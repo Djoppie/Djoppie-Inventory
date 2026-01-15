@@ -1,0 +1,449 @@
+/* Djoppie Inventory - Retrofuturistic Cyberpunk Console Theme */
+
+:root {
+  /* Djoppie Brand Colors - Cyberpunk Gold Palette */
+  --djoppie-orange: #E07B28;
+  --console-gold: #FFD700;
+  --console-warm-gold: #FDB931;
+  --console-dark-gold: #DAA520;
+  --console-bronze: #CD7F32;
+  --console-green: #00ff88;
+  --console-red: #ff5555;
+  --console-amber: #ffb86c;
+  --console-cyan: #00ffff;
+  --console-blue: #0088ff;
+
+  /* Atmospheric Effects */
+  --glow-primary: 0 0 8px rgba(255, 215, 0, 0.4);
+  --glow-secondary: 0 0 12px rgba(224, 123, 40, 0.5);
+  --glow-success: 0 0 8px rgba(0, 255, 136, 0.6);
+  --shadow-elevation: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+  /* Console Typography - Monospace for that terminal feel */
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.6;
+  font-weight: 400;
+
+  /* Rendering optimizations */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+}
+
+/* Global reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Subtle CRT scanline effect overlay (very subtle) */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    transparent 1px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+  opacity: 0.3;
+  animation: scanlineFlicker 8s ease-in-out infinite;
+}
+
+@keyframes scanlineFlicker {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* Atmospheric glow overlay for dark mode */
+@media (prefers-color-scheme: dark) {
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 800px;
+    height: 800px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 215, 0, 0.03) 0%,
+      rgba(253, 185, 49, 0.02) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+    animation: atmosphericGlow 8s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes atmosphericGlow {
+  0% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* Console-style links with holographic glow */
+a {
+  font-weight: 600;
+  color: var(--console-warm-gold);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid transparent;
+  position: relative;
+}
+
+a::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--console-gold), var(--console-warm-gold), var(--djoppie-orange));
+  transition: width 0.3s ease;
+}
+
+a:hover {
+  color: var(--console-gold);
+  text-shadow: var(--glow-primary);
+}
+
+a:hover::before {
+  width: 100%;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--console-gold);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* Console-style code blocks with glow */
+code,
+pre {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  font-size: 0.9em;
+  box-shadow: inset 0 0 8px rgba(255, 215, 0, 0.1);
+}
+
+pre {
+  padding: 16px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+/* Custom Scrollbar - Cyberpunk Style */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    var(--console-gold) 0%,
+    var(--console-warm-gold) 50%,
+    var(--console-dark-gold) 100%
+  );
+  border-radius: 2px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  box-shadow: var(--glow-primary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    var(--console-warm-gold) 0%,
+    var(--console-dark-gold) 50%,
+    var(--djoppie-orange) 100%
+  );
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+}
+
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Selection styling with holographic highlight */
+::selection {
+  background-color: var(--console-gold);
+  color: #0a0e27;
+  text-shadow: none;
+}
+
+::-moz-selection {
+  background-color: var(--console-gold);
+  color: #0a0e27;
+  text-shadow: none;
+}
+
+/* Focus states with cyberpunk glow */
+*:focus-visible {
+  outline: 2px solid var(--console-gold);
+  outline-offset: 3px;
+  border-radius: 2px;
+  box-shadow: var(--glow-primary), 0 0 16px rgba(255, 215, 0, 0.3);
+}
+
+/* Button focus refinement */
+button:focus-visible {
+  outline-offset: 2px;
+}
+
+/* Utility classes for console-style elements */
+.console-prompt {
+  color: var(--djoppie-orange);
+  font-weight: 700;
+  text-shadow: var(--glow-secondary);
+}
+
+.console-success {
+  color: var(--console-green);
+  text-shadow: var(--glow-success);
+}
+
+.console-error {
+  color: var(--console-red);
+  text-shadow: 0 0 8px rgba(255, 85, 85, 0.6);
+}
+
+.console-warning {
+  color: var(--console-amber);
+  text-shadow: 0 0 8px rgba(255, 184, 108, 0.5);
+}
+
+.console-info {
+  color: var(--console-gold);
+  text-shadow: var(--glow-primary);
+}
+
+.console-gold {
+  color: var(--console-gold);
+  text-shadow: var(--glow-primary);
+  font-weight: 600;
+}
+
+/* Holographic border effect utility */
+.holographic-border {
+  border: 1px solid;
+  border-image: linear-gradient(
+    135deg,
+    var(--console-gold),
+    var(--console-warm-gold),
+    var(--djoppie-orange)
+  ) 1;
+  box-shadow: inset 0 0 12px rgba(255, 215, 0, 0.1);
+  position: relative;
+}
+
+.holographic-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--console-gold),
+    var(--console-warm-gold),
+    var(--djoppie-orange)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0.5;
+}
+
+/* Glitch text effect (use sparingly) */
+@keyframes glitchText {
+  0% {
+    transform: translate(0);
+    text-shadow: none;
+  }
+  20% {
+    transform: translate(-2px, 2px);
+    text-shadow: 2px 0 var(--console-cyan), -2px 0 var(--console-red);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+    text-shadow: -2px 0 var(--console-cyan), 2px 0 var(--console-red);
+  }
+  60% {
+    transform: translate(2px, 2px);
+    text-shadow: 2px 0 var(--console-red), -2px 0 var(--console-cyan);
+  }
+  80% {
+    transform: translate(2px, -2px);
+    text-shadow: -2px 0 var(--console-red), 2px 0 var(--console-cyan);
+  }
+  100% {
+    transform: translate(0);
+    text-shadow: none;
+  }
+}
+
+.glitch {
+  animation: glitchText 0.3s ease-in-out;
+}
+
+/* Cyberpunk grid background pattern (optional, for specific sections) */
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(255, 215, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 215, 0, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  position: relative;
+}
+
+.cyber-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    rgba(10, 14, 39, 0.3) 100%
+  );
+  pointer-events: none;
+}
+
+/* Animated gradient text */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(
+    90deg,
+    var(--console-gold),
+    var(--console-warm-gold),
+    var(--djoppie-orange),
+    var(--console-warm-gold),
+    var(--console-gold)
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease-in-out infinite;
+}
+
+/* Responsive typography scales */
+@media (max-width: 640px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  :root {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1919px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    font-size: 18px;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  body::before,
+  body::after {
+    animation: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --console-gold: #FFE34D;
+    --console-warm-gold: #FFC933;
+    --console-dark-gold: #CC9900;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  *:focus-visible {
+    outline-width: 3px;
+    outline-offset: 4px;
+  }
+}
+
+/* Print styles */
+@media print {
+  body::before,
+  body::after {
+    display: none !important;
+  }
+
+  * {
+    text-shadow: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+}

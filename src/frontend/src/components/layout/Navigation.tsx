@@ -1,0 +1,53 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import AddBoxIcon from '@mui/icons-material/AddBox';
+
+const Navigation = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    // Update active tab based on current route
+    if (location.pathname === '/') {
+      setValue(0);
+    } else if (location.pathname === '/scan') {
+      setValue(1);
+    } else if (location.pathname === '/assets/new') {
+      setValue(2);
+    }
+  }, [location]);
+
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+
+    switch (newValue) {
+      case 0:
+        navigate('/');
+        break;
+      case 1:
+        navigate('/scan');
+        break;
+      case 2:
+        navigate('/assets/new');
+        break;
+    }
+  };
+
+  return (
+    <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
+      <BottomNavigation value={value} onChange={handleChange}>
+        <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
+        <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
+        <BottomNavigationAction label={t('navigation.assets')} icon={<AddBoxIcon />} />
+      </BottomNavigation>
+    </Paper>
+  );
+};
+
+export default Navigation;
