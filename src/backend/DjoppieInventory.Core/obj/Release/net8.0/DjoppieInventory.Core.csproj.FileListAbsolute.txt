@@ -1,0 +1,12 @@
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\bin\Release\net8.0\DjoppieInventory.Core.deps.json
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\bin\Release\net8.0\DjoppieInventory.Core.dll
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\bin\Release\net8.0\DjoppieInventory.Core.pdb
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.AssemblyInfoInputs.cache
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.AssemblyInfo.cs
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.csproj.CoreCompileInputs.cache
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.sourcelink.json
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.dll
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\refint\DjoppieInventory.Core.dll
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\DjoppieInventory.Core.pdb
+C:\Users\jowij\VSCodeDiepenbeek\Djoppie\Djoppie-Inventory\Djoppie-Inventory\src\backend\DjoppieInventory.Core\obj\Release\net8.0\ref\DjoppieInventory.Core.dll

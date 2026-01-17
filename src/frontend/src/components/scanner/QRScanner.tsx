@@ -5,19 +5,37 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import CameraHelp from './CameraHelp';
 
+// QR Scanner Configuration Constants
+const QR_SCANNER_CONFIG = {
+  FPS: 10, // Frames per second for QR code scanning
+  QR_BOX_WIDTH: 250, // Width of the QR code scanning box in pixels
+  QR_BOX_HEIGHT: 250, // Height of the QR code scanning box in pixels
+  ASPECT_RATIO: 1.0, // Camera aspect ratio (1.0 for square)
+  FACING_MODE: 'environment' // Use back camera on mobile devices
+} as const;
+
+const QR_CODE_REGION_ID = 'qr-code-scanner-region';
+
 interface QRScannerProps {
   onScanSuccess: (assetCode: string) => void;
   onScanError?: (error: string) => void;
 }
 
+/**
+ * QRScanner component for scanning asset QR codes using device camera.
+ * Handles camera permissions, initialization, scanning, and error states.
+ */
 const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const qrCodeRegionId = 'qr-code-scanner-region';
   const isMountedRef = useRef(true);
 
+  /**
+   * Starts the QR code scanner and initializes the camera.
+   * Handles camera permissions and displays appropriate error messages.
+   */
   const startScanning = async () => {
     if (isInitializing) return;
 
@@ -32,18 +50,21 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
 
       // Initialize scanner if not already done
       if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode(qrCodeRegionId);
+        scannerRef.current = new Html5Qrcode(QR_CODE_REGION_ID);
       }
 
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
+      const scannerConfig = {
+        fps: QR_SCANNER_CONFIG.FPS,
+        qrbox: {
+          width: QR_SCANNER_CONFIG.QR_BOX_WIDTH,
+          height: QR_SCANNER_CONFIG.QR_BOX_HEIGHT
+        },
+        aspectRatio: QR_SCANNER_CONFIG.ASPECT_RATIO,
       };
 
       await scannerRef.current.start(
-        { facingMode: 'environment' },
-        config,
+        { facingMode: QR_SCANNER_CONFIG.FACING_MODE },
+        scannerConfig,
         (decodedText) => {
           // Successfully scanned
           if (isMountedRef.current) {
@@ -85,6 +106,9 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
     }
   };
 
+  /**
+   * Stops the QR code scanner and releases the camera.
+   */
   const stopScanning = async () => {
     if (scannerRef.current && isScanning) {
       try {
@@ -127,7 +151,7 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
       )}
 
       <Box
-        id={qrCodeRegionId}
+        id={QR_CODE_REGION_ID}
         sx={{
           width: '100%',
           maxWidth: 500,

@@ -43,15 +43,15 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
             ? {
               // Light mode - Vintage Amber Terminal style
               primary: {
-                main: '#FDB931', // Warm Gold
-                light: '#FFD700',
-                dark: '#DAA520',
+                main: '#D4910C', // Darker Gold for better readability
+                light: '#FDB931',
+                dark: '#B8860B',
                 contrastText: '#000000',
               },
               secondary: {
-                main: '#E07B28', // Djoppie Orange
-                light: '#ff9a4d',
-                dark: '#c25d10',
+                main: '#C85D0A', // Darker Djoppie Orange
+                light: '#E07B28',
+                dark: '#A04D08',
                 contrastText: '#ffffff',
               },
               background: {
@@ -59,8 +59,8 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 paper: '#ffffff',
               },
               text: {
-                primary: '#1a1f36', // Dark text
-                secondary: '#4a5568',
+                primary: '#0f1419', // Even darker text for better contrast
+                secondary: '#2d3748', // Darker secondary text
               },
               success: {
                 main: '#00ff88', // Green (console style)

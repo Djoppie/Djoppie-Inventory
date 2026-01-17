@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DjoppieThemeProvider } from './theme/ThemeContext';
+import { ROUTES } from './constants/routes';
 import Layout from './components/layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import ScanPage from './pages/ScanPage';
@@ -25,11 +26,11 @@ function App() {
         <BrowserRouter>
           <Layout>
             <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/scan" element={<ScanPage />} />
-              <Route path="/assets/:id" element={<AssetDetailPage />} />
-              <Route path="/assets/new" element={<AddAssetPage />} />
-              <Route path="/assets/:id/edit" element={<EditAssetPage />} />
+              <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+              <Route path={ROUTES.SCAN} element={<ScanPage />} />
+              <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />
+              <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
+              <Route path={ROUTES.ASSET_EDIT} element={<EditAssetPage />} />
             </Routes>
           </Layout>
         </BrowserRouter>

@@ -24,3 +24,13 @@ out/
 .idea/
 *.sublime-workspace
 *.sublime-project
+
+# Azure credentials and secrets
+.azure-credentials.txt
+entra-id-config-*.txt
+*.credentials
+*.secrets
+*.md
+
+# Auto Claude data directory
+.auto-claude/

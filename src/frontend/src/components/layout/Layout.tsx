@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Box, AppBar, Toolbar, Typography, Container, IconButton, Tooltip } from '@mui/material';
+import { Box, AppBar, Toolbar, Container, Typography, IconButton, Tooltip } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import Navigation from './Navigation';
@@ -18,9 +18,70 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
-        <Toolbar sx={{ gap: 2 }}>
-          {/* Djoppie Logo */}
-          <DjoppieLogo size={40} animate />
+        <Toolbar
+          sx={{
+            gap: 2,
+            py: 1.5,
+            background: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(180deg, rgba(10, 14, 39, 0.95) 0%, rgba(10, 14, 39, 1) 100%)'
+                : 'linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 1) 100%)',
+            position: 'relative',
+            overflow: 'visible',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(90deg, transparent 0%, rgba(255, 168, 65, 0.4) 50%, transparent 100%)'
+                  : 'linear-gradient(90deg, transparent 0%, rgba(212, 145, 12, 0.3) 50%, transparent 100%)',
+            },
+          }}
+        >
+          {/* Djoppie Head - High quality animated design with soft glowing eyes */}
+          <Box
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                width: '140%',
+                height: '140%',
+                borderRadius: '50%',
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'radial-gradient(circle, rgba(255, 168, 65, 0.08) 0%, transparent 70%)'
+                    : 'radial-gradient(circle, rgba(212, 145, 12, 0.06) 0%, transparent 70%)',
+                animation: 'ambientPulse 4s ease-in-out infinite',
+                zIndex: 0,
+              },
+              '@keyframes ambientPulse': {
+                '0%, 100%': {
+                  transform: 'scale(1)',
+                  opacity: 0.6,
+                },
+                '50%': {
+                  transform: 'scale(1.1)',
+                  opacity: 1,
+                },
+              },
+            }}
+          >
+            <DjoppieLogo
+              size={70}
+              animate
+              intensity="high"
+              headerMode
+              headOnly
+            />
+          </Box>
 
           {/* Console-style prompt */}
           <Typography

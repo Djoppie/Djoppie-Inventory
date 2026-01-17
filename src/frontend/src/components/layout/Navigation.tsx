@@ -5,7 +5,12 @@ import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import { ROUTES } from '../../constants/routes';
 
+/**
+ * Bottom navigation component providing quick access to main app sections.
+ * Synchronizes with current route to highlight active navigation item.
+ */
 const Navigation = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -14,11 +19,11 @@ const Navigation = () => {
 
   useEffect(() => {
     // Update active tab based on current route
-    if (location.pathname === '/') {
+    if (location.pathname === ROUTES.DASHBOARD) {
       setValue(0);
-    } else if (location.pathname === '/scan') {
+    } else if (location.pathname === ROUTES.SCAN) {
       setValue(1);
-    } else if (location.pathname === '/assets/new') {
+    } else if (location.pathname === ROUTES.ASSETS_NEW) {
       setValue(2);
     }
   }, [location]);
@@ -28,13 +33,13 @@ const Navigation = () => {
 
     switch (newValue) {
       case 0:
-        navigate('/');
+        navigate(ROUTES.DASHBOARD);
         break;
       case 1:
-        navigate('/scan');
+        navigate(ROUTES.SCAN);
         break;
       case 2:
-        navigate('/assets/new');
+        navigate(ROUTES.ASSETS_NEW);
         break;
     }
   };

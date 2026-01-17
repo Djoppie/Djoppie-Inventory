@@ -1,18 +1,16 @@
-import { Box, CircularProgress } from '@mui/material';
+import DjoppieLoading from './DjoppieLoading';
 
-const Loading = () => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '200px',
-      }}
-    >
-      <CircularProgress />
-    </Box>
-  );
+interface LoadingProps {
+  message?: string;
+  fullScreen?: boolean;
+}
+
+/**
+ * Loading component that displays an animated Djoppie robot
+ * with console-style loading message.
+ */
+const Loading = ({ message, fullScreen = false }: LoadingProps) => {
+  return <DjoppieLoading message={message} fullScreen={fullScreen} />;
 };
 
 export default Loading;
