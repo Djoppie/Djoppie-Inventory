@@ -20,7 +20,7 @@ param projectName = 'djoppie'
 // These values were configured by setup-entra-id.ps1 on 2026-01-17
 param entraIdTenantId = '7db28d6f-d542-40c1-b529-5e5ed2aad545' // Diepenbeek tenant
 param entraBackendClientId = 'fc0be7bf-0e71-4c39-8a02-614dfa16322c' // Djoppie-Inventory-API-dev
-param entraBackendClientSecret = '<FROM_PIPELINE_VARIABLE>' // This will be injected by pipeline
+param entraBackendClientSecret = 'placeholder-will-be-overridden-by-pipeline' // Injected by pipeline
 param entraFrontendClientId = 'bec7a94f-d35d-4f0e-af77-60f6a9342f2d' // Djoppie-Inventory-Web-dev
 
 // Admin settings
