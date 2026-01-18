@@ -30,7 +30,11 @@ out/
 entra-id-config-*.txt
 *.credentials
 *.secrets
-*.md
+
+# Ignore specific markdown files in root
+/*.md
+# But allow markdown files in docs directory
+!docs/**/*.md
 
 # Auto Claude data directory
 .auto-claude/
