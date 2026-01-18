@@ -193,30 +193,40 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          # Extract outputs from deployment
-          BACKEND_APP_NAME=$(az deployment group show \
-            --name "djoppie-$(environment)-$(Build.BuildId)" \
-            --resource-group $(resourceGroupName) \
-            --query 'properties.outputs.backendAppServiceName.value' -o tsv)
+          echo "Querying deployed resources in $(resourceGroupName)..."
 
-          FRONTEND_APP_NAME=$(az deployment group show \
-            --name "djoppie-$(environment)-$(Build.BuildId)" \
+          # Query resources directly from resource group (more reliable than deployment outputs)
+          BACKEND_APP_NAME=$(az webapp list \
             --resource-group $(resourceGroupName) \
-            --query 'properties.outputs.frontendStaticWebAppName.value' -o tsv)
+            --query "[?kind=='app,linux'].name | [0]" -o tsv)
 
-          KEY_VAULT_NAME=$(az deployment group show \
-            --name "djoppie-$(environment)-$(Build.BuildId)" \
+          FRONTEND_APP_NAME=$(az staticwebapp list \
             --resource-group $(resourceGroupName) \
-            --query 'properties.outputs.keyVaultName.value' -o tsv)
+            --query "[0].name" -o tsv)
+
+          KEY_VAULT_NAME=$(az keyvault list \
+            --resource-group $(resourceGroupName) \
+            --query "[0].name" -o tsv)
+
+          # Validate we got the names
+          if [ -z "$BACKEND_APP_NAME" ]; then
+            echo "ERROR: Could not find backend app service"
+            exit 1
+          fi
+
+          if [ -z "$FRONTEND_APP_NAME" ]; then
+            echo "ERROR: Could not find frontend static web app"
+            exit 1
+          fi
 
           # Save as pipeline variables for next stages
           echo "##vso[task.setvariable variable=backendAppName;isOutput=true]$BACKEND_APP_NAME"
           echo "##vso[task.setvariable variable=frontendAppName;isOutput=true]$FRONTEND_APP_NAME"
           echo "##vso[task.setvariable variable=keyVaultName;isOutput=true]$KEY_VAULT_NAME"
 
-          echo "Backend App: $BACKEND_APP_NAME"
-          echo "Frontend App: $FRONTEND_APP_NAME"
-          echo "Key Vault: $KEY_VAULT_NAME"
+          echo "✓ Backend App: $BACKEND_APP_NAME"
+          echo "✓ Frontend App: $FRONTEND_APP_NAME"
+          echo "✓ Key Vault: $KEY_VAULT_NAME"
       name: outputs
 
 # ----------------------------------------------------------------------------
