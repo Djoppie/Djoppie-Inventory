@@ -121,12 +121,27 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
       name: 'standard' // Standard tier is cheaper than Premium
     }
     tenantId: subscription().tenantId
-    enableRbacAuthorization: true // Use RBAC instead of access policies (modern approach)
+    enableRbacAuthorization: false // Use access policies for learning deployment (simpler)
     enableSoftDelete: true
     softDeleteRetentionInDays: 7 // Minimum retention period
     enablePurgeProtection: false // Disabled to allow vault deletion in dev
     publicNetworkAccess: 'Enabled'
+    accessPolicies: [
+      {
+        tenantId: subscription().tenantId
+        objectId: backendApp.identity.principalId
+        permissions: {
+          secrets: [
+            'get'
+            'list'
+          ]
+        }
+      }
+    ]
   }
+  dependsOn: [
+    backendApp // Ensure backend app is created first so we have its managed identity
+  ]
 }
 
 // Store Entra ID secrets in Key Vault
@@ -255,16 +270,9 @@ resource backendApp 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-// Grant backend app access to Key Vault secrets
-resource backendKeyVaultAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVault.id, backendApp.id, 'Key Vault Secrets User')
-  scope: keyVault
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: backendApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+// NOTE: Role assignment removed for learning deployment to avoid permission issues
+// Key Vault access will be configured through access policies instead
+// For production, use RBAC role assignments with proper permissions
 
 // ============================================================================
 // STATIC WEB APP (Free tier - perfect for React apps)
@@ -297,7 +305,7 @@ resource frontendAppSettings 'Microsoft.Web/staticSites/config@2023-12-01' = {
   parent: frontendApp
   name: 'appsettings'
   properties: {
-    VITE_API_URL: 'https://${backendApp.properties.defaultHostName}/api'
+    VITE_API_URL: 'https://${backendApp.properties.defaultHostname}/api'
     VITE_ENTRA_CLIENT_ID: entraFrontendClientId
     VITE_ENTRA_TENANT_ID: entraIdTenantId
     VITE_ENVIRONMENT: environment
@@ -315,11 +323,11 @@ output environment string = environment
 // App Service outputs
 output appServicePlanName string = appServicePlan.name
 output backendAppServiceName string = backendApp.name
-output backendAppUrl string = 'https://${backendApp.properties.defaultHostName}'
+output backendAppUrl string = 'https://${backendApp.properties.defaultHostname}'
 
 // Static Web App outputs
 output frontendStaticWebAppName string = frontendApp.name
-output frontendStaticWebAppUrl string = 'https://${frontendApp.properties.defaultHostName}'
+output frontendStaticWebAppUrl string = 'https://${frontendApp.properties.defaultHostname}'
 output frontendDeploymentToken string = frontendApp.listSecrets().properties.apiKey
 
 // Key Vault outputs
