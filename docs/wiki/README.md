@@ -17,6 +17,7 @@ Deze Wiki bevat complete, stap-voor-stap handleidingen voor het deployen en behe
 - **Developers** - Voor lokale ontwikkeling en deployment workflows
 - **IT Managers** - Voor overzicht van architectuur en kosten
 - **Operations** - Voor monitoring en troubleshooting
+- **Eindgebruikers** - Voor dagelijks gebruik van de applicatie (IT-ondersteuning, voorraadbeheer)
 
 ---
 
@@ -144,6 +145,27 @@ Inhoud:
 
 ---
 
+### [07 - Gebruikershandleiding](07-Gebruikershandleiding.md)
+**Complete handleiding voor eindgebruikers**
+
+Inhoud:
+- Projectoverzicht en belangrijkste functies
+- Inloggen met Microsoft Entra ID (stap voor stap)
+- QR-code scannen en activa opzoeken
+- Activa beheren (toevoegen, bewerken, verwijderen)
+- Dashboard gebruiken met filters en statistieken
+- Microsoft Intune integratie uitleg
+- Veelvoorkomende werkstromen (5 praktische scenario's)
+- Uitgebreide probleemoplossing
+- 25+ veelgestelde vragen (FAQ)
+- Contact en ondersteuning
+- Best practices voor dagelijks gebruik
+
+**Doelgroep:** IT-ondersteuningsmedewerkers, voorraadbeheerders, facilitair medewerkers
+**Geschatte leestijd:** 30-45 minuten
+
+---
+
 ## Quick Start Guide
 
 ### Voor Nieuwe Developers
@@ -163,6 +185,16 @@ Inhoud:
 6. **Enable monitoring** - Configure via [06-Monitoring-en-Troubleshooting.md](06-Monitoring-en-Troubleshooting.md)
 
 **Totale setup tijd:** ~6-8 uur voor complete environment (DEV + PROD)
+
+### Voor Eindgebruikers
+
+1. **Start met overzicht** - Lees [07-Gebruikershandleiding.md](07-Gebruikershandleiding.md) voor inleiding
+2. **Eerste login** - Volg de instructies voor inloggen met Microsoft Entra ID
+3. **Verken de interface** - Dashboard, Scannen, en Activa toevoegen
+4. **Probeer QR scannen** - Test de QR-code scanner functionaliteit
+5. **Bekijk FAQ** - Veelgestelde vragen voor veel voorkomende situaties
+
+**Leestijd:** ~30-45 minuten
 
 ---
 
