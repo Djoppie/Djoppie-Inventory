@@ -1,6 +1,6 @@
 # Djoppie Inventory - Gebruikershandleiding
 
-## Inhoudsopgave
+## 📜 Inhoudsopgave
 
 1. [Projectoverzicht](#projectoverzicht)
 2. [Aan de slag](#aan-de-slag)
@@ -13,7 +13,7 @@
 
 ---
 
-## Projectoverzicht
+## 👓 Projectoverzicht
 
 ### Wat is Djoppie Inventory?
 
@@ -57,7 +57,7 @@ Het systeem ondersteunt verschillende categorieën IT-activa:
 
 ---
 
-## Aan de slag
+## 🤖 Aan de slag
 
 ### Toegang tot de applicatie
 
@@ -70,19 +70,23 @@ Het systeem ondersteunt verschillende categorieën IT-activa:
 Djoppie Inventory maakt gebruik van Single Sign-On (SSO) via Microsoft Entra ID voor veilige authenticatie.
 
 **Stap 1: Aanmeldscherm**
+
 - Klik op de knop **"Aanmelden met Microsoft"**
 - U wordt doorgestuurd naar de bekende Microsoft-aanmeldingspagina
 
 **Stap 2: Accountselectie**
+
 - Selecteer uw **werk- of schoolaccount** (uw Diepenbeek-account)
 - Als u al bent ingelogd in andere Microsoft-diensten, wordt uw account mogelijk automatisch geselecteerd
 
 **Stap 3: Toestemming verlenen**
+
 - Bij uw eerste aanmelding wordt mogelijk gevraagd om toestemming te geven voor Djoppie Inventory
 - Lees de gevraagde machtigingen door en klik op **"Accepteren"**
 - Deze stap hoeft u slechts eenmaal uit te voeren
 
 **Stap 4: Welkom bij Djoppie Inventory**
+
 - Na succesvolle aanmelding wordt u doorgestuurd naar het dashboard
 - Uw naam en profielfoto worden rechtsboven weergegeven
 
@@ -101,47 +105,55 @@ Bij uw eerste gebruik van Djoppie Inventory:
 ### Gebruikersinterface overzicht
 
 **Bovenbalk (Header)**:
+
 - **Djoppie-logo**: Links in de balk
 - **Taalwissel**: Schakel tussen Nederlands (NL) en Engels (EN)
 - **Themawissel**: Donkere of lichte modus
 - **Gebruikersprofiel**: Uw naam, profielfoto en uitlog-knop
 
 **Hoofdgedeelte (Main Area)**:
+
 - Dynamische inhoud afhankelijk van de geselecteerde pagina
 - Dashboard, Scanner, of Activaformulier
 
 **Navigatiebalk (Bottom Navigation)**:
+
 - **Dashboard**: Toon alle activa met filtermogelijkheden
 - **Scannen**: Open de QR-scanner of handmatige invoer
 - **Activa**: Voeg een nieuw activa toe
 
 ---
 
-## Kernfuncties - Stap voor stap
+## 💎 Kernfuncties - Stap voor stap
 
 ### 1. QR-code scannen
 
 De QR-scanner is de snelste manier om informatie over een activa op te zoeken.
 
 **Stap 1: Open de Scanner**
+
 - Klik op de **"Scannen"**-knop in de navigatiebalk onderaan het scherm
 - U ziet twee tabbladen: **QR Scanner** en **Handmatige invoer**
 
 **Stap 2: Camera toestemming**
+
 - Bij het eerste gebruik vraagt uw browser om toestemming voor cameratoegang
 - Klik op **"Toestaan"** in het pop-upvenster
 - De camera wordt geactiveerd en u ziet een live beeld
 
 **Stap 3: QR-code scannen**
+
 - Richt uw camera op de QR-code van het activa
 - Houd de camera stabiel op ongeveer 10-20 cm afstand
 - De code wordt automatisch herkend (dit duurt meestal minder dan 1 seconde)
 
 **Stap 4: Resultaat bekijken**
+
 - Na succesvolle scan wordt u automatisch doorgestuurd naar de detailpagina van het activa
 - Als de code niet wordt herkend, verschijnt een foutmelding
 
 **Tips voor succesvol scannen**:
+
 - Zorg voor goede belichting
 - Houd de camera stabiel
 - Zorg dat de volledige QR-code zichtbaar is
@@ -152,19 +164,23 @@ De QR-scanner is de snelste manier om informatie over een activa op te zoeken.
 Als QR-scannen niet mogelijk is, kunt u handmatig naar een activa zoeken.
 
 **Stap 1: Handmatige invoer openen**
+
 - Ga naar de Scanner-pagina
 - Klik op het tabblad **"Handmatige invoer"**
 
 **Stap 2: Activacode invoeren**
+
 - Typ de activacode in het invoerveld (bijv. "AST-001")
 - De code is hoofdlettergevoelig
 - Zorg dat u de code exact invoert zoals deze op het activa staat
 
 **Stap 3: Zoeken**
+
 - Klik op de knop **"Zoeken"** of druk op **Enter**
 - Het systeem zoekt naar het activa
 
 **Stap 4: Resultaat**
+
 - Bij een gevonden activa wordt u doorgestuurd naar de detailpagina
 - Bij een niet-gevonden code verschijnt de melding: "Activa niet gevonden: [code]"
 
@@ -175,22 +191,26 @@ De detailpagina toont alle informatie over een specifiek activa.
 **Informatie op de detailpagina**:
 
 **Identificatie**:
+
 - Activacode (unieke identifier)
 - Activanaam (beschrijving)
 - Categorie (Computers, Randapparatuur, etc.)
 - Status badge (Actief of Onderhoud)
 
 **Toewijzingsgegevens**:
+
 - Eigenaar (medewerker aan wie het activa is toegewezen)
 - Gebouw (locatie van het activa)
 - Ruimte/Verdieping (specifieke locatie)
 
 **Technische specificaties**:
+
 - Merk (bijv. Dell, HP)
 - Model (bijv. Latitude 5420)
 - Serienummer (uniek fabrikantsnummer)
 
 **Levenscyclus informatie**:
+
 - Aankoopdatum
 - Garantieverloopdatum
 - Installatiedatum
@@ -198,20 +218,24 @@ De detailpagina toont alle informatie over een specifiek activa.
 - Laatst bijgewerkt
 
 **QR-code**:
+
 - Rechts op de pagina ziet u een grote, scanbare QR-code
 - Klik op **"Download QR Code"** om deze als SVG-bestand te downloaden en af te drukken
 
 **Acties**:
+
 - **Bewerken**: Wijzig de gegevens van het activa
 - **Verwijderen**: Verwijder het activa permanent uit het systeem
 
 ### 4. Nieuw activa toevoegen
 
 **Stap 1: Navigeer naar het formulier**
+
 - Klik op **"Activa"** in de navigatiebalk onderaan
 - U komt op de pagina "Activa toevoegen"
 
 **Stap 2: Kies een sjabloon (optioneel)**
+
 - Bovenaan ziet u een dropdown **"Selecteer Sjabloon (Optioneel)"**
 - Kies een voorgedefinieerd sjabloon om velden automatisch in te vullen:
   - Dell Latitude Laptop (Computers)
@@ -222,6 +246,7 @@ De detailpagina toont alle informatie over een specifiek activa.
 - Of kies **"Geen sjabloon - Handmatig invoeren"** om alle velden zelf in te vullen
 
 **Stap 3: Vul de identificatiegegevens in** (verplicht)
+
 - **Activacode**: Unieke code (bijv. "AST-2024-001")
   - Gebruik een consistent nummerschema
   - Deze code wordt gebruikt voor QR-codes en zoekopdrachten
@@ -230,45 +255,54 @@ De detailpagina toont alle informatie over een specifiek activa.
 - **Status**: Selecteer "Actief" of "Onderhoud"
 
 **Stap 4: Vul de toewijzingsgegevens in** (verplicht)
+
 - **Eigenaar**: Naam van de medewerker (bijv. "Jan Janssen")
 - **Gebouw**: Locatie (bijv. "Hoofdgebouw Diepenbeek")
 - **Ruimte/Verdieping**: Specifieke locatie (bijv. "Verdieping 2, Kamer 205")
 
 **Stap 5: Vul technische details in** (optioneel)
+
 - **Merk**: Fabrikant (bijv. "Dell")
 - **Model**: Modelnummer (bijv. "Latitude 5420")
 - **Serienummer**: Uniek serienummer van de fabrikant
 
 **Stap 6: Vul levenscyclus informatie in** (optioneel)
+
 - **Aankoopdatum**: Wanneer het activa is aangeschaft
 - **Garantieverloopdatum**: Einddatum van de fabrieksgarantie
 - **Installatiedatum**: Wanneer het activa in gebruik is genomen
 
 **Stap 7: Opslaan**
+
 - Klik op **"Opslaan"** onderaan het formulier
 - Bij ontbrekende verplichte velden krijgt u een foutmelding
 - Na succesvol opslaan verschijnt de melding "Activa succesvol opgeslagen"
 - U wordt automatisch doorgestuurd naar het dashboard
 
 **Stap 8: Annuleren**
+
 - Klik op **"Annuleren"** om terug te gaan zonder op te slaan
 - Niet-opgeslagen wijzigingen gaan verloren
 
 ### 5. Activa bewerken
 
 **Stap 1: Open het activa**
+
 - Zoek het activa via het dashboard of de scanner
 - Open de detailpagina
 
 **Stap 2: Bewerkmodus openen**
+
 - Klik op de knop **"Bewerken"** rechtsboven
 
 **Stap 3: Wijzig de gegevens**
+
 - Het bewerkingsformulier toont alle huidige gegevens
 - **Let op**: De activacode kan niet worden gewijzigd (dit is de unieke identifier)
 - Wijzig de gewenste velden
 
 **Stap 4: Opslaan of annuleren**
+
 - Klik op **"Opslaan"** om de wijzigingen te bevestigen
 - Of klik op **"Annuleren"** om terug te gaan zonder wijzigingen
 
@@ -277,18 +311,22 @@ De detailpagina toont alle informatie over een specifiek activa.
 **Waarschuwing**: Verwijderen is permanent en kan niet ongedaan worden gemaakt.
 
 **Stap 1: Open het activa**
+
 - Ga naar de detailpagina van het activa
 
 **Stap 2: Verwijderen starten**
+
 - Klik op de rode knop **"Verwijderen"** rechtsboven
 
 **Stap 3: Bevestiging**
+
 - Een dialoogvenster verschijnt met de vraag:
   "Weet u zeker dat u [Activanaam] ([Activacode]) wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
 - Klik op **"Verwijderen"** om te bevestigen
 - Of klik op **"Annuleren"** om terug te gaan
 
 **Stap 4: Resultaat**
+
 - Het activa wordt permanent verwijderd
 - U wordt automatisch teruggestuurd naar het dashboard
 
@@ -297,11 +335,13 @@ De detailpagina toont alle informatie over een specifiek activa.
 Het dashboard is uw centrale overzicht van alle activa.
 
 **Overzichtsstatistieken**:
+
 - **Total Assets**: Totaal aantal geregistreerde activa
 - **Active**: Aantal activa met status "Actief"
 - **Maintenance**: Aantal activa met status "Onderhoud"
 
 **Filteren op status**:
+
 - Klik op de dropdown **"Filter op status"** rechtsboven
 - Selecteer:
   - **"Alle activa"**: Toon alle activa ongeacht status
@@ -310,6 +350,7 @@ Het dashboard is uw centrale overzicht van alle activa.
 - Het dashboard wordt direct bijgewerkt
 
 **Activalijst**:
+
 - Alle activa worden weergegeven als kaarten
 - Elke kaart toont:
   - Activanaam
@@ -321,6 +362,7 @@ Het dashboard is uw centrale overzicht van alle activa.
 - Klik op een kaart om de volledige details te bekijken
 
 **Zoeken in de lijst**:
+
 - Gebruik de filterfunctie bovenaan
 - Of scroll door de lijst om handmatig te zoeken
 
@@ -329,31 +371,36 @@ Het dashboard is uw centrale overzicht van alle activa.
 Elk activa heeft automatisch een unieke QR-code.
 
 **Stap 1: Open de detailpagina**
+
 - Zoek het activa waarvoor u een QR-code wilt downloaden
 
 **Stap 2: Bekijk de QR-code**
+
 - Rechts op de detailpagina ziet u een grote QR-code
 - Deze code bevat de activacode
 
 **Stap 3: Download de QR-code**
+
 - Klik op de knop **"Download QR Code"**
 - Het bestand wordt gedownload als SVG-formaat
 - Bestandsnaam: `[ACTIVACODE]-QR.svg`
 
 **Stap 4: Afdrukken en aanbrengen**
+
 - Open het SVG-bestand in een afbeeldingsviewer of browser
 - Druk de QR-code af op een etiket of sticker
 - Plak deze op het fysieke activa
 - De code kan nu worden gescand voor snelle toegang tot informatie
 
 **Tips voor afdrukken**:
+
 - Gebruik een minimale grootte van 3x3 cm voor goede scanbaarheid
 - Druk af op mat papier om reflecties te voorkomen
 - Test de QR-code na het afdrukken met de scanner
 
 ---
 
-## Microsoft Intune Integratie
+## 👨‍💻 Microsoft Intune Integratie
 
 ### Wat is Microsoft Intune-integratie?
 
@@ -383,6 +430,7 @@ De Intune-integratie werkt met:
 **Let op**: Deze functie is momenteel in ontwikkeling. In toekomstige versies zal Intune-informatie zichtbaar zijn op de activadetailpagina.
 
 **Geplande functionaliteit**:
+
 - Tabblad "Intune-informatie" op de detailpagina
 - Automatische synchronisatie van hardware-specs bij opslaan
 - Koppeling naar Intune-apparaatbeheerportal
@@ -399,7 +447,7 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 
 ---
 
-## Veelvoorkomende Werkstromen
+## 🧭 Veelvoorkomende Werkstromen
 
 ### Scenario 1: Nieuwe laptop registreren
 
@@ -563,7 +611,7 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 
 ---
 
-## Probleemoplossing
+## 🚑 Probleemoplossing
 
 ### QR-scanner werkt niet
 
@@ -576,12 +624,14 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 **Symptoom**: Melding "Camera opstarten mislukt" of "Toestemming geweigerd"
 
 **Oplossing**:
+
 - Klik op het **camerapictogram** in de adresbalk van uw browser (naast de URL)
 - Selecteer **"Toestaan"** voor cameratoegang
 - Vernieuw de pagina (F5 of Ctrl+R)
 - Probeer de scanner opnieuw te openen
 
 **Browser-specifieke instellingen**:
+
 - **Chrome**: Instellingen → Privacy en beveiliging → Site-instellingen → Camera
 - **Firefox**: Instellingen → Privacy & Beveiliging → Machtigingen → Camera
 - **Edge**: Instellingen → Cookies en site-machtigingen → Camera
@@ -591,8 +641,9 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 **Symptoom**: Camera werkt niet in productieomgeving
 
 **Oplossing**:
+
 - Moderne browsers vereisen HTTPS voor cameratoegang (behalve voor localhost)
-- Controleer of de URL begint met **"https://"** of **"http://localhost"**
+- Controleer of de URL begint met **"https://"** of **"<http://localhost>"**
 - Neem contact op met uw IT-beheerder als de site niet via HTTPS beschikbaar is
 
 #### 3. Geen camera gedetecteerd
@@ -600,6 +651,7 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 **Symptoom**: Melding "Geen camera gevonden"
 
 **Oplossing**:
+
 - Controleer of uw apparaat een camera heeft
 - Voor externe camera's: controleer de USB-verbinding
 - Test de camera in een andere applicatie (bijv. Windows Camera-app)
@@ -610,6 +662,7 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 **Symptoom**: Melding dat de camera wordt gebruikt door een andere applicatie
 
 **Oplossing**:
+
 - Sluit andere applicaties die de camera gebruiken:
   - Microsoft Teams
   - Zoom
@@ -623,6 +676,7 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 **Symptoom**: Camera werkt maar scant de QR-code niet
 
 **Oplossing**:
+
 - Zorg voor **goede belichting** (geen fel tegenlicht)
 - Houd de camera **stabiel** op 10-20 cm afstand
 - Zorg dat de **volledige QR-code zichtbaar** is
@@ -632,6 +686,7 @@ Als IT-beheerder kunt u de Microsoft Intune-portal bezoeken:
 #### Alternatieve oplossing: Handmatige invoer
 
 Als de QR-scanner niet werkt:
+
 - Klik op het tabblad **"Handmatige invoer"**
 - Typ de activacode die op het label staat
 - Klik op "Zoeken"
@@ -645,6 +700,7 @@ Als de QR-scanner niet werkt:
 #### 1. Typefout in activacode
 
 **Oplossing**:
+
 - Controleer of u de code **exact** heeft ingevoerd
 - Let op **hoofdletters en kleine letters** (AST-001 ≠ ast-001)
 - Controleer op **spaties** aan het begin of einde
@@ -653,6 +709,7 @@ Als de QR-scanner niet werkt:
 #### 2. Activa bestaat niet in systeem
 
 **Oplossing**:
+
 - Ga naar het Dashboard en blader door alle activa
 - Als het activa er niet tussen staat, is het niet geregistreerd
 - Registreer het activa via "Activa toevoegen"
@@ -660,6 +717,7 @@ Als de QR-scanner niet werkt:
 #### 3. Verkeerde activacode
 
 **Oplossing**:
+
 - Controleer het fysieke label op het activa
 - De QR-code bevat de juiste code - probeer te scannen
 - Neem contact op met de IT-afdeling als de code onduidelijk is
@@ -675,6 +733,7 @@ Als de QR-scanner niet werkt:
 **Symptoom**: "U bent niet gemachtigd" of "Toegang geweigerd"
 
 **Oplossing**:
+
 - Controleer of u een geldig **werk- of schoolaccount** van Diepenbeek heeft
 - Neem contact op met uw IT-beheerder om toegang aan te vragen
 - Mogelijk moet u worden toegevoegd aan een beveiligingsgroep
@@ -684,6 +743,7 @@ Als de QR-scanner niet werkt:
 **Symptoom**: Ingelogd met persoonlijk Microsoft-account
 
 **Oplossing**:
+
 - Log uit en log opnieuw in
 - Selecteer bij aanmelding uw **werk- of schoolaccount**
 - Klik indien nodig op "Een ander account gebruiken"
@@ -693,6 +753,7 @@ Als de QR-scanner niet werkt:
 **Symptoom**: Herhaalde doorverwijzingen of lus bij inloggen
 
 **Oplossing**:
+
 - Wis de **browsercache en cookies**:
   - Chrome: Ctrl+Shift+Delete
   - Firefox: Ctrl+Shift+Delete
@@ -705,6 +766,7 @@ Als de QR-scanner niet werkt:
 **Symptoom**: Niets gebeurt bij klikken op "Aanmelden met Microsoft"
 
 **Oplossing**:
+
 - Controleer of **pop-ups zijn toegestaan** voor deze site
 - Kijk naar de adresbalk voor een pop-up blokkade-melding
 - Klik op "Altijd toestaan" voor deze site
@@ -714,6 +776,7 @@ Als de QR-scanner niet werkt:
 **Probleem**: Melding "Backend-API reageert niet" of netwerkfout.
 
 **Symptoom**:
+
 - Laadschermen die niet verdwijnen
 - Foutmelding "Netwerkfout"
 - Geen activa zichtbaar op het dashboard
@@ -721,12 +784,14 @@ Als de QR-scanner niet werkt:
 **Oplossing**:
 
 **Voor gebruikers**:
+
 - **Wacht enkele minuten** en probeer opnieuw
 - **Vernieuw de pagina** (F5 of Ctrl+R)
 - Controleer uw **internetverbinding**
 - Neem contact op met de **IT-helpdesk** als het probleem aanhoudt
 
 **Voor IT-beheerders/ontwikkelaars**:
+
 - Controleer of de **backend-server actief** is
 - Controleer de **Azure App Service** status
 - Bekijk de **Application Insights logs** voor foutmeldingen
@@ -775,7 +840,7 @@ Als de QR-scanner niet werkt:
 
 ---
 
-## Veelgestelde Vragen (FAQ)
+## ⁉️ Veelgestelde Vragen (FAQ)
 
 ### Algemene vragen
 
@@ -834,10 +899,11 @@ A: Verwijderde activa worden permanent uit het systeem verwijderd. Er is geen pr
 ### Vragen over sjablonen
 
 **V: Kan ik mijn eigen sjablonen aanmaken?**
-A: Deze functie is momenteel niet beschikbaar voor eindgebruikers. Neem contact op met uw IT-beheerder om aangepaste sjablonen toe te voegen.
+A: Deze functie is momenteel niet beschikbaar voor eindgebruikers.
 
 **V: Welke sjablonen zijn standaard beschikbaar?**
 A: Standaard sjablonen zijn:
+
 - Dell Latitude Laptop (Computers)
 - HP LaserJet Printer (Randapparatuur)
 - Cisco Network Switch (Netwerken)
@@ -878,13 +944,16 @@ A: Ja, open Djoppie Inventory in uw mobiele browser en gebruik de QR-scanner. Zo
 
 ### Hulp nodig?
 
-Als u problemen ondervindt die niet worden opgelost door deze handleiding, zijn er verschillende manieren om hulp te krijgen.
+Als u problemen ondervindt die niet worden opgelost door deze handleiding, kan u een melding maken bij de IT ServiceDesk.
 
 ### IT Helpdesk
 
-**E-mail**: [jo.wijnen@diepenbeek.be](mailto:jo.wijnen@diepenbeek.be)
+**Ga naar**: [IT ServiceDesk](https://diepenbeek.sharepoint.com/sites/IN-Servicedesk)
 
-**Voor gebruikersvragen**:
+#### 🙋‍♂️ Voor gebruikersvragen
+
+> Onderwerp: "Djoppie Inventory - Gebruikersvragen"
+
 - Inlogproblemen
 - Toegangsproblemen
 - Technische problemen met de applicatie
@@ -892,41 +961,39 @@ Als u problemen ondervindt die niet worden opgelost door deze handleiding, zijn 
 
 **Response tijd**: Binnen 1 werkdag
 
-### Bugs of fouten melden
+#### 🙋‍♂️ Bugs of fouten melden
 
-Als u een bug of fout in het systeem tegenkomt:
+> Onderwerp: "Djoppie Inventory - Bug Report"
 
-1. **Noteer de volgende informatie**:
-   - Wat u probeerde te doen
-   - Wat er gebeurde (inclusief foutmeldingen)
-   - Wanneer het gebeurde (datum en tijd)
-   - Welke browser u gebruikt
-   - Screenshots indien mogelijk
+**Noteer de volgende informatie**:
 
-2. **Stuur naar**: [jo.wijnen@diepenbeek.be](mailto:jo.wijnen@diepenbeek.be)
-   - Onderwerp: "Djoppie Inventory - Bug Report"
-   - Vermeld alle bovenstaande informatie
+- Wat u probeerde te doen
+- Wat er gebeurde (inclusief foutmeldingen)
+- Wanneer het gebeurde (datum en tijd)
+- Welke browser u gebruikt
+- Screenshots indien mogelijk
 
-3. **Verwachting**:
-   - Bevestiging binnen 1 werkdag
-   - Bugs worden geprioriteerd en opgelost in volgende releases
+**Verwachting**: Bevestiging binnen 1 werkdag
 
-### Feature requests (nieuwe functies aanvragen)
+- Bugs worden geprioriteerd en opgelost in volgende releases
+
+#### 🙋‍♂️ Feature requests (nieuwe functies aanvragen)
 
 Heeft u ideeën voor nieuwe functies of verbeteringen?
 
-**E-mail**: [jo.wijnen@diepenbeek.be](mailto:jo.wijnen@diepenbeek.be)
-- Onderwerp: "Djoppie Inventory - Feature Request"
+Onderwerp: "Djoppie Inventory - Feature Request"
+
 - Beschrijf duidelijk welke functie u wilt en waarom dit nuttig zou zijn
 
 **Populaire geplande features**:
-- Foto-upload voor activa
+
 - Volledige wijzigingshistorie
 - Bulk-import via Excel/CSV
 - Export naar Excel
 - Aangepaste velden per categorie
 - Meldingen voor garantieverlopen
 - Uitgebreide rapportages
+- stock
 
 ### GitHub Repository
 
@@ -935,27 +1002,16 @@ Voor ontwikkelaars en IT-professionals:
 **Repository**: [https://github.com/Djoppie/Djoppie-Inventory](https://github.com/Djoppie/Djoppie-Inventory)
 
 Hier vindt u:
+
 - Broncode
 - Technische documentatie
 - Issue tracker
-- Roadmap
 - Contributierichtlijnen
-
-### Training en onboarding
-
-Voor teams die net beginnen met Djoppie Inventory:
-
-- Neem contact op met [jo.wijnen@diepenbeek.be](mailto:jo.wijnen@diepenbeek.be) voor:
-  - Groepstraining (online of on-site)
-  - Onboarding nieuwe medewerkers
-  - Best practices voor uw organisatie
-  - Aangepast nummerschema voor activacodes
 
 ### Updates en nieuwigheden
 
 Blijf op de hoogte van nieuwe functies en updates:
 
-- Check de GitHub repository voor release notes
 - Belangrijke updates worden gecommuniceerd via uw IT-afdeling
 
 ---
@@ -964,6 +1020,7 @@ Blijf op de hoogte van nieuwe functies en updates:
 
 ### Activacodes
 
+Nog te bepalen
 **Aanbevolen nummerschema's**:
 
 - **Categoriegebaseerd**: `LAP-001`, `MON-001`, `PRI-001`
@@ -972,6 +1029,7 @@ Blijf op de hoogte van nieuwe functies en updates:
 - **Gecombineerd**: `2024-HQ-LAP-001`
 
 **Tips**:
+
 - Gebruik leading zeros voor sortering (`001` i.p.v. `1`)
 - Houd het schema consistent
 - Documenteer uw schema voor toekomstige gebruikers
@@ -980,25 +1038,22 @@ Blijf op de hoogte van nieuwe functies en updates:
 ### QR-code plaatsing
 
 **Beste locaties**:
+
 - **Laptops**: Onderkant, naast fabrikantslabel
 - **Monitoren**: Achterkant, centraal
 - **Printers**: Voorkant of bovenkant, goed zichtbaar
 - **Netwerkapparatuur**: Voorkant of bovenkant
 
-**Tips**:
-- Plaats op een vlak oppervlak
-- Vermijd hoeken of randen waar labels kunnen beschadigen
-- Niet op bewegende delen
-- Bescherm met transparante overlaminaat indien mogelijk
-
 ### Inventarisatie planning
 
 **Aanbevolen frequentie**:
+
 - **Volledige inventarisatie**: 1x per jaar
 - **Spot checks**: 1x per kwartaal
 - **Bij wijzigingen**: Onmiddellijk bijwerken
 
 **Proces**:
+
 1. Plan vooraf welke gebouwen/verdiepingen
 2. Gebruik de QR-scanner voor snelheid
 3. Noteer discrepanties
@@ -1009,6 +1064,5 @@ Blijf op de hoogte van nieuwe functies en updates:
 
 **Versie**: 1.0
 **Laatst bijgewerkt**: Januari 2026
+**Auteur**: Jo Wijnen <mailto:jo.wijnen@Diepenbeek.be>
 **Toepasselijk op**: Djoppie Inventory v1.0
-
-Voor de meest recente versie van deze handleiding, raadpleeg de GitHub repository of neem contact op met uw IT-afdeling.
