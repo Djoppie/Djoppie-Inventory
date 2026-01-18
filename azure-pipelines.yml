@@ -326,10 +326,11 @@ stages:
           - task: AzureStaticWebApp@0
             displayName: 'Deploy to Static Web App'
             inputs:
-              app_location: '$(Pipeline.Workspace)/frontend'
+              app_location: '/'
               output_location: ''
               azure_static_web_apps_api_token: $(STATIC_WEB_APP_TOKEN)
               skip_app_build: true
+              workingDirectory: '$(Pipeline.Workspace)/frontend'
 
 # ----------------------------------------------------------------------------
 # STAGE 4: SMOKE TESTS
