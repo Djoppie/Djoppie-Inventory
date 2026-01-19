@@ -1,4 +1,2 @@
-/* App.css - Djoppie Inventory Cyberpunk Enhancements */
-
-/* Removed all unused Vite default styles */
-/* All styling is now handled through Material-UI theme and index.css */
+/* App.css - Reserved for app-specific overrides if needed */
+/* All design system styling is handled through index.css and ThemeContext.tsx */

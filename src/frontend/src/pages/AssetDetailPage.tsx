@@ -283,14 +283,31 @@ const AssetDetailPage = () => {
               </Typography>
 
               <Box
+                id="qr-code-container"
                 sx={{
                   p: 3,
-                  bgcolor: 'background.default',
+                  bgcolor: '#FFFFFF',
                   borderRadius: 2,
                   display: 'inline-block',
+                  boxShadow: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? '0 4px 12px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05)'
+                      : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  border: '3px solid',
+                  borderColor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 119, 0, 0.3)'
+                      : 'rgba(255, 119, 0, 0.2)',
                 }}
               >
-                <QRCodeSVG value={asset.assetCode} size={200} level="H" />
+                <QRCodeSVG
+                  id="asset-qr-code"
+                  value={asset.assetCode}
+                  size={200}
+                  level="H"
+                  bgColor="#FFFFFF"
+                  fgColor="#000000"
+                />
               </Box>
 
               <Typography variant="caption" display="block" sx={{ mt: 2 }} color="text.secondary">
@@ -302,20 +319,20 @@ const AssetDetailPage = () => {
                 variant="outlined"
                 sx={{ mt: 3 }}
                 onClick={() => {
-                  const svg = document.querySelector('svg');
+                  const svg = document.querySelector('#asset-qr-code');
                   if (svg) {
                     const svgData = new XMLSerializer().serializeToString(svg);
                     const blob = new Blob([svgData], { type: 'image/svg+xml' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
-                    link.download = `${asset.assetCode}-QR.svg`;
+                    link.download = `${asset.assetCode}-QR-Label.svg`;
                     link.href = url;
                     link.click();
                     URL.revokeObjectURL(url);
                   }
                 }}
               >
-                Download QR Code
+                Print Label
               </Button>
             </CardContent>
           </Card>

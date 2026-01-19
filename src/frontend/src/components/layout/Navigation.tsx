@@ -45,7 +45,16 @@ const Navigation = () => {
   };
 
   return (
-    <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }} elevation={3}>
+    <Paper
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+      }}
+      elevation={3}
+    >
       <BottomNavigation value={value} onChange={handleChange}>
         <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />

@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj",
+      "projectUniqueName": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj",
       "projectName": "DjoppieInventory.Core",
-      "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj",
+      "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj",
       "packagesPath": "C:\\Users\\jowij\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\obj\\",
+      "outputPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\jowij\\AppData\\Roaming\\NuGet\\NuGet.Config"

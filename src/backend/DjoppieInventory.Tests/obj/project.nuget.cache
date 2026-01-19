@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "RDkWWTFyeuY=",
+  "dgSpecHash": "TRx5jfVkC3E=",
   "success": true,
-  "projectFilePath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
+  "projectFilePath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\jowij\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
     "C:\\Users\\jowij\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",

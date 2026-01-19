@@ -2852,11 +2852,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
       "projectName": "DjoppieInventory.Tests",
-      "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
+      "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
       "packagesPath": "C:\\Users\\jowij\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\obj\\",
+      "outputPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\jowij\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -2871,11 +2871,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.API\\DjoppieInventory.API.csproj": {
-              "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.API\\DjoppieInventory.API.csproj"
+            "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.API\\DjoppieInventory.API.csproj": {
+              "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.API\\DjoppieInventory.API.csproj"
             },
-            "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj": {
-              "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-Inventory\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj"
+            "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj": {
+              "projectPath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj"
             }
           }
         }

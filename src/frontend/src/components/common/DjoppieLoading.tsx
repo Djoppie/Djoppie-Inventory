@@ -1,57 +1,19 @@
-import { Box, Typography, keyframes, LinearProgress } from '@mui/material';
+import { Box, Typography, keyframes } from '@mui/material';
 import { useState, useEffect } from 'react';
 import DjoppieLogo from './DjoppieLogo';
 
-// Advanced animation keyframes
-const bootTextAppear = keyframes`
-  0% {
-    opacity: 0;
-    transform: translateX(-20px);
+// Subtle breathing animation for Djoppie
+const subtleBreath = keyframes`
+  0%, 100% {
+    transform: scale(1);
   }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
+  50% {
+    transform: scale(1.02);
   }
 `;
 
-const scanlineSweep = keyframes`
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
-`;
-
-const statusBlink = keyframes`
-  0%, 49% {
-    opacity: 1;
-  }
-  50%, 100% {
-    opacity: 0.3;
-  }
-`;
-
-const glitchEffect = keyframes`
-  0%, 90%, 100% {
-    transform: translate(0, 0);
-    filter: hue-rotate(0deg);
-  }
-  92% {
-    transform: translate(-2px, 1px);
-    filter: hue-rotate(90deg);
-  }
-  94% {
-    transform: translate(2px, -1px);
-    filter: hue-rotate(-90deg);
-  }
-  96% {
-    transform: translate(-1px, 2px);
-    filter: hue-rotate(45deg);
-  }
-`;
-
-const matrixRain = keyframes`
+// Scanning beam that moves vertically across QR code
+const scanBeam = keyframes`
   0% {
     transform: translateY(-100%);
     opacity: 0;
@@ -59,31 +21,59 @@ const matrixRain = keyframes`
   10% {
     opacity: 1;
   }
+  90% {
+    opacity: 1;
+  }
   100% {
-    transform: translateY(100vh);
+    transform: translateY(100%);
     opacity: 0;
   }
 `;
 
-const energyPulse = keyframes`
+// Eye glow intensifies during scan
+const scanningEyeGlow = keyframes`
   0%, 100% {
-    box-shadow:
-      0 0 10px rgba(255, 215, 0, 0.3),
-      inset 0 0 10px rgba(255, 215, 0, 0.1);
+    filter: brightness(1) drop-shadow(0 0 8px rgba(255, 119, 0, 0.6));
   }
   50% {
-    box-shadow:
-      0 0 25px rgba(255, 215, 0, 0.6),
-      inset 0 0 20px rgba(255, 215, 0, 0.2);
+    filter: brightness(1.5) drop-shadow(0 0 16px rgba(255, 119, 0, 1));
   }
 `;
 
-const funBounce = keyframes`
-  0%, 100% {
+// QR code pixels appearing
+const pixelAppear = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  100% {
+    opacity: 1;
     transform: scale(1);
   }
+`;
+
+// Data stream effect
+const dataStream = keyframes`
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
   50% {
-    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+`;
+
+// Subtle pulse for loading text
+const subtlePulse = keyframes`
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
   }
 `;
 
@@ -94,329 +84,39 @@ interface DjoppieLoadingProps {
   partyMode?: boolean;
 }
 
-interface SystemCheck {
-  id: string;
-  label: string;
-  delay: number;
-}
-
-const SYSTEM_CHECKS: SystemCheck[] = [
-  { id: 'init', label: '[INIT] Initializing Djoppie Core Systems', delay: 0 },
-  { id: 'memory', label: '[MEM] Allocating memory buffers', delay: 300 },
-  { id: 'neural', label: '[AI] Loading neural pathways', delay: 600 },
-  { id: 'database', label: '[DB] Connecting to inventory database', delay: 900 },
-  { id: 'auth', label: '[AUTH] Verifying security protocols', delay: 1200 },
-  { id: 'graphics', label: '[GFX] Rendering holographic interface', delay: 1500 },
-  { id: 'ready', label: '[SYS] All systems operational', delay: 1800 },
+const FUN_MESSAGES = [
+  'Counting inventory boxes...',
+  'Waking up Djoppie...',
+  'Charging robot batteries...',
+  'Scanning QR codes...',
+  'Organizing assets...',
+  'Brewing coffee for the team...',
+  'Doing robot gymnastics...',
+  'Polishing metallic surfaces...',
 ];
 
 const DjoppieLoading = ({
-  message = '[EXEC] Processing request...',
+  message,
   fullScreen = false,
   bootSequence = false,
   partyMode = false,
 }: DjoppieLoadingProps) => {
-  const [completedChecks, setCompletedChecks] = useState<string[]>([]);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [funMessage, setFunMessage] = useState(FUN_MESSAGES[0]);
+  const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
-    // Update time every second for boot sequence
-    if (bootSequence) {
-      const interval = setInterval(() => {
-        setCurrentTime(new Date());
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [bootSequence]);
+    // Rotate through fun messages
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % FUN_MESSAGES.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
-    if (!bootSequence) return;
+    setFunMessage(FUN_MESSAGES[messageIndex]);
+  }, [messageIndex]);
 
-    // Simulate boot sequence
-    SYSTEM_CHECKS.forEach((check) => {
-      setTimeout(() => {
-        setCompletedChecks((prev) => [...prev, check.id]);
-        setProgress((prev) => Math.min(prev + (100 / SYSTEM_CHECKS.length), 100));
-      }, check.delay);
-    });
-  }, [bootSequence]);
-
-  if (bootSequence) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: fullScreen ? '100vh' : '400px',
-          position: fullScreen ? 'fixed' : 'relative',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(10, 14, 39, 0.98)',
-          backdropFilter: 'blur(12px)',
-          zIndex: fullScreen ? 9999 : 'auto',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Animated Scanline Effect */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: 'linear-gradient(90deg, transparent, #FFD700, transparent)',
-            animation: `${scanlineSweep} 3s linear infinite`,
-            opacity: 0.3,
-          }}
-        />
-
-        {/* Matrix Rain Effect (subtle) */}
-        {[...Array(8)].map((_, i) => (
-          <Box
-            key={i}
-            sx={{
-              position: 'absolute',
-              left: `${i * 12.5}%`,
-              width: '2px',
-              height: '100px',
-              background: 'linear-gradient(transparent, #FFD700, transparent)',
-              animation: `${matrixRain} ${3 + i * 0.3}s linear infinite`,
-              animationDelay: `${i * 0.2}s`,
-              opacity: 0.1,
-            }}
-          />
-        ))}
-
-        {/* Main Content */}
-        <Box
-          sx={{
-            width: '100%',
-            maxWidth: '800px',
-            px: 4,
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          {/* Header with Time */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              mb: 4,
-              pb: 2,
-              borderBottom: '2px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Typography
-              variant="overline"
-              sx={{
-                color: 'primary.main',
-                fontWeight: 700,
-                fontSize: '1.1rem',
-                letterSpacing: '0.1em',
-                animation: `${glitchEffect} 5s ease-in-out infinite`,
-              }}
-            >
-              DJOPPIE OS v1.0.0
-            </Typography>
-            <Typography
-              variant="overline"
-              sx={{
-                color: 'success.main',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                fontFamily: 'monospace',
-              }}
-            >
-              {currentTime.toLocaleTimeString()}
-            </Typography>
-          </Box>
-
-          {/* Animated Logo - BIGGER AND COOLER! */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              mb: 4,
-            }}
-          >
-            <DjoppieLogo size={180} animate intensity="party" />
-          </Box>
-
-          {/* System Checks */}
-          <Box
-            sx={{
-              mb: 4,
-              p: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1,
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              animation: `${energyPulse} 2s ease-in-out infinite`,
-            }}
-          >
-            {SYSTEM_CHECKS.map((check, index) => {
-              const isCompleted = completedChecks.includes(check.id);
-              const isActive = completedChecks.length === index;
-
-              return (
-                <Box
-                  key={check.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    mb: 1.5,
-                    opacity: isCompleted ? 1 : isActive ? 0.8 : 0.3,
-                    animation: isCompleted ? `${bootTextAppear} 0.3s ease-out` : 'none',
-                  }}
-                >
-                  {/* Status Indicator */}
-                  <Box
-                    sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      bgcolor: isCompleted ? 'success.main' : isActive ? 'warning.main' : 'text.disabled',
-                      animation: isActive ? `${statusBlink} 0.8s infinite` : 'none',
-                      boxShadow: isCompleted
-                        ? '0 0 8px rgba(0, 255, 136, 0.6)'
-                        : isActive
-                        ? '0 0 8px rgba(255, 184, 108, 0.6)'
-                        : 'none',
-                    }}
-                  />
-
-                  {/* Check Label */}
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: isCompleted ? 'success.main' : isActive ? 'warning.main' : 'text.secondary',
-                      fontWeight: 600,
-                      fontSize: '0.95rem',
-                      fontFamily: 'monospace',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    {check.label}
-                  </Typography>
-
-                  {/* OK Badge */}
-                  {isCompleted && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        ml: 'auto',
-                        px: 1.5,
-                        py: 0.25,
-                        bgcolor: 'success.main',
-                        color: 'background.paper',
-                        fontWeight: 700,
-                        borderRadius: 0.5,
-                        fontSize: '0.7rem',
-                        letterSpacing: '0.1em',
-                      }}
-                    >
-                      OK
-                    </Typography>
-                  )}
-                </Box>
-              );
-            })}
-          </Box>
-
-          {/* Progress Bar */}
-          <Box sx={{ mb: 3 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                mb: 1,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'primary.main',
-                  fontWeight: 600,
-                  letterSpacing: '0.05em',
-                }}
-              >
-                BOOT PROGRESS
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'primary.main',
-                  fontWeight: 700,
-                  fontFamily: 'monospace',
-                }}
-              >
-                {Math.round(progress)}%
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{
-                height: 8,
-                borderRadius: 1,
-                backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                '& .MuiLinearProgress-bar': {
-                  background: 'linear-gradient(90deg, #FFD700, #FDB931, #E07B28)',
-                  boxShadow: '0 0 10px rgba(255, 215, 0, 0.5)',
-                  borderRadius: 1,
-                },
-              }}
-            />
-          </Box>
-
-          {/* Footer Status */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 1,
-              alignItems: 'center',
-              pt: 2,
-              borderTop: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Box
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: 'success.main',
-                animation: `${statusBlink} 1s ease-in-out infinite`,
-                boxShadow: '0 0 8px rgba(0, 255, 136, 0.6)',
-              }}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'success.main',
-                letterSpacing: '0.1em',
-                fontWeight: 600,
-              }}
-            >
-              ONLINE
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Standard loading (non-boot sequence) - BIGGER DJOPPIE!
+  // Subtle scanning animation - Djoppie scanning a QR code
   return (
     <Box
       sx={{
@@ -424,111 +124,208 @@ const DjoppieLoading = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: fullScreen ? '100vh' : '400px',
-        gap: 3,
+        minHeight: fullScreen ? '100vh' : '300px',
+        gap: 2.5,
         position: fullScreen ? 'fixed' : 'relative',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: fullScreen ? 'rgba(10, 14, 39, 0.98)' : 'transparent',
-        backdropFilter: fullScreen ? 'blur(8px)' : 'none',
+        backgroundColor: fullScreen ? 'background.default' : 'transparent',
+        backdropFilter: fullScreen ? 'blur(10px)' : 'none',
         zIndex: fullScreen ? 9999 : 'auto',
+        overflow: 'hidden',
       }}
     >
-      {/* Animated Djoppie Logo - EVEN BIGGER! */}
+      {/* Main Container - Djoppie and QR Code side by side */}
       <Box
         sx={{
           display: 'flex',
-          justifyContent: 'center',
           alignItems: 'center',
-          animation: `${funBounce} 2s ease-in-out infinite`,
+          gap: 3,
+          position: 'relative',
         }}
       >
-        <DjoppieLogo size={160} animate intensity={partyMode ? 'party' : 'high'} />
-      </Box>
-
-      {/* Console-style Message */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 1,
-        }}
-      >
-        <Typography
-          variant="h6"
+        {/* Djoppie with subtle breathing and eye glow */}
+        <Box
           sx={{
-            color: 'secondary.main',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            animation: `${statusBlink} 2s ease-in-out infinite`,
-            textAlign: 'center',
-            textShadow: '0 0 10px rgba(224, 123, 40, 0.5)',
+            position: 'relative',
+            animation: `${subtleBreath} 3s ease-in-out infinite`,
+            '& #djoppie-logo': {
+              animation: `${scanningEyeGlow} 2s ease-in-out infinite`,
+            },
           }}
         >
-          {message}
-        </Typography>
+          <DjoppieLogo size={100} animate intensity="medium" />
+        </Box>
 
-        {/* Loading Dots (console style) */}
-        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          {[0, 1, 2].map((i) => (
-            <Typography
-              key={i}
-              component="span"
-              sx={{
-                color: 'primary.main',
-                fontSize: '2rem',
-                fontWeight: 700,
-                animation: `${statusBlink} 1.4s ease-in-out infinite`,
-                animationDelay: `${i * 0.2}s`,
-                textShadow: '0 0 12px rgba(255, 215, 0, 0.6)',
-              }}
-            >
-              .
-            </Typography>
-          ))}
+        {/* Scanning beam connecting eyes to QR code */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: '42%',
+            width: '80px',
+            height: '2px',
+            background: 'linear-gradient(90deg, rgba(255, 119, 0, 0.9), rgba(255, 119, 0, 0.3))',
+            transform: 'translateY(-50%)',
+            opacity: 0.7,
+            animation: `${subtlePulse} 1.5s ease-in-out infinite`,
+            boxShadow: '0 0 8px rgba(255, 119, 0, 0.7)',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '6px solid rgba(255, 119, 0, 0.9)',
+              borderTop: '4px solid transparent',
+              borderBottom: '4px solid transparent',
+            },
+          }}
+        />
+
+        {/* QR Code Being Scanned */}
+        <Box
+          sx={{
+            position: 'relative',
+            width: '90px',
+            height: '90px',
+            backgroundColor: '#FFFFFF',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--neu-shadow-light-md)',
+            padding: 1.5,
+            border: '2px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+          }}
+        >
+          {/* QR Code Pattern - Higher resolution */}
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              gridTemplateRows: 'repeat(7, 1fr)',
+              gap: '1px',
+            }}
+          >
+            {/* Generate more realistic QR-like pattern */}
+            {[...Array(49)].map((_, i) => {
+              // More realistic QR pattern with finder patterns in corners
+              const row = Math.floor(i / 7);
+              const col = i % 7;
+              const isCorner =
+                (row < 3 && col < 3) || // Top-left
+                (row < 3 && col > 3) || // Top-right
+                (row > 3 && col < 3);   // Bottom-left
+
+              const isFinderPattern = isCorner && (
+                (row === 0 || row === 2 || col === 0 || col === 2) ||
+                (row === 1 && col === 1)
+              );
+
+              const isDataPattern = !isCorner && Math.random() > 0.45;
+
+              const isBlack = isFinderPattern || isDataPattern;
+
+              return (
+                <Box
+                  key={i}
+                  sx={{
+                    backgroundColor: isBlack ? '#000000' : 'transparent',
+                    borderRadius: '1px',
+                    animation: `${pixelAppear} 0.4s ease-out ${i * 0.015}s both`,
+                  }}
+                />
+              );
+            })}
+          </Box>
+
+          {/* Scanning Beam Effect - More prominent */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '4px',
+              background: 'linear-gradient(90deg, transparent, rgba(255, 119, 0, 0.9), transparent)',
+              boxShadow: '0 0 12px rgba(255, 119, 0, 0.9), 0 0 6px rgba(255, 119, 0, 0.6)',
+              animation: `${scanBeam} 2.5s ease-in-out infinite`,
+              filter: 'blur(0.5px)',
+            }}
+          />
+
+          {/* Success flash on complete scan */}
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: 'var(--radius-md)',
+              border: '2px solid transparent',
+              animation: 'successFlash 2.5s ease-in-out infinite',
+              '@keyframes successFlash': {
+                '0%, 85%': {
+                  borderColor: 'transparent',
+                  opacity: 0,
+                },
+                '90%': {
+                  borderColor: 'rgba(76, 175, 80, 0.8)',
+                  opacity: 1,
+                },
+                '95%, 100%': {
+                  borderColor: 'transparent',
+                  opacity: 0,
+                },
+              },
+            }}
+          />
         </Box>
       </Box>
 
-      {/* System indicator */}
+      {/* Minimal Data Indicator */}
       <Box
         sx={{
           display: 'flex',
-          gap: 1,
+          gap: 0.75,
           alignItems: 'center',
-          mt: 2,
-          px: 2,
-          py: 1,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1,
-          animation: `${energyPulse} 2s ease-in-out infinite`,
+          height: '12px',
         }}
       >
-        <Box
-          sx={{
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            bgcolor: 'success.main',
-            animation: `${statusBlink} 1s ease-in-out infinite`,
-            boxShadow: '0 0 10px rgba(0, 255, 136, 0.8)',
-          }}
-        />
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'success.main',
-            letterSpacing: '0.1em',
-            fontWeight: 700,
-            textShadow: '0 0 8px rgba(0, 255, 136, 0.5)',
-          }}
-        >
-          SYSTEM READY
-        </Typography>
+        {[...Array(4)].map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              width: 3,
+              height: 3,
+              borderRadius: '50%',
+              backgroundColor: 'primary.main',
+              animation: `${subtlePulse} 1.2s ease-in-out infinite`,
+              animationDelay: `${i * 0.15}s`,
+              boxShadow: '0 0 4px rgba(255, 119, 0, 0.6)',
+            }}
+          />
+        ))}
       </Box>
+
+      {/* Loading Message */}
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          fontWeight: 500,
+          letterSpacing: '0.03em',
+          textAlign: 'center',
+          fontSize: '0.875rem',
+          animation: `${subtlePulse} 2s ease-in-out infinite`,
+        }}
+      >
+        {message || funMessage}
+      </Typography>
     </Box>
   );
 };
