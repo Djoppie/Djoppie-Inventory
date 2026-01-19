@@ -1,4 +1,5 @@
-// Infrastructure module - deploys all Azure resources for Djoppie Inventory
+// Minimal Infrastructure module for DEV environment - Ultra-low cost configuration
+// Estimated monthly cost: €5-10
 
 param environment string
 param location string
@@ -7,10 +8,6 @@ param sqlAdminLogin string
 @secure()
 param sqlAdminPassword string
 param entraIdTenantId string
-param entraBackendClientId string
-@secure()
-param entraBackendClientSecret string
-param entraFrontendClientId string
 param deploymentPrincipalObjectId string
 param tags object
 
@@ -46,7 +43,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
     sku: {
       name: 'PerGB2018'
     }
-    retentionInDays: environment == 'prod' ? 90 : 30
+    retentionInDays: 30 // Minimum for DEV
     features: {
       enableLogAccessUsingOnlyResourcePermissions: true
     }
@@ -61,7 +58,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalytics.id
-    RetentionInDays: environment == 'prod' ? 90 : 30
+    RetentionInDays: 30
     publicNetworkAccessForIngestion: 'Enabled'
     publicNetworkAccessForQuery: 'Enabled'
   }
@@ -81,31 +78,29 @@ resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
       name: 'standard'
     }
     tenantId: subscription().tenantId
-    enableRbacAuthorization: true // Use RBAC instead of access policies
+    enableRbacAuthorization: false // Use access policies for simpler setup
     enableSoftDelete: true
-    softDeleteRetentionInDays: 90
-    enablePurgeProtection: true
+    softDeleteRetentionInDays: 7 // Minimum allowed
+    enablePurgeProtection: true // Required once enabled, cannot be disabled
     publicNetworkAccess: 'Enabled'
     networkAcls: {
       bypass: 'AzureServices'
       defaultAction: 'Allow'
     }
-  }
-}
-
-// Grant Key Vault Secrets Officer role to deployment principal
-resource keyVaultRoleAssignmentDeployment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVault.id, deploymentPrincipalObjectId, 'SecretsOfficer')
-  scope: keyVault
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7') // Key Vault Secrets Officer
-    principalId: deploymentPrincipalObjectId
-    principalType: 'ServicePrincipal'
+    accessPolicies: [
+      {
+        tenantId: subscription().tenantId
+        objectId: deploymentPrincipalObjectId
+        permissions: {
+          secrets: ['get', 'list', 'set', 'delete']
+        }
+      }
+    ]
   }
 }
 
 // ========================================
-// AZURE SQL DATABASE
+// AZURE SQL DATABASE - SERVERLESS
 // ========================================
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
@@ -117,14 +112,14 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
     administratorLoginPassword: sqlAdminPassword
     version: '12.0'
     minimalTlsVersion: '1.2'
-    publicNetworkAccess: 'Enabled' // For initial setup; consider restricting later
+    publicNetworkAccess: 'Enabled'
   }
   identity: {
     type: 'SystemAssigned'
   }
 }
 
-// Allow Azure services to access SQL Server (required for App Service)
+// Allow Azure services to access SQL Server
 resource sqlServerFirewallRuleAzure 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
   parent: sqlServer
   name: 'AllowAzureServices'
@@ -134,56 +129,44 @@ resource sqlServerFirewallRuleAzure 'Microsoft.Sql/servers/firewallRules@2023-08
   }
 }
 
-// SQL Database with appropriate tier based on environment
+// SQL Database - SERVERLESS with auto-pause (ultra-low cost)
 resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
   name: sqlDatabaseName
   location: location
   tags: tags
   sku: {
-    name: environment == 'prod' ? 'S1' : 'Basic'
-    tier: environment == 'prod' ? 'Standard' : 'Basic'
-    capacity: environment == 'prod' ? 20 : 5
+    name: 'GP_S_Gen5'
+    tier: 'GeneralPurpose'
+    family: 'Gen5'
+    capacity: 1 // 1 vCore
   }
   properties: {
     collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: environment == 'prod' ? 268435456000 : 2147483648 // 250GB for prod, 2GB for dev
+    maxSizeBytes: 2147483648 // 2GB
     catalogCollation: 'SQL_Latin1_General_CP1_CI_AS'
-    zoneRedundant: environment == 'prod' ? true : false
-    readScale: environment == 'prod' ? 'Enabled' : 'Disabled'
-    requestedBackupStorageRedundancy: environment == 'prod' ? 'Geo' : 'Local'
+    zoneRedundant: false
+    readScale: 'Disabled'
+    requestedBackupStorageRedundancy: 'Local'
     isLedgerOn: false
+    // Serverless specific settings
+    autoPauseDelay: 60 // Auto-pause after 60 minutes of inactivity
+    minCapacity: json('0.5') // Minimum 0.5 vCore when active (using json() for decimal)
   }
 }
 
-// Store SQL connection string in Key Vault
+// Store SQL connection string in Key Vault (using SQL authentication for simplicity in DEV)
 resource kvSecretSqlConnectionString 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
   parent: keyVault
   name: 'SqlConnectionString'
   properties: {
-    value: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Initial Catalog=${sqlDatabase.name};Authentication=Active Directory Managed Identity;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+    value: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Initial Catalog=${sqlDatabase.name};User ID=${sqlAdminLogin};Password=${sqlAdminPassword};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
     contentType: 'text/plain'
   }
-  dependsOn: [
-    keyVaultRoleAssignmentDeployment
-  ]
-}
-
-// Store Entra ID Backend Client Secret in Key Vault
-resource kvSecretEntraBackendClientSecret 'Microsoft.KeyVault/vaults/secrets@2024-04-01-preview' = {
-  parent: keyVault
-  name: 'EntraBackendClientSecret'
-  properties: {
-    value: entraBackendClientSecret
-    contentType: 'text/plain'
-  }
-  dependsOn: [
-    keyVaultRoleAssignmentDeployment
-  ]
 }
 
 // ========================================
-// APP SERVICE PLAN
+// APP SERVICE PLAN - F1 FREE TIER
 // ========================================
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
@@ -191,14 +174,14 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   location: location
   tags: tags
   sku: {
-    name: environment == 'prod' ? 'P1V3' : 'B2'
-    tier: environment == 'prod' ? 'PremiumV3' : 'Basic'
-    capacity: environment == 'prod' ? 2 : 1
+    name: 'F1' // FREE tier
+    tier: 'Free'
+    capacity: 1
   }
   kind: 'linux'
   properties: {
     reserved: true // Required for Linux
-    zoneRedundant: environment == 'prod' ? true : false
+    zoneRedundant: false
   }
 }
 
@@ -220,15 +203,14 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
     clientAffinityEnabled: false
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|8.0'
-      alwaysOn: true
+      alwaysOn: false // Must be false for F1 tier
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       http20Enabled: true
-      healthCheckPath: '/health'
       cors: {
         allowedOrigins: [
           'https://${frontendStaticWebAppName}.azurestaticapps.net'
-          environment == 'dev' ? 'http://localhost:5173' : ''
+          'http://localhost:5173'
         ]
         supportCredentials: true
       }
@@ -243,7 +225,7 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           name: 'ASPNETCORE_ENVIRONMENT'
-          value: environment == 'prod' ? 'Production' : 'Development'
+          value: 'Development'
         }
         {
           name: 'KeyVaultName'
@@ -258,24 +240,8 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
           value: entraIdTenantId
         }
         {
-          name: 'AzureAd__ClientId'
-          value: entraBackendClientId
-        }
-        {
-          name: 'AzureAd__ClientSecret'
-          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=EntraBackendClientSecret)'
-        }
-        {
-          name: 'AzureAd__Audience'
-          value: 'api://${entraBackendClientId}'
-        }
-        {
           name: 'MicrosoftGraph__BaseUrl'
           value: 'https://graph.microsoft.com/v1.0'
-        }
-        {
-          name: 'MicrosoftGraph__Scopes__0'
-          value: 'https://graph.microsoft.com/.default'
         }
       ]
       connectionStrings: [
@@ -289,68 +255,17 @@ resource backendAppService 'Microsoft.Web/sites@2024-04-01' = {
   }
 }
 
-// Grant backend app managed identity access to Key Vault
-resource keyVaultRoleAssignmentBackend 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(keyVault.id, backendAppService.id, 'SecretsUser')
-  scope: keyVault
+// Grant backend app access to Key Vault using access policy
+resource keyVaultAccessPolicyBackend 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
+  parent: keyVault
+  name: 'add'
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
-    principalId: backendAppService.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// Grant backend app managed identity access to SQL Server (Entra ID authentication)
-resource sqlServerAdAdmin 'Microsoft.Sql/servers/administrators@2023-08-01-preview' = {
-  parent: sqlServer
-  name: 'ActiveDirectory'
-  properties: {
-    administratorType: 'ActiveDirectory'
-    login: backendAppServiceName
-    sid: backendAppService.identity.principalId
-    tenantId: subscription().tenantId
-  }
-}
-
-// Diagnostic settings for backend app
-resource backendAppDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'diagnostics'
-  scope: backendAppService
-  properties: {
-    workspaceId: logAnalytics.id
-    logs: [
+    accessPolicies: [
       {
-        category: 'AppServiceHTTPLogs'
-        enabled: true
-        retentionPolicy: {
-          enabled: false
-          days: 0
-        }
-      }
-      {
-        category: 'AppServiceConsoleLogs'
-        enabled: true
-        retentionPolicy: {
-          enabled: false
-          days: 0
-        }
-      }
-      {
-        category: 'AppServiceAppLogs'
-        enabled: true
-        retentionPolicy: {
-          enabled: false
-          days: 0
-        }
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-        retentionPolicy: {
-          enabled: false
-          days: 0
+        tenantId: subscription().tenantId
+        objectId: backendAppService.identity.principalId
+        permissions: {
+          secrets: ['get', 'list']
         }
       }
     ]
@@ -358,7 +273,7 @@ resource backendAppDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01
 }
 
 // ========================================
-// FRONTEND STATIC WEB APP
+// FRONTEND STATIC WEB APP - FREE TIER
 // ========================================
 
 resource frontendStaticWebApp 'Microsoft.Web/staticSites@2024-04-01' = {
@@ -366,11 +281,11 @@ resource frontendStaticWebApp 'Microsoft.Web/staticSites@2024-04-01' = {
   location: location
   tags: tags
   sku: {
-    name: environment == 'prod' ? 'Standard' : 'Free'
-    tier: environment == 'prod' ? 'Standard' : 'Free'
+    name: 'Free'
+    tier: 'Free'
   }
   properties: {
-    repositoryUrl: null // Will be configured via Azure DevOps
+    repositoryUrl: null
     branch: null
     buildProperties: {
       appLocation: 'src/frontend'
@@ -379,20 +294,7 @@ resource frontendStaticWebApp 'Microsoft.Web/staticSites@2024-04-01' = {
     }
     stagingEnvironmentPolicy: 'Enabled'
     allowConfigFileUpdates: true
-    provider: 'None' // Using Azure DevOps instead of GitHub
-  }
-}
-
-// Link Application Insights to Static Web App
-resource frontendAppInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: '${appInsightsName}-frontend'
-  location: location
-  tags: tags
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    WorkspaceResourceId: logAnalytics.id
-    RetentionInDays: environment == 'prod' ? 90 : 30
+    provider: 'None'
   }
 }
 

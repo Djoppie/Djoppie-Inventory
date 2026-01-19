@@ -1,13 +1,16 @@
-// Main Bicep template for Djoppie Inventory Azure Infrastructure
-// This template deploys all required Azure resources following best practices
+// Minimal Main Bicep template for Djoppie Inventory DEV environment
+// Ultra-low cost configuration: €5-10/month
+// - F1 Free App Service Plan
+// - Serverless SQL Database (0.5-1 vCore with auto-pause)
+// - Free Static Web App
+// - Standard Key Vault
+// - Pay-as-you-go Application Insights
 
 targetScope = 'subscription'
 
-@description('Environment name (dev, staging, prod)')
+@description('Environment name (dev)')
 @allowed([
   'dev'
-  'staging'
-  'prod'
 ])
 param environment string = 'dev'
 
@@ -25,16 +28,6 @@ param sqlAdminPassword string
 @description('Entra ID Tenant ID (Diepenbeek)')
 param entraIdTenantId string
 
-@description('Entra ID Backend API Client ID')
-param entraBackendClientId string
-
-@description('Entra ID Backend API Client Secret')
-@secure()
-param entraBackendClientSecret string
-
-@description('Entra ID Frontend SPA Client ID')
-param entraFrontendClientId string
-
 @description('Object ID of the deployment principal (for Key Vault access)')
 param deploymentPrincipalObjectId string
 
@@ -45,6 +38,7 @@ param tags object = {
   ManagedBy: 'Bicep'
   Department: 'IT-Support'
   CostCenter: 'Diepenbeek'
+  Configuration: 'Minimal'
 }
 
 // Generate unique suffix for globally unique resource names
@@ -58,9 +52,9 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   tags: tags
 }
 
-// Deploy all infrastructure components
-module infrastructure 'modules/infrastructure.bicep' = {
-  name: 'infrastructure-deployment'
+// Deploy minimal infrastructure components
+module infrastructure 'modules/infrastructure-minimal.bicep' = {
+  name: 'infrastructure-minimal-deployment'
   scope: resourceGroup
   params: {
     environment: environment
@@ -69,20 +63,24 @@ module infrastructure 'modules/infrastructure.bicep' = {
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPassword: sqlAdminPassword
     entraIdTenantId: entraIdTenantId
-    entraBackendClientId: entraBackendClientId
-    entraBackendClientSecret: entraBackendClientSecret
-    entraFrontendClientId: entraFrontendClientId
     deploymentPrincipalObjectId: deploymentPrincipalObjectId
     tags: tags
   }
 }
 
-// Outputs for pipeline consumption
+// Outputs for verification
 output resourceGroupName string = resourceGroup.name
 output sqlServerName string = infrastructure.outputs.sqlServerName
 output sqlDatabaseName string = infrastructure.outputs.sqlDatabaseName
+output sqlServerFqdn string = infrastructure.outputs.sqlServerFqdn
 output backendAppServiceName string = infrastructure.outputs.backendAppServiceName
-output frontendStaticWebAppName string = infrastructure.outputs.frontendStaticWebAppName
-output keyVaultName string = infrastructure.outputs.keyVaultName
-output applicationInsightsConnectionString string = infrastructure.outputs.applicationInsightsConnectionString
+output backendAppServiceUrl string = infrastructure.outputs.backendAppServiceUrl
 output backendAppServicePrincipalId string = infrastructure.outputs.backendAppServicePrincipalId
+output frontendStaticWebAppName string = infrastructure.outputs.frontendStaticWebAppName
+output frontendStaticWebAppUrl string = infrastructure.outputs.frontendStaticWebAppUrl
+output frontendStaticWebAppDeploymentToken string = infrastructure.outputs.frontendStaticWebAppDeploymentToken
+output keyVaultName string = infrastructure.outputs.keyVaultName
+output keyVaultUri string = infrastructure.outputs.keyVaultUri
+output applicationInsightsConnectionString string = infrastructure.outputs.applicationInsightsConnectionString
+output applicationInsightsInstrumentationKey string = infrastructure.outputs.applicationInsightsInstrumentationKey
+output logAnalyticsWorkspaceId string = infrastructure.outputs.logAnalyticsWorkspaceId
