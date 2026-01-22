@@ -10,7 +10,11 @@ import {
   Paper,
   Chip,
   keyframes,
+  Button,
+  Stack,
+  Tooltip,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAssets } from '../hooks/useAssets';
 import AssetList from '../components/assets/AssetList';
@@ -18,25 +22,23 @@ import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
-
-// Terminal cursor blink animation
-const cursorBlink = keyframes`
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-`;
+import AddIcon from '@mui/icons-material/Add';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import { ROUTES } from '../constants/routes';
 
 // Subtle glow pulse for the header
 const headerGlow = keyframes`
   0%, 100% {
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2), inset 0 0 10px rgba(255, 215, 0, 0.05);
+    box-shadow: 0 0 10px rgba(255, 119, 0, 0.2), inset 0 0 10px rgba(255, 119, 0, 0.05);
   }
   50% {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), inset 0 0 15px rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 20px rgba(255, 119, 0, 0.4), inset 0 0 15px rgba(255, 119, 0, 0.1);
   }
 `;
 
 const DashboardPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { data: assets, isLoading, error, refetch } = useAssets(statusFilter);
 
@@ -87,23 +89,11 @@ const DashboardPage = () => {
           animation: `${headerGlow} 3s ease-in-out infinite`,
           background: (theme) =>
             theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.05) 0%, transparent 100%)'
-              : 'linear-gradient(135deg, rgba(253, 185, 49, 0.05) 0%, transparent 100%)',
+              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(204, 0, 0, 0.03) 50%, transparent 100%)'
+              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.06) 0%, rgba(204, 0, 0, 0.02) 50%, transparent 100%)',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          {/* Console prompt */}
-          <Typography
-            component="span"
-            sx={{
-              color: 'success.main',
-              fontWeight: 700,
-              fontSize: '1.5rem',
-            }}
-          >
-            $
-          </Typography>
-
           {/* Dashboard icon */}
           <DashboardIcon
             sx={{
@@ -111,7 +101,7 @@ const DashboardPage = () => {
               fontSize: '2rem',
               filter: (theme) =>
                 theme.palette.mode === 'dark'
-                  ? 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.5))'
+                  ? 'drop-shadow(0 0 8px rgba(255, 119, 0, 0.5))'
                   : 'none',
             }}
           />
@@ -124,22 +114,16 @@ const DashboardPage = () => {
               color: 'primary.main',
               fontWeight: 700,
               letterSpacing: '0.05em',
+              background: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'linear-gradient(90deg, var(--djoppie-orange-400), var(--djoppie-red-400))'
+                  : 'linear-gradient(90deg, var(--djoppie-orange-600), var(--djoppie-red-600))',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
             }}
           >
             {t('dashboard.title')}
-          </Typography>
-
-          {/* Blinking cursor */}
-          <Typography
-            component="span"
-            sx={{
-              color: 'primary.main',
-              fontWeight: 700,
-              fontSize: '1.5rem',
-              animation: `${cursorBlink} 1.5s infinite`,
-            }}
-          >
-            _
           </Typography>
         </Box>
 
@@ -156,25 +140,43 @@ const DashboardPage = () => {
           />
           <Chip
             label={`${activeCount} Active`}
-            color="success"
             sx={{
               fontWeight: 600,
               fontSize: '0.9rem',
               px: 1,
+              backgroundColor: 'rgba(76, 175, 80, 0.2)',
+              color: 'rgb(76, 175, 80)',
+              border: '1px solid rgba(76, 175, 80, 0.4)',
+              '& .MuiChip-label': {
+                color: 'rgb(76, 175, 80)',
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(76, 175, 80, 0.3)',
+                boxShadow: '0 0 12px rgba(76, 175, 80, 0.4)',
+              },
             }}
           />
           <Chip
             label={`${maintenanceCount} Maintenance`}
-            color="warning"
             sx={{
               fontWeight: 600,
               fontSize: '0.9rem',
               px: 1,
+              backgroundColor: 'rgba(255, 119, 0, 0.15)',
+              color: 'rgb(255, 119, 0)',
+              border: '1px solid rgba(255, 119, 0, 0.4)',
+              '& .MuiChip-label': {
+                color: 'rgb(255, 119, 0)',
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(255, 119, 0, 0.25)',
+                boxShadow: '0 0 12px rgba(255, 119, 0, 0.5)',
+              },
             }}
           />
 
           {/* Filter Control */}
-          <Box sx={{ ml: 'auto' }}>
+          <Box sx={{ ml: 'auto', display: 'flex', gap: 2, alignItems: 'center' }}>
             <FormControl sx={{ minWidth: 220 }} size="small">
               <InputLabel>{t('dashboard.filterByStatus')}</InputLabel>
               <Select
@@ -187,6 +189,39 @@ const DashboardPage = () => {
                 <MenuItem value="Maintenance">{t('dashboard.maintenance')}</MenuItem>
               </Select>
             </FormControl>
+
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Add single asset">
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate(ROUTES.ASSETS_NEW)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                  }}
+                >
+                  Add Asset
+                </Button>
+              </Tooltip>
+              <Tooltip title="Create multiple assets at once">
+                <Button
+                  variant="contained"
+                  startIcon={<LibraryAddIcon />}
+                  onClick={() => navigate(ROUTES.ASSETS_BULK_NEW)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    background: 'linear-gradient(145deg, #FF9233, #FF7700)',
+                    '&:hover': {
+                      background: 'linear-gradient(145deg, #FFAD66, #FF9233)',
+                    },
+                  }}
+                >
+                  Bulk Create
+                </Button>
+              </Tooltip>
+            </Stack>
           </Box>
         </Box>
       </Paper>
