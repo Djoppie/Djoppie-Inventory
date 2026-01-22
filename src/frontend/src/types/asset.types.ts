@@ -61,3 +61,31 @@ export interface AssetTemplate {
   brand: string;
   model: string;
 }
+
+export interface BulkCreateAssetDto {
+  assetCodePrefix: string;
+  startingNumber: number;
+  quantity: number;
+  templateId?: number;
+  assetName: string;
+  category: string;
+  owner: string;
+  building: string;
+  spaceOrFloor: string;
+  status?: string;
+  brand?: string;
+  model?: string;
+  serialNumberPrefix?: string;
+  purchaseDate?: string;
+  warrantyExpiry?: string;
+  installationDate?: string;
+}
+
+export interface BulkCreateAssetResultDto {
+  totalRequested: number;
+  successfullyCreated: number;
+  failed: number;
+  createdAssets: Asset[];
+  errors: string[];
+  isFullySuccessful: boolean;
+}

@@ -1,9 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Alert, Snackbar } from '@mui/material';
+import { Box, Typography, Alert, Snackbar, Paper, Button, Stack } from '@mui/material';
 import { useState } from 'react';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import InfoIcon from '@mui/icons-material/Info';
 import AssetForm from '../components/assets/AssetForm';
 import { useCreateAsset } from '../hooks/useAssets';
 import { CreateAssetDto, UpdateAssetDto } from '../types/asset.types';
+import { ROUTES } from '../constants/routes';
 
 const AddAssetPage = () => {
   const navigate = useNavigate();
@@ -36,6 +39,43 @@ const AddAssetPage = () => {
           Create a new asset record. Use templates for quick setup or enter details manually.
         </Typography>
       </Box>
+
+      {/* Bulk Creation Suggestion */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 3,
+          p: 2.5,
+          background: (theme) =>
+            theme.palette.mode === 'light'
+              ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(37, 99, 235, 0.08))'
+              : 'linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.12))',
+          border: '2px solid',
+          borderColor: 'info.main',
+          borderRadius: 2,
+        }}
+      >
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+          <InfoIcon color="info" sx={{ fontSize: 40 }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              Need to create multiple assets?
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Use bulk creation to save time when adding multiple similar assets with sequential codes.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="info"
+            startIcon={<LibraryAddIcon />}
+            onClick={() => navigate(ROUTES.ASSETS_BULK_NEW)}
+            sx={{ whiteSpace: 'nowrap', minWidth: 160 }}
+          >
+            Bulk Create
+          </Button>
+        </Stack>
+      </Paper>
 
       {createAsset.isError && (
         <Alert severity="error" sx={{ mb: 3 }}>

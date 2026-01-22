@@ -10,7 +10,11 @@ import {
   Paper,
   Chip,
   keyframes,
+  Button,
+  Stack,
+  Tooltip,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAssets } from '../hooks/useAssets';
 import AssetList from '../components/assets/AssetList';
@@ -18,6 +22,9 @@ import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import AddIcon from '@mui/icons-material/Add';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import { ROUTES } from '../constants/routes';
 
 // Subtle glow pulse for the header
 const headerGlow = keyframes`
@@ -31,6 +38,7 @@ const headerGlow = keyframes`
 
 const DashboardPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { data: assets, isLoading, error, refetch } = useAssets(statusFilter);
 
@@ -168,7 +176,7 @@ const DashboardPage = () => {
           />
 
           {/* Filter Control */}
-          <Box sx={{ ml: 'auto' }}>
+          <Box sx={{ ml: 'auto', display: 'flex', gap: 2, alignItems: 'center' }}>
             <FormControl sx={{ minWidth: 220 }} size="small">
               <InputLabel>{t('dashboard.filterByStatus')}</InputLabel>
               <Select
@@ -181,6 +189,39 @@ const DashboardPage = () => {
                 <MenuItem value="Maintenance">{t('dashboard.maintenance')}</MenuItem>
               </Select>
             </FormControl>
+
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Add single asset">
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate(ROUTES.ASSETS_NEW)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                  }}
+                >
+                  Add Asset
+                </Button>
+              </Tooltip>
+              <Tooltip title="Create multiple assets at once">
+                <Button
+                  variant="contained"
+                  startIcon={<LibraryAddIcon />}
+                  onClick={() => navigate(ROUTES.ASSETS_BULK_NEW)}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    background: 'linear-gradient(145deg, #FF9233, #FF7700)',
+                    '&:hover': {
+                      background: 'linear-gradient(145deg, #FFAD66, #FF9233)',
+                    },
+                  }}
+                >
+                  Bulk Create
+                </Button>
+              </Tooltip>
+            </Stack>
           </Box>
         </Box>
       </Paper>

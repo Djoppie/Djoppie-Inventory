@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Asset, CreateAssetDto, UpdateAssetDto } from '../types/asset.types';
+import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto } from '../types/asset.types';
 
 export const getAssets = async (statusFilter?: string): Promise<Asset[]> => {
   const params = statusFilter ? { status: statusFilter } : {};
@@ -29,4 +29,9 @@ export const updateAsset = async (id: number, data: UpdateAssetDto): Promise<Ass
 
 export const deleteAsset = async (id: number): Promise<void> => {
   await apiClient.delete(`/assets/${id}`);
+};
+
+export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCreateAssetResultDto> => {
+  const response = await apiClient.post<BulkCreateAssetResultDto>('/assets/bulk', data);
+  return response.data;
 };
