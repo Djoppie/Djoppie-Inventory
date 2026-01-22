@@ -13,6 +13,9 @@ export const ROUTES = {
   /** Create new asset page */
   ASSETS_NEW: '/assets/new',
 
+  /** Bulk create assets page */
+  ASSETS_BULK_NEW: '/assets/bulk-create',
+
   /** Asset detail page (requires :id parameter) */
   ASSET_DETAIL: '/assets/:id',
 

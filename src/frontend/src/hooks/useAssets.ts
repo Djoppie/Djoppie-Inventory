@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as assetsApi from '../api/assets.api';
-import { CreateAssetDto, UpdateAssetDto } from '../types/asset.types';
+import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto } from '../types/asset.types';
 
 export const useAssets = (statusFilter?: string) => {
   return useQuery({
@@ -54,6 +54,17 @@ export const useDeleteAsset = () => {
 
   return useMutation({
     mutationFn: (id: number) => assetsApi.deleteAsset(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+  });
+};
+
+export const useBulkCreateAssets = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkCreateAssetDto) => assetsApi.bulkCreateAssets(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
     },

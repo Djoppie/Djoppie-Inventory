@@ -255,6 +255,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   label="Serial Number"
                   value={formData.serialNumber}
                   onChange={(e) => handleChange('serialNumber', e.target.value)}
+                  error={!!errors.serialNumber}
+                  helperText={errors.serialNumber}
                 />
               </Box>
             </Box>
