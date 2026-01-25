@@ -182,8 +182,8 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 borderRadius: 12,
                 padding: '10px 24px',
                 boxShadow: mode === 'light'
-                  ? '0 2px 4px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05)'
-                  : '0 2px 4px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.4)',
+                  ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
+                  : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06), 2px 2px 5px rgba(0, 0, 0, 0.6) inset',
                 border: 'none',
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
@@ -200,8 +200,8 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 },
                 '&:hover': {
                   boxShadow: mode === 'light'
-                    ? '0 4px 8px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(255, 119, 0, 0.2)'
-                    : '0 4px 8px rgba(0, 0, 0, 0.8), 0 8px 16px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(255, 119, 0, 0.3)',
+                    ? '10px 10px 20px rgba(0, 0, 0, 0.18), -10px -10px 20px rgba(255, 255, 255, 0.95), 0 8px 24px rgba(255, 119, 0, 0.4)'
+                    : '0 20px 40px rgba(0, 0, 0, 0.9), 0 10px 20px rgba(0, 0, 0, 0.75), -6px -6px 15px rgba(255, 255, 255, 0.05), 0 6px 20px rgba(255, 146, 51, 0.35)',
                   transform: 'translateY(-2px)',
                 },
                 '&:hover::before': {
@@ -210,8 +210,8 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 '&:active': {
                   transform: 'translateY(0)',
                   boxShadow: mode === 'light'
-                    ? '0 1px 2px rgba(0, 0, 0, 0.08)'
-                    : '0 1px 2px rgba(0, 0, 0, 0.6)',
+                    ? '3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(255, 255, 255, 0.95)'
+                    : '5px 5px 10px rgba(0, 0, 0, 0.7), -3px -3px 8px rgba(255, 255, 255, 0.05), 1px 1px 3px rgba(0, 0, 0, 0.85) inset',
                 },
               },
               contained: {
@@ -253,16 +253,26 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
               root: {
                 borderRadius: 16,
                 border: 'none',
-                background: mode === 'light' ? '#FFFFFF' : '#1C1F28',
+                background: mode === 'light' ? '#FFFFFF' : '#23262F',
                 boxShadow: mode === 'light'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08)'
-                  : '0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 16px rgba(0, 0, 0, 0.6)',
+                  ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
+                  : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06), 2px 2px 5px rgba(0, 0, 0, 0.6) inset',
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
+                ...(mode === 'dark' && {
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 16,
+                    border: '1px solid rgba(255, 255, 255, 0.02)',
+                    pointerEvents: 'none',
+                  },
+                }),
                 '&:hover': {
                   boxShadow: mode === 'light'
-                    ? '0 4px 12px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(255, 119, 0, 0.2)'
-                    : '0 4px 12px rgba(0, 0, 0, 0.9), 0 8px 24px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(255, 119, 0, 0.3)',
+                    ? '10px 10px 20px rgba(0, 0, 0, 0.18), -10px -10px 20px rgba(255, 255, 255, 0.95), 0 4px 16px rgba(255, 119, 0, 0.25)'
+                    : '0 20px 40px rgba(0, 0, 0, 0.9), 0 10px 20px rgba(0, 0, 0, 0.75), -6px -6px 15px rgba(255, 255, 255, 0.05), 0 6px 20px rgba(255, 146, 51, 0.35)',
                   transform: 'translateY(-4px)',
                 },
               },
@@ -273,10 +283,13 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
               root: {
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 12,
-                  background: mode === 'light' ? '#FFFFFF' : '#1C1F28',
+                  background: mode === 'light' ? '#FFFFFF' : '#0A0D12',
+                  boxShadow: mode === 'dark'
+                    ? 'inset 5px 5px 12px rgba(0, 0, 0, 0.9), inset -3px -3px 8px rgba(255, 255, 255, 0.04), inset 2px 2px 5px rgba(0, 0, 0, 0.95)'
+                    : 'inset 3px 3px 6px rgba(0, 0, 0, 0.12), inset -3px -3px 6px rgba(255, 255, 255, 0.8)',
                   transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                   '& fieldset': {
-                    borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
+                    borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.06)',
                     borderWidth: '1px',
                   },
                   '&:hover fieldset': {
@@ -284,13 +297,20 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                   },
                   '&.Mui-focused': {
                     boxShadow: mode === 'light'
-                      ? '0 0 0 3px rgba(255, 119, 0, 0.1)'
-                      : '0 0 0 3px rgba(255, 146, 51, 0.2)',
+                      ? 'inset 3px 3px 6px rgba(0, 0, 0, 0.12), inset -3px -3px 6px rgba(255, 255, 255, 0.8), 0 0 0 3px rgba(255, 119, 0, 0.1)'
+                      : 'inset 7px 7px 15px rgba(0, 0, 0, 0.95), inset -4px -4px 10px rgba(255, 255, 255, 0.03), inset 3px 3px 6px rgba(0, 0, 0, 1), 0 0 0 3px rgba(255, 146, 51, 0.15)',
                   },
                   '&.Mui-focused fieldset': {
                     borderColor: mode === 'light' ? '#FF7700' : '#FF9233',
                     borderWidth: '2px',
                   },
+                },
+                '& .MuiInputBase-input': {
+                  color: mode === 'dark' ? '#F7FAFC' : 'inherit',
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.4)',
+                  opacity: 1,
                 },
               },
             },
@@ -302,14 +322,16 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 fontWeight: 600,
                 fontSize: '0.8125rem',
                 boxShadow: mode === 'light'
-                  ? '0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05)'
-                  : '0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3)',
-                border: mode === 'light' ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.08)',
+                  ? '3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(255, 255, 255, 0.95)'
+                  : '5px 5px 10px rgba(0, 0, 0, 0.7), -3px -3px 8px rgba(255, 255, 255, 0.05), 1px 1px 3px rgba(0, 0, 0, 0.85) inset',
+                border: mode === 'light'
+                  ? '1px solid rgba(0, 0, 0, 0.08)'
+                  : '1px solid rgba(255, 255, 255, 0.05)',
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   boxShadow: mode === 'light'
-                    ? '0 2px 4px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)'
-                    : '0 2px 4px rgba(0, 0, 0, 0.7), 0 4px 8px rgba(0, 0, 0, 0.5)',
+                    ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
+                    : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06)',
                   transform: 'scale(1.05)',
                 },
               },
@@ -345,18 +367,18 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
               },
               elevation1: {
                 boxShadow: mode === 'light'
-                  ? '0 1px 3px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05)'
-                  : '0 1px 3px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4)',
+                  ? '3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(255, 255, 255, 0.95)'
+                  : '5px 5px 10px rgba(0, 0, 0, 0.7), -3px -3px 8px rgba(255, 255, 255, 0.05), 1px 1px 3px rgba(0, 0, 0, 0.85) inset',
               },
               elevation2: {
                 boxShadow: mode === 'light'
-                  ? '0 2px 8px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08)'
-                  : '0 2px 8px rgba(0, 0, 0, 0.8), 0 4px 16px rgba(0, 0, 0, 0.6)',
+                  ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
+                  : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06), 2px 2px 5px rgba(0, 0, 0, 0.6) inset',
               },
               elevation3: {
                 boxShadow: mode === 'light'
-                  ? '0 4px 12px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1)'
-                  : '0 4px 12px rgba(0, 0, 0, 0.9), 0 8px 24px rgba(0, 0, 0, 0.7)',
+                  ? '10px 10px 20px rgba(0, 0, 0, 0.18), -10px -10px 20px rgba(255, 255, 255, 0.95)'
+                  : '14px 14px 28px rgba(0, 0, 0, 0.85), -7px -7px 16px rgba(255, 255, 255, 0.07), 3px 3px 8px rgba(0, 0, 0, 0.5) inset',
               },
             },
           },
@@ -366,19 +388,20 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 borderRadius: 12,
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: mode === 'light'
-                  ? '0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05)'
-                  : '0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3)',
+                  ? '3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(255, 255, 255, 0.95)'
+                  : '5px 5px 10px rgba(0, 0, 0, 0.7), -3px -3px 8px rgba(255, 255, 255, 0.05), 1px 1px 3px rgba(0, 0, 0, 0.85) inset',
+                background: mode === 'light' ? '#FFFFFF' : '#23262F',
                 '&:hover': {
                   transform: 'scale(1.05)',
                   boxShadow: mode === 'light'
-                    ? '0 2px 4px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)'
-                    : '0 2px 4px rgba(0, 0, 0, 0.7), 0 4px 8px rgba(0, 0, 0, 0.5)',
+                    ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
+                    : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06), 2px 2px 5px rgba(0, 0, 0, 0.6) inset',
                 },
                 '&:active': {
                   transform: 'scale(0.98)',
                   boxShadow: mode === 'light'
-                    ? '0 1px 2px rgba(0, 0, 0, 0.08) inset'
-                    : '0 1px 2px rgba(0, 0, 0, 0.6) inset',
+                    ? 'inset 3px 3px 6px rgba(0, 0, 0, 0.12), inset -3px -3px 6px rgba(255, 255, 255, 0.8)'
+                    : 'inset 5px 5px 12px rgba(0, 0, 0, 0.9), inset -3px -3px 8px rgba(255, 255, 255, 0.04), inset 2px 2px 5px rgba(0, 0, 0, 0.95)',
                 },
               },
             },

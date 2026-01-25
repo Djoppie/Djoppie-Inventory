@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -20,6 +20,7 @@ import { useAssets } from '../hooks/useAssets';
 import AssetList from '../components/assets/AssetList';
 import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
+import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AddIcon from '@mui/icons-material/Add';
@@ -36,14 +37,31 @@ const headerGlow = keyframes`
   }
 `;
 
+const VIEW_MODE_STORAGE_KEY = 'djoppie-dashboard-view-mode';
+
 const DashboardPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Load view mode from localStorage on mount
+    const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return (savedMode === 'card' || savedMode === 'table') ? savedMode : 'card';
+  });
+
   const { data: assets, isLoading, error, refetch } = useAssets(statusFilter);
+
+  // Save view mode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   const handleFilterChange = (event: SelectChangeEvent) => {
     setStatusFilter(event.target.value);
+  };
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
   };
 
   if (isLoading) return <Loading message="[LOAD] Loading asset inventory..." />;
@@ -175,8 +193,11 @@ const DashboardPage = () => {
             }}
           />
 
-          {/* Filter Control */}
-          <Box sx={{ ml: 'auto', display: 'flex', gap: 2, alignItems: 'center' }}>
+          {/* Filter Control and View Toggle */}
+          <Box sx={{ ml: 'auto', display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* View Toggle */}
+            <ViewToggle value={viewMode} onChange={handleViewModeChange} />
+
             <FormControl sx={{ minWidth: 220 }} size="small">
               <InputLabel>{t('dashboard.filterByStatus')}</InputLabel>
               <Select
@@ -227,7 +248,7 @@ const DashboardPage = () => {
       </Paper>
 
       {/* Asset List */}
-      <AssetList assets={assets || []} />
+      <AssetList assets={assets || []} viewMode={viewMode} />
     </Box>
   );
 };

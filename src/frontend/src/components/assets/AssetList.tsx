@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { Typography, Box, Pagination, Stack } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import AssetCard from './AssetCard';
+import AssetTableView from './AssetTableView';
+import { ViewMode } from '../common/ViewToggle';
 
 interface AssetListProps {
   assets: Asset[];
+  viewMode: ViewMode;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-const AssetList = ({ assets }: AssetListProps) => {
+const AssetList = ({ assets, viewMode }: AssetListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   if (assets.length === 0) {
@@ -25,7 +28,12 @@ const AssetList = ({ assets }: AssetListProps) => {
     );
   }
 
-  // Calculate pagination
+  // If table view, delegate to AssetTableView component
+  if (viewMode === 'table') {
+    return <AssetTableView assets={assets} />;
+  }
+
+  // Card view logic (existing implementation)
   const totalPages = Math.ceil(assets.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "TRx5jfVkC3E=",
+  "dgSpecHash": "2OTe5CtwDR4=",
   "success": true,
   "projectFilePath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Tests\\DjoppieInventory.Tests.csproj",
   "expectedPackageFiles": [
@@ -54,10 +54,7 @@
     "C:\\Users\\jowij\\.nuget\\packages\\xunit.core\\2.9.3\\xunit.core.2.9.3.nupkg.sha512",
     "C:\\Users\\jowij\\.nuget\\packages\\xunit.extensibility.core\\2.9.3\\xunit.extensibility.core.2.9.3.nupkg.sha512",
     "C:\\Users\\jowij\\.nuget\\packages\\xunit.extensibility.execution\\2.9.3\\xunit.extensibility.execution.2.9.3.nupkg.sha512",
-    "C:\\Users\\jowij\\.nuget\\packages\\xunit.runner.visualstudio\\3.1.4\\xunit.runner.visualstudio.3.1.4.nupkg.sha512",
-    "C:\\Users\\jowij\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.23\\microsoft.netcore.app.ref.8.0.23.nupkg.sha512",
-    "C:\\Users\\jowij\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.23\\microsoft.windowsdesktop.app.ref.8.0.23.nupkg.sha512",
-    "C:\\Users\\jowij\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.23\\microsoft.aspnetcore.app.ref.8.0.23.nupkg.sha512"
+    "C:\\Users\\jowij\\.nuget\\packages\\xunit.runner.visualstudio\\3.1.4\\xunit.runner.visualstudio.3.1.4.nupkg.sha512"
   ],
   "logs": []
 }

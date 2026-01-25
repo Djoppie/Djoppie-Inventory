@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djoppie Neumorphic Dark Mode - Visual Examples</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            padding: 40px;
+            background: #0F1117;
+            color: #F7FAFC;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #FF9233, #CC0000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: #CBD5E0;
+            margin-bottom: 3rem;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            font-size: 1.875rem;
+            margin-bottom: 1.5rem;
+            color: #FF9233;
+        }
+
+        .example-card {
+            background: #1C1F28;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            color: #CBD5E0;
+        }
+
+        .label.before { color: #F87171; }
+        .label.after { color: #34D399; }
+
+        /* BEFORE STYLES - Current Implementation */
+        .card-before {
+            background: #1f2329;
+            box-shadow:
+                6px 6px 12px rgba(0, 0, 0, 0.6),
+                -6px -6px 12px rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.25s ease;
+        }
+
+        .button-before {
+            background: linear-gradient(145deg, #FF9233, #FF7700);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.6),
+                0 4px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        .button-before:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 4px 8px rgba(0, 0, 0, 0.8),
+                0 8px 16px rgba(0, 0, 0, 0.6),
+                0 2px 8px rgba(255, 119, 0, 0.3);
+        }
+
+        .input-before {
+            background: #1C1F28;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #F7FAFC;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .input-before:focus {
+            outline: none;
+            border-color: #FF9233;
+            box-shadow: 0 0 0 3px rgba(255, 146, 51, 0.2);
+        }
+
+        /* AFTER STYLES - Enhanced Implementation */
+        .card-after {
+            background: #23262F;
+            box-shadow:
+                8px 8px 18px rgba(0, 0, 0, 0.75),
+                -5px -5px 12px rgba(255, 255, 255, 0.06),
+                2px 2px 5px rgba(0, 0, 0, 0.6) inset;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            position: relative;
+            transition: all 0.25s ease;
+        }
+
+        .card-after::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 16px;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.03) 0%,
+                transparent 50%,
+                rgba(0, 0, 0, 0.1) 100%
+            );
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .card-after:hover {
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.9),
+                0 10px 20px rgba(0, 0, 0, 0.75),
+                -6px -6px 15px rgba(255, 255, 255, 0.05),
+                0 6px 20px rgba(255, 146, 51, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .button-after {
+            background: linear-gradient(145deg, #FF9233, #FF7700);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow:
+                8px 8px 18px rgba(0, 0, 0, 0.75),
+                -5px -5px 12px rgba(255, 255, 255, 0.06),
+                2px 2px 5px rgba(0, 0, 0, 0.6) inset;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button-after::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .button-after:hover::before {
+            left: 100%;
+        }
+
+        .button-after:hover {
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.9),
+                0 10px 20px rgba(0, 0, 0, 0.75),
+                -6px -6px 15px rgba(255, 255, 255, 0.05),
+                0 6px 20px rgba(255, 146, 51, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .button-after:active {
+            transform: translateY(0);
+            box-shadow:
+                5px 5px 10px rgba(0, 0, 0, 0.7),
+                -3px -3px 8px rgba(255, 255, 255, 0.05),
+                1px 1px 3px rgba(0, 0, 0, 0.85) inset;
+        }
+
+        .input-after {
+            background: #0A0D12;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow:
+                inset 5px 5px 12px rgba(0, 0, 0, 0.9),
+                inset -3px -3px 8px rgba(255, 255, 255, 0.04),
+                inset 2px 2px 5px rgba(0, 0, 0, 0.95);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #F7FAFC;
+            width: 100%;
+            font-size: 1rem;
+            transition: all 0.25s ease;
+        }
+
+        .input-after:focus {
+            outline: none;
+            border-color: #FF9233;
+            box-shadow:
+                inset 7px 7px 15px rgba(0, 0, 0, 0.95),
+                inset -4px -4px 10px rgba(255, 255, 255, 0.03),
+                inset 3px 3px 6px rgba(0, 0, 0, 1),
+                0 0 0 3px rgba(255, 146, 51, 0.15);
+        }
+
+        .input-after::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .icon-button-after {
+            background: #23262F;
+            border: none;
+            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow:
+                5px 5px 10px rgba(0, 0, 0, 0.7),
+                -3px -3px 8px rgba(255, 255, 255, 0.05),
+                1px 1px 3px rgba(0, 0, 0, 0.85) inset;
+            transition: all 0.25s ease;
+            color: #FF9233;
+            font-size: 20px;
+        }
+
+        .icon-button-after:hover {
+            transform: scale(1.05);
+            box-shadow:
+                8px 8px 18px rgba(0, 0, 0, 0.75),
+                -5px -5px 12px rgba(255, 255, 255, 0.06),
+                2px 2px 5px rgba(0, 0, 0, 0.6) inset;
+        }
+
+        .icon-button-after:active {
+            transform: scale(0.98);
+            box-shadow:
+                inset 5px 5px 12px rgba(0, 0, 0, 0.9),
+                inset -3px -3px 8px rgba(255, 255, 255, 0.04),
+                inset 2px 2px 5px rgba(0, 0, 0, 0.95);
+        }
+
+        .chip-after {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 16px;
+            background: linear-gradient(145deg, #252932, #1C1F28);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            box-shadow:
+                5px 5px 10px rgba(0, 0, 0, 0.7),
+                -3px -3px 8px rgba(255, 255, 255, 0.05),
+                1px 1px 3px rgba(0, 0, 0, 0.85) inset;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .chip-after:hover {
+            box-shadow:
+                8px 8px 18px rgba(0, 0, 0, 0.75),
+                -5px -5px 12px rgba(255, 255, 255, 0.06);
+            transform: scale(1.05);
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #F7FAFC;
+        }
+
+        .card-text {
+            color: #CBD5E0;
+            line-height: 1.6;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .note {
+            background: rgba(255, 146, 51, 0.1);
+            border-left: 3px solid #FF9233;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 30px;
+            color: #CBD5E0;
+            font-size: 0.875rem;
+        }
+
+        .code-comparison {
+            background: #0A0D12;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+
+        .code-comparison pre {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .code-label {
+            color: #FF9233;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Djoppie Neumorphic Dark Mode</h1>
+        <p class="subtitle">Visual Comparison: Before vs After Enhancement</p>
+
+        <!-- Cards Comparison -->
+        <section class="section">
+            <h2 class="section-title">Neumorphic Cards</h2>
+            <div class="comparison-grid">
+                <div class="example-card">
+                    <div class="label before">BEFORE - Current Implementation</div>
+                    <div class="card-before">
+                        <div class="card-content">
+                            <div class="card-title">Asset Card</div>
+                            <div class="card-text">Dell Latitude Laptop - Asset Code: DLP-001</div>
+                            <div class="card-text" style="margin-top: 8px; font-size: 0.875rem;">
+                                Notice the flat appearance and weak shadow definition.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-comparison">
+                        <div class="code-label">Shadow Values:</div>
+                        <pre>6px 6px 12px rgba(0, 0, 0, 0.6)
+-6px -6px 12px rgba(255, 255, 255, 0.03)</pre>
+                    </div>
+                </div>
+
+                <div class="example-card">
+                    <div class="label after">AFTER - Enhanced Implementation</div>
+                    <div class="card-after">
+                        <div class="card-content">
+                            <div class="card-title">Asset Card</div>
+                            <div class="card-text">Dell Latitude Laptop - Asset Code: DLP-001</div>
+                            <div class="card-text" style="margin-top: 8px; font-size: 0.875rem;">
+                                Notice the rich depth, visible highlights, and hover elevation effect.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-comparison">
+                        <div class="code-label">Shadow Values:</div>
+                        <pre>8px 8px 18px rgba(0, 0, 0, 0.75)
+-5px -5px 12px rgba(255, 255, 255, 0.06)
+2px 2px 5px rgba(0, 0, 0, 0.6) inset
++ gradient overlay + border</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons Comparison -->
+        <section class="section">
+            <h2 class="section-title">Neumorphic Buttons</h2>
+            <div class="comparison-grid">
+                <div class="example-card">
+                    <div class="label before">BEFORE</div>
+                    <button class="button-before">Add New Asset</button>
+                    <div class="note">
+                        Hover to see basic elevation. Limited tactile feedback.
+                    </div>
+                </div>
+
+                <div class="example-card">
+                    <div class="label after">AFTER</div>
+                    <button class="button-after">Add New Asset</button>
+                    <div class="note">
+                        Hover for dramatic float effect with shimmer animation. Click for pressed state.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inputs Comparison -->
+        <section class="section">
+            <h2 class="section-title">Neumorphic Inputs</h2>
+            <div class="comparison-grid">
+                <div class="example-card">
+                    <div class="label before">BEFORE</div>
+                    <input class="input-before" type="text" placeholder="Search assets...">
+                    <div class="note">
+                        Basic border focus state. Flat appearance.
+                    </div>
+                </div>
+
+                <div class="example-card">
+                    <div class="label after">AFTER</div>
+                    <input class="input-after" type="text" placeholder="Search assets...">
+                    <div class="note">
+                        Deep inset effect with glow focus state. Click to focus and see the enhancement.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Additional Controls -->
+        <section class="section">
+            <h2 class="section-title">Additional UI Elements (Enhanced Only)</h2>
+            <div class="example-card">
+                <div class="label after">ENHANCED COMPONENTS</div>
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <div style="color: #CBD5E0; font-size: 0.875rem; margin-bottom: 4px;">Icon Buttons</div>
+                        <div style="display: flex; gap: 12px;">
+                            <button class="icon-button-after">⚙️</button>
+                            <button class="icon-button-after">🔍</button>
+                            <button class="icon-button-after">➕</button>
+                        </div>
+                    </div>
+
+                    <div class="control-item">
+                        <div style="color: #CBD5E0; font-size: 0.875rem; margin-bottom: 4px;">Status Chips</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span class="chip-after" style="color: #34D399;">Active</span>
+                            <span class="chip-after" style="color: #FBBF24;">Maintenance</span>
+                            <span class="chip-after" style="color: #60A5FA;">Computing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Improvements Summary -->
+        <section class="section">
+            <h2 class="section-title">Key Improvements Summary</h2>
+            <div class="example-card">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; color: #CBD5E0;">
+                    <div>
+                        <h3 style="color: #FF9233; margin-bottom: 12px;">Shadow Depth</h3>
+                        <p>Black opacity increased from 0.5-0.7 to 0.7-0.95 for dramatic depth</p>
+                    </div>
+                    <div>
+                        <h3 style="color: #FF9233; margin-bottom: 12px;">Highlight Visibility</h3>
+                        <p>White opacity increased from 0.02-0.03 to 0.04-0.07 for visible lift</p>
+                    </div>
+                    <div>
+                        <h3 style="color: #FF9233; margin-bottom: 12px;">Layered Effects</h3>
+                        <p>Added inset shadows to all elements for authentic dimension</p>
+                    </div>
+                    <div>
+                        <h3 style="color: #FF9233; margin-bottom: 12px;">Background Hierarchy</h3>
+                        <p>4-level system: Sunken → Base → Elevated → Raised</p>
+                    </div>
+                    <div>
+                        <h3 style="color: #FF9233; margin-bottom: 12px;">Hover States</h3>
+                        <p>Dramatic float effects with 4-layer shadow combinations</p>
+                    </div>
+                    <div>
+                        <h3 style="color: #FF9233; margin-bottom: 12px;">Accent Integration</h3>
+                        <p>Orange glow shadows for interactive feedback</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="note" style="margin-top: 40px;">
+            <strong>Implementation Note:</strong> This visual example demonstrates the enhanced neumorphic design system for the Djoppie Inventory application. All styles shown here are production-ready and can be integrated directly into the project. Hover over elements to see interactive states. Open this file in a modern browser for the best experience.
+        </div>
+    </div>
+</body>
+</html>
