@@ -1,12 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "dTa98bJT3n8=",
+  "dgSpecHash": "cnzthKDQnVk=",
   "success": true,
   "projectFilePath": "C:\\Users\\jowij\\VSCodeDiepenbeek\\Djoppie\\Djoppie-inventory-v2\\Djoppie-Inventory\\src\\backend\\DjoppieInventory.Core\\DjoppieInventory.Core.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\jowij\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.23\\microsoft.netcore.app.ref.8.0.23.nupkg.sha512",
-    "C:\\Users\\jowij\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.23\\microsoft.windowsdesktop.app.ref.8.0.23.nupkg.sha512",
-    "C:\\Users\\jowij\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.23\\microsoft.aspnetcore.app.ref.8.0.23.nupkg.sha512"
-  ],
+  "expectedPackageFiles": [],
   "logs": []
 }
