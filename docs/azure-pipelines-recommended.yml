@@ -1,0 +1,593 @@
+# ============================================================================
+# Azure DevOps CI/CD Pipeline - Djoppie Inventory (Recommended Enterprise Version)
+# ============================================================================
+# Description: Production-ready CI/CD pipeline with all best practices
+# Features:
+#   - Build and test automation
+#   - Infrastructure as Code deployment
+#   - Blue-green deployment with staging slots
+#   - Database migration management
+#   - Comprehensive health checks
+#   - Manual approval gates
+#   - Automatic rollback on failure
+# ============================================================================
+# Triggers: main (PROD), develop (DEV)
+# Environments: DEV, PROD
+# ============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - src/frontend/**
+      - src/backend/**
+      - infrastructure/bicep/**
+    exclude:
+      - '**.md'
+      - 'docs/**'
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - src/frontend/**
+      - src/backend/**
+
+variables:
+  # Build Configuration
+  buildConfiguration: 'Release'
+  dotnetVersion: '8.x'
+  nodeVersion: '18.x'
+
+  # Project Paths
+  frontendPath: 'src/frontend'
+  backendPath: 'src/backend'
+  infrastructurePath: 'infrastructure/bicep'
+
+  # Environment Configuration (dynamic based on branch)
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    environment: 'prod'
+    azureServiceConnection: 'Azure-Djoppie-Prod'
+    resourceGroupName: 'rg-djoppie-prod-westeu'
+    location: 'westeurope'
+    bicepTemplate: 'main.prod.bicep'
+  ${{ else }}:
+    environment: 'dev'
+    azureServiceConnection: 'Azure-Djoppie-Dev'
+    resourceGroupName: 'rg-djoppie-dev-westeu'
+    location: 'westeurope'
+    bicepTemplate: 'main.dev.bicep'
+
+# ============================================================================
+# STAGES
+# ============================================================================
+
+stages:
+  # ==========================================================================
+  # STAGE 1: BUILD
+  # ==========================================================================
+  - stage: Build
+    displayName: 'Build & Test Applications'
+    jobs:
+      # ------------------------------------------------------------------------
+      # Job: Build Frontend
+      # ------------------------------------------------------------------------
+      - job: BuildFrontend
+        displayName: 'Build React Frontend'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js $(nodeVersion)'
+            inputs:
+              versionSpec: $(nodeVersion)
+
+          - script: |
+              cd $(frontendPath)
+              npm ci --prefer-offline
+            displayName: 'Install npm dependencies'
+
+          - script: |
+              cd $(frontendPath)
+              npm run lint
+            displayName: 'Lint TypeScript code'
+            continueOnError: true
+
+          # Note: Build step happens at deployment time for Static Web Apps
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Frontend Source'
+            inputs:
+              PathtoPublish: '$(frontendPath)'
+              ArtifactName: 'frontend-source'
+              publishLocation: 'Container'
+
+      # ------------------------------------------------------------------------
+      # Job: Build Backend
+      # ------------------------------------------------------------------------
+      - job: BuildBackend
+        displayName: 'Build ASP.NET Core API'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: $(dotnetVersion)
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet Packages'
+            inputs:
+              command: 'restore'
+              projects: '$(backendPath)/**/*.csproj'
+              feedsToUse: 'select'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Solution'
+            inputs:
+              command: 'build'
+              projects: '$(backendPath)/**/*.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              projects: '$(backendPath)/DjoppieInventory.Tests/DjoppieInventory.Tests.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx'
+              publishTestResults: true
+            continueOnError: false
+
+          - task: PublishCodeCoverageResults@1
+            displayName: 'Publish Code Coverage'
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+            condition: succeededOrFailed()
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish API Project'
+            inputs:
+              command: 'publish'
+              publishWebProjects: false
+              projects: '$(backendPath)/DjoppieInventory.API/DjoppieInventory.API.csproj'
+              arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/backend --no-restore --no-build'
+              zipAfterPublish: true
+              modifyOutputPath: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Backend Artifact'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/backend'
+              ArtifactName: 'backend'
+              publishLocation: 'Container'
+
+      # ------------------------------------------------------------------------
+      # Job: Validate Infrastructure
+      # ------------------------------------------------------------------------
+      - job: ValidateInfrastructure
+        displayName: 'Validate Bicep Templates'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Install Bicep CLI'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Bicep version:"
+                az bicep version
+                az bicep upgrade
+
+          - task: AzureCLI@2
+            displayName: 'Build & Validate Bicep Templates'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Validating Bicep template: $(bicepTemplate)"
+                cd $(infrastructurePath)
+
+                # Build Bicep to ARM template
+                az bicep build --file $(bicepTemplate)
+
+                # Validate template against Azure
+                az deployment sub validate \
+                  --location $(location) \
+                  --template-file $(bicepTemplate) \
+                  --parameters environment=$(environment) \
+                               projectName='djoppie' \
+                               sqlAdminUsername='placeholder' \
+                               sqlAdminPassword='Placeholder123!' \
+                               entraTenantId='00000000-0000-0000-0000-000000000000' \
+                               entraBackendClientId='00000000-0000-0000-0000-000000000000' \
+                               entraBackendClientSecret='placeholder' \
+                               entraFrontendClientId='00000000-0000-0000-0000-000000000000'
+
+                echo "✓ Bicep validation completed successfully"
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Infrastructure Artifacts'
+            inputs:
+              PathtoPublish: '$(infrastructurePath)'
+              ArtifactName: 'infrastructure'
+              publishLocation: 'Container'
+
+  # ==========================================================================
+  # STAGE 2: DEPLOY INFRASTRUCTURE
+  # ==========================================================================
+  - stage: DeployInfrastructure
+    displayName: 'Deploy Infrastructure ($(environment))'
+    dependsOn: Build
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      - deployment: DeployBicep
+        displayName: 'Deploy Bicep Templates'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'djoppie-$(environment)-infrastructure'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'infrastructure'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+
+                - task: AzureCLI@2
+                  displayName: 'Deploy Infrastructure'
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      cd $(System.ArtifactsDirectory)/infrastructure
+
+                      echo "Deploying infrastructure to $(environment) environment..."
+                      echo "Template: $(bicepTemplate)"
+                      echo "Location: $(location)"
+
+                      # Deploy at subscription scope
+                      az deployment sub create \
+                        --name "djoppie-$(environment)-$(Build.BuildId)" \
+                        --location $(location) \
+                        --template-file $(bicepTemplate) \
+                        --parameters environment=$(environment) \
+                                     projectName='djoppie' \
+                                     sqlAdminUsername='$(SQL_ADMIN_USERNAME)' \
+                                     sqlAdminPassword='$(SQL_ADMIN_PASSWORD)' \
+                                     entraTenantId='$(ENTRA_TENANT_ID)' \
+                                     entraBackendClientId='$(ENTRA_BACKEND_CLIENT_ID)' \
+                                     entraBackendClientSecret='$(ENTRA_BACKEND_CLIENT_SECRET)' \
+                                     entraFrontendClientId='$(ENTRA_FRONTEND_CLIENT_ID)' \
+                        --output json > deployment-output.json
+
+                      echo "Infrastructure deployment completed"
+
+                      # Extract outputs
+                      cat deployment-output.json | jq '.properties.outputs'
+
+                - task: AzureCLI@2
+                  displayName: 'Extract Resource Names'
+                  name: outputs
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      cd $(System.ArtifactsDirectory)/infrastructure
+
+                      # Extract outputs from deployment
+                      APP_SERVICE_NAME=$(cat deployment-output.json | jq -r '.properties.outputs.appServiceName.value')
+                      KEY_VAULT_NAME=$(cat deployment-output.json | jq -r '.properties.outputs.keyVaultName.value')
+                      SQL_SERVER_NAME=$(cat deployment-output.json | jq -r '.properties.outputs.sqlServerName.value')
+
+                      echo "App Service: $APP_SERVICE_NAME"
+                      echo "Key Vault: $KEY_VAULT_NAME"
+                      echo "SQL Server: $SQL_SERVER_NAME"
+
+                      # Set as pipeline variables
+                      echo "##vso[task.setvariable variable=appServiceName;isOutput=true]$APP_SERVICE_NAME"
+                      echo "##vso[task.setvariable variable=keyVaultName;isOutput=true]$KEY_VAULT_NAME"
+                      echo "##vso[task.setvariable variable=sqlServerName;isOutput=true]$SQL_SERVER_NAME"
+
+  # ==========================================================================
+  # STAGE 3: DEPLOY DATABASE
+  # ==========================================================================
+  - stage: DeployDatabase
+    displayName: 'Deploy Database Migrations'
+    dependsOn: DeployInfrastructure
+    condition: succeeded()
+    variables:
+      keyVaultName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.keyVaultName'] ]
+    jobs:
+      - deployment: MigrateDatabase
+        displayName: 'Apply EF Core Migrations'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'djoppie-$(environment)-database'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'backend'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+
+                - task: AzureCLI@2
+                  displayName: 'Run Database Migrations'
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Running database migrations..."
+
+                      # Extract the published app
+                      cd $(System.ArtifactsDirectory)/backend
+                      unzip -q *.zip -d app
+
+                      # Install EF Core tools
+                      dotnet tool install --global dotnet-ef --version 8.0.*
+                      export PATH="$PATH:$HOME/.dotnet/tools"
+
+                      # Get connection string from Key Vault
+                      CONNECTION_STRING=$(az keyvault secret show \
+                        --vault-name $(keyVaultName) \
+                        --name SqlConnectionString \
+                        --query value -o tsv)
+
+                      # Run migrations
+                      cd app
+                      export ConnectionStrings__DefaultConnection="$CONNECTION_STRING"
+
+                      dotnet ef database update --no-build --verbose
+
+                      echo "✓ Database migrations completed"
+
+  # ==========================================================================
+  # STAGE 4: DEPLOY BACKEND
+  # ==========================================================================
+  - stage: DeployBackend
+    displayName: 'Deploy Backend API'
+    dependsOn: DeployDatabase
+    condition: succeeded()
+    variables:
+      appServiceName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.appServiceName'] ]
+    jobs:
+      - deployment: DeployAPI
+        displayName: 'Deploy to App Service ${{ if eq(variables.environment, ''prod'') }}(Staging Slot)${{ else }}${{ endif }}'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'djoppie-$(environment)-backend'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'backend'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+
+                # Production: Deploy to staging slot
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to App Service'
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    appType: 'webApp'
+                    appName: '$(appServiceName)'
+                    package: '$(System.ArtifactsDirectory)/backend/*.zip'
+                    deployToSlotOrASE: ${{ eq(variables.environment, 'prod') }}
+                    resourceGroupName: '$(resourceGroupName)'
+                    slotName: ${{ if eq(variables.environment, 'prod') }}'staging'${{ else }}''${{ endif }}
+                    deploymentMethod: 'auto'
+
+                - task: AzureCLI@2
+                  displayName: 'Health Check - ${{ if eq(variables.environment, ''prod'') }}Staging Slot${{ else }}App Service${{ endif }}'
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Wait for app to start
+                      echo "Waiting 30 seconds for app to start..."
+                      sleep 30
+
+                      # Get app URL
+                      if [ "$(environment)" == "prod" ]; then
+                        # Staging slot URL
+                        APP_URL="https://$(appServiceName)-staging.azurewebsites.net"
+                      else
+                        # Dev app URL
+                        APP_URL="https://$(appServiceName).azurewebsites.net"
+                      fi
+
+                      echo "Testing health endpoint: $APP_URL/health"
+
+                      # Retry health check
+                      for i in {1..10}; do
+                        STATUS=$(curl -s -o /dev/null -w "%{http_code}" $APP_URL/health)
+                        if [ $STATUS -eq 200 ]; then
+                          echo "✓ Health check passed (HTTP $STATUS)"
+                          exit 0
+                        fi
+                        echo "Attempt $i/10: HTTP $STATUS - waiting..."
+                        sleep 10
+                      done
+
+                      echo "✗ Health check failed after 10 attempts"
+                      exit 1
+
+  # ==========================================================================
+  # STAGE 5: SWAP TO PRODUCTION (PROD ONLY)
+  # ==========================================================================
+  - stage: SwapToProduction
+    displayName: 'Swap Staging to Production'
+    dependsOn: DeployBackend
+    condition: and(succeeded(), eq(variables.environment, 'prod'))
+    variables:
+      appServiceName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.appServiceName'] ]
+    jobs:
+      - job: ManualApproval
+        displayName: 'Manual Approval Gate'
+        pool: server
+        timeoutInMinutes: 1440 # 24 hours
+        steps:
+          - task: ManualValidation@0
+            displayName: 'Approve Production Deployment'
+            inputs:
+              notifyUsers: 'jo.wijnen@diepenbeek.be'
+              instructions: |
+                Please verify the staging slot deployment before approving:
+                - Test API: https://$(appServiceName)-staging.azurewebsites.net/health
+                - Review Swagger: https://$(appServiceName)-staging.azurewebsites.net/swagger
+                - Check Application Insights for errors
+
+                Click APPROVE to swap staging to production.
+              onTimeout: 'reject'
+
+      - deployment: SwapSlots
+        displayName: 'Swap Staging → Production'
+        dependsOn: ManualApproval
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'djoppie-prod-production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureAppServiceManage@0
+                  displayName: 'Swap Deployment Slots'
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    Action: 'Swap Slots'
+                    WebAppName: '$(appServiceName)'
+                    ResourceGroupName: '$(resourceGroupName)'
+                    SourceSlot: 'staging'
+                    SwapWithProduction: true
+
+                - task: AzureCLI@2
+                  displayName: 'Verify Production Health'
+                  inputs:
+                    azureSubscription: '$(azureServiceConnection)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Wait for swap to complete
+                      echo "Waiting 30 seconds for slot swap..."
+                      sleep 30
+
+                      PROD_URL="https://$(appServiceName).azurewebsites.net"
+                      echo "Testing production: $PROD_URL/health"
+
+                      STATUS=$(curl -s -o /dev/null -w "%{http_code}" $PROD_URL/health)
+                      if [ $STATUS -eq 200 ]; then
+                        echo "✓ Production health check passed"
+                      else
+                        echo "✗ Production health check failed - initiating rollback"
+                        az webapp deployment slot swap \
+                          --name $(appServiceName) \
+                          --resource-group $(resourceGroupName) \
+                          --slot staging \
+                          --target-slot production
+                        exit 1
+                      fi
+
+  # ==========================================================================
+  # STAGE 6: DEPLOY FRONTEND
+  # ==========================================================================
+  - stage: DeployFrontend
+    displayName: 'Deploy Frontend'
+    dependsOn:
+      - DeployBackend
+      - ${{ if eq(variables.environment, 'prod') }}
+        - SwapToProduction
+    condition: succeeded()
+    jobs:
+      - deployment: DeployStaticWebApp
+        displayName: 'Deploy to Azure Static Web Apps'
+        pool:
+          vmImage: 'ubuntu-latest'
+        environment: 'djoppie-$(environment)-frontend'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'frontend-source'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+
+                - task: AzureStaticWebApp@0
+                  displayName: 'Build and Deploy Static Web App'
+                  inputs:
+                    app_location: '/'
+                    api_location: ''
+                    output_location: 'dist'
+                    azure_static_web_apps_api_token: $(STATIC_WEB_APP_TOKEN_$(environment))
+                    workingDirectory: '$(System.ArtifactsDirectory)/frontend-source'
+
+  # ==========================================================================
+  # STAGE 7: POST-DEPLOYMENT TESTS
+  # ==========================================================================
+  - stage: PostDeploymentTests
+    displayName: 'Post-Deployment Validation'
+    dependsOn: DeployFrontend
+    condition: succeeded()
+    jobs:
+      - job: IntegrationTests
+        displayName: 'Integration & Smoke Tests'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Run Comprehensive Health Checks'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Running post-deployment validation..."
+
+                # Get resource URLs
+                APP_SERVICE_URL=$(az webapp show \
+                  --name $(appServiceName) \
+                  --resource-group $(resourceGroupName) \
+                  --query defaultHostName -o tsv)
+
+                echo "==================================="
+                echo "Deployment Summary"
+                echo "==================================="
+                echo "Environment: $(environment)"
+                echo "Backend API: https://$APP_SERVICE_URL"
+                echo "Build ID: $(Build.BuildId)"
+                echo "==================================="
+
+                # Test API health
+                curl -f https://$APP_SERVICE_URL/health || exit 1
+                echo "✓ API health check passed"
+
+                echo "✓ All post-deployment tests passed"
+
+# ============================================================================
+# END OF PIPELINE
+# ============================================================================

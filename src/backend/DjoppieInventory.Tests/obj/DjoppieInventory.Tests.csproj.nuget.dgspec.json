@@ -55,6 +55,14 @@
               "target": "Package",
               "version": "[12.0.1, )"
             },
+            "Azure.Identity": {
+              "target": "Package",
+              "version": "[1.14.3, )"
+            },
+            "Microsoft.ApplicationInsights.AspNetCore": {
+              "target": "Package",
+              "version": "[2.22.0, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[8.0.11, )"
@@ -64,6 +72,18 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[8.0.11, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Microsoft.Graph": {
+              "target": "Package",
+              "version": "[5.91.0, )"
+            },
+            "Microsoft.Identity.Web": {
+              "target": "Package",
+              "version": "[3.6.3, )"
             },
             "QRCoder": {
               "target": "Package",

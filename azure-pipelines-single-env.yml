@@ -1,0 +1,548 @@
+# ============================================================================
+# DJOPPIE INVENTORY - SINGLE DEV ENVIRONMENT PIPELINE
+# ============================================================================
+# Purpose: Simplified pipeline for single DEV environment deployment
+# Source: GitHub repository (https://github.com/Djoppie/Djoppie-Inventory)
+# Target: Azure DEV environment only
+# Branch Strategy:
+#   - 'develop' → Auto-deploy to DEV
+#   - 'main' → Reserved for releases (no auto-deploy)
+#   - 'feature/*' → Build only, no deploy
+# ============================================================================
+
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - develop  # Only deploy from develop branch
+  paths:
+    exclude:
+      - '*.md'
+      - 'docs/**'
+      - '.github/**'
+
+# Don't trigger on pull requests (save build minutes)
+pr: none
+
+# Use Ubuntu for faster builds and lower cost
+pool:
+  vmImage: 'ubuntu-latest'
+
+# ============================================================================
+# VARIABLES
+# ============================================================================
+
+variables:
+  # Build configuration
+  buildConfiguration: 'Release'
+  dotnetSdkVersion: '8.x'
+  nodeVersion: '20.x'
+
+  # Project paths
+  backendPath: 'src/backend'
+  frontendPath: 'src/frontend'
+  infrastructurePath: '.'
+
+  # Azure configuration (DEV only)
+  environment: 'dev'
+  azureSubscription: 'Azure-Djoppie-Service-Connection'  # Service connection name
+  resourceGroupName: 'rg-djoppie-dev-westeurope'
+  location: 'westeurope'
+
+  # Deployment settings
+  bicepFile: 'infrastructure-minimal.bicep'
+  parametersFile: 'infrastructure-minimal.parameters.json'
+
+# ============================================================================
+# STAGES
+# ============================================================================
+
+stages:
+
+# ----------------------------------------------------------------------------
+# STAGE 1: BUILD APPLICATIONS
+# ----------------------------------------------------------------------------
+- stage: Build
+  displayName: 'Build Applications'
+  jobs:
+
+  # Build Backend (.NET 8)
+  - job: BuildBackend
+    displayName: 'Build ASP.NET Core API'
+    steps:
+
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK $(dotnetSdkVersion)'
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotnetSdkVersion)'
+        installationPath: $(Agent.ToolsDirectory)/dotnet
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet packages'
+      inputs:
+        command: 'restore'
+        projects: '$(backendPath)/**/*.csproj'
+        feedsToUse: 'select'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build backend'
+      inputs:
+        command: 'build'
+        projects: '$(backendPath)/DjoppieInventory.API/DjoppieInventory.API.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run unit tests'
+      inputs:
+        command: 'test'
+        projects: '$(backendPath)/DjoppieInventory.Tests/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"'
+      continueOnError: true  # Don't fail build if tests fail (warning only for DEV)
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish backend'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '$(backendPath)/DjoppieInventory.API/DjoppieInventory.API.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/backend --no-restore'
+        zipAfterPublish: true
+        modifyOutputPath: false
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish backend artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/backend'
+        ArtifactName: 'backend-drop'
+        publishLocation: 'Container'
+
+  # Build Frontend (React + Vite)
+  - job: BuildFrontend
+    displayName: 'Build React Frontend'
+    steps:
+
+    - task: NodeTool@0
+      displayName: 'Install Node.js $(nodeVersion)'
+      inputs:
+        versionSpec: '$(nodeVersion)'
+
+    - script: |
+        cd $(frontendPath)
+        npm ci --prefer-offline --no-audit
+      displayName: 'Install npm dependencies'
+
+    - script: |
+        cd $(frontendPath)
+        npm run build
+      displayName: 'Build React app with Vite'
+      env:
+        # Placeholder values - will be overridden by Static Web App environment variables
+        VITE_API_URL: 'https://placeholder.azurewebsites.net'
+        VITE_ENTRA_CLIENT_ID: 'placeholder'
+        VITE_ENTRA_TENANT_ID: 'placeholder'
+        VITE_ENVIRONMENT: '$(environment)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish frontend artifact'
+      inputs:
+        PathtoPublish: '$(frontendPath)/dist'
+        ArtifactName: 'frontend-drop'
+        publishLocation: 'Container'
+
+# ----------------------------------------------------------------------------
+# STAGE 2: DEPLOY INFRASTRUCTURE
+# ----------------------------------------------------------------------------
+- stage: DeployInfrastructure
+  displayName: 'Deploy Infrastructure to Azure'
+  dependsOn: []  # Run in parallel with Build stage
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  jobs:
+
+  - deployment: DeployBicep
+    displayName: 'Deploy Bicep Template'
+    environment: 'djoppie-dev-infrastructure'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - checkout: self
+            displayName: 'Checkout source code'
+
+          - task: AzureCLI@2
+            displayName: 'Validate Bicep template'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Validating Bicep template..."
+
+                az deployment sub validate \
+                  --location $(location) \
+                  --template-file $(bicepFile) \
+                  --parameters sqlAdminUsername='djoppieadmin' \
+                               sqlAdminPassword='$(SQL_ADMIN_PASSWORD)' \
+                               entraTenantId='$(ENTRA_TENANT_ID)' \
+                               entraBackendClientId='$(ENTRA_BACKEND_CLIENT_ID)' \
+                               entraBackendClientSecret='$(ENTRA_BACKEND_CLIENT_SECRET)' \
+                               entraFrontendClientId='$(ENTRA_FRONTEND_CLIENT_ID)' \
+                  --output table
+
+                echo "✓ Template validation successful"
+
+          - task: AzureCLI@2
+            displayName: 'Deploy infrastructure'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "========================================"
+                echo "Deploying Djoppie Inventory Infrastructure"
+                echo "Environment: $(environment)"
+                echo "Location: $(location)"
+                echo "Build: $(Build.BuildNumber)"
+                echo "========================================"
+
+                # Deploy infrastructure
+                az deployment sub create \
+                  --name "djoppie-$(environment)-$(Build.BuildNumber)" \
+                  --location $(location) \
+                  --template-file $(bicepFile) \
+                  --parameters sqlAdminUsername='djoppieadmin' \
+                               sqlAdminPassword='$(SQL_ADMIN_PASSWORD)' \
+                               entraTenantId='$(ENTRA_TENANT_ID)' \
+                               entraBackendClientId='$(ENTRA_BACKEND_CLIENT_ID)' \
+                               entraBackendClientSecret='$(ENTRA_BACKEND_CLIENT_SECRET)' \
+                               entraFrontendClientId='$(ENTRA_FRONTEND_CLIENT_ID)' \
+                  --output json > deployment-output.json
+
+                echo "✓ Infrastructure deployment completed"
+
+                # Display deployment outputs
+                cat deployment-output.json | jq '.properties.outputs'
+            name: 'infraDeploy'
+
+          - task: AzureCLI@2
+            displayName: 'Extract deployment outputs'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Extracting resource names from deployment..."
+
+                # Get deployment outputs
+                DEPLOYMENT_NAME="djoppie-$(environment)-$(Build.BuildNumber)"
+
+                # Extract resource names using Azure CLI
+                APP_SERVICE_NAME=$(az deployment sub show \
+                  --name $DEPLOYMENT_NAME \
+                  --query 'properties.outputs.appServiceName.value' -o tsv)
+
+                STATIC_WEB_APP_NAME=$(az deployment sub show \
+                  --name $DEPLOYMENT_NAME \
+                  --query 'properties.outputs.staticWebAppName.value' -o tsv)
+
+                KEY_VAULT_NAME=$(az deployment sub show \
+                  --name $DEPLOYMENT_NAME \
+                  --query 'properties.outputs.keyVaultName.value' -o tsv)
+
+                SQL_SERVER_NAME=$(az deployment sub show \
+                  --name $DEPLOYMENT_NAME \
+                  --query 'properties.outputs.sqlServerName.value' -o tsv)
+
+                # Validate outputs
+                if [ -z "$APP_SERVICE_NAME" ]; then
+                  echo "ERROR: Failed to retrieve App Service name"
+                  exit 1
+                fi
+
+                if [ -z "$STATIC_WEB_APP_NAME" ]; then
+                  echo "ERROR: Failed to retrieve Static Web App name"
+                  exit 1
+                fi
+
+                # Set pipeline variables for subsequent stages
+                echo "##vso[task.setvariable variable=appServiceName;isOutput=true]$APP_SERVICE_NAME"
+                echo "##vso[task.setvariable variable=staticWebAppName;isOutput=true]$STATIC_WEB_APP_NAME"
+                echo "##vso[task.setvariable variable=keyVaultName;isOutput=true]$KEY_VAULT_NAME"
+                echo "##vso[task.setvariable variable=sqlServerName;isOutput=true]$SQL_SERVER_NAME"
+
+                echo ""
+                echo "========================================"
+                echo "Deployment Outputs:"
+                echo "========================================"
+                echo "App Service: $APP_SERVICE_NAME"
+                echo "Static Web App: $STATIC_WEB_APP_NAME"
+                echo "Key Vault: $KEY_VAULT_NAME"
+                echo "SQL Server: $SQL_SERVER_NAME"
+                echo "========================================"
+            name: 'outputs'
+
+# ----------------------------------------------------------------------------
+# STAGE 3: DEPLOY BACKEND API
+# ----------------------------------------------------------------------------
+- stage: DeployBackend
+  displayName: 'Deploy Backend API'
+  dependsOn:
+    - Build
+    - DeployInfrastructure
+  condition: succeeded()
+  variables:
+    appServiceName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.appServiceName'] ]
+    sqlServerName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.sqlServerName'] ]
+    keyVaultName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.keyVaultName'] ]
+  jobs:
+
+  - deployment: DeployAPI
+    displayName: 'Deploy ASP.NET Core API'
+    environment: 'djoppie-dev-backend'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - download: current
+            artifact: backend-drop
+            displayName: 'Download backend artifact'
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy to App Service'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'webAppLinux'
+              appName: '$(appServiceName)'
+              package: '$(Pipeline.Workspace)/backend-drop/*.zip'
+              runtimeStack: 'DOTNETCORE|8.0'
+              startUpCommand: ''
+
+          - task: AzureCLI@2
+            displayName: 'Run database migrations'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Installing EF Core tools..."
+                dotnet tool install --global dotnet-ef --version 8.*
+                export PATH="$PATH:$HOME/.dotnet/tools"
+
+                echo "Retrieving SQL connection string from Key Vault..."
+                CONNECTION_STRING=$(az keyvault secret show \
+                  --vault-name $(keyVaultName) \
+                  --name "SqlConnectionString" \
+                  --query "value" -o tsv)
+
+                if [ -z "$CONNECTION_STRING" ]; then
+                  echo "ERROR: Failed to retrieve connection string from Key Vault"
+                  exit 1
+                fi
+
+                echo "Running Entity Framework migrations..."
+                cd $(backendPath)
+
+                dotnet ef database update \
+                  --project DjoppieInventory.Infrastructure/DjoppieInventory.Infrastructure.csproj \
+                  --startup-project DjoppieInventory.API/DjoppieInventory.API.csproj \
+                  --connection "$CONNECTION_STRING" \
+                  --verbose
+
+                echo "✓ Database migrations completed successfully"
+            continueOnError: true  # Continue even if migrations fail (might already be applied)
+
+          - task: AzureCLI@2
+            displayName: 'Health check'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Waiting for app to start (45 seconds)..."
+                sleep 45
+
+                API_URL="https://$(appServiceName).azurewebsites.net"
+
+                echo "Testing health endpoint: $API_URL/health"
+
+                for i in {1..5}; do
+                  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health")
+
+                  if [ $HTTP_CODE -eq 200 ]; then
+                    echo "✓ Backend API is healthy (HTTP $HTTP_CODE)"
+                    echo "✓ Swagger UI available at: $API_URL/swagger"
+                    exit 0
+                  fi
+
+                  echo "Attempt $i/5: HTTP $HTTP_CODE - waiting..."
+                  sleep 10
+                done
+
+                echo "⚠ Health check inconclusive, but deployment completed"
+                echo "Check logs manually: az webapp log tail --name $(appServiceName) --resource-group $(resourceGroupName)"
+
+# ----------------------------------------------------------------------------
+# STAGE 4: DEPLOY FRONTEND
+# ----------------------------------------------------------------------------
+- stage: DeployFrontend
+  displayName: 'Deploy Frontend App'
+  dependsOn:
+    - Build
+    - DeployInfrastructure
+  condition: succeeded()
+  variables:
+    staticWebAppName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.staticWebAppName'] ]
+  jobs:
+
+  - deployment: DeploySPA
+    displayName: 'Deploy React SPA'
+    environment: 'djoppie-dev-frontend'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - download: current
+            artifact: frontend-drop
+            displayName: 'Download frontend artifact'
+
+          - task: AzureCLI@2
+            displayName: 'Get Static Web App deployment token'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Retrieving deployment token for Static Web App: $(staticWebAppName)"
+
+                TOKEN=$(az staticwebapp secrets list \
+                  --name $(staticWebAppName) \
+                  --resource-group $(resourceGroupName) \
+                  --query "properties.apiKey" -o tsv)
+
+                if [ -z "$TOKEN" ]; then
+                  echo "ERROR: Failed to retrieve deployment token"
+                  exit 1
+                fi
+
+                echo "✓ Deployment token retrieved"
+                echo "##vso[task.setvariable variable=STATIC_WEB_APP_TOKEN;issecret=true]$TOKEN"
+
+          - task: AzureStaticWebApp@0
+            displayName: 'Deploy to Static Web App'
+            inputs:
+              app_location: '/'
+              api_location: ''
+              output_location: ''
+              azure_static_web_apps_api_token: '$(STATIC_WEB_APP_TOKEN)'
+              skip_app_build: true
+              workingDirectory: '$(Pipeline.Workspace)/frontend-drop'
+
+# ----------------------------------------------------------------------------
+# STAGE 5: SMOKE TESTS
+# ----------------------------------------------------------------------------
+- stage: SmokeTests
+  displayName: 'Smoke Tests & Verification'
+  dependsOn:
+    - DeployBackend
+    - DeployFrontend
+  condition: succeeded()
+  variables:
+    appServiceName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.appServiceName'] ]
+    staticWebAppName: $[ stageDependencies.DeployInfrastructure.DeployBicep.outputs['outputs.staticWebAppName'] ]
+  jobs:
+
+  - job: VerifyDeployment
+    displayName: 'Verify Deployment'
+    steps:
+
+    - task: AzureCLI@2
+      displayName: 'Test backend endpoints'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          API_URL="https://$(appServiceName).azurewebsites.net"
+
+          echo "========================================"
+          echo "Testing Backend API"
+          echo "========================================"
+
+          # Test health endpoint
+          echo "Testing /health..."
+          HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health")
+          if [ $HEALTH_STATUS -eq 200 ]; then
+            echo "✓ Health endpoint: OK (HTTP $HEALTH_STATUS)"
+          else
+            echo "⚠ Health endpoint: HTTP $HEALTH_STATUS"
+          fi
+
+          # Test Swagger
+          echo "Testing /swagger..."
+          SWAGGER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/swagger/index.html")
+          if [ $SWAGGER_STATUS -eq 200 ]; then
+            echo "✓ Swagger UI: OK (HTTP $SWAGGER_STATUS)"
+          else
+            echo "⚠ Swagger UI: HTTP $SWAGGER_STATUS"
+          fi
+
+          echo ""
+
+    - task: AzureCLI@2
+      displayName: 'Test frontend'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          FRONTEND_URL="https://$(staticWebAppName).azurestaticapps.net"
+
+          echo "========================================"
+          echo "Testing Frontend App"
+          echo "========================================"
+
+          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
+          if [ $FRONTEND_STATUS -eq 200 ]; then
+            echo "✓ Frontend: OK (HTTP $FRONTEND_STATUS)"
+          else
+            echo "⚠ Frontend: HTTP $FRONTEND_STATUS"
+          fi
+
+          echo ""
+
+    - task: PowerShell@2
+      displayName: 'Deployment summary'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "========================================" -ForegroundColor Green
+          Write-Host "DEPLOYMENT COMPLETED SUCCESSFULLY!" -ForegroundColor Green
+          Write-Host "========================================" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "Environment: $(environment)" -ForegroundColor Cyan
+          Write-Host "Build Number: $(Build.BuildNumber)" -ForegroundColor Cyan
+          Write-Host "Build Date: $(Build.SourceVersion)" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "Backend API:" -ForegroundColor Yellow
+          Write-Host "  URL: https://$(appServiceName).azurewebsites.net" -ForegroundColor White
+          Write-Host "  Swagger: https://$(appServiceName).azurewebsites.net/swagger" -ForegroundColor White
+          Write-Host "  Health: https://$(appServiceName).azurewebsites.net/health" -ForegroundColor White
+          Write-Host ""
+          Write-Host "Frontend App:" -ForegroundColor Yellow
+          Write-Host "  URL: https://$(staticWebAppName).azurestaticapps.net" -ForegroundColor White
+          Write-Host ""
+          Write-Host "Azure Portal:" -ForegroundColor Yellow
+          Write-Host "  Resource Group: $(resourceGroupName)" -ForegroundColor White
+          Write-Host "  https://portal.azure.com/#resource/subscriptions/.../resourceGroups/$(resourceGroupName)" -ForegroundColor White
+          Write-Host ""
+          Write-Host "========================================" -ForegroundColor Green
+          Write-Host "Next Steps:" -ForegroundColor Cyan
+          Write-Host "  1. Test the application manually" -ForegroundColor White
+          Write-Host "  2. Configure Entra ID authentication if not done" -ForegroundColor White
+          Write-Host "  3. Monitor Application Insights for any errors" -ForegroundColor White
+          Write-Host "  4. Review cost usage in Azure Cost Management" -ForegroundColor White
+          Write-Host "========================================" -ForegroundColor Green

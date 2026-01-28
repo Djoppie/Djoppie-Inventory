@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "westeurope" },
+    "environment": { "value": "dev" },
+    "projectName": { "value": "djoppie-inv" },
+    "sqlAdminUsername": { "value": "sqladminuser" },
+    "entraTenantId": { "value": "<TENANT_ID>" },
+    "entraBackendClientId": { "value": "<API_CLIENT_ID>" },
+    "entraFrontendClientId": { "value": "<SPA_CLIENT_ID>" },
+    "allowedClientIps": { "value": [] }
+  }
+}

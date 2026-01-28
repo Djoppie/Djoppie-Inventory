@@ -1,0 +1,67 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "westeurope"
+    },
+    "projectName": {
+      "value": "djoppie"
+    },
+    "sqlAdminUsername": {
+      "value": "sqladmin"
+    },
+    "sqlAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{temp-rg}/providers/Microsoft.KeyVault/vaults/{temp-keyvault}"
+        },
+        "secretName": "SqlAdminPassword"
+      }
+    },
+    "entraTenantId": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{temp-rg}/providers/Microsoft.KeyVault/vaults/{temp-keyvault}"
+        },
+        "secretName": "EntraTenantId"
+      }
+    },
+    "entraBackendClientId": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{temp-rg}/providers/Microsoft.KeyVault/vaults/{temp-keyvault}"
+        },
+        "secretName": "EntraBackendClientId"
+      }
+    },
+    "entraBackendClientSecret": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{temp-rg}/providers/Microsoft.KeyVault/vaults/{temp-keyvault}"
+        },
+        "secretName": "EntraBackendClientSecret"
+      }
+    },
+    "entraFrontendClientId": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/{subscription-id}/resourceGroups/{temp-rg}/providers/Microsoft.KeyVault/vaults/{temp-keyvault}"
+        },
+        "secretName": "EntraFrontendClientId"
+      }
+    },
+    "tags": {
+      "value": {
+        "Environment": "dev",
+        "Project": "djoppie-inventory",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT-Infrastructure",
+        "Department": "Diepenbeek"
+      }
+    }
+  }
+}

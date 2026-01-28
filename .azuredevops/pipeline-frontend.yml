@@ -1,0 +1,33 @@
+trigger:
+  branches: { include: [ develop ] }
+  paths:    { include: [ src/frontend/*, .azuredevops/pipeline-frontend.yml ] }
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  node_version: '18.x'              # of 20.x
+  app_location: 'src/frontend'
+  output_location: 'dist'
+
+stages:
+- stage: BuildAndDeploy
+  jobs:
+  - job: SWA
+    steps:
+    - task: NodeTool@0
+      inputs: { versionSpec: '$(node_version)' }
+
+    - script: |
+        cd $(app_location)
+        npm ci
+        npm run build
+      displayName: 'Build Vite React'
+
+    # Deploy to Static Web Apps using deployment token
+    - task: AzureStaticWebApp@0
+      displayName: 'Deploy to Azure Static Web Apps (Free)'
+      inputs:
+        azure_static_web_apps_api_token: '$(deployment_token)'  # <-- secret variable
+        app_location: '$(app_location)'
+        output_location: '$(app_location)/$(output_location)'
