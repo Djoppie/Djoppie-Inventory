@@ -1,4 +1,5 @@
 # GitHub to Azure DevOps Integration Guide
+
 # Djoppie Inventory - Single DEV Environment
 
 **Version**: 1.0
@@ -12,6 +13,7 @@
 This guide explains how to connect your **GitHub repository** to **Azure DevOps Pipelines** for automated CI/CD deployment of the Djoppie Inventory system. This is the recommended approach for modern development workflows.
 
 **Why GitHub + Azure DevOps?**
+
 - GitHub provides excellent source control and collaboration features
 - Azure DevOps offers powerful enterprise CI/CD capabilities
 - Free tier available for both platforms
@@ -56,7 +58,7 @@ Azure Subscription (Infrastructure)
 
 If you don't have an Azure DevOps organization:
 
-1. Navigate to: https://dev.azure.com/
+1. Navigate to: <https://dev.azure.com/>
 2. Sign in with your Microsoft account
 3. Click "Start free" or "Create new organization"
 4. Organization name: `diepenbeek-it` (or your preferred name)
@@ -74,6 +76,7 @@ If you don't have an Azure DevOps organization:
 6. Click "Create"
 
 **Result**: Your project is ready at:
+
 ```
 https://dev.azure.com/diepenbeek-it/Djoppie-Inventory
 ```
@@ -101,6 +104,7 @@ This is the **modern, recommended approach** for GitHub integration:
 11. Click "Save"
 
 **Benefits of GitHub App**:
+
 - More secure than Personal Access Tokens
 - Fine-grained repository permissions
 - Automatic webhook creation
@@ -120,6 +124,7 @@ If GitHub App installation fails or is restricted:
 6. **IMPORTANT**: Copy the token immediately (you won't see it again)
 
 In Azure DevOps:
+
 1. Go to **Project Settings → Service connections**
 2. Click **New service connection → GitHub**
 3. Select **Personal Access Token**
@@ -147,6 +152,7 @@ This connection allows Azure DevOps to deploy resources to your Azure subscripti
 10. Click "Save"
 
 **What happens**:
+
 - Azure DevOps creates a service principal in your Azure AD
 - Service principal gets "Contributor" role on your subscription
 - Credentials are securely stored in Azure DevOps
@@ -158,6 +164,7 @@ This connection allows Azure DevOps to deploy resources to your Azure subscripti
 3. You should see: "Verification Succeeded"
 
 If verification fails:
+
 - Check that you're the subscription owner
 - Ensure Azure AD permissions allow app registration
 - Try manual service principal creation (see Troubleshooting section)
@@ -183,7 +190,7 @@ Azure DevOps pipelines need secure variables for sensitive data.
 | `ENTRA_BACKEND_CLIENT_SECRET` | `your-client-secret-here` | ☑ Yes | Backend API App Secret |
 | `ENTRA_FRONTEND_CLIENT_ID` | `11223344-5566-7788-9900-aabbccddeeff` | ☑ Yes | Frontend SPA App Registration Client ID |
 
-5. Click "Save"
+1. Click "Save"
 
 ### 4.2 Link Variable Group to Pipeline
 
@@ -196,6 +203,7 @@ Azure DevOps pipelines need secure variables for sensitive data.
 7. Click "Save"
 
 **Alternative**: Pipeline YAML includes the variable group automatically:
+
 ```yaml
 variables:
   - group: Djoppie-DEV-Secrets
@@ -337,12 +345,14 @@ Resource Group: rg-djoppie-dev-westeurope
 
 1. Make a small change in your `develop` branch (e.g., update README.md)
 2. Commit and push to GitHub:
+
    ```bash
    git checkout develop
    git add .
    git commit -m "Test pipeline trigger"
    git push origin develop
    ```
+
 3. In Azure DevOps, go to **Pipelines**
 4. You should see a new run triggered automatically
 5. Check the trigger: It should show "Continuous Integration (CI)"
@@ -369,6 +379,7 @@ To ensure only tested code reaches main:
 **Error**: "Repository not found" or "Permission denied"
 
 **Solution**:
+
 1. Verify GitHub service connection is working:
    - Go to **Project Settings → Service connections**
    - Select your GitHub connection
@@ -384,15 +395,19 @@ To ensure only tested code reaches main:
 **Error**: "Authorization failed" or "The client does not have authorization"
 
 **Solution**:
+
 1. Check service connection has Contributor role:
+
    ```bash
    az role assignment list --assignee <service-principal-id>
    ```
+
 2. Verify service connection in Azure DevOps:
    - Go to **Project Settings → Service connections**
    - Select Azure connection
    - Click "Verify"
 3. If verification fails, recreate service connection with manual service principal:
+
    ```bash
    az ad sp create-for-rbac --name "AzureDevOps-Djoppie" \
      --role Contributor \
@@ -404,13 +419,16 @@ To ensure only tested code reaches main:
 **Error**: "The variable 'SQL_ADMIN_PASSWORD' is not defined"
 
 **Solution**:
+
 1. Verify variable group exists:
    - **Pipelines → Library → Djoppie-DEV-Secrets**
 2. Ensure pipeline references the variable group:
+
    ```yaml
    variables:
      - group: Djoppie-DEV-Secrets
    ```
+
 3. Check pipeline permissions on variable group:
    - Open variable group
    - Click "Pipeline permissions"
@@ -421,6 +439,7 @@ To ensure only tested code reaches main:
 **Error**: Pushing to GitHub doesn't trigger pipeline
 
 **Solution**:
+
 1. Check webhook in GitHub:
    - **Repository → Settings → Webhooks**
    - Verify webhook exists and is active
@@ -430,6 +449,7 @@ To ensure only tested code reaches main:
    - Edit pipeline in Azure DevOps
    - Save (this recreates webhook)
 3. Check branch filters in pipeline trigger:
+
    ```yaml
    trigger:
      branches:
@@ -442,15 +462,18 @@ To ensure only tested code reaches main:
 **Error**: "Failed to get deployment token"
 
 **Solution**:
+
 1. Verify Static Web App was created by infrastructure deployment
 2. Check service connection has permissions on resource group
 3. Manually retrieve token and verify:
+
    ```bash
    az staticwebapp secrets list \
      --name <static-web-app-name> \
      --resource-group rg-djoppie-dev-westeurope \
      --query "properties.apiKey"
    ```
+
 4. If manual retrieval works but pipeline fails, check pipeline service connection permissions
 
 ### Issue 6: EF Core Migrations Fail
@@ -458,16 +481,20 @@ To ensure only tested code reaches main:
 **Error**: "Login failed for user" or "Cannot open database"
 
 **Solution**:
+
 1. Verify SQL Server firewall rules allow Azure services:
    - Azure Portal → SQL Server → Networking
    - "Allow Azure services and resources to access this server": ☑ Yes
 2. Check Key Vault has SQL connection string:
+
    ```bash
    az keyvault secret show \
      --vault-name kv-djoppie-dev-abc123 \
      --name SqlConnectionString
    ```
+
 3. Verify connection string format:
+
    ```
    Server=tcp:sql-djoppie-dev-abc123.database.windows.net,1433;Initial Catalog=sqldb-djoppie-dev;User ID=djoppieadmin;Password=...;Encrypt=True;
    ```
@@ -552,6 +579,7 @@ To add staging or test environments:
 1. Duplicate variable group with environment-specific values
 2. Modify pipeline to accept environment parameter
 3. Add condition to stage:
+
    ```yaml
    condition: eq(variables['Environment'], 'staging')
    ```
@@ -563,14 +591,17 @@ To add staging or test environments:
 ### Pipeline Build Minutes
 
 **Azure DevOps Free Tier**:
+
 - 1,800 minutes/month for private projects
 - Unlimited for public projects
 
 **Your pipeline usage**:
+
 - ~20 minutes per full deployment
 - ~90 deployments/month before hitting limit
 
 **Optimization**:
+
 - Disable PR validation (save ~40%)
 - Cache npm and NuGet packages
 - Use self-hosted agents (unlimited minutes)
@@ -578,6 +609,7 @@ To add staging or test environments:
 ### Azure Resource Costs
 
 **Monthly estimates** (already optimized in infrastructure):
+
 - App Service F1: €0
 - Static Web App: €0
 - SQL Serverless: €5-8
@@ -587,6 +619,7 @@ To add staging or test environments:
 **Total: €6-10/month**
 
 **Monitor costs**:
+
 ```bash
 az consumption usage list \
   --start-date 2026-01-01 \
@@ -613,17 +646,20 @@ After completing this guide:
 ## Additional Resources
 
 **Microsoft Documentation**:
+
 - [Azure Pipelines Documentation](https://learn.microsoft.com/en-us/azure/devops/pipelines/)
 - [GitHub Integration](https://learn.microsoft.com/en-us/azure/devops/pipelines/repos/github)
 - [Service Connections](https://learn.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints)
 - [Secure Files and Variables](https://learn.microsoft.com/en-us/azure/devops/pipelines/security/misc)
 
 **GitHub Documentation**:
+
 - [GitHub Webhooks](https://docs.github.com/en/webhooks)
 - [Branch Protection Rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
 - [GitHub Apps](https://docs.github.com/en/apps)
 
 **Community Resources**:
+
 - [Azure DevOps Labs](https://azuredevopslabs.com/)
 - [Stack Overflow - Azure DevOps](https://stackoverflow.com/questions/tagged/azure-devops)
 
@@ -636,7 +672,7 @@ If you encounter issues not covered in this guide:
 1. Check Azure DevOps pipeline logs (detailed error messages)
 2. Review GitHub webhook delivery logs
 3. Consult Azure Portal activity logs
-4. Contact IT support: jo.wijnen@diepenbeek.be
+4. Contact IT support: <jo.wijnen@diepenbeek.be>
 
 ---
 

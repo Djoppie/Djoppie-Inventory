@@ -9,7 +9,7 @@
       "value": "westeurope"
     },
     "projectName": {
-      "value": "djoppie"
+      "value": "djoppie-inv"
     },
     "sqlAdminUsername": {
       "value": "sqladmin"
@@ -60,7 +60,7 @@
         "Project": "djoppie-inventory",
         "ManagedBy": "Bicep",
         "CostCenter": "IT-Infrastructure",
-        "Department": "Diepenbeek"
+        "Department": "ICT"
       }
     }
   }

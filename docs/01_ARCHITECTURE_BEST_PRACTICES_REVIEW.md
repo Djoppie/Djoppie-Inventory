@@ -1,4 +1,5 @@
 # Architecture Best Practices Review
+
 # Djoppie Inventory System - Single DEV Environment
 
 **Review Date**: 2026-01-27
@@ -13,6 +14,7 @@
 This document validates the Djoppie Inventory system architecture against Azure Well-Architected Framework, ASP.NET Core best practices, and DevOps principles. The system uses a simplified single-environment approach optimized for development and learning, with a clear upgrade path to production when needed.
 
 **Overall Architecture Rating**: GOOD (4/5)
+
 - Strong foundation with modern technology stack
 - Cost-optimized for learning and development
 - Clear separation of concerns with three-layer architecture
@@ -27,6 +29,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Rating**: EXCELLENT (5/5)
 
 **Current Implementation**:
+
 - Azure App Service F1 Free tier (€0/month)
 - Azure SQL Database Serverless 0.5 vCore with auto-pause (€5-8/month)
 - Azure Static Web Apps Free tier (€0/month)
@@ -36,12 +39,14 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Total Estimated Cost**: €6-10/month
 
 **Strengths**:
+
 - Excellent use of free tiers for non-production workloads
 - SQL auto-pause feature saves costs when not in use
 - Serverless compute aligns perfectly with DEV usage patterns
 - No unnecessary premium features or redundancy
 
 **Recommendations**:
+
 - Set up Azure Cost Management alerts at €12/month threshold
 - Review monthly costs and optimize if exceeded
 - Consider Azure Dev/Test subscription pricing if available
@@ -52,28 +57,33 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Rating**: GOOD (4/5)
 
 **Current Implementation**:
+
 - Single region deployment (West Europe)
 - No high availability or failover
 - Basic health checks in place
 - Managed services reduce maintenance burden
 
 **Strengths**:
+
 - Appropriate for DEV environment
 - Azure-managed services provide baseline reliability
 - Health endpoints enable monitoring
 
 **Limitations (Acceptable for DEV)**:
+
 - No SLA guarantees on free tiers
 - Single point of failure
 - No geographic redundancy
 - Limited backup strategy
 
 **Recommendations for DEV**:
+
 - Configure Azure SQL automated backups (included in serverless)
 - Set up Application Insights availability tests
 - Document RTO/RPO expectations (not critical for DEV)
 
 **Production Upgrade Path**:
+
 - Move to Standard/Premium App Service with multiple instances
 - Enable SQL Database geo-replication
 - Implement Azure Front Door for global distribution
@@ -84,6 +94,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Rating**: VERY GOOD (4.5/5)
 
 **Current Implementation**:
+
 - Microsoft Entra ID (Azure AD) authentication
 - Azure Key Vault for secrets management
 - Managed Identity for service-to-service authentication
@@ -91,17 +102,20 @@ This document validates the Djoppie Inventory system architecture against Azure 
 - SQL firewall rules restricting access
 
 **Strengths**:
+
 - Industry-standard OAuth 2.0/OpenID Connect flows
 - Secrets never stored in code or configuration files
 - Zero trust architecture with managed identities
 - Proper separation of frontend/backend authentication
 
 **Recommendations**:
+
 1. **Enable Azure AD Conditional Access** (if available in tenant)
    - Require MFA for admin operations
    - Restrict access to Diepenbeek IP ranges
 
 2. **Implement API Rate Limiting**
+
    ```csharp
    // Add to Program.cs
    builder.Services.AddRateLimiter(options => {
@@ -117,6 +131,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
    ```
 
 3. **Enable SQL Threat Detection** (minimal cost, high value)
+
    ```bicep
    resource sqlServerSecurityAlertPolicy 'Microsoft.Sql/servers/securityAlertPolicies@2023-05-01-preview' = {
      parent: sqlServer
@@ -130,6 +145,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
    ```
 
 4. **Add Security Headers Middleware**
+
    ```csharp
    app.Use(async (context, next) => {
        context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
@@ -151,6 +167,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Rating**: GOOD (4/5)
 
 **Current Implementation**:
+
 - Infrastructure as Code with Bicep
 - Azure DevOps CI/CD pipeline
 - Application Insights telemetry
@@ -158,6 +175,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 - Health check endpoints
 
 **Strengths**:
+
 - Automated deployment reduces human error
 - Repeatable infrastructure provisioning
 - Monitoring from day one
@@ -166,6 +184,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Recommendations**:
 
 1. **Enhance Health Checks**
+
    ```csharp
    builder.Services.AddHealthChecks()
        .AddDbContextCheck<ApplicationDbContext>()
@@ -181,6 +200,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
    ```
 
 2. **Add Correlation IDs**
+
    ```csharp
    app.Use(async (context, next) => {
        if (!context.Request.Headers.ContainsKey("X-Correlation-ID")) {
@@ -207,12 +227,14 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Rating**: GOOD (4/5)
 
 **Current Implementation**:
+
 - Serverless SQL with auto-scaling
 - Static Web Apps with global CDN
 - Entity Framework Core with proper async/await
 - Efficient API design
 
 **Strengths**:
+
 - Appropriate performance for DEV workload
 - Auto-scaling handles variable load
 - Modern async patterns throughout
@@ -220,6 +242,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Recommendations**:
 
 1. **Implement Response Caching**
+
    ```csharp
    builder.Services.AddResponseCaching();
    builder.Services.AddOutputCache(options => {
@@ -230,6 +253,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
    ```
 
 2. **Optimize Entity Framework Queries**
+
    ```csharp
    // Use projection to reduce data transfer
    var assets = await _context.Assets
@@ -244,6 +268,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
    ```
 
 3. **Add Database Indexes**
+
    ```csharp
    modelBuilder.Entity<Asset>()
        .HasIndex(a => a.AssetCode)
@@ -255,6 +280,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
    ```
 
 4. **Enable Compression**
+
    ```csharp
    builder.Services.AddResponseCompression(options => {
        options.EnableForHttps = true;
@@ -272,6 +298,7 @@ This document validates the Djoppie Inventory system architecture against Azure 
 **Rating**: EXCELLENT (5/5)
 
 **Current Implementation**:
+
 ```
 DjoppieInventory.API/          # Presentation layer
 DjoppieInventory.Core/         # Domain layer
@@ -280,12 +307,14 @@ DjoppieInventory.Tests/        # Unit tests
 ```
 
 **Strengths**:
+
 - Clean Architecture principles followed
 - Clear separation of concerns
 - Proper dependency inversion (Core doesn't reference Infrastructure)
 - Testable design
 
 **Validation**:
+
 - Controllers are thin and delegate to services
 - DTOs separate internal models from API contracts
 - Repository pattern abstracts data access
@@ -295,6 +324,7 @@ DjoppieInventory.Tests/        # Unit tests
 **Rating**: VERY GOOD (4.5/5)
 
 **Expected Implementation**:
+
 ```csharp
 // Program.cs
 builder.Services.AddScoped<IAssetRepository, AssetRepository>();
@@ -305,7 +335,9 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 ```
 
 **Recommendations**:
+
 1. **Use Scrutor for convention-based registration**
+
    ```csharp
    builder.Services.Scan(scan => scan
        .FromAssemblyOf<IAssetRepository>()
@@ -316,6 +348,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 2. **Validate service lifetimes** (avoid captive dependencies)
+
    ```csharp
    builder.Services.AddOptions<ServiceProviderOptions>()
        .Configure(options => {
@@ -331,6 +364,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Recommendations**:
 
 1. **Global Exception Handler**
+
    ```csharp
    public class GlobalExceptionHandler : IExceptionHandler
    {
@@ -386,6 +420,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Rating**: VERY GOOD (4.5/5)
 
 **Expected Patterns**:
+
 - RESTful endpoint design
 - Proper HTTP verb usage (GET, POST, PUT, DELETE)
 - Consistent status code responses
@@ -394,6 +429,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Recommendations**:
 
 1. **API Versioning**
+
    ```csharp
    builder.Services.AddApiVersioning(options => {
        options.DefaultApiVersion = new ApiVersion(1, 0);
@@ -406,6 +442,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 2. **Result Pattern for Service Layer**
+
    ```csharp
    public class Result<T>
    {
@@ -428,6 +465,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 3. **Pagination for Lists**
+
    ```csharp
    public class PagedResult<T>
    {
@@ -456,6 +494,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Recommendations**:
 
 1. **Optimize Query Performance**
+
    ```csharp
    // Use AsNoTracking for read-only queries
    public async Task<List<AssetDto>> GetAssetsAsync()
@@ -470,6 +509,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 2. **Implement Soft Delete**
+
    ```csharp
    public abstract class BaseEntity
    {
@@ -486,6 +526,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 3. **Use Value Objects**
+
    ```csharp
    public class AssetCode : ValueObject
    {
@@ -507,6 +548,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 4. **Configure Connection Resiliency**
+
    ```csharp
    builder.Services.AddDbContext<ApplicationDbContext>(options =>
        options.UseSqlServer(connectionString, sqlOptions => {
@@ -524,6 +566,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Rating**: EXCELLENT (5/5)
 
 **Current Implementation**:
+
 - Microsoft.Identity.Web for Azure AD integration
 - JWT token validation
 - Role-based authorization
@@ -531,6 +574,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Recommendations**:
 
 1. **Policy-Based Authorization**
+
    ```csharp
    builder.Services.AddAuthorization(options => {
        options.AddPolicy("RequireITSupport", policy =>
@@ -550,6 +594,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 2. **Custom Authorization Handler**
+
    ```csharp
    public class AssetModificationHandler :
        AuthorizationHandler<AssetModificationRequirement, Asset>
@@ -579,17 +624,20 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Rating**: EXCELLENT (5/5)
 
 **Current Implementation**:
+
 - GitHub repository
 - Branch strategy: `main`, `develop`, `feature/*`
 - Clear branch protection rules
 
 **Strengths**:
+
 - Industry-standard Git workflow
 - Protected main branch (no direct commits)
 - Feature branches enable parallel development
 - PR-based code review process
 
 **Recommendations**:
+
 - Enable branch protection rules on `main` and `develop`
 - Require PR reviews before merge (at least 1 reviewer)
 - Enable status checks (build must pass)
@@ -600,12 +648,14 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Rating**: VERY GOOD (4.5/5)
 
 **Current Implementation**:
+
 - Azure DevOps Pipelines
 - YAML-based pipeline configuration
 - Automated build and deployment
 - Separate stages for build, infrastructure, deploy
 
 **Strengths**:
+
 - Pipeline as code (version controlled)
 - Parallel job execution where possible
 - Environment-based deployments
@@ -619,6 +669,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    - Remove manual approval gates (not needed for DEV)
 
 2. **Add Database Migration Step**
+
    ```yaml
    - task: AzureCLI@2
      displayName: 'Run EF Core Migrations'
@@ -645,6 +696,7 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
    ```
 
 3. **Add Integration Tests**
+
    ```yaml
    - stage: Test
      jobs:
@@ -669,11 +721,13 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Rating**: GOOD (4/5)
 
 **Current Setup**:
+
 - GitHub repository as source
 - Azure DevOps for pipelines
 - Service connections required
 
 **Recommendations**:
+
 - Document complete setup process (see GITHUB_AZURE_DEVOPS_SETUP.md)
 - Use Azure Pipelines GitHub app for better integration
 - Configure webhook triggers for faster pipeline execution
@@ -684,18 +738,21 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 **Rating**: EXCELLENT (5/5)
 
 **Current Implementation**:
+
 - Bicep for infrastructure provisioning
 - Parameterized templates
 - Environment-specific parameter files
 - Modular design
 
 **Strengths**:
+
 - Modern Azure IaC language (better than ARM JSON)
 - Type safety and validation
 - Readable syntax
 - Native Azure integration
 
 **Recommendations for Single-Environment**:
+
 - Consolidate into single `infrastructure-minimal.bicep` file
 - Remove multi-environment complexity
 - Keep all resources in one file for simplicity
@@ -719,12 +776,14 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 ### 4.2 Cost Optimization Strategies
 
 **Implemented**:
+
 - Free tiers for compute (App Service, Static Web Apps)
 - SQL auto-pause after 1 hour of inactivity
 - Serverless compute only when active
 - No premium features
 
 **Additional Recommendations**:
+
 1. Set up budget alerts in Azure Cost Management
 2. Review Application Insights data retention (default 90 days)
 3. Disable Application Insights during extended inactive periods
@@ -775,11 +834,13 @@ Backend (ASP.NET) → Validates JWT → Calls Microsoft Graph API
 ### 5.3 Secrets Management
 
 **Current State**: EXCELLENT
+
 - No secrets in code or configuration files
 - Key Vault used for all sensitive data
 - Managed Identity eliminates need for service credentials
 
 **Key Vault Contents**:
+
 - `SqlConnectionString`
 - `EntraTenantId`
 - `EntraBackendClientId`
@@ -794,6 +855,7 @@ Backend (ASP.NET) → Validates JWT → Calls Microsoft Graph API
 ### 6.1 Application Insights Configuration
 
 **Recommended Telemetry**:
+
 ```csharp
 builder.Services.AddApplicationInsightsTelemetry(options => {
     options.ConnectionString = configuration["ApplicationInsights:ConnectionString"];
@@ -809,6 +871,7 @@ builder.Services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((mo
 ### 6.2 Logging Strategy
 
 **Recommended Configuration**:
+
 ```csharp
 builder.Logging.AddConsole();
 builder.Logging.AddApplicationInsights();
@@ -829,6 +892,7 @@ Log.Logger = new LoggerConfiguration()
 ### 6.3 Metrics to Monitor
 
 **Application Metrics**:
+
 - Request rate and duration
 - Failed requests and exceptions
 - Database query performance
@@ -836,6 +900,7 @@ Log.Logger = new LoggerConfiguration()
 - Authentication success/failure rate
 
 **Infrastructure Metrics**:
+
 - App Service CPU and memory usage
 - SQL Database DTU/vCore utilization
 - SQL connection pool statistics
@@ -844,6 +909,7 @@ Log.Logger = new LoggerConfiguration()
 ### 6.4 Alert Rules
 
 **Recommended Alerts**:
+
 ```yaml
 Critical:
   - Failed requests > 50 in 5 minutes
@@ -870,6 +936,7 @@ Informational:
 **Target Coverage**: 70% minimum
 
 **Recommended Structure**:
+
 ```
 DjoppieInventory.Tests/
 ├── Unit/
@@ -894,6 +961,7 @@ DjoppieInventory.Tests/
 ### 7.2 Integration Tests
 
 **Recommended Setup**:
+
 ```csharp
 public class IntegrationTestFixture : IAsyncLifetime
 {
@@ -923,6 +991,7 @@ public class IntegrationTestFixture : IAsyncLifetime
 ### 7.3 E2E Tests
 
 **For Future Implementation**:
+
 - Playwright or Cypress for frontend testing
 - Test critical user flows (scan asset, view details, create asset)
 - Run in pipeline before production deployment
@@ -999,6 +1068,7 @@ public class IntegrationTestFixture : IAsyncLifetime
 The Djoppie Inventory system architecture is **well-designed** for a development environment with a clear upgrade path to production. The technology choices are modern, the cost optimization is excellent, and the security foundation is solid.
 
 **Key Strengths**:
+
 - Modern ASP.NET Core 8.0 stack
 - Cost-effective Azure resource selection
 - Strong security with Entra ID and Key Vault
@@ -1006,6 +1076,7 @@ The Djoppie Inventory system architecture is **well-designed** for a development
 - Infrastructure as Code with Bicep
 
 **Key Areas for Improvement**:
+
 - Add comprehensive monitoring and alerting
 - Implement rate limiting and security headers
 - Enhance health checks and observability

@@ -1,4 +1,5 @@
 # Complete Deployment Guide - Single DEV Environment
+
 # Djoppie Inventory System
 
 **Version**: 2.0 - Simplified Single Environment
@@ -45,27 +46,27 @@ Before starting, ensure you have:
 ### Required Accounts & Access
 
 - [ ] **GitHub account** with repository access
-  - Repository: https://github.com/Djoppie/Djoppie-Inventory
+  - Repository: <https://github.com/Djoppie/Djoppie-Inventory>
 - [ ] **Azure subscription** with Owner or Contributor role
-  - Free trial: https://azure.microsoft.com/free/
+  - Free trial: <https://azure.microsoft.com/free/>
 - [ ] **Azure DevOps organization** (free)
-  - Create at: https://dev.azure.com/
+  - Create at: <https://dev.azure.com/>
 - [ ] **Microsoft Entra ID tenant** (Diepenbeek)
   - Admin access to create app registrations
 
 ### Required Software
 
 - [ ] **Git** (for cloning repository)
-  - Download: https://git-scm.com/
+  - Download: <https://git-scm.com/>
 - [ ] **Azure CLI** (version 2.50+)
   - Install: `winget install Microsoft.AzureCLI`
-  - Or: https://learn.microsoft.com/cli/azure/install-azure-cli
+  - Or: <https://learn.microsoft.com/cli/azure/install-azure-cli>
 - [ ] **.NET SDK 8.0** (for local testing)
-  - Download: https://dotnet.microsoft.com/download/dotnet/8.0
+  - Download: <https://dotnet.microsoft.com/download/dotnet/8.0>
 - [ ] **Node.js 20.x** (for local testing)
-  - Download: https://nodejs.org/
+  - Download: <https://nodejs.org/>
 - [ ] **Visual Studio Code** (recommended)
-  - Download: https://code.visualstudio.com/
+  - Download: <https://code.visualstudio.com/>
 
 ### Optional but Recommended
 
@@ -96,6 +97,7 @@ az account show --output table
 ```
 
 **Expected Output**:
+
 ```
 Name                          SubscriptionId                        State    IsDefault
 ----------------------------  ------------------------------------  -------  ----------
@@ -249,7 +251,7 @@ Microsoft Entra ID (formerly Azure AD) provides authentication for both frontend
 Create a secure note with these values:
 
 ```
-ENTRA_TENANT_ID=12345678-1234-1234-1234-123456789012
+ENTRA_TENANT_ID=7db28d6f-d542-40c1-b529-5e5ed2aad545
 ENTRA_BACKEND_CLIENT_ID=87654321-4321-4321-4321-210987654321
 ENTRA_BACKEND_CLIENT_SECRET=abc123~DEF456.ghi789JKL012
 ENTRA_FRONTEND_CLIENT_ID=11223344-5566-7788-9900-aabbccddeeff
@@ -267,7 +269,7 @@ This phase connects GitHub to Azure DevOps and configures the CI/CD pipeline.
 
 If you haven't already:
 
-1. Go to https://dev.azure.com/
+1. Go to <https://dev.azure.com/>
 2. Click **Start free** or sign in
 3. Create organization: `diepenbeek-it` (or your choice)
 4. Create project: `Djoppie-Inventory`
@@ -278,6 +280,7 @@ If you haven't already:
 Follow the detailed guide: [GITHUB_AZURE_DEVOPS_SETUP.md](./GITHUB_AZURE_DEVOPS_SETUP.md)
 
 Quick steps:
+
 1. Go to **Project Settings → Service connections**
 2. Create **GitHub** connection (use GitHub App method)
 3. Authorize access to `Djoppie/Djoppie-Inventory` repository
@@ -311,12 +314,13 @@ Quick steps:
 | `ENTRA_FRONTEND_CLIENT_ID` | [From Phase 2.2] | Secret |
 
 **SQL Password Requirements**:
+
 - Minimum 12 characters
 - Must include uppercase, lowercase, number, and special character
 - Example: `Djoppie2026!SecurePass`
 
-5. Click **Save**
-6. Click **Pipeline permissions** → **+ (Add pipeline)** → Allow all pipelines
+1. Click **Save**
+2. Click **Pipeline permissions** → **+ (Add pipeline)** → Allow all pipelines
 
 ### 3.5 Create Azure Pipeline
 
@@ -372,6 +376,7 @@ az deployment sub validate `
 **Expected Output**: `"provisioningState": "Succeeded"`
 
 If validation fails, check:
+
 - Parameter values are correct
 - You're logged into Azure CLI
 - Azure providers are registered
@@ -402,6 +407,7 @@ git push origin develop
 The pipeline will run 5 stages:
 
 **Stage 1: Build (5-8 minutes)**
+
 - Restore NuGet packages
 - Build ASP.NET Core backend
 - Run unit tests
@@ -409,6 +415,7 @@ The pipeline will run 5 stages:
 - Build React frontend with Vite
 
 **Stage 2: Deploy Infrastructure (3-5 minutes)**
+
 - Validate Bicep template
 - Create resource group
 - Deploy all Azure resources:
@@ -422,15 +429,18 @@ The pipeline will run 5 stages:
 - Extract deployment outputs
 
 **Stage 3: Deploy Backend (2-3 minutes)**
+
 - Deploy API to App Service
 - Run EF Core database migrations
 - Health check endpoint test
 
 **Stage 4: Deploy Frontend (2-3 minutes)**
+
 - Get Static Web App deployment token
 - Deploy React SPA
 
 **Stage 5: Smoke Tests (1-2 minutes)**
+
 - Test backend API endpoints
 - Test frontend accessibility
 - Display deployment summary
@@ -496,7 +506,7 @@ The Static Web App needs environment variables for the React app:
 | `VITE_ENVIRONMENT` | `dev` |
 | `VITE_ENTRA_REDIRECT_URI` | `https://[your-static-web-app].azurestaticapps.net` |
 
-5. Click **Save**
+1. Click **Save**
 
 **Note**: Static Web App will restart automatically (takes 1-2 minutes)
 
@@ -528,7 +538,7 @@ Add your office/home IP for database access:
 6. Ensure **Allow Azure services** is: ☑ Yes
 7. Click **Save**
 
-**Find your public IP**: https://whatismyip.com/
+**Find your public IP**: <https://whatismyip.com/>
 
 ### 5.5 Verify Key Vault Secrets
 
@@ -546,6 +556,7 @@ az keyvault secret show --vault-name $keyVaultName --name "SqlConnectionString" 
 ```
 
 **Expected Secrets**:
+
 - `SqlConnectionString`
 - `EntraTenantId`
 - `EntraBackendClientId`
@@ -569,6 +580,7 @@ Check if EF Core migrations were applied by the pipeline:
    - Username: `djoppieadmin`
    - Password: [From Phase 3.4]
 5. Run query:
+
    ```sql
    SELECT TABLE_NAME
    FROM INFORMATION_SCHEMA.TABLES
@@ -577,6 +589,7 @@ Check if EF Core migrations were applied by the pipeline:
    ```
 
 **Expected Tables**:
+
 - `__EFMigrationsHistory`
 - `Assets`
 - `AssetCategories`
@@ -649,6 +662,7 @@ using (var scope = app.Services.CreateScope())
 ### 7.1 Test Backend API
 
 **Health Check**:
+
 ```powershell
 # Test health endpoint
 $apiUrl = "https://app-djoppie-dev-api-abc123.azurewebsites.net"
@@ -659,6 +673,7 @@ curl "$apiUrl/health"
 ```
 
 **Swagger UI**:
+
 1. Open browser: `https://app-djoppie-dev-api-abc123.azurewebsites.net/swagger`
 2. Verify Swagger UI loads
 3. Test unauthenticated endpoints:
@@ -668,6 +683,7 @@ curl "$apiUrl/health"
 **API with Authentication** (requires Postman or similar):
 
 1. Get access token from Entra ID:
+
    ```http
    POST https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token
    Content-Type: application/x-www-form-urlencoded
@@ -679,6 +695,7 @@ curl "$apiUrl/health"
    ```
 
 2. Use token in API request:
+
    ```http
    GET https://app-djoppie-dev-api-abc123.azurewebsites.net/api/assets
    Authorization: Bearer {access-token}
@@ -755,18 +772,24 @@ Check current costs:
 **Error**: "Deployment failed with correlation id..."
 
 **Solutions**:
+
 1. Check parameter values in variable group
 2. Verify service connection has permissions:
+
    ```powershell
    az role assignment list --assignee [service-principal-id]
    ```
+
 3. Check Azure resource providers are registered:
+
    ```powershell
    az provider show --namespace Microsoft.Web
    az provider show --namespace Microsoft.Sql
    ```
+
 4. Review detailed error in pipeline logs
 5. Try manual deployment to see full error:
+
    ```powershell
    az deployment sub create --location westeurope --template-file infrastructure-minimal.bicep --parameters [params]
    ```
@@ -774,17 +797,23 @@ Check current costs:
 ### Issue 2: Backend API Returns 500 Errors
 
 **Solutions**:
+
 1. Check App Service logs:
+
    ```powershell
    az webapp log tail --name app-djoppie-dev-api-abc123 --resource-group rg-djoppie-dev-westeurope
    ```
+
 2. Verify connection string in Key Vault
 3. Check App Service application settings
 4. Restart App Service:
+
    ```powershell
    az webapp restart --name app-djoppie-dev-api-abc123 --resource-group rg-djoppie-dev-westeurope
    ```
+
 5. Enable detailed errors in `appsettings.json`:
+
    ```json
    {
      "Logging": {
@@ -801,11 +830,13 @@ Check current costs:
 **Error**: "Access to fetch at '...' from origin '...' has been blocked by CORS policy"
 
 **Solutions**:
+
 1. Verify CORS configuration in App Service (Phase 5.3)
 2. Check frontend is using correct API URL:
    - Open browser DevTools → Network
    - Verify API calls go to correct URL
 3. Ensure credentials are included in API requests:
+
    ```javascript
    fetch(apiUrl, {
      credentials: 'include',
@@ -815,6 +846,7 @@ Check current costs:
      }
    });
    ```
+
 4. Restart App Service after CORS changes
 
 ### Issue 4: Authentication Fails (Entra ID Errors)
@@ -822,6 +854,7 @@ Check current costs:
 **Error**: "AADSTS700016: Application was not found in the directory" or "Invalid redirect URI"
 
 **Solutions**:
+
 1. Verify redirect URIs in frontend app registration match exactly:
    - `http://localhost:5173`
    - `https://[your-static-web-app].azurestaticapps.net`
@@ -836,15 +869,20 @@ Check current costs:
 **Error**: "Cannot open server... Login failed for user"
 
 **Solutions**:
+
 1. Check SQL Server firewall rules (Phase 5.4)
 2. Verify connection string format:
+
    ```
    Server=tcp:sql-djoppie-dev-abc123.database.windows.net,1433;Initial Catalog=sqldb-djoppie-dev;User ID=djoppieadmin;Password=...;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
    ```
+
 3. Test connection from local machine:
+
    ```powershell
    sqlcmd -S sql-djoppie-dev-abc123.database.windows.net -d sqldb-djoppie-dev -U djoppieadmin -P [password]
    ```
+
 4. Check SQL Database status (may be paused if serverless):
    - Go to Azure Portal → SQL Database
    - Click **Resume** if paused
@@ -855,12 +893,14 @@ Check current costs:
 ### Issue 6: Static Web App Not Updating
 
 **Solutions**:
+
 1. Check deployment status:
    - Azure Portal → Static Web App → **Deployments**
 2. Verify GitHub webhook is triggered:
    - GitHub → Repository → Settings → Webhooks
    - Check "Recent Deliveries"
 3. Redeploy manually:
+
    ```powershell
    # Get deployment token
    az staticwebapp secrets list --name stapp-djoppie-dev-abc123 --resource-group rg-djoppie-dev-westeurope
@@ -869,6 +909,7 @@ Check current costs:
    npm install -g @azure/static-web-apps-cli
    swa deploy --deployment-token [token]
    ```
+
 4. Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)
 
 ---
@@ -878,11 +919,13 @@ Check current costs:
 ### Daily Operations
 
 **Monitor Health**:
+
 - Check Application Insights daily for errors
 - Review failed requests
 - Monitor response times
 
 **Cost Management**:
+
 - Review daily costs in Cost Management
 - Check SQL Database isn't running 24/7 (should auto-pause)
 - Verify no unexpected resource creation
@@ -890,6 +933,7 @@ Check current costs:
 ### Weekly Operations
 
 **Review Logs**:
+
 ```powershell
 # View backend logs
 az webapp log tail --name app-djoppie-dev-api-abc123 --resource-group rg-djoppie-dev-westeurope
@@ -899,6 +943,7 @@ az webapp log download --name app-djoppie-dev-api-abc123 --resource-group rg-djo
 ```
 
 **Database Backup**:
+
 ```powershell
 # Azure SQL automatically backs up (7 days retention)
 # To export database:
@@ -916,7 +961,9 @@ az sql db export \
 ### Monthly Operations
 
 **Update Dependencies**:
+
 1. Backend (NuGet packages):
+
    ```bash
    cd src/backend
    dotnet list package --outdated
@@ -924,6 +971,7 @@ az sql db export \
    ```
 
 2. Frontend (npm packages):
+
    ```bash
    cd src/frontend
    npm outdated
@@ -931,11 +979,13 @@ az sql db export \
    ```
 
 **Rotate Secrets**:
+
 1. Entra ID client secrets (every 6-12 months)
 2. SQL admin password (every 3-6 months)
 3. Update in Azure DevOps variable group
 
 **Review Security**:
+
 - Check Azure Advisor security recommendations
 - Review Application Insights for suspicious patterns
 - Update firewall rules if office IP changes
@@ -949,6 +999,7 @@ If a deployment causes issues:
 ### 1. Rollback Application Code
 
 **Backend API**:
+
 ```powershell
 # List previous deployments
 az webapp deployment list --name app-djoppie-dev-api-abc123 --resource-group rg-djoppie-dev-westeurope
@@ -958,6 +1009,7 @@ az webapp deployment slot swap --name app-djoppie-dev-api-abc123 --resource-grou
 ```
 
 **Frontend**:
+
 - Static Web App keeps previous versions
 - Go to Azure Portal → Static Web App → Deployments
 - Click on previous successful deployment
@@ -976,6 +1028,7 @@ dotnet ef database update [PreviousMigrationName] \
 ### 3. Rollback Infrastructure
 
 **DO NOT** rollback infrastructure unless absolutely necessary. Instead:
+
 - Fix configuration issues through Azure Portal
 - Update Bicep template and redeploy
 - Infrastructure changes are usually additive
@@ -1045,12 +1098,14 @@ When ready for production, see **Production Upgrade Checklist**:
 ### Support
 
 **Technical Issues**:
-- Azure Support: https://portal.azure.com/#blade/Microsoft_Azure_Support/HelpAndSupportBlade
-- Stack Overflow: https://stackoverflow.com/questions/tagged/azure
+
+- Azure Support: <https://portal.azure.com/#blade/Microsoft_Azure_Support/HelpAndSupportBlade>
+- Stack Overflow: <https://stackoverflow.com/questions/tagged/azure>
 
 **Project Contact**:
-- Email: jo.wijnen@diepenbeek.be
-- Repository: https://github.com/Djoppie/Djoppie-Inventory
+
+- Email: <jo.wijnen@diepenbeek.be>
+- Repository: <https://github.com/Djoppie/Djoppie-Inventory>
 
 ---
 
@@ -1133,13 +1188,14 @@ git push origin develop
 **Congratulations!** You've successfully deployed the Djoppie Inventory system to Azure.
 
 **Next Steps**:
+
 1. Test all functionality thoroughly
 2. Configure monitoring alerts
 3. Train users on the system
 4. Plan for production deployment (when ready)
 5. Set up regular maintenance schedule
 
-For questions or issues, contact: jo.wijnen@diepenbeek.be
+For questions or issues, contact: <jo.wijnen@diepenbeek.be>
 
 ---
 
