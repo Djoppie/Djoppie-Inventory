@@ -59,14 +59,15 @@ $config = @{
     ProjectName         = "djoppie-inv"
     ResourceGroupName   = "rg-djoppie-inv-dev"
     Location            = $Location
+    TenantId            = "7db28d6f-d542-40c1-b529-5e5ed2aad545"  # Diepenbeek tenant
 
     # Bicep files
-    BicepTemplatePath   = ".\infrastructure\main-minimal.bicep"
+    BicepTemplatePath   = ".\infra\bicep\main.dev.bicep"
     ParametersFilePath  = ".\infra\parameters-dev.json"
 
-    # Entra ID App Names
-    BackendAppName      = "Djoppie-Inventory-API-DEV"
-    FrontendAppName     = "Djoppie-Inventory-SPA-DEV"
+    # Entra ID App Names (must match setup-entra-apps.ps1)
+    BackendAppName      = "Djoppie-Inventory-Backend-API-DEV"
+    FrontendAppName     = "Djoppie-Inventory-Frontend-SPA-DEV"
 
     # SQL Configuration
     SqlAdminUsername    = "djoppieadmin"

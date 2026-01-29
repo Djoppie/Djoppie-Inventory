@@ -1,0 +1,72 @@
+{
+  "Metadata": {
+    "GeneratedAt": "2026-01-29 22:30:00",
+    "Environment": "DEV",
+    "TenantId": "7db28d6f-d542-40c1-b529-5e5ed2aad545",
+    "ScriptVersion": "1.0.0"
+  },
+  "BackendAPI": {
+    "AppName": "Djoppie-Inventory-Backend-API-DEV",
+    "ApplicationId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "ObjectId": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+    "ClientSecret": "EXAMPLE_SECRET_DO_NOT_USE_12345678",
+    "SecretExpiry": "2028-01-29T22:30:00Z",
+    "ApiUri": "api://xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "ScopeId": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
+    "ScopeName": "api://xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/access_as_user",
+    "RedirectUri": "https://localhost:7001/signin-oidc"
+  },
+  "FrontendSPA": {
+    "AppName": "Djoppie-Inventory-Frontend-SPA-DEV",
+    "ApplicationId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "ObjectId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "RedirectUris": [
+      "http://localhost:5173",
+      "http://localhost:5173/redirect"
+    ]
+  },
+  "Configuration": {
+    "Frontend": {
+      "VITE_API_URL": "<backend-api-url>",
+      "VITE_ENTRA_CLIENT_ID": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "VITE_ENTRA_TENANT_ID": "7db28d6f-d542-40c1-b529-5e5ed2aad545",
+      "VITE_ENTRA_REDIRECT_URI": "http://localhost:5173",
+      "VITE_ENTRA_AUTHORITY": "https://login.microsoftonline.com/7db28d6f-d542-40c1-b529-5e5ed2aad545",
+      "VITE_ENTRA_API_SCOPE": "api://xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/access_as_user"
+    },
+    "Backend": {
+      "AzureAd_Instance": "https://login.microsoftonline.com/",
+      "AzureAd_TenantId": "7db28d6f-d542-40c1-b529-5e5ed2aad545",
+      "AzureAd_ClientId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "AzureAd_ClientSecret": "EXAMPLE_SECRET_DO_NOT_USE_12345678",
+      "AzureAd_Domain": "<your-domain>.onmicrosoft.com",
+      "AzureAd_Audience": "api://xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "MicrosoftGraph_BaseUrl": "https://graph.microsoft.com/v1.0",
+      "MicrosoftGraph_Scopes": [
+        "https://graph.microsoft.com/.default"
+      ]
+    }
+  },
+  "AzurePortalLinks": {
+    "BackendAppRegistration": "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "FrontendAppRegistration": "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "EnterpriseApps": "https://portal.azure.com/#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview"
+  },
+  "SecurityNotes": [
+    "CRITICAL: Store the Backend Client Secret securely (e.g., Azure Key Vault)",
+    "The client secret cannot be retrieved after this session",
+    "Client secret expires on: 2028-01-29T22:30:00Z",
+    "Frontend SPA uses OAuth 2.0 with PKCE (no client secret needed)",
+    "Ensure admin consent is granted for all required permissions",
+    "Review and minimize permissions following least privilege principle"
+  ],
+  "NextSteps": [
+    "1. Update frontend .env file with values from Configuration.Frontend",
+    "2. Update backend appsettings.json with values from Configuration.Backend",
+    "3. Store Backend Client Secret in Azure Key Vault",
+    "4. Grant admin consent if not done automatically (check AzurePortalLinks)",
+    "5. Update redirect URIs when deploying to production",
+    "6. Configure app roles and assignments as needed",
+    "7. Test authentication flow in both frontend and backend"
+  ]
+}

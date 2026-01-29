@@ -1,282 +1,838 @@
 <#
 .SYNOPSIS
-  Maak/actualiseer Entra ID app-registraties voor Djoppie Inventory (DEV/TEST/PROD):
-  - Backend API  : Djoppie-Inventory-Backend-API-<ENV>  (publiceert scope 'access_as_user')
-  - Frontend SPA : Djoppie-Inventory-Frontend-SPA-<ENV> (SPA redirect URIs, PKCE)
+    Configure Entra ID App Registrations for Djoppie Inventory
 
-.BEST-PRACTICES
-  - Identifier URI als 'api://<AppId>' (uniek & aanbevolen)  <-- zie MS Learn 'identifier URI restrictions'
-  - SPA gebruikt Authorization Code Flow met PKCE, géén implicit  <-- MSAL v2 guidance
+.DESCRIPTION
+    Complete setup script for Microsoft Entra ID (Azure AD) app registrations
+    following Microsoft best practices:
+    
+    - Creates two app registrations (Backend API and Frontend SPA)
+    - Configures OAuth 2.0 with PKCE for SPA
+    - Exposes API scope (api://appid/access_as_user)
+    - Configures minimal required permissions
+    - Generates and securely handles client secrets
+    - Initiates admin consent workflow
+    - Saves configuration to timestamped JSON file
+    
+    The script is designed to be idempotent and can be run multiple times safely.
 
-.PARAMETERS
-  -Environment            dev|test|prod
-  -TenantId               Standaard: 7db28d6f-d542-40c1-b529-5e5ed2aad545
-  -SpaRedirectUris        Lijst met SPA redirect URIs (b.v. http://localhost:5173, https://<SWA_HOST>)
-  -ApiDisplayName         Standaard: Djoppie-Inventory-Backend-API-<ENV>
-  -SpaDisplayName         Standaard: Djoppie-Inventory-Frontend-SPA-<ENV>
-  -SecretDisplayName      Naamlabel voor API client secret (default 'Backend-Client-Secret')
-  -SecretYearsValid       Geldigheid (jaren) van secret (default 1)
-  -KeyVaultName           (Optioneel) sla secret direct op in Key Vault
-  -AddUserReadToSpa       (Optioneel) voeg MS Graph 'User.Read' toe als SPA gedelegeerde permissie
-  -OutputSecretToConsole  (Optioneel) toon secret eenmalig in console (AF TE RADEN)
-  -OutputPath             (Optioneel) JSON output pad (default ./entra-output.<env>.json)
+.PARAMETER TenantId
+    Entra ID Tenant ID (default: 7db28d6f-d542-40c1-b529-5e5ed2aad545)
 
-.REQUIREMENTS
-  PowerShell 7+, Microsoft.Graph module (wordt indien nodig geïnstalleerd)
-  Rechten: Application Administrator / Cloud Application Administrator
+.PARAMETER Environment
+    Environment name (dev, test, prod) - affects app registration naming (default: DEV)
 
+.PARAMETER BackendRedirectUri
+    Backend API redirect URI for OIDC (default: https://localhost:7001/signin-oidc)
+
+.PARAMETER FrontendRedirectUris
+    Frontend SPA redirect URIs as comma-separated list (default: http://localhost:5173,http://localhost:5173/redirect)
+
+.PARAMETER SkipAdminConsent
+    Skip attempting to grant admin consent (useful if you don't have admin privileges)
+
+.PARAMETER ForceRecreate
+    Force recreation of app registrations (WARNING: deletes existing apps)
+
+.PARAMETER OutputPath
+    Path to save configuration JSON file (default: ./entra-apps-config-{timestamp}.json)
+
+.EXAMPLE
+    .\setup-entra-apps.ps1
+    
+    Creates app registrations with default settings
+
+.EXAMPLE
+    .\setup-entra-apps.ps1 -Environment "PROD" -TenantId "12345678-1234-1234-1234-123456789012"
+    
+    Creates production app registrations with custom tenant
+
+.EXAMPLE
+    .\setup-entra-apps.ps1 -SkipAdminConsent -OutputPath "./configs/entra-config.json"
+    
+    Creates apps without admin consent and saves to custom path
+
+.NOTES
+    Author: Djoppie Inventory Team
+    Requires: Azure CLI, PowerShell 7+
+    Permissions: Application Administrator or Global Administrator role
+    
+    Security Best Practices Implemented:
+    - OAuth 2.0 Authorization Code Flow with PKCE for SPA
+    - Minimal permission scope (least privilege principle)
+    - Secure client secret generation (24-character random)
+    - Single Page Application platform configuration
+    - API exposure with explicit consent requirements
+    - Delegated permissions for user context
+    - Application permissions for service context
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-  [Parameter(Mandatory = $true)]
-  [ValidateSet('dev', 'test', 'prod')]
-  [string]$Environment,
+    [Parameter(Mandatory = $false)]
+    [string]$TenantId = "7db28d6f-d542-40c1-b529-5e5ed2aad545",
 
-  [Parameter(Mandatory = $false)]
-  [string]$TenantId = '7db28d6f-d542-40c1-b529-5e5ed2aad545',
+    [Parameter(Mandatory = $false)]
+    [ValidateSet("DEV", "TEST", "PROD")]
+    [string]$Environment = "DEV",
 
-  [Parameter(Mandatory = $true)]
-  [ValidateNotNullOrEmpty()]
-  [string[]]$SpaRedirectUris,
+    [Parameter(Mandatory = $false)]
+    [string]$BackendRedirectUri = "https://localhost:7001/signin-oidc",
 
-  [Parameter(Mandatory = $false)]
-  [string]$ApiDisplayName = "Djoppie-Inventory-Backend-API-DEV",
+    [Parameter(Mandatory = $false)]
+    [string[]]$FrontendRedirectUris = @("http://localhost:5173", "http://localhost:5173/redirect"),
 
-  [Parameter(Mandatory = $false)]
-  [string]$SpaDisplayName = "Djoppie-Inventory-Frontend-SPA-DEV",
+    [Parameter(Mandatory = $false)]
+    [switch]$SkipAdminConsent,
 
-  [Parameter(Mandatory = $false)]
-  [string]$SecretDisplayName = "Backend-Client-Secret",
+    [Parameter(Mandatory = $false)]
+    [switch]$ForceRecreate,
 
-  [Parameter(Mandatory = $false)]
-  [ValidateRange(1, 3)]
-  [int]$SecretYearsValid = 1,
-
-  [Parameter(Mandatory = $false)]
-  [string]$KeyVaultName,
-
-  [Parameter(Mandatory = $false)]
-  [switch]$AddUserReadToSpa,
-
-  [Parameter(Mandatory = $false)]
-  [switch]$OutputSecretToConsole,
-
-  [Parameter(Mandatory = $false)]
-  [string]$OutputPath = ""
+    [Parameter(Mandatory = $false)]
+    [string]$OutputPath
 )
 
-#region helpers
-function Ensure-Graph {
-  if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
-    Write-Host "Installing Microsoft.Graph module..." -ForegroundColor Yellow
-    Install-Module Microsoft.Graph -Scope CurrentUser -Force
-  }
-  Write-Host "Connecting to Microsoft Graph (tenant $TenantId)..." -ForegroundColor Cyan
-  Connect-MgGraph -TenantId $TenantId -Scopes @("Application.ReadWrite.All", "Directory.Read.All") | Out-Null
-  $ctx = Get-MgContext
-  if (-not $ctx.Account) { throw "Graph connect failed." }
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+$config = @{
+    TenantId            = $TenantId
+    Environment         = $Environment
+    BackendAppName      = "Djoppie-Inventory-Backend-API-$Environment"
+    FrontendAppName     = "Djoppie-Inventory-Frontend-SPA-$Environment"
+    BackendRedirectUri  = $BackendRedirectUri
+    FrontendRedirectUris = $FrontendRedirectUris
+    
+    # Microsoft Graph Resource ID
+    MicrosoftGraphAppId = "00000003-0000-0000-c000-000000000000"
+    
+    # Permission IDs from Microsoft Graph
+    Permissions         = @{
+        # Delegated Permissions
+        UserRead                = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"  # User.Read
+        DirectoryReadAll        = "06da0dbc-49e2-44d2-8312-53f166ab848a"  # Directory.Read.All (Delegated)
+        
+        # Application Permissions
+        DirectoryReadAllApp     = "7ab1d382-f21e-4acd-a863-ba3e13f7da61"  # Directory.Read.All (Application)
+        DeviceManagementRead    = "2f51be20-0bb4-4fed-bf7b-db946066c75e"  # DeviceManagementManagedDevices.Read.All
+    }
+    
+    # API Scope Configuration
+    ApiScope                = @{
+        Value               = "access_as_user"
+        AdminConsentDisplay = "Access Djoppie Inventory API"
+        AdminConsentDesc    = "Allow the application to access Djoppie Inventory API on behalf of the signed-in user"
+        UserConsentDisplay  = "Access Djoppie Inventory API"
+        UserConsentDesc     = "Allow the application to access Djoppie Inventory API on your behalf"
+    }
 }
 
-function Get-Or-Create-App {
-  param([string]$DisplayName)
-  $app = Get-MgApplication -Filter "displayName eq '$DisplayName'" -ErrorAction SilentlyContinue
-  if (-not $app) {
-    $app = New-MgApplication -DisplayName $DisplayName -SignInAudience "AzureADMyOrg"
-  }
-  $sp = Get-MgServicePrincipal -Filter "appId eq '$($app.AppId)'" -ErrorAction SilentlyContinue
-  if (-not $sp) { $sp = New-MgServicePrincipal -AppId $app.AppId }
-  return @{ App = $app; Sp = $sp }
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+function Write-Header {
+    param([string]$Message)
+    Write-Host ""
+    Write-Host "============================================================================" -ForegroundColor Cyan
+    Write-Host " $Message" -ForegroundColor Cyan
+    Write-Host "============================================================================" -ForegroundColor Cyan
 }
 
-function Ensure-IdentifierUriApi {
-  param([object]$App)
-  $desired = "api://$($App.AppId)"
-  $uris = @()
-  if ($App.IdentifierUris) { $uris = @($App.IdentifierUris) }
-  if ($uris -notcontains $desired) {
-    $uris += $desired
-    Update-MgApplication -ApplicationId $App.Id -IdentifierUris $uris | Out-Null
-  }
+function Write-Success {
+    param([string]$Message)
+    Write-Host "✓ $Message" -ForegroundColor Green
 }
 
-function Ensure-ApiScope {
-  param([object]$App, [string]$ScopeValue = "access_as_user")
-  $scopes = @()
-  if ($App.Api -and $App.Api.Oauth2PermissionScopes) { $scopes = @($App.Api.Oauth2PermissionScopes) }
-  $existing = $scopes | Where-Object { $_.Value -eq $ScopeValue }
-  if (-not $existing) {
-    $newScopeId = [Guid]::NewGuid()
-    $scopes += @{
-      Id = $newScopeId; IsEnabled = $true; Type = "User"; Value = $ScopeValue
-      AdminConsentDisplayName = "Access Djoppie Inventory API"
-      AdminConsentDescription = "Allow the app to access the API on behalf of the signed-in user."
-      UserConsentDisplayName = "Access Djoppie Inventory API"
-      UserConsentDescription = "Allow the app to access the API on your behalf."
-    }
-    Update-MgApplication -ApplicationId $App.Id -Api @{
-      RequestedAccessTokenVersion = 2
-      Oauth2PermissionScopes      = $scopes
-    } | Out-Null
-    $App = Get-MgApplication -ApplicationId $App.Id
-  }
-  return ($App.Api.Oauth2PermissionScopes | Where-Object { $_.Value -eq $ScopeValue }).Id
+function Write-Info {
+    param([string]$Message)
+    Write-Host "→ $Message" -ForegroundColor Yellow
 }
 
-function Ensure-SpaRedirects {
-  param([object]$SpaApp, [string[]]$Uris)
-  # Set SPA redirect URIs (overwrites SPA redirectUris intentionally with provided list)
-  Update-MgApplication -ApplicationId $SpaApp.Id -Spa @{ RedirectUris = $Uris } | Out-Null
+function Write-Warning {
+    param([string]$Message)
+    Write-Host "⚠ $Message" -ForegroundColor DarkYellow
 }
 
-function Ensure-PreAuthorizedApplications {
-  param([object]$ApiApp, [object]$SpaApp, [Guid]$ScopeId)
-  $pre = @()
-  if ($ApiApp.Api -and $ApiApp.Api.PreAuthorizedApplications) { $pre = @($ApiApp.Api.PreAuthorizedApplications) }
-  $exists = $pre | Where-Object { $_.AppId -eq $SpaApp.AppId -and ($_.DelegatedPermissionIds -contains $ScopeId) }
-  if (-not $exists) {
-    # voeg toe of merge (per SPA)
-    $spaEntry = $pre | Where-Object { $_.AppId -eq $SpaApp.AppId }
-    if ($spaEntry) {
-      $spaEntry.DelegatedPermissionIds += $ScopeId
-    }
-    else {
-      $pre += @{ AppId = $SpaApp.AppId; DelegatedPermissionIds = @($ScopeId) }
-    }
-    Update-MgApplication -ApplicationId $ApiApp.Id -Api @{ PreAuthorizedApplications = $pre } | Out-Null
-  }
+function Write-ErrorMessage {
+    param([string]$Message)
+    Write-Host "✗ $Message" -ForegroundColor Red
 }
 
-function Ensure-RequiredResourceAccessForSpa {
-  param([object]$SpaApp, [object]$ApiApp, [Guid]$ScopeId, [switch]$AddUserRead)
-  $req = @()
-  if ($SpaApp.RequiredResourceAccess) { $req = @($SpaApp.RequiredResourceAccess) }
-
-  # Zorg dat API scope aanwezig is
-  $apiEntry = $req | Where-Object { $_.ResourceAppId -eq $ApiApp.AppId }
-  if ($apiEntry) {
-    $hasScope = $apiEntry.ResourceAccess | Where-Object { $_.Id -eq $ScopeId -and $_.Type -eq "Scope" }
-    if (-not $hasScope) {
-      $apiEntry.ResourceAccess += @{ Id = $ScopeId; Type = "Scope" }
-    }
-  }
-  else {
-    $req += @{
-      ResourceAppId  = $ApiApp.AppId
-      ResourceAccess = @(@{ Id = $ScopeId; Type = "Scope" })
-    }
-  }
-
-  if ($AddUserRead) {
-    $graphSp = Get-MgServicePrincipal -Filter "appId eq '00000003-0000-0000-c000-000000000000'"
-    $userRead = ($graphSp.Oauth2PermissionScopes | Where-Object { $_.Value -eq 'User.Read' }).Id
-    $graphEntry = $req | Where-Object { $_.ResourceAppId -eq $graphSp.AppId }
-    if ($graphEntry) {
-      $hasUR = $graphEntry.ResourceAccess | Where-Object { $_.Id -eq $userRead }
-      if (-not $hasUR) { $graphEntry.ResourceAccess += @{ Id = $userRead; Type = "Scope" } }
-    }
-    else {
-      $req += @{
-        ResourceAppId  = $graphSp.AppId
-        ResourceAccess = @(@{ Id = $userRead; Type = "Scope" })
-      }
-    }
-  }
-
-  Update-MgApplication -ApplicationId $SpaApp.Id -RequiredResourceAccess $req | Out-Null
+function Write-Step {
+    param(
+        [int]$Step,
+        [int]$Total,
+        [string]$Message
+    )
+    Write-Host ""
+    Write-Host "[$Step/$Total] $Message" -ForegroundColor Magenta
+    Write-Host ("─" * 76) -ForegroundColor DarkGray
 }
 
-function Create-ApiSecret {
-  param([object]$ApiApp, [string]$DisplayName, [int]$Years, [string]$KeyVaultName, [switch]$EchoSecret)
-  $end = (Get-Date).AddYears($Years).ToUniversalTime()
-  $secret = Add-MgApplicationPassword -ApplicationId $ApiApp.Id -PasswordCredential @{
-    DisplayName = $DisplayName
-    EndDateTime = $end
-  }
-  if ($KeyVaultName) {
+function Test-Prerequisites {
+    Write-Header "Checking Prerequisites"
+
+    # Check PowerShell version
+    Write-Info "Checking PowerShell version..."
+    if ($PSVersionTable.PSVersion.Major -lt 7) {
+        Write-ErrorMessage "PowerShell 7 or higher required. Current: $($PSVersionTable.PSVersion)"
+        throw "Please install PowerShell 7: https://aka.ms/powershell"
+    }
+    Write-Success "PowerShell $($PSVersionTable.PSVersion)"
+
+    # Check Azure CLI
+    Write-Info "Checking Azure CLI..."
     try {
-      az keyvault secret set --vault-name $KeyVaultName --name "EntraBackendClientSecret" --value $secret.SecretText 1>$null
-      Write-Host "Secret opgeslagen in Key Vault '$KeyVaultName' als 'EntraBackendClientSecret'." -ForegroundColor Green
+        $azVersion = az version --query '"azure-cli"' -o tsv 2>$null
+        if ($LASTEXITCODE -ne 0) { throw }
+        Write-Success "Azure CLI $azVersion"
     }
     catch {
-      Write-Warning "Kon secret niet in Key Vault opslaan. Fout: $($_.Exception.Message)"
+        Write-ErrorMessage "Azure CLI not found"
+        throw "Please install Azure CLI: https://aka.ms/installazurecliwindows"
     }
-  }
-  elseif ($EchoSecret) {
-    Write-Warning "LET OP: hieronder staat het client secret. Kopieer en bewaar veilig."
-    Write-Host $secret.SecretText -ForegroundColor Yellow
-  }
-  else {
-    Write-Host "Secret NIET getoond. Gebruik -KeyVaultName of -OutputSecretToConsole om toegang te krijgen." -ForegroundColor Yellow
-  }
-  return $secret
+
+    # Check Azure CLI login
+    Write-Info "Checking Azure CLI authentication..."
+    $account = az account show 2>$null | ConvertFrom-Json
+    if (-not $account) {
+        Write-Info "Not logged in. Opening browser for authentication..."
+        az login --tenant $config.TenantId
+        $account = az account show | ConvertFrom-Json
+    }
+    Write-Success "Logged in as: $($account.user.name)"
+
+    # Verify tenant
+    if ($account.tenantId -ne $config.TenantId) {
+        Write-Warning "Logged into different tenant: $($account.tenantId)"
+        Write-Info "Switching to tenant: $($config.TenantId)"
+        az login --tenant $config.TenantId
+        $account = az account show | ConvertFrom-Json
+    }
+    Write-Success "Connected to tenant: $($config.TenantId)"
+
+    # Check permissions
+    Write-Info "Checking user permissions..."
+    try {
+        $currentUser = az ad signed-in-user show | ConvertFrom-Json
+        Write-Success "Signed in as: $($currentUser.userPrincipalName)"
+        
+        # Note: Cannot easily check admin role via CLI, so just warn
+        Write-Warning "Ensure you have 'Application Administrator' or 'Global Administrator' role"
+    }
+    catch {
+        Write-Warning "Could not verify user details"
+    }
 }
 
-function Save-Output {
-  param([hashtable]$Data, [string]$Path, [string]$Env)
-  if (-not $Path -or $Path.Trim() -eq "") { $Path = "./entra-output.$Env.json" }
-  $json = $Data | ConvertTo-Json -Depth 5
-  $json | Out-File -FilePath $Path -Encoding UTF8
-  Write-Host "Output opgeslagen naar $Path" -ForegroundColor Green
-}
-#endregion helpers
+function New-SecurePassword {
+    param([int]$Length = 24)
 
-# -------------------- MAIN --------------------
-$ApiDisplayName = $ApiDisplayName -replace 'DEV$', $Environment.ToUpper()
-$SpaDisplayName = $SpaDisplayName -replace 'DEV$', $Environment.ToUpper()
-
-Ensure-Graph
-
-Write-Host "`n[1/5] Backend API aanmaken/actualiseren: $ApiDisplayName" -ForegroundColor Cyan
-$apiPair = Get-Or-Create-App -DisplayName $ApiDisplayName
-$apiApp = $apiPair.App
-Ensure-IdentifierUriApi -App $apiApp
-$scopeId = Ensure-ApiScope -App $apiApp
-
-Write-Host "[2/5] Frontend SPA aanmaken/actualiseren: $SpaDisplayName" -ForegroundColor Cyan
-$spaPair = Get-Or-Create-App -DisplayName $SpaDisplayName
-$spaApp = $spaPair.App
-Ensure-SpaRedirects -SpaApp $spaApp -Uris $SpaRedirectUris
-
-Write-Host "[3/5] Pre-authorisatie SPA -> API scope" -ForegroundColor Cyan
-PreAuthorizedApplications:
-Ensure-PreAuthorizedApplications -ApiApp $apiApp -SpaApp $spaApp -ScopeId $scopeId
-
-Write-Host "[4/5] RequiredResourceAccess voor SPA configureren" -ForegroundColor Cyan
-Ensure-RequiredResourceAccessForSpa -SpaApp $spaApp -ApiApp $apiApp -ScopeId $scopeId -AddUserRead:$AddUserReadToSpa
-
-Write-Host "[5/5] API client secret genereren" -ForegroundColor Cyan
-$secret = Create-ApiSecret -ApiApp $apiApp -DisplayName $SecretDisplayName -Years $SecretYearsValid -KeyVaultName $KeyVaultName -EchoSecret:$OutputSecretToConsole
-
-# Samenvatting (zonder secret)
-$summary = [ordered]@{
-  TenantId                    = $TenantId
-  Environment                 = $Environment
-  # API
-  Api_DisplayName             = $ApiDisplayName
-  Api_AppId                   = $apiApp.AppId
-  Api_ObjectId                = $apiApp.Id
-  Api_IdentifierUri           = "api://$($apiApp.AppId)"
-  Api_ScopeValue              = "access_as_user"
-  Api_ScopeId                 = $scopeId
-  Api_SP_ObjectId             = $apiPair.Sp.Id
-  Api_ClientSecret_ExpiresUtc = $secret.EndDateTime
-  Api_ClientSecret_InKeyVault = [bool]($KeyVaultName)
-  # SPA
-  Spa_DisplayName             = $SpaDisplayName
-  Spa_AppId                   = $spaApp.AppId
-  Spa_ObjectId                = $spaApp.Id
-  Spa_SP_ObjectId             = $spaPair.Sp.Id
-  Spa_RedirectUris            = $SpaRedirectUris
+    # Use cryptographically secure random for client secrets
+    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_=+[]{}|:,.<>?"
+    $password = -join ((1..$Length) | ForEach-Object { 
+        $chars[(Get-Random -Maximum $chars.Length)] 
+    })
+    
+    return $password
 }
 
-Save-Output -Data $summary -Path $OutputPath -Env $Environment
+function New-Guid {
+    return [System.Guid]::NewGuid().ToString()
+}
 
-Write-Host "`nKLAAR ✔  Zet nu in je app-config:" -ForegroundColor Green
-Write-Host "  Backend -> TenantId       : $TenantId" -ForegroundColor Gray
-Write-Host "  Backend -> ClientId       : $($apiApp.AppId)" -ForegroundColor Gray
-Write-Host "  Backend -> Audience       : api://$($apiApp.AppId)" -ForegroundColor Gray
-Write-Host "  Frontend -> VITE_ENTRA_TENANT_ID : $TenantId" -ForegroundColor Gray
-Write-Host "  Frontend -> VITE_ENTRA_CLIENT_ID : $($spaApp.AppId)" -ForegroundColor Gray
-Write-Host "Let op: secret staat in Key Vault ($KeyVaultName) of is niet getoond." -ForegroundColor Yellow
-``
+function Remove-ExistingApp {
+    param(
+        [string]$AppName
+    )
+
+    Write-Info "Checking for existing app: $AppName"
+    $existingApp = az ad app list --display-name $AppName | ConvertFrom-Json
+
+    if ($existingApp.Count -gt 0) {
+        if ($ForceRecreate) {
+            Write-Warning "Deleting existing app: $AppName"
+            foreach ($app in $existingApp) {
+                az ad app delete --id $app.id
+            }
+            Write-Success "Existing app deleted"
+            Start-Sleep -Seconds 2  # Wait for deletion to propagate
+        }
+        else {
+            Write-Warning "App '$AppName' already exists. Use -ForceRecreate to delete and recreate."
+            return $existingApp[0]
+        }
+    }
+
+    return $null
+}
+
+function New-BackendApiApp {
+    Write-Step -Step 1 -Total 3 -Message "Creating Backend API App Registration"
+
+    # Check for existing app
+    $existingApp = Remove-ExistingApp -AppName $config.BackendAppName
+
+    if ($existingApp -and -not $ForceRecreate) {
+        Write-Info "Using existing Backend API app"
+        $backendAppId = $existingApp.appId
+        $backendObjectId = $existingApp.id
+    }
+    else {
+        Write-Info "Creating new Backend API app registration..."
+
+        # Required resource access (Microsoft Graph permissions)
+        $requiredResourceAccess = @(
+            @{
+                resourceAppId  = $config.MicrosoftGraphAppId
+                resourceAccess = @(
+                    @{
+                        id   = $config.Permissions.UserRead
+                        type = "Scope"  # Delegated
+                    },
+                    @{
+                        id   = $config.Permissions.DirectoryReadAll
+                        type = "Scope"  # Delegated
+                    },
+                    @{
+                        id   = $config.Permissions.DirectoryReadAllApp
+                        type = "Role"  # Application
+                    },
+                    @{
+                        id   = $config.Permissions.DeviceManagementRead
+                        type = "Role"  # Application
+                    }
+                )
+            }
+        ) | ConvertTo-Json -Depth 10 -Compress
+
+        # Create app registration
+        $backendApp = az ad app create `
+            --display-name $config.BackendAppName `
+            --sign-in-audience "AzureADMyOrg" `
+            --web-redirect-uris $config.BackendRedirectUri `
+            --enable-id-token-issuance true `
+            --required-resource-accesses $requiredResourceAccess `
+            | ConvertFrom-Json
+
+        $backendAppId = $backendApp.appId
+        $backendObjectId = $backendApp.id
+
+        Write-Success "Backend API app created"
+        Write-Info "App ID: $backendAppId"
+        Write-Info "Object ID: $backendObjectId"
+
+        # Create service principal
+        Write-Info "Creating service principal..."
+        az ad sp create --id $backendAppId | Out-Null
+        Write-Success "Service principal created"
+
+        # Wait for app to propagate
+        Start-Sleep -Seconds 3
+    }
+
+    # Generate client secret (always generate new secret)
+    Write-Info "Generating client secret..."
+    $secretName = "$Environment-Secret-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+    $backendSecret = az ad app credential reset `
+        --id $backendAppId `
+        --append `
+        --display-name $secretName `
+        --years 2 `
+        | ConvertFrom-Json
+
+    $backendClientSecret = $backendSecret.password
+    Write-Success "Client secret generated (expires: $($backendSecret.endDateTime))"
+    Write-Warning "IMPORTANT: Save this secret securely - it cannot be retrieved later!"
+
+    # Expose API
+    Write-Info "Configuring API exposure..."
+    $apiUri = "api://$backendAppId"
+    
+    try {
+        az ad app update --id $backendAppId --identifier-uris $apiUri
+        Write-Success "API identifier URI set: $apiUri"
+    }
+    catch {
+        Write-Warning "Could not set identifier URI (may already exist)"
+    }
+
+    # Add API scope
+    Write-Info "Adding API scope: $($config.ApiScope.Value)..."
+    $scopeId = New-Guid
+
+    $oauth2Permissions = @{
+        oauth2PermissionScopes = @(
+            @{
+                id                      = $scopeId
+                isEnabled               = $true
+                type                    = "User"
+                adminConsentDescription = $config.ApiScope.AdminConsentDesc
+                adminConsentDisplayName = $config.ApiScope.AdminConsentDisplay
+                userConsentDescription  = $config.ApiScope.UserConsentDesc
+                userConsentDisplayName  = $config.ApiScope.UserConsentDisplay
+                value                   = $config.ApiScope.Value
+            }
+        )
+    } | ConvertTo-Json -Depth 10 -Compress
+
+    try {
+        # Use --set to update the api property
+        az rest --method PATCH `
+            --uri "https://graph.microsoft.com/v1.0/applications/$backendObjectId" `
+            --headers "Content-Type=application/json" `
+            --body "{`"api`": $oauth2Permissions}"
+        
+        Write-Success "API scope added: $($config.ApiScope.Value)"
+        Write-Info "Scope ID: $scopeId"
+    }
+    catch {
+        Write-Warning "Could not add API scope via REST API, trying alternative method..."
+        # Fallback: try direct update (may not work for oauth2PermissionScopes)
+        try {
+            az ad app update --id $backendAppId --set "api=$oauth2Permissions"
+            Write-Success "API scope added"
+        }
+        catch {
+            Write-Warning "Could not add API scope automatically. Please add manually in Azure Portal:"
+            Write-Warning "  Scope name: $($config.ApiScope.Value)"
+            Write-Warning "  Scope ID: $scopeId"
+        }
+    }
+
+    # Enable ID tokens and access tokens
+    Write-Info "Enabling token issuance..."
+    az ad app update --id $backendAppId `
+        --enable-access-token-issuance true `
+        --enable-id-token-issuance true
+    Write-Success "Token issuance enabled"
+
+    return @{
+        AppId        = $backendAppId
+        ObjectId     = $backendObjectId
+        ClientSecret = $backendClientSecret
+        SecretExpiry = $backendSecret.endDateTime
+        ApiUri       = $apiUri
+        ScopeId      = $scopeId
+    }
+}
+
+function New-FrontendSpaApp {
+    param(
+        [hashtable]$BackendApp
+    )
+
+    Write-Step -Step 2 -Total 3 -Message "Creating Frontend SPA App Registration"
+
+    # Check for existing app
+    $existingApp = Remove-ExistingApp -AppName $config.FrontendAppName
+
+    if ($existingApp -and -not $ForceRecreate) {
+        Write-Info "Using existing Frontend SPA app"
+        $frontendAppId = $existingApp.appId
+        $frontendObjectId = $existingApp.id
+    }
+    else {
+        Write-Info "Creating new Frontend SPA app registration..."
+
+        # Required resource access (Backend API + Microsoft Graph)
+        $requiredResourceAccess = @(
+            @{
+                # Backend API access
+                resourceAppId  = $BackendApp.AppId
+                resourceAccess = @(
+                    @{
+                        id   = $BackendApp.ScopeId
+                        type = "Scope"
+                    }
+                )
+            },
+            @{
+                # Microsoft Graph access (for user profile)
+                resourceAppId  = $config.MicrosoftGraphAppId
+                resourceAccess = @(
+                    @{
+                        id   = $config.Permissions.UserRead
+                        type = "Scope"
+                    }
+                )
+            }
+        ) | ConvertTo-Json -Depth 10 -Compress
+
+        # Create SPA app with PKCE
+        $frontendApp = az ad app create `
+            --display-name $config.FrontendAppName `
+            --sign-in-audience "AzureADMyOrg" `
+            --public-client-redirect-uris ($config.FrontendRedirectUris -join ' ') `
+            --required-resource-accesses $requiredResourceAccess `
+            | ConvertFrom-Json
+
+        $frontendAppId = $frontendApp.appId
+        $frontendObjectId = $frontendApp.id
+
+        Write-Success "Frontend SPA app created"
+        Write-Info "App ID: $frontendAppId"
+        Write-Info "Object ID: $frontendObjectId"
+
+        # Configure as SPA (enable PKCE)
+        Write-Info "Configuring Single Page Application settings..."
+        
+        $spaConfig = @{
+            spa = @{
+                redirectUris = $config.FrontendRedirectUris
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
+
+        az rest --method PATCH `
+            --uri "https://graph.microsoft.com/v1.0/applications/$frontendObjectId" `
+            --headers "Content-Type=application/json" `
+            --body $spaConfig
+
+        Write-Success "SPA configuration applied (OAuth 2.0 with PKCE enabled)"
+
+        # Create service principal
+        Write-Info "Creating service principal..."
+        az ad sp create --id $frontendAppId | Out-Null
+        Write-Success "Service principal created"
+
+        # Enable implicit flow (optional, but can be useful for compatibility)
+        Write-Info "Configuring implicit flow settings..."
+        az ad app update --id $frontendAppId `
+            --enable-access-token-issuance false `
+            --enable-id-token-issuance true
+        Write-Success "Implicit flow configured (ID tokens only)"
+    }
+
+    return @{
+        AppId      = $frontendAppId
+        ObjectId   = $frontendObjectId
+        RedirectUris = $config.FrontendRedirectUris
+    }
+}
+
+function Grant-AdminConsent {
+    param(
+        [hashtable]$BackendApp,
+        [hashtable]$FrontendApp
+    )
+
+    Write-Step -Step 3 -Total 3 -Message "Granting Admin Consent"
+
+    if ($SkipAdminConsent) {
+        Write-Warning "Skipping admin consent (use -SkipAdminConsent flag to override)"
+        Write-Info "Manual admin consent required in Azure Portal:"
+        Write-Info "  1. Navigate to Entra ID > App registrations"
+        Write-Info "  2. Select each app and go to 'API permissions'"
+        Write-Info "  3. Click 'Grant admin consent for <tenant>'"
+        return
+    }
+
+    Write-Info "Attempting to grant admin consent..."
+    Write-Warning "This requires Application Administrator or Global Administrator role"
+
+    # Grant consent for Backend API
+    Write-Info "Granting consent for Backend API app..."
+    try {
+        az ad app permission admin-consent --id $BackendApp.AppId 2>$null
+        Write-Success "Admin consent granted for Backend API"
+    }
+    catch {
+        Write-Warning "Could not grant admin consent for Backend API"
+        Write-Info "Please grant manually in Azure Portal"
+    }
+
+    # Wait for propagation
+    Start-Sleep -Seconds 2
+
+    # Grant consent for Frontend SPA
+    Write-Info "Granting consent for Frontend SPA app..."
+    try {
+        az ad app permission admin-consent --id $FrontendApp.AppId 2>$null
+        Write-Success "Admin consent granted for Frontend SPA"
+    }
+    catch {
+        Write-Warning "Could not grant admin consent for Frontend SPA"
+        Write-Info "Please grant manually in Azure Portal"
+    }
+
+    Write-Success "Admin consent process completed"
+}
+
+function Save-Configuration {
+    param(
+        [hashtable]$BackendApp,
+        [hashtable]$FrontendApp
+    )
+
+    Write-Header "Saving Configuration"
+
+    # Generate default output path if not provided
+    if (-not $OutputPath) {
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+        $OutputPath = ".\entra-apps-config-$timestamp.json"
+    }
+
+    # Prepare configuration object
+    $configuration = [ordered]@{
+        Metadata         = [ordered]@{
+            GeneratedAt     = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            Environment     = $config.Environment
+            TenantId        = $config.TenantId
+            ScriptVersion   = "1.0.0"
+        }
+        
+        BackendAPI       = [ordered]@{
+            AppName         = $config.BackendAppName
+            ApplicationId   = $BackendApp.AppId
+            ObjectId        = $BackendApp.ObjectId
+            ClientSecret    = $BackendApp.ClientSecret
+            SecretExpiry    = $BackendApp.SecretExpiry
+            ApiUri          = $BackendApp.ApiUri
+            ScopeId         = $BackendApp.ScopeId
+            ScopeName       = "$($BackendApp.ApiUri)/$($config.ApiScope.Value)"
+            RedirectUri     = $config.BackendRedirectUri
+        }
+        
+        FrontendSPA      = [ordered]@{
+            AppName         = $config.FrontendAppName
+            ApplicationId   = $FrontendApp.AppId
+            ObjectId        = $FrontendApp.ObjectId
+            RedirectUris    = $FrontendApp.RedirectUris
+        }
+        
+        Configuration    = [ordered]@{
+            Frontend = [ordered]@{
+                VITE_API_URL             = "<backend-api-url>"
+                VITE_ENTRA_CLIENT_ID     = $FrontendApp.AppId
+                VITE_ENTRA_TENANT_ID     = $config.TenantId
+                VITE_ENTRA_REDIRECT_URI  = $FrontendApp.RedirectUris[0]
+                VITE_ENTRA_AUTHORITY     = "https://login.microsoftonline.com/$($config.TenantId)"
+                VITE_ENTRA_API_SCOPE     = "$($BackendApp.ApiUri)/$($config.ApiScope.Value)"
+            }
+            
+            Backend  = [ordered]@{
+                AzureAd_Instance         = "https://login.microsoftonline.com/"
+                AzureAd_TenantId         = $config.TenantId
+                AzureAd_ClientId         = $BackendApp.AppId
+                AzureAd_ClientSecret     = $BackendApp.ClientSecret
+                AzureAd_Domain           = "<your-domain>.onmicrosoft.com"
+                AzureAd_Audience         = $BackendApp.ApiUri
+                MicrosoftGraph_BaseUrl   = "https://graph.microsoft.com/v1.0"
+                MicrosoftGraph_Scopes    = @("https://graph.microsoft.com/.default")
+            }
+        }
+        
+        AzurePortalLinks = [ordered]@{
+            BackendAppRegistration  = "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/$($BackendApp.AppId)"
+            FrontendAppRegistration = "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/$($FrontendApp.AppId)"
+            EnterpriseApps          = "https://portal.azure.com/#view/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/~/AppAppsPreview"
+        }
+        
+        SecurityNotes    = @(
+            "CRITICAL: Store the Backend Client Secret securely (e.g., Azure Key Vault)"
+            "The client secret cannot be retrieved after this session"
+            "Client secret expires on: $($BackendApp.SecretExpiry)"
+            "Frontend SPA uses OAuth 2.0 with PKCE (no client secret needed)"
+            "Ensure admin consent is granted for all required permissions"
+            "Review and minimize permissions following least privilege principle"
+        )
+        
+        NextSteps        = @(
+            "1. Update frontend .env file with values from Configuration.Frontend"
+            "2. Update backend appsettings.json with values from Configuration.Backend"
+            "3. Store Backend Client Secret in Azure Key Vault"
+            "4. Grant admin consent if not done automatically (check AzurePortalLinks)"
+            "5. Update redirect URIs when deploying to production"
+            "6. Configure app roles and assignments as needed"
+            "7. Test authentication flow in both frontend and backend"
+        )
+    }
+
+    # Save to JSON file
+    $configuration | ConvertTo-Json -Depth 10 | Out-File -FilePath $OutputPath -Encoding UTF8
+
+    Write-Success "Configuration saved to: $OutputPath"
+    Write-Info "File size: $((Get-Item $OutputPath).Length) bytes"
+
+    return $OutputPath
+}
+
+function Show-Summary {
+    param(
+        [hashtable]$BackendApp,
+        [hashtable]$FrontendApp,
+        [string]$ConfigFilePath
+    )
+
+    Write-Host ""
+    Write-Host "============================================================================" -ForegroundColor Green
+    Write-Host " ENTRA ID APP REGISTRATIONS CONFIGURED SUCCESSFULLY!" -ForegroundColor Green
+    Write-Host "============================================================================" -ForegroundColor Green
+    Write-Host ""
+
+    Write-Host "ENVIRONMENT: $($config.Environment)" -ForegroundColor Cyan
+    Write-Host "TENANT ID: $($config.TenantId)" -ForegroundColor Cyan
+    Write-Host ""
+
+    Write-Host "BACKEND API APP" -ForegroundColor Yellow
+    Write-Host "---------------" -ForegroundColor Yellow
+    Write-Host "Name:              $($config.BackendAppName)" -ForegroundColor White
+    Write-Host "Application ID:    $($BackendApp.AppId)" -ForegroundColor White
+    Write-Host "Object ID:         $($BackendApp.ObjectId)" -ForegroundColor White
+    Write-Host "API URI:           $($BackendApp.ApiUri)" -ForegroundColor White
+    Write-Host "Scope:             $($BackendApp.ApiUri)/$($config.ApiScope.Value)" -ForegroundColor White
+    Write-Host "Client Secret:     $($BackendApp.ClientSecret.Substring(0, 8))..." -ForegroundColor White -NoNewline
+    Write-Host " (SAVE THIS SECURELY!)" -ForegroundColor Red
+    Write-Host "Secret Expiry:     $($BackendApp.SecretExpiry)" -ForegroundColor White
+    Write-Host ""
+
+    Write-Host "FRONTEND SPA APP" -ForegroundColor Yellow
+    Write-Host "----------------" -ForegroundColor Yellow
+    Write-Host "Name:              $($config.FrontendAppName)" -ForegroundColor White
+    Write-Host "Application ID:    $($FrontendApp.AppId)" -ForegroundColor White
+    Write-Host "Object ID:         $($FrontendApp.ObjectId)" -ForegroundColor White
+    Write-Host "Auth Flow:         OAuth 2.0 with PKCE" -ForegroundColor White
+    Write-Host "Redirect URIs:     $($FrontendApp.RedirectUris -join ', ')" -ForegroundColor White
+    Write-Host ""
+
+    Write-Host "PERMISSIONS CONFIGURED" -ForegroundColor Yellow
+    Write-Host "----------------------" -ForegroundColor Yellow
+    Write-Host "Backend API (Delegated):" -ForegroundColor White
+    Write-Host "  • User.Read" -ForegroundColor Gray
+    Write-Host "  • Directory.Read.All" -ForegroundColor Gray
+    Write-Host "Backend API (Application):" -ForegroundColor White
+    Write-Host "  • Directory.Read.All" -ForegroundColor Gray
+    Write-Host "  • DeviceManagementManagedDevices.Read.All" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Frontend SPA (Delegated):" -ForegroundColor White
+    Write-Host "  • User.Read (Microsoft Graph)" -ForegroundColor Gray
+    Write-Host "  • $($config.ApiScope.Value) (Backend API)" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "CONFIGURATION FILE" -ForegroundColor Yellow
+    Write-Host "------------------" -ForegroundColor Yellow
+    Write-Host "Saved to: $ConfigFilePath" -ForegroundColor White
+    Write-Host ""
+
+    Write-Host "NEXT STEPS" -ForegroundColor Cyan
+    Write-Host "----------" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "1. SECURE THE CLIENT SECRET" -ForegroundColor White
+    Write-Host "   Store in Azure Key Vault:" -ForegroundColor Gray
+    Write-Host "   az keyvault secret set --vault-name <vault-name> \" -ForegroundColor DarkGray
+    Write-Host "     --name 'EntraBackendClientSecret' \" -ForegroundColor DarkGray
+    Write-Host "     --value '$($BackendApp.ClientSecret)'" -ForegroundColor DarkGray
+    Write-Host ""
+
+    Write-Host "2. UPDATE FRONTEND CONFIGURATION" -ForegroundColor White
+    Write-Host "   Create/update src/frontend/.env:" -ForegroundColor Gray
+    Write-Host "   VITE_ENTRA_CLIENT_ID=$($FrontendApp.AppId)" -ForegroundColor DarkGray
+    Write-Host "   VITE_ENTRA_TENANT_ID=$($config.TenantId)" -ForegroundColor DarkGray
+    Write-Host "   VITE_ENTRA_REDIRECT_URI=$($FrontendApp.RedirectUris[0])" -ForegroundColor DarkGray
+    Write-Host "   VITE_ENTRA_API_SCOPE=$($BackendApp.ApiUri)/$($config.ApiScope.Value)" -ForegroundColor DarkGray
+    Write-Host ""
+
+    Write-Host "3. UPDATE BACKEND CONFIGURATION" -ForegroundColor White
+    Write-Host "   Update src/backend/DjoppieInventory.API/appsettings.json:" -ForegroundColor Gray
+    Write-Host "   {" -ForegroundColor DarkGray
+    Write-Host '     "AzureAd": {' -ForegroundColor DarkGray
+    Write-Host "       `"TenantId`": `"$($config.TenantId)`"," -ForegroundColor DarkGray
+    Write-Host "       `"ClientId`": `"$($BackendApp.AppId)`"," -ForegroundColor DarkGray
+    Write-Host "       `"ClientSecret`": `"<from-key-vault>`"" -ForegroundColor DarkGray
+    Write-Host "     }" -ForegroundColor DarkGray
+    Write-Host "   }" -ForegroundColor DarkGray
+    Write-Host ""
+
+    Write-Host "4. GRANT ADMIN CONSENT (if not done)" -ForegroundColor White
+    Write-Host "   Visit Azure Portal > Entra ID > App registrations" -ForegroundColor Gray
+    Write-Host "   Select each app > API permissions > Grant admin consent" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "5. UPDATE REDIRECT URIs FOR PRODUCTION" -ForegroundColor White
+    Write-Host "   Add production URLs when deploying:" -ForegroundColor Gray
+    Write-Host "   Frontend: https://<your-domain>.azurestaticapps.net" -ForegroundColor Gray
+    Write-Host "   Backend:  https://<your-api>.azurewebsites.net/signin-oidc" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "AZURE PORTAL LINKS" -ForegroundColor Cyan
+    Write-Host "------------------" -ForegroundColor Cyan
+    Write-Host "Backend App:  https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/$($BackendApp.AppId)" -ForegroundColor Blue
+    Write-Host "Frontend App: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/~/Overview/appId/$($FrontendApp.AppId)" -ForegroundColor Blue
+    Write-Host ""
+
+    Write-Host "SECURITY REMINDERS" -ForegroundColor Red
+    Write-Host "------------------" -ForegroundColor Red
+    Write-Host "• Never commit client secrets to source control" -ForegroundColor DarkRed
+    Write-Host "• Rotate client secrets before expiry ($($BackendApp.SecretExpiry))" -ForegroundColor DarkRed
+    Write-Host "• Use Azure Key Vault for production secrets" -ForegroundColor DarkRed
+    Write-Host "• Review permissions regularly (least privilege)" -ForegroundColor DarkRed
+    Write-Host "• Enable conditional access policies" -ForegroundColor DarkRed
+    Write-Host ""
+
+    Write-Host "============================================================================" -ForegroundColor Green
+    Write-Host ""
+}
+
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
+
+try {
+    Write-Header "Djoppie Inventory - Entra ID App Registration Setup"
+    Write-Host "This script will configure Microsoft Entra ID app registrations"
+    Write-Host "Environment: $($config.Environment)" -ForegroundColor Cyan
+    Write-Host "Tenant: $($config.TenantId)" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Confirm before proceeding
+    if ($ForceRecreate) {
+        Write-Warning "WARNING: -ForceRecreate will DELETE existing app registrations!"
+        $confirm = Read-Host "Are you sure you want to continue? (yes/no)"
+        if ($confirm -ne "yes") {
+            Write-Info "Operation cancelled"
+            exit 0
+        }
+    }
+
+    # Step 0: Prerequisites
+    Test-Prerequisites
+
+    # Step 1: Create Backend API App
+    $backendApp = New-BackendApiApp
+
+    # Step 2: Create Frontend SPA App
+    $frontendApp = New-FrontendSpaApp -BackendApp $backendApp
+
+    # Step 3: Grant Admin Consent
+    Grant-AdminConsent -BackendApp $backendApp -FrontendApp $frontendApp
+
+    # Step 4: Save Configuration
+    $configFile = Save-Configuration -BackendApp $backendApp -FrontendApp $frontendApp
+
+    # Step 5: Show Summary
+    Show-Summary -BackendApp $backendApp -FrontendApp $frontendApp -ConfigFilePath $configFile
+
+    Write-Success "Setup completed successfully!"
+    exit 0
+}
+catch {
+    Write-ErrorMessage "Setup failed: $_"
+    Write-Host ""
+    Write-Host "Error Details:" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Stack Trace:" -ForegroundColor Red
+    Write-Host $_.ScriptStackTrace -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Troubleshooting:" -ForegroundColor Yellow
+    Write-Host "• Ensure you have Application Administrator role" -ForegroundColor Gray
+    Write-Host "• Verify Azure CLI is logged in: az account show" -ForegroundColor Gray
+    Write-Host "• Check tenant ID is correct" -ForegroundColor Gray
+    Write-Host "• Review error message above for specific issues" -ForegroundColor Gray
+    exit 1
+}

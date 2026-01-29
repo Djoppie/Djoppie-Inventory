@@ -12,7 +12,13 @@
       "Bash(npm create:*)",
       "Skill(business-dashboard-designer)",
       "Skill(frontend-design)",
-      "Bash(git cherry-pick:*)"
+      "Bash(git cherry-pick:*)",
+      "Bash(ls:*)",
+      "Bash(powershell -Command \"New-Item -Path ''setup-entra-apps.ps1'' -ItemType File -Force\")",
+      "Bash(powershell -Command \"Get-Help ./setup-entra-apps.ps1\")",
+      "Bash(powershell -Command \"$null = $PSCommandPath; Test-Path ./setup-entra-apps.ps1\")",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
     ]
   }
 }
