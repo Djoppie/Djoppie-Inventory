@@ -216,30 +216,31 @@ Configuration saved to: entra-apps-config-20260129-143022.json
 
 ### Step 3: Deploy Infrastructure
 
-Run the deployment script:
+Run the infrastructure deployment script (assumes Entra apps are configured):
 
 ```powershell
-# Run with prompts
+# Option 1: Use existing Entra config file
+.\deploy-dev.ps1 -EntraConfigFile ".\entra-apps-config-dev-20260129.json"
+
+# Option 2: Auto-detect most recent config file
 .\deploy-dev.ps1
 
-# Or specify parameters
+# Option 3: Run Entra setup automatically before deploying
+.\deploy-dev.ps1 -RunEntraSetup
+
+# With specific subscription
 .\deploy-dev.ps1 -SubscriptionId "your-subscription-id" -Location "westeurope"
-
-# Skip Entra app creation (if already done)
-.\deploy-dev.ps1 -SkipEntraApps
-
-# Skip infrastructure (for app updates only)
-.\deploy-dev.ps1 -SkipInfrastructure
 ```
 
 **What This Does:**
-- ✅ Validates prerequisites
+- ✅ Validates prerequisites (Azure CLI, PowerShell 7+, Bicep)
+- ✅ Loads Entra app configuration from setup-entra-apps.ps1 output
 - ✅ Deploys Bicep templates (`infra/bicep/main.dev.bicep`)
 - ✅ Creates resource group: `rg-djoppie-inv-dev`
 - ✅ Provisions App Service, SQL Database, Key Vault, etc.
-- ✅ Stores secrets in Key Vault
-- ✅ Configures SQL firewall
+- ✅ Configures SQL Server firewall for your IP
 - ✅ Provides deployment summary with URLs
+- ✅ Saves deployment outputs to JSON file
 
 **Deployment Progress:**
 

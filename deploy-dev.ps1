@@ -1,13 +1,15 @@
 <#
 .SYNOPSIS
-    Deploy Djoppie Inventory to Azure DEV Environment
+    Deploy Azure Infrastructure for Djoppie Inventory
 
 .DESCRIPTION
-    Complete deployment script for Djoppie Inventory system to a single DEV environment
-    - Creates/updates Entra ID app registrations
-    - Deploys Azure infrastructure using Bicep
-    - Configures secrets in Key Vault
-    - Provides deployment summary and URLs
+    Deploys Azure infrastructure for Djoppie Inventory using Bicep templates.
+    This script focuses solely on infrastructure deployment and assumes
+    Entra ID app registrations are already configured.
+
+    Prerequisites:
+    1. Run setup-entra-apps.ps1 first to create app registrations
+    2. Have the Entra configuration JSON file available
 
 .PARAMETER SubscriptionId
     Azure Subscription ID (optional - will prompt if not provided)
@@ -15,21 +17,27 @@
 .PARAMETER Location
     Azure region for deployment (default: westeurope)
 
-.PARAMETER SkipInfrastructure
-    Skip infrastructure deployment (useful for app-only updates)
+.PARAMETER EntraConfigFile
+    Path to Entra apps configuration JSON from setup-entra-apps.ps1
 
-.PARAMETER SkipEntraApps
-    Skip Entra ID app registration creation/update
+.PARAMETER SqlAdminPassword
+    SQL Server administrator password (will prompt if not provided)
+
+.PARAMETER RunEntraSetup
+    Run setup-entra-apps.ps1 automatically before deploying infrastructure
 
 .EXAMPLE
-    .\deploy-dev.ps1
+    .\deploy-infrastructure.ps1
 
 .EXAMPLE
-    .\deploy-dev.ps1 -SubscriptionId "12345678-1234-1234-1234-123456789012" -Location "westeurope"
+    .\deploy-infrastructure.ps1 -SubscriptionId "xxx" -EntraConfigFile ".\entra-apps-config-dev-20260129.json"
+
+.EXAMPLE
+    .\deploy-infrastructure.ps1 -RunEntraSetup
 
 .NOTES
     Author: Djoppie Inventory Team
-    Requires: Azure CLI, PowerShell 7+
+    Requires: Azure CLI, PowerShell 7+, Entra ID apps configured
 #>
 
 [CmdletBinding()]
@@ -41,10 +49,13 @@ param(
     [string]$Location = "westeurope",
 
     [Parameter(Mandatory = $false)]
-    [switch]$SkipInfrastructure,
+    [string]$EntraConfigFile,
 
     [Parameter(Mandatory = $false)]
-    [switch]$SkipEntraApps
+    [SecureString]$SqlAdminPassword,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$RunEntraSetup
 )
 
 $ErrorActionPreference = "Stop"
@@ -59,22 +70,13 @@ $config = @{
     ProjectName         = "djoppie-inv"
     ResourceGroupName   = "rg-djoppie-inv-dev"
     Location            = $Location
-    TenantId            = "7db28d6f-d542-40c1-b529-5e5ed2aad545"  # Diepenbeek tenant
+    TenantId            = "7db28d6f-d542-40c1-b529-5e5ed2aad545"
 
     # Bicep files
     BicepTemplatePath   = ".\infra\bicep\main.dev.bicep"
-    ParametersFilePath  = ".\infra\parameters-dev.json"
-
-    # Entra ID App Names (must match setup-entra-apps.ps1)
-    BackendAppName      = "Djoppie-Inventory-Backend-API-DEV"
-    FrontendAppName     = "Djoppie-Inventory-Frontend-SPA-DEV"
 
     # SQL Configuration
     SqlAdminUsername    = "djoppieadmin"
-
-    # Cost Management
-    BudgetAmount        = 20  # EUR per month
-    BudgetAlertPercent  = 80  # Alert at 80%
 }
 
 # ============================================================================
@@ -99,7 +101,12 @@ function Write-Info {
     Write-Host "→ $Message" -ForegroundColor Yellow
 }
 
-function Write-Error {
+function Write-Warning {
+    param([string]$Message)
+    Write-Host "⚠ $Message" -ForegroundColor DarkYellow
+}
+
+function Write-ErrorMessage {
     param([string]$Message)
     Write-Host "✗ $Message" -ForegroundColor Red
 }
@@ -110,21 +117,21 @@ function Test-Prerequisites {
     # Check PowerShell version
     Write-Info "Checking PowerShell version..."
     if ($PSVersionTable.PSVersion.Major -lt 7) {
-        Write-Error "PowerShell 7 or higher required. Current: $($PSVersionTable.PSVersion)"
-        throw "Please install PowerShell 7: https://aka.ms/powershell"
+        Write-ErrorMessage "PowerShell 7 or higher required. Current: $($PSVersionTable.PSVersion)"
+        throw "Install PowerShell 7: https://aka.ms/powershell"
     }
     Write-Success "PowerShell $($PSVersionTable.PSVersion)"
 
     # Check Azure CLI
     Write-Info "Checking Azure CLI..."
     try {
-        $azVersion = az version --query '\"azure-cli\"' -o tsv 2>$null
+        $azVersion = az version --query '"azure-cli"' -o tsv 2>$null
         if ($LASTEXITCODE -ne 0) { throw }
         Write-Success "Azure CLI $azVersion"
     }
     catch {
-        Write-Error "Azure CLI not found"
-        throw "Please install Azure CLI: https://aka.ms/installazurecliwindows"
+        Write-ErrorMessage "Azure CLI not found"
+        throw "Install Azure CLI: https://aka.ms/installazurecliwindows"
     }
 
     # Check Azure CLI login
@@ -132,34 +139,96 @@ function Test-Prerequisites {
     $account = az account show 2>$null | ConvertFrom-Json
     if (-not $account) {
         Write-Info "Not logged in. Opening browser for authentication..."
-        az login
+        az login --tenant $config.TenantId
         $account = az account show | ConvertFrom-Json
     }
     Write-Success "Logged in as: $($account.user.name)"
 
-    # Check Bicep CLI
+    # Verify tenant
+    if ($account.tenantId -ne $config.TenantId) {
+        Write-Info "Switching to tenant: $($config.TenantId)"
+        az login --tenant $config.TenantId
+    }
+
+    # Check Bicep
     Write-Info "Checking Bicep CLI..."
     try {
         $bicepVersion = az bicep version 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Info "Installing Bicep CLI..."
             az bicep install
-            $bicepVersion = az bicep version
         }
-        Write-Success "Bicep CLI installed"
+        Write-Success "Bicep CLI available"
     }
     catch {
-        Write-Error "Failed to install Bicep CLI"
+        Write-ErrorMessage "Failed to setup Bicep CLI"
         throw
     }
 
-    # Check required files
-    Write-Info "Checking required files..."
+    # Check Bicep template exists
     if (-not (Test-Path $config.BicepTemplatePath)) {
-        Write-Error "Bicep template not found: $($config.BicepTemplatePath)"
-        throw "Please ensure infrastructure files are present"
+        Write-ErrorMessage "Bicep template not found: $($config.BicepTemplatePath)"
+        throw "Ensure infrastructure files are present"
     }
-    Write-Success "All required files present"
+    Write-Success "Bicep template found"
+}
+
+function Get-EntraConfiguration {
+    Write-Header "Loading Entra ID Configuration"
+
+    # Option 1: Run setup-entra-apps.ps1
+    if ($RunEntraSetup) {
+        Write-Info "Running setup-entra-apps.ps1..."
+
+        if (-not (Test-Path ".\setup-entra-apps.ps1")) {
+            throw "setup-entra-apps.ps1 not found in current directory"
+        }
+
+        # Run the setup script
+        $result = & ".\setup-entra-apps.ps1"
+
+        # Find the generated config file
+        $configFiles = Get-ChildItem -Path "." -Filter "entra-apps-config-*.json" |
+            Sort-Object LastWriteTime -Descending
+
+        if ($configFiles.Count -eq 0) {
+            throw "No Entra config file generated. setup-entra-apps.ps1 may have failed."
+        }
+
+        $EntraConfigFile = $configFiles[0].FullName
+        Write-Success "Entra apps configured. Using: $($configFiles[0].Name)"
+    }
+
+    # Option 2: Load from specified file
+    if ($EntraConfigFile -and (Test-Path $EntraConfigFile)) {
+        Write-Info "Loading from: $EntraConfigFile"
+        $entraConfig = Get-Content $EntraConfigFile | ConvertFrom-Json
+        Write-Success "Entra configuration loaded"
+        return $entraConfig
+    }
+
+    # Option 3: Find most recent config file
+    Write-Info "Looking for recent Entra configuration files..."
+    $configFiles = Get-ChildItem -Path "." -Filter "entra-apps-config-*.json" |
+        Sort-Object LastWriteTime -Descending
+
+    if ($configFiles.Count -eq 0) {
+        Write-ErrorMessage "No Entra configuration file found"
+        Write-Info "Please run setup-entra-apps.ps1 first or use -RunEntraSetup flag"
+        throw "Entra ID apps must be configured before deploying infrastructure"
+    }
+
+    $latestConfig = $configFiles[0]
+    Write-Info "Found: $($latestConfig.Name) (modified: $($latestConfig.LastWriteTime))"
+
+    $confirm = Read-Host "Use this configuration? (yes/no)"
+    if ($confirm -ne "yes") {
+        throw "Deployment cancelled. Please specify -EntraConfigFile or use -RunEntraSetup"
+    }
+
+    $entraConfig = Get-Content $latestConfig.FullName | ConvertFrom-Json
+    Write-Success "Configuration loaded"
+    return $entraConfig
 }
 
 function Set-AzureSubscription {
@@ -167,7 +236,9 @@ function Set-AzureSubscription {
 
     if (-not $SubscriptionId) {
         Write-Info "Available subscriptions:"
-        $subscriptions = az account list --query "[].{Name:name, SubscriptionId:id, State:state}" -o json | ConvertFrom-Json
+        $subscriptions = az account list --query "[].{Name:name, SubscriptionId:id, State:state}" -o json |
+            ConvertFrom-Json
+
         $subscriptions | Format-Table -AutoSize
 
         $SubscriptionId = Read-Host "Enter Subscription ID"
@@ -182,155 +253,72 @@ function Set-AzureSubscription {
     return $currentSub
 }
 
-function New-SecurePassword {
-    param([int]$Length = 24)
+function Get-SqlPassword {
+    Write-Header "SQL Server Configuration"
 
-    $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
-    $password = -join ((1..$Length) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
-    return $password
-}
-
-function New-EntraIdApps {
-    Write-Header "Creating/Updating Entra ID App Registrations"
-
-    $tenantId = az account show --query tenantId -o tsv
-
-    # Backend API App Registration
-    Write-Info "Creating Backend API app registration..."
-
-    $backendApp = az ad app list --display-name $config.BackendAppName | ConvertFrom-Json
-
-    if ($backendApp.Count -eq 0) {
-        Write-Info "Creating new Backend API app..."
-
-        # Create app
-        $backendApp = az ad app create `
-            --display-name $config.BackendAppName `
-            --sign-in-audience "AzureADMyOrg" `
-            --web-redirect-uris "https://localhost:7001/signin-oidc" `
-            --required-resource-accesses '@[{\"resourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"resourceAccess\":[{\"id\":\"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\"type\":\"Scope\"},{\"id\":\"06da0dbc-49e2-44d2-8312-53f166ab848a\",\"type\":\"Scope\"},{\"id\":\"7ab1d382-f21e-4acd-a863-ba3e13f7da61\",\"type\":\"Role\"}]}]' `
-            | ConvertFrom-Json
-
-        $backendAppId = $backendApp.appId
-        $backendObjectId = $backendApp.id
-
-        # Create service principal
-        $backendSp = az ad sp create --id $backendAppId | ConvertFrom-Json
-
-        # Generate client secret
-        $backendSecret = az ad app credential reset --id $backendAppId --append --display-name "DEV-Secret-$(Get-Date -Format 'yyyyMMdd')" | ConvertFrom-Json
-        $backendClientSecret = $backendSecret.password
-
-        # Expose API
-        $apiUri = "api://$backendAppId"
-        az ad app update --id $backendAppId --identifier-uris $apiUri
-
-        # Add API scope
-        $scopeId = (New-Guid).ToString()
-        $manifest = @{
-            oauth2PermissionScopes = @(
-                @{
-                    adminConsentDescription = "Allow the application to access Djoppie Inventory API on behalf of the signed-in user"
-                    adminConsentDisplayName = "Access Djoppie Inventory API"
-                    id                      = $scopeId
-                    isEnabled               = $true
-                    type                    = "User"
-                    userConsentDescription  = "Allow the application to access Djoppie Inventory API on your behalf"
-                    userConsentDisplayName  = "Access Djoppie Inventory API"
-                    value                   = "access_as_user"
-                }
-            )
-        }
-        $manifestJson = $manifest | ConvertTo-Json -Depth 10 -Compress
-        az ad app update --id $backendAppId --set api=$manifestJson.Replace('"', '\"')
-
-        Write-Success "Backend API app created: $backendAppId"
-    }
-    else {
-        $backendAppId = $backendApp[0].appId
-        $backendObjectId = $backendApp[0].id
-
-        # Generate new client secret
-        $backendSecret = az ad app credential reset --id $backendAppId --append --display-name "DEV-Secret-$(Get-Date -Format 'yyyyMMdd')" | ConvertFrom-Json
-        $backendClientSecret = $backendSecret.password
-
-        Write-Success "Backend API app found: $backendAppId (new secret generated)"
+    if ($SqlAdminPassword) {
+        $passwordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SqlAdminPassword))
+        return $passwordPlain
     }
 
-    # Frontend SPA App Registration
-    Write-Info "Creating Frontend SPA app registration..."
+    Write-Info "SQL Server credentials needed"
+    Write-Info "Username will be: $($config.SqlAdminUsername)"
 
-    $frontendApp = az ad app list --display-name $config.FrontendAppName | ConvertFrom-Json
+    $password1 = Read-Host "Enter SQL Admin Password" -AsSecureString
+    $password2 = Read-Host "Confirm SQL Admin Password" -AsSecureString
 
-    if ($frontendApp.Count -eq 0) {
-        Write-Info "Creating new Frontend SPA app..."
+    $pwd1Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password1))
+    $pwd2Plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR($password2))
 
-        $frontendApp = az ad app create `
-            --display-name $config.FrontendAppName `
-            --sign-in-audience "AzureADMyOrg" `
-            --spa-redirect-uris "http://localhost:5173" "http://localhost:5173/redirect" `
-            --required-resource-accesses "@[{`"resourceAppId`":`"$backendAppId`",`"resourceAccess`":[{`"id`":`"$scopeId`",`"type`":`"Scope`"}]}]" `
-            | ConvertFrom-Json
-
-        $frontendAppId = $frontendApp.appId
-
-        # Create service principal
-        az ad sp create --id $frontendAppId | Out-Null
-
-        Write-Success "Frontend SPA app created: $frontendAppId"
-    }
-    else {
-        $frontendAppId = $frontendApp[0].appId
-        Write-Success "Frontend SPA app found: $frontendAppId"
+    if ($pwd1Plain -ne $pwd2Plain) {
+        throw "Passwords do not match"
     }
 
-    # Grant admin consent (requires admin privileges)
-    Write-Info "Attempting to grant admin consent..."
-    try {
-        az ad app permission admin-consent --id $backendAppId 2>$null
-        az ad app permission admin-consent --id $frontendAppId 2>$null
-        Write-Success "Admin consent granted"
-    }
-    catch {
-        Write-Warning "Could not grant admin consent automatically. Please grant manually in Azure Portal."
+    # Basic password validation
+    if ($pwd1Plain.Length -lt 12) {
+        throw "Password must be at least 12 characters"
     }
 
-    return @{
-        TenantId             = $tenantId
-        BackendAppId         = $backendAppId
-        BackendClientSecret  = $backendClientSecret
-        FrontendAppId        = $frontendAppId
-    }
+    Write-Success "SQL password configured"
+    return $pwd1Plain
 }
 
 function Deploy-Infrastructure {
     param(
-        [hashtable]$EntraApps,
+        [Parameter(Mandatory = $true)]
+        [object]$EntraConfig,
+
+        [Parameter(Mandatory = $true)]
         [string]$SqlPassword
     )
 
     Write-Header "Deploying Azure Infrastructure"
 
-    # Get current user's object ID for Key Vault access
-    $currentUserObjectId = az ad signed-in-user show --query id -o tsv
-
-    Write-Info "Resource Group: $($config.ResourceGroupName)"
-    Write-Info "Location: $($config.Location)"
-    Write-Info "Template: $($config.BicepTemplatePath)"
-
-    # Build deployment parameters
     $deploymentName = "djoppie-dev-$(Get-Date -Format 'yyyyMMddHHmmss')"
 
+    Write-Info "Deployment name: $deploymentName"
+    Write-Info "Resource group: $($config.ResourceGroupName)"
+    Write-Info "Location: $($config.Location)"
+
+    # Get current user for Key Vault access
+    $currentUserObjectId = az ad signed-in-user show --query id -o tsv
+
+    # Build parameters
     $parameters = @{
-        environment                    = $config.Environment
-        location                       = $config.Location
-        sqlAdminLogin                  = $config.SqlAdminUsername
-        sqlAdminPassword               = $SqlPassword
-        entraIdTenantId                = $EntraApps.TenantId
-        deploymentPrincipalObjectId    = $currentUserObjectId
+        environment                 = $config.Environment
+        location                    = $config.Location
+        sqlAdminUsername            = $config.SqlAdminUsername
+        sqlAdminPassword            = $SqlPassword
+        entraTenantId               = $EntraConfig.Metadata.TenantId
+        entraBackendClientId        = $EntraConfig.BackendAPI.ApplicationId
+        entraBackendClientSecret    = $EntraConfig.BackendAPI.ClientSecret
+        entraFrontendClientId       = $EntraConfig.FrontendSPA.ApplicationId
     }
 
-    # Convert parameters to JSON
+    # Convert to JSON for Azure CLI
     $parametersJson = $parameters | ConvertTo-Json -Compress
 
     # Validate template
@@ -346,8 +334,10 @@ function Deploy-Infrastructure {
     }
     Write-Success "Template validation passed"
 
-    # Deploy infrastructure
-    Write-Info "Deploying infrastructure (this may take 5-10 minutes)..."
+    # Deploy
+    Write-Info "Deploying infrastructure (this may take 8-12 minutes)..."
+    Write-Info "You can monitor progress in Azure Portal: Subscriptions > Deployments"
+
     $deployment = az deployment sub create `
         --location $config.Location `
         --template-file $config.BicepTemplatePath `
@@ -362,45 +352,23 @@ function Deploy-Infrastructure {
 
     # Extract outputs
     $outputs = @{
-        ResourceGroupName             = $deployment.properties.outputs.resourceGroupName.value
-        SqlServerName                 = $deployment.properties.outputs.sqlServerName.value
-        SqlDatabaseName               = $deployment.properties.outputs.sqlDatabaseName.value
-        SqlServerFqdn                 = $deployment.properties.outputs.sqlServerFqdn.value
-        BackendAppServiceName         = $deployment.properties.outputs.backendAppServiceName.value
-        BackendAppServiceUrl          = $deployment.properties.outputs.backendAppServiceUrl.value
-        FrontendStaticWebAppName      = $deployment.properties.outputs.frontendStaticWebAppName.value
-        FrontendStaticWebAppUrl       = $deployment.properties.outputs.frontendStaticWebAppUrl.value
-        FrontendDeploymentToken       = $deployment.properties.outputs.frontendStaticWebAppDeploymentToken.value
-        KeyVaultName                  = $deployment.properties.outputs.keyVaultName.value
-        KeyVaultUri                   = $deployment.properties.outputs.keyVaultUri.value
-        AppInsightsConnectionString   = $deployment.properties.outputs.applicationInsightsConnectionString.value
-        AppInsightsInstrumentationKey = $deployment.properties.outputs.applicationInsightsInstrumentationKey.value
+        ResourceGroupName               = $deployment.properties.outputs.resourceGroupName.value
+        SqlServerName                   = $deployment.properties.outputs.sqlServerName.value
+        SqlDatabaseName                 = $deployment.properties.outputs.sqlDatabaseName.value
+        SqlServerFqdn                   = $deployment.properties.outputs.sqlServerFqdn.value
+        AppServiceName                  = $deployment.properties.outputs.appServiceName.value
+        AppServiceUrl                   = $deployment.properties.outputs.appServiceUrl.value
+        KeyVaultName                    = $deployment.properties.outputs.keyVaultName.value
+        KeyVaultUri                     = $deployment.properties.outputs.keyVaultUri.value
+        AppInsightsConnectionString     = $deployment.properties.outputs.appInsightsConnectionString.value
+        AppInsightsInstrumentationKey   = $deployment.properties.outputs.appInsightsInstrumentationKey.value
+        LogAnalyticsWorkspaceId         = $deployment.properties.outputs.logAnalyticsWorkspaceId.value
     }
 
     return $outputs
 }
 
-function Set-AdditionalSecrets {
-    param(
-        [hashtable]$Outputs,
-        [hashtable]$EntraApps
-    )
-
-    Write-Header "Storing Additional Secrets in Key Vault"
-
-    $keyVaultName = $Outputs.KeyVaultName
-
-    Write-Info "Storing Entra ID configuration..."
-
-    az keyvault secret set --vault-name $keyVaultName --name "EntraTenantId" --value $EntraApps.TenantId | Out-Null
-    az keyvault secret set --vault-name $keyVaultName --name "EntraBackendClientId" --value $EntraApps.BackendAppId | Out-Null
-    az keyvault secret set --vault-name $keyVaultName --name "EntraBackendClientSecret" --value $EntraApps.BackendClientSecret | Out-Null
-    az keyvault secret set --vault-name $keyVaultName --name "EntraFrontendClientId" --value $EntraApps.FrontendAppId | Out-Null
-
-    Write-Success "Secrets stored successfully"
-}
-
-function Set-FirewallRule {
+function Add-SqlFirewallRule {
     param(
         [string]$ResourceGroupName,
         [string]$SqlServerName
@@ -408,7 +376,7 @@ function Set-FirewallRule {
 
     Write-Header "Configuring SQL Server Firewall"
 
-    Write-Info "Adding your current IP address to SQL Server firewall..."
+    Write-Info "Adding your IP address to SQL Server firewall..."
 
     try {
         $myIp = (Invoke-WebRequest -Uri "https://api.ipify.org" -UseBasicParsing).Content
@@ -423,95 +391,87 @@ function Set-FirewallRule {
         Write-Success "Firewall rule added for IP: $myIp"
     }
     catch {
-        Write-Warning "Could not add firewall rule automatically. Add manually in Azure Portal if needed."
+        Write-Warning "Could not add firewall rule automatically"
+        Write-Info "Add manually in Azure Portal if needed for local access"
     }
 }
 
 function Show-DeploymentSummary {
     param(
         [hashtable]$Outputs,
-        [hashtable]$EntraApps
+        [object]$EntraConfig
     )
 
     Write-Host ""
     Write-Host "============================================================================" -ForegroundColor Green
-    Write-Host " DEPLOYMENT COMPLETED SUCCESSFULLY!" -ForegroundColor Green
+    Write-Host " INFRASTRUCTURE DEPLOYMENT COMPLETED!" -ForegroundColor Green
     Write-Host "============================================================================" -ForegroundColor Green
     Write-Host ""
 
-    Write-Host "ENVIRONMENT DETAILS" -ForegroundColor Cyan
-    Write-Host "-------------------" -ForegroundColor Cyan
-    Write-Host "Environment:       dev" -ForegroundColor White
-    Write-Host "Location:          $($config.Location)" -ForegroundColor White
+    Write-Host "AZURE RESOURCES" -ForegroundColor Cyan
+    Write-Host "---------------" -ForegroundColor Cyan
     Write-Host "Resource Group:    $($Outputs.ResourceGroupName)" -ForegroundColor White
+    Write-Host "Location:          $($config.Location)" -ForegroundColor White
     Write-Host ""
 
     Write-Host "BACKEND API" -ForegroundColor Yellow
     Write-Host "-----------" -ForegroundColor Yellow
-    Write-Host "App Service:       $($Outputs.BackendAppServiceName)" -ForegroundColor White
-    Write-Host "URL:               $($Outputs.BackendAppServiceUrl)" -ForegroundColor White
-    Write-Host "Swagger:           $($Outputs.BackendAppServiceUrl)/swagger" -ForegroundColor White
-    Write-Host "Health Check:      $($Outputs.BackendAppServiceUrl)/health" -ForegroundColor White
-    Write-Host ""
-
-    Write-Host "FRONTEND APP" -ForegroundColor Yellow
-    Write-Host "------------" -ForegroundColor Yellow
-    Write-Host "Static Web App:    $($Outputs.FrontendStaticWebAppName)" -ForegroundColor White
-    Write-Host "URL:               $($Outputs.FrontendStaticWebAppUrl)" -ForegroundColor White
+    Write-Host "App Service:       $($Outputs.AppServiceName)" -ForegroundColor White
+    Write-Host "URL:               $($Outputs.AppServiceUrl)" -ForegroundColor White
+    Write-Host "Health:            $($Outputs.AppServiceUrl)/health" -ForegroundColor White
     Write-Host ""
 
     Write-Host "DATABASE" -ForegroundColor Yellow
     Write-Host "--------" -ForegroundColor Yellow
     Write-Host "SQL Server:        $($Outputs.SqlServerFqdn)" -ForegroundColor White
     Write-Host "Database:          $($Outputs.SqlDatabaseName)" -ForegroundColor White
+    Write-Host "Admin User:        $($config.SqlAdminUsername)" -ForegroundColor White
     Write-Host ""
 
-    Write-Host "MONITORING" -ForegroundColor Yellow
-    Write-Host "----------" -ForegroundColor Yellow
+    Write-Host "SECRETS & MONITORING" -ForegroundColor Yellow
+    Write-Host "--------------------" -ForegroundColor Yellow
     Write-Host "Key Vault:         $($Outputs.KeyVaultName)" -ForegroundColor White
-    Write-Host "App Insights:      Portal > Monitor > Application Insights" -ForegroundColor White
+    Write-Host "App Insights:      Portal > Application Insights" -ForegroundColor White
     Write-Host ""
 
-    Write-Host "ENTRA ID APPS" -ForegroundColor Yellow
-    Write-Host "-------------" -ForegroundColor Yellow
-    Write-Host "Tenant ID:         $($EntraApps.TenantId)" -ForegroundColor White
-    Write-Host "Backend Client ID: $($EntraApps.BackendAppId)" -ForegroundColor White
-    Write-Host "Frontend Client ID: $($EntraApps.FrontendAppId)" -ForegroundColor White
+    Write-Host "ENTRA ID INTEGRATION" -ForegroundColor Yellow
+    Write-Host "--------------------" -ForegroundColor Yellow
+    Write-Host "Tenant:            $($EntraConfig.Metadata.TenantId)" -ForegroundColor White
+    Write-Host "Backend App:       $($EntraConfig.BackendAPI.ApplicationId)" -ForegroundColor White
+    Write-Host "Frontend App:      $($EntraConfig.FrontendSPA.ApplicationId)" -ForegroundColor White
     Write-Host ""
 
     Write-Host "NEXT STEPS" -ForegroundColor Cyan
     Write-Host "----------" -ForegroundColor Cyan
-    Write-Host "1. Update your frontend .env file with:" -ForegroundColor White
-    Write-Host "   VITE_API_URL=$($Outputs.BackendAppServiceUrl)" -ForegroundColor Gray
-    Write-Host "   VITE_ENTRA_CLIENT_ID=$($EntraApps.FrontendAppId)" -ForegroundColor Gray
-    Write-Host "   VITE_ENTRA_TENANT_ID=$($EntraApps.TenantId)" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "2. Deploy backend code:" -ForegroundColor White
+    Write-Host "1. Deploy backend code to App Service:" -ForegroundColor White
     Write-Host "   cd src/backend" -ForegroundColor Gray
     Write-Host "   dotnet publish -c Release" -ForegroundColor Gray
-    Write-Host "   az webapp deploy --resource-group $($Outputs.ResourceGroupName) --name $($Outputs.BackendAppServiceName) --src-path <zip-file>" -ForegroundColor Gray
+    Write-Host "   az webapp deploy --resource-group $($Outputs.ResourceGroupName) --name $($Outputs.AppServiceName) --src-path <zip>" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "3. Deploy frontend code:" -ForegroundColor White
-    Write-Host "   Use the Azure DevOps pipeline or:" -ForegroundColor Gray
-    Write-Host "   cd src/frontend && npm run build" -ForegroundColor Gray
-    Write-Host "   Use deployment token from Key Vault: FrontendDeploymentToken" -ForegroundColor Gray
+    Write-Host "2. Deploy frontend code to Static Web App" -ForegroundColor White
+    Write-Host "   (See DEPLOYMENT-GUIDE.md for details)" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "4. Run database migrations:" -ForegroundColor White
+    Write-Host "3. Run database migrations:" -ForegroundColor White
     Write-Host "   cd src/backend" -ForegroundColor Gray
-    Write-Host "   dotnet ef database update --project DjoppieInventory.Infrastructure --startup-project DjoppieInventory.API" -ForegroundColor Gray
+    Write-Host "   dotnet ef database update --project DjoppieInventory.Infrastructure" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "5. Configure Azure DevOps pipeline variables in the Azure DevOps portal" -ForegroundColor White
+    Write-Host "4. Update app redirect URIs in Entra ID:" -ForegroundColor White
+    Write-Host "   Backend: $($Outputs.AppServiceUrl)/signin-oidc" -ForegroundColor Gray
     Write-Host ""
     Write-Host "============================================================================" -ForegroundColor Green
     Write-Host ""
 
-    # Save outputs to file
-    $outputFile = "deployment-outputs-dev.json"
+    # Save outputs
+    $outputFile = "infrastructure-outputs-$(Get-Date -Format 'yyyyMMddHHmmss').json"
     @{
-        Timestamp   = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        Environment = "dev"
-        Outputs     = $Outputs
-        EntraApps   = $EntraApps
+        Timestamp       = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        Environment     = $config.Environment
+        Infrastructure  = $Outputs
+        EntraApps       = @{
+            TenantId        = $EntraConfig.Metadata.TenantId
+            BackendAppId    = $EntraConfig.BackendAPI.ApplicationId
+            FrontendAppId   = $EntraConfig.FrontendSPA.ApplicationId
+        }
     } | ConvertTo-Json -Depth 10 | Out-File $outputFile
 
     Write-Success "Deployment outputs saved to: $outputFile"
@@ -522,58 +482,41 @@ function Show-DeploymentSummary {
 # ============================================================================
 
 try {
-    Write-Header "Djoppie Inventory - DEV Environment Deployment"
-    Write-Host "This script will deploy the complete Djoppie Inventory system to Azure"
+    Write-Header "Djoppie Inventory - Infrastructure Deployment"
+    Write-Host "This script deploys Azure infrastructure for Djoppie Inventory"
     Write-Host ""
 
     # Step 1: Prerequisites
     Test-Prerequisites
 
-    # Step 2: Set subscription
+    # Step 2: Load Entra configuration
+    $entraConfig = Get-EntraConfiguration
+
+    # Step 3: Set Azure subscription
     $subscription = Set-AzureSubscription
 
-    # Step 3: Create Entra ID apps
-    if (-not $SkipEntraApps) {
-        $entraApps = New-EntraIdApps
-    }
-    else {
-        Write-Warning "Skipping Entra ID app creation. Ensure apps exist and provide credentials manually."
-        $entraApps = @{
-            TenantId            = Read-Host "Enter Tenant ID"
-            BackendAppId        = Read-Host "Enter Backend App ID"
-            BackendClientSecret = Read-Host "Enter Backend Client Secret" -AsSecureString | ConvertFrom-SecureString -AsPlainText
-            FrontendAppId       = Read-Host "Enter Frontend App ID"
-        }
-    }
-
-    # Step 4: Generate SQL password
-    $sqlPassword = New-SecurePassword
-    Write-Info "SQL Admin Password generated (will be stored in Key Vault)"
+    # Step 4: Get SQL password
+    $sqlPassword = Get-SqlPassword
 
     # Step 5: Deploy infrastructure
-    if (-not $SkipInfrastructure) {
-        $outputs = Deploy-Infrastructure -EntraApps $entraApps -SqlPassword $sqlPassword
+    $outputs = Deploy-Infrastructure -EntraConfig $entraConfig -SqlPassword $sqlPassword
 
-        # Step 6: Store additional secrets
-        Set-AdditionalSecrets -Outputs $outputs -EntraApps $entraApps
+    # Step 6: Configure SQL firewall
+    Add-SqlFirewallRule -ResourceGroupName $outputs.ResourceGroupName -SqlServerName $outputs.SqlServerName
 
-        # Step 7: Configure firewall
-        Set-FirewallRule -ResourceGroupName $outputs.ResourceGroupName -SqlServerName $outputs.SqlServerName
-    }
-    else {
-        Write-Warning "Skipping infrastructure deployment"
-        # Would need to fetch existing outputs here
-    }
+    # Step 7: Show summary
+    Show-DeploymentSummary -Outputs $outputs -EntraConfig $entraConfig
 
-    # Step 8: Show summary
-    Show-DeploymentSummary -Outputs $outputs -EntraApps $entraApps
-
-    Write-Success "Deployment completed successfully!"
+    Write-Success "Infrastructure deployment completed successfully!"
     exit 0
 }
 catch {
-    Write-Error "Deployment failed: $_"
+    Write-ErrorMessage "Deployment failed: $_"
+    Write-Host ""
+    Write-Host "Error Details:" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Stack Trace:" -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Red
     exit 1
 }
