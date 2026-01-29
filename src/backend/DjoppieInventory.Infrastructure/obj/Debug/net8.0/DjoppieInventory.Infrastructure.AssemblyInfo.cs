@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DjoppieInventory.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a7f4e9cbacea9005166bf27e7d2cca6d477d80f7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dab4c88aab8e790705f293bc7a72e7c498163df9")]
 [assembly: System.Reflection.AssemblyProductAttribute("DjoppieInventory.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DjoppieInventory.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -11,7 +11,8 @@
       "Bash(dotnet run)",
       "Bash(npm create:*)",
       "Skill(business-dashboard-designer)",
-      "Skill(frontend-design)"
+      "Skill(frontend-design)",
+      "Bash(git cherry-pick:*)"
     ]
   }
 }
