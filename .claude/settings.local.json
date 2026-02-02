@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell \"Get-ChildItem -Recurse | Select-Object FullName\")",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln:*)",
+      "Bash(dotnet sln add:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet ef migrations add:*)",
+      "Bash(dotnet run)",
+      "Bash(npm create:*)",
+      "Skill(business-dashboard-designer)",
+      "Skill(frontend-design)",
+      "Bash(git cherry-pick:*)",
+      "Bash(ls:*)",
+      "Bash(powershell -Command \"New-Item -Path ''setup-entra-apps.ps1'' -ItemType File -Force\")",
+      "Bash(powershell -Command \"Get-Help ./setup-entra-apps.ps1\")",
+      "Bash(powershell -Command \"$null = $PSCommandPath; Test-Path ./setup-entra-apps.ps1\")",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nRestructure project with complete Azure DevOps CI/CD pipeline and deployment automation\n\nMajor cleanup and organization:\n- Removed duplicate infrastructure and documentation directories\n- Consolidated infrastructure to single infra/ directory\n- Removed outdated docs/ directory with 40+ redundant files\n- Organized deployment scripts and guides at root level\n\nNew Azure DevOps CI/CD pipeline:\n- Complete 5-stage pipeline with build, test, and deployment\n- Automated backend \\(.NET\\) and frontend \\(React\\) builds\n- Infrastructure deployment with Bicep templates\n- Database migrations and smoke tests\n- Pipeline variable setup automation\n\nEnhanced deployment scripts:\n- setup-entra-apps.ps1: Comprehensive Entra ID app registration with Microsoft best practices\n- deploy-dev.ps1: Updated with correct paths and tenant configuration\n- setup-azure-devops-variables.ps1: Automated pipeline variable configuration\n\nComprehensive documentation:\n- DEPLOYMENT-GUIDE.md: Complete step-by-step deployment guide\n- README-DEPLOYMENT.md: Technical overview and architecture\n- .azuredevops/README.md: CI/CD pipeline setup guide\n- ENTRA-QUICK-REFERENCE.md & ENTRA-SETUP-README.md: Quick reference guides\n\nConfiguration:\n- Tenant ID: 7db28d6f-d542-40c1-b529-5e5ed2aad545 \\(Diepenbeek\\)\n- App registrations: Djoppie-Inventory-Backend-API-DEV, Djoppie-Inventory-Frontend-SPA-DEV\n- Single sign-on with Microsoft Entra ID\n- Minimal cost setup \\(€6-10/month DEV environment\\)\n\nAll scripts follow Microsoft best practices with OAuth 2.0 + PKCE for SPA,\nproper API scope exposure, and secure secret management.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git mv:*)",
+      "Bash(pwsh:*)",
+      "Bash(az deployment sub list:*)",
+      "Bash(az deployment sub show:*)",
+      "Bash(az monitor app-insights query:*)",
+      "Bash(npm run dev)",
+      "Bash(git -C \"C:/Users/jowij/VSCodeDiepenbeek/Djoppie/Djoppie-inventory-v2/Djoppie-Inventory\" status --short src/backend/DjoppieInventory.API/appsettings.Production.json src/backend/DjoppieInventory.API/Program.cs)"
+    ]
+  }
+}

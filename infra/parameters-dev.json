@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "westeurope"
+    },
+    "sqlAdminLogin": {
+      "value": "djoppieadmin"
+    },
+    "sqlAdminPassword": {
+      "value": "REPLACE_WITH_SECURE_PASSWORD_OR_USE_KEYVAULT_REFERENCE"
+    },
+    "entraIdTenantId": {
+      "value": "REPLACE_WITH_DIEPENBEEK_TENANT_ID"
+    },
+    "deploymentPrincipalObjectId": {
+      "value": "REPLACE_WITH_YOUR_OBJECT_ID_OR_SERVICE_PRINCIPAL_ID"
+    }
+  }
+}

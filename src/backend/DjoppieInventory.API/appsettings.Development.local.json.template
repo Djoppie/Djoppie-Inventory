@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "// INSTRUCTIONS": "Copy this file to appsettings.Development.local.json and fill in your local secrets",
+  "// NOTE": "appsettings.Development.local.json is gitignored and will override Key Vault for local development",
+  "// WARNING": "NEVER commit appsettings.Development.local.json to source control",
+
+  "KeyVault": {
+    "// VaultName": "Leave empty to disable Key Vault and use local secrets below",
+    "VaultName": ""
+  },
+
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=djoppie.db"
+  },
+
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "TenantId": "7db28d6f-d542-40c1-b529-5e5ed2aad545",
+    "ClientId": "eb5bcf06-8032-494f-a363-92b6802c44bf",
+    "// ClientSecret": "Get this from Azure Portal or another developer",
+    "ClientSecret": "YOUR_CLIENT_SECRET_HERE",
+    "Domain": "diepenbeek.onmicrosoft.com",
+    "Audience": "api://eb5bcf06-8032-494f-a363-92b6802c44bf",
+    "Scopes": "access_as_user"
+  },
+
+  "MicrosoftGraph": {
+    "BaseUrl": "https://graph.microsoft.com/v1.0",
+    "Scopes": [ "https://graph.microsoft.com/.default" ]
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Information"
+    }
+  }
+}

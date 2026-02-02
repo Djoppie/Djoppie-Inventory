@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DjoppieInventory.API/DjoppieInventory.API.csproj" />
+  <Project Path="DjoppieInventory.Core/DjoppieInventory.Core.csproj" />
+  <Project Path="DjoppieInventory.Infrastructure/DjoppieInventory.Infrastructure.csproj" />
+  <Project Path="DjoppieInventory.Tests/DjoppieInventory.Tests.csproj" />
+</Solution>
