@@ -47,8 +47,8 @@ app-logs/
 *.log
 *.zip
 
-# Allow all markdown files in docs/ subdirectories
-!docs/**/*.md
+# do not Allow all markdown files in docs/ subdirectories
+docs/**/*.md
 
 # Auto Claude data directory
 .auto-claude/
