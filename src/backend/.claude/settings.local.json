@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git rm:*)",
-      "Bash(dotnet list:*)",
-      "Bash(dotnet add:*)"
-    ]
-  }
-}
