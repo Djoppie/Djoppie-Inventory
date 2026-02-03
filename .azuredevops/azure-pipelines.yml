@@ -198,7 +198,8 @@ stages:
             deploy:
               steps:
                 - download: current
-                  artifact: $(infraArtifactName)
+                  artifact: infra-drop
+                  displayName: 'Download Infrastructure Artifacts'
 
                 - task: AzureCLI@2
                   displayName: 'Deploy Bicep Template'
@@ -208,12 +209,14 @@ stages:
                     scriptLocation: 'inlineScript'
                     inlineScript: |
                       echo "Deploying infrastructure to Azure..."
+                      echo "Artifact location: $(Pipeline.Workspace)/infra-drop"
+                      ls -la $(Pipeline.Workspace)/infra-drop || echo "Artifact not found"
 
                       # Deploy at subscription scope
                       az deployment sub create \
                         --name "djoppie-dev-$(Build.BuildId)" \
                         --location $(location) \
-                        --template-file $(Pipeline.Workspace)/$(infraArtifactName)/bicep/main.dev.bicep \
+                        --template-file $(Pipeline.Workspace)/infra-drop/bicep/main.dev.bicep \
                         --parameters \
                           environment=dev \
                           location=$(location) \
