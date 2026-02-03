@@ -62,13 +62,30 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 # ============================================================================
+# AZURE CLI PATH FIX
+# ============================================================================
+# Add Azure CLI to PATH if not already available
+if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+    $azPaths = @(
+        "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin",
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+    )
+    foreach ($azPath in $azPaths) {
+        if (Test-Path $azPath) {
+            $env:PATH += ";$azPath"
+            break
+        }
+    }
+}
+
+# ============================================================================
 # CONFIGURATION
 # ============================================================================
 
 $config = @{
     Environment       = "dev"
-    ProjectName       = "djoppie-inv"
-    ResourceGroupName = "rg-djoppie-inv-dev"
+    ProjectName       = "djoppie-inventory"
+    ResourceGroupName = "rg-djoppie-inventory-dev"
     Location          = $Location
     TenantId          = "7db28d6f-d542-40c1-b529-5e5ed2aad545"
 

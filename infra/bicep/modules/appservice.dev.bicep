@@ -44,6 +44,9 @@ param sqlDatabaseName string
 @description('Frontend URL for CORS')
 param frontendUrl string
 
+@description('Backend API Client ID for audience configuration')
+param entraBackendClientId string
+
 @description('.NET version')
 param dotnetVersion string = 'v8.0'
 
@@ -116,7 +119,7 @@ resource appSettings 'Microsoft.Web/sites/config@2023-12-01' = {
     'AzureAd__TenantId': '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/EntraTenantId/)'
     'AzureAd__ClientId': '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/EntraBackendClientId/)'
     'AzureAd__ClientSecret': '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/EntraBackendClientSecret/)'
-    'AzureAd__Audience': 'api://fc0be7bf-0e71-4c39-8a02-614dfa16322c' // Update this with actual backend API app ID
+    'AzureAd__Audience': 'api://${entraBackendClientId}' // Dynamic audience based on backend client ID
 
     // Microsoft Graph configuration
     'MicrosoftGraph__BaseUrl': 'https://graph.microsoft.com/v1.0'
