@@ -197,9 +197,11 @@ stages:
           runOnce:
             deploy:
               steps:
-                - download: current
-                  artifact: infra-drop
+                - task: DownloadPipelineArtifact@2
                   displayName: 'Download Infrastructure Artifacts'
+                  inputs:
+                    artifactName: 'infra-drop'
+                    downloadPath: '$(Pipeline.Workspace)'
 
                 - task: AzureCLI@2
                   displayName: 'Deploy Bicep Template'
@@ -269,8 +271,11 @@ stages:
           runOnce:
             deploy:
               steps:
-                - download: current
-                  artifact: $(backendArtifactName)
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Backend Artifacts'
+                  inputs:
+                    artifactName: 'backend-drop'
+                    downloadPath: '$(Pipeline.Workspace)'
 
                 - task: AzureWebApp@1
                   displayName: 'Deploy Backend to App Service'
@@ -278,7 +283,7 @@ stages:
                     azureSubscription: $(azureServiceConnection)
                     appType: 'webApp'
                     appName: '$(backendAppServiceName)'
-                    package: '$(Pipeline.Workspace)/$(backendArtifactName)/**/*.zip'
+                    package: '$(Pipeline.Workspace)/backend-drop/**/*.zip'
                     deploymentMethod: 'zipDeploy'
 
                 - task: AzureCLI@2
@@ -317,14 +322,17 @@ stages:
           runOnce:
             deploy:
               steps:
-                - download: current
-                  artifact: $(frontendArtifactName)
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Frontend Artifacts'
+                  inputs:
+                    artifactName: 'frontend-drop'
+                    downloadPath: '$(Pipeline.Workspace)'
 
                 - task: AzureStaticWebApp@0
                   displayName: 'Deploy Frontend to Static Web App'
                   inputs:
                     azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
-                    app_location: '$(Pipeline.Workspace)/$(frontendArtifactName)'
+                    app_location: '$(Pipeline.Workspace)/frontend-drop'
                     skip_app_build: true
                     skip_api_build: true
 
