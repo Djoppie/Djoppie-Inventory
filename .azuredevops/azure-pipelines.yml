@@ -281,7 +281,7 @@ stages:
     dependsOn: DeployInfrastructure
     condition: succeeded()
     variables:
-      appServiceName: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.AppServiceName'] ]
+      appServiceName: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['deploy.GetOutputs.AppServiceName'] ]
     jobs:
       - deployment: DeployBackendAPI
         displayName: 'Deploy to App Service'
