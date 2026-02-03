@@ -33,29 +33,46 @@ pr:
       - develop
 
 variables:
+  # Variable Groups (contains secrets)
+  - group: 'Djoppie-Inventory-Dev'
+
   # Build Configuration
-  buildConfiguration: 'Release'
-  dotnetSdkVersion: '8.x'
-  nodeVersion: '20.x'
+  - name: buildConfiguration
+    value: 'Release'
+  - name: dotnetSdkVersion
+    value: '8.x'
+  - name: nodeVersion
+    value: '20.x'
 
   # Azure Configuration
-  azureServiceConnection: 'AzureServiceConnection'
-  resourceGroupName: 'rg-djoppie-inventory-dev'
-  location: 'westeurope'
+  - name: azureServiceConnection
+    value: 'AzureServiceConnection'
+  - name: resourceGroupName
+    value: 'rg-djoppie-inventory-dev'
+  - name: location
+    value: 'westeurope'
 
   # Application Names
-  backendAppServiceName: 'app-djoppie-inventory-dev-api'
-  frontendStaticWebAppName: 'swa-djoppie-inventory-dev-ui'
+  - name: backendAppServiceName
+    value: 'app-djoppie-inventory-dev-api'
+  - name: frontendStaticWebAppName
+    value: 'swa-djoppie-inventory-dev-ui'
 
   # Paths
-  backendPath: 'src/backend'
-  frontendPath: 'src/frontend'
-  infraPath: 'infra'
+  - name: backendPath
+    value: 'src/backend'
+  - name: frontendPath
+    value: 'src/frontend'
+  - name: infraPath
+    value: 'infra'
 
   # Build Artifacts
-  backendArtifactName: 'backend-drop'
-  frontendArtifactName: 'frontend-drop'
-  infraArtifactName: 'infra-drop'
+  - name: backendArtifactName
+    value: 'backend-drop'
+  - name: frontendArtifactName
+    value: 'frontend-drop'
+  - name: infraArtifactName
+    value: 'infra-drop'
 
 stages:
   # ============================================================================
