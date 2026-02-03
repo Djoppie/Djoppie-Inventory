@@ -97,7 +97,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     if (!validateForm()) return;
 
     if (isEditMode) {
-      const { assetCode, ...updateData } = formData;
+      const { assetCode: _assetCode, ...updateData } = formData; // eslint-disable-line @typescript-eslint/no-unused-vars
       onSubmit(updateData as UpdateAssetDto);
     } else {
       onSubmit(formData);
