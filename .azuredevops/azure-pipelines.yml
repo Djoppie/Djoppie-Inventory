@@ -252,6 +252,7 @@ stages:
                       cat deployment-output.json
 
                 - task: AzureCLI@2
+                  name: GetOutputs
                   displayName: 'Get Deployment Outputs'
                   inputs:
                     azureSubscription: $(azureServiceConnection)
@@ -279,6 +280,8 @@ stages:
     displayName: 'Deploy Backend API'
     dependsOn: DeployInfrastructure
     condition: succeeded()
+    variables:
+      appServiceName: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.AppServiceName'] ]
     jobs:
       - deployment: DeployBackendAPI
         displayName: 'Deploy to App Service'
@@ -301,7 +304,7 @@ stages:
                   inputs:
                     azureSubscription: $(azureServiceConnection)
                     appType: 'webApp'
-                    appName: '$(backendAppServiceName)'
+                    appName: '$(appServiceName)'
                     package: '$(Pipeline.Workspace)/backend-drop/**/*.zip'
                     deploymentMethod: 'zipDeploy'
 
