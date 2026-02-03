@@ -305,11 +305,16 @@ stages:
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
                     inlineScript: |
-                      # Find the App Service in the resource group
+                      # Find the App Service in the resource group (starts with 'app-' and contains 'api')
                       APP_SERVICE_NAME=$(az webapp list \
                         --resource-group $(resourceGroupName) \
-                        --query "[?contains(name, 'app-djoppie-inventory-dev-api')].name" \
+                        --query "[?starts_with(name, 'app-') && contains(name, 'api')].name | [0]" \
                         -o tsv)
+
+                      if [ -z "$APP_SERVICE_NAME" ]; then
+                        echo "##[error]No App Service found in resource group $(resourceGroupName)"
+                        exit 1
+                      fi
 
                       echo "Found App Service: $APP_SERVICE_NAME"
                       echo "##vso[task.setvariable variable=appServiceName]$APP_SERVICE_NAME"
