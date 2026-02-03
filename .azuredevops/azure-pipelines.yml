@@ -270,8 +270,30 @@ stages:
                         --query 'properties.outputs.appServiceName.value' \
                         -o tsv)
 
+                      APP_SERVICE_URL=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.appServiceUrl.value' \
+                        -o tsv)
+
+                      STATIC_WEB_APP_NAME=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.staticWebAppName.value' \
+                        -o tsv)
+
+                      STATIC_WEB_APP_API_KEY=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.staticWebAppApiKey.value' \
+                        -o tsv)
+
                       echo "##vso[task.setvariable variable=AppServiceName;isOutput=true]$APP_SERVICE_NAME"
+                      echo "##vso[task.setvariable variable=AppServiceUrl;isOutput=true]$APP_SERVICE_URL"
+                      echo "##vso[task.setvariable variable=StaticWebAppName;isOutput=true]$STATIC_WEB_APP_NAME"
+                      echo "##vso[task.setvariable variable=StaticWebAppApiKey;isOutput=true;issecret=true]$STATIC_WEB_APP_API_KEY"
+
                       echo "App Service Name: $APP_SERVICE_NAME"
+                      echo "App Service URL: $APP_SERVICE_URL"
+                      echo "Static Web App Name: $STATIC_WEB_APP_NAME"
+                      echo "Static Web App API Key: [REDACTED]"
 
   # ============================================================================
   # STAGE 3: DEPLOY BACKEND
@@ -350,11 +372,17 @@ stages:
   # ============================================================================
   # STAGE 4: DEPLOY FRONTEND
   # ============================================================================
-  # TODO: Enable when Static Web App is created in infrastructure
   - stage: DeployFrontend
-    displayName: 'Deploy Frontend SPA (DISABLED - No Static Web App)'
-    dependsOn: DeployBackend
-    condition: false  # Disabled until Static Web App is provisioned
+    displayName: 'Deploy Frontend SPA'
+    dependsOn:
+      - DeployBackend
+      - DeployInfrastructure
+      - Build
+    condition: succeeded()
+    variables:
+      staticWebAppApiKey: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.StaticWebAppApiKey'] ]
+      staticWebAppUrl: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.StaticWebAppUrl'] ]
+      appServiceUrl: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.AppServiceUrl'] ]
     jobs:
       - deployment: DeployFrontendSPA
         displayName: 'Deploy to Static Web App'
@@ -365,29 +393,74 @@ stages:
           runOnce:
             deploy:
               steps:
-                - task: DownloadPipelineArtifact@2
-                  displayName: 'Download Frontend Artifacts'
+                - checkout: self
+                  displayName: 'Checkout source code'
+
+                - task: NodeTool@0
+                  displayName: 'Install Node.js'
                   inputs:
-                    buildType: 'current'
-                    artifactName: 'frontend-drop'
-                    downloadPath: '$(Pipeline.Workspace)'
+                    versionSpec: $(nodeVersion)
+
+                - task: AzureCLI@2
+                  name: RebuildFrontend
+                  displayName: 'Rebuild Frontend with Production URLs'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Building frontend with production configuration..."
+
+                      # Get actual resource names from infrastructure outputs
+                      DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
+
+                      APP_SERVICE_URL=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.appServiceUrl.value' \
+                        -o tsv)
+
+                      STATIC_WEB_APP_URL=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.staticWebAppUrl.value' \
+                        -o tsv)
+
+                      echo "Backend API URL: $APP_SERVICE_URL"
+                      echo "Frontend URL: $STATIC_WEB_APP_URL"
+
+                      # Navigate to frontend directory
+                      cd $(frontendPath)
+
+                      # Install dependencies
+                      npm ci
+
+                      # Create production .env file with actual URLs
+                      echo "VITE_API_URL=${APP_SERVICE_URL}/api" > .env.production
+                      echo "VITE_ENTRA_CLIENT_ID=$(ENTRA_FRONTEND_CLIENT_ID)" >> .env.production
+                      echo "VITE_ENTRA_TENANT_ID=$(ENTRA_TENANT_ID)" >> .env.production
+                      echo "VITE_ENTRA_REDIRECT_URI=${STATIC_WEB_APP_URL}" >> .env.production
+                      echo "VITE_ENTRA_AUTHORITY=https://login.microsoftonline.com/$(ENTRA_TENANT_ID)" >> .env.production
+                      echo "VITE_ENTRA_API_SCOPE=api://$(ENTRA_BACKEND_CLIENT_ID)/access_as_user" >> .env.production
+
+                      # Build frontend
+                      npm run build
+
+                      echo "Frontend build completed"
 
                 - task: AzureStaticWebApp@0
                   displayName: 'Deploy Frontend to Static Web App'
                   inputs:
-                    azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
-                    app_location: '$(Pipeline.Workspace)/frontend-drop'
+                    azure_static_web_apps_api_token: $(staticWebAppApiKey)
+                    app_location: '$(frontendPath)/dist'
                     skip_app_build: true
                     skip_api_build: true
 
   # ============================================================================
   # STAGE 5: SMOKE TESTS
   # ============================================================================
-  # TODO: Enable when frontend deployment is working
   - stage: SmokeTests
-    displayName: 'Smoke Tests (DISABLED)'
-    dependsOn: DeployBackend
-    condition: false  # Disabled until frontend deployment is configured
+    displayName: 'Smoke Tests'
+    dependsOn: DeployFrontend
+    condition: succeeded()
     jobs:
       - job: RunSmokeTests
         displayName: 'Run Smoke Tests'

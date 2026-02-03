@@ -202,6 +202,20 @@ module secrets 'modules/keyvault-secrets.bicep' = {
   ]
 }
 
+// Static Web App (Frontend SPA)
+module staticWebApp 'modules/staticwebapp.bicep' = {
+  scope: resourceGroup
+  name: 'staticWebAppDeployment'
+  params: {
+    location: location
+    environment: environment
+    namingPrefix: namingPrefix
+    tags: tags
+    skuName: 'Free'
+    backendApiUrl: appService.outputs.appServiceUrl
+  }
+}
+
 // ============================================================================
 // OUTPUTS
 // ============================================================================
@@ -227,6 +241,11 @@ output appServicePrincipalId string = appService.outputs.appServicePrincipalId
 // Application Insights
 output appInsightsName string = appInsights.outputs.appInsightsName
 output appInsightsInstrumentationKey string = appInsights.outputs.instrumentationKey
+
+// Static Web App
+output staticWebAppName string = staticWebApp.outputs.staticWebAppName
+output staticWebAppUrl string = staticWebApp.outputs.staticWebAppUrl
+output staticWebAppApiKey string = staticWebApp.outputs.staticWebAppApiKey
 output appInsightsConnectionString string = appInsights.outputs.connectionString
 
 // Log Analytics
