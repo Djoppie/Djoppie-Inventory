@@ -280,8 +280,6 @@ stages:
     displayName: 'Deploy Backend API'
     dependsOn: DeployInfrastructure
     condition: succeeded()
-    variables:
-      appServiceName: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['deploy.GetOutputs.AppServiceName'] ]
     jobs:
       - deployment: DeployBackendAPI
         displayName: 'Deploy to App Service'
@@ -298,6 +296,23 @@ stages:
                     buildType: 'current'
                     artifactName: 'backend-drop'
                     downloadPath: '$(Pipeline.Workspace)'
+
+                - task: AzureCLI@2
+                  name: GetAppServiceName
+                  displayName: 'Get App Service Name'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Find the App Service in the resource group
+                      APP_SERVICE_NAME=$(az webapp list \
+                        --resource-group $(resourceGroupName) \
+                        --query "[?contains(name, 'app-djoppie-inventory-dev-api')].name" \
+                        -o tsv)
+
+                      echo "Found App Service: $APP_SERVICE_NAME"
+                      echo "##vso[task.setvariable variable=appServiceName]$APP_SERVICE_NAME"
 
                 - task: AzureWebApp@1
                   displayName: 'Deploy Backend to App Service'
