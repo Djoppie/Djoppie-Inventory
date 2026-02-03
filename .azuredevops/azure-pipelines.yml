@@ -200,6 +200,7 @@ stages:
                 - task: DownloadPipelineArtifact@2
                   displayName: 'Download Infrastructure Artifacts'
                   inputs:
+                    buildType: 'current'
                     artifactName: 'infra-drop'
                     downloadPath: '$(Pipeline.Workspace)'
 
@@ -274,6 +275,7 @@ stages:
                 - task: DownloadPipelineArtifact@2
                   displayName: 'Download Backend Artifacts'
                   inputs:
+                    buildType: 'current'
                     artifactName: 'backend-drop'
                     downloadPath: '$(Pipeline.Workspace)'
 
@@ -325,6 +327,7 @@ stages:
                 - task: DownloadPipelineArtifact@2
                   displayName: 'Download Frontend Artifacts'
                   inputs:
+                    buildType: 'current'
                     artifactName: 'frontend-drop'
                     downloadPath: '$(Pipeline.Workspace)'
 
