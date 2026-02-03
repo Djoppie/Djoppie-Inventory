@@ -228,7 +228,8 @@ const DjoppieLoading = ({
                 (row === 1 && col === 1)
               );
 
-              const isDataPattern = !isCorner && Math.random() > 0.45;
+              // Deterministic pattern based on position (instead of Math.random for React purity)
+              const isDataPattern = !isCorner && ((row * 7 + col) % 3 !== 0);
 
               const isBlack = isFinderPattern || isDataPattern;
 

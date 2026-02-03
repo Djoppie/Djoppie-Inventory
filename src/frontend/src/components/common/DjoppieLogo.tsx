@@ -41,16 +41,6 @@ const ringPulse = keyframes`
   }
 `;
 
-// Shimmer effect using gradient animation
-const shimmer = keyframes`
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-`;
-
 // Gentle head tilt animation
 const headTilt = keyframes`
   0%, 100% {
@@ -93,16 +83,6 @@ const ambientGlow = keyframes`
   }
   50% {
     filter: drop-shadow(0 0 20px rgba(255, 168, 65, 0.6));
-  }
-`;
-
-// Modern gradient shift
-const gradientShift = keyframes`
-  0%, 100% {
-    stop-color: #FFA841;
-  }
-  50% {
-    stop-color: #FFB858;
   }
 `;
 
