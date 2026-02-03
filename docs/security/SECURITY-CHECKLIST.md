@@ -1,4 +1,5 @@
 # SECURITY REMEDIATION CHECKLIST
+
 ## Djoppie Inventory - Critical Security Issues Resolution
 
 **SEVERITY:** CRITICAL - Must complete before production deployment
@@ -50,6 +51,7 @@ Write-Host "SQL password rotated successfully" -ForegroundColor Green
 ```
 
 **Verification:**
+
 - [ ] Password saved in secure password manager
 - [ ] Old password no longer works
 - [ ] Test connection with new password succeeds
@@ -86,6 +88,7 @@ Write-Host $newDevSecret -ForegroundColor Yellow
 ```
 
 **Verification:**
+
 - [ ] Production client secret saved
 - [ ] Development client secret saved
 - [ ] Old secrets no longer work (test after updating Key Vault)
@@ -119,6 +122,7 @@ Write-Host "Key Vault secrets updated successfully" -ForegroundColor Green
 ```
 
 **Verification:**
+
 - [ ] Key Vault shows updated secret versions
 - [ ] App Service can access secrets (check Application Insights logs)
 - [ ] Backend API authenticates successfully with new secrets
@@ -180,6 +184,7 @@ Edit `appsettings.Production.json`:
 ```
 
 **Changes Made:**
+
 - [ ] ConnectionString uses Key Vault reference
 - [ ] ClientSecret uses Key Vault reference
 - [ ] Removed localhost from AllowedOrigins (production only)
@@ -191,11 +196,13 @@ Edit `appsettings.Production.json`:
 Edit `docs/BACKEND-CONFIGURATION-GUIDE.md`:
 
 **Find and replace:**
+
 - `ClientSecret: "vu-8Q~Z_KOrU5jQGlmGYXLDBDpmDd83hRg2AscA_"` → `ClientSecret: "<stored-in-azure-key-vault>"`
 - `ClientSecret: "~_F8Q~QoPr9w32OVCh55IKDXKrnwRYEj5v~8jaLs"` → `ClientSecret: "<stored-in-azure-key-vault>"`
 - `Password=DjoppieDB2026!Secure@Pass;` → `Password=<secure-password>;`
 
 **Verification:**
+
 - [ ] No plaintext passwords in documentation
 - [ ] No plaintext client secrets in documentation
 - [ ] Documentation clearly states secrets are in Key Vault
@@ -230,6 +237,7 @@ EOF
 ```
 
 **Verification:**
+
 - [ ] `appsettings.Production.json` listed in .gitignore
 - [ ] Git status shows file as "ignored"
 - [ ] Existing tracked version still in repository (will be overwritten on next commit)
@@ -265,6 +273,7 @@ git push origin develop
 ```
 
 **Verification:**
+
 - [ ] Commit pushed successfully
 - [ ] GitHub shows updated files
 - [ ] No secrets visible in diff
@@ -301,12 +310,14 @@ git push --force
 **Option B: Create Fresh Repository**
 
 If repository is private and team is small:
+
 1. Create new repository
 2. Copy latest code (excluding .git folder)
 3. Initialize new Git history
 4. Migrate issues/PRs manually
 
 **Verification:**
+
 - [ ] Git history searched for exposed secrets (none found)
 - [ ] Team notified of history rewrite
 - [ ] All contributors re-clone repository
@@ -348,6 +359,7 @@ Write-Host "App Service can now access Key Vault without client secrets" -Foregr
 ```
 
 **Verification:**
+
 - [ ] App Service shows "System assigned" identity enabled
 - [ ] Key Vault access policies include App Service identity
 - [ ] App Service successfully loads configuration from Key Vault
@@ -388,11 +400,13 @@ Create a secret rotation policy:
 ```
 
 **Create Azure Logic App for automatic reminders (optional):**
+
 - Trigger: 7 days before secret expiration
 - Action: Send email to administrators
 - Content: Include rotation scripts
 
 **Verification:**
+
 - [ ] Calendar reminders set
 - [ ] Rotation runbook documented
 - [ ] Team trained on rotation process
@@ -423,12 +437,14 @@ az security pricing create \
 ```
 
 **Review recommendations:**
+
 1. Navigate to: Azure Portal > Security Center > Recommendations
 2. Review "High" and "Critical" severity items
 3. Implement recommended actions
 4. Configure automated remediation for common issues
 
 **Verification:**
+
 - [ ] Security Center shows no "Critical" recommendations
 - [ ] SQL Threat Detection enabled
 - [ ] Key Vault diagnostic logging enabled
@@ -475,6 +491,7 @@ updates:
 ```
 
 **Verification:**
+
 - [ ] Dependabot is creating pull requests for updates
 - [ ] Secret scanning alerts are enabled
 - [ ] No secrets detected in repository
@@ -502,6 +519,7 @@ az monitor app-insights query \
 ```
 
 **Expected Results:**
+
 - [ ] App Service starts successfully
 - [ ] No "Key Vault access denied" errors
 - [ ] Configuration loaded from Key Vault
@@ -517,6 +535,7 @@ az monitor app-insights query \
 4. Test API endpoint (e.g., GET /api/assets)
 
 **Expected Results:**
+
 - [ ] OAuth flow completes successfully
 - [ ] Token issued with correct audience
 - [ ] API returns 200 OK (not 401 Unauthorized)
@@ -532,6 +551,7 @@ az monitor app-insights query \
 4. Attempt to create/view/edit asset
 
 **Expected Results:**
+
 - [ ] Login succeeds
 - [ ] Token acquired with correct scope
 - [ ] API calls succeed (check browser Network tab)
@@ -595,6 +615,7 @@ npm audit
 ## FINAL VERIFICATION CHECKLIST
 
 ### Configuration Security
+
 - [ ] No hardcoded passwords in source code
 - [ ] No hardcoded client secrets in source code
 - [ ] No connection strings with passwords in source code
@@ -603,6 +624,7 @@ npm audit
 - [ ] .gitignore prevents future secret commits
 
 ### Credential Rotation
+
 - [ ] SQL Server password rotated
 - [ ] Entra ID client secrets rotated (all environments)
 - [ ] Old credentials confirmed non-functional
@@ -610,6 +632,7 @@ npm audit
 - [ ] Key Vault updated with new credentials
 
 ### Azure Security
+
 - [ ] Managed Identity enabled on App Service
 - [ ] Key Vault access policies configured correctly
 - [ ] SQL Server firewall rules appropriate
@@ -618,6 +641,7 @@ npm audit
 - [ ] Backup policies configured
 
 ### Documentation & Process
+
 - [ ] Documentation updated (no exposed secrets)
 - [ ] Secret rotation schedule established
 - [ ] Team trained on secure practices
@@ -625,6 +649,7 @@ npm audit
 - [ ] Git history cleaned (if applicable)
 
 ### Testing
+
 - [ ] App Service loads configuration from Key Vault
 - [ ] Backend API authenticates successfully
 - [ ] Frontend-backend integration works
@@ -632,6 +657,7 @@ npm audit
 - [ ] No authentication errors in logs
 
 ### Ongoing Monitoring
+
 - [ ] GitHub secret scanning enabled
 - [ ] Dependabot alerts enabled
 - [ ] Azure Security Center monitoring active
@@ -663,6 +689,7 @@ npm audit
 If this repository was public or secrets were exposed for more than 24 hours:
 
 ### Immediate Actions
+
 1. **Assume breach:** Treat all exposed credentials as compromised
 2. **Rotate everything:** SQL passwords, Entra secrets, API keys
 3. **Audit access logs:**
@@ -688,6 +715,7 @@ If this repository was public or secrets were exposed for more than 24 hours:
    - Lessons learned
 
 ### Post-Incident Actions
+
 - [ ] Conduct full security audit
 - [ ] Review and update incident response plan
 - [ ] Implement additional controls (e.g., MFA for database access)
@@ -699,16 +727,19 @@ If this repository was public or secrets were exposed for more than 24 hours:
 ## SUPPORT CONTACTS
 
 **Azure Security Issues:**
-- Azure Security Center: https://portal.azure.com > Security Center
-- Azure Support: https://portal.azure.com > Help + support
+
+- Azure Security Center: <https://portal.azure.com> > Security Center
+- Azure Support: <https://portal.azure.com> > Help + support
 
 **Entra ID Issues:**
-- Entra ID Admin Center: https://entra.microsoft.com
-- Microsoft Identity Platform: https://docs.microsoft.com/azure/active-directory
+
+- Entra ID Admin Center: <https://entra.microsoft.com>
+- Microsoft Identity Platform: <https://docs.microsoft.com/azure/active-directory>
 
 **Djoppie Inventory Team:**
-- Primary Contact: jo.wijnen@diepenbeek.be
-- Repository Issues: https://github.com/Djoppie/Djoppie-Inventory/issues
+
+- Primary Contact: <jo.wijnen@diepenbeek.be>
+- Repository Issues: <https://github.com/Djoppie/Djoppie-Inventory/issues>
 
 ---
 
