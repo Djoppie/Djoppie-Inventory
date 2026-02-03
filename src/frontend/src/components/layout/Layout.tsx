@@ -6,7 +6,7 @@ import Navigation from './Navigation';
 import DjoppieLogo from '../common/DjoppieLogo';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserProfile from '../auth/UserProfile';
-import { useThemeMode } from '../../theme/ThemeContext';
+import { useThemeMode } from '../../hooks/useThemeMode';
 
 interface LayoutProps {
   children: ReactNode;

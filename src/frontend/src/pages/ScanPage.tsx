@@ -37,9 +37,9 @@ const ScanPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const {
-    data: asset,
+    data: _asset,
     isLoading,
-    error,
+    error: _error,
     refetch,
   } = useAssetByCode(searchCode);
 

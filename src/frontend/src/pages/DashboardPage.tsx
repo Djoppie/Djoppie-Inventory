@@ -117,7 +117,7 @@ const DashboardPage = () => {
   const filteredAndSortedAssets = useMemo(() => {
     if (!assetsFilteredBySearchAndCategory) return [];
 
-    let result = [...assetsFilteredBySearchAndCategory];
+    const result = [...assetsFilteredBySearchAndCategory];
 
     // Apply sorting
     switch (sortBy) {
