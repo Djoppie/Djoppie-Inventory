@@ -52,21 +52,6 @@ const pixelAppear = keyframes`
   }
 `;
 
-// Data stream effect
-const dataStream = keyframes`
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-`;
-
 // Subtle pulse for loading text
 const subtlePulse = keyframes`
   0%, 100% {
@@ -98,8 +83,8 @@ const FUN_MESSAGES = [
 const DjoppieLoading = ({
   message,
   fullScreen = false,
-  bootSequence = false,
-  partyMode = false,
+  bootSequence = false, // eslint-disable-line @typescript-eslint/no-unused-vars
+  partyMode = false, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: DjoppieLoadingProps) => {
   const [funMessage, setFunMessage] = useState(FUN_MESSAGES[0]);
   const [messageIndex, setMessageIndex] = useState(0);
