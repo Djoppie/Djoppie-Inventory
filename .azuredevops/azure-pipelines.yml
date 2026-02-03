@@ -350,10 +350,11 @@ stages:
   # ============================================================================
   # STAGE 4: DEPLOY FRONTEND
   # ============================================================================
+  # TODO: Enable when Static Web App is created in infrastructure
   - stage: DeployFrontend
-    displayName: 'Deploy Frontend SPA'
+    displayName: 'Deploy Frontend SPA (DISABLED - No Static Web App)'
     dependsOn: DeployBackend
-    condition: succeeded()
+    condition: false  # Disabled until Static Web App is provisioned
     jobs:
       - deployment: DeployFrontendSPA
         displayName: 'Deploy to Static Web App'
@@ -382,10 +383,11 @@ stages:
   # ============================================================================
   # STAGE 5: SMOKE TESTS
   # ============================================================================
+  # TODO: Enable when frontend deployment is working
   - stage: SmokeTests
-    displayName: 'Smoke Tests'
-    dependsOn: DeployFrontend
-    condition: succeeded()
+    displayName: 'Smoke Tests (DISABLED)'
+    dependsOn: DeployBackend
+    condition: false  # Disabled until frontend deployment is configured
     jobs:
       - job: RunSmokeTests
         displayName: 'Run Smoke Tests'
