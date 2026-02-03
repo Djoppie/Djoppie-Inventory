@@ -39,7 +39,9 @@ param enablePurgeProtection bool = false
 // VARIABLES
 // ============================================================================
 
-var keyVaultName = 'kv-${namingPrefix}-${uniqueSuffix}'
+// Key Vault names must be 3-24 characters (alphanumeric and hyphens only)
+// Using abbreviated naming to stay within limit
+var keyVaultName = 'kv-djoppie-${environment}-${uniqueSuffix}'
 
 // ============================================================================
 // RESOURCES
