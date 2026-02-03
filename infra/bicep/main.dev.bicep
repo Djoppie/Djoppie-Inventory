@@ -19,7 +19,7 @@ param environment string = 'dev'
 param location string = 'westeurope'
 
 @description('Project name prefix for all resources')
-param projectName string = 'djoppie'
+param projectName string = 'djoppie-inventory'
 
 @description('Unique suffix for globally unique resource names (6 characters)')
 @minLength(6)
@@ -63,7 +63,7 @@ param tags object = {
 // VARIABLES
 // ============================================================================
 
-var resourceGroupName = 'rg-${projectName}-${environment}-${location}'
+var resourceGroupName = 'rg-${projectName}-${environment}'
 var namingPrefix = '${projectName}-${environment}'
 
 // ============================================================================
@@ -164,13 +164,14 @@ module appService 'modules/appservice.dev.bicep' = {
     sqlServerFqdn: sqlServer.outputs.sqlServerFqdn
     sqlDatabaseName: sqlServer.outputs.databaseName
     frontendUrl: 'http://localhost:5173' // Will be updated after Static Web App deployment
+    entraBackendClientId: entraBackendClientId
   }
 }
 
-// Grant App Service access to Key Vault
-module keyVaultAccessPolicy 'modules/keyvault-accesspolicy.bicep' = {
+// Grant App Service access to Key Vault using RBAC (2026+ standard)
+module keyVaultRbac 'modules/keyvault-rbac.bicep' = {
   scope: resourceGroup
-  name: 'keyVaultAccessPolicyDeployment'
+  name: 'keyVaultRbacDeployment'
   params: {
     keyVaultName: keyVault.outputs.keyVaultName
     appServicePrincipalId: appService.outputs.appServicePrincipalId

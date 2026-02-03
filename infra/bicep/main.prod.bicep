@@ -19,7 +19,7 @@ param environment string = 'prod'
 param location string = 'westeurope'
 
 @description('Project name prefix for all resources')
-param projectName string = 'djoppie-inv'
+param projectName string = 'djoppie-inventory'
 
 @description('Unique suffix for globally unique resource names (6 characters)')
 @minLength(6)
@@ -75,8 +75,8 @@ param tags object = {
 // VARIABLES
 // ============================================================================
 
-var resourceGroupName = 'rg-${projectName}-${environment}-${location}'
-var drResourceGroupName = 'rg-${projectName}-dr-${secondaryLocation}'
+var resourceGroupName = 'rg-${projectName}-${environment}'
+var drResourceGroupName = 'rg-${projectName}-dr'
 var namingPrefix = '${projectName}-${environment}'
 
 // ============================================================================
@@ -226,6 +226,7 @@ module appService 'modules/appservice.prod.bicep' = {
     sqlServerFqdn: sqlServer.outputs.sqlServerFqdn
     sqlDatabaseName: sqlServer.outputs.databaseName
     frontendUrl: frontendUrl
+    entraBackendClientId: entraBackendClientId
     enableDeploymentSlot: true // Production: enable staging slot
   }
 }
@@ -246,10 +247,10 @@ module redisCache 'modules/redis.bicep' = if (enableRedisCache) {
   }
 }
 
-// Grant App Service access to Key Vault
-module keyVaultAccessPolicy 'modules/keyvault-accesspolicy.bicep' = {
+// Grant App Service access to Key Vault using RBAC (2026+ standard)
+module keyVaultRbac 'modules/keyvault-rbac.bicep' = {
   scope: resourceGroup
-  name: 'keyVaultAccessPolicyDeployment'
+  name: 'keyVaultRbacDeployment'
   params: {
     keyVaultName: keyVault.outputs.keyVaultName
     appServicePrincipalId: appService.outputs.appServicePrincipalId

@@ -58,7 +58,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     enableSoftDelete: enableSoftDelete
     softDeleteRetentionInDays: softDeleteRetentionDays
     enablePurgeProtection: enablePurgeProtection ? true : null
-    enableRbacAuthorization: false // Using access policies instead
+    enableRbacAuthorization: true // Use Azure RBAC (2026+ standard)
 
     // Network settings
     networkAcls: {

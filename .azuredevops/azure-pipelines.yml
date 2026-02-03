@@ -40,12 +40,12 @@ variables:
 
   # Azure Configuration
   azureServiceConnection: 'AzureServiceConnection'
-  resourceGroupName: 'rg-djoppie-inv-dev'
+  resourceGroupName: 'rg-djoppie-inventory-dev'
   location: 'westeurope'
 
   # Application Names
-  backendAppServiceName: 'app-djoppie-dev-api'
-  frontendStaticWebAppName: 'swa-djoppie-dev-ui'
+  backendAppServiceName: 'app-djoppie-inventory-dev-api'
+  frontendStaticWebAppName: 'swa-djoppie-inventory-dev-ui'
 
   # Paths
   backendPath: 'src/backend'

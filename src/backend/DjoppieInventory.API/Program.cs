@@ -3,20 +3,6 @@ using DjoppieInventory.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Azure Key Vault for secure configuration management
-// Must be called early in the pipeline, before other services that depend on secrets
-builder.AddAzureKeyVault();
-
-// Validate that all required secrets are available (from Key Vault or appsettings)
-// This prevents the application from starting with missing critical configuration
-if (!builder.Environment.IsDevelopment())
-{
-    builder.Configuration.ValidateRequiredSecrets(
-        "AzureAd:ClientSecret",
-        "ConnectionStrings:DefaultConnection"
-    );
-}
-
 // Configure Application Insights
 builder.Services.AddApplicationInsightsTelemetry();
 
