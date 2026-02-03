@@ -1,16 +1,7 @@
-import { createContext, useState, useMemo, ReactNode, useEffect } from 'react';
+import { useState, useMemo, ReactNode, useEffect } from 'react';
 import { ThemeProvider, createTheme, PaletteMode } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
-
-interface ThemeContextType {
-  mode: PaletteMode;
-  toggleTheme: () => void;
-}
-
-export const ThemeContext = createContext<ThemeContextType>({
-  mode: 'light',
-  toggleTheme: () => { },
-});
+import { ThemeContext } from '../contexts/ThemeContext';
 
 interface DjoppieThemeProviderProps {
   children: ReactNode;

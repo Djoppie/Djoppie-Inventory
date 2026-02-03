@@ -37,9 +37,9 @@ const ScanPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const {
-    data: _asset,
+    data: _asset, // eslint-disable-line @typescript-eslint/no-unused-vars
     isLoading,
-    error: _error,
+    error: _error, // eslint-disable-line @typescript-eslint/no-unused-vars
     refetch,
   } = useAssetByCode(searchCode);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -60,10 +60,9 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [previewCodes, setPreviewCodes] = useState<string[]>([]);
 
-  // Generate preview of asset codes
-  useEffect(() => {
+  // Generate preview of asset codes using useMemo (avoids setState in effect)
+  const previewCodes = useMemo(() => {
     if (formData.assetCodePrefix && formData.quantity > 0) {
       const codes: string[] = [];
       for (let i = 0; i < Math.min(formData.quantity, 5); i++) {
@@ -73,10 +72,9 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
       if (formData.quantity > 5) {
         codes.push('...');
       }
-      setPreviewCodes(codes);
-    } else {
-      setPreviewCodes([]);
+      return codes;
     }
+    return [];
   }, [formData.assetCodePrefix, formData.startingNumber, formData.quantity]);
 
   const handleTemplateChange = (templateId: number) => {
