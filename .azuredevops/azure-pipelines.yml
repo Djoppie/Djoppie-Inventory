@@ -379,10 +379,6 @@ stages:
       - DeployInfrastructure
       - Build
     condition: succeeded()
-    variables:
-      staticWebAppApiKey: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.StaticWebAppApiKey'] ]
-      staticWebAppUrl: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.StaticWebAppUrl'] ]
-      appServiceUrl: $[ stageDependencies.DeployInfrastructure.DeployInfra.outputs['GetOutputs.AppServiceUrl'] ]
     jobs:
       - deployment: DeployFrontendSPA
         displayName: 'Deploy to Static Web App'
@@ -446,10 +442,36 @@ stages:
 
                       echo "Frontend build completed"
 
+                - task: AzureCLI@2
+                  name: GetStaticWebAppToken
+                  displayName: 'Get Static Web App Deployment Token'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Getting Static Web App deployment token..."
+
+                      # Get deployment outputs
+                      DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
+
+                      STATIC_WEB_APP_API_KEY=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.staticWebAppApiKey.value' \
+                        -o tsv)
+
+                      if [ -z "$STATIC_WEB_APP_API_KEY" ]; then
+                        echo "##[error]Failed to get Static Web App API key from deployment outputs"
+                        exit 1
+                      fi
+
+                      echo "Static Web App API key retrieved successfully"
+                      echo "##vso[task.setvariable variable=staticWebAppToken;issecret=true]$STATIC_WEB_APP_API_KEY"
+
                 - task: AzureStaticWebApp@0
                   displayName: 'Deploy Frontend to Static Web App'
                   inputs:
-                    azure_static_web_apps_api_token: $(staticWebAppApiKey)
+                    azure_static_web_apps_api_token: $(staticWebAppToken)
                     app_location: '$(frontendPath)/dist'
                     skip_app_build: true
                     skip_api_build: true
