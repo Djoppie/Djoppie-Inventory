@@ -497,12 +497,19 @@ stages:
                         --query "[?starts_with(name, 'app-') && contains(name, 'api')].name | [0]" \
                         -o tsv)
 
-                      echo "Setting Frontend__AllowedOrigins__0=$STATIC_WEB_APP_URL on $APP_SERVICE_NAME"
+                      echo "Setting CORS for $APP_SERVICE_NAME to allow $STATIC_WEB_APP_URL"
 
+                      # Update app settings (used by ASP.NET Core CORS middleware)
                       az webapp config appsettings set \
                         --resource-group $(resourceGroupName) \
                         --name $APP_SERVICE_NAME \
                         --settings "Frontend__AllowedOrigins__0=$STATIC_WEB_APP_URL"
+
+                      # Update Azure-level CORS (handles preflight before app code)
+                      az webapp cors add \
+                        --resource-group $(resourceGroupName) \
+                        --name $APP_SERVICE_NAME \
+                        --allowed-origins "$STATIC_WEB_APP_URL"
 
                       echo "Backend CORS updated successfully"
 
