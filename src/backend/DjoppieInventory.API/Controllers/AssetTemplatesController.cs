@@ -1,5 +1,6 @@
 using AutoMapper;
 using DjoppieInventory.Core.DTOs;
+using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -57,6 +58,63 @@ public class AssetTemplatesController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving template {TemplateId}", id);
             return StatusCode(500, "An error occurred while retrieving the template");
+        }
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<AssetTemplateDto>> CreateTemplate(CreateAssetTemplateDto createDto)
+    {
+        try
+        {
+            var template = _mapper.Map<AssetTemplate>(createDto);
+            var created = await _templateRepository.CreateAsync(template);
+            var templateDto = _mapper.Map<AssetTemplateDto>(created);
+            return CreatedAtAction(nameof(GetTemplate), new { id = templateDto.Id }, templateDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating asset template");
+            return StatusCode(500, "An error occurred while creating the template");
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<AssetTemplateDto>> UpdateTemplate(int id, UpdateAssetTemplateDto updateDto)
+    {
+        try
+        {
+            var existing = await _templateRepository.GetByIdAsync(id);
+            if (existing == null)
+                return NotFound($"Template with ID {id} not found");
+
+            _mapper.Map(updateDto, existing);
+            var updated = await _templateRepository.UpdateAsync(existing);
+            var templateDto = _mapper.Map<AssetTemplateDto>(updated);
+            return Ok(templateDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating template {TemplateId}", id);
+            return StatusCode(500, "An error occurred while updating the template");
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteTemplate(int id)
+    {
+        try
+        {
+            var existing = await _templateRepository.GetByIdAsync(id);
+            if (existing == null)
+                return NotFound($"Template with ID {id} not found");
+
+            await _templateRepository.DeleteAsync(id);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting template {TemplateId}", id);
+            return StatusCode(500, "An error occurred while deleting the template");
         }
     }
 }

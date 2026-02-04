@@ -24,6 +24,10 @@ public class MappingProfile : Profile
 
         // AssetTemplate mappings
         CreateMap<AssetTemplate, AssetTemplateDto>();
+        CreateMap<CreateAssetTemplateDto, AssetTemplate>();
+        CreateMap<UpdateAssetTemplateDto, AssetTemplate>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore());
     }
 
     private static AssetStatus ParseAssetStatus(string statusString)

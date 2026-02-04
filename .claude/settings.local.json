@@ -28,7 +28,10 @@
       "Bash(az deployment sub show:*)",
       "Bash(az monitor app-insights query:*)",
       "Bash(npm run dev)",
-      "Bash(git -C \"C:/Users/jowij/VSCodeDiepenbeek/Djoppie/Djoppie-inventory-v2/Djoppie-Inventory\" status --short src/backend/DjoppieInventory.API/appsettings.Production.json src/backend/DjoppieInventory.API/Program.cs)"
+      "Bash(git -C \"C:/Users/jowij/VSCodeDiepenbeek/Djoppie/Djoppie-inventory-v2/Djoppie-Inventory\" status --short src/backend/DjoppieInventory.API/appsettings.Production.json src/backend/DjoppieInventory.API/Program.cs)",
+      "Bash(az webapp cors:*)",
+      "Bash(findstr:*)",
+      "Bash(az ad signed-in-user show:*)"
     ]
   }
 }

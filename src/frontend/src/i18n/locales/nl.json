@@ -17,12 +17,16 @@
     "no": "Nee",
     "ok": "OK",
     "refresh": "Vernieuwen",
-    "tryAgain": "Opnieuw proberen"
+    "tryAgain": "Opnieuw proberen",
+    "actions": "Acties",
+    "saving": "Opslaan...",
+    "deleting": "Verwijderen..."
   },
   "navigation": {
     "dashboard": "Dashboard",
     "scan": "Scannen",
-    "assets": "Activa"
+    "assets": "Activa",
+    "templates": "Sjablonen"
   },
   "dashboard": {
     "title": "Activa Dashboard",
@@ -134,6 +138,37 @@
     "retired": "Buiten gebruik",
     "lost": "Verloren",
     "damaged": "Beschadigd"
+  },
+  "templates": {
+    "title": "Sjablonen",
+    "subtitle": "Beheer herbruikbare sjablonen voor snelle asset aanmaak",
+    "templateCount": "{{count}} sjablonen",
+    "addTemplate": "Sjabloon toevoegen",
+    "editTemplate": "Sjabloon bewerken",
+    "deleteTemplate": "Sjabloon verwijderen",
+    "deleteConfirm": "Weet u zeker dat u sjabloon '{{name}}' wilt verwijderen?",
+    "templateName": "Sjabloonnaam",
+    "assetName": "Asset naam",
+    "category": "Categorie",
+    "brand": "Merk",
+    "model": "Model",
+    "owner": "Eigenaar",
+    "building": "Gebouw",
+    "spaceOrFloor": "Ruimte / Verdieping",
+    "lifecycleDates": "Levenscyclus datums (optioneel)",
+    "purchaseDate": "Aankoopdatum",
+    "warrantyExpiry": "Garantie vervaldatum",
+    "installationDate": "Installatiedatum",
+    "noTemplates": "Geen sjablonen gevonden",
+    "noTemplatesDesc": "Maak uw eerste sjabloon aan om te beginnen",
+    "saveSuccess": "Sjabloon succesvol opgeslagen",
+    "updateSuccess": "Sjabloon succesvol bijgewerkt",
+    "deleteSuccess": "Sjabloon succesvol verwijderd",
+    "saveError": "Fout bij opslaan sjabloon",
+    "deleteError": "Fout bij verwijderen sjabloon",
+    "errorLoading": "Fout bij laden sjablonen",
+    "loading": "Sjablonen laden...",
+    "required": "Verplicht"
   },
   "errors": {
     "networkError": "Netwerkfout. Controleer of de backend-API actief is.",

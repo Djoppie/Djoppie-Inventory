@@ -17,12 +17,16 @@
     "no": "No",
     "ok": "OK",
     "refresh": "Refresh",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "actions": "Actions",
+    "saving": "Saving...",
+    "deleting": "Deleting..."
   },
   "navigation": {
     "dashboard": "Dashboard",
     "scan": "Scan",
-    "assets": "Assets"
+    "assets": "Assets",
+    "templates": "Templates"
   },
   "dashboard": {
     "title": "Asset Dashboard",
@@ -134,6 +138,37 @@
     "retired": "Retired",
     "lost": "Lost",
     "damaged": "Damaged"
+  },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Manage reusable asset templates for quick creation",
+    "templateCount": "{{count}} templates",
+    "addTemplate": "Add Template",
+    "editTemplate": "Edit Template",
+    "deleteTemplate": "Delete Template",
+    "deleteConfirm": "Are you sure you want to delete template '{{name}}'?",
+    "templateName": "Template Name",
+    "assetName": "Asset Name",
+    "category": "Category",
+    "brand": "Brand",
+    "model": "Model",
+    "owner": "Owner",
+    "building": "Building",
+    "spaceOrFloor": "Space / Floor",
+    "lifecycleDates": "Lifecycle dates (optional)",
+    "purchaseDate": "Purchase Date",
+    "warrantyExpiry": "Warranty Expiry",
+    "installationDate": "Installation Date",
+    "noTemplates": "No templates found",
+    "noTemplatesDesc": "Create your first template to get started",
+    "saveSuccess": "Template saved successfully",
+    "updateSuccess": "Template updated successfully",
+    "deleteSuccess": "Template deleted successfully",
+    "saveError": "Failed to save template",
+    "deleteError": "Failed to delete template",
+    "errorLoading": "Error loading templates",
+    "loading": "Loading templates...",
+    "required": "Required"
   },
   "errors": {
     "networkError": "Network Error. Please check if the backend API is running.",

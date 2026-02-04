@@ -98,4 +98,30 @@ public class AssetsController : ControllerBase
         var result = await _assetService.BulkCreateAssetsAsync(bulkCreateDto);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Gets the next available asset number for a given prefix (below 9000).
+    /// </summary>
+    [HttpGet("next-number")]
+    public async Task<ActionResult<int>> GetNextAssetNumber([FromQuery] string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix))
+            return BadRequest("Prefix is required");
+
+        var nextNumber = await _assetService.GetNextAssetNumberAsync(prefix);
+        return Ok(nextNumber);
+    }
+
+    /// <summary>
+    /// Checks if an asset code already exists.
+    /// </summary>
+    [HttpGet("code-exists")]
+    public async Task<ActionResult<bool>> AssetCodeExists([FromQuery] string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return BadRequest("Code is required");
+
+        var exists = await _assetService.GetAssetByCodeAsync(code) != null;
+        return Ok(exists);
+    }
 }

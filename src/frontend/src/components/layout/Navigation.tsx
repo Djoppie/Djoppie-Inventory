@@ -4,6 +4,7 @@ import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import CategoryIcon from '@mui/icons-material/Category';
 import { ROUTES } from '../../constants/routes';
 
 /**
@@ -20,6 +21,7 @@ const Navigation = () => {
     if (location.pathname === ROUTES.DASHBOARD) return 0;
     if (location.pathname === ROUTES.SCAN) return 1;
     if (location.pathname === ROUTES.ASSETS_NEW) return 2;
+    if (location.pathname === ROUTES.TEMPLATES) return 3;
     return 0;
   };
 
@@ -33,6 +35,9 @@ const Navigation = () => {
         break;
       case 2:
         navigate(ROUTES.ASSETS_NEW);
+        break;
+      case 3:
+        navigate(ROUTES.TEMPLATES);
         break;
     }
   };
@@ -52,6 +57,7 @@ const Navigation = () => {
         <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.assets')} icon={<AddBoxIcon />} />
+        <BottomNavigationAction label={t('navigation.templates')} icon={<CategoryIcon />} />
       </BottomNavigation>
     </Paper>
   );

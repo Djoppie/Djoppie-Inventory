@@ -41,4 +41,9 @@ public interface IAssetService
     /// Creates multiple assets in a single operation
     /// </summary>
     Task<BulkCreateAssetResultDto> BulkCreateAssetsAsync(BulkCreateAssetDto bulkCreateDto);
+
+    /// <summary>
+    /// Gets the next available asset number for a given prefix (below 9000)
+    /// </summary>
+    Task<int> GetNextAssetNumberAsync(string prefix);
 }

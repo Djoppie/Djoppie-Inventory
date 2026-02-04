@@ -11,4 +11,5 @@ public interface IAssetRepository
     Task<Asset> UpdateAsync(Asset asset);
     Task<bool> DeleteAsync(int id);
     Task<bool> AssetCodeExistsAsync(string assetCode);
+    Task<int> GetNextAssetNumberAsync(string prefix);
 }

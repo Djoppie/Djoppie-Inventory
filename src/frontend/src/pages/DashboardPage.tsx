@@ -44,6 +44,15 @@ const VIEW_MODE_STORAGE_KEY = 'djoppie-dashboard-view-mode';
 
 type SortOption = 'name-asc' | 'name-desc' | 'code-asc' | 'code-desc' | 'date-newest' | 'date-oldest';
 
+// Helper: check if an asset code has a number >= 9000 (dummy/test asset)
+const isDummyAsset = (assetCode: string): boolean => {
+  const lastDash = assetCode.lastIndexOf('-');
+  if (lastDash < 0) return false;
+  const numStr = assetCode.substring(lastDash + 1);
+  const num = parseInt(numStr, 10);
+  return !isNaN(num) && num >= 9000;
+};
+
 const DashboardPage = () => {
   const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -60,7 +69,8 @@ const DashboardPage = () => {
     return (savedMode === 'card' || savedMode === 'table') ? savedMode : 'card';
   });
 
-  const { data: assets, isLoading, error, refetch } = useAssets(statusFilter);
+  // Always fetch all assets; filtering is done client-side
+  const { data: assets, isLoading, error, refetch } = useAssets();
 
   // Save view mode to localStorage whenever it changes
   useEffect(() => {
@@ -113,11 +123,40 @@ const DashboardPage = () => {
     return result;
   }, [assets, searchQuery, categoryFilter]);
 
+  // Split into real assets and dummy assets (code number >= 9000)
+  const realAssets = useMemo(() =>
+    assetsFilteredBySearchAndCategory.filter(a => !isDummyAsset(a.assetCode)),
+    [assetsFilteredBySearchAndCategory]
+  );
+  const dummyAssets = useMemo(() =>
+    assetsFilteredBySearchAndCategory.filter(a => isDummyAsset(a.assetCode)),
+    [assetsFilteredBySearchAndCategory]
+  );
+
   // Filter and sort assets
   const filteredAndSortedAssets = useMemo(() => {
-    if (!assetsFilteredBySearchAndCategory) return [];
+    // When Dummy is selected, show only dummy assets
+    if (statusFilter === 'Dummy') {
+      const result = [...dummyAssets];
+      // Apply sorting below
+      switch (sortBy) {
+        case 'name-asc': result.sort((a, b) => a.assetName.localeCompare(b.assetName)); break;
+        case 'name-desc': result.sort((a, b) => b.assetName.localeCompare(a.assetName)); break;
+        case 'code-asc': result.sort((a, b) => a.assetCode.localeCompare(b.assetCode)); break;
+        case 'code-desc': result.sort((a, b) => b.assetCode.localeCompare(a.assetCode)); break;
+        case 'date-newest': result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
+        case 'date-oldest': result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break;
+      }
+      return result;
+    }
 
-    const result = [...assetsFilteredBySearchAndCategory];
+    // For regular filters, use only non-dummy assets
+    let result = [...realAssets];
+
+    // Apply status filter
+    if (statusFilter) {
+      result = result.filter(a => a.status === statusFilter);
+    }
 
     // Apply sorting
     switch (sortBy) {
@@ -142,7 +181,7 @@ const DashboardPage = () => {
     }
 
     return result;
-  }, [assetsFilteredBySearchAndCategory, sortBy]);
+  }, [realAssets, dummyAssets, statusFilter, sortBy]);
 
   const handleSortMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setSortMenuAnchor(event.currentTarget);
@@ -195,13 +234,14 @@ const DashboardPage = () => {
     );
   }
 
-  // Calculate counts based on filtered assets (search + category, but not status)
-  const assetCount = assetsFilteredBySearchAndCategory?.length || 0;
-  const inGebruikCount = assetsFilteredBySearchAndCategory?.filter(a => a.status === 'InGebruik').length || 0;
-  const stockCount = assetsFilteredBySearchAndCategory?.filter(a => a.status === 'Stock').length || 0;
-  const herstellingCount = assetsFilteredBySearchAndCategory?.filter(a => a.status === 'Herstelling').length || 0;
-  const defectCount = assetsFilteredBySearchAndCategory?.filter(a => a.status === 'Defect').length || 0;
-  const uitDienstCount = assetsFilteredBySearchAndCategory?.filter(a => a.status === 'UitDienst').length || 0;
+  // Calculate counts based on real assets only (excluding dummies)
+  const assetCount = realAssets.length;
+  const inGebruikCount = realAssets.filter(a => a.status === 'InGebruik').length;
+  const stockCount = realAssets.filter(a => a.status === 'Stock').length;
+  const herstellingCount = realAssets.filter(a => a.status === 'Herstelling').length;
+  const defectCount = realAssets.filter(a => a.status === 'Defect').length;
+  const uitDienstCount = realAssets.filter(a => a.status === 'UitDienst').length;
+  const dummyCount = dummyAssets.length;
 
   return (
     <Box>
@@ -400,6 +440,33 @@ const DashboardPage = () => {
               },
             }}
           />
+          {dummyCount > 0 && (
+            <Chip
+              label={`${dummyCount} Dummy`}
+              onClick={() => handleStatusChipClick('Dummy')}
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                px: 1,
+                cursor: 'pointer',
+                backgroundColor: statusFilter === 'Dummy' ? 'rgba(156, 39, 176, 0.25)' : 'rgba(156, 39, 176, 0.12)',
+                color: 'rgb(156, 39, 176)',
+                border: '1px solid rgba(156, 39, 176, 0.4)',
+                opacity: statusFilter === 'Dummy' ? 1 : 0.5,
+                transform: statusFilter === 'Dummy' ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.2s ease',
+                '& .MuiChip-label': {
+                  color: 'rgb(156, 39, 176)',
+                },
+                '&:hover': {
+                  opacity: 1,
+                  backgroundColor: 'rgba(156, 39, 176, 0.3)',
+                  boxShadow: '0 0 12px rgba(156, 39, 176, 0.5)',
+                  transform: 'scale(1.05)',
+                },
+              }}
+            />
+          )}
         </Box>
       </Paper>
 

@@ -35,3 +35,13 @@ export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCr
   const response = await apiClient.post<BulkCreateAssetResultDto>('/assets/bulk', data);
   return response.data;
 };
+
+export const getNextAssetNumber = async (prefix: string): Promise<number> => {
+  const response = await apiClient.get<number>('/assets/next-number', { params: { prefix } });
+  return response.data;
+};
+
+export const assetCodeExists = async (code: string): Promise<boolean> => {
+  const response = await apiClient.get<boolean>('/assets/code-exists', { params: { code } });
+  return response.data;
+};
