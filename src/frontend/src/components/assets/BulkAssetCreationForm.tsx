@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -60,17 +60,19 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [numberAutoFilled, setNumberAutoFilled] = useState(false);
+  const [prevNextNumber, setPrevNextNumber] = useState<number | undefined>(undefined);
 
   // Auto-fetch next number for prefix
   const { data: nextNumber } = useNextAssetNumber(formData.assetCodePrefix);
 
-  // Auto-fill starting number when next number is fetched
-  useEffect(() => {
-    if (nextNumber !== undefined && !numberAutoFilled) {
+  // Auto-fill starting number when next number is fetched (render-time state adjustment)
+  if (nextNumber !== undefined && nextNumber !== prevNextNumber) {
+    setPrevNextNumber(nextNumber);
+    if (!numberAutoFilled) {
       setFormData(prev => ({ ...prev, startingNumber: nextNumber }));
       setNumberAutoFilled(true);
     }
-  }, [nextNumber, numberAutoFilled]);
+  }
 
   // Check if last asset number would exceed 8999
   const lastNumber = formData.startingNumber + formData.quantity - 1;
@@ -144,6 +146,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
     setFormData(prev => ({ ...prev, [field]: value }));
     if (field === 'assetCodePrefix') {
       setNumberAutoFilled(false); // Reset so next number auto-fills for new prefix
+      setPrevNextNumber(undefined);
     }
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

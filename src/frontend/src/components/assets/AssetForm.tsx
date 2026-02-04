@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   TextField,
@@ -89,26 +89,39 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     : '';
   const { data: codeExists } = useAssetCodeExists(combinedCode);
 
-  // Auto-fill number when next number is fetched
+  // Auto-fill number when next number is fetched (render-time state adjustment)
   const [numberAutoFilled, setNumberAutoFilled] = useState(false);
-  useEffect(() => {
-    if (nextNumber !== undefined && !isEditMode && !numberAutoFilled) {
+  const [prevNextNumber, setPrevNextNumber] = useState<number | undefined>(undefined);
+
+  if (nextNumber !== undefined && nextNumber !== prevNextNumber && !isEditMode) {
+    setPrevNextNumber(nextNumber);
+    if (!numberAutoFilled) {
       setAssetCodeNumber(nextNumber);
       setNumberAutoFilled(true);
     }
-  }, [nextNumber, isEditMode, numberAutoFilled]);
+  }
 
-  // Auto-increment when code already exists
-  useEffect(() => {
+  // Auto-increment when code already exists (render-time state adjustment)
+  const [prevCodeExists, setPrevCodeExists] = useState<boolean | undefined>(undefined);
+  const [prevCombinedCode, setPrevCombinedCode] = useState('');
+
+  if (combinedCode !== prevCombinedCode) {
+    setPrevCombinedCode(combinedCode);
+    setPrevCodeExists(undefined);
+  }
+
+  if (codeExists !== prevCodeExists) {
+    setPrevCodeExists(codeExists);
     if (codeExists === true && !isEditMode && assetCodeNumber > 0 && assetCodeNumber < 9999) {
       setAssetCodeNumber(prev => prev + 1);
     }
-  }, [codeExists, isEditMode, assetCodeNumber]);
+  }
 
   // Reset auto-fill when prefix changes
   const handlePrefixChange = (value: string) => {
     setAssetCodePrefix(value.toUpperCase());
     setNumberAutoFilled(false);
+    setPrevNextNumber(undefined);
     if (errors.assetCode) {
       setErrors(prev => ({ ...prev, assetCode: '' }));
     }
