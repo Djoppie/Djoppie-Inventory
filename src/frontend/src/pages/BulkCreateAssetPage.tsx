@@ -39,7 +39,17 @@ const BulkCreateAssetPage = () => {
 
   const handleSubmit = async (data: BulkCreateAssetDto) => {
     try {
-      const response = await bulkCreate.mutateAsync(data);
+      // Clean up empty strings — ASP.NET Core can't deserialize "" as DateTime?
+      const cleanedData = {
+        ...data,
+        brand: data.brand || undefined,
+        model: data.model || undefined,
+        serialNumberPrefix: data.serialNumberPrefix || undefined,
+        purchaseDate: data.purchaseDate || undefined,
+        warrantyExpiry: data.warrantyExpiry || undefined,
+        installationDate: data.installationDate || undefined,
+      };
+      const response = await bulkCreate.mutateAsync(cleanedData);
       setResult(response);
       setShowResultDialog(true);
 

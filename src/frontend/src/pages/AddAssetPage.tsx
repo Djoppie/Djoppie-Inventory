@@ -15,8 +15,17 @@ const AddAssetPage = () => {
 
   const handleSubmit = async (data: CreateAssetDto | UpdateAssetDto) => {
     try {
-      // In create mode, data will always be CreateAssetDto
-      await createAsset.mutateAsync(data as CreateAssetDto);
+      // Clean up empty strings — ASP.NET Core can't deserialize "" as DateTime?
+      const cleanedData = {
+        ...data,
+        brand: data.brand || undefined,
+        model: data.model || undefined,
+        serialNumber: (data as CreateAssetDto).serialNumber || undefined,
+        purchaseDate: data.purchaseDate || undefined,
+        warrantyExpiry: data.warrantyExpiry || undefined,
+        installationDate: data.installationDate || undefined,
+      };
+      await createAsset.mutateAsync(cleanedData as CreateAssetDto);
       setSuccessMessage('Asset created successfully!');
       // Redirect to dashboard after short delay
       setTimeout(() => navigate('/'), 1500);
