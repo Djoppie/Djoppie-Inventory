@@ -94,11 +94,13 @@ az account show
 ### 2. Azure Permissions
 
 Required Azure RBAC roles:
+
 - **Contributor** role on subscription (or resource group)
 - **User Access Administrator** role (for service principal creation)
 - **Application Administrator** role in Microsoft Entra ID
 
 Verify permissions:
+
 ```powershell
 # Check subscription role assignments
 az role assignment list --assignee (az ad signed-in-user show --query id -o tsv) --all
@@ -139,7 +141,7 @@ Save the generated configuration file path - you'll need it later.
 
 If you don't have an Azure DevOps organization:
 
-1. Navigate to https://dev.azure.com
+1. Navigate to <https://dev.azure.com>
 2. Click **Start free with GitHub** or **Start free**
 3. Follow prompts to create organization (e.g., `diepenbeek-org`)
 
@@ -147,7 +149,7 @@ If you don't have an Azure DevOps organization:
 
 **Option A: Azure DevOps Portal**
 
-1. Go to https://dev.azure.com/YOUR_ORG
+1. Go to <https://dev.azure.com/YOUR_ORG>
 2. Click **+ New project**
 3. Configure project:
    - **Project name**: `Djoppie-Inventory`
@@ -198,7 +200,7 @@ az devops configure --defaults \
 ### Step 1: Install Azure Pipelines GitHub App
 
 1. Go to your GitHub repository: `https://github.com/Djoppie/Djoppie-Inventory`
-2. Navigate to **Settings** > **Integrations** > **GitHub Apps**
+2. In Github: Navigate to **Settings** > **Integrations** > **GitHub Apps**
 3. Click **Configure** on "Azure Pipelines"
 4. Select **Only select repositories**: `Djoppie-Inventory`
 5. Click **Save**
@@ -233,6 +235,7 @@ az devops service-endpoint github create \
 ### Step 3: Configure Branch Triggers
 
 The pipeline is configured to trigger on:
+
 - **Commits** to `develop` branch
 - **Pull requests** to `develop` and `main` branches
 
@@ -353,6 +356,7 @@ Use the provided PowerShell script:
 ```
 
 The script will:
+
 1. Load Entra configuration from the JSON file
 2. Prompt for SQL credentials
 3. Either display variables for manual entry OR set them automatically via Azure CLI
@@ -577,6 +581,7 @@ curl $frontendUrl
 ```
 
 Expected results:
+
 - Backend health endpoint returns HTTP 200
 - Frontend displays login page
 - Application Insights shows telemetry
@@ -609,11 +614,13 @@ az pipelines runs list \
 #### Issue 1: Service Connection Authentication Fails
 
 **Symptoms**:
+
 ```
 ERROR: The current subscription is not authorized to perform operations on resource
 ```
 
 **Solution**:
+
 ```powershell
 # Verify service principal permissions
 az role assignment list --assignee SERVICE_PRINCIPAL_APP_ID
@@ -628,11 +635,13 @@ az role assignment create \
 #### Issue 2: Pipeline Variables Not Found
 
 **Symptoms**:
+
 ```
 ERROR: Variable 'ENTRA_TENANT_ID' is not defined
 ```
 
 **Solution**:
+
 1. Go to **Pipelines** > **Library**
 2. Verify variable group `djoppie-inventory-dev` exists
 3. Check pipeline is linked to this variable group
@@ -641,11 +650,13 @@ ERROR: Variable 'ENTRA_TENANT_ID' is not defined
 #### Issue 3: Infrastructure Deployment Fails
 
 **Symptoms**:
+
 ```
 ERROR: Deployment failed. Correlation ID: xxx
 ```
 
 **Solution**:
+
 ```bash
 # Get detailed error message
 az deployment sub show \
@@ -661,11 +672,13 @@ az deployment sub show \
 #### Issue 4: Backend Deployment Timeout
 
 **Symptoms**:
+
 ```
 ERROR: Deployment to App Service timed out after 30 minutes
 ```
 
 **Solution**:
+
 ```powershell
 # Check App Service logs
 az webapp log tail \
@@ -681,6 +694,7 @@ az webapp restart \
 #### Issue 5: Static Web App Deployment Token Missing
 
 **Symptoms**:
+
 ```
 ERROR: Variable 'AZURE_STATIC_WEB_APPS_API_TOKEN' is not defined
 ```
@@ -690,6 +704,7 @@ ERROR: Variable 'AZURE_STATIC_WEB_APPS_API_TOKEN' is not defined
 The Static Web App deployment token is only available after the infrastructure is deployed for the first time.
 
 **Workaround**:
+
 1. Run pipeline with `skip_frontend_deploy` or comment out frontend stage
 2. After infrastructure deployment completes, get the token:
 
@@ -701,7 +716,8 @@ az staticwebapp secrets list \
   --query properties.apiKey -o tsv
 ```
 
-3. Add token to pipeline variables:
+1. Add token to pipeline variables:
+
 ```bash
 az pipelines variable-group variable create \
   --group-id <group-id> \
@@ -710,16 +726,18 @@ az pipelines variable-group variable create \
   --secret true
 ```
 
-4. Re-run pipeline
+1. Re-run pipeline
 
 #### Issue 6: Database Migration Fails
 
 **Symptoms**:
+
 ```
 ERROR: Unable to connect to SQL Server
 ```
 
 **Solution**:
+
 ```powershell
 # Add your IP to SQL firewall temporarily
 az sql server firewall-rule create \
@@ -783,6 +801,7 @@ az pipelines run \
    - Limit scope to specific resource groups
 
 3. **Enable branch policies**
+
    ```bash
    # Require pull request before merging to main
    az repos policy create \
@@ -799,6 +818,7 @@ az pipelines run \
 ### Pipeline Optimization
 
 1. **Use caching for dependencies**
+
    ```yaml
    - task: Cache@2
      inputs:
@@ -811,6 +831,7 @@ az pipelines run \
    - Run tests in parallel where possible
 
 3. **Skip unnecessary builds**
+
    ```yaml
    trigger:
      paths:
@@ -822,6 +843,7 @@ az pipelines run \
 ### Monitoring
 
 1. **Configure build retention policies**
+
    ```bash
    # Keep builds for 30 days
    az pipelines build definition update \
@@ -909,8 +931,8 @@ az pipelines variable-group variable list --group-id GROUP_ID
 
 - **Documentation**: See `docs/deploy/` directory
 - **Issues**: Report via GitHub Issues
-- **Email**: jo.wijnen@diepenbeek.be
-- **Azure Support**: https://portal.azure.com > Support + troubleshooting
+- **Email**: <jo.wijnen@diepenbeek.be>
+- **Azure Support**: <https://portal.azure.com> > Support + troubleshooting
 
 ---
 
