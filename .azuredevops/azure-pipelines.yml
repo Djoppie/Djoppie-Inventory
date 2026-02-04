@@ -476,6 +476,36 @@ stages:
                     skip_app_build: true
                     skip_api_build: true
 
+                - task: AzureCLI@2
+                  displayName: 'Update Backend CORS with Frontend URL'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Updating backend CORS configuration..."
+
+                      DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
+
+                      STATIC_WEB_APP_URL=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.staticWebAppUrl.value' \
+                        -o tsv)
+
+                      APP_SERVICE_NAME=$(az webapp list \
+                        --resource-group $(resourceGroupName) \
+                        --query "[?starts_with(name, 'app-') && contains(name, 'api')].name | [0]" \
+                        -o tsv)
+
+                      echo "Setting Frontend__AllowedOrigins__0=$STATIC_WEB_APP_URL on $APP_SERVICE_NAME"
+
+                      az webapp config appsettings set \
+                        --resource-group $(resourceGroupName) \
+                        --name $APP_SERVICE_NAME \
+                        --settings "Frontend__AllowedOrigins__0=$STATIC_WEB_APP_URL"
+
+                      echo "Backend CORS updated successfully"
+
   # ============================================================================
   # STAGE 5: SMOKE TESTS
   # ============================================================================
