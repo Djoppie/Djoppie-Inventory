@@ -35,7 +35,7 @@ ASP.NET Core automatically detects the environment using the `ASPNETCORE_ENVIRON
     "Instance": "https://login.microsoftonline.com/",
     "TenantId": "7db28d6f-d542-40c1-b529-5e5ed2aad545",
     "ClientId": "eb5bcf06-8032-494f-a363-92b6802c44bf",
-    "ClientSecret": "vu-8Q~Z_KOrU5jQGlmGYXLDBDpmDd83hRg2AscA_",
+    "ClientSecret": "****",
     "Domain": "diepenbeek.onmicrosoft.com",
     "Audience": "api://eb5bcf06-8032-494f-a363-92b6802c44bf",
     "Scopes": "access_as_user"
@@ -71,7 +71,7 @@ ASP.NET Core automatically detects the environment using the `ASPNETCORE_ENVIRON
   },
   "Frontend": {
     "AllowedOrigins": [
-      "https://lemon-glacier-041730903.1.azurestaticapps.net",
+      "https://blue-cliff-031d65b03.1.azurestaticapps.net",
       "http://localhost:5173",
       "https://localhost:5173"
     ]
@@ -137,7 +137,7 @@ Allows these origins:
 
 Allows these origins (configurable via `Frontend:AllowedOrigins`):
 
-- `https://lemon-glacier-041730903.1.azurestaticapps.net` (Azure Static Web App)
+- `https://blue-cliff-031d65b03.1.azurestaticapps.net` (Azure Static Web App)
 - `http://localhost:5173` (for local testing against production API)
 - `https://localhost:5173` (for local testing against production API)
 
