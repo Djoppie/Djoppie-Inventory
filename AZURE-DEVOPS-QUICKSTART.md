@@ -1,11 +1,23 @@
 # Azure DevOps Deployment - Quick Start Guide
 
+## 🎉 Deployment Status: LIVE
+
+**DEV Environment is successfully deployed and running!**
+
+- **Frontend:** https://blue-cliff-031d65b03.1.azurestaticapps.net
+- **Backend API:** https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net
+- **Resource Group:** rg-djoppie-inventory-dev
+- **Last Deployment:** 2026-02-04 (Automated via Azure DevOps)
+
+---
+
 ## ✅ Prerequisites
 
 You already have:
 - ✅ Bicep infrastructure templates (updated with RBAC)
 - ✅ Complete Azure DevOps pipeline configuration
 - ✅ Backend and Frontend code ready
+- ✅ DEV environment fully deployed and operational
 
 ## 🚀 Setup Steps (15 minutes)
 
@@ -110,15 +122,18 @@ The pipeline will automatically:
 | Resource | Name | Cost/Month |
 |----------|------|------------|
 | Resource Group | `rg-djoppie-inventory-dev` | €0 |
-| Key Vault | `kv-djoppie-inventory-dev-{suffix}` | ~€1 |
-| SQL Server | `sql-djoppie-inventory-dev-{suffix}` | ~€5-8 |
-| SQL Database | `sqldb-djoppie-inventory-dev` | (included) |
-| App Service Plan | `plan-djoppie-inventory-dev` | €0 (Free) |
-| App Service | `app-djoppie-inventory-dev-api-{suffix}` | €0 |
+| Static Web App | `swa-djoppie-inventory-dev` | €0 (Free tier) |
+| App Service | `app-djoppie-inventory-dev-api-k5xdqp` | €0 (F1 Free) |
+| App Service Plan | `asp-djoppie-inventory-dev` | €0 (included) |
+| SQL Server | `sql-djoppie-inventory-dev-k5xdqp` | €0 |
+| SQL Database | `sqldb-djoppie-inventory-dev` | ~€4.74-5.07 |
+| Key Vault | `kv-djoppie-dev-k5xdqp` | ~€0.50-2.00 |
 | Application Insights | `appi-djoppie-inventory-dev` | €0 (free tier) |
 | Log Analytics | `log-djoppie-inventory-dev` | €0 (free tier) |
 
-**Total: €6-9/month**
+**Total: ~€5.24-9.57/month**
+
+> **Note:** Resource names with suffix (`-k5xdqp`) are automatically generated for global uniqueness.
 
 ## ✅ Verify Deployment
 
@@ -130,14 +145,16 @@ After pipeline completes:
 
 2. **Test Backend API**
    ```bash
-   # Get URL from pipeline output or Azure Portal
-   curl https://app-djoppie-inventory-dev-api-{suffix}.azurewebsites.net/health
+   # Test the deployed backend
+   curl https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/health
    ```
-   Expected: `{"status":"Healthy"}`
+   Expected: `HTTP 401 Unauthorized` (authentication required - this is good!)
 
 3. **Test Frontend**
-   - URL will be in pipeline output
+   - **URL:** https://blue-cliff-031d65b03.1.azurestaticapps.net
    - Should load the React application
+   - Sign in with Diepenbeek Microsoft account
+   - Verify you can see the dashboard
 
 ## 🔧 Troubleshooting
 
