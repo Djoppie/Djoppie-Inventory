@@ -481,7 +481,9 @@ stages:
   # ============================================================================
   - stage: SmokeTests
     displayName: 'Smoke Tests'
-    dependsOn: DeployFrontend
+    dependsOn:
+      - DeployFrontend
+      - DeployInfrastructure
     condition: succeeded()
     jobs:
       - job: RunSmokeTests
@@ -489,27 +491,72 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
+          - task: AzureCLI@2
+            name: GetResourceUrls
+            displayName: 'Get Deployed Resource URLs'
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Getting deployed resource URLs from deployment outputs..."
+
+                # Get deployment outputs
+                DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
+
+                APP_SERVICE_URL=$(az deployment sub show \
+                  --name $DEPLOYMENT_NAME \
+                  --query 'properties.outputs.appServiceUrl.value' \
+                  -o tsv)
+
+                STATIC_WEB_APP_URL=$(az deployment sub show \
+                  --name $DEPLOYMENT_NAME \
+                  --query 'properties.outputs.staticWebAppUrl.value' \
+                  -o tsv)
+
+                echo "Backend API URL: $APP_SERVICE_URL"
+                echo "Frontend URL: $STATIC_WEB_APP_URL"
+
+                echo "##vso[task.setvariable variable=backendUrl]$APP_SERVICE_URL"
+                echo "##vso[task.setvariable variable=frontendUrl]$STATIC_WEB_APP_URL"
+
           - script: |
               echo "Running smoke tests..."
 
               # Test Backend API
-              BACKEND_URL="https://$(backendAppServiceName).azurewebsites.net"
+              BACKEND_URL="$(backendUrl)"
               echo "Testing Backend: $BACKEND_URL"
 
-              # Health check
-              curl -f "$BACKEND_URL/health" || exit 1
-              echo "✓ Backend health check passed"
+              # Health check (note: /health requires auth, so 401 is expected)
+              echo "Checking backend availability..."
+              HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/health")
 
-              # API version check
-              curl -f "$BACKEND_URL/api/version" || echo "Version endpoint not found"
+              if [ "$HEALTH_STATUS" = "401" ] || [ "$HEALTH_STATUS" = "200" ]; then
+                echo "✓ Backend is running (HTTP $HEALTH_STATUS)"
+              else
+                echo "✗ Backend health check failed (HTTP $HEALTH_STATUS)"
+                exit 1
+              fi
 
               # Test Frontend
-              FRONTEND_URL="https://$(frontendStaticWebAppName).azurestaticapps.net"
+              FRONTEND_URL="$(frontendUrl)"
               echo "Testing Frontend: $FRONTEND_URL"
 
               # Check if frontend is accessible
-              curl -f "$FRONTEND_URL" || exit 1
-              echo "✓ Frontend is accessible"
+              FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
 
+              if [ "$FRONTEND_STATUS" = "200" ]; then
+                echo "✓ Frontend is accessible (HTTP $FRONTEND_STATUS)"
+              else
+                echo "✗ Frontend check failed (HTTP $FRONTEND_STATUS)"
+                exit 1
+              fi
+
+              echo ""
+              echo "=========================================="
               echo "All smoke tests passed!"
+              echo "=========================================="
+              echo "Backend:  $BACKEND_URL"
+              echo "Frontend: $FRONTEND_URL"
+              echo "=========================================="
             displayName: 'Run Smoke Tests'
