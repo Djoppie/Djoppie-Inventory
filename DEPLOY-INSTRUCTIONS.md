@@ -1,6 +1,20 @@
 # Azure DEV Deployment Instructions
 
-## Quick Start
+## ✅ Current Deployment Status
+
+**DEV Environment is already deployed and operational!**
+
+- **Frontend:** https://blue-cliff-031d65b03.1.azurestaticapps.net
+- **Backend API:** https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api
+- **Resource Group:** rg-djoppie-inventory-dev
+- **Deployment Method:** Azure DevOps CI/CD Pipeline (Automated)
+- **Last Updated:** 2026-02-04
+
+> **Note:** For ongoing deployments, use the Azure DevOps pipeline. Manual deployment is only needed for initial setup or troubleshooting.
+
+---
+
+## Quick Start (For Initial Setup or Manual Deployment)
 
 Open a **new PowerShell 7 terminal** and run:
 
@@ -41,20 +55,23 @@ The script will show you available subscriptions and let you choose.
 
 ## Expected Resources
 
-After deployment, you'll have:
+Currently deployed resources:
 
 | Resource | Name | Monthly Cost |
 |----------|------|--------------|
 | Resource Group | `rg-djoppie-inventory-dev` | €0 |
-| Key Vault | `kv-djoppie-inventory-dev-{suffix}` | ~€1 |
-| SQL Server | `sql-djoppie-inventory-dev-{suffix}` | ~€5-8 |
-| SQL Database | `sqldb-djoppie-inventory-dev` | (included) |
-| App Service Plan | `plan-djoppie-inventory-dev` | €0 (Free tier) |
-| App Service | `app-djoppie-inventory-dev-api-{suffix}` | €0 |
+| Static Web App | `swa-djoppie-inventory-dev` | €0 (Free tier) |
+| App Service | `app-djoppie-inventory-dev-api-k5xdqp` | €0 (F1 Free) |
+| App Service Plan | `asp-djoppie-inventory-dev` | €0 (included) |
+| SQL Server | `sql-djoppie-inventory-dev-k5xdqp` | €0 |
+| SQL Database | `sqldb-djoppie-inventory-dev` | ~€4.74-5.07 |
+| Key Vault | `kv-djoppie-dev-k5xdqp` | ~€0.50-2.00 |
 | Application Insights | `appi-djoppie-inventory-dev` | €0 (free tier) |
 | Log Analytics | `log-djoppie-inventory-dev` | €0 (free tier) |
 
-**Total: ~€6-9/month**
+**Total: ~€5.24-9.57/month**
+
+> **Note:** Suffix `k5xdqp` is auto-generated for global uniqueness.
 
 ## Troubleshooting
 
@@ -128,9 +145,28 @@ az deployment sub create `
    ```
 
 4. **Test the deployment:**
-   - Open: `https://<app-service-name>.azurewebsites.net/health`
-   - Should return: `{"status":"Healthy"}`
+   - Backend: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/health
+   - Expected: HTTP 401 (authentication required - this is correct!)
+   - Frontend: https://blue-cliff-031d65b03.1.azurestaticapps.net
+   - Sign in with Diepenbeek Microsoft account
+
+## Accessing the Deployed Application
+
+**Frontend (User Interface):**
+- URL: https://blue-cliff-031d65b03.1.azurestaticapps.net
+- Login: Use your Diepenbeek Microsoft account (@diepenbeek.onmicrosoft.com)
+
+**Backend API (For Development/Testing):**
+- URL: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api
+- Authentication: Requires valid JWT token from Entra ID
+
+**Azure Resources:**
+- Portal: https://portal.azure.com
+- Resource Group: rg-djoppie-inventory-dev
+- Application Insights: appi-djoppie-inventory-dev (monitoring & logs)
 
 ## Need Help?
 
-Contact: jo.wijnen@diepenbeek.be
+- **Installation Guide:** See [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) for complete setup instructions
+- **Pipeline Setup:** See [AZURE-DEVOPS-QUICKSTART.md](AZURE-DEVOPS-QUICKSTART.md) for CI/CD configuration
+- **Contact:** jo.wijnen@diepenbeek.be

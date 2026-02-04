@@ -1,6 +1,16 @@
 # Djoppie Inventory - Gebruikershandleiding
 
-> **For Developers:** See [README-DEPLOYMENT.md](README-DEPLOYMENT.md) for deployment instructions and technical documentation.
+> **For Developers:** See [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) for complete installation, deployment, and development setup instructions.
+
+## 🚀 Direct aan de slag
+
+**DEV Omgeving - Nu beschikbaar!**
+
+- **Applicatie:** https://blue-cliff-031d65b03.1.azurestaticapps.net
+- **Inloggen:** Gebruik uw Diepenbeek Microsoft-account
+- **Eerste keer?** Zie [Aan de slag](#aan-de-slag) hieronder voor instructies
+
+---
 
 ## 📜 Inhoudsopgave
 
@@ -63,9 +73,13 @@ Het systeem ondersteunt verschillende categorieën IT-activa:
 
 ### Toegang tot de applicatie
 
+**DEV Omgeving:**
+
 1. **Open uw webbrowser** (Chrome, Firefox, Edge of Safari)
-2. **Navigeer naar het Djoppie Inventory webadres** dat door uw organisatie is verstrekt
+2. **Navigeer naar:** https://blue-cliff-031d65b03.1.azurestaticapps.net
 3. **U wordt automatisch doorgestuurd naar de Microsoft-aanmeldingspagina**
+
+> **Let op:** Gebruik uw Diepenbeek Microsoft-account (@diepenbeek.onmicrosoft.com) om in te loggen.
 
 ### Inloggen met Microsoft Entra ID
 
