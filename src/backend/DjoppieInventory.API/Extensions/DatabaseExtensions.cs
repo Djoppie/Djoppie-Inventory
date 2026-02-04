@@ -47,33 +47,33 @@ public static class DatabaseExtensions
     /// </summary>
     public static WebApplication EnsureDatabaseReady(this WebApplication app)
     {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
         if (app.Environment.IsProduction())
         {
             var autoMigrate = app.Configuration.GetValue<bool>("Database:AutoMigrate", false);
             if (autoMigrate)
             {
-                using var scope = app.Services.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
                 try
                 {
-                    logger.LogInformation("Applying database migrations...");
-                    db.Database.Migrate();
-                    logger.LogInformation("Database migrations applied successfully.");
+                    // Use EnsureCreated to generate schema matching the current provider (SQL Server)
+                    // Note: existing SQLite-based migrations are not compatible with SQL Server
+                    logger.LogInformation("Ensuring database schema exists...");
+                    db.Database.EnsureCreated();
+                    logger.LogInformation("Database schema ready.");
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "An error occurred while migrating the database.");
-                    logger.LogWarning("Application will start without migrations. Please run migrations manually.");
+                    logger.LogError(ex, "An error occurred while initializing the database.");
+                    logger.LogWarning("Application will start without database initialization. Please run migrations manually.");
                 }
             }
         }
         else
         {
             // Ensure database is created in development
-            using var scope = app.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             db.Database.EnsureCreated();
         }
 
