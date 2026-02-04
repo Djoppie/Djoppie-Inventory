@@ -118,13 +118,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
       http20Enabled: true
       healthCheckPath: '/health'
 
-      // CORS configuration
-      cors: {
-        allowedOrigins: [
-          frontendUrl
-        ]
-        supportCredentials: true
-      }
+      // CORS is handled by ASP.NET Core middleware via Frontend__AllowedOrigins app settings
 
       appSettings: []
     }

@@ -505,12 +505,6 @@ stages:
                         --name $APP_SERVICE_NAME \
                         --settings "Frontend__AllowedOrigins__0=$STATIC_WEB_APP_URL"
 
-                      # Update Azure-level CORS (handles preflight before app code)
-                      az webapp cors add \
-                        --resource-group $(resourceGroupName) \
-                        --name $APP_SERVICE_NAME \
-                        --allowed-origins "$STATIC_WEB_APP_URL"
-
                       echo "Backend CORS updated successfully"
 
   # ============================================================================
