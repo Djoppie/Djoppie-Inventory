@@ -80,15 +80,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
       minTlsVersion: '1.2'
       http20Enabled: true
 
-      // CORS configuration
-      cors: {
-        allowedOrigins: [
-          frontendUrl
-          'http://localhost:5173'
-          'https://localhost:5173'
-        ]
-        supportCredentials: true
-      }
+      // CORS is handled by ASP.NET Core middleware via Frontend__AllowedOrigins app settings
 
       // Application settings will be added separately
       appSettings: []
