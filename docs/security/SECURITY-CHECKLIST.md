@@ -197,9 +197,9 @@ Edit `docs/BACKEND-CONFIGURATION-GUIDE.md`:
 
 **Find and replace:**
 
-- `ClientSecret: "vu-8Q~Z_KOrU5jQGlmGYXLDBDpmDd83hRg2AscA_"` → `ClientSecret: "<stored-in-azure-key-vault>"`
-- `ClientSecret: "~_F8Q~QoPr9w32OVCh55IKDXKrnwRYEj5v~8jaLs"` → `ClientSecret: "<stored-in-azure-key-vault>"`
-- `Password=DjoppieDB2026!Secure@Pass;` → `Password=<secure-password>;`
+- `ClientSecret: "*****"` → `ClientSecret: "<stored-in-azure-key-vault>"`
+- `ClientSecret: "*****"` → `ClientSecret: "<stored-in-azure-key-vault>"`
+- `Password=*****;` → `Password=<secure-password>;`
 
 **Verification:**
 
@@ -293,9 +293,9 @@ git push origin develop
 
 # Create passwords file
 @"
-DjoppieDB2026!Secure@Pass
-vu-8Q~Z_KOrU5jQGlmGYXLDBDpmDd83hRg2AscA_
-~_F8Q~QoPr9w32OVCh55IKDXKrnwRYEj5v~8jaLs
+*****
+*****
+*****
 "@ | Out-File passwords.txt
 
 # Run BFG
