@@ -6,7 +6,7 @@
 
 **DEV Omgeving - Nu beschikbaar!**
 
-- **Applicatie:** https://blue-cliff-031d65b03.1.azurestaticapps.net
+- **Applicatie:** <https://blue-cliff-031d65b03.1.azurestaticapps.net>
 - **Inloggen:** Gebruik uw Diepenbeek Microsoft-account
 - **Eerste keer?** Zie [Aan de slag](#aan-de-slag) hieronder voor instructies
 
@@ -76,7 +76,7 @@ Het systeem ondersteunt verschillende categorieën IT-activa:
 **DEV Omgeving:**
 
 1. **Open uw webbrowser** (Chrome, Firefox, Edge of Safari)
-2. **Navigeer naar:** https://blue-cliff-031d65b03.1.azurestaticapps.net
+2. **Navigeer naar:** <https://blue-cliff-031d65b03.1.azurestaticapps.net>
 3. **U wordt automatisch doorgestuurd naar de Microsoft-aanmeldingspagina**
 
 > **Let op:** Gebruik uw Diepenbeek Microsoft-account (@diepenbeek.onmicrosoft.com) om in te loggen.
@@ -111,10 +111,11 @@ Djoppie Inventory maakt gebruik van Single Sign-On (SSO) via Microsoft Entra ID 
 Bij uw eerste gebruik van Djoppie Inventory:
 
 1. **Verken het dashboard**: Bekijk het overzicht van alle geregistreerde activa
-2. **Bekijk de navigatie**: Onderaan het scherm vindt u drie knoppen:
+2. **Bekijk de navigatie**: Onderaan het scherm vindt u 4 knoppen:
    - **Dashboard**: Overzicht van alle activa
    - **Scannen**: QR-code scanner en handmatige zoekopdracht
    - **Activa**: Nieuw activa toevoegen
+   - **Sjablonen**: Beheer van sjablonen (snelle asset creatie templates)
 3. **Taalinstellingen**: Klik rechtsboven op het taalicoon om te wisselen tussen Nederlands en Engels
 4. **Thema**: Klik op het maan/zon-icoon om te schakelen tussen donkere en lichte modus
 

@@ -148,7 +148,7 @@
 
 ### Dependency Direction
 
-```
+```text
 API Layer --> Core Layer <-- Infrastructure Layer
 ```
 
@@ -420,7 +420,7 @@ Azure Subscription
              - Staging environments
 ```
 
-### PROD Environment (Planned)
+### PROD Environment (Planned??)
 
 Additional features over DEV:
 
