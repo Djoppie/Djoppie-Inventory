@@ -46,7 +46,7 @@ param zoneRedundant bool = false
 // VARIABLES
 // ============================================================================
 
-var appServicePlanName = 'plan-${namingPrefix}-${location}'
+var appServicePlanName = 'plan-${namingPrefix}'
 
 var skuTiers = {
   S1: 'Standard'

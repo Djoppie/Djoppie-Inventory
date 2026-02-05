@@ -41,7 +41,7 @@ param samplingPercentage int = environment == 'prod' ? 50 : 100
 // VARIABLES
 // ============================================================================
 
-var appInsightsName = 'appi-${namingPrefix}-${location}'
+var appInsightsName = 'appi-${namingPrefix}'
 
 // ============================================================================
 // RESOURCES

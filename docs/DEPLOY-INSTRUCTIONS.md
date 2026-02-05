@@ -6,7 +6,7 @@
 
 - **Frontend:** <https://blue-cliff-031d65b03.1.azurestaticapps.net>
 - **Backend API:** <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api>
-- **Resource Group:** rg-djoppie-inv-dev
+- **Resource Group:** rg-djoppie-inventory-dev
 - **Deployment Method:** Azure DevOps CI/CD Pipeline (Automated)
 - **Last Updated:** 2026-02-04
 
@@ -61,10 +61,10 @@ Currently deployed resources:
 
 | Resource | Name | Monthly Cost |
 |----------|------|--------------|
-| Resource Group | `rg-djoppie-inv-dev` | €0 |
+| Resource Group | `rg-djoppie-inventory-dev` | €0 |
 | Static Web App | `swa-djoppie-inventory-dev` | €0 (Free tier) |
 | App Service | `app-djoppie-inventory-dev-api-k5xdqp` | €0 (F1 Free) |
-| App Service Plan | `asp-djoppie-inventory-dev` | €0 (included) |
+| App Service Plan | `plan-djoppie-inventory-dev` | €0 (included) |
 | SQL Server | `sql-djoppie-inventory-dev-k5xdqp` | €0 |
 | SQL Database | `sqldb-djoppie-inventory-dev` | ~€4.74-5.07 |
 | Key Vault | `kv-djoppie-dev-k5xdqp` | ~€0.50-2.00 |
@@ -142,7 +142,7 @@ az deployment sub create `
    cd src/backend/DjoppieInventory.API
    dotnet publish -c Release -o ./publish
    Compress-Archive -Path ./publish/* -DestinationPath ./publish.zip
-   az webapp deploy --resource-group rg-djoppie-inv-dev --name <app-service-name> --src-path ./publish.zip
+   az webapp deploy --resource-group rg-djoppie-inventory-dev --name <app-service-name> --src-path ./publish.zip
    ```
 
 3. **Run database migrations:**
@@ -173,7 +173,7 @@ az deployment sub create `
 **Azure Resources:**
 
 - Portal: <https://portal.azure.com>
-- Resource Group: rg-djoppie-inv-dev
+- Resource Group: rg-djoppie-inventory-dev
 - Application Insights: appi-djoppie-inventory-dev (monitoring & logs)
 
 ## Need Help?

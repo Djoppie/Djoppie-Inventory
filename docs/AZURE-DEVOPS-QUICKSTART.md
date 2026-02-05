@@ -6,7 +6,7 @@
 
 - **Frontend:** https://blue-cliff-031d65b03.1.azurestaticapps.net
 - **Backend API:** https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net
-- **Resource Group:** rg-djoppie-inv-dev
+- **Resource Group:** rg-djoppie-inventory-dev
 - **Last Deployment:** 2026-02-04 (Automated via Azure DevOps)
 
 ---
@@ -121,10 +121,10 @@ The pipeline will automatically:
 
 | Resource | Name | Cost/Month |
 |----------|------|------------|
-| Resource Group | `rg-djoppie-inv-dev` | €0 |
+| Resource Group | `rg-djoppie-inventory-dev` | €0 |
 | Static Web App | `swa-djoppie-inventory-dev` | €0 (Free tier) |
 | App Service | `app-djoppie-inventory-dev-api-k5xdqp` | €0 (F1 Free) |
-| App Service Plan | `asp-djoppie-inventory-dev` | €0 (included) |
+| App Service Plan | `plan-djoppie-inventory-dev` | €0 (included) |
 | SQL Server | `sql-djoppie-inventory-dev-k5xdqp` | €0 |
 | SQL Database | `sqldb-djoppie-inventory-dev` | ~€4.74-5.07 |
 | Key Vault | `kv-djoppie-dev-k5xdqp` | ~€0.50-2.00 |
@@ -140,7 +140,7 @@ The pipeline will automatically:
 After pipeline completes:
 
 1. **Check Azure Portal**
-   - Go to Resource Group: `rg-djoppie-inv-dev`
+   - Go to Resource Group: `rg-djoppie-inventory-dev`
    - Verify all resources are running
 
 2. **Test Backend API**

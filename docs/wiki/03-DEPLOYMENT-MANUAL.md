@@ -111,7 +111,7 @@ Deployed at **subscription scope** to create the resource group and all child re
 ```text
 Subscription
   |
-  +-- Resource Group (rg-djoppie-inv-dev)
+  +-- Resource Group (rg-djoppie-inventory-dev)
        |
        +-- Key Vault               # Secrets management (RBAC-based)
        |     +-- Secrets            # SQL conn string, Entra secrets, App Insights
@@ -136,7 +136,7 @@ Subscription
 {resource-type}-{project-name}-{environment}-{role}-{unique-suffix}
 
 Examples:
-  rg-djoppie-inv-dev              (resource group)
+  rg-djoppie-inventory-dev              (resource group)
   app-djoppie-inventory-dev-api-k5xdqp  (app service)
   sql-djoppie-inventory-dev-7xzs5n      (SQL server)
   kv-djoppie-dev-7xzs5n                 (key vault - shorter name)
@@ -270,7 +270,7 @@ pr:
 | `dotnetSdkVersion` | `8.x` | .NET SDK version |
 | `nodeVersion` | `20.x` | Node.js version |
 | `azureServiceConnection` | `AzureServiceConnection` | Azure RM connection name |
-| `resourceGroupName` | `rg-djoppie-inv-dev` | Target resource group |
+| `resourceGroupName` | `rg-djoppie-inventory-dev` | Target resource group |
 | `location` | `westeurope` | Azure region (can be changed to any Azure region) |
 
 ---
@@ -373,7 +373,7 @@ dotnet publish -c Release -o ./publish
 
 # Deploy via Azure CLI
 az webapp deploy \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --name app-djoppie-inventory-dev-api-<suffix> \
   --src-path ./publish \
   --type zip
@@ -433,7 +433,7 @@ The backend CORS is configured via App Service settings:
 ```powershell
 # Set allowed frontend origin
 az webapp config appsettings set \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --name app-djoppie-inventory-dev-api-<suffix> \
   --settings "Frontend__AllowedOrigins__0=https://blue-cliff-031d65b03.1.azurestaticapps.net"
 ```
@@ -459,12 +459,12 @@ AzureAd__TenantId                    = @Microsoft.KeyVault(VaultName=kv-djoppie-
 ```powershell
 # List recent deployments
 az webapp deployment list \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --name app-djoppie-inventory-dev-api-<suffix>
 
 # Rollback to previous deployment
 az webapp deployment slot swap \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --name app-djoppie-inventory-dev-api-<suffix> \
   --slot staging \
   --target-slot production
@@ -501,7 +501,7 @@ git checkout <previous-commit> -- infra/
 
 ### Application Insights
 
-- **Location**: Azure Portal > `rg-djoppie-inv-dev` > Application Insights
+- **Location**: Azure Portal > `rg-djoppie-inventory-dev` > Application Insights
 - **Metrics**: Request rates, response times, failure rates
 - **Logs**: Kusto queries for detailed investigation
 - **Alerts**: Configure alerts for error rate thresholds
@@ -554,7 +554,7 @@ az consumption budget create \
   --amount 20 \
   --budget-name "djoppie-dev-budget" \
   --category cost \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --time-grain monthly \
   --time-period start-date=2026-01-01 end-date=2027-01-01
 ```

@@ -27,7 +27,7 @@ param retentionInDays int = environment == 'prod' ? 90 : 30
 // VARIABLES
 // ============================================================================
 
-var workspaceName = 'log-${namingPrefix}-${location}'
+var workspaceName = 'log-${namingPrefix}'
 
 // ============================================================================
 // RESOURCES

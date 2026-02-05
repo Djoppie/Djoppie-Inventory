@@ -236,7 +236,7 @@ Total: ~20 minutes
 After successful deployment:
 
 1. **Check Resources in Azure Portal**
-   - Resource Group: `rg-djoppie-inv-dev`
+   - Resource Group: `rg-djoppie-inventory-dev`
    - App Service: `app-djoppie-dev-api-*`
    - Static Web App: `swa-djoppie-dev-ui-*`
    - SQL Database: `sqldb-djoppie-inventory`
@@ -401,7 +401,7 @@ Configure pipeline notifications:
 **Solution:**
 ```bash
 # Delete existing resource group
-az group delete --name rg-djoppie-inv-dev --yes
+az group delete --name rg-djoppie-inventory-dev --yes
 
 # Or use a different environment name
 ```

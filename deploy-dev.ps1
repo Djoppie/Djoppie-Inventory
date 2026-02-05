@@ -85,7 +85,7 @@ if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
 $config = @{
     Environment       = "dev"
     ProjectName       = "djoppie-inventory"
-    ResourceGroupName = "rg-djoppie-inv-dev"
+    ResourceGroupName = "rg-djoppie-inventory-dev"
     Location          = $Location
     TenantId          = "7db28d6f-d542-40c1-b529-5e5ed2aad545"
 

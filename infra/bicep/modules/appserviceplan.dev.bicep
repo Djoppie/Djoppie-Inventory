@@ -37,7 +37,7 @@ param osType string = 'Windows'
 // VARIABLES
 // ============================================================================
 
-var appServicePlanName = 'plan-${namingPrefix}-${location}'
+var appServicePlanName = 'plan-${namingPrefix}'
 
 var skuTiers = {
   F1: 'Free'

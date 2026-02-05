@@ -173,7 +173,7 @@ VITE_ENTRA_API_SCOPE=api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user
 │                     Azure Subscription                       │
 │                                                               │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │         Resource Group: rg-djoppie-inv-dev       │ │
+│  │         Resource Group: rg-djoppie-inventory-dev       │ │
 │  │                                                         │ │
 │  │  ┌──────────────────┐    ┌──────────────────────────┐ │ │
 │  │  │  Static Web App  │    │     App Service          │ │ │
@@ -206,7 +206,7 @@ VITE_ENTRA_API_SCOPE=api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user
 |---------------|------|---------|------------------|
 | Static Web App | swa-djoppie-inventory-dev | Frontend hosting | Free |
 | App Service | app-djoppie-inventory-dev-api-k5xdqp | Backend API | Free (F1) |
-| App Service Plan | asp-djoppie-inventory-dev | Hosting plan | Free (F1) |
+| App Service Plan | plan-djoppie-inventory-dev | Hosting plan | Free (F1) |
 | Azure SQL Server | sql-djoppie-inventory-dev-k5xdqp | Database server | €0 |
 | SQL Database | sqldb-djoppie-inventory-dev | Application data | €4.74-5.07 |
 | Key Vault | kv-djoppie-dev-k5xdqp | Secrets storage | €0.50-2.00 |
@@ -302,7 +302,7 @@ Compress-Archive -Path * -DestinationPath ../backend.zip
 
 # Deploy to App Service
 az webapp deployment source config-zip \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --name app-djoppie-inventory-dev-api-k5xdqp \
   --src ../backend.zip
 ```
@@ -320,7 +320,7 @@ npm run build
 # Deploy using Azure CLI
 az staticwebapp deploy \
   --name swa-djoppie-inventory-dev \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --source-path ./dist \
   --api-token "<deployment-token>"
 ```
@@ -409,7 +409,7 @@ az ad app permission admin-consent --id eb5bcf06-8032-494f-a363-92b6802c44bf
 # Check backend CORS settings
 az webapp config appsettings list \
   --name app-djoppie-inventory-dev-api-k5xdqp \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --query "[?name=='Frontend__AllowedOrigins'].value"
 ```
 
