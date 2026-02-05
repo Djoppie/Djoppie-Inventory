@@ -378,7 +378,7 @@ az keyvault secret set \
 
 ```powershell
 az webapp restart \
-  --resource-group rg-djoppie-inv-dev \
+  --resource-group rg-djoppie-inventory-dev \
   --name app-djoppie-inv-dev-api-<suffix>
 ```
 

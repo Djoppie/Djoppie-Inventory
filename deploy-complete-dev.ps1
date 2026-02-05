@@ -129,7 +129,7 @@ $config = @{
     Domain            = "diepenbeek.onmicrosoft.com"
 
     # Resource Names
-    ResourceGroupName = "rg-djoppie-inv-dev"
+    ResourceGroupName = "rg-djoppie-inventory-dev"
 
     # SQL Configuration
     SqlAdminUsername  = "djoppieadmin"
