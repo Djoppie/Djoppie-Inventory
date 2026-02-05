@@ -12,7 +12,7 @@
     - Application Insights data flow
 
 .PARAMETER ResourceGroup
-    Resource group name (default: rg-djoppie-inv-dev-westeurope)
+    Resource group name (default: rg-djoppie-inv-dev)
 
 .PARAMETER Detailed
     Show detailed information for each component
@@ -37,7 +37,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$ResourceGroup = "rg-djoppie-inv-dev-westeurope",
+    [string]$ResourceGroup = "rg-djoppie-inv-dev",
 
     [Parameter(Mandatory = $false)]
     [switch]$Detailed,

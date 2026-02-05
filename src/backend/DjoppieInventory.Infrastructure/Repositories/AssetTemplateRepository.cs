@@ -24,6 +24,32 @@ public class AssetTemplateRepository : IAssetTemplateRepository
 
     public async Task<AssetTemplate?> GetByIdAsync(int id)
     {
-        return await _context.AssetTemplates.FindAsync(id);
+        return await _context.AssetTemplates
+            .FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+    }
+
+    public async Task<AssetTemplate> CreateAsync(AssetTemplate template)
+    {
+        template.IsActive = true;
+        _context.AssetTemplates.Add(template);
+        await _context.SaveChangesAsync();
+        return template;
+    }
+
+    public async Task<AssetTemplate> UpdateAsync(AssetTemplate template)
+    {
+        _context.AssetTemplates.Update(template);
+        await _context.SaveChangesAsync();
+        return template;
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var template = await _context.AssetTemplates.FindAsync(id);
+        if (template != null)
+        {
+            template.IsActive = false;
+            await _context.SaveChangesAsync();
+        }
     }
 }

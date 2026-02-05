@@ -73,4 +73,25 @@ public class AssetRepository : IAssetRepository
     {
         return await _context.Assets.AnyAsync(a => a.AssetCode == assetCode);
     }
+
+    public async Task<int> GetNextAssetNumberAsync(string prefix)
+    {
+        var prefixPattern = prefix + "-";
+        var assetCodes = await _context.Assets
+            .Where(a => a.AssetCode.StartsWith(prefixPattern))
+            .Select(a => a.AssetCode)
+            .ToListAsync();
+
+        int maxNumber = 0;
+        foreach (var code in assetCodes)
+        {
+            var numberPart = code.Substring(prefixPattern.Length);
+            if (int.TryParse(numberPart, out var number) && number < 9000 && number > maxNumber)
+            {
+                maxNumber = number;
+            }
+        }
+
+        return maxNumber + 1;
+    }
 }

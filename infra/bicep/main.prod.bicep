@@ -2,7 +2,8 @@
 // Djoppie Inventory - PROD Environment Infrastructure
 // ============================================================================
 // Description: Production environment with scaling and DR capabilities
-// Region: West Europe (Primary), North Europe (DR - optional)
+// Default Region: West Europe (configurable via location parameter)
+// Secondary Region: North Europe (for DR - optional)
 // Target Cost: €140-250/month
 // ============================================================================
 

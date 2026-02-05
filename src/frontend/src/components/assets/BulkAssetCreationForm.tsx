@@ -16,6 +16,7 @@ import {
   Stack,
   Collapse,
   Paper,
+  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -25,6 +26,7 @@ import {
   AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
+import { useNextAssetNumber } from '../../hooks/useAssets';
 import { BulkCreateAssetDto, AssetTemplate } from '../../types/asset.types';
 
 interface BulkAssetCreationFormProps {
@@ -57,6 +59,24 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [numberAutoFilled, setNumberAutoFilled] = useState(false);
+  const [prevNextNumber, setPrevNextNumber] = useState<number | undefined>(undefined);
+
+  // Auto-fetch next number for prefix
+  const { data: nextNumber } = useNextAssetNumber(formData.assetCodePrefix);
+
+  // Auto-fill starting number when next number is fetched (render-time state adjustment)
+  if (nextNumber !== undefined && nextNumber !== prevNextNumber) {
+    setPrevNextNumber(nextNumber);
+    if (!numberAutoFilled) {
+      setFormData(prev => ({ ...prev, startingNumber: nextNumber }));
+      setNumberAutoFilled(true);
+    }
+  }
+
+  // Check if last asset number would exceed 8999
+  const lastNumber = formData.startingNumber + formData.quantity - 1;
+  const exceedsLimit = lastNumber >= 9000;
 
   // Generate preview of asset codes using useMemo (avoids setState in effect)
   const previewCodes = useMemo(() => {
@@ -87,6 +107,12 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
         category: template.category,
         brand: template.brand,
         model: template.model,
+        owner: template.owner || prev.owner,
+        building: template.building || prev.building,
+        spaceOrFloor: template.spaceOrFloor || prev.spaceOrFloor,
+        purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
+        warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
+        installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
         templateId: template.id,
       }));
     }
@@ -118,6 +144,10 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
 
   const handleChange = (field: keyof BulkCreateAssetDto, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'assetCodePrefix') {
+      setNumberAutoFilled(false); // Reset so next number auto-fills for new prefix
+      setPrevNextNumber(undefined);
+    }
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -240,6 +270,13 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                   inputProps={{ min: 1, max: 100 }}
                 />
               </Box>
+
+              {/* Info when using test range */}
+              {exceedsLimit && formData.assetCodePrefix && (
+                <Alert severity="info" sx={{ mt: 1 }}>
+                  Numbers 9000+ are dummy/test assets and will be shown separately in the dashboard.
+                </Alert>
+              )}
 
               {/* Preview Section with Animation */}
               <Collapse in={previewCodes.length > 0}>

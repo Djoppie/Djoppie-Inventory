@@ -70,3 +70,19 @@ export const useBulkCreateAssets = () => {
     },
   });
 };
+
+export const useNextAssetNumber = (prefix: string) => {
+  return useQuery({
+    queryKey: ['assets', 'next-number', prefix],
+    queryFn: () => assetsApi.getNextAssetNumber(prefix),
+    enabled: !!prefix && prefix.length >= 2,
+  });
+};
+
+export const useAssetCodeExists = (code: string) => {
+  return useQuery({
+    queryKey: ['assets', 'code-exists', code],
+    queryFn: () => assetsApi.assetCodeExists(code),
+    enabled: !!code && code.length >= 3,
+  });
+};

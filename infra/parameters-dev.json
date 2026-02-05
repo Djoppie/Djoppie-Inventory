@@ -6,7 +6,10 @@
       "value": "dev"
     },
     "location": {
-      "value": "westeurope"
+      "value": "westeurope",
+      "metadata": {
+        "description": "Azure region for deployment (can be changed to any Azure region)"
+      }
     },
     "sqlAdminLogin": {
       "value": "djoppieadmin"

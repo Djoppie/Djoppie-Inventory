@@ -26,7 +26,7 @@
     Azure Subscription ID (optional - will prompt if not provided)
 
 .PARAMETER Location
-    Azure region for deployment (default: westeurope)
+    Azure region for deployment (default: westeurope, can be changed to any Azure region)
 
 .PARAMETER SkipEntraSetup
     Skip Entra ID app registration (assumes already configured)
@@ -129,7 +129,7 @@ $config = @{
     Domain            = "diepenbeek.onmicrosoft.com"
 
     # Resource Names
-    ResourceGroupName = "rg-djoppie-inv-dev-$Location"
+    ResourceGroupName = "rg-djoppie-inv-dev"
 
     # SQL Configuration
     SqlAdminUsername  = "djoppieadmin"
