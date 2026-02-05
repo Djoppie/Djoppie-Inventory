@@ -80,15 +80,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
       minTlsVersion: '1.2'
       http20Enabled: true
 
-      // CORS configuration
-      cors: {
-        allowedOrigins: [
-          frontendUrl
-          'http://localhost:5173'
-          'https://localhost:5173'
-        ]
-        supportCredentials: true
-      }
+      // CORS is handled by ASP.NET Core middleware via Frontend__AllowedOrigins app settings
 
       // Application settings will be added separately
       appSettings: []
@@ -131,7 +123,7 @@ resource appSettings 'Microsoft.Web/sites/config@2023-12-01' = {
     'Frontend__AllowedOrigins__2': 'https://localhost:5173'
 
     // Database migration settings
-    'Database__AutoMigrate': 'false' // Set to true to enable auto-migration on startup (not recommended)
+    'Database__AutoMigrate': 'true' // DEV: auto-migrate on startup
 
     // Logging
     'Logging__LogLevel__Default': 'Information'

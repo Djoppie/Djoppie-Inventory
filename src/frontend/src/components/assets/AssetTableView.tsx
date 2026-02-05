@@ -163,6 +163,33 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                 }}
               >
                 <TableSortLabel
+                  active={sortField === 'status'}
+                  direction={sortField === 'status' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('status')}
+                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
+                  sx={{
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
+                    '&.Mui-active': {
+                      color: 'primary.main',
+                      fontWeight: 800,
+                    },
+                  }}
+                >
+                  Status
+                </TableSortLabel>
+              </TableCell>
+              <TableCell
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'primary.main',
+                }}
+              >
+                <TableSortLabel
                   active={sortField === 'assetName'}
                   direction={sortField === 'assetName' ? sortOrder : 'asc'}
                   onClick={() => handleSort('assetName')}
@@ -262,33 +289,6 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                 </TableSortLabel>
               </TableCell>
               <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                }}
-              >
-                <TableSortLabel
-                  active={sortField === 'status'}
-                  direction={sortField === 'status' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('status')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
-                  sx={{
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
-                    },
-                  }}
-                >
-                  Status
-                </TableSortLabel>
-              </TableCell>
-              <TableCell
                 align="center"
                 sx={{
                   fontWeight: 700,
@@ -346,6 +346,9 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                 >
                   {asset.assetCode}
                 </TableCell>
+                <TableCell>
+                  <StatusBadge status={asset.status} />
+                </TableCell>
                 <TableCell
                   sx={{
                     fontWeight: 600,
@@ -382,9 +385,6 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                       {asset.spaceOrFloor}
                     </Typography>
                   </Box>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={asset.status} />
                 </TableCell>
                 <TableCell align="center">
                   <Tooltip title="View Details" arrow>

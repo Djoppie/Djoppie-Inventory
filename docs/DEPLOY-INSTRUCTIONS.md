@@ -4,8 +4,8 @@
 
 **DEV Environment is already deployed and operational!**
 
-- **Frontend:** https://blue-cliff-031d65b03.1.azurestaticapps.net
-- **Backend API:** https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api
+- **Frontend:** <https://blue-cliff-031d65b03.1.azurestaticapps.net>
+- **Backend API:** <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api>
 - **Resource Group:** rg-djoppie-inventory-dev
 - **Deployment Method:** Azure DevOps CI/CD Pipeline (Automated)
 - **Last Updated:** 2026-02-04
@@ -39,6 +39,7 @@ cd C:\Djoppie\Djoppie-Inventory
 ### 1. SQL Admin Password
 
 When prompted, enter a strong password:
+
 - Minimum 12 characters
 - Mix of uppercase, lowercase, numbers, symbols
 - Example: `DjoppieInv2026!Secure`
@@ -46,6 +47,7 @@ When prompted, enter a strong password:
 ### 2. Entra ID Configuration (Optional)
 
 The script can use:
+
 - Existing `entra-apps-config-*.json` file (if you have one)
 - Or prompt you to enter details manually
 
@@ -78,12 +80,14 @@ Currently deployed resources:
 ### "Azure CLI not found"
 
 **Solution 1:** Restart PowerShell terminal
+
 ```powershell
 # Close and reopen PowerShell, then try again
 .\deploy-dev.ps1
 ```
 
 **Solution 2:** Add Azure CLI to PATH manually
+
 ```powershell
 $env:PATH += ";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
 .\deploy-dev.ps1
@@ -92,9 +96,11 @@ $env:PATH += ";C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
 ### "No Entra configuration file found"
 
 **Option 1:** Use existing configuration
+
 - If you see a recent `entra-apps-config-*.json` file, type `yes` to use it
 
 **Option 2:** Enter manually
+
 - The script will prompt for:
   - Tenant ID: `7db28d6f-d542-40c1-b529-5e5ed2aad545`
   - Backend Client ID: `eb5bcf06-8032-494f-a363-92b6802c44bf`
@@ -131,6 +137,7 @@ az deployment sub create `
 
 1. **Note the App Service URL** (displayed in summary)
 2. **Deploy backend code:**
+
    ```powershell
    cd src/backend/DjoppieInventory.API
    dotnet publish -c Release -o ./publish
@@ -139,29 +146,33 @@ az deployment sub create `
    ```
 
 3. **Run database migrations:**
+
    ```powershell
    # Get connection string from Key Vault or Azure Portal
    dotnet ef database update --project DjoppieInventory.Infrastructure --startup-project DjoppieInventory.API
    ```
 
 4. **Test the deployment:**
-   - Backend: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/health
+   - Backend: <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/health>
    - Expected: HTTP 401 (authentication required - this is correct!)
-   - Frontend: https://blue-cliff-031d65b03.1.azurestaticapps.net
+   - Frontend: <https://blue-cliff-031d65b03.1.azurestaticapps.net>
    - Sign in with Diepenbeek Microsoft account
 
 ## Accessing the Deployed Application
 
 **Frontend (User Interface):**
-- URL: https://blue-cliff-031d65b03.1.azurestaticapps.net
+
+- URL: <https://blue-cliff-031d65b03.1.azurestaticapps.net>
 - Login: Use your Diepenbeek Microsoft account (@diepenbeek.onmicrosoft.com)
 
 **Backend API (For Development/Testing):**
-- URL: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api
+
+- URL: <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api>
 - Authentication: Requires valid JWT token from Entra ID
 
 **Azure Resources:**
-- Portal: https://portal.azure.com
+
+- Portal: <https://portal.azure.com>
 - Resource Group: rg-djoppie-inventory-dev
 - Application Insights: appi-djoppie-inventory-dev (monitoring & logs)
 
@@ -169,4 +180,4 @@ az deployment sub create `
 
 - **Installation Guide:** See [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) for complete setup instructions
 - **Pipeline Setup:** See [AZURE-DEVOPS-QUICKSTART.md](AZURE-DEVOPS-QUICKSTART.md) for CI/CD configuration
-- **Contact:** jo.wijnen@diepenbeek.be
+- **Contact:** <jo.wijnen@diepenbeek.be>

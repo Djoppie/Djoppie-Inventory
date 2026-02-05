@@ -121,22 +121,26 @@ public class AssetService : IAssetService
             TotalRequested = bulkCreateDto.Quantity
         };
 
-        for (int i = 0; i < bulkCreateDto.Quantity; i++)
+        var currentNumber = bulkCreateDto.StartingNumber;
+        var created = 0;
+        var maxAttempts = bulkCreateDto.Quantity * 10; // Safety limit to avoid infinite loops
+        var attempts = 0;
+
+        while (created < bulkCreateDto.Quantity && attempts < maxAttempts && currentNumber <= 9999)
         {
+            attempts++;
             try
             {
-                var assetNumber = bulkCreateDto.StartingNumber + i;
-                var assetCode = $"{bulkCreateDto.AssetCodePrefix}-{assetNumber:D4}";
+                var assetCode = $"{bulkCreateDto.AssetCodePrefix}-{currentNumber:D4}";
 
-                // Check if asset code already exists
+                // Skip existing codes and try next number
                 if (await _assetRepository.AssetCodeExistsAsync(assetCode))
                 {
-                    result.Failed++;
-                    result.Errors.Add($"Asset code '{assetCode}' already exists");
+                    currentNumber++;
                     continue;
                 }
 
-                // Create asset with sequential numbering
+                // Create asset with the next available number
                 var asset = new Asset
                 {
                     AssetCode = assetCode,
@@ -151,7 +155,7 @@ public class AssetService : IAssetService
                     Brand = bulkCreateDto.Brand,
                     Model = bulkCreateDto.Model,
                     SerialNumber = !string.IsNullOrWhiteSpace(bulkCreateDto.SerialNumberPrefix)
-                        ? $"{bulkCreateDto.SerialNumberPrefix}-{assetNumber:D4}"
+                        ? $"{bulkCreateDto.SerialNumberPrefix}-{currentNumber:D4}"
                         : null,
                     PurchaseDate = bulkCreateDto.PurchaseDate,
                     WarrantyExpiry = bulkCreateDto.WarrantyExpiry,
@@ -163,12 +167,15 @@ public class AssetService : IAssetService
 
                 result.CreatedAssets.Add(assetDto);
                 result.SuccessfullyCreated++;
+                created++;
+                currentNumber++;
             }
             catch (Exception ex)
             {
                 result.Failed++;
-                result.Errors.Add($"Failed to create asset #{i + 1}: {ex.Message}");
-                _logger.LogError(ex, "Error creating asset #{Index} in bulk operation", i + 1);
+                result.Errors.Add($"Failed to create asset with number {currentNumber}: {ex.Message}");
+                _logger.LogError(ex, "Error creating asset with number {Number} in bulk operation", currentNumber);
+                currentNumber++;
             }
         }
 
@@ -177,5 +184,13 @@ public class AssetService : IAssetService
             result.SuccessfullyCreated, result.Failed, result.TotalRequested);
 
         return result;
+    }
+
+    public async Task<int> GetNextAssetNumberAsync(string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix))
+            throw new ArgumentException("Prefix is required", nameof(prefix));
+
+        return await _assetRepository.GetNextAssetNumberAsync(prefix);
     }
 }

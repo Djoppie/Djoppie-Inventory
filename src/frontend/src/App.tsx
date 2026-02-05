@@ -10,6 +10,7 @@ import AssetDetailPage from './pages/AssetDetailPage';
 import AddAssetPage from './pages/AddAssetPage';
 import EditAssetPage from './pages/EditAssetPage';
 import BulkCreateAssetPage from './pages/BulkCreateAssetPage';
+import AssetTemplatesPage from './pages/AssetTemplatesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +36,7 @@ function App() {
                 <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
                 <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />
                 <Route path={ROUTES.ASSET_EDIT} element={<EditAssetPage />} />
+                <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
               </Routes>
             </Layout>
           </AuthGuard>

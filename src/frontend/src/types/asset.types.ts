@@ -63,6 +63,40 @@ export interface AssetTemplate {
   category: string;
   brand: string;
   model: string;
+  owner: string;
+  building: string;
+  spaceOrFloor: string;
+  purchaseDate?: string;
+  warrantyExpiry?: string;
+  installationDate?: string;
+}
+
+export interface CreateAssetTemplateDto {
+  templateName: string;
+  assetName: string;
+  category: string;
+  brand: string;
+  model: string;
+  owner: string;
+  building: string;
+  spaceOrFloor: string;
+  purchaseDate?: string;
+  warrantyExpiry?: string;
+  installationDate?: string;
+}
+
+export interface UpdateAssetTemplateDto {
+  templateName: string;
+  assetName: string;
+  category: string;
+  brand: string;
+  model: string;
+  owner: string;
+  building: string;
+  spaceOrFloor: string;
+  purchaseDate?: string;
+  warrantyExpiry?: string;
+  installationDate?: string;
 }
 
 export interface BulkCreateAssetDto {

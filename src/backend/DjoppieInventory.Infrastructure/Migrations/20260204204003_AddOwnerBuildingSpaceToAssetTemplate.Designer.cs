@@ -3,6 +3,7 @@ using System;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260204204003_AddOwnerBuildingSpaceToAssetTemplate")]
+    partial class AddOwnerBuildingSpaceToAssetTemplate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -116,9 +119,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("InstallationDate")
-                        .HasColumnType("TEXT");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
@@ -131,9 +131,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("PurchaseDate")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("SpaceOrFloor")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -141,9 +138,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<string>("TemplateName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("WarrantyExpiry")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

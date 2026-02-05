@@ -12,8 +12,11 @@ import {
   InputLabel,
   Select,
   CircularProgress,
+  Chip,
+  InputAdornment,
 } from '@mui/material';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
+import { useNextAssetNumber, useAssetCodeExists } from '../../hooks/useAssets';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
 
 interface AssetFormProps {
@@ -27,9 +30,8 @@ interface AssetFormProps {
 // Helper function to format ISO date string to yyyy-MM-dd for HTML date inputs
 const formatDateForInput = (dateString?: string): string => {
   if (!dateString) return '';
-  // Handle both ISO format (2026-01-01T00:00:00) and date-only format (2026-01-01)
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return ''; // Invalid date
+  if (isNaN(date.getTime())) return '';
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -38,8 +40,26 @@ const formatDateForInput = (dateString?: string): string => {
   return `${year}-${month}-${day}`;
 };
 
+// Parse an existing asset code into prefix and number parts
+const parseAssetCode = (code: string): { prefix: string; number: number } => {
+  const lastDash = code.lastIndexOf('-');
+  if (lastDash > 0) {
+    const prefix = code.substring(0, lastDash);
+    const numStr = code.substring(lastDash + 1);
+    const num = parseInt(numStr, 10);
+    if (!isNaN(num)) return { prefix, number: num };
+  }
+  return { prefix: '', number: 1 };
+};
+
 const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: AssetFormProps) => {
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
+
+  // Parse initial asset code for edit mode
+  const initialParsed = initialData?.assetCode ? parseAssetCode(initialData.assetCode) : { prefix: '', number: 1 };
+
+  const [assetCodePrefix, setAssetCodePrefix] = useState(isEditMode ? '' : initialParsed.prefix);
+  const [assetCodeNumber, setAssetCodeNumber] = useState(isEditMode ? 0 : initialParsed.number);
 
   const [formData, setFormData] = useState<CreateAssetDto>({
     assetCode: initialData?.assetCode || '',
@@ -60,6 +80,60 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Auto-fetch next number for prefix
+  const { data: nextNumber } = useNextAssetNumber(assetCodePrefix);
+
+  // Build the combined code for uniqueness check (only in create mode)
+  const combinedCode = !isEditMode && assetCodePrefix && assetCodeNumber > 0
+    ? `${assetCodePrefix}-${assetCodeNumber.toString().padStart(4, '0')}`
+    : '';
+  const { data: codeExists } = useAssetCodeExists(combinedCode);
+
+  // Auto-fill number when next number is fetched (render-time state adjustment)
+  const [numberAutoFilled, setNumberAutoFilled] = useState(false);
+  const [prevNextNumber, setPrevNextNumber] = useState<number | undefined>(undefined);
+
+  if (nextNumber !== undefined && nextNumber !== prevNextNumber && !isEditMode) {
+    setPrevNextNumber(nextNumber);
+    if (!numberAutoFilled) {
+      setAssetCodeNumber(nextNumber);
+      setNumberAutoFilled(true);
+    }
+  }
+
+  // Auto-increment when code already exists (render-time state adjustment)
+  const [prevCodeExists, setPrevCodeExists] = useState<boolean | undefined>(undefined);
+  const [prevCombinedCode, setPrevCombinedCode] = useState('');
+
+  if (combinedCode !== prevCombinedCode) {
+    setPrevCombinedCode(combinedCode);
+    setPrevCodeExists(undefined);
+  }
+
+  if (codeExists !== prevCodeExists) {
+    setPrevCodeExists(codeExists);
+    if (codeExists === true && !isEditMode && assetCodeNumber > 0 && assetCodeNumber < 9999) {
+      setAssetCodeNumber(prev => prev + 1);
+    }
+  }
+
+  // Reset auto-fill when prefix changes
+  const handlePrefixChange = (value: string) => {
+    setAssetCodePrefix(value.toUpperCase());
+    setNumberAutoFilled(false);
+    setPrevNextNumber(undefined);
+    if (errors.assetCode) {
+      setErrors(prev => ({ ...prev, assetCode: '' }));
+    }
+  };
+
+  const handleNumberChange = (value: number) => {
+    setAssetCodeNumber(value);
+    if (errors.assetCode) {
+      setErrors(prev => ({ ...prev, assetCode: '' }));
+    }
+  };
+
   const handleTemplateChange = (templateId: number) => {
     setSelectedTemplate(templateId);
 
@@ -73,6 +147,12 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         category: template.category,
         brand: template.brand,
         model: template.model,
+        owner: template.owner || prev.owner,
+        building: template.building || prev.building,
+        spaceOrFloor: template.spaceOrFloor || prev.spaceOrFloor,
+        purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
+        warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
+        installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
       }));
     }
   };
@@ -80,7 +160,11 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.assetCode.trim()) newErrors.assetCode = 'Asset code is required';
+    if (!isEditMode) {
+      if (!assetCodePrefix.trim()) newErrors.assetCode = 'Prefix is required';
+      else if (assetCodeNumber < 1) newErrors.assetCode = 'Number must be at least 1';
+      else if (codeExists) newErrors.assetCode = `Code ${combinedCode} already exists`;
+    }
     if (!formData.assetName.trim()) newErrors.assetName = 'Asset name is required';
     if (!formData.category.trim()) newErrors.category = 'Category is required';
     if (!formData.owner.trim()) newErrors.owner = 'Owner is required';
@@ -91,6 +175,15 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     return Object.keys(newErrors).length === 0;
   };
 
+  // Convert empty strings to undefined so the API receives null instead of ""
+  const cleanData = (data: Record<string, unknown>): Record<string, unknown> => {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      cleaned[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
+    }
+    return cleaned;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -98,9 +191,10 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
 
     if (isEditMode) {
       const { assetCode: _assetCode, ...updateData } = formData; // eslint-disable-line @typescript-eslint/no-unused-vars
-      onSubmit(updateData as UpdateAssetDto);
+      onSubmit(cleanData(updateData) as unknown as UpdateAssetDto);
     } else {
-      onSubmit(formData);
+      const assetCode = `${assetCodePrefix}-${assetCodeNumber.toString().padStart(4, '0')}`;
+      onSubmit(cleanData({ ...formData, assetCode }) as unknown as CreateAssetDto);
     }
   };
 
@@ -154,27 +248,76 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               Asset Identification
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  sx={{ flex: '1 1 200px' }}
-                  label="Asset Code"
-                  value={formData.assetCode}
-                  onChange={(e) => handleChange('assetCode', e.target.value)}
-                  error={!!errors.assetCode}
-                  helperText={errors.assetCode || 'Unique identifier (e.g., AST-001)'}
-                  required
-                  disabled={isEditMode}
-                />
-                <TextField
-                  sx={{ flex: '2 1 400px' }}
-                  label="Asset Name"
-                  value={formData.assetName}
-                  onChange={(e) => handleChange('assetName', e.target.value)}
-                  error={!!errors.assetName}
-                  helperText={errors.assetName}
-                  required
-                />
-              </Box>
+              {isEditMode ? (
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <TextField
+                    sx={{ flex: '1 1 200px' }}
+                    label="Asset Code"
+                    value={formData.assetCode}
+                    disabled
+                    required
+                  />
+                  <TextField
+                    sx={{ flex: '2 1 400px' }}
+                    label="Asset Name"
+                    value={formData.assetName}
+                    onChange={(e) => handleChange('assetName', e.target.value)}
+                    error={!!errors.assetName}
+                    helperText={errors.assetName}
+                    required
+                  />
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <TextField
+                    sx={{ flex: '1 1 150px' }}
+                    label="Code Prefix"
+                    value={assetCodePrefix}
+                    onChange={(e) => handlePrefixChange(e.target.value)}
+                    error={!!errors.assetCode}
+                    helperText='e.g., LAP, MON, PRINT'
+                    required
+                    inputProps={{ maxLength: 20 }}
+                  />
+                  <TextField
+                    sx={{ flex: '0 1 150px' }}
+                    label="Number"
+                    type="number"
+                    value={assetCodeNumber}
+                    onChange={(e) => handleNumberChange(parseInt(e.target.value) || 0)}
+                    error={!!errors.assetCode || (codeExists === true)}
+                    helperText={errors.assetCode || (codeExists ? `${combinedCode} exists already` : '')}
+                    required
+                    inputProps={{ min: 1, max: 9999 }}
+                    InputProps={{
+                      endAdornment: codeExists === false && combinedCode ? (
+                        <InputAdornment position="end">
+                          <Chip label="OK" size="small" color="success" sx={{ height: 20, fontSize: '0.7rem' }} />
+                        </InputAdornment>
+                      ) : undefined,
+                    }}
+                  />
+                  {combinedCode && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', pt: 1 }}>
+                      <Chip
+                        label={combinedCode}
+                        color={codeExists ? 'error' : 'primary'}
+                        variant="outlined"
+                        sx={{ fontWeight: 600, fontFamily: 'monospace' }}
+                      />
+                    </Box>
+                  )}
+                  <TextField
+                    sx={{ flex: '2 1 300px' }}
+                    label="Asset Name"
+                    value={formData.assetName}
+                    onChange={(e) => handleChange('assetName', e.target.value)}
+                    error={!!errors.assetName}
+                    helperText={errors.assetName}
+                    required
+                  />
+                </Box>
+              )}
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   sx={{ flex: '1 1 300px' }}
@@ -330,7 +473,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             <Button
               type="submit"
               variant="contained"
-              disabled={isLoading}
+              disabled={isLoading || (!isEditMode && codeExists === true)}
               size="large"
               sx={{ minWidth: 150 }}
             >

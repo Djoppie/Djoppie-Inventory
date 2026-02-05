@@ -1,107 +1,116 @@
-import { Box, Typography, keyframes } from '@mui/material';
+import { Box, Typography, keyframes, useTheme } from '@mui/material';
 import { useState, useEffect } from 'react';
 import DjoppieLogo from './DjoppieLogo';
 
-// Subtle breathing animation for Djoppie
-const subtleBreath = keyframes`
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.02);
-  }
-`;
-
-// Scanning beam that moves vertically across QR code
-const scanBeam = keyframes`
+// Orbital arc rotation
+const orbitSweep = keyframes`
   0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
+    transform: rotate(0deg);
   }
   100% {
-    transform: translateY(100%);
-    opacity: 0;
+    transform: rotate(360deg);
   }
 `;
 
-// Eye glow intensifies during scan
-const scanningEyeGlow = keyframes`
-  0%, 100% {
-    filter: brightness(1) drop-shadow(0 0 8px rgba(255, 119, 0, 0.6));
-  }
-  50% {
-    filter: brightness(1.5) drop-shadow(0 0 16px rgba(255, 119, 0, 1));
-  }
-`;
-
-// QR code pixels appearing
-const pixelAppear = keyframes`
+// Counter-rotating inner ring
+const orbitSweepReverse = keyframes`
   0% {
-    opacity: 0;
-    transform: scale(0);
+    transform: rotate(0deg);
   }
   100% {
-    opacity: 1;
-    transform: scale(1);
+    transform: rotate(-360deg);
   }
 `;
 
-// Subtle pulse for loading text
-const subtlePulse = keyframes`
+// Gentle float for the logo
+const gentleFloat = keyframes`
   0%, 100% {
-    opacity: 0.7;
+    transform: translateY(0);
   }
   50% {
+    transform: translateY(-6px);
+  }
+`;
+
+// Fade cycle for messages
+const messageFade = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  15% {
     opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+`;
+
+// Staggered dot bounce
+const dotBounce = keyframes`
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+`;
+
+// Subtle ambient pulse on the container
+const ambientPulse = keyframes`
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 119, 0, 0);
+  }
+  50% {
+    box-shadow: 0 0 40px 0 rgba(255, 119, 0, 0.06);
   }
 `;
 
 interface DjoppieLoadingProps {
   message?: string;
   fullScreen?: boolean;
-  bootSequence?: boolean;
-  partyMode?: boolean;
 }
 
-const FUN_MESSAGES = [
-  'Counting inventory boxes...',
-  'Waking up Djoppie...',
-  'Charging robot batteries...',
-  'Scanning QR codes...',
-  'Organizing assets...',
-  'Brewing coffee for the team...',
-  'Doing robot gymnastics...',
-  'Polishing metallic surfaces...',
+const LOADING_MESSAGES = [
+  'Loading inventory...',
+  'Scanning assets...',
+  'Syncing data...',
+  'Almost ready...',
+  'Organizing records...',
+  'Fetching details...',
 ];
 
 const DjoppieLoading = ({
   message,
   fullScreen = false,
-  bootSequence = false, // eslint-disable-line @typescript-eslint/no-unused-vars
-  partyMode = false, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: DjoppieLoadingProps) => {
-  const [funMessage, setFunMessage] = useState(FUN_MESSAGES[0]);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [messageIndex, setMessageIndex] = useState(0);
+  const [fadeKey, setFadeKey] = useState(0);
 
   useEffect(() => {
-    // Rotate through fun messages
+    if (message) return; // Don't rotate if custom message provided
     const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % FUN_MESSAGES.length);
-    }, 2000);
+      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      setFadeKey((prev) => prev + 1);
+    }, 2800);
     return () => clearInterval(interval);
-  }, []);
+  }, [message]);
 
-  useEffect(() => {
-    setFunMessage(FUN_MESSAGES[messageIndex]);
-  }, [messageIndex]);
+  const displayMessage = message || LOADING_MESSAGES[messageIndex];
+  const primaryColor = theme.palette.primary.main;
+  const ringSize = 140;
+  const logoSize = 72;
 
-  // Subtle scanning animation - Djoppie scanning a QR code
   return (
     <Box
       sx={{
@@ -109,208 +118,142 @@ const DjoppieLoading = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: fullScreen ? '100vh' : '300px',
-        gap: 2.5,
+        minHeight: fullScreen ? '100vh' : '320px',
+        gap: 3,
         position: fullScreen ? 'fixed' : 'relative',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: fullScreen ? 'background.default' : 'transparent',
-        backdropFilter: fullScreen ? 'blur(10px)' : 'none',
+        backgroundColor: fullScreen
+          ? 'background.default'
+          : 'transparent',
         zIndex: fullScreen ? 9999 : 'auto',
-        overflow: 'hidden',
       }}
     >
-      {/* Main Container - Djoppie and QR Code side by side */}
+      {/* Orbital ring container */}
       <Box
         sx={{
+          position: 'relative',
+          width: ringSize,
+          height: ringSize,
           display: 'flex',
           alignItems: 'center',
-          gap: 3,
-          position: 'relative',
+          justifyContent: 'center',
+          animation: `${ambientPulse} 3s ease-in-out infinite`,
         }}
       >
-        {/* Djoppie with subtle breathing and eye glow */}
-        <Box
-          sx={{
-            position: 'relative',
-            animation: `${subtleBreath} 3s ease-in-out infinite`,
-            '& #djoppie-logo': {
-              animation: `${scanningEyeGlow} 2s ease-in-out infinite`,
-            },
-          }}
-        >
-          <DjoppieLogo size={100} animate intensity="medium" />
-        </Box>
-
-        {/* Scanning beam connecting eyes to QR code */}
+        {/* Outer orbital arc */}
         <Box
           sx={{
             position: 'absolute',
-            left: '50%',
-            top: '42%',
-            width: '80px',
-            height: '2px',
-            background: 'linear-gradient(90deg, rgba(255, 119, 0, 0.9), rgba(255, 119, 0, 0.3))',
-            transform: 'translateY(-50%)',
-            opacity: 0.7,
-            animation: `${subtlePulse} 1.5s ease-in-out infinite`,
-            boxShadow: '0 0 8px rgba(255, 119, 0, 0.7)',
-            '&::after': {
+            inset: 0,
+            borderRadius: '50%',
+            animation: `${orbitSweep} 2.4s linear infinite`,
+            '&::before': {
               content: '""',
               position: 'absolute',
-              right: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: 0,
-              height: 0,
-              borderLeft: '6px solid rgba(255, 119, 0, 0.9)',
-              borderTop: '4px solid transparent',
-              borderBottom: '4px solid transparent',
+              inset: 0,
+              borderRadius: '50%',
+              border: `2.5px solid transparent`,
+              borderTopColor: primaryColor,
+              borderRightColor: isDark
+                ? 'rgba(255, 146, 51, 0.3)'
+                : 'rgba(255, 119, 0, 0.2)',
+              filter: `drop-shadow(0 0 6px ${isDark ? 'rgba(255, 146, 51, 0.4)' : 'rgba(255, 119, 0, 0.3)'})`,
             },
           }}
         />
 
-        {/* QR Code Being Scanned */}
+        {/* Inner orbital arc (counter-rotating) */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 10,
+            borderRadius: '50%',
+            animation: `${orbitSweepReverse} 1.8s linear infinite`,
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              border: `2px solid transparent`,
+              borderBottomColor: isDark
+                ? 'rgba(255, 146, 51, 0.5)'
+                : 'rgba(255, 119, 0, 0.35)',
+              borderLeftColor: isDark
+                ? 'rgba(255, 146, 51, 0.15)'
+                : 'rgba(255, 119, 0, 0.1)',
+            },
+          }}
+        />
+
+        {/* Subtle static track ring */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            border: isDark
+              ? '1px solid rgba(255, 255, 255, 0.04)'
+              : '1px solid rgba(0, 0, 0, 0.06)',
+          }}
+        />
+
+        {/* Logo container with float */}
         <Box
           sx={{
             position: 'relative',
-            width: '90px',
-            height: '90px',
-            backgroundColor: '#FFFFFF',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--neu-shadow-light-md)',
-            padding: 1.5,
-            border: '2px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
+            zIndex: 1,
+            animation: `${gentleFloat} 3s ease-in-out infinite`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {/* QR Code Pattern - Higher resolution */}
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              gridTemplateRows: 'repeat(7, 1fr)',
-              gap: '1px',
-            }}
-          >
-            {/* Generate more realistic QR-like pattern */}
-            {[...Array(49)].map((_, i) => {
-              // More realistic QR pattern with finder patterns in corners
-              const row = Math.floor(i / 7);
-              const col = i % 7;
-              const isCorner =
-                (row < 3 && col < 3) || // Top-left
-                (row < 3 && col > 3) || // Top-right
-                (row > 3 && col < 3);   // Bottom-left
-
-              const isFinderPattern = isCorner && (
-                (row === 0 || row === 2 || col === 0 || col === 2) ||
-                (row === 1 && col === 1)
-              );
-
-              // Deterministic pattern based on position (instead of Math.random for React purity)
-              const isDataPattern = !isCorner && ((row * 7 + col) % 3 !== 0);
-
-              const isBlack = isFinderPattern || isDataPattern;
-
-              return (
-                <Box
-                  key={i}
-                  sx={{
-                    backgroundColor: isBlack ? '#000000' : 'transparent',
-                    borderRadius: '1px',
-                    animation: `${pixelAppear} 0.4s ease-out ${i * 0.015}s both`,
-                  }}
-                />
-              );
-            })}
-          </Box>
-
-          {/* Scanning Beam Effect - More prominent */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: 'linear-gradient(90deg, transparent, rgba(255, 119, 0, 0.9), transparent)',
-              boxShadow: '0 0 12px rgba(255, 119, 0, 0.9), 0 0 6px rgba(255, 119, 0, 0.6)',
-              animation: `${scanBeam} 2.5s ease-in-out infinite`,
-              filter: 'blur(0.5px)',
-            }}
-          />
-
-          {/* Success flash on complete scan */}
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: 'var(--radius-md)',
-              border: '2px solid transparent',
-              animation: 'successFlash 2.5s ease-in-out infinite',
-              '@keyframes successFlash': {
-                '0%, 85%': {
-                  borderColor: 'transparent',
-                  opacity: 0,
-                },
-                '90%': {
-                  borderColor: 'rgba(76, 175, 80, 0.8)',
-                  opacity: 1,
-                },
-                '95%, 100%': {
-                  borderColor: 'transparent',
-                  opacity: 0,
-                },
-              },
-            }}
-          />
+          <DjoppieLogo size={logoSize} animate intensity="low" />
         </Box>
       </Box>
 
-      {/* Minimal Data Indicator */}
+      {/* Loading dots */}
       <Box
         sx={{
           display: 'flex',
-          gap: 0.75,
+          gap: 1,
           alignItems: 'center',
-          height: '12px',
+          height: 10,
         }}
       >
-        {[...Array(4)].map((_, i) => (
+        {[0, 1, 2].map((i) => (
           <Box
             key={i}
             sx={{
-              width: 3,
-              height: 3,
+              width: 6,
+              height: 6,
               borderRadius: '50%',
-              backgroundColor: 'primary.main',
-              animation: `${subtlePulse} 1.2s ease-in-out infinite`,
-              animationDelay: `${i * 0.15}s`,
-              boxShadow: '0 0 4px rgba(255, 119, 0, 0.6)',
+              backgroundColor: primaryColor,
+              animation: `${dotBounce} 1.2s ease-in-out infinite`,
+              animationDelay: `${i * 0.16}s`,
             }}
           />
         ))}
       </Box>
 
-      {/* Loading Message */}
+      {/* Message */}
       <Typography
+        key={message ? 'static' : fadeKey}
         variant="body2"
         sx={{
           color: 'text.secondary',
           fontWeight: 500,
-          letterSpacing: '0.03em',
+          letterSpacing: '0.02em',
           textAlign: 'center',
           fontSize: '0.875rem',
-          animation: `${subtlePulse} 2s ease-in-out infinite`,
+          minHeight: '1.5em',
+          animation: message ? 'none' : `${messageFade} 2.8s ease-in-out`,
         }}
       >
-        {message || funMessage}
+        {displayMessage}
       </Typography>
     </Box>
   );

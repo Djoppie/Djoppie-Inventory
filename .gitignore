@@ -4,12 +4,6 @@ theme-toggle.md
 DJOPPIE-inventory.md
 node_modules/
 .vscode/
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.production
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

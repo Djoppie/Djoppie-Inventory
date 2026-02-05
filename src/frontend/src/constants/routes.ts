@@ -21,6 +21,9 @@ export const ROUTES = {
 
   /** Edit asset page (requires :id parameter) */
   ASSET_EDIT: '/assets/:id/edit',
+
+  /** Asset templates management page */
+  TEMPLATES: '/templates',
 } as const;
 
 /**
