@@ -382,7 +382,7 @@ Database provider is selected automatically in `DatabaseExtensions.cs` based on 
 ```
 Azure Subscription
   |
-  +-- rg-djoppie-inventory-dev (West Europe)
+  +-- rg-djoppie-inv-dev (Location: configurable, default West Europe)
        |
        +-- Key Vault (Standard)
        |     - SQL connection string

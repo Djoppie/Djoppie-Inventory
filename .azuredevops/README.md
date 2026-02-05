@@ -345,7 +345,7 @@ az pipelines variable-group create \
   --name "djoppie-inventory-dev" \
   --variables \
     ENVIRONMENT=dev \
-    LOCATION=westeurope
+    LOCATION=westeurope  # Can be changed to any Azure region
 ```
 
 ### Deployment Approvals

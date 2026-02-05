@@ -173,7 +173,7 @@ VITE_ENTRA_API_SCOPE=api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user
 │                     Azure Subscription                       │
 │                                                               │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │         Resource Group: rg-djoppie-inventory-dev       │ │
+│  │         Resource Group: rg-djoppie-inv-dev       │ │
 │  │                                                         │ │
 │  │  ┌──────────────────┐    ┌──────────────────────────┐ │ │
 │  │  │  Static Web App  │    │     App Service          │ │ │
@@ -276,7 +276,7 @@ az account set --subscription "8de4d933-658f-4a54-b514-95f2fb386718"
 
 az deployment sub create \
   --name "djoppie-dev-manual" \
-  --location westeurope \
+  --location westeurope \  # Can be changed to any Azure region
   --template-file main.dev.bicep \
   --parameters \
     environment=dev \
@@ -302,7 +302,7 @@ Compress-Archive -Path * -DestinationPath ../backend.zip
 
 # Deploy to App Service
 az webapp deployment source config-zip \
-  --resource-group rg-djoppie-inventory-dev \
+  --resource-group rg-djoppie-inv-dev \
   --name app-djoppie-inventory-dev-api-k5xdqp \
   --src ../backend.zip
 ```
@@ -320,7 +320,7 @@ npm run build
 # Deploy using Azure CLI
 az staticwebapp deploy \
   --name swa-djoppie-inventory-dev \
-  --resource-group rg-djoppie-inventory-dev \
+  --resource-group rg-djoppie-inv-dev \
   --source-path ./dist \
   --api-token "<deployment-token>"
 ```
@@ -409,7 +409,7 @@ az ad app permission admin-consent --id eb5bcf06-8032-494f-a363-92b6802c44bf
 # Check backend CORS settings
 az webapp config appsettings list \
   --name app-djoppie-inventory-dev-api-k5xdqp \
-  --resource-group rg-djoppie-inventory-dev \
+  --resource-group rg-djoppie-inv-dev \
   --query "[?name=='Frontend__AllowedOrigins'].value"
 ```
 

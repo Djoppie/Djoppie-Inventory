@@ -15,7 +15,7 @@
     Azure Subscription ID (optional - will prompt if not provided)
 
 .PARAMETER Location
-    Azure region for deployment (default: westeurope)
+    Azure region for deployment (default: westeurope, can be changed to any Azure region)
 
 .PARAMETER EntraConfigFile
     Path to Entra apps configuration JSON from setup-entra-apps.ps1
@@ -85,7 +85,7 @@ if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
 $config = @{
     Environment       = "dev"
     ProjectName       = "djoppie-inventory"
-    ResourceGroupName = "rg-djoppie-inventory-dev"
+    ResourceGroupName = "rg-djoppie-inv-dev"
     Location          = $Location
     TenantId          = "7db28d6f-d542-40c1-b529-5e5ed2aad545"
 

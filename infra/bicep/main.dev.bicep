@@ -2,7 +2,7 @@
 // Djoppie Inventory - DEV Environment Infrastructure
 // ============================================================================
 // Description: Ultra-low cost development environment (€5-10/month)
-// Region: West Europe (Amsterdam)
+// Default Region: West Europe (configurable via location parameter)
 // Target Cost: €6-8.50/month
 // ============================================================================
 

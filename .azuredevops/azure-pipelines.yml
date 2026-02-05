@@ -48,9 +48,9 @@ variables:
   - name: azureServiceConnection
     value: 'AzureServiceConnection'
   - name: resourceGroupName
-    value: 'rg-djoppie-inventory-dev'
+    value: 'rg-djoppie-inv-dev'
   - name: location
-    value: 'westeurope'
+    value: 'westeurope'  # Can be changed to any Azure region
 
   # Application Names
   - name: backendAppServiceName

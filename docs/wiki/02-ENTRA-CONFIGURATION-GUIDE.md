@@ -378,8 +378,8 @@ az keyvault secret set \
 
 ```powershell
 az webapp restart \
-  --resource-group rg-djoppie-inventory-dev \
-  --name app-djoppie-inventory-dev-api-<suffix>
+  --resource-group rg-djoppie-inv-dev \
+  --name app-djoppie-inv-dev-api-<suffix>
 ```
 
 6. Verify the application still authenticates correctly

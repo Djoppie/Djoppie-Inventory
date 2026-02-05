@@ -152,7 +152,7 @@ The Azure DEV environment consists of:
 
 | Resource | SKU | Monthly Cost |
 |----------|-----|-------------|
-| Resource Group | `rg-djoppie-inventory-dev` | Free |
+| Resource Group | `rg-djoppie-inv-dev` | Free |
 | App Service Plan | F1 (Free) | Free |
 | App Service (Backend API) | F1 | Free |
 | Static Web App (Frontend) | Free | Free |
@@ -255,7 +255,7 @@ For full end-to-end deployment (infrastructure + code):
 
 ### Azure DEV Checklist
 
-- [ ] All resources visible in Azure Portal under `rg-djoppie-inventory-dev`
+- [ ] All resources visible in Azure Portal under `rg-djoppie-inv-dev`
 - [ ] Backend health check responds at `/health`
 - [ ] Frontend loads in browser
 - [ ] Authentication flow completes successfully
