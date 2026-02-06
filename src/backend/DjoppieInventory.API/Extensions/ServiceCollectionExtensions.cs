@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         // Register Services
         services.AddScoped<IAssetService, AssetService>();
         services.AddScoped<IIntuneService, IntuneService>();
+        services.AddScoped<IGraphUserService, GraphUserService>();
 
         // Configure AutoMapper
         services.AddAutoMapper(typeof(Program).Assembly);

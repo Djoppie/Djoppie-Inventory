@@ -30,9 +30,13 @@ public class CreateAssetDtoValidator : AbstractValidator<CreateAssetDto>
             .NotEmpty().WithMessage("Building is required")
             .MaximumLength(200).WithMessage("Building cannot exceed 200 characters");
 
-        RuleFor(x => x.SpaceOrFloor)
-            .NotEmpty().WithMessage("Space or floor is required")
-            .MaximumLength(200).WithMessage("Space or floor cannot exceed 200 characters");
+        RuleFor(x => x.Department)
+            .NotEmpty().WithMessage("Department is required")
+            .MaximumLength(100).WithMessage("Department cannot exceed 100 characters");
+
+        RuleFor(x => x.OfficeLocation)
+            .MaximumLength(100).WithMessage("Office location cannot exceed 100 characters")
+            .When(x => !string.IsNullOrEmpty(x.OfficeLocation));
 
         RuleFor(x => x.Brand)
             .MaximumLength(100).WithMessage("Brand cannot exceed 100 characters")

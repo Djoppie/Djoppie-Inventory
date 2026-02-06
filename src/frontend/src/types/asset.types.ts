@@ -13,7 +13,8 @@ export interface Asset {
   category: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   status: AssetStatus;
   brand?: string;
   model?: string;
@@ -31,7 +32,8 @@ export interface CreateAssetDto {
   category: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   status?: string;
   brand?: string;
   model?: string;
@@ -45,7 +47,8 @@ export interface UpdateAssetDto {
   assetName: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   status?: string;
   brand?: string;
   model?: string;
@@ -65,7 +68,8 @@ export interface AssetTemplate {
   model: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -79,7 +83,8 @@ export interface CreateAssetTemplateDto {
   model: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -93,7 +98,8 @@ export interface UpdateAssetTemplateDto {
   model: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -108,7 +114,8 @@ export interface BulkCreateAssetDto {
   category: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
+  officeLocation?: string;
   status?: string;
   brand?: string;
   model?: string;

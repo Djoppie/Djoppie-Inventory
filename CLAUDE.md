@@ -35,6 +35,7 @@ The system uses the following status values (defined in `DjoppieInventory.Core/E
 - **Entity Framework Core** - ORM for database access
 - **Microsoft.Identity.Web** - Entra ID authentication
 - **Microsoft.Graph** - SDK for Intune/Microsoft Graph API integration
+- **Azure Key Vault** - Secret management (production)
 - **SQLite** (development) / **Azure SQL** (production) - Database
 
 ### Frontend
@@ -243,6 +244,28 @@ npm run lint -- --fix
 ```
 
 ## Environment Configuration
+
+### Secret Management
+
+The application uses **Azure Key Vault** for production secret management:
+
+- **Development**: Secrets stored in `appsettings.Development.json` (local file, not committed with real values)
+- **Production**: Secrets stored in Azure Key Vault (`kv-djoppie-dev-k5xdqp`)
+- **Authentication**: App Service uses Managed Identity to access Key Vault
+- **Configuration**: Key Vault secrets override appsettings.json values
+
+**Key Vault Secret Naming Convention**:
+- Configuration key: `AzureAd:ClientSecret`
+- Key Vault secret name: `AzureAd--ClientSecret` (uses `--` instead of `:`)
+
+**Required Secrets in Key Vault**:
+- `ConnectionStrings--DefaultConnection` - SQL Database connection string
+- `AzureAd--ClientSecret` - Entra ID client secret for Microsoft Graph API
+- `ApplicationInsights--ConnectionString` - Application Insights telemetry
+
+For detailed Key Vault management, see:
+- [Key Vault Configuration Guide](docs/KEYVAULT-CONFIGURATION-GUIDE.md)
+- [Key Vault Quick Reference](KEYVAULT-QUICK-REFERENCE.md)
 
 ### Local Development Setup
 

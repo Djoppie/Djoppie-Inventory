@@ -285,15 +285,140 @@ stages:
                         --query 'properties.outputs.staticWebAppApiKey.value' \
                         -o tsv)
 
+                      KEY_VAULT_NAME=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.keyVaultName.value' \
+                        -o tsv)
+
                       echo "##vso[task.setvariable variable=AppServiceName;isOutput=true]$APP_SERVICE_NAME"
                       echo "##vso[task.setvariable variable=AppServiceUrl;isOutput=true]$APP_SERVICE_URL"
                       echo "##vso[task.setvariable variable=StaticWebAppName;isOutput=true]$STATIC_WEB_APP_NAME"
                       echo "##vso[task.setvariable variable=StaticWebAppApiKey;isOutput=true;issecret=true]$STATIC_WEB_APP_API_KEY"
+                      echo "##vso[task.setvariable variable=KeyVaultName;isOutput=true]$KEY_VAULT_NAME"
 
                       echo "App Service Name: $APP_SERVICE_NAME"
                       echo "App Service URL: $APP_SERVICE_URL"
                       echo "Static Web App Name: $STATIC_WEB_APP_NAME"
                       echo "Static Web App API Key: [REDACTED]"
+                      echo "Key Vault Name: $KEY_VAULT_NAME"
+
+                - task: AzureCLI@2
+                  displayName: 'Configure Managed Identity & Key Vault'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Configuring Managed Identity for App Service..."
+
+                      # Get deployment outputs
+                      DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
+
+                      APP_SERVICE_NAME=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.appServiceName.value' \
+                        -o tsv)
+
+                      KEY_VAULT_NAME=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.keyVaultName.value' \
+                        -o tsv)
+
+                      echo "App Service: $APP_SERVICE_NAME"
+                      echo "Key Vault: $KEY_VAULT_NAME"
+
+                      # Enable system-assigned managed identity
+                      echo "Enabling Managed Identity..."
+                      PRINCIPAL_ID=$(az webapp identity assign \
+                        --resource-group $(resourceGroupName) \
+                        --name $APP_SERVICE_NAME \
+                        --query principalId \
+                        -o tsv)
+
+                      echo "Managed Identity Principal ID: $PRINCIPAL_ID"
+
+                      # Wait for identity to propagate
+                      echo "Waiting for identity propagation..."
+                      sleep 15
+
+                      # Grant Key Vault access to Managed Identity
+                      echo "Granting Key Vault access to Managed Identity..."
+                      az keyvault set-policy \
+                        --name $KEY_VAULT_NAME \
+                        --object-id $PRINCIPAL_ID \
+                        --secret-permissions get list
+
+                      echo "Managed Identity and Key Vault access configured successfully"
+
+                - task: AzureCLI@2
+                  displayName: 'Populate Key Vault Secrets'
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Populating Key Vault with secrets from pipeline variables..."
+
+                      # Get deployment outputs
+                      DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
+
+                      KEY_VAULT_NAME=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.keyVaultName.value' \
+                        -o tsv)
+
+                      SQL_SERVER_FQDN=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.sqlServerFqdn.value' \
+                        -o tsv)
+
+                      SQL_DATABASE_NAME=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.sqlDatabaseName.value' \
+                        -o tsv)
+
+                      APP_INSIGHTS_CONNECTION_STRING=$(az deployment sub show \
+                        --name $DEPLOYMENT_NAME \
+                        --query 'properties.outputs.appInsightsConnectionString.value' \
+                        -o tsv)
+
+                      echo "Key Vault: $KEY_VAULT_NAME"
+                      echo "SQL Server: $SQL_SERVER_FQDN"
+                      echo "Database: $SQL_DATABASE_NAME"
+
+                      # Construct SQL connection string
+                      SQL_CONNECTION_STRING="Server=tcp:$SQL_SERVER_FQDN,1433;Initial Catalog=$SQL_DATABASE_NAME;Persist Security Info=False;User ID=$(SQL_ADMIN_USERNAME);Password=$(SQL_ADMIN_PASSWORD);MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+
+                      # Set secrets in Key Vault
+                      echo "Setting ConnectionStrings--DefaultConnection..."
+                      az keyvault secret set \
+                        --vault-name $KEY_VAULT_NAME \
+                        --name "ConnectionStrings--DefaultConnection" \
+                        --value "$SQL_CONNECTION_STRING" \
+                        --output none
+
+                      echo "Setting AzureAd--ClientSecret..."
+                      az keyvault secret set \
+                        --vault-name $KEY_VAULT_NAME \
+                        --name "AzureAd--ClientSecret" \
+                        --value "$(ENTRA_BACKEND_CLIENT_SECRET)" \
+                        --output none
+
+                      echo "Setting ApplicationInsights--ConnectionString..."
+                      az keyvault secret set \
+                        --vault-name $KEY_VAULT_NAME \
+                        --name "ApplicationInsights--ConnectionString" \
+                        --value "$APP_INSIGHTS_CONNECTION_STRING" \
+                        --output none
+
+                      echo "All secrets populated successfully"
+
+                      # List secrets (for verification)
+                      echo "Secrets in Key Vault:"
+                      az keyvault secret list \
+                        --vault-name $KEY_VAULT_NAME \
+                        --query "[].name" \
+                        -o table
 
   # ============================================================================
   # STAGE 3: DEPLOY BACKEND

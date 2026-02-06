@@ -10,7 +10,8 @@ public class AssetTemplate
     public string Model { get; set; } = string.Empty;
     public string Owner { get; set; } = string.Empty;
     public string Building { get; set; } = string.Empty;
-    public string SpaceOrFloor { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string? OfficeLocation { get; set; }
 
     // Lifecycle (Optional)
     public DateTime? PurchaseDate { get; set; }
