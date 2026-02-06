@@ -46,7 +46,7 @@ az --version           # >= 2.50
 
 ---
 
-## 2. Local Development Setup
+## 2. Local Development Setup (without Azure DevOps)
 
 ### Step 1: Clone the Repository
 
