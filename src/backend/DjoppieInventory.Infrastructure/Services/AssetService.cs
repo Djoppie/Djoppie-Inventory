@@ -148,7 +148,8 @@ public class AssetService : IAssetService
                     Category = bulkCreateDto.Category,
                     Owner = bulkCreateDto.Owner,
                     Building = bulkCreateDto.Building,
-                    SpaceOrFloor = bulkCreateDto.SpaceOrFloor,
+                    Department = bulkCreateDto.Department,
+                    OfficeLocation = bulkCreateDto.OfficeLocation,
                     Status = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
                         ? status
                         : AssetStatus.InGebruik,

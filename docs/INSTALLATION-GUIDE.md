@@ -42,11 +42,13 @@ The application is already deployed and ready to use!
 ### DEV Environment
 
 **Frontend Application:**
-- URL: https://blue-cliff-031d65b03.1.azurestaticapps.net
+
+- URL: <https://blue-cliff-031d65b03.1.azurestaticapps.net>
 - Use your Diepenbeek Microsoft account to sign in
 
 **Backend API:**
-- URL: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net
+
+- URL: <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net>
 - Authentication required (automatically handled by frontend)
 
 ### First Time Access
@@ -96,9 +98,10 @@ dotnet ef database update --project ../DjoppieInventory.Infrastructure
 dotnet run
 ```
 
-The backend API will start at: **http://localhost:5052**
+The backend API will start at: **<http://localhost:5052>**
 
 Backend uses:
+
 - SQLite database (djoppie.db file in API directory)
 - Entra ID authentication
 - Microsoft Graph API for Intune integration
@@ -118,7 +121,7 @@ npm install
 npm run dev
 ```
 
-The frontend will start at: **http://localhost:5173**
+The frontend will start at: **<http://localhost:5173>**
 
 ### 4. Configuration
 
@@ -157,8 +160,8 @@ VITE_ENTRA_API_SCOPE=api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user
 
 ### 5. Test Local Setup
 
-1. Backend health check: http://localhost:5052/health (expect HTTP 401 - authentication required)
-2. Frontend: http://localhost:5173 (should load and redirect to Microsoft login)
+1. Backend health check: <http://localhost:5052/health> (expect HTTP 401 - authentication required)
+2. Frontend: <http://localhost:5173> (should load and redirect to Microsoft login)
 3. Sign in with Diepenbeek account
 4. Create a test asset to verify everything works
 
@@ -260,7 +263,7 @@ git push origin develop
 git push azdo develop  # If using Azure DevOps as remote
 ```
 
-Monitor the pipeline at: https://dev.azure.com/gemeentediepenbeek/Djoppie-Inventory/_build
+Monitor the pipeline at: <https://dev.azure.com/gemeentediepenbeek/Djoppie-Inventory/_build>
 
 ### Manual Deployment
 
@@ -334,36 +337,38 @@ az staticwebapp deploy \
 #### Backend (appsettings)
 
 | Setting | DEV Value | Purpose |
-|---------|-----------|---------|
+| --------- | ----------- | --------- |
 | ConnectionStrings:DefaultConnection | From Key Vault | Database connection |
 | AzureAd:TenantId | 7db28d6f-d542-40c1-b529-5e5ed2aad545 | Diepenbeek tenant |
 | AzureAd:ClientId | eb5bcf06-8032-494f-a363-92b6802c44bf | Backend API app |
 | AzureAd:ClientSecret | From Key Vault | API authentication |
-| MicrosoftGraph:BaseUrl | https://graph.microsoft.com/v1.0 | Intune API |
+| MicrosoftGraph:BaseUrl | <https://graph.microsoft.com/v1.0> | Intune API |
 
 #### Frontend (.env)
 
 | Variable | DEV Value | Purpose |
-|----------|-----------|---------|
-| VITE_API_URL | https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api | Backend endpoint |
+| ---------- | ----------- | --------- |
+| VITE_API_URL | <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/api> | Backend endpoint |
 | VITE_ENTRA_CLIENT_ID | b0b10b6c-8638-4bdd-9684-de4a55afd521 | Frontend app |
 | VITE_ENTRA_TENANT_ID | 7db28d6f-d542-40c1-b529-5e5ed2aad545 | Diepenbeek tenant |
-| VITE_ENTRA_REDIRECT_URI | https://blue-cliff-031d65b03.1.azurestaticapps.net | Login redirect |
+| VITE_ENTRA_REDIRECT_URI | <https://blue-cliff-031d65b03.1.azurestaticapps.net> | Login redirect |
 | VITE_ENTRA_API_SCOPE | api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user | API permission |
 
 ### Microsoft Entra ID App Registrations
 
 #### Frontend SPA
+
 - **Application ID:** b0b10b6c-8638-4bdd-9684-de4a55afd521
 - **Type:** Single Page Application
 - **Redirect URIs:**
-  - http://localhost:5173 (development)
-  - https://blue-cliff-031d65b03.1.azurestaticapps.net (production)
+  - <http://localhost:5173> (development)
+  - <https://blue-cliff-031d65b03.1.azurestaticapps.net> (production)
 - **API Permissions:**
   - User.Read (Microsoft Graph)
   - access_as_user (Backend API)
 
 #### Backend API
+
 - **Application ID:** eb5bcf06-8032-494f-a363-92b6802c44bf
 - **Type:** Web API
 - **Exposed API Scope:** access_as_user
@@ -384,6 +389,7 @@ az staticwebapp deploy \
 **Problem:** Authentication fails when trying to log in.
 
 **Solutions:**
+
 1. Verify you're using a Diepenbeek account (@diepenbeek.onmicrosoft.com)
 2. Clear browser cache and cookies
 3. Check redirect URI matches in Entra ID app registration
@@ -400,6 +406,7 @@ az ad app permission admin-consent --id eb5bcf06-8032-494f-a363-92b6802c44bf
 **Problem:** Frontend can't communicate with backend.
 
 **Solutions:**
+
 1. Check network tab in browser DevTools
 2. Verify access token is being sent
 3. Check CORS configuration in backend
@@ -418,6 +425,7 @@ az webapp config appsettings list \
 **Problem:** Backend can't connect to database.
 
 **Solutions:**
+
 1. Check SQL Server firewall rules
 2. Verify connection string in Key Vault
 3. Check App Service has correct Key Vault reference
@@ -435,6 +443,7 @@ az keyvault secret show \
 **Problem:** Azure DevOps pipeline errors.
 
 **Solutions:**
+
 1. Check service principal permissions
 2. Verify variable group values
 3. Check Azure resource quotas
@@ -455,12 +464,12 @@ az role assignment list \
    - Infrastructure: Azure Portal > Deployments
 
 2. **View Application Insights:**
-   - Failures: https://portal.azure.com > Application Insights > Failures
-   - Performance: https://portal.azure.com > Application Insights > Performance
+   - Failures: <https://portal.azure.com> > Application Insights > Failures
+   - Performance: <https://portal.azure.com> > Application Insights > Performance
 
 3. **Contact support:**
-   - Email: jo.wijnen@diepenbeek.be
-   - Azure DevOps: https://dev.azure.com/gemeentediepenbeek/Djoppie-Inventory
+   - Email: <jo.wijnen@diepenbeek.be>
+   - Azure DevOps: <https://dev.azure.com/gemeentediepenbeek/Djoppie-Inventory>
 
 ---
 

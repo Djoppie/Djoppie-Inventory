@@ -90,7 +90,7 @@ Before configuring the pipeline, complete these steps:
 
 A service connection allows Azure DevOps to deploy resources to your Azure subscription.
 
-#### Step-by-Step:
+#### Step-by-Step
 
 1. **Navigate to Project Settings**
    - Go to your Azure DevOps project
@@ -114,7 +114,7 @@ A service connection allows Azure DevOps to deploy resources to your Azure subsc
    - ✅ Check **Grant access permission to all pipelines**
    - Click **Save**
 
-#### Verify Connection:
+#### Verify Connection
 
 ```bash
 # Connection should show as "Ready"
@@ -154,20 +154,23 @@ Pipeline variables store sensitive configuration like credentials and IDs.
 | `SQL_ADMIN_PASSWORD` | `<strong-password>` | ✅ Yes | SQL admin password |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | `<from azure portal>` | ✅ Yes | SWA deployment token |
 
-#### Finding Values:
+#### Finding Values
 
 **Entra App IDs:**
+
 ```powershell
 # From setup-entra-apps.ps1 output file
 Get-Content entra-apps-config-*.json | ConvertFrom-Json
 ```
 
 **Azure Subscription ID:**
+
 ```bash
 az account show --query id -o tsv
 ```
 
 **Static Web App Token:**
+
 ```bash
 # Will be available after first infrastructure deployment
 # Or get from Azure Portal: Static Web App > Manage deployment token
@@ -177,7 +180,7 @@ az account show --query id -o tsv
 
 ### 3. Import Pipeline
 
-#### Step-by-Step:
+#### Step-by-Step
 
 1. **Create New Pipeline**
    - Go to **Pipelines** > **New pipeline**
@@ -204,7 +207,7 @@ az account show --query id -o tsv
 
 ### 4. Run First Deployment
 
-#### Pre-Deployment Checklist:
+#### Pre-Deployment Checklist
 
 - ✅ Service connection created and verified
 - ✅ All pipeline variables configured
@@ -212,14 +215,14 @@ az account show --query id -o tsv
 - ✅ Pipeline imported from azure-pipelines.yml
 - ✅ Environment created
 
-#### Run Pipeline:
+#### Run Pipeline
 
 1. Go to **Pipelines** > Select your pipeline
 2. Click **Run pipeline**
 3. Select branch (usually `main` or `develop`)
 4. Click **Run**
 
-#### Monitor Progress:
+#### Monitor Progress
 
 ```
 Stage 1: Build & Test          [████████] ✓ Complete (5 min)
@@ -231,7 +234,7 @@ Stage 5: Smoke Tests          [████████] ✓ Complete (1 min)
 Total: ~20 minutes
 ```
 
-#### Verify Deployment:
+#### Verify Deployment
 
 After successful deployment:
 
@@ -242,12 +245,14 @@ After successful deployment:
    - SQL Database: `sqldb-djoppie-inventory`
 
 2. **Test Backend API**
+
    ```bash
    curl https://app-djoppie-dev-api-*.azurewebsites.net/health
    # Expected: {"status":"Healthy"}
    ```
 
 3. **Test Frontend**
+
    ```bash
    curl https://swa-djoppie-dev-ui-*.azurestaticapps.net
    # Expected: HTML content
@@ -260,18 +265,21 @@ After successful deployment:
 ### Build Stage
 
 **Backend Build:**
+
 - Restore NuGet packages
 - Build ASP.NET Core projects
 - Run unit tests
 - Publish artifacts
 
 **Frontend Build:**
+
 - Install npm dependencies
 - Run linters and tests
 - Build production bundle with environment variables
 - Publish artifacts
 
 **Infrastructure Prep:**
+
 - Copy Bicep templates
 - Validate Bicep syntax
 - Publish artifacts
@@ -279,22 +287,26 @@ After successful deployment:
 ### Deploy Stages
 
 **Infrastructure:**
+
 - Deploy Bicep template at subscription scope
 - Create resource group
 - Provision all Azure resources
 - Store outputs for subsequent stages
 
 **Backend:**
+
 - Deploy API to App Service via ZIP deploy
 - Apply database migrations
 - Verify health endpoint
 
 **Frontend:**
+
 - Deploy to Static Web App
 - Configure custom domain (if specified)
 - Update CDN cache
 
 **Smoke Tests:**
+
 - Test backend health endpoint
 - Test frontend accessibility
 - Verify API version endpoint
@@ -303,9 +315,10 @@ After successful deployment:
 
 ## Pipeline Triggers
 
-### Automatic Triggers:
+### Automatic Triggers
 
 **Push to main/develop:**
+
 ```yaml
 trigger:
   branches:
@@ -315,6 +328,7 @@ trigger:
 ```
 
 **Pull Request:**
+
 ```yaml
 pr:
   branches:
@@ -323,7 +337,7 @@ pr:
       - develop
 ```
 
-### Manual Trigger:
+### Manual Trigger
 
 1. Go to **Pipelines**
 2. Select pipeline
@@ -379,6 +393,7 @@ Configure pipeline notifications:
 **Error:** `No service connection found with identifier 'AzureServiceConnection'`
 
 **Solution:**
+
 1. Verify service connection exists in **Project Settings** > **Service connections**
 2. Ensure connection is named exactly `AzureServiceConnection`
 3. Grant access permission to all pipelines
@@ -389,6 +404,7 @@ Configure pipeline notifications:
 **Error:** `Variable 'ENTRA_BACKEND_CLIENT_ID' is undefined`
 
 **Solution:**
+
 1. Go to **Pipelines** > **Edit** > **Variables**
 2. Add missing variable
 3. For secrets, check **Keep this value secret**
@@ -399,6 +415,7 @@ Configure pipeline notifications:
 **Error:** `Deployment failed. Resource already exists.`
 
 **Solution:**
+
 ```bash
 # Delete existing resource group
 az group delete --name rg-djoppie-inventory-dev --yes
@@ -411,6 +428,7 @@ az group delete --name rg-djoppie-inventory-dev --yes
 **Error:** `Could not find part of the path 'D:\home\site\wwwroot\*.dll'`
 
 **Solution:**
+
 1. Verify backend build completed successfully
 2. Check artifact contains published files
 3. Ensure `publishWebProjects: false` in publish task
@@ -421,6 +439,7 @@ az group delete --name rg-djoppie-inventory-dev --yes
 **Error:** `Module not found: Can't resolve '@/components/...'`
 
 **Solution:**
+
 ```bash
 # Clear npm cache and reinstall
 cd src/frontend
@@ -433,6 +452,7 @@ npm install
 **Error:** `curl: (6) Could not resolve host`
 
 **Solution:**
+
 1. Wait 2-3 minutes for DNS propagation
 2. Verify resources deployed in Azure Portal
 3. Check App Service and Static Web App are running
@@ -440,9 +460,9 @@ npm install
 
 ### Getting Help
 
-- **Azure DevOps Documentation:** https://docs.microsoft.com/azure/devops/
-- **Pipeline YAML Reference:** https://docs.microsoft.com/azure/devops/pipelines/yaml-schema
-- **Azure CLI Reference:** https://docs.microsoft.com/cli/azure/
+- **Azure DevOps Documentation:** <https://docs.microsoft.com/azure/devops/>
+- **Pipeline YAML Reference:** <https://docs.microsoft.com/azure/devops/pipelines/yaml-schema>
+- **Azure CLI Reference:** <https://docs.microsoft.com/cli/azure/>
 
 ---
 
@@ -476,23 +496,26 @@ After successful pipeline setup:
 
 ## Maintenance
 
-### Regular Tasks:
+### Regular Tasks
 
 **Weekly:**
+
 - Review pipeline run history
 - Check for failed deployments
 - Monitor application health
 
 **Monthly:**
+
 - Review and optimize pipeline performance
 - Update dependencies in frontend/backend
 - Check Azure resource costs
 
 **Quarterly:**
+
 - Rotate secrets and credentials
 - Review and update infrastructure templates
 - Audit access permissions
 
 ---
 
-**Need Help?** Contact: jo.wijnen@diepenbeek.be
+**Need Help?** Contact: <jo.wijnen@diepenbeek.be>

@@ -64,10 +64,15 @@ public class BulkCreateAssetDto
     public string Building { get; set; } = string.Empty;
 
     /// <summary>
-    /// Space or floor location for all assets in the bulk creation.
+    /// Department for all assets in the bulk creation.
     /// </summary>
     [Required]
-    public string SpaceOrFloor { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional: Office location for all assets in the bulk creation.
+    /// </summary>
+    public string? OfficeLocation { get; set; }
 
     /// <summary>
     /// Status for all assets. Defaults to "InGebruik".

@@ -215,8 +215,18 @@ const AssetCard = ({ asset }: AssetCardProps) => {
                   color: 'text.secondary',
                 }}
               >
-                {asset.spaceOrFloor}
+                {asset.department}
               </Typography>
+              {asset.officeLocation && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
+                  {asset.officeLocation}
+                </Typography>
+              )}
             </Box>
           </Box>
 

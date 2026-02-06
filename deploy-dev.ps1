@@ -142,7 +142,7 @@ function Test-Prerequisites {
     # Check Azure CLI
     Write-Info "Checking Azure CLI..."
     try {
-        $azVersion = az version --query '"azure-cli"' -o tsv 2>$null
+        $azVersion = (az version 2>$null | ConvertFrom-Json).'azure-cli'
         if ($LASTEXITCODE -ne 0) { throw }
         Write-Success "Azure CLI $azVersion"
     }
@@ -226,8 +226,8 @@ function Get-EntraConfiguration {
 
     # Option 3: Find most recent config file
     Write-Info "Looking for recent Entra configuration files..."
-    $configFiles = Get-ChildItem -Path "." -Filter "entra-apps-config-*.json" |
-    Sort-Object LastWriteTime -Descending
+    $configFiles = @(Get-ChildItem -Path "." -Filter "entra-apps-config-*.json" |
+    Sort-Object LastWriteTime -Descending)
 
     if ($configFiles.Count -eq 0) {
         Write-ErrorMessage "No Entra configuration file found"
@@ -314,7 +314,8 @@ function Deploy-Infrastructure {
 
     Write-Header "Deploying Azure Infrastructure"
 
-    $deploymentName = "djoppie-dev-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    $deployTimestamp = Get-Date -Format yyyyMMddHHmmss
+    $deploymentName = "djoppie-dev-$deployTimestamp"
 
     Write-Info "Deployment name: $deploymentName"
     Write-Info "Resource group: $($config.ResourceGroupName)"
@@ -401,7 +402,7 @@ function Add-SqlFirewallRule {
         az sql server firewall-rule create `
             --resource-group $ResourceGroupName `
             --server $SqlServerName `
-            --name "ClientIP-$(Get-Date -Format 'yyyyMMdd')" `
+            --name "ClientIP-$(Get-Date -Format yyyyMMdd)" `
             --start-ip-address $myIp `
             --end-ip-address $myIp | Out-Null
 
@@ -479,7 +480,8 @@ function Show-DeploymentSummary {
     Write-Host ""
 
     # Save outputs
-    $outputFile = "infrastructure-outputs-$(Get-Date -Format 'yyyyMMddHHmmss').json"
+    $timestamp = Get-Date -Format yyyyMMddHHmmss
+    $outputFile = "infrastructure-outputs-$timestamp.json"
     @{
         Timestamp      = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         Environment    = $config.Environment

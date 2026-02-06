@@ -17,7 +17,9 @@ public class UpdateAssetDto
     public string Building { get; set; } = string.Empty;
 
     [Required]
-    public string SpaceOrFloor { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+
+    public string? OfficeLocation { get; set; }
 
     public string Status { get; set; } = "InGebruik";
 

@@ -63,7 +63,7 @@ interface FormData {
   model: string;
   owner: string;
   building: string;
-  spaceOrFloor: string;
+  department: string;
   purchaseDate: string;
   warrantyExpiry: string;
   installationDate: string;
@@ -77,7 +77,7 @@ const initialFormData: FormData = {
   model: '',
   owner: '',
   building: '',
-  spaceOrFloor: '',
+  department: '',
   purchaseDate: '',
   warrantyExpiry: '',
   installationDate: '',
@@ -123,7 +123,7 @@ const AssetTemplatesPage = () => {
         model: template.model,
         owner: template.owner,
         building: template.building,
-        spaceOrFloor: template.spaceOrFloor,
+        department: template.department,
         purchaseDate: template.purchaseDate?.split('T')[0] || '',
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || '',
         installationDate: template.installationDate?.split('T')[0] || '',
@@ -191,7 +191,7 @@ const AssetTemplatesPage = () => {
       model: formData.model.trim(),
       owner: formData.owner.trim(),
       building: formData.building.trim(),
-      spaceOrFloor: formData.spaceOrFloor.trim(),
+      department: formData.department.trim(),
       purchaseDate: formData.purchaseDate || undefined,
       warrantyExpiry: formData.warrantyExpiry || undefined,
       installationDate: formData.installationDate || undefined,
@@ -442,10 +442,10 @@ const AssetTemplatesPage = () => {
                       )}
 
                       {/* Building | Space */}
-                      {(template.building || template.spaceOrFloor) && (
+                      {(template.building || template.department) && (
                         <Typography variant="body2" color="text.secondary">
                           <strong>{t('templates.building')}:</strong>{' '}
-                          {[template.building, template.spaceOrFloor].filter(Boolean).join(' / ')}
+                          {[template.building, template.department].filter(Boolean).join(' / ')}
                         </Typography>
                       )}
                     </CardContent>
@@ -522,7 +522,7 @@ const AssetTemplatesPage = () => {
                     <TableCell sx={{ fontWeight: 700 }}>{t('templates.model')}</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{t('templates.owner')}</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{t('templates.building')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.spaceOrFloor')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.department')}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700 }}>
                       {t('common.actions')}
                     </TableCell>
@@ -550,7 +550,7 @@ const AssetTemplatesPage = () => {
                       <TableCell>{template.model || '-'}</TableCell>
                       <TableCell>{template.owner || '-'}</TableCell>
                       <TableCell>{template.building || '-'}</TableCell>
-                      <TableCell>{template.spaceOrFloor || '-'}</TableCell>
+                      <TableCell>{template.department || '-'}</TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                         <IconButton
                           size="small"
@@ -791,9 +791,9 @@ const AssetTemplatesPage = () => {
               />
 
               <TextField
-                label={t('templates.spaceOrFloor')}
-                value={formData.spaceOrFloor}
-                onChange={handleInputChange('spaceOrFloor')}
+                label={t('templates.department')}
+                value={formData.department}
+                onChange={handleInputChange('department')}
                 sx={{
                   flex: '1 1 200px',
                   '& .MuiOutlinedInput-root': {

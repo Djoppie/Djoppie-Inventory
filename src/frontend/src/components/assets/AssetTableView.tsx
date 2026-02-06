@@ -382,7 +382,7 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                       {asset.building}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {asset.spaceOrFloor}
+                      {asset.department} {asset.officeLocation && `/ ${asset.officeLocation}`}
                     </Typography>
                   </Box>
                 </TableCell>
