@@ -18,6 +18,9 @@ import {
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { useNextAssetNumber, useAssetCodeExists } from '../../hooks/useAssets';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
+import { GraphUser, IntuneDevice } from '../../types/graph.types';
+import UserAutocomplete from '../common/UserAutocomplete';
+import DeviceAutocomplete from '../common/DeviceAutocomplete';
 
 interface AssetFormProps {
   initialData?: Asset;
@@ -67,7 +70,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     category: initialData?.category || '',
     owner: initialData?.owner || '',
     building: initialData?.building || '',
-    spaceOrFloor: initialData?.spaceOrFloor || '',
+    department: initialData?.department || '',
+    officeLocation: initialData?.officeLocation || '',
     status: initialData?.status || 'InGebruik',
     brand: initialData?.brand || '',
     model: initialData?.model || '',
@@ -149,7 +153,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         model: template.model,
         owner: template.owner || prev.owner,
         building: template.building || prev.building,
-        spaceOrFloor: template.spaceOrFloor || prev.spaceOrFloor,
+        department: template.department || prev.department,
+        officeLocation: template.officeLocation || prev.officeLocation,
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
         installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
@@ -169,7 +174,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     if (!formData.category.trim()) newErrors.category = 'Category is required';
     if (!formData.owner.trim()) newErrors.owner = 'Owner is required';
     if (!formData.building.trim()) newErrors.building = 'Building is required';
-    if (!formData.spaceOrFloor.trim()) newErrors.spaceOrFloor = 'Space/Floor is required';
+    if (!formData.department.trim()) newErrors.department = 'Department is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -354,14 +359,25 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               Assignment Details
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Owner"
+              <UserAutocomplete
                 value={formData.owner}
-                onChange={(e) => handleChange('owner', e.target.value)}
-                error={!!errors.owner}
-                helperText={errors.owner}
+                onChange={(displayName: string, user: GraphUser | null) => {
+                  handleChange('owner', displayName);
+                  // Auto-populate department and office location if user selected
+                  if (user) {
+                    if (user.department && !formData.department) {
+                      handleChange('department', user.department);
+                    }
+                    if (user.officeLocation && !formData.officeLocation) {
+                      handleChange('officeLocation', user.officeLocation);
+                    }
+                  }
+                }}
+                label="Owner"
                 required
+                error={!!errors.owner}
+                helperText={errors.owner || 'Search for user or enter name manually'}
+                disabled={isLoading}
               />
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
@@ -375,14 +391,21 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 />
                 <TextField
                   sx={{ flex: '1 1 250px' }}
-                  label="Space / Floor"
-                  value={formData.spaceOrFloor}
-                  onChange={(e) => handleChange('spaceOrFloor', e.target.value)}
-                  error={!!errors.spaceOrFloor}
-                  helperText={errors.spaceOrFloor}
+                  label="Department"
+                  value={formData.department}
+                  onChange={(e) => handleChange('department', e.target.value)}
+                  error={!!errors.department}
+                  helperText={errors.department}
                   required
                 />
               </Box>
+              <TextField
+                fullWidth
+                label="Office Location"
+                value={formData.officeLocation}
+                onChange={(e) => handleChange('officeLocation', e.target.value)}
+                helperText="Optional: Specific office or room number"
+              />
             </Box>
           </Box>
 
@@ -394,9 +417,29 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               Technical Details
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Optional but recommended for better asset tracking
+              Optional but recommended for better asset tracking. Search Intune for device details.
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <DeviceAutocomplete
+                value={formData.serialNumber || ''}
+                onSelect={(device: IntuneDevice | null) => {
+                  if (device) {
+                    // Auto-populate device details
+                    if (device.manufacturer && !formData.brand) {
+                      handleChange('brand', device.manufacturer);
+                    }
+                    if (device.model && !formData.model) {
+                      handleChange('model', device.model);
+                    }
+                    if (device.serialNumber) {
+                      handleChange('serialNumber', device.serialNumber);
+                    }
+                  }
+                }}
+                label="Search Intune Device"
+                helperText="Search by device name or serial number to auto-fill details"
+                searchBy="name"
+              />
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   sx={{ flex: '1 1 200px' }}

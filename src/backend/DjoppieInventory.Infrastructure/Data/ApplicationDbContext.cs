@@ -27,7 +27,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Owner).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Building).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.SpaceOrFloor).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Department).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.OfficeLocation).HasMaxLength(100);
             entity.Property(e => e.Brand).HasMaxLength(100);
             entity.Property(e => e.Model).HasMaxLength(200);
             entity.Property(e => e.SerialNumber).HasMaxLength(100);

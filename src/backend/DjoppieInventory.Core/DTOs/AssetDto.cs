@@ -8,7 +8,8 @@ public class AssetDto
     public string Category { get; set; } = string.Empty;
     public string Owner { get; set; } = string.Empty;
     public string Building { get; set; } = string.Empty;
-    public string SpaceOrFloor { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string? OfficeLocation { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Brand { get; set; }
     public string? Model { get; set; }

@@ -173,10 +173,18 @@ const AssetDetailPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 200px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Space / Floor
+                    Department
                   </Typography>
-                  <Typography variant="body1">{asset.spaceOrFloor}</Typography>
+                  <Typography variant="body1">{asset.department}</Typography>
                 </Box>
+                {asset.officeLocation && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Office Location
+                    </Typography>
+                    <Typography variant="body1">{asset.officeLocation}</Typography>
+                  </Box>
+                )}
               </Box>
             </CardContent>
           </Card>

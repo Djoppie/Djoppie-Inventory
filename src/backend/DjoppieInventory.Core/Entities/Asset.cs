@@ -13,7 +13,8 @@ public class Asset
     // Assignment (Required)
     public string Owner { get; set; } = string.Empty;
     public string Building { get; set; } = string.Empty;
-    public string SpaceOrFloor { get; set; } = string.Empty;
+    public string Department { get; set; } = string.Empty;
+    public string? OfficeLocation { get; set; }
     public AssetStatus Status { get; set; } = AssetStatus.InGebruik;
 
     // Technical Details (Optional)

@@ -3,6 +3,10 @@ using DjoppieInventory.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Azure Key Vault (Production only)
+// Secrets from Key Vault will override appsettings.json values
+builder.Configuration.AddAzureKeyVaultConfiguration(builder.Environment);
+
 // Configure Application Insights
 builder.Services.AddApplicationInsightsTelemetry();
 
@@ -20,6 +24,9 @@ builder.Services.AddApplicationServices();
 
 // Configure CORS
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
+
+// Validate required secrets are present (Production only)
+builder.Services.ValidateRequiredSecrets(builder.Configuration, builder.Environment);
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();

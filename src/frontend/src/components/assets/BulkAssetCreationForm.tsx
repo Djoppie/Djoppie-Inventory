@@ -46,7 +46,8 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
     category: '',
     owner: '',
     building: '',
-    spaceOrFloor: '',
+    department: '',
+    officeLocation: '',
     status: 'InGebruik',
     brand: '',
     model: '',
@@ -109,7 +110,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
         model: template.model,
         owner: template.owner || prev.owner,
         building: template.building || prev.building,
-        spaceOrFloor: template.spaceOrFloor || prev.spaceOrFloor,
+        department: template.department || prev.department,
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
         installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
@@ -130,7 +131,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
     if (!formData.category.trim()) newErrors.category = 'Category is required';
     if (!formData.owner.trim()) newErrors.owner = 'Owner is required';
     if (!formData.building.trim()) newErrors.building = 'Building is required';
-    if (!formData.spaceOrFloor.trim()) newErrors.spaceOrFloor = 'Space/Floor is required';
+    if (!formData.department.trim()) newErrors.department = 'Space/Floor is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -421,10 +422,10 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                 <TextField
                   sx={{ flex: '1 1 250px' }}
                   label="Space / Floor"
-                  value={formData.spaceOrFloor}
-                  onChange={(e) => handleChange('spaceOrFloor', e.target.value)}
-                  error={!!errors.spaceOrFloor}
-                  helperText={errors.spaceOrFloor}
+                  value={formData.department}
+                  onChange={(e) => handleChange('department', e.target.value)}
+                  error={!!errors.department}
+                  helperText={errors.department}
                   required
                 />
               </Box>

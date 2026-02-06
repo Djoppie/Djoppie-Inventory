@@ -12,6 +12,7 @@ import {
   Divider,
   TextField,
   InputAdornment,
+  Button,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAssets } from '../hooks/useAssets';
@@ -19,6 +20,7 @@ import AssetList from '../components/assets/AssetList';
 import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
+import ExportDialog from '../components/export/ExportDialog';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SortIcon from '@mui/icons-material/Sort';
@@ -26,6 +28,7 @@ import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CheckIcon from '@mui/icons-material/Check';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -63,6 +66,7 @@ const DashboardPage = () => {
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
   const [discussionExpanded, setDiscussionExpanded] = useState<boolean>(false);
   const [discussionText, setDiscussionText] = useState<string>('');
+  const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load view mode from localStorage on mount
     const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -108,7 +112,8 @@ const DashboardPage = () => {
         a.category.toLowerCase().includes(query) ||
         a.owner.toLowerCase().includes(query) ||
         a.building.toLowerCase().includes(query) ||
-        a.spaceOrFloor.toLowerCase().includes(query) ||
+        a.department?.toLowerCase().includes(query) ||
+        a.officeLocation?.toLowerCase().includes(query) ||
         a.brand?.toLowerCase().includes(query) ||
         a.model?.toLowerCase().includes(query) ||
         a.serialNumber?.toLowerCase().includes(query)
@@ -490,9 +495,30 @@ const DashboardPage = () => {
         }}
       >
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          {/* Left side - View Toggle */}
-          <Box>
+          {/* Left side - View Toggle & Export Button */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <ViewToggle value={viewMode} onChange={handleViewModeChange} />
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              onClick={() => setExportDialogOpen(true)}
+              sx={{
+                borderRadius: 2,
+                px: 2,
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.9) 0%, rgba(204, 0, 0, 0.8) 100%)'
+                    : 'linear-gradient(135deg, rgba(255, 119, 0, 1) 0%, rgba(204, 0, 0, 0.9) 100%)',
+                boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(255, 119, 0, 0.4)',
+                },
+              }}
+            >
+              {t('export.title')}
+            </Button>
           </Box>
 
           {/* Center - Search */}
@@ -832,6 +858,13 @@ const DashboardPage = () => {
           </Box>
         )}
       </Paper>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+        assets={assets || []}
+      />
     </Box>
   );
 };
