@@ -18,7 +18,6 @@ import {
   Divider,
   Paper,
   IconButton,
-  Tooltip,
   FormGroup,
   Alert,
   Collapse,
@@ -43,16 +42,6 @@ import {
   ExportConfig,
   getDefaultExportColumns,
 } from '../../utils/exportUtils';
-
-// Smooth shimmer animation for the export preview
-const shimmer = keyframes`
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
-`;
 
 // Pulse animation for the download button
 const pulse = keyframes`

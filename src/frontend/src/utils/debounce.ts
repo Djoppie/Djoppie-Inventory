@@ -6,21 +6,19 @@
  * @param delay - The delay in milliseconds
  * @returns A debounced version of the function
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: Parameters<T>) => void>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  return function (this: any, ...args: Parameters<T>) {
-    const context = this;
-
+  return (...args: Parameters<T>): void => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
 
     timeoutId = setTimeout(() => {
-      func.apply(context, args);
+      func(...args);
     }, delay);
   };
 }

@@ -67,8 +67,8 @@ export const intuneApi = {
   /**
    * Get device statistics
    */
-  getStatistics: async (): Promise<any> => {
-    const response = await apiClient.get('/intune/statistics');
+  getStatistics: async (): Promise<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }> => {
+    const response = await apiClient.get<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }>('/intune/statistics');
     return response.data;
   }
 };

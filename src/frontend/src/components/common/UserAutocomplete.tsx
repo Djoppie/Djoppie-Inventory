@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Autocomplete,
   TextField,
@@ -39,28 +39,29 @@ const UserAutocomplete = ({
   const [selectedUser, setSelectedUser] = useState<GraphUser | null>(null);
 
   // Debounced search function
-  const searchUsers = useCallback(
-    debounce(async (query: string) => {
-      if (!query || query.length < 2) {
-        setOptions([]);
-        return;
-      }
+  const searchUsers = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (!query || query.length < 2) {
+          setOptions([]);
+          return;
+        }
 
-      setLoading(true);
-      setSearchError(null);
-
-      try {
-        const users = await graphApi.searchUsers(query, 10);
-        setOptions(users);
-      } catch (error) {
-        // Silently fall back to manual input - Graph search is optional
-        console.warn('Graph user search unavailable, using manual input:', error);
+        setLoading(true);
         setSearchError(null);
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300),
+
+        try {
+          const users = await graphApi.searchUsers(query, 10);
+          setOptions(users);
+        } catch (error) {
+          // Silently fall back to manual input - Graph search is optional
+          console.warn('Graph user search unavailable, using manual input:', error);
+          setSearchError(null);
+          setOptions([]);
+        } finally {
+          setLoading(false);
+        }
+      }, 300),
     []
   );
 

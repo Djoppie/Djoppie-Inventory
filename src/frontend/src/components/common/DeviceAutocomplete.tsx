@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Autocomplete,
   TextField,
@@ -43,39 +43,40 @@ const DeviceAutocomplete = ({
   const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
 
   // Debounced search function
-  const searchDevices = useCallback(
-    debounce(async (query: string) => {
-      if (!query || query.length < 2) {
-        setOptions([]);
-        return;
-      }
-
-      setLoading(true);
-      setSearchError(null);
-
-      try {
-        if (searchBy === 'serial') {
-          // Search by serial number (exact match)
-          try {
-            const device = await intuneApi.getDeviceBySerialNumber(query);
-            setOptions([device]);
-          } catch {
-            // If not found, return empty array
-            setOptions([]);
-          }
-        } else {
-          // Search by device name (partial match)
-          const devices = await intuneApi.searchDevicesByName(query);
-          setOptions(devices);
+  const searchDevices = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (!query || query.length < 2) {
+          setOptions([]);
+          return;
         }
-      } catch (error) {
-        console.error('Error searching devices:', error);
-        setSearchError('Failed to search devices. Please try again.');
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 300),
+
+        setLoading(true);
+        setSearchError(null);
+
+        try {
+          if (searchBy === 'serial') {
+            // Search by serial number (exact match)
+            try {
+              const device = await intuneApi.getDeviceBySerialNumber(query);
+              setOptions([device]);
+            } catch {
+              // If not found, return empty array
+              setOptions([]);
+            }
+          } else {
+            // Search by device name (partial match)
+            const devices = await intuneApi.searchDevicesByName(query);
+            setOptions(devices);
+          }
+        } catch (error) {
+          console.error('Error searching devices:', error);
+          setSearchError('Failed to search devices. Please try again.');
+          setOptions([]);
+        } finally {
+          setLoading(false);
+        }
+      }, 300),
     [searchBy]
   );
 
