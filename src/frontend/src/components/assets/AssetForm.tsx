@@ -502,96 +502,104 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 description={t('assetForm.assignmentSectionDesc')}
                 theme={theme}
               />
-              <Stack spacing={2.5}>
+              <Stack spacing={2}>
                 <UserAutocomplete
                   value={formData.owner}
                   onChange={(displayName: string, user: GraphUser | null) => {
                     handleChange('owner', displayName);
                     // Auto-populate department, job title, and office location if user selected
                     if (user) {
-                      if (user.department && !formData.department) {
+                      if (user.department) {
                         handleChange('department', user.department);
                         markFieldAsAutoFilled('department');
                       }
-                      if (user.jobTitle && !formData.jobTitle) {
+                      if (user.jobTitle) {
                         handleChange('jobTitle', user.jobTitle);
                         markFieldAsAutoFilled('jobTitle');
                       }
-                      if (user.officeLocation && !formData.officeLocation) {
+                      if (user.officeLocation) {
                         handleChange('officeLocation', user.officeLocation);
                         markFieldAsAutoFilled('officeLocation');
                       }
+                    } else {
+                      // Clear auto-filled fields when user is cleared
+                      handleChange('department', '');
+                      handleChange('jobTitle', '');
+                      handleChange('officeLocation', '');
                     }
                   }}
-                  label={t('assetDetail.owner')}
+                  label={t('assetDetail.primaryUser')}
                   required
                   error={!!errors.owner}
-                  helperText={errors.owner || t('assetForm.userAutoFillHint')}
+                  helperText={errors.owner}
                   disabled={isLoading}
                 />
 
-                {/* Auto-filled chips display */}
+                {/* User info display (read-only) */}
                 {(formData.department || formData.jobTitle || formData.officeLocation) && (
                   <Box
                     sx={{
                       display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 1.5,
-                      p: 2,
-                      borderRadius: 2,
-                      background: theme.palette.mode === 'light'
-                        ? alpha(theme.palette.primary.main, 0.05)
-                        : alpha(theme.palette.primary.dark, 0.2),
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                      flexDirection: 'column',
+                      gap: 0.5,
+                      pl: 2,
+                      py: 1,
+                      borderLeft: `3px solid ${theme.palette.primary.main}`,
+                      background: alpha(theme.palette.primary.main, 0.03),
+                      borderRadius: '0 8px 8px 0',
                     }}
                   >
                     {formData.department && (
-                      <Chip
-                        icon={<Business />}
-                        label={formData.department}
-                        size="medium"
-                        color="primary"
-                        variant={autoFilledFields.has('department') ? 'filled' : 'outlined'}
-                        sx={{
-                          fontWeight: 600,
-                          animation: autoFilledFields.has('department') ? 'pulse 0.5s ease-in-out' : 'none',
-                          '@keyframes pulse': {
-                            '0%': { transform: 'scale(1)' },
-                            '50%': { transform: 'scale(1.1)' },
-                            '100%': { transform: 'scale(1)' },
-                          },
-                        }}
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Business sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {t('assetDetail.department')}:
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {formData.department}
+                        </Typography>
+                      </Box>
                     )}
                     {formData.jobTitle && (
-                      <Chip
-                        icon={<Work />}
-                        label={formData.jobTitle}
-                        size="medium"
-                        color="secondary"
-                        variant={autoFilledFields.has('jobTitle') ? 'filled' : 'outlined'}
-                        sx={{
-                          fontWeight: 600,
-                          animation: autoFilledFields.has('jobTitle') ? 'pulse 0.5s ease-in-out' : 'none',
-                        }}
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Work sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {t('assetDetail.jobTitle')}:
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {formData.jobTitle}
+                        </Typography>
+                      </Box>
                     )}
                     {formData.officeLocation && (
-                      <Chip
-                        icon={<LocationOn />}
-                        label={formData.officeLocation}
-                        size="medium"
-                        color="info"
-                        variant={autoFilledFields.has('officeLocation') ? 'filled' : 'outlined'}
-                        sx={{
-                          fontWeight: 600,
-                          animation: autoFilledFields.has('officeLocation') ? 'pulse 0.5s ease-in-out' : 'none',
-                        }}
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LocationOn sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {t('assetDetail.officeLocation')}:
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {formData.officeLocation}
+                        </Typography>
+                      </Box>
                     )}
                   </Box>
                 )}
+              </Stack>
+            </Box>
+          </Fade>
 
+          <Divider sx={{ my: 4 }} />
+
+          {/* Location & Technical Details Section */}
+          <Fade in timeout={600}>
+            <Box sx={{ mb: 4 }}>
+              <SectionHeader
+                icon={<Computer />}
+                title={t('assetForm.technicalSection')}
+                description={t('assetForm.technicalSectionDesc')}
+                theme={theme}
+              />
+              <Stack spacing={2.5}>
                 <TextField
                   fullWidth
                   label={t('assetDetail.building')}
@@ -608,22 +616,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     ),
                   }}
                 />
-              </Stack>
-            </Box>
-          </Fade>
-
-          <Divider sx={{ my: 4 }} />
-
-          {/* Technical Details Section */}
-          <Fade in timeout={600}>
-            <Box sx={{ mb: 4 }}>
-              <SectionHeader
-                icon={<Computer />}
-                title={t('assetForm.technicalSection')}
-                description={t('assetForm.technicalSectionDesc')}
-                theme={theme}
-              />
-              <Stack spacing={2.5}>
                 <DeviceAutocomplete
                   value={formData.serialNumber || ''}
                   onSelect={(device: IntuneDevice | null) => {

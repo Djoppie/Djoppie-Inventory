@@ -87,9 +87,11 @@
     "category": "Categorie",
     "status": "Status",
     "owner": "Eigenaar",
+    "primaryUser": "Hoofdgebruiker",
     "location": "Locatie",
     "building": "Gebouw",
     "department": "Afdeling",
+    "jobTitle": "Functietitel",
     "officeLocation": "Kantoorlocatie",
     "floor": "Verdieping",
     "technical": "Technische specificaties",
@@ -128,7 +130,7 @@
     "noTemplate": "Geen sjabloon - Handmatig invoeren",
     "identificationSection": "Activa identificatie",
     "assignmentSection": "Toewijzingsgegevens",
-    "assignmentSectionDesc": "Zoek naar de eigenaar van de activa om afdeling, functietitel en locatie automatisch in te vullen",
+    "assignmentSectionDesc": "Zoek de hoofdgebruiker van de activa",
     "technicalSection": "Locatie en technische details",
     "technicalSectionDesc": "Zoek Intune-apparaat om merk, model en serienummer automatisch in te vullen",
     "lifecycleSection": "Levenscyclus informatie",
@@ -142,8 +144,7 @@
     "number": "Nummer",
     "codeExists": "bestaat al",
     "updateAsset": "Activa bijwerken",
-    "createAsset": "Activa aanmaken",
-    "userAutoFillHint": "Afdeling, functietitel en locatie worden automatisch ingevuld wanneer u een gebruiker selecteert"
+    "createAsset": "Activa aanmaken"
   },
   "categories": {
     "computing": "Computers",

@@ -87,9 +87,11 @@
     "category": "Category",
     "status": "Status",
     "owner": "Owner",
+    "primaryUser": "Primary User",
     "location": "Location",
     "building": "Building",
     "department": "Department",
+    "jobTitle": "Job Title",
     "officeLocation": "Office Location",
     "floor": "Floor",
     "technical": "Technical Specifications",
@@ -128,7 +130,7 @@
     "noTemplate": "No Template - Enter Manually",
     "identificationSection": "Asset Identification",
     "assignmentSection": "Assignment Details",
-    "assignmentSectionDesc": "Search for the asset owner to auto-fill department, job title, and location",
+    "assignmentSectionDesc": "Search for the primary user of the asset",
     "technicalSection": "Asset Location & Technical Details",
     "technicalSectionDesc": "Search Intune device to auto-fill brand, model, and serial number",
     "lifecycleSection": "Lifecycle Information",
@@ -142,8 +144,7 @@
     "number": "Number",
     "codeExists": "exists already",
     "updateAsset": "Update Asset",
-    "createAsset": "Create Asset",
-    "userAutoFillHint": "Department, job title, and location will be auto-filled when you select a user"
+    "createAsset": "Create Asset"
   },
   "categories": {
     "computing": "Computing",
