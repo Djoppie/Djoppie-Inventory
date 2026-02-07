@@ -11,8 +11,9 @@ export interface Asset {
   assetCode: string;
   assetName: string;
   category: string;
-  owner: string;
-  building: string;
+  isDummy: boolean;
+  building: string; // Installation location
+  owner: string; // Primary user
   department: string;
   officeLocation?: string;
   jobTitle?: string;
@@ -28,11 +29,12 @@ export interface Asset {
 }
 
 export interface CreateAssetDto {
-  assetCode: string;
+  assetCodePrefix: string;
   assetName: string;
   category: string;
-  owner: string;
-  building: string;
+  isDummy?: boolean;
+  building: string; // Installation location
+  owner: string; // Primary user
   department: string;
   officeLocation?: string;
   jobTitle?: string;
@@ -110,13 +112,13 @@ export interface UpdateAssetTemplateDto {
 
 export interface BulkCreateAssetDto {
   assetCodePrefix: string;
-  startingNumber: number;
   quantity: number;
+  isDummy?: boolean;
   templateId?: number;
   assetName: string;
   category: string;
-  owner: string;
-  building: string;
+  building: string; // Installation location
+  owner: string; // Primary user
   department: string;
   officeLocation?: string;
   status?: string;

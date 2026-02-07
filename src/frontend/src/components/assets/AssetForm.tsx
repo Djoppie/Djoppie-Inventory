@@ -12,13 +12,15 @@ import {
   InputLabel,
   Select,
   CircularProgress,
-  Chip,
   InputAdornment,
   Stack,
   Fade,
   alpha,
   useTheme,
   Theme,
+  FormControlLabel,
+  Checkbox,
+  Chip,
 } from '@mui/material';
 import {
   Person,
@@ -30,11 +32,13 @@ import {
   Category as CategoryIcon,
   CalendarMonth,
   CheckCircle,
-  ErrorOutline,
+  Science,
+  Warning,
+  Link as LinkIcon,
+  LinkOff,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
-import { useNextAssetNumber, useAssetCodeExists } from '../../hooks/useAssets';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
 import { GraphUser, IntuneDevice } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
@@ -61,19 +65,7 @@ const formatDateForInput = (dateString?: string): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Parse an existing asset code into prefix and number parts
-const parseAssetCode = (code: string): { prefix: string; number: number } => {
-  const lastDash = code.lastIndexOf('-');
-  if (lastDash > 0) {
-    const prefix = code.substring(0, lastDash);
-    const numStr = code.substring(lastDash + 1);
-    const num = parseInt(numStr, 10);
-    if (!isNaN(num)) return { prefix, number: num };
-  }
-  return { prefix: '', number: 1 };
-};
-
-// Section Header Component - defined outside to avoid re-creation on each render
+// Section Header Component
 interface SectionHeaderProps {
   icon: React.ReactNode;
   title: string;
@@ -141,18 +133,16 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const theme = useTheme();
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
 
-  // Parse initial asset code for edit mode
-  const initialParsed = initialData?.assetCode ? parseAssetCode(initialData.assetCode) : { prefix: '', number: 1 };
+  const [assetCodePrefix, setAssetCodePrefix] = useState('');
+  const [isDummy, setIsDummy] = useState(initialData?.isDummy || false);
+  const [selectedUserUpn, setSelectedUserUpn] = useState<string | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
 
-  const [assetCodePrefix, setAssetCodePrefix] = useState(isEditMode ? '' : initialParsed.prefix);
-  const [assetCodeNumber, setAssetCodeNumber] = useState(isEditMode ? 0 : initialParsed.number);
-
-  const [formData, setFormData] = useState<CreateAssetDto>({
-    assetCode: initialData?.assetCode || '',
+  const [formData, setFormData] = useState<Omit<CreateAssetDto, 'assetCodePrefix' | 'isDummy'>>({
     assetName: initialData?.assetName || '',
     category: initialData?.category || '',
-    owner: initialData?.owner || '',
     building: initialData?.building || '',
+    owner: initialData?.owner || '',
     department: initialData?.department || '',
     officeLocation: initialData?.officeLocation || '',
     jobTitle: initialData?.jobTitle || '',
@@ -168,60 +158,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
-
-  // Auto-fetch next number for prefix
-  const { data: nextNumber } = useNextAssetNumber(assetCodePrefix);
-
-  // Build the combined code for uniqueness check (only in create mode)
-  const combinedCode = !isEditMode && assetCodePrefix && assetCodeNumber > 0
-    ? `${assetCodePrefix}-${assetCodeNumber.toString().padStart(4, '0')}`
-    : '';
-  const { data: codeExists } = useAssetCodeExists(combinedCode);
-
-  // Auto-fill number when next number is fetched (render-time state adjustment)
-  const [numberAutoFilled, setNumberAutoFilled] = useState(false);
-  const [prevNextNumber, setPrevNextNumber] = useState<number | undefined>(undefined);
-
-  if (nextNumber !== undefined && nextNumber !== prevNextNumber && !isEditMode) {
-    setPrevNextNumber(nextNumber);
-    if (!numberAutoFilled) {
-      setAssetCodeNumber(nextNumber);
-      setNumberAutoFilled(true);
-    }
-  }
-
-  // Auto-increment when code already exists (render-time state adjustment)
-  const [prevCodeExists, setPrevCodeExists] = useState<boolean | undefined>(undefined);
-  const [prevCombinedCode, setPrevCombinedCode] = useState('');
-
-  if (combinedCode !== prevCombinedCode) {
-    setPrevCombinedCode(combinedCode);
-    setPrevCodeExists(undefined);
-  }
-
-  if (codeExists !== prevCodeExists) {
-    setPrevCodeExists(codeExists);
-    if (codeExists === true && !isEditMode && assetCodeNumber > 0 && assetCodeNumber < 9999) {
-      setAssetCodeNumber(prev => prev + 1);
-    }
-  }
-
-  // Reset auto-fill when prefix changes
-  const handlePrefixChange = (value: string) => {
-    setAssetCodePrefix(value.toUpperCase());
-    setNumberAutoFilled(false);
-    setPrevNextNumber(undefined);
-    if (errors.assetCode) {
-      setErrors(prev => ({ ...prev, assetCode: '' }));
-    }
-  };
-
-  const handleNumberChange = (value: number) => {
-    setAssetCodeNumber(value);
-    if (errors.assetCode) {
-      setErrors(prev => ({ ...prev, assetCode: '' }));
-    }
-  };
 
   const handleTemplateChange = (templateId: number) => {
     setSelectedTemplate(templateId);
@@ -251,26 +187,24 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     const newErrors: Record<string, string> = {};
 
     if (!isEditMode) {
-      if (!assetCodePrefix.trim()) newErrors.assetCode = t('assetForm.validationError');
-      else if (assetCodeNumber < 1) newErrors.assetCode = t('assetForm.validationError');
-      else if (codeExists) newErrors.assetCode = `Code ${combinedCode} ${t('assetForm.codeExists')}`;
+      if (!assetCodePrefix.trim()) newErrors.assetCodePrefix = t('assetForm.validationError');
     }
     if (!formData.assetName.trim()) newErrors.assetName = t('assetForm.validationError');
     if (!formData.category.trim()) newErrors.category = t('assetForm.validationError');
-    if (!formData.owner.trim()) newErrors.owner = t('assetForm.validationError');
     if (!formData.building.trim()) newErrors.building = t('assetForm.validationError');
+    if (!formData.owner.trim()) newErrors.owner = t('assetForm.validationError');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Convert empty strings to undefined so the API receives null instead of ""
-  const cleanData = (data: Record<string, unknown>): Record<string, unknown> => {
+  const cleanData = <T extends object>(data: T): T => {
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       cleaned[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
     }
-    return cleaned;
+    return cleaned as T;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -279,15 +213,18 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     if (!validateForm()) return;
 
     if (isEditMode) {
-      const { assetCode: _assetCode, ...updateData } = formData; // eslint-disable-line @typescript-eslint/no-unused-vars
-      onSubmit(cleanData(updateData) as unknown as UpdateAssetDto);
+      onSubmit(cleanData(formData as UpdateAssetDto));
     } else {
-      const assetCode = `${assetCodePrefix}-${assetCodeNumber.toString().padStart(4, '0')}`;
-      onSubmit(cleanData({ ...formData, assetCode }) as unknown as CreateAssetDto);
+      const createData: CreateAssetDto = {
+        ...formData,
+        assetCodePrefix: assetCodePrefix.toUpperCase(),
+        isDummy,
+      };
+      onSubmit(cleanData(createData));
     }
   };
 
-  const handleChange = (field: keyof CreateAssetDto, value: string) => {
+  const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -367,13 +304,13 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               />
               <Stack spacing={2.5}>
                 {isEditMode ? (
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  // Edit mode: show asset code as read-only
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                     <TextField
                       sx={{ flex: '1 1 200px' }}
                       label={t('assetDetail.assetCode')}
-                      value={formData.assetCode}
+                      value={initialData?.assetCode || ''}
                       disabled
-                      required
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -382,79 +319,79 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                         ),
                       }}
                     />
-                    <TextField
-                      sx={{ flex: '2 1 400px' }}
-                      label={t('assetDetail.assetName')}
-                      value={formData.assetName}
-                      onChange={(e) => handleChange('assetName', e.target.value)}
-                      error={!!errors.assetName}
-                      helperText={errors.assetName}
-                      required
-                    />
+                    {initialData?.isDummy && (
+                      <Chip
+                        icon={<Science />}
+                        label={t('assetForm.dummyAsset')}
+                        color="warning"
+                        variant="outlined"
+                      />
+                    )}
                   </Box>
                 ) : (
-                  <Box>
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start', mb: 2 }}>
-                      <TextField
-                        sx={{ flex: '1 1 150px' }}
-                        label={t('assetForm.codePrefix')}
-                        value={assetCodePrefix}
-                        onChange={(e) => handlePrefixChange(e.target.value)}
-                        error={!!errors.assetCode}
-                        helperText={t('assetForm.codePrefixHint')}
-                        required
-                        inputProps={{ maxLength: 20 }}
-                      />
-                      <TextField
-                        sx={{ flex: '0 1 150px' }}
-                        label={t('assetForm.number')}
-                        type="number"
-                        value={assetCodeNumber}
-                        onChange={(e) => handleNumberChange(parseInt(e.target.value) || 0)}
-                        error={!!errors.assetCode || (codeExists === true)}
-                        helperText={errors.assetCode || (codeExists ? `${combinedCode} ${t('assetForm.codeExists')}` : '')}
-                        required
-                        inputProps={{ min: 1, max: 9999 }}
-                        InputProps={{
-                          endAdornment: codeExists === false && combinedCode ? (
-                            <InputAdornment position="end">
-                              <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
-                            </InputAdornment>
-                          ) : codeExists === true ? (
-                            <InputAdornment position="end">
-                              <ErrorOutline sx={{ color: 'error.main', fontSize: 20 }} />
-                            </InputAdornment>
-                          ) : undefined,
-                        }}
-                      />
-                      {combinedCode && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', pt: 1 }}>
-                          <Chip
-                            label={combinedCode}
-                            color={codeExists ? 'error' : 'primary'}
-                            variant="outlined"
-                            sx={{
-                              fontWeight: 700,
-                              fontFamily: 'monospace',
-                              fontSize: '1rem',
-                              height: 40,
-                              borderWidth: 2,
-                            }}
-                          />
-                        </Box>
-                      )}
-                    </Box>
+                  // Create mode: show prefix input and dummy checkbox
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     <TextField
-                      fullWidth
-                      label={t('assetDetail.assetName')}
-                      value={formData.assetName}
-                      onChange={(e) => handleChange('assetName', e.target.value)}
-                      error={!!errors.assetName}
-                      helperText={errors.assetName}
+                      sx={{ flex: '1 1 200px' }}
+                      label={t('assetForm.codePrefix')}
+                      value={assetCodePrefix}
+                      onChange={(e) => {
+                        setAssetCodePrefix(e.target.value.toUpperCase());
+                        if (errors.assetCodePrefix) {
+                          setErrors(prev => ({ ...prev, assetCodePrefix: '' }));
+                        }
+                      }}
+                      error={!!errors.assetCodePrefix}
+                      helperText={errors.assetCodePrefix || t('assetForm.codePrefixHint')}
                       required
+                      inputProps={{ maxLength: 20 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <QrCode sx={{ color: 'primary.main' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={isDummy}
+                          onChange={(e) => setIsDummy(e.target.checked)}
+                          color="warning"
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Science sx={{ fontSize: 20, color: 'warning.main' }} />
+                          <Typography variant="body2">{t('assetForm.dummyAsset')}</Typography>
+                        </Box>
+                      }
+                      sx={{
+                        mt: 1,
+                        ml: 0,
+                        p: 1,
+                        borderRadius: 2,
+                        bgcolor: isDummy ? alpha(theme.palette.warning.main, 0.1) : 'transparent',
+                        border: isDummy ? `1px solid ${theme.palette.warning.main}` : '1px solid transparent',
+                        transition: 'all 0.2s ease',
+                      }}
                     />
                   </Box>
                 )}
+
+                {/* Alias (Asset Name) */}
+                <TextField
+                  fullWidth
+                  label={t('assetForm.alias')}
+                  value={formData.assetName}
+                  onChange={(e) => handleChange('assetName', e.target.value)}
+                  error={!!errors.assetName}
+                  helperText={errors.assetName}
+                  required
+                />
+
+                {/* Category and Status */}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <TextField
                     sx={{ flex: '1 1 300px' }}
@@ -487,6 +424,24 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     </Select>
                   </FormControl>
                 </Box>
+
+                {/* Installation Location (Building) */}
+                <TextField
+                  fullWidth
+                  label={t('assetForm.installationLocation')}
+                  value={formData.building}
+                  onChange={(e) => handleChange('building', e.target.value)}
+                  error={!!errors.building}
+                  helperText={errors.building}
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Business sx={{ color: 'primary.main' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
               </Stack>
             </Box>
           </Fade>
@@ -502,11 +457,13 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 description={t('assetForm.assignmentSectionDesc')}
                 theme={theme}
               />
-              <Stack spacing={2}>
+              <Stack spacing={2.5}>
                 <UserAutocomplete
                   value={formData.owner}
                   onChange={(displayName: string, user: GraphUser | null) => {
                     handleChange('owner', displayName);
+                    // Store UPN for device validation
+                    setSelectedUserUpn(user?.userPrincipalName || null);
                     // Auto-populate department, job title, and office location if user selected
                     if (user) {
                       if (user.department) {
@@ -584,105 +541,145 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     )}
                   </Box>
                 )}
+
+                {/* Intune Device Search */}
+                <Box sx={{ mt: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      mb: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      color: 'text.secondary',
+                    }}
+                  >
+                    <Computer sx={{ fontSize: 18 }} />
+                    {t('assetForm.searchIntuneDevice')}
+                  </Typography>
+                  <DeviceAutocomplete
+                    value={formData.serialNumber || ''}
+                    onSelect={(device: IntuneDevice | null) => {
+                      setSelectedDevice(device);
+                      if (device) {
+                        // Auto-populate device details
+                        if (device.manufacturer) {
+                          handleChange('brand', device.manufacturer);
+                          markFieldAsAutoFilled('brand');
+                        }
+                        if (device.model) {
+                          handleChange('model', device.model);
+                          markFieldAsAutoFilled('model');
+                        }
+                        if (device.serialNumber) {
+                          handleChange('serialNumber', device.serialNumber);
+                          markFieldAsAutoFilled('serialNumber');
+                        }
+                      }
+                    }}
+                    label={t('assetForm.searchIntuneDevice')}
+                    helperText={t('assetForm.searchIntuneHint')}
+                    searchBy="name"
+                  />
+
+                  {/* Device-User validation indicator */}
+                  {selectedDevice && (
+                    <Box sx={{ mt: 1.5 }}>
+                      {selectedDevice.userPrincipalName ? (
+                        // Device has an assigned user in Intune
+                        selectedUserUpn && selectedDevice.userPrincipalName.toLowerCase() === selectedUserUpn.toLowerCase() ? (
+                          // User matches
+                          <Chip
+                            icon={<LinkIcon />}
+                            label={t('assetForm.deviceLinkedToUser')}
+                            color="success"
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500 }}
+                          />
+                        ) : (
+                          // User does not match
+                          <Chip
+                            icon={<Warning />}
+                            label={`${t('assetForm.deviceLinkedToOther')}: ${selectedDevice.userPrincipalName}`}
+                            color="warning"
+                            variant="outlined"
+                            size="small"
+                            sx={{ fontWeight: 500, maxWidth: '100%' }}
+                          />
+                        )
+                      ) : (
+                        // Device has no assigned user
+                        <Chip
+                          icon={<LinkOff />}
+                          label={t('assetForm.deviceNotLinked')}
+                          color="default"
+                          variant="outlined"
+                          size="small"
+                          sx={{ fontWeight: 500 }}
+                        />
+                      )}
+                    </Box>
+                  )}
+                </Box>
               </Stack>
             </Box>
           </Fade>
 
           <Divider sx={{ my: 4 }} />
 
-          {/* Location & Technical Details Section */}
+          {/* Technical Details Section */}
           <Fade in timeout={600}>
             <Box sx={{ mb: 4 }}>
               <SectionHeader
                 icon={<Computer />}
                 title={t('assetForm.technicalSection')}
-                description={t('assetForm.technicalSectionDesc')}
+                description={selectedDevice ? t('assetForm.autoFilledFromDevice') : undefined}
                 theme={theme}
               />
-              <Stack spacing={2.5}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
-                  fullWidth
-                  label={t('assetDetail.building')}
-                  value={formData.building}
-                  onChange={(e) => handleChange('building', e.target.value)}
-                  error={!!errors.building}
-                  helperText={errors.building}
-                  required
+                  sx={{ flex: '1 1 200px' }}
+                  label={t('assetDetail.brand')}
+                  value={formData.brand}
+                  onChange={(e) => handleChange('brand', e.target.value)}
                   InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Business sx={{ color: 'primary.main' }} />
+                    endAdornment: autoFilledFields.has('brand') ? (
+                      <InputAdornment position="end">
+                        <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
                       </InputAdornment>
-                    ),
+                    ) : undefined,
                   }}
                 />
-                <DeviceAutocomplete
-                  value={formData.serialNumber || ''}
-                  onSelect={(device: IntuneDevice | null) => {
-                    if (device) {
-                      // Auto-populate device details
-                      if (device.manufacturer && !formData.brand) {
-                        handleChange('brand', device.manufacturer);
-                        markFieldAsAutoFilled('brand');
-                      }
-                      if (device.model && !formData.model) {
-                        handleChange('model', device.model);
-                        markFieldAsAutoFilled('model');
-                      }
-                      if (device.serialNumber) {
-                        handleChange('serialNumber', device.serialNumber);
-                        markFieldAsAutoFilled('serialNumber');
-                      }
-                    }
+                <TextField
+                  sx={{ flex: '1 1 200px' }}
+                  label={t('assetDetail.model')}
+                  value={formData.model}
+                  onChange={(e) => handleChange('model', e.target.value)}
+                  InputProps={{
+                    endAdornment: autoFilledFields.has('model') ? (
+                      <InputAdornment position="end">
+                        <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : undefined,
                   }}
-                  label={t('assetForm.searchIntuneDevice')}
-                  helperText={t('assetForm.searchIntuneHint')}
-                  searchBy="name"
                 />
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <TextField
-                    sx={{ flex: '1 1 200px' }}
-                    label={t('assetDetail.brand')}
-                    value={formData.brand}
-                    onChange={(e) => handleChange('brand', e.target.value)}
-                    InputProps={{
-                      endAdornment: autoFilledFields.has('brand') ? (
-                        <InputAdornment position="end">
-                          <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
-                        </InputAdornment>
-                      ) : undefined,
-                    }}
-                  />
-                  <TextField
-                    sx={{ flex: '1 1 200px' }}
-                    label={t('assetDetail.model')}
-                    value={formData.model}
-                    onChange={(e) => handleChange('model', e.target.value)}
-                    InputProps={{
-                      endAdornment: autoFilledFields.has('model') ? (
-                        <InputAdornment position="end">
-                          <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
-                        </InputAdornment>
-                      ) : undefined,
-                    }}
-                  />
-                  <TextField
-                    sx={{ flex: '1 1 200px' }}
-                    label={t('assetDetail.serialNumber')}
-                    value={formData.serialNumber}
-                    onChange={(e) => handleChange('serialNumber', e.target.value)}
-                    error={!!errors.serialNumber}
-                    helperText={errors.serialNumber}
-                    InputProps={{
-                      endAdornment: autoFilledFields.has('serialNumber') ? (
-                        <InputAdornment position="end">
-                          <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
-                        </InputAdornment>
-                      ) : undefined,
-                    }}
-                  />
-                </Box>
-              </Stack>
+                <TextField
+                  sx={{ flex: '1 1 200px' }}
+                  label={t('assetDetail.serialNumber')}
+                  value={formData.serialNumber}
+                  onChange={(e) => handleChange('serialNumber', e.target.value)}
+                  error={!!errors.serialNumber}
+                  helperText={errors.serialNumber}
+                  InputProps={{
+                    endAdornment: autoFilledFields.has('serialNumber') ? (
+                      <InputAdornment position="end">
+                        <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : undefined,
+                  }}
+                />
+              </Box>
             </Box>
           </Fade>
 
@@ -752,7 +749,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             <Button
               type="submit"
               variant="contained"
-              disabled={isLoading || (!isEditMode && codeExists === true)}
+              disabled={isLoading}
               size="large"
               sx={{
                 minWidth: 180,

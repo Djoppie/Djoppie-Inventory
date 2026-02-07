@@ -11,5 +11,11 @@ public interface IAssetRepository
     Task<Asset> UpdateAsync(Asset asset);
     Task<bool> DeleteAsync(int id);
     Task<bool> AssetCodeExistsAsync(string assetCode);
-    Task<int> GetNextAssetNumberAsync(string prefix);
+
+    /// <summary>
+    /// Gets the next available asset number for a given prefix.
+    /// For normal assets: 1-8999
+    /// For dummy assets: 9000+
+    /// </summary>
+    Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false);
 }

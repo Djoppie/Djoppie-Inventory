@@ -74,7 +74,7 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets.AnyAsync(a => a.AssetCode == assetCode);
     }
 
-    public async Task<int> GetNextAssetNumberAsync(string prefix)
+    public async Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false)
     {
         var prefixPattern = prefix + "-";
         var assetCodes = await _context.Assets
@@ -82,16 +82,33 @@ public class AssetRepository : IAssetRepository
             .Select(a => a.AssetCode)
             .ToListAsync();
 
-        int maxNumber = 0;
-        foreach (var code in assetCodes)
+        if (isDummy)
         {
-            var numberPart = code.Substring(prefixPattern.Length);
-            if (int.TryParse(numberPart, out var number) && number < 9000 && number > maxNumber)
+            // For dummy assets: find max number >= 9000, start at 9000 if none exist
+            int maxDummyNumber = 8999;
+            foreach (var code in assetCodes)
             {
-                maxNumber = number;
+                var numberPart = code.Substring(prefixPattern.Length);
+                if (int.TryParse(numberPart, out var number) && number >= 9000 && number > maxDummyNumber)
+                {
+                    maxDummyNumber = number;
+                }
             }
+            return maxDummyNumber + 1;
         }
-
-        return maxNumber + 1;
+        else
+        {
+            // For normal assets: find max number < 9000
+            int maxNumber = 0;
+            foreach (var code in assetCodes)
+            {
+                var numberPart = code.Substring(prefixPattern.Length);
+                if (int.TryParse(numberPart, out var number) && number < 9000 && number > maxNumber)
+                {
+                    maxNumber = number;
+                }
+            }
+            return maxNumber + 1;
+        }
     }
 }

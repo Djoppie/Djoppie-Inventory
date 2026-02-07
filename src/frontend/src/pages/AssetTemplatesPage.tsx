@@ -25,6 +25,8 @@ import {
   Alert,
   useMediaQuery,
   useTheme,
+  Divider,
+  alpha,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import {
@@ -44,6 +46,10 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import QrCodeIcon from '@mui/icons-material/QrCode';
+import ComputerIcon from '@mui/icons-material/Computer';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import BusinessIcon from '@mui/icons-material/Business';
 
 // Subtle glow pulse for the header (matching DashboardPage)
 const headerGlow = keyframes`
@@ -659,46 +665,50 @@ const AssetTemplatesPage = () => {
         </DialogTitle>
 
         <DialogContent sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Template Name - always required */}
             <TextField
               label={t('templates.templateName')}
               value={formData.templateName}
               onChange={handleInputChange('templateName')}
               error={!!formErrors.templateName}
-              helperText={formErrors.templateName}
+              helperText={formErrors.templateName || t('templates.templateNameHint')}
               required
               fullWidth
               autoFocus
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
             />
 
+            <Divider sx={{ my: 1 }} />
+
+            {/* Identification Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                }}
+              >
+                <QrCodeIcon fontSize="small" />
+              </Box>
+              <Typography variant="subtitle1" fontWeight={600} color="primary">
+                {t('assetForm.identificationSection')}
+              </Typography>
+            </Box>
+
             <TextField
-              label={t('templates.assetName')}
+              label={t('assetForm.alias')}
               value={formData.assetName}
               onChange={handleInputChange('assetName')}
               error={!!formErrors.assetName}
               helperText={formErrors.assetName}
               required
               fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
             />
 
             <TextField
@@ -706,111 +716,130 @@ const AssetTemplatesPage = () => {
               value={formData.category}
               onChange={handleInputChange('category')}
               error={!!formErrors.category}
-              helperText={formErrors.category}
+              helperText={formErrors.category || 'e.g., Computing, Peripherals'}
               required
               fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
             />
 
             <TextField
-              label={t('templates.brand')}
-              value={formData.brand}
-              onChange={handleInputChange('brand')}
+              label={t('assetForm.installationLocation')}
+              value={formData.building}
+              onChange={handleInputChange('building')}
               fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
+              InputProps={{
+                startAdornment: (
+                  <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                    <BusinessIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                  </Box>
+                ),
               }}
             />
 
-            <TextField
-              label={t('templates.model')}
-              value={formData.model}
-              onChange={handleInputChange('model')}
-              fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
-            />
+            <Divider sx={{ my: 1 }} />
 
-            <TextField
-              label={t('templates.owner')}
-              value={formData.owner}
-              onChange={handleInputChange('owner')}
-              fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
-            />
+            {/* Technical Details Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                }}
+              >
+                <ComputerIcon fontSize="small" />
+              </Box>
+              <Typography variant="subtitle1" fontWeight={600} color="primary">
+                {t('assetForm.technicalSection')}
+              </Typography>
+            </Box>
 
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <TextField
-                label={t('templates.building')}
-                value={formData.building}
-                onChange={handleInputChange('building')}
+                label={t('templates.brand')}
+                value={formData.brand}
+                onChange={handleInputChange('brand')}
+                sx={{ flex: '1 1 200px' }}
+              />
+
+              <TextField
+                label={t('templates.model')}
+                value={formData.model}
+                onChange={handleInputChange('model')}
+                sx={{ flex: '1 1 200px' }}
+              />
+            </Box>
+
+            <Divider sx={{ my: 1 }} />
+
+            {/* Default Assignment Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
                 sx={{
-                  flex: '1 1 200px',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
                 }}
+              >
+                <CategoryIcon fontSize="small" />
+              </Box>
+              <Typography variant="subtitle1" fontWeight={600} color="primary">
+                {t('templates.defaultAssignment')}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <TextField
+                label={t('templates.owner')}
+                value={formData.owner}
+                onChange={handleInputChange('owner')}
+                sx={{ flex: '1 1 200px' }}
+                helperText={t('templates.ownerHint')}
               />
 
               <TextField
                 label={t('templates.department')}
                 value={formData.department}
                 onChange={handleInputChange('department')}
-                sx={{
-                  flex: '1 1 200px',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
+                sx={{ flex: '1 1 200px' }}
               />
             </Box>
 
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
-              {t('templates.lifecycleDates')}
-            </Typography>
+            <Divider sx={{ my: 1 }} />
+
+            {/* Lifecycle Section */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                }}
+              >
+                <CalendarMonthIcon fontSize="small" />
+              </Box>
+              <Typography variant="subtitle1" fontWeight={600} color="primary">
+                {t('assetForm.lifecycleSection')}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                ({t('assetForm.optional')})
+              </Typography>
+            </Box>
+
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <TextField
                 label={t('templates.purchaseDate')}
@@ -818,17 +847,7 @@ const AssetTemplatesPage = () => {
                 value={formData.purchaseDate}
                 onChange={handleInputChange('purchaseDate')}
                 InputLabelProps={{ shrink: true }}
-                sx={{
-                  flex: '1 1 160px',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
+                sx={{ flex: '1 1 160px' }}
               />
               <TextField
                 label={t('templates.warrantyExpiry')}
@@ -836,17 +855,7 @@ const AssetTemplatesPage = () => {
                 value={formData.warrantyExpiry}
                 onChange={handleInputChange('warrantyExpiry')}
                 InputLabelProps={{ shrink: true }}
-                sx={{
-                  flex: '1 1 160px',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
+                sx={{ flex: '1 1 160px' }}
               />
               <TextField
                 label={t('templates.installationDate')}
@@ -854,17 +863,7 @@ const AssetTemplatesPage = () => {
                 value={formData.installationDate}
                 onChange={handleInputChange('installationDate')}
                 InputLabelProps={{ shrink: true }}
-                sx={{
-                  flex: '1 1 160px',
-                  '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
+                sx={{ flex: '1 1 160px' }}
               />
             </Box>
           </Box>

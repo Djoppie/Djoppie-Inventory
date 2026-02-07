@@ -100,15 +100,17 @@ public class AssetsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the next available asset number for a given prefix (below 9000).
+    /// Gets the next available asset number for a given prefix.
+    /// For normal assets: 1-8999
+    /// For dummy assets: 9000+
     /// </summary>
     [HttpGet("next-number")]
-    public async Task<ActionResult<int>> GetNextAssetNumber([FromQuery] string prefix)
+    public async Task<ActionResult<int>> GetNextAssetNumber([FromQuery] string prefix, [FromQuery] bool isDummy = false)
     {
         if (string.IsNullOrWhiteSpace(prefix))
             return BadRequest("Prefix is required");
 
-        var nextNumber = await _assetService.GetNextAssetNumberAsync(prefix);
+        var nextNumber = await _assetService.GetNextAssetNumberAsync(prefix, isDummy);
         return Ok(nextNumber);
     }
 

@@ -13,17 +13,30 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Chip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ScienceIcon from '@mui/icons-material/Science';
 import { QRCodeSVG } from 'qrcode.react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { useAsset, useDeleteAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
 
+// Helper: check if an asset code has a number >= 9000 (dummy/test asset)
+const isDummyAsset = (assetCode: string): boolean => {
+  const lastDash = assetCode.lastIndexOf('-');
+  if (lastDash < 0) return false;
+  const numStr = assetCode.substring(lastDash + 1);
+  const num = parseInt(numStr, 10);
+  return !isNaN(num) && num >= 9000;
+};
+
 const AssetDetailPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading, error } = useAsset(Number(id));
@@ -88,11 +101,20 @@ const AssetDetailPage = () => {
             <Typography variant="h4" component="h1" gutterBottom>
               {asset.assetName}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography variant="h6" color="text.secondary">
                 {asset.assetCode}
               </Typography>
               <StatusBadge status={asset.status} />
+              {isDummyAsset(asset.assetCode) && (
+                <Chip
+                  icon={<ScienceIcon />}
+                  label={t('assetForm.dummyAsset')}
+                  color="warning"
+                  variant="outlined"
+                  size="small"
+                />
+              )}
             </Box>
           </Box>
 
@@ -102,7 +124,7 @@ const AssetDetailPage = () => {
               startIcon={<EditIcon />}
               onClick={handleEdit}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant="outlined"
@@ -110,7 +132,7 @@ const AssetDetailPage = () => {
               startIcon={<DeleteIcon />}
               onClick={() => setDeleteDialogOpen(true)}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </Box>
         </Box>
@@ -123,12 +145,12 @@ const AssetDetailPage = () => {
           <Card elevation={2} sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" color="primary" gutterBottom>
-                Asset Identification
+                {t('assetForm.identificationSection')}
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 200px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Asset Code
+                    {t('assetDetail.assetCode')}
                   </Typography>
                   <Typography variant="body1" fontWeight="bold">
                     {asset.assetCode}
@@ -136,13 +158,13 @@ const AssetDetailPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 200px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Category
+                    {t('assetDetail.category')}
                   </Typography>
                   <Typography variant="body1">{asset.category}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 100%' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Asset Name
+                    {t('assetForm.alias')}
                   </Typography>
                   <Typography variant="body1">{asset.assetName}</Typography>
                 </Box>
@@ -154,12 +176,12 @@ const AssetDetailPage = () => {
           <Card elevation={2} sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" color="primary" gutterBottom>
-                Assignment Details
+                {t('assetForm.assignmentSection')}
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 200px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Owner
+                    {t('assetDetail.primaryUser')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
                     {asset.owner}
@@ -167,20 +189,28 @@ const AssetDetailPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 200px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Building
+                    {t('assetForm.installationLocation')}
                   </Typography>
                   <Typography variant="body1">{asset.building}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 200px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Department
+                    {t('assetDetail.department')}
                   </Typography>
-                  <Typography variant="body1">{asset.department}</Typography>
+                  <Typography variant="body1">{asset.department || '-'}</Typography>
                 </Box>
+                {asset.jobTitle && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetDetail.jobTitle')}
+                    </Typography>
+                    <Typography variant="body1">{asset.jobTitle}</Typography>
+                  </Box>
+                )}
                 {asset.officeLocation && (
                   <Box sx={{ flex: '1 1 200px' }}>
                     <Typography variant="caption" color="text.secondary">
-                      Office Location
+                      {t('assetDetail.officeLocation')}
                     </Typography>
                     <Typography variant="body1">{asset.officeLocation}</Typography>
                   </Box>
@@ -193,31 +223,31 @@ const AssetDetailPage = () => {
           <Card elevation={2} sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" color="primary" gutterBottom>
-                Technical Specifications
+                {t('assetForm.technicalSection')}
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 150px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Brand
+                    {t('assetDetail.brand')}
                   </Typography>
                   <Typography variant="body1">
-                    {asset.brand || 'Not specified'}
+                    {asset.brand || '-'}
                   </Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Model
+                    {t('assetDetail.model')}
                   </Typography>
                   <Typography variant="body1">
-                    {asset.model || 'Not specified'}
+                    {asset.model || '-'}
                   </Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Serial Number
+                    {t('assetDetail.serialNumber')}
                   </Typography>
                   <Typography variant="body1">
-                    {asset.serialNumber || 'Not specified'}
+                    {asset.serialNumber || '-'}
                   </Typography>
                 </Box>
               </Box>
@@ -228,12 +258,12 @@ const AssetDetailPage = () => {
           <Card elevation={2}>
             <CardContent>
               <Typography variant="h6" color="primary" gutterBottom>
-                Lifecycle Information
+                {t('assetForm.lifecycleSection')}
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 150px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Purchase Date
+                    {t('assetDetail.purchaseDate')}
                   </Typography>
                   <Typography variant="body1">
                     {formatDate(asset.purchaseDate)}
@@ -241,7 +271,7 @@ const AssetDetailPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Warranty Expiry
+                    {t('assetDetail.warrantyExpiry')}
                   </Typography>
                   <Typography variant="body1">
                     {formatDate(asset.warrantyExpiry)}
@@ -249,7 +279,7 @@ const AssetDetailPage = () => {
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
                   <Typography variant="caption" color="text.secondary">
-                    Installation Date
+                    {t('assetDetail.installationDate')}
                   </Typography>
                   <Typography variant="body1">
                     {formatDate(asset.installationDate)}

@@ -16,7 +16,10 @@ import {
   Stack,
   Collapse,
   Paper,
-  Alert,
+  FormControlLabel,
+  Checkbox,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -24,10 +27,18 @@ import {
   ExpandLess as ExpandLessIcon,
   Preview as PreviewIcon,
   AutoAwesome as AutoAwesomeIcon,
+  Science,
+  Business,
+  QrCode,
+  Person,
+  Work,
+  LocationOn,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
-import { useNextAssetNumber } from '../../hooks/useAssets';
 import { BulkCreateAssetDto, AssetTemplate } from '../../types/asset.types';
+import { GraphUser } from '../../types/graph.types';
+import UserAutocomplete from '../common/UserAutocomplete';
 
 interface BulkAssetCreationFormProps {
   onSubmit: (data: BulkCreateAssetDto) => void | Promise<void>;
@@ -36,16 +47,18 @@ interface BulkAssetCreationFormProps {
 }
 
 const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreationFormProps) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
 
   const [formData, setFormData] = useState<BulkCreateAssetDto>({
     assetCodePrefix: '',
-    startingNumber: 1,
     quantity: 1,
+    isDummy: false,
     assetName: '',
     category: '',
-    owner: '',
     building: '',
+    owner: '',
     department: '',
     officeLocation: '',
     status: 'InGebruik',
@@ -60,31 +73,14 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [numberAutoFilled, setNumberAutoFilled] = useState(false);
-  const [prevNextNumber, setPrevNextNumber] = useState<number | undefined>(undefined);
 
-  // Auto-fetch next number for prefix
-  const { data: nextNumber } = useNextAssetNumber(formData.assetCodePrefix);
-
-  // Auto-fill starting number when next number is fetched (render-time state adjustment)
-  if (nextNumber !== undefined && nextNumber !== prevNextNumber) {
-    setPrevNextNumber(nextNumber);
-    if (!numberAutoFilled) {
-      setFormData(prev => ({ ...prev, startingNumber: nextNumber }));
-      setNumberAutoFilled(true);
-    }
-  }
-
-  // Check if last asset number would exceed 8999
-  const lastNumber = formData.startingNumber + formData.quantity - 1;
-  const exceedsLimit = lastNumber >= 9000;
-
-  // Generate preview of asset codes using useMemo (avoids setState in effect)
+  // Generate preview of asset codes
   const previewCodes = useMemo(() => {
     if (formData.assetCodePrefix && formData.quantity > 0) {
       const codes: string[] = [];
+      const startNum = formData.isDummy ? 9000 : 1;
       for (let i = 0; i < Math.min(formData.quantity, 5); i++) {
-        const num = formData.startingNumber + i;
+        const num = startNum + i;
         codes.push(`${formData.assetCodePrefix}-${num.toString().padStart(4, '0')}`);
       }
       if (formData.quantity > 5) {
@@ -93,7 +89,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
       return codes;
     }
     return [];
-  }, [formData.assetCodePrefix, formData.startingNumber, formData.quantity]);
+  }, [formData.assetCodePrefix, formData.quantity, formData.isDummy]);
 
   const handleTemplateChange = (templateId: number) => {
     setSelectedTemplate(templateId);
@@ -122,16 +118,14 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.assetCodePrefix.trim()) newErrors.assetCodePrefix = 'Prefix is required';
+    if (!formData.assetCodePrefix.trim()) newErrors.assetCodePrefix = t('assetForm.validationError');
     if (formData.quantity < 1 || formData.quantity > 100) {
-      newErrors.quantity = 'Quantity must be between 1 and 100';
+      newErrors.quantity = t('bulkCreate.quantityError');
     }
-    if (formData.startingNumber < 1) newErrors.startingNumber = 'Starting number must be at least 1';
-    if (!formData.assetName.trim()) newErrors.assetName = 'Asset name is required';
-    if (!formData.category.trim()) newErrors.category = 'Category is required';
-    if (!formData.owner.trim()) newErrors.owner = 'Owner is required';
-    if (!formData.building.trim()) newErrors.building = 'Building is required';
-    if (!formData.department.trim()) newErrors.department = 'Space/Floor is required';
+    if (!formData.assetName.trim()) newErrors.assetName = t('assetForm.validationError');
+    if (!formData.category.trim()) newErrors.category = t('assetForm.validationError');
+    if (!formData.building.trim()) newErrors.building = t('assetForm.validationError');
+    if (!formData.owner?.trim()) newErrors.owner = t('assetForm.validationError');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -143,12 +137,8 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
     onSubmit(formData);
   };
 
-  const handleChange = (field: keyof BulkCreateAssetDto, value: string | number) => {
+  const handleChange = (field: keyof BulkCreateAssetDto, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (field === 'assetCodePrefix') {
-      setNumberAutoFilled(false); // Reset so next number auto-fills for new prefix
-      setPrevNextNumber(undefined);
-    }
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -174,33 +164,27 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
         }}
       >
         <CardContent sx={{ p: 3, pt: 4 }}>
-          {/* Template Selection with Animation */}
+          {/* Template Selection */}
           <Box sx={{ mb: 3 }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
               <AutoAwesomeIcon color="primary" />
               <Typography variant="h6" color="primary">
-                Quick Start with Template
+                {t('assetForm.templateSection')}
               </Typography>
             </Stack>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Select a template to auto-fill common asset details
+              {t('assetForm.templateSectionDesc')}
             </Typography>
 
             <FormControl fullWidth disabled={templatesLoading}>
-              <InputLabel>Select Template (Optional)</InputLabel>
+              <InputLabel>{t('assetForm.optional')}</InputLabel>
               <Select
                 value={selectedTemplate}
                 onChange={(e) => handleTemplateChange(Number(e.target.value))}
-                label="Select Template (Optional)"
-                sx={{
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-1px)',
-                  }
-                }}
+                label={t('assetForm.optional')}
               >
                 <MenuItem value={0}>
-                  <em>No Template - Enter Manually</em>
+                  <em>{t('assetForm.noTemplate')}</em>
                 </MenuItem>
                 {templates?.map((template: AssetTemplate) => (
                   <MenuItem key={template.id} value={template.id}>
@@ -220,91 +204,93 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
 
           {/* Bulk Creation Settings */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Bulk Creation Settings
-            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+              <QrCode color="primary" />
+              <Typography variant="h6" color="primary">
+                {t('bulkCreate.settingsTitle')}
+              </Typography>
+            </Stack>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Configure how many assets to create and their naming pattern
+              {t('bulkCreate.settingsDescription')}
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                 <TextField
                   sx={{ flex: '1 1 200px' }}
-                  label="Asset Code Prefix"
+                  label={t('assetForm.codePrefix')}
                   value={formData.assetCodePrefix}
                   onChange={(e) => handleChange('assetCodePrefix', e.target.value.toUpperCase())}
                   error={!!errors.assetCodePrefix}
-                  helperText={errors.assetCodePrefix || 'e.g., "LAP" for laptops, "MON" for monitors'}
+                  helperText={errors.assetCodePrefix || t('assetForm.codePrefixHint')}
                   required
                   inputProps={{ maxLength: 20 }}
                 />
                 <TextField
-                  sx={{ flex: '1 1 200px' }}
-                  label="Serial Number Prefix (Optional)"
-                  value={formData.serialNumberPrefix}
-                  onChange={(e) => handleChange('serialNumberPrefix', e.target.value.toUpperCase())}
-                  error={!!errors.serialNumberPrefix}
-                  helperText={errors.serialNumberPrefix || 'e.g., "SN" for serial numbers'}
-                  inputProps={{ maxLength: 50 }}
-                />
-                <TextField
                   sx={{ flex: '0 1 150px' }}
-                  label="Starting Number"
-                  type="number"
-                  value={formData.startingNumber}
-                  onChange={(e) => handleChange('startingNumber', parseInt(e.target.value) || 1)}
-                  error={!!errors.startingNumber}
-                  helperText={errors.startingNumber}
-                  required
-                  inputProps={{ min: 1, max: 9999 }}
-                />
-                <TextField
-                  sx={{ flex: '0 1 150px' }}
-                  label="Quantity"
+                  label={t('bulkCreate.quantity')}
                   type="number"
                   value={formData.quantity}
                   onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 1)}
                   error={!!errors.quantity}
-                  helperText={errors.quantity || 'Max: 100'}
+                  helperText={errors.quantity || t('bulkCreate.maxQuantity')}
                   required
                   inputProps={{ min: 1, max: 100 }}
                 />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.isDummy || false}
+                      onChange={(e) => handleChange('isDummy', e.target.checked)}
+                      color="warning"
+                    />
+                  }
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Science sx={{ fontSize: 20, color: 'warning.main' }} />
+                      <Typography variant="body2">{t('assetForm.dummyAsset')}</Typography>
+                    </Box>
+                  }
+                  sx={{
+                    mt: 1,
+                    ml: 0,
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: formData.isDummy ? alpha(theme.palette.warning.main, 0.1) : 'transparent',
+                    border: formData.isDummy ? `1px solid ${theme.palette.warning.main}` : '1px solid transparent',
+                    transition: 'all 0.2s ease',
+                  }}
+                />
               </Box>
 
-              {/* Info when using test range */}
-              {exceedsLimit && formData.assetCodePrefix && (
-                <Alert severity="info" sx={{ mt: 1 }}>
-                  Numbers 9000+ are dummy/test assets and will be shown separately in the dashboard.
-                </Alert>
-              )}
-
-              {/* Preview Section with Animation */}
+              {/* Preview Section */}
               <Collapse in={previewCodes.length > 0}>
                 <Paper
                   elevation={0}
                   sx={{
                     p: 2,
-                    background: (theme) =>
-                      theme.palette.mode === 'light'
-                        ? 'linear-gradient(135deg, rgba(255, 146, 51, 0.05), rgba(255, 119, 0, 0.08))'
-                        : 'linear-gradient(135deg, rgba(255, 146, 51, 0.08), rgba(255, 119, 0, 0.12))',
+                    background: formData.isDummy
+                      ? `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)}, ${alpha(theme.palette.warning.main, 0.1)})`
+                      : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)}, ${alpha(theme.palette.primary.main, 0.1)})`,
                     borderRadius: 2,
                     border: '2px dashed',
-                    borderColor: 'primary.main',
-                    transition: 'all 0.3s ease',
-                    animation: 'fadeIn 0.5s ease-in',
-                    '@keyframes fadeIn': {
-                      from: { opacity: 0, transform: 'translateY(-10px)' },
-                      to: { opacity: 1, transform: 'translateY(0)' },
-                    },
+                    borderColor: formData.isDummy ? 'warning.main' : 'primary.main',
                   }}
                 >
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                    <PreviewIcon color="primary" fontSize="small" />
-                    <Typography variant="subtitle2" fontWeight={600} color="primary">
-                      Preview: {formData.quantity} Asset{formData.quantity !== 1 ? 's' : ''} Will Be Created
+                    <PreviewIcon color={formData.isDummy ? 'warning' : 'primary'} fontSize="small" />
+                    <Typography variant="subtitle2" fontWeight={600} color={formData.isDummy ? 'warning.main' : 'primary'}>
+                      {t('bulkCreate.preview', { count: formData.quantity })}
                     </Typography>
+                    {formData.isDummy && (
+                      <Chip
+                        icon={<Science />}
+                        label={t('assetForm.dummyAsset')}
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                      />
+                    )}
                   </Stack>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {previewCodes.map((code, idx) => (
@@ -312,31 +298,12 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                         key={idx}
                         label={code}
                         size="small"
-                        color="primary"
+                        color={formData.isDummy ? 'warning' : 'primary'}
                         variant="outlined"
-                        sx={{
-                          fontWeight: 600,
-                          fontFamily: 'monospace',
-                          animation: `slideIn 0.3s ease-out ${idx * 0.05}s both`,
-                          '@keyframes slideIn': {
-                            from: { opacity: 0, transform: 'translateX(-10px)' },
-                            to: { opacity: 1, transform: 'translateX(0)' },
-                          },
-                        }}
+                        sx={{ fontWeight: 600, fontFamily: 'monospace' }}
                       />
                     ))}
                   </Box>
-                  {formData.quantity > 1 && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-                      All assets will have the same name: "{formData.assetName}"
-                      {formData.serialNumberPrefix && (
-                        <>
-                          <br />
-                          Serial numbers will follow the pattern: {formData.serialNumberPrefix}-0001, {formData.serialNumberPrefix}-0002, etc.
-                        </>
-                      )}
-                    </Typography>
-                  )}
                 </Paper>
               </Collapse>
             </Box>
@@ -344,30 +311,27 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
 
           <Divider sx={{ my: 3 }} />
 
-          {/* Basic Asset Details */}
+          {/* Asset Identification */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom color="primary">
-              Asset Details
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              These details will apply to all assets in this bulk creation
+              {t('assetForm.identificationSection')}
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 fullWidth
-                label="Base Asset Name"
+                label={t('assetForm.alias')}
                 value={formData.assetName}
                 onChange={(e) => handleChange('assetName', e.target.value)}
                 error={!!errors.assetName}
-                helperText={errors.assetName || 'Numbers will be appended automatically'}
+                helperText={errors.assetName}
                 required
               />
 
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   sx={{ flex: '1 1 200px' }}
-                  label="Category"
+                  label={t('assetDetail.category')}
                   value={formData.category}
                   onChange={(e) => handleChange('category', e.target.value)}
                   error={!!errors.category}
@@ -375,20 +339,38 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                   required
                 />
                 <FormControl sx={{ flex: '0 1 200px' }} required>
-                  <InputLabel>Status</InputLabel>
+                  <InputLabel>{t('assetDetail.status')}</InputLabel>
                   <Select
                     value={formData.status}
                     onChange={(e) => handleChange('status', e.target.value)}
-                    label="Status"
+                    label={t('assetDetail.status')}
                   >
-                    <MenuItem value="InGebruik">In gebruik</MenuItem>
-                    <MenuItem value="Stock">Stock</MenuItem>
-                    <MenuItem value="Herstelling">Herstelling</MenuItem>
-                    <MenuItem value="Defect">Defect</MenuItem>
-                    <MenuItem value="UitDienst">Uit dienst</MenuItem>
+                    <MenuItem value="InGebruik">{t('statuses.ingebruik')}</MenuItem>
+                    <MenuItem value="Stock">{t('statuses.stock')}</MenuItem>
+                    <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
+                    <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
+                    <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
                   </Select>
                 </FormControl>
               </Box>
+
+              {/* Installation Location */}
+              <TextField
+                fullWidth
+                label={t('assetForm.installationLocation')}
+                value={formData.building}
+                onChange={(e) => handleChange('building', e.target.value)}
+                error={!!errors.building}
+                helperText={errors.building}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                      <Business sx={{ color: 'primary.main' }} />
+                    </Box>
+                  ),
+                }}
+              />
             </Box>
           </Box>
 
@@ -396,40 +378,76 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
 
           {/* Assignment Details */}
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Assignment Details
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+              <Person color="primary" />
+              <Typography variant="h6" color="primary">
+                {t('assetForm.assignmentSection')}
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t('assetForm.assignmentSectionDesc')}
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Owner"
-                value={formData.owner}
-                onChange={(e) => handleChange('owner', e.target.value)}
+
+            <Stack spacing={2.5}>
+              <UserAutocomplete
+                value={formData.owner || ''}
+                onChange={(displayName: string, user: GraphUser | null) => {
+                  handleChange('owner', displayName);
+                  // Auto-populate department and office location if user selected
+                  if (user) {
+                    if (user.department) {
+                      handleChange('department', user.department);
+                    }
+                    if (user.officeLocation) {
+                      handleChange('officeLocation', user.officeLocation || '');
+                    }
+                  }
+                }}
+                label={t('assetDetail.primaryUser')}
+                required
                 error={!!errors.owner}
                 helperText={errors.owner}
-                required
               />
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  sx={{ flex: '1 1 250px' }}
-                  label="Building"
-                  value={formData.building}
-                  onChange={(e) => handleChange('building', e.target.value)}
-                  error={!!errors.building}
-                  helperText={errors.building}
-                  required
-                />
-                <TextField
-                  sx={{ flex: '1 1 250px' }}
-                  label="Space / Floor"
-                  value={formData.department}
-                  onChange={(e) => handleChange('department', e.target.value)}
-                  error={!!errors.department}
-                  helperText={errors.department}
-                  required
-                />
-              </Box>
-            </Box>
+
+              {/* User info display (read-only) */}
+              {(formData.department || formData.officeLocation) && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    pl: 2,
+                    py: 1,
+                    borderLeft: `3px solid ${theme.palette.primary.main}`,
+                    background: alpha(theme.palette.primary.main, 0.03),
+                    borderRadius: '0 8px 8px 0',
+                  }}
+                >
+                  {formData.department && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Work sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {t('assetDetail.department')}:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {formData.department}
+                      </Typography>
+                    </Box>
+                  )}
+                  {formData.officeLocation && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LocationOn sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {t('assetDetail.officeLocation')}:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {formData.officeLocation}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Stack>
           </Box>
 
           {/* Advanced Options - Collapsible */}
@@ -447,26 +465,35 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
               }}
             >
               <Typography variant="h6" color="primary">
-                Advanced Options (Optional)
+                {t('bulkCreate.advancedOptions')}
               </Typography>
             </Button>
 
             <Collapse in={showAdvanced}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Add technical details and lifecycle information
+                  {t('bulkCreate.advancedDescription')}
                 </Typography>
+
+                <TextField
+                  fullWidth
+                  label={t('bulkCreate.serialNumberPrefix')}
+                  value={formData.serialNumberPrefix}
+                  onChange={(e) => handleChange('serialNumberPrefix', e.target.value.toUpperCase())}
+                  helperText={t('bulkCreate.serialNumberPrefixHint')}
+                  inputProps={{ maxLength: 50 }}
+                />
 
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <TextField
                     sx={{ flex: '1 1 200px' }}
-                    label="Brand"
+                    label={t('assetDetail.brand')}
                     value={formData.brand}
                     onChange={(e) => handleChange('brand', e.target.value)}
                   />
                   <TextField
                     sx={{ flex: '1 1 200px' }}
-                    label="Model"
+                    label={t('assetDetail.model')}
                     value={formData.model}
                     onChange={(e) => handleChange('model', e.target.value)}
                   />
@@ -475,12 +502,12 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                 <Divider sx={{ my: 1 }} />
 
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Lifecycle Dates
+                  {t('assetForm.lifecycleSection')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <TextField
                     sx={{ flex: '1 1 200px' }}
-                    label="Purchase Date"
+                    label={t('assetDetail.purchaseDate')}
                     type="date"
                     value={formData.purchaseDate}
                     onChange={(e) => handleChange('purchaseDate', e.target.value)}
@@ -488,7 +515,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                   />
                   <TextField
                     sx={{ flex: '1 1 200px' }}
-                    label="Warranty Expiry"
+                    label={t('assetDetail.warrantyExpiry')}
                     type="date"
                     value={formData.warrantyExpiry}
                     onChange={(e) => handleChange('warrantyExpiry', e.target.value)}
@@ -496,7 +523,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
                   />
                   <TextField
                     sx={{ flex: '1 1 200px' }}
-                    label="Installation Date"
+                    label={t('assetDetail.installationDate')}
                     type="date"
                     value={formData.installationDate}
                     onChange={(e) => handleChange('installationDate', e.target.value)}
@@ -516,7 +543,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
               size="large"
               sx={{ minWidth: 120 }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
@@ -524,29 +551,12 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, isLoading }: BulkAssetCreat
               disabled={isLoading}
               size="large"
               startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
-              sx={{
-                minWidth: 200,
-                position: 'relative',
-                overflow: 'hidden',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: 0,
-                  height: 0,
-                  borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.3)',
-                  transform: 'translate(-50%, -50%)',
-                  transition: 'width 0.6s, height 0.6s',
-                },
-                '&:hover::after': {
-                  width: '300px',
-                  height: '300px',
-                },
-              }}
+              sx={{ minWidth: 200 }}
             >
-              {isLoading ? 'Creating Assets...' : `Create ${formData.quantity} Asset${formData.quantity !== 1 ? 's' : ''}`}
+              {isLoading
+                ? t('bulkCreate.creating')
+                : t('bulkCreate.createButton', { count: formData.quantity })
+              }
             </Button>
           </Box>
         </CardContent>

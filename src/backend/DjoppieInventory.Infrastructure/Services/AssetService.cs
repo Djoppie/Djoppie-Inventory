@@ -51,22 +51,44 @@ public class AssetService : IAssetService
         if (createAssetDto == null)
             throw new ArgumentNullException(nameof(createAssetDto));
 
-        if (string.IsNullOrWhiteSpace(createAssetDto.AssetCode))
-            throw new ArgumentException("Asset code is required", nameof(createAssetDto));
+        if (string.IsNullOrWhiteSpace(createAssetDto.AssetCodePrefix))
+            throw new ArgumentException("Asset code prefix is required", nameof(createAssetDto));
 
-        // Check if asset code already exists
-        if (await _assetRepository.AssetCodeExistsAsync(createAssetDto.AssetCode))
-        {
-            throw new InvalidOperationException($"Asset with code '{createAssetDto.AssetCode}' already exists");
-        }
+        // Auto-generate asset code
+        var assetCode = await GenerateAssetCodeAsync(createAssetDto.AssetCodePrefix, createAssetDto.IsDummy);
 
         var asset = _mapper.Map<Asset>(createAssetDto);
+        asset.AssetCode = assetCode;
+        asset.IsDummy = createAssetDto.IsDummy;
+
         var createdAsset = await _assetRepository.CreateAsync(asset);
 
-        _logger.LogInformation("Created asset {AssetCode} with ID {AssetId}",
-            createdAsset.AssetCode, createdAsset.Id);
+        _logger.LogInformation("Created asset {AssetCode} (IsDummy: {IsDummy}) with ID {AssetId}",
+            createdAsset.AssetCode, createdAsset.IsDummy, createdAsset.Id);
 
         return _mapper.Map<AssetDto>(createdAsset);
+    }
+
+    private async Task<string> GenerateAssetCodeAsync(string prefix, bool isDummy)
+    {
+        const int maxAttempts = 100;
+        var attempt = 0;
+
+        while (attempt < maxAttempts)
+        {
+            var nextNumber = await _assetRepository.GetNextAssetNumberAsync(prefix, isDummy);
+            var assetCode = $"{prefix}-{nextNumber:D4}";
+
+            // Verify code doesn't exist (race condition protection)
+            if (!await _assetRepository.AssetCodeExistsAsync(assetCode))
+            {
+                return assetCode;
+            }
+
+            attempt++;
+        }
+
+        throw new InvalidOperationException($"Unable to generate unique asset code for prefix '{prefix}' after {maxAttempts} attempts");
     }
 
     public async Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto)
@@ -121,12 +143,15 @@ public class AssetService : IAssetService
             TotalRequested = bulkCreateDto.Quantity
         };
 
-        var currentNumber = bulkCreateDto.StartingNumber;
+        // Get starting number based on whether it's a dummy asset
+        var startingNumber = await _assetRepository.GetNextAssetNumberAsync(bulkCreateDto.AssetCodePrefix, bulkCreateDto.IsDummy);
+        var currentNumber = startingNumber;
         var created = 0;
         var maxAttempts = bulkCreateDto.Quantity * 10; // Safety limit to avoid infinite loops
         var attempts = 0;
+        var maxNumber = bulkCreateDto.IsDummy ? 9999 : 8999; // Limit for normal vs dummy
 
-        while (created < bulkCreateDto.Quantity && attempts < maxAttempts && currentNumber <= 9999)
+        while (created < bulkCreateDto.Quantity && attempts < maxAttempts && currentNumber <= maxNumber)
         {
             attempts++;
             try
@@ -146,6 +171,7 @@ public class AssetService : IAssetService
                     AssetCode = assetCode,
                     AssetName = bulkCreateDto.AssetName,
                     Category = bulkCreateDto.Category,
+                    IsDummy = bulkCreateDto.IsDummy,
                     Owner = bulkCreateDto.Owner,
                     Building = bulkCreateDto.Building,
                     Department = bulkCreateDto.Department,
@@ -181,17 +207,17 @@ public class AssetService : IAssetService
         }
 
         _logger.LogInformation(
-            "Bulk asset creation completed: {SuccessCount} successful, {FailCount} failed out of {TotalCount}",
-            result.SuccessfullyCreated, result.Failed, result.TotalRequested);
+            "Bulk asset creation completed: {SuccessCount} successful, {FailCount} failed out of {TotalCount} (IsDummy: {IsDummy})",
+            result.SuccessfullyCreated, result.Failed, result.TotalRequested, bulkCreateDto.IsDummy);
 
         return result;
     }
 
-    public async Task<int> GetNextAssetNumberAsync(string prefix)
+    public async Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false)
     {
         if (string.IsNullOrWhiteSpace(prefix))
             throw new ArgumentException("Prefix is required", nameof(prefix));
 
-        return await _assetRepository.GetNextAssetNumberAsync(prefix);
+        return await _assetRepository.GetNextAssetNumberAsync(prefix, isDummy);
     }
 }

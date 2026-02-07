@@ -6,8 +6,9 @@ public class AssetDto
     public string AssetCode { get; set; } = string.Empty;
     public string AssetName { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
-    public string Owner { get; set; } = string.Empty;
+    public bool IsDummy { get; set; }
     public string Building { get; set; } = string.Empty;
+    public string Owner { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }

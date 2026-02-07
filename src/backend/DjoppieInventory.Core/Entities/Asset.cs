@@ -6,13 +6,14 @@ public class Asset
     public int Id { get; set; }
 
     // Identification (Required)
-    public string AssetCode { get; set; } = string.Empty; // Unique, e.g., "AST-2401"
-    public string AssetName { get; set; } = string.Empty;
+    public string AssetCode { get; set; } = string.Empty; // Auto-generated: PREFIX-0001 to PREFIX-8999 (normal), PREFIX-9000+ (dummy)
+    public string AssetName { get; set; } = string.Empty; // Alias for the asset
     public string Category { get; set; } = string.Empty; // Computing, Peripherals, Networking, Displays
+    public bool IsDummy { get; set; } = false; // Dummy/test assets use codes 9000+
+    public string Building { get; set; } = string.Empty; // Installation location
 
     // Assignment (Required)
-    public string Owner { get; set; } = string.Empty;
-    public string Building { get; set; } = string.Empty;
+    public string Owner { get; set; } = string.Empty; // Primary user
     public string Department { get; set; } = string.Empty;
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
