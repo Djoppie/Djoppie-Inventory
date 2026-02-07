@@ -24,6 +24,8 @@ public class CreateAssetDto
     [Required]
     public string Department { get; set; } = string.Empty;
 
+    public string? JobTitle { get; set; }
+
     public string? OfficeLocation { get; set; }
 
     public string Status { get; set; } = "Active";

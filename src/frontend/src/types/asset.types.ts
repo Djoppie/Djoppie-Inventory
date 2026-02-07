@@ -15,6 +15,7 @@ export interface Asset {
   building: string;
   department: string;
   officeLocation?: string;
+  jobTitle?: string;
   status: AssetStatus;
   brand?: string;
   model?: string;
@@ -34,6 +35,7 @@ export interface CreateAssetDto {
   building: string;
   department: string;
   officeLocation?: string;
+  jobTitle?: string;
   status?: string;
   brand?: string;
   model?: string;
@@ -49,6 +51,7 @@ export interface UpdateAssetDto {
   building: string;
   department: string;
   officeLocation?: string;
+  jobTitle?: string;
   status?: string;
   brand?: string;
   model?: string;

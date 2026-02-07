@@ -14,6 +14,7 @@ public class Asset
     public string Owner { get; set; } = string.Empty;
     public string Building { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
+    public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
     public AssetStatus Status { get; set; } = AssetStatus.InGebruik;
 

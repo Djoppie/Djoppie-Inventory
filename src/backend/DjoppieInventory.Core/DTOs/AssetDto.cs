@@ -9,6 +9,7 @@ public class AssetDto
     public string Owner { get; set; } = string.Empty;
     public string Building { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
+    public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? Brand { get; set; }
