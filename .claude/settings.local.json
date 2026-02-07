@@ -35,7 +35,11 @@
       "Bash(xxd:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File ./deploy-dev.ps1)",
       "Bash(az resource list:*)",
-      "Bash(az account show:*)"
+      "Bash(az account show:*)",
+      "Bash(curl:*)",
+      "Bash(az keyvault secret show:*)",
+      "Bash(az sql server firewall-rule create:*)",
+      "Bash(sqlcmd:*)"
     ]
   }
 }

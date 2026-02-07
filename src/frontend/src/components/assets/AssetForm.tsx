@@ -18,6 +18,7 @@ import {
   Fade,
   alpha,
   useTheme,
+  Theme,
 } from '@mui/material';
 import {
   Person,
@@ -77,7 +78,7 @@ interface SectionHeaderProps {
   icon: React.ReactNode;
   title: string;
   description?: string;
-  theme: ReturnType<typeof useTheme>;
+  theme: Theme;
 }
 
 const SectionHeader = ({ icon, title, description, theme }: SectionHeaderProps) => (
