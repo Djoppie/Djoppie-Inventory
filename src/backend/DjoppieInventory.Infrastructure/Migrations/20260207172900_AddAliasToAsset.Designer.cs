@@ -3,6 +3,7 @@ using System;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260207172900_AddAliasToAsset")]
+    partial class AddAliasToAsset
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -24,7 +27,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Alias")
-                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AssetCode")
@@ -42,6 +44,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Building")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -54,6 +57,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Department")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -75,6 +79,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Owner")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
@@ -82,7 +87,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SerialNumber")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -100,9 +104,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("AssetCode")
                         .IsUnique();
 
-                    b.HasIndex("SerialNumber")
-                        .IsUnique();
-
                     b.ToTable("Assets");
                 });
 
@@ -113,15 +114,17 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("AssetName")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Brand")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Building")
-                        .HasMaxLength(100)
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Category")
@@ -130,7 +133,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Department")
-                        .HasMaxLength(100)
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("InstallationDate")
@@ -140,6 +143,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Model")
+                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
@@ -147,7 +151,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Owner")
-                        .HasMaxLength(200)
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("PurchaseDate")
@@ -171,9 +175,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 1,
                             AssetName = "Dell Latitude Laptop",
                             Brand = "Dell",
+                            Building = "",
                             Category = "Computing",
+                            Department = "",
                             IsActive = true,
                             Model = "Latitude 5420",
+                            Owner = "",
                             TemplateName = "Dell Latitude Laptop"
                         },
                         new
@@ -181,9 +188,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 2,
                             AssetName = "HP LaserJet Printer",
                             Brand = "HP",
+                            Building = "",
                             Category = "Peripherals",
+                            Department = "",
                             IsActive = true,
                             Model = "LaserJet Pro M404dn",
+                            Owner = "",
                             TemplateName = "HP LaserJet Printer"
                         },
                         new
@@ -191,9 +201,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 3,
                             AssetName = "Cisco Network Switch",
                             Brand = "Cisco",
+                            Building = "",
                             Category = "Networking",
+                            Department = "",
                             IsActive = true,
                             Model = "Catalyst 2960",
+                            Owner = "",
                             TemplateName = "Cisco Network Switch"
                         },
                         new
@@ -201,9 +214,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 4,
                             AssetName = "Samsung Monitor 27\"",
                             Brand = "Samsung",
+                            Building = "",
                             Category = "Displays",
+                            Department = "",
                             IsActive = true,
                             Model = "27\" LED Monitor",
+                            Owner = "",
                             TemplateName = "Samsung Monitor 27\""
                         },
                         new
@@ -211,9 +227,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 5,
                             AssetName = "Logitech Wireless Mouse",
                             Brand = "Logitech",
+                            Building = "",
                             Category = "Peripherals",
+                            Department = "",
                             IsActive = true,
                             Model = "MX Master 3",
+                            Owner = "",
                             TemplateName = "Logitech Wireless Mouse"
                         });
                 });

@@ -37,11 +37,16 @@ public class BulkCreateAssetDto
     public int? TemplateId { get; set; }
 
     /// <summary>
-    /// The base name for the assets (alias).
+    /// The official device name (DeviceName) for the assets.
     /// </summary>
-    [Required]
     [StringLength(200)]
     public string AssetName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional: Readable name/alias for the assets.
+    /// </summary>
+    [StringLength(200)]
+    public string? Alias { get; set; }
 
     /// <summary>
     /// Category for all assets in the bulk creation.
@@ -50,22 +55,19 @@ public class BulkCreateAssetDto
     public string Category { get; set; } = string.Empty;
 
     /// <summary>
-    /// Installation location for all assets.
+    /// Installation location for all assets (optional).
     /// </summary>
-    [Required]
-    public string Building { get; set; } = string.Empty;
+    public string? Building { get; set; }
 
     /// <summary>
-    /// Primary user for all assets in the bulk creation.
+    /// Primary user for all assets (optional - can be assigned later).
     /// </summary>
-    [Required]
-    public string Owner { get; set; } = string.Empty;
+    public string? Owner { get; set; }
 
     /// <summary>
-    /// Department for all assets in the bulk creation.
+    /// Department for all assets (optional).
     /// </summary>
-    [Required]
-    public string Department { get; set; } = string.Empty;
+    public string? Department { get; set; }
 
     /// <summary>
     /// Optional: Office location for all assets in the bulk creation.
@@ -73,9 +75,9 @@ public class BulkCreateAssetDto
     public string? OfficeLocation { get; set; }
 
     /// <summary>
-    /// Status for all assets. Defaults to "InGebruik".
+    /// Status for all assets. Defaults to "Stock".
     /// </summary>
-    public string Status { get; set; } = "InGebruik";
+    public string Status { get; set; } = "Stock";
 
     /// <summary>
     /// Optional: Brand for all assets in the bulk creation.
@@ -88,12 +90,13 @@ public class BulkCreateAssetDto
     public string? Model { get; set; }
 
     /// <summary>
-    /// Optional: Serial number prefix for generating unique serial numbers.
-    /// If provided, will be combined with the asset number to create unique serial numbers.
+    /// Serial number prefix for generating unique serial numbers - REQUIRED.
+    /// Will be combined with the asset number to create unique serial numbers.
     /// Example: "SN" will generate SN-0001, SN-0002, etc.
     /// </summary>
+    [Required]
     [StringLength(50)]
-    public string? SerialNumberPrefix { get; set; }
+    public string SerialNumberPrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// Optional: Purchase date for all assets in the bulk creation.

@@ -18,4 +18,14 @@ public interface IAssetRepository
     /// For dummy assets: 9000+
     /// </summary>
     Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false);
+
+    /// <summary>
+    /// Checks if a serial number already exists in the system.
+    /// </summary>
+    Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null);
+
+    /// <summary>
+    /// Gets an asset by its serial number
+    /// </summary>
+    Task<Asset?> GetBySerialNumberAsync(string serialNumber);
 }

@@ -111,4 +111,21 @@ public class AssetRepository : IAssetRepository
             return maxNumber + 1;
         }
     }
+
+    public async Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null)
+    {
+        var query = _context.Assets.Where(a => a.SerialNumber == serialNumber);
+
+        if (excludeAssetId.HasValue)
+        {
+            query = query.Where(a => a.Id != excludeAssetId.Value);
+        }
+
+        return await query.AnyAsync();
+    }
+
+    public async Task<Asset?> GetBySerialNumberAsync(string serialNumber)
+    {
+        return await _context.Assets.FirstOrDefaultAsync(a => a.SerialNumber == serialNumber);
+    }
 }

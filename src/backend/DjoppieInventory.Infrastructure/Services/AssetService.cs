@@ -135,6 +135,9 @@ public class AssetService : IAssetService
         if (string.IsNullOrWhiteSpace(bulkCreateDto.AssetCodePrefix))
             throw new ArgumentException("Asset code prefix is required", nameof(bulkCreateDto));
 
+        if (string.IsNullOrWhiteSpace(bulkCreateDto.SerialNumberPrefix))
+            throw new ArgumentException("Serial number prefix is required", nameof(bulkCreateDto));
+
         if (bulkCreateDto.Quantity < 1 || bulkCreateDto.Quantity > 100)
             throw new ArgumentException("Quantity must be between 1 and 100", nameof(bulkCreateDto));
 
@@ -170,6 +173,7 @@ public class AssetService : IAssetService
                 {
                     AssetCode = assetCode,
                     AssetName = bulkCreateDto.AssetName,
+                    Alias = bulkCreateDto.Alias,
                     Category = bulkCreateDto.Category,
                     IsDummy = bulkCreateDto.IsDummy,
                     Owner = bulkCreateDto.Owner,
@@ -178,12 +182,10 @@ public class AssetService : IAssetService
                     OfficeLocation = bulkCreateDto.OfficeLocation,
                     Status = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
                         ? status
-                        : AssetStatus.InGebruik,
+                        : AssetStatus.Stock,
                     Brand = bulkCreateDto.Brand,
                     Model = bulkCreateDto.Model,
-                    SerialNumber = !string.IsNullOrWhiteSpace(bulkCreateDto.SerialNumberPrefix)
-                        ? $"{bulkCreateDto.SerialNumberPrefix}-{currentNumber:D4}"
-                        : null,
+                    SerialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{currentNumber:D4}",
                     PurchaseDate = bulkCreateDto.PurchaseDate,
                     WarrantyExpiry = bulkCreateDto.WarrantyExpiry,
                     InstallationDate = bulkCreateDto.InstallationDate
@@ -219,5 +221,22 @@ public class AssetService : IAssetService
             throw new ArgumentException("Prefix is required", nameof(prefix));
 
         return await _assetRepository.GetNextAssetNumberAsync(prefix, isDummy);
+    }
+
+    public async Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null)
+    {
+        if (string.IsNullOrWhiteSpace(serialNumber))
+            return false;
+
+        return await _assetRepository.SerialNumberExistsAsync(serialNumber, excludeAssetId);
+    }
+
+    public async Task<AssetDto?> GetAssetBySerialNumberAsync(string serialNumber)
+    {
+        if (string.IsNullOrWhiteSpace(serialNumber))
+            return null;
+
+        var asset = await _assetRepository.GetBySerialNumberAsync(serialNumber);
+        return asset == null ? null : _mapper.Map<AssetDto>(asset);
     }
 }

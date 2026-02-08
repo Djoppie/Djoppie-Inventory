@@ -48,4 +48,17 @@ public interface IAssetService
     /// For dummy assets: 9000+
     /// </summary>
     Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false);
+
+    /// <summary>
+    /// Checks if a serial number already exists in the system.
+    /// </summary>
+    /// <param name="serialNumber">The serial number to check</param>
+    /// <param name="excludeAssetId">Optional asset ID to exclude (for updates)</param>
+    /// <returns>True if the serial number exists, false otherwise</returns>
+    Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null);
+
+    /// <summary>
+    /// Gets an asset by its serial number
+    /// </summary>
+    Task<AssetDto?> GetAssetBySerialNumberAsync(string serialNumber);
 }

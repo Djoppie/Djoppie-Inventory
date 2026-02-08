@@ -22,16 +22,18 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.AssetCode).IsUnique();
+            entity.HasIndex(e => e.SerialNumber).IsUnique(); // SerialNumber must be unique
             entity.Property(e => e.AssetCode).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.AssetName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.AssetName).HasMaxLength(200); // DeviceName from Intune (auto-fetched)
+            entity.Property(e => e.Alias).HasMaxLength(200); // Optional user-defined name
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Owner).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Building).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Department).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.SerialNumber).IsRequired().HasMaxLength(100); // Required unique identifier
+            entity.Property(e => e.Owner).HasMaxLength(200); // Optional - primary user
+            entity.Property(e => e.Building).HasMaxLength(100); // Optional - installation location
+            entity.Property(e => e.Department).HasMaxLength(100); // Optional
             entity.Property(e => e.OfficeLocation).HasMaxLength(100);
             entity.Property(e => e.Brand).HasMaxLength(100);
             entity.Property(e => e.Model).HasMaxLength(200);
-            entity.Property(e => e.SerialNumber).HasMaxLength(100);
             entity.Property(e => e.Status).HasConversion<int>();
         });
 
@@ -40,10 +42,13 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.TemplateName).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.AssetName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.AssetName).HasMaxLength(200);  // Optional alias
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Brand).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Model).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Brand).HasMaxLength(100);  // Optional
+            entity.Property(e => e.Model).HasMaxLength(200);  // Optional
+            entity.Property(e => e.Owner).HasMaxLength(200);  // Optional - default primary user
+            entity.Property(e => e.Building).HasMaxLength(100);  // Optional - default location
+            entity.Property(e => e.Department).HasMaxLength(100);  // Optional
         });
 
         // Seed data - 5 pre-defined templates

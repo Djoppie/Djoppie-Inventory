@@ -123,13 +123,13 @@ const AssetTemplatesPage = () => {
       setEditingTemplate(template);
       setFormData({
         templateName: template.templateName,
-        assetName: template.assetName,
+        assetName: template.assetName || '',  // Handle undefined
         category: template.category,
-        brand: template.brand,
-        model: template.model,
-        owner: template.owner,
-        building: template.building,
-        department: template.department,
+        brand: template.brand || '',  // Handle undefined
+        model: template.model || '',  // Handle undefined
+        owner: template.owner || '',  // Handle undefined
+        building: template.building || '',  // Handle undefined
+        department: template.department || '',  // Handle undefined
         purchaseDate: template.purchaseDate?.split('T')[0] || '',
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || '',
         installationDate: template.installationDate?.split('T')[0] || '',
@@ -175,9 +175,7 @@ const AssetTemplatesPage = () => {
     if (!formData.templateName.trim()) {
       errors.templateName = t('templates.required');
     }
-    if (!formData.assetName.trim()) {
-      errors.assetName = t('templates.required');
-    }
+    // assetName is now optional - removed validation
     if (!formData.category.trim()) {
       errors.category = t('templates.required');
     }
@@ -191,13 +189,13 @@ const AssetTemplatesPage = () => {
 
     const dto: CreateAssetTemplateDto = {
       templateName: formData.templateName.trim(),
-      assetName: formData.assetName.trim(),
+      assetName: formData.assetName.trim() || undefined,  // Optional
       category: formData.category.trim(),
-      brand: formData.brand.trim(),
-      model: formData.model.trim(),
-      owner: formData.owner.trim(),
-      building: formData.building.trim(),
-      department: formData.department.trim(),
+      brand: formData.brand.trim() || undefined,  // Optional
+      model: formData.model.trim() || undefined,  // Optional
+      owner: formData.owner.trim() || undefined,  // Optional
+      building: formData.building.trim() || undefined,  // Optional
+      department: formData.department.trim() || undefined,  // Optional
       purchaseDate: formData.purchaseDate || undefined,
       warrantyExpiry: formData.warrantyExpiry || undefined,
       installationDate: formData.installationDate || undefined,
@@ -706,8 +704,7 @@ const AssetTemplatesPage = () => {
               value={formData.assetName}
               onChange={handleInputChange('assetName')}
               error={!!formErrors.assetName}
-              helperText={formErrors.assetName}
-              required
+              helperText={formErrors.assetName || t('assetForm.aliasHelper')}
               fullWidth
             />
 

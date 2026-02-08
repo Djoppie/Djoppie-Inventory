@@ -126,4 +126,32 @@ public class AssetsController : ControllerBase
         var exists = await _assetService.GetAssetByCodeAsync(code) != null;
         return Ok(exists);
     }
+
+    /// <summary>
+    /// Checks if a serial number already exists in the system.
+    /// </summary>
+    [HttpGet("serial-exists")]
+    public async Task<ActionResult<bool>> SerialNumberExists(
+        [FromQuery] string serialNumber,
+        [FromQuery] int? excludeAssetId = null)
+    {
+        if (string.IsNullOrWhiteSpace(serialNumber))
+            return BadRequest("Serial number is required");
+
+        var exists = await _assetService.SerialNumberExistsAsync(serialNumber, excludeAssetId);
+        return Ok(exists);
+    }
+
+    /// <summary>
+    /// Retrieves an asset by its serial number.
+    /// </summary>
+    [HttpGet("by-serial/{serialNumber}")]
+    public async Task<ActionResult<AssetDto>> GetAssetBySerialNumber(string serialNumber)
+    {
+        var asset = await _assetService.GetAssetBySerialNumberAsync(serialNumber);
+        if (asset == null)
+            return NotFound($"Asset with serial number '{serialNumber}' not found");
+
+        return Ok(asset);
+    }
 }

@@ -7,22 +7,23 @@ public class Asset
 
     // Identification (Required)
     public string AssetCode { get; set; } = string.Empty; // Auto-generated: PREFIX-0001 to PREFIX-8999 (normal), PREFIX-9000+ (dummy)
-    public string AssetName { get; set; } = string.Empty; // Alias for the asset
+    public string AssetName { get; set; } = string.Empty; // Official device name (DeviceName)
+    public string? Alias { get; set; } // Optional readable name for the asset
     public string Category { get; set; } = string.Empty; // Computing, Peripherals, Networking, Displays
     public bool IsDummy { get; set; } = false; // Dummy/test assets use codes 9000+
-    public string Building { get; set; } = string.Empty; // Installation location
+    public string? Building { get; set; } // Installation location (optional)
 
-    // Assignment (Required)
-    public string Owner { get; set; } = string.Empty; // Primary user
-    public string Department { get; set; } = string.Empty;
+    // Assignment (Optional)
+    public string? Owner { get; set; } // Primary user (optional)
+    public string? Department { get; set; }
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
-    public AssetStatus Status { get; set; } = AssetStatus.InGebruik;
+    public AssetStatus Status { get; set; } = AssetStatus.Stock; // Default to Stock
 
-    // Technical Details (Optional)
+    // Technical Details
     public string? Brand { get; set; }
     public string? Model { get; set; }
-    public string? SerialNumber { get; set; }
+    public string SerialNumber { get; set; } = string.Empty; // Required - unique identifier for the device
 
     // Lifecycle (Optional)
     public DateTime? PurchaseDate { get; set; }

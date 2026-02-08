@@ -42,8 +42,8 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
 
   // Sort assets
   const sortedAssets = [...assets].sort((a, b) => {
-    const aValue = a[sortField];
-    const bValue = b[sortField];
+    const aValue = a[sortField] ?? '';
+    const bValue = b[sortField] ?? '';
 
     if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;

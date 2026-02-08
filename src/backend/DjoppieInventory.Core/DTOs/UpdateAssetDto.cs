@@ -4,26 +4,37 @@ namespace DjoppieInventory.Core.DTOs;
 
 public class UpdateAssetDto
 {
-    [Required]
+    /// <summary>
+    /// Official device name (DeviceName)
+    /// </summary>
     public string AssetName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional readable name for the asset
+    /// </summary>
+    [StringLength(200)]
+    public string? Alias { get; set; }
 
     [Required]
     public string Category { get; set; } = string.Empty;
 
-    [Required]
-    public string Owner { get; set; } = string.Empty;
+    /// <summary>
+    /// Primary user (optional)
+    /// </summary>
+    public string? Owner { get; set; }
 
-    [Required]
-    public string Building { get; set; } = string.Empty;
+    /// <summary>
+    /// Installation location (optional)
+    /// </summary>
+    public string? Building { get; set; }
 
-    [Required]
-    public string Department { get; set; } = string.Empty;
+    public string? Department { get; set; }
 
     public string? JobTitle { get; set; }
 
     public string? OfficeLocation { get; set; }
 
-    public string Status { get; set; } = "InGebruik";
+    public string Status { get; set; } = "Stock";
 
     public string? Brand { get; set; }
     public string? Model { get; set; }

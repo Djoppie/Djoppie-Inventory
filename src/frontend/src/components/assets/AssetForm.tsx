@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -21,6 +21,8 @@ import {
   FormControlLabel,
   Checkbox,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   Person,
@@ -36,13 +38,16 @@ import {
   Warning,
   Link as LinkIcon,
   LinkOff,
+  Search,
+  Numbers,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
 import { GraphUser, IntuneDevice } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
-import DeviceAutocomplete from '../common/DeviceAutocomplete';
+import { intuneApi } from '../../api/intune.api';
+import { serialNumberExists } from '../../api/assets.api';
 
 interface AssetFormProps {
   initialData?: Asset;
@@ -138,6 +143,12 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const [selectedUserUpn, setSelectedUserUpn] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
 
+  // Serial number lookup states
+  const [isLookingUpSerial, setIsLookingUpSerial] = useState(false);
+  const [serialLookupError, setSerialLookupError] = useState<string | null>(null);
+  const [isSerialUnique, setIsSerialUnique] = useState<boolean | null>(null);
+  const [isCheckingUniqueness, setIsCheckingUniqueness] = useState(false);
+
   const [formData, setFormData] = useState<Omit<CreateAssetDto, 'assetCodePrefix' | 'isDummy'>>({
     assetName: initialData?.assetName || '',
     category: initialData?.category || '',
@@ -146,7 +157,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     department: initialData?.department || '',
     officeLocation: initialData?.officeLocation || '',
     jobTitle: initialData?.jobTitle || '',
-    status: initialData?.status || 'InGebruik',
+    status: initialData?.status || 'Stock',
     brand: initialData?.brand || '',
     model: initialData?.model || '',
     serialNumber: initialData?.serialNumber || '',
@@ -155,9 +166,92 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     installationDate: formatDateForInput(initialData?.installationDate),
   });
 
+  // Alias is stored separately (optional readable name)
+  const [alias, setAlias] = useState(initialData?.alias || '');
+
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+
+  // Lookup device info from Intune by serial number
+  const lookupDeviceBySerial = useCallback(async (serial: string) => {
+    if (!serial.trim()) return;
+
+    setIsLookingUpSerial(true);
+    setSerialLookupError(null);
+
+    try {
+      const device = await intuneApi.getDeviceBySerialNumber(serial.trim());
+      setSelectedDevice(device);
+
+      // Auto-populate device name (AssetName)
+      if (device.deviceName) {
+        setFormData(prev => ({ ...prev, assetName: device.deviceName || '' }));
+        markFieldAsAutoFilled('assetName');
+      }
+      // Auto-populate device details
+      if (device.manufacturer) {
+        setFormData(prev => ({ ...prev, brand: device.manufacturer || '' }));
+        markFieldAsAutoFilled('brand');
+      }
+      if (device.model) {
+        setFormData(prev => ({ ...prev, model: device.model || '' }));
+        markFieldAsAutoFilled('model');
+      }
+    } catch {
+      setSerialLookupError(t('assetForm.deviceNotFoundBySerial'));
+      setSelectedDevice(null);
+    } finally {
+      setIsLookingUpSerial(false);
+    }
+  }, [t]);
+
+  // Check if serial number is unique
+  const checkSerialUniqueness = useCallback(async (serial: string) => {
+    if (!serial.trim()) {
+      setIsSerialUnique(null);
+      return;
+    }
+
+    setIsCheckingUniqueness(true);
+    try {
+      const exists = await serialNumberExists(serial.trim(), isEditMode ? initialData?.id : undefined);
+      setIsSerialUnique(!exists);
+      if (exists) {
+        setErrors(prev => ({ ...prev, serialNumber: t('assetForm.serialNumberNotUnique') }));
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.serialNumber;
+          return newErrors;
+        });
+      }
+    } catch {
+      setIsSerialUnique(null);
+    } finally {
+      setIsCheckingUniqueness(false);
+    }
+  }, [isEditMode, initialData?.id, t]);
+
+  // Debounce serial number uniqueness check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.serialNumber) {
+        checkSerialUniqueness(formData.serialNumber);
+      } else {
+        setIsSerialUnique(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.serialNumber, checkSerialUniqueness]);
+
+  // Auto-lookup device from Intune when editing an asset with existing serial number
+  useEffect(() => {
+    if (isEditMode && initialData?.serialNumber) {
+      lookupDeviceBySerial(initialData.serialNumber);
+    }
+  }, [isEditMode, initialData?.serialNumber, lookupDeviceBySerial]);
 
   const handleTemplateChange = (templateId: number) => {
     setSelectedTemplate(templateId);
@@ -189,20 +283,32 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     if (!isEditMode) {
       if (!assetCodePrefix.trim()) newErrors.assetCodePrefix = t('assetForm.validationError');
     }
-    if (!formData.assetName.trim()) newErrors.assetName = t('assetForm.validationError');
+    // SerialNumber is REQUIRED and must be unique
+    if (!formData.serialNumber.trim()) {
+      newErrors.serialNumber = t('assetForm.serialNumberRequired');
+    } else if (isSerialUnique === false) {
+      newErrors.serialNumber = t('assetForm.serialNumberNotUnique');
+    }
     if (!formData.category.trim()) newErrors.category = t('assetForm.validationError');
-    if (!formData.building.trim()) newErrors.building = t('assetForm.validationError');
-    if (!formData.owner.trim()) newErrors.owner = t('assetForm.validationError');
+    // Owner is optional - removed validation
+    // Building (Installation Location) is optional
+    // Status is required but has default value
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Convert empty strings to undefined so the API receives null instead of ""
+  // Keep required fields (serialNumber, category, assetCodePrefix) as-is
   const cleanData = <T extends object>(data: T): T => {
+    const requiredFields = ['serialNumber', 'category', 'assetCodePrefix', 'status'];
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
-      cleaned[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
+      if (requiredFields.includes(key)) {
+        cleaned[key] = value; // Keep required fields as-is
+      } else {
+        cleaned[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
+      }
     }
     return cleaned as T;
   };
@@ -213,10 +319,15 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     if (!validateForm()) return;
 
     if (isEditMode) {
-      onSubmit(cleanData(formData as UpdateAssetDto));
+      const updateData: UpdateAssetDto = {
+        ...formData,
+        alias: alias || undefined,
+      };
+      onSubmit(cleanData(updateData));
     } else {
       const createData: CreateAssetDto = {
         ...formData,
+        alias: alias || undefined,
         assetCodePrefix: assetCodePrefix.toUpperCase(),
         isDummy,
       };
@@ -380,15 +491,93 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   </Box>
                 )}
 
-                {/* Alias (Asset Name) */}
+                {/* SerialNumber - REQUIRED (must be first after prefix) */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t('assetDetail.serialNumber')}
+                    value={formData.serialNumber}
+                    onChange={(e) => handleChange('serialNumber', e.target.value)}
+                    error={!!errors.serialNumber}
+                    helperText={errors.serialNumber || t('assetForm.serialNumberHint')}
+                    required
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Numbers sx={{ color: 'primary.main' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {isCheckingUniqueness && <CircularProgress size={20} />}
+                          {!isCheckingUniqueness && isSerialUnique === true && (
+                            <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                          )}
+                          {!isCheckingUniqueness && isSerialUnique === false && (
+                            <Warning sx={{ color: 'error.main', fontSize: 20 }} />
+                          )}
+                          <Tooltip title={t('assetForm.lookupDeviceBySerial')}>
+                            <IconButton
+                              size="small"
+                              onClick={() => lookupDeviceBySerial(formData.serialNumber)}
+                              disabled={!formData.serialNumber.trim() || isLookingUpSerial}
+                            >
+                              {isLookingUpSerial ? (
+                                <CircularProgress size={20} />
+                              ) : (
+                                <Search />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  {serialLookupError && (
+                    <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, display: 'block' }}>
+                      {serialLookupError}
+                    </Typography>
+                  )}
+                  {selectedDevice && (
+                    <Chip
+                      icon={<LinkIcon />}
+                      label={`${t('assetForm.deviceFound')}: ${selectedDevice.deviceName}`}
+                      color="success"
+                      variant="outlined"
+                      size="small"
+                      sx={{ mt: 1 }}
+                    />
+                  )}
+                </Box>
+
+                {/* AssetName (DeviceName) - auto-fetched from Intune */}
+                <TextField
+                  fullWidth
+                  label={t('assetForm.assetNameDevice')}
+                  value={formData.assetName}
+                  onChange={(e) => handleChange('assetName', e.target.value)}
+                  helperText={t('assetForm.assetNameAutoFetched')}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Computer sx={{ color: 'primary.main' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: autoFilledFields.has('assetName') ? (
+                      <InputAdornment position="end">
+                        <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                      </InputAdornment>
+                    ) : undefined,
+                  }}
+                />
+
+                {/* Alias - Optional readable name */}
                 <TextField
                   fullWidth
                   label={t('assetForm.alias')}
-                  value={formData.assetName}
-                  onChange={(e) => handleChange('assetName', e.target.value)}
-                  error={!!errors.assetName}
-                  helperText={errors.assetName}
-                  required
+                  value={alias}
+                  onChange={(e) => setAlias(e.target.value)}
+                  helperText={t('assetForm.aliasHint')}
                 />
 
                 {/* Category and Status */}
@@ -416,8 +605,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                       onChange={(e) => handleChange('status', e.target.value)}
                       label={t('assetDetail.status')}
                     >
-                      <MenuItem value="InGebruik">{t('statuses.ingebruik')}</MenuItem>
                       <MenuItem value="Stock">{t('statuses.stock')}</MenuItem>
+                      <MenuItem value="InGebruik">{t('statuses.ingebruik')}</MenuItem>
                       <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
                       <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
                       <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
@@ -431,9 +620,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   label={t('assetForm.installationLocation')}
                   value={formData.building}
                   onChange={(e) => handleChange('building', e.target.value)}
-                  error={!!errors.building}
-                  helperText={errors.building}
-                  required
+                  helperText={t('assetForm.installationLocationHint')}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -459,7 +646,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               />
               <Stack spacing={2.5}>
                 <UserAutocomplete
-                  value={formData.owner}
+                  value={formData.owner || ''}
                   onChange={(displayName: string, user: GraphUser | null) => {
                     handleChange('owner', displayName);
                     // Store UPN for device validation
@@ -486,9 +673,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     }
                   }}
                   label={t('assetDetail.primaryUser')}
-                  required
-                  error={!!errors.owner}
-                  helperText={errors.owner}
+                  helperText={t('assetForm.ownerOptionalHint')}
                   disabled={isLoading}
                 />
 
@@ -542,63 +727,36 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   </Box>
                 )}
 
-                {/* Intune Device Search */}
-                <Box sx={{ mt: 1 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      mb: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      color: 'text.secondary',
-                    }}
-                  >
-                    <Computer sx={{ fontSize: 18 }} />
-                    {t('assetForm.searchIntuneDevice')}
-                  </Typography>
-                  <DeviceAutocomplete
-                    value={formData.serialNumber || ''}
-                    onSelect={(device: IntuneDevice | null) => {
-                      setSelectedDevice(device);
-                      if (device) {
-                        // Auto-populate device details
-                        if (device.manufacturer) {
-                          handleChange('brand', device.manufacturer);
-                          markFieldAsAutoFilled('brand');
-                        }
-                        if (device.model) {
-                          handleChange('model', device.model);
-                          markFieldAsAutoFilled('model');
-                        }
-                        if (device.serialNumber) {
-                          handleChange('serialNumber', device.serialNumber);
-                          markFieldAsAutoFilled('serialNumber');
-                        }
-                      }
-                    }}
-                    label={t('assetForm.searchIntuneDevice')}
-                    helperText={t('assetForm.searchIntuneHint')}
-                    searchBy="name"
-                  />
+                {/* Device-User validation indicator - shows relationship between selected user and device from SerialNumber lookup */}
+                {selectedDevice && (
+                  <Box sx={{ mt: 1 }}>
+                    {selectedDevice.userPrincipalName ? (
+                      // Device has an assigned user in Intune
+                      // Check if user matches: either by UPN or by matching display name with UPN local part
+                      (() => {
+                        const deviceUpn = selectedDevice.userPrincipalName.toLowerCase();
+                        const ownerName = (formData.owner || '').toLowerCase();
+                        // Match by UPN (if user selected from autocomplete)
+                        const upnMatch = selectedUserUpn && deviceUpn === selectedUserUpn.toLowerCase();
+                        // Match by display name: "Jo Wijnen" matches "jo.wijnen@..."
+                        const upnLocalPart = deviceUpn.split('@')[0].replace(/[._-]/g, ' ');
+                        const nameMatch = ownerName && (
+                          upnLocalPart.includes(ownerName.replace(/\s+/g, ' ')) ||
+                          ownerName.split(' ').every(part => upnLocalPart.includes(part))
+                        );
 
-                  {/* Device-User validation indicator */}
-                  {selectedDevice && (
-                    <Box sx={{ mt: 1.5 }}>
-                      {selectedDevice.userPrincipalName ? (
-                        // Device has an assigned user in Intune
-                        selectedUserUpn && selectedDevice.userPrincipalName.toLowerCase() === selectedUserUpn.toLowerCase() ? (
-                          // User matches
+                        return upnMatch || nameMatch ? (
+                          // User matches - show handshake indicator
                           <Chip
-                            icon={<LinkIcon />}
-                            label={t('assetForm.deviceLinkedToUser')}
+                            icon={<span style={{ fontSize: '16px' }}>🤝</span>}
+                            label={`${formData.owner} 🤝 ${selectedDevice.deviceName}`}
                             color="success"
                             variant="outlined"
                             size="small"
-                            sx={{ fontWeight: 500 }}
+                            sx={{ fontWeight: 500, py: 0.5 }}
                           />
                         ) : (
-                          // User does not match
+                          // User does not match - show warning with Intune user
                           <Chip
                             icon={<Warning />}
                             label={`${t('assetForm.deviceLinkedToOther')}: ${selectedDevice.userPrincipalName}`}
@@ -607,21 +765,21 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                             size="small"
                             sx={{ fontWeight: 500, maxWidth: '100%' }}
                           />
-                        )
-                      ) : (
-                        // Device has no assigned user
-                        <Chip
-                          icon={<LinkOff />}
-                          label={t('assetForm.deviceNotLinked')}
-                          color="default"
-                          variant="outlined"
-                          size="small"
-                          sx={{ fontWeight: 500 }}
-                        />
-                      )}
-                    </Box>
-                  )}
-                </Box>
+                        );
+                      })()
+                    ) : (
+                      // Device has no assigned user in Intune
+                      <Chip
+                        icon={<LinkOff />}
+                        label={t('assetForm.deviceNotLinked')}
+                        color="default"
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500 }}
+                      />
+                    )}
+                  </Box>
+                )}
               </Stack>
             </Box>
           </Fade>
@@ -658,21 +816,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   onChange={(e) => handleChange('model', e.target.value)}
                   InputProps={{
                     endAdornment: autoFilledFields.has('model') ? (
-                      <InputAdornment position="end">
-                        <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
-                      </InputAdornment>
-                    ) : undefined,
-                  }}
-                />
-                <TextField
-                  sx={{ flex: '1 1 200px' }}
-                  label={t('assetDetail.serialNumber')}
-                  value={formData.serialNumber}
-                  onChange={(e) => handleChange('serialNumber', e.target.value)}
-                  error={!!errors.serialNumber}
-                  helperText={errors.serialNumber}
-                  InputProps={{
-                    endAdornment: autoFilledFields.has('serialNumber') ? (
                       <InputAdornment position="end">
                         <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
                       </InputAdornment>

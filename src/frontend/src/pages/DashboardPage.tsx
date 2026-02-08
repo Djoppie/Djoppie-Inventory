@@ -110,13 +110,13 @@ const DashboardPage = () => {
         a.assetName.toLowerCase().includes(query) ||
         a.assetCode.toLowerCase().includes(query) ||
         a.category.toLowerCase().includes(query) ||
-        a.owner.toLowerCase().includes(query) ||
-        a.building.toLowerCase().includes(query) ||
+        a.owner?.toLowerCase().includes(query) ||
+        a.building?.toLowerCase().includes(query) ||
         a.department?.toLowerCase().includes(query) ||
         a.officeLocation?.toLowerCase().includes(query) ||
         a.brand?.toLowerCase().includes(query) ||
         a.model?.toLowerCase().includes(query) ||
-        a.serialNumber?.toLowerCase().includes(query)
+        a.serialNumber.toLowerCase().includes(query)
       );
     }
 

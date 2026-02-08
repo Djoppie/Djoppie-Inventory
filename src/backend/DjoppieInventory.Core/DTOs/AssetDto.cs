@@ -5,6 +5,7 @@ public class AssetDto
     public int Id { get; set; }
     public string AssetCode { get; set; } = string.Empty;
     public string AssetName { get; set; } = string.Empty;
+    public string? Alias { get; set; }
     public string Category { get; set; } = string.Empty;
     public bool IsDummy { get; set; }
     public string Building { get; set; } = string.Empty;

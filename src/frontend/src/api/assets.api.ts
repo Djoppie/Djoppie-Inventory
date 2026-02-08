@@ -45,3 +45,17 @@ export const assetCodeExists = async (code: string): Promise<boolean> => {
   const response = await apiClient.get<boolean>('/assets/code-exists', { params: { code } });
   return response.data;
 };
+
+export const serialNumberExists = async (serialNumber: string, excludeAssetId?: number): Promise<boolean> => {
+  const params: { serialNumber: string; excludeAssetId?: number } = { serialNumber };
+  if (excludeAssetId !== undefined) {
+    params.excludeAssetId = excludeAssetId;
+  }
+  const response = await apiClient.get<boolean>('/assets/serial-exists', { params });
+  return response.data;
+};
+
+export const getAssetBySerialNumber = async (serialNumber: string): Promise<Asset> => {
+  const response = await apiClient.get<Asset>(`/assets/by-serial/${serialNumber}`);
+  return response.data;
+};
