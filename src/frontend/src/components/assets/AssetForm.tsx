@@ -269,7 +269,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         owner: template.owner || prev.owner,
         building: template.building || prev.building,
         department: template.department || prev.department,
-        officeLocation: template.officeLocation || prev.officeLocation,
+        // officeLocation not in template - keep existing value
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
         installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
