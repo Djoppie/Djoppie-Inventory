@@ -165,7 +165,7 @@ const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading
   }, [formData.assetCodePrefix, formData.quantity, formData.isDummy]);
 
   // CSV validation - updated for new asset structure
-  const validateCsvAsset = (row: Record<string, string>, rowIndex: number): CsvAsset => {
+  const validateCsvAsset = (row: Record<string, string>, _rowIndex: number): CsvAsset => {
     const errors: string[] = [];
 
     // Required field validation - SerialNumber is now the primary identifier
