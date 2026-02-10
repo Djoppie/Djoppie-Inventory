@@ -110,6 +110,43 @@ const CSV_COLUMNS = [
 
 const VALID_STATUSES = ['InGebruik', 'Stock', 'Herstelling', 'Defect', 'UitDienst'];
 
+// Parse date string in multiple formats (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD)
+// Returns ISO date string (YYYY-MM-DD) or null if invalid
+const parseDateString = (dateStr: string): string | null => {
+  if (!dateStr || !dateStr.trim()) return null;
+
+  const trimmed = dateStr.trim();
+
+  // Try ISO format first (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) return trimmed;
+  }
+
+  // Try European format DD-MM-YYYY or DD/MM/YYYY
+  const euroMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (euroMatch) {
+    const [, day, month, year] = euroMatch;
+    const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const date = new Date(isoDate);
+    // Validate the date is real (not like 31-02-2024)
+    if (!isNaN(date.getTime()) &&
+        date.getDate() === parseInt(day) &&
+        date.getMonth() + 1 === parseInt(month)) {
+      return isoDate;
+    }
+  }
+
+  // Try US format MM/DD/YYYY (less common but Date.parse handles it)
+  const parsed = Date.parse(trimmed);
+  if (!isNaN(parsed)) {
+    const date = new Date(parsed);
+    return date.toISOString().split('T')[0];
+  }
+
+  return null;
+};
+
 const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading }: BulkAssetCreationFormProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -180,11 +217,18 @@ const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading
       errors.push(`Invalid status: ${status}`);
     }
 
-    // Date validation
-    const dateFields = ['purchaseDate', 'warrantyExpiry', 'installationDate'];
+    // Date validation and parsing - supports DD-MM-YYYY, DD/MM/YYYY, and YYYY-MM-DD formats
+    const dateFields = ['purchaseDate', 'warrantyExpiry', 'installationDate'] as const;
+    const parsedDates: Record<string, string | undefined> = {};
+
     dateFields.forEach(field => {
-      if (row[field] && isNaN(Date.parse(row[field]))) {
-        errors.push(`Invalid date format for ${field}`);
+      if (row[field]) {
+        const parsed = parseDateString(row[field]);
+        if (parsed === null) {
+          errors.push(`Invalid date format for ${field} (use DD-MM-YYYY or YYYY-MM-DD)`);
+        } else {
+          parsedDates[field] = parsed;
+        }
       }
     });
 
@@ -199,9 +243,9 @@ const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading
       department: row.department?.trim(),
       brand: row.brand?.trim(),
       model: row.model?.trim(),
-      purchaseDate: row.purchaseDate?.trim(),
-      warrantyExpiry: row.warrantyExpiry?.trim(),
-      installationDate: row.installationDate?.trim(),
+      purchaseDate: parsedDates.purchaseDate,
+      warrantyExpiry: parsedDates.warrantyExpiry,
+      installationDate: parsedDates.installationDate,
       isDummy: row.isDummy?.toLowerCase() === 'true' || row.isDummy === '1',
       isValid: errors.length === 0,
       errors,
@@ -210,7 +254,8 @@ const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading
 
   // Parse CSV file
   const parseCsv = useCallback((content: string) => {
-    const lines = content.split('\n').filter(line => line.trim());
+    // Filter out empty lines and comment lines (starting with #)
+    const lines = content.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'));
     if (lines.length < 2) {
       setCsvError(t('bulkCreate.csvNoData'));
       return;
@@ -308,9 +353,12 @@ const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading
   // Download template CSV - updated for new asset structure
   const downloadTemplate = useCallback(() => {
     const headers = CSV_COLUMNS.map(c => c.label).join(',');
-    // Example: SerialNumber (req), CodePrefix (req), Category (req), Alias (opt), Status (opt), Location (opt), Owner (opt), Dept (opt), Brand (opt), Model (opt), dates...
-    const exampleRow = 'SN-12345,LAP,Computing,Laptop Dell Latitude,Stock,Building A,John Doe,IT Department,Dell,Latitude 5520,2024-01-15,2027-01-15,2024-01-20,false';
-    const content = `${headers}\n${exampleRow}`;
+    // Example with European date format (DD-MM-YYYY) and ISO format (YYYY-MM-DD) both work
+    const exampleRow1 = 'SN-12345,LAP,Computing,Laptop Dell Latitude,Stock,Building A,John Doe,IT Department,Dell,Latitude 5520,15-01-2024,15-01-2027,20-01-2024,false';
+    const exampleRow2 = 'SN-12346,MON,Displays,Monitor 24 inch,Stock,Building B,,Finance,Samsung,S24E450,2024-02-01,2027-02-01,2024-02-05,false';
+    // Add a comment line explaining date formats
+    const dateHint = '# Date formats: DD-MM-YYYY (European) or YYYY-MM-DD (ISO) are both supported';
+    const content = `${dateHint}\n${headers}\n${exampleRow1}\n${exampleRow2}`;
 
     const blob = new Blob([content], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
