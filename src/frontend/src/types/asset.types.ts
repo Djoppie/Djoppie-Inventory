@@ -139,3 +139,24 @@ export interface BulkCreateAssetResultDto {
   errors: string[];
   isFullySuccessful: boolean;
 }
+
+/**
+ * Generic paginated result type matching the backend PagedResultDto<T>
+ */
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+/**
+ * Pagination parameters for API requests
+ */
+export interface PaginationParams {
+  pageNumber?: number;
+  pageSize?: number;
+}

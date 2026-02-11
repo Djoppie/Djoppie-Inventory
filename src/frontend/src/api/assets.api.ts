@@ -1,9 +1,39 @@
 import { apiClient } from './client';
-import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto } from '../types/asset.types';
+import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto, PagedResult, PaginationParams } from '../types/asset.types';
 
+/**
+ * Retrieves all assets (unpaginated). Use for client-side filtering/sorting.
+ * For server-side pagination, use getAssetsPaged instead.
+ */
 export const getAssets = async (statusFilter?: string): Promise<Asset[]> => {
   const params = statusFilter ? { status: statusFilter } : {};
-  const response = await apiClient.get<Asset[]>('/assets', { params });
+  const response = await apiClient.get<Asset[]>('/assets/all', { params });
+  return response.data;
+};
+
+/**
+ * Retrieves assets with server-side pagination.
+ * @param statusFilter Optional status filter
+ * @param pagination Pagination parameters (pageNumber, pageSize)
+ * @returns Paginated result with items and metadata
+ */
+export const getAssetsPaged = async (
+  statusFilter?: string,
+  pagination?: PaginationParams
+): Promise<PagedResult<Asset>> => {
+  const params: Record<string, string | number> = {};
+
+  if (statusFilter) {
+    params.status = statusFilter;
+  }
+  if (pagination?.pageNumber) {
+    params.pageNumber = pagination.pageNumber;
+  }
+  if (pagination?.pageSize) {
+    params.pageSize = pagination.pageSize;
+  }
+
+  const response = await apiClient.get<PagedResult<Asset>>('/assets', { params });
   return response.data;
 };
 
