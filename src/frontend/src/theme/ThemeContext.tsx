@@ -449,6 +449,12 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 borderRadius: 12,
                 margin: '4px',
+                // Console-style monospace font
+                fontFamily: '"JetBrains Mono", "Fira Code", "Source Code Pro", "Consolas", monospace',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
                 '&:hover': {
                   background: mode === 'light'
                     ? 'rgba(255, 119, 0, 0.08)'
@@ -459,12 +465,24 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                 },
                 '&.Mui-selected': {
                   color: mode === 'light' ? '#FF7700' : '#FF9233',
+                  fontWeight: 700,
                   boxShadow: mode === 'light'
                     ? '0 1px 2px rgba(0, 0, 0, 0.08) inset'
                     : '0 1px 2px rgba(0, 0, 0, 0.6) inset',
                   background: mode === 'light'
                     ? 'rgba(255, 119, 0, 0.1)'
                     : 'rgba(255, 146, 51, 0.15)',
+                },
+              },
+              label: {
+                fontFamily: '"JetBrains Mono", "Fira Code", "Source Code Pro", "Consolas", monospace',
+                fontSize: '0.7rem',
+                fontWeight: 500,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                '&.Mui-selected': {
+                  fontWeight: 700,
+                  fontSize: '0.72rem',
                 },
               },
             },
