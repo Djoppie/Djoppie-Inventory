@@ -13,6 +13,15 @@ public interface IAssetService
     Task<IEnumerable<AssetDto>> GetAssetsAsync(string? status = null);
 
     /// <summary>
+    /// Gets a paginated list of assets with optional status filter.
+    /// </summary>
+    Task<PagedResultDto<AssetDto>> GetAssetsPagedAsync(
+        string? status = null,
+        int pageNumber = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a single asset by its ID
     /// </summary>
     Task<AssetDto?> GetAssetByIdAsync(int id);

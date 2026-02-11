@@ -2,6 +2,7 @@ using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DjoppieInventory.Infrastructure.Repositories;
 
@@ -33,6 +34,36 @@ public class AssetRepository : IAssetRepository
             .OrderByDescending(a => a.CreatedAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IEnumerable<Asset> Items, int TotalCount)> GetPagedAsync(
+        string? statusFilter = null,
+        int pageNumber = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Assets.AsQueryable();
+
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            if (Enum.TryParse<AssetStatus>(statusFilter, true, out var status))
+            {
+                query = query.Where(a => a.Status == status);
+            }
+        }
+
+        // Get total count before pagination
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // Apply pagination
+        var items = await query
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public async Task<Asset?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -137,5 +168,41 @@ public class AssetRepository : IAssetRepository
     {
         return await _context.Assets
             .FirstOrDefaultAsync(a => a.SerialNumber == serialNumber, cancellationToken);
+    }
+
+    public async Task<IEnumerable<Asset>> BulkCreateAsync(IEnumerable<Asset> assets, CancellationToken cancellationToken = default)
+    {
+        var assetList = assets.ToList();
+        if (assetList.Count == 0)
+            return assetList;
+
+        var now = DateTime.UtcNow;
+        foreach (var asset in assetList)
+        {
+            asset.CreatedAt = now;
+            asset.UpdatedAt = now;
+        }
+
+        await _context.Assets.AddRangeAsync(assetList, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return assetList;
+    }
+
+    public async Task<HashSet<string>> GetExistingAssetCodesAsync(string prefix, CancellationToken cancellationToken = default)
+    {
+        var prefixPattern = prefix + "-";
+        var codes = await _context.Assets
+            .Where(a => a.AssetCode.StartsWith(prefixPattern))
+            .Select(a => a.AssetCode)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        return codes.ToHashSet();
+    }
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Database.BeginTransactionAsync(cancellationToken);
     }
 }

@@ -31,6 +31,23 @@ public class AssetService : IAssetService
         return _mapper.Map<IEnumerable<AssetDto>>(assets);
     }
 
+    public async Task<PagedResultDto<AssetDto>> GetAssetsPagedAsync(
+        string? status = null,
+        int pageNumber = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var (assets, totalCount) = await _assetRepository.GetPagedAsync(status, pageNumber, pageSize, cancellationToken);
+
+        return new PagedResultDto<AssetDto>
+        {
+            Items = _mapper.Map<IEnumerable<AssetDto>>(assets),
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<AssetDto?> GetAssetByIdAsync(int id)
     {
         var asset = await _assetRepository.GetByIdAsync(id);
@@ -146,23 +163,33 @@ public class AssetService : IAssetService
             TotalRequested = bulkCreateDto.Quantity
         };
 
-        // Get starting number based on whether it's a dummy asset
-        var startingNumber = await _assetRepository.GetNextAssetNumberAsync(bulkCreateDto.AssetCodePrefix, bulkCreateDto.IsDummy);
-        var currentNumber = startingNumber;
-        var created = 0;
-        var maxAttempts = bulkCreateDto.Quantity * 10; // Safety limit to avoid infinite loops
-        var attempts = 0;
-        var maxNumber = bulkCreateDto.IsDummy ? 9999 : 8999; // Limit for normal vs dummy
+        // Use transaction for atomic operation - all succeed or all fail
+        await using var transaction = await _assetRepository.BeginTransactionAsync();
 
-        while (created < bulkCreateDto.Quantity && attempts < maxAttempts && currentNumber <= maxNumber)
+        try
         {
-            attempts++;
-            try
+            // Get all existing asset codes for this prefix in a single query (avoid N+1)
+            var existingCodes = await _assetRepository.GetExistingAssetCodesAsync(bulkCreateDto.AssetCodePrefix);
+
+            // Get starting number based on whether it's a dummy asset
+            var startingNumber = await _assetRepository.GetNextAssetNumberAsync(bulkCreateDto.AssetCodePrefix, bulkCreateDto.IsDummy);
+            var currentNumber = startingNumber;
+            var maxNumber = bulkCreateDto.IsDummy ? 9999 : 8999;
+
+            // Parse status once
+            var assetStatus = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
+                ? status
+                : AssetStatus.Stock;
+
+            // Prepare all assets in memory first
+            var assetsToCreate = new List<Asset>();
+
+            while (assetsToCreate.Count < bulkCreateDto.Quantity && currentNumber <= maxNumber)
             {
                 var assetCode = $"{bulkCreateDto.AssetCodePrefix}-{currentNumber:D4}";
 
-                // Skip existing codes and try next number
-                if (await _assetRepository.AssetCodeExistsAsync(assetCode))
+                // Check against in-memory set (no database call)
+                if (existingCodes.Contains(assetCode))
                 {
                     currentNumber++;
                     continue;
@@ -180,9 +207,7 @@ public class AssetService : IAssetService
                     Building = bulkCreateDto.Building,
                     Department = bulkCreateDto.Department,
                     OfficeLocation = bulkCreateDto.OfficeLocation,
-                    Status = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
-                        ? status
-                        : AssetStatus.Stock,
+                    Status = assetStatus,
                     Brand = bulkCreateDto.Brand,
                     Model = bulkCreateDto.Model,
                     SerialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{currentNumber:D4}",
@@ -191,26 +216,37 @@ public class AssetService : IAssetService
                     InstallationDate = bulkCreateDto.InstallationDate
                 };
 
-                var createdAsset = await _assetRepository.CreateAsync(asset);
-                var assetDto = _mapper.Map<AssetDto>(createdAsset);
-
-                result.CreatedAssets.Add(assetDto);
-                result.SuccessfullyCreated++;
-                created++;
+                assetsToCreate.Add(asset);
+                existingCodes.Add(assetCode); // Track newly added codes
                 currentNumber++;
             }
-            catch (Exception ex)
+
+            // Bulk insert all assets in a single database operation
+            if (assetsToCreate.Count > 0)
             {
-                result.Failed++;
-                result.Errors.Add($"Failed to create asset with number {currentNumber}: {ex.Message}");
-                _logger.LogError(ex, "Error creating asset with number {Number} in bulk operation", currentNumber);
-                currentNumber++;
+                var createdAssets = await _assetRepository.BulkCreateAsync(assetsToCreate);
+                result.CreatedAssets = _mapper.Map<List<AssetDto>>(createdAssets);
+                result.SuccessfullyCreated = assetsToCreate.Count;
             }
-        }
 
-        _logger.LogInformation(
-            "Bulk asset creation completed: {SuccessCount} successful, {FailCount} failed out of {TotalCount} (IsDummy: {IsDummy})",
-            result.SuccessfullyCreated, result.Failed, result.TotalRequested, bulkCreateDto.IsDummy);
+            // Commit transaction
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Bulk asset creation completed: {SuccessCount} successful out of {TotalCount} requested (IsDummy: {IsDummy})",
+                result.SuccessfullyCreated, result.TotalRequested, bulkCreateDto.IsDummy);
+        }
+        catch (Exception ex)
+        {
+            // Rollback transaction on any error
+            await transaction.RollbackAsync();
+
+            result.Failed = bulkCreateDto.Quantity;
+            result.Errors.Add($"Bulk operation failed: {ex.Message}");
+            _logger.LogError(ex, "Bulk asset creation failed, transaction rolled back");
+
+            throw; // Re-throw to let the controller handle the error response
+        }
 
         return result;
     }
