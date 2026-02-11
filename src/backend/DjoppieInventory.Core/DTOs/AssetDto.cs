@@ -1,5 +1,8 @@
 namespace DjoppieInventory.Core.DTOs;
 
+/// <summary>
+/// Data Transfer Object for Asset entity
+/// </summary>
 public class AssetDto
 {
     public int Id { get; set; }
@@ -8,15 +11,21 @@ public class AssetDto
     public string? Alias { get; set; }
     public string Category { get; set; } = string.Empty;
     public bool IsDummy { get; set; }
-    public string Building { get; set; } = string.Empty;
-    public string Owner { get; set; } = string.Empty;
-    public string Department { get; set; } = string.Empty;
+
+    // These fields are optional in the entity, so they should be nullable in the DTO
+    public string? Building { get; set; }
+    public string? Owner { get; set; }
+    public string? Department { get; set; }
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
+
     public string Status { get; set; } = string.Empty;
     public string? Brand { get; set; }
     public string? Model { get; set; }
-    public string? SerialNumber { get; set; }
+
+    // SerialNumber is required in the entity
+    public string SerialNumber { get; set; } = string.Empty;
+
     public DateTime? PurchaseDate { get; set; }
     public DateTime? WarrantyExpiry { get; set; }
     public DateTime? InstallationDate { get; set; }

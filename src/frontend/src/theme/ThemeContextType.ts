@@ -8,5 +8,5 @@ export interface ThemeContextType {
 
 export const ThemeContext = createContext<ThemeContextType>({
   mode: 'light',
-  toggleTheme: () => { },
+  toggleTheme: () => {},
 });

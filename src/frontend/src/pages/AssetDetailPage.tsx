@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
@@ -28,6 +29,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { QRCodeSVG } from 'qrcode.react';
+import PrintIcon from '@mui/icons-material/Print';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useAsset, useDeleteAsset } from '../hooks/useAssets';
@@ -112,7 +114,7 @@ const AssetDetailPage = () => {
       await deleteAsset.mutateAsync(Number(id));
       navigate('/');
     } catch (error) {
-      console.error('Error deleting asset:', error);
+      logger.error('Error deleting asset:', error);
     }
   };
 
@@ -554,18 +556,39 @@ const AssetDetailPage = () => {
                   <Button
                     fullWidth
                     variant="outlined"
+                    startIcon={<PrintIcon />}
                     sx={{ mt: 3 }}
                     onClick={() => {
                       const svg = document.querySelector('#asset-qr-code');
                       if (svg) {
                         const svgData = new XMLSerializer().serializeToString(svg);
-                        const blob = new Blob([svgData], { type: 'image/svg+xml' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.download = `${asset.assetCode}-QR-Label.svg`;
-                        link.href = url;
-                        link.click();
-                        URL.revokeObjectURL(url);
+                        const printWindow = window.open('', '_blank', 'width=400,height=400');
+                        if (printWindow) {
+                          printWindow.document.write(`
+                            <!DOCTYPE html>
+                            <html>
+                              <head>
+                                <title>Print QR Label - ${asset.assetCode}</title>
+                                <style>
+                                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                                  body { display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #fff; }
+                                  .label { display: flex; flex-direction: column; align-items: center; padding: 16px; gap: 8px; }
+                                  .qr-code svg { width: 150px; height: 150px; }
+                                  .asset-code { font-size: 18px; font-weight: 700; color: #000; text-align: center; }
+                                  @media print { body { min-height: auto; } .label { padding: 8px; } .qr-code svg { width: 120px; height: 120px; } .asset-code { font-size: 14pt; } }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="label">
+                                  <div class="qr-code">${svgData}</div>
+                                  <div class="asset-code">${asset.assetCode}</div>
+                                </div>
+                                <script>window.onload = function() { setTimeout(function() { window.print(); window.onafterprint = function() { window.close(); }; }, 250); };<\/script>
+                              </body>
+                            </html>
+                          `);
+                          printWindow.document.close();
+                        }
                       }
                     }}
                   >

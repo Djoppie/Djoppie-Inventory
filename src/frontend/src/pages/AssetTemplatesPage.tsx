@@ -397,7 +397,6 @@ const AssetTemplatesPage = () => {
                     borderRadius: 2,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      transform: 'translateY(-4px)',
                       boxShadow: (theme) =>
                         theme.palette.mode === 'dark'
                           ? '0 8px 16px rgba(255, 119, 0, 0.2)'

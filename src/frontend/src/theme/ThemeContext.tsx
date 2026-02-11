@@ -1,7 +1,7 @@
 import { useState, useMemo, ReactNode, useEffect } from 'react';
 import { ThemeProvider, createTheme, PaletteMode } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeContext } from '../contexts/ThemeContext';
+import { ThemeContext } from './ThemeContextType';
 
 interface DjoppieThemeProviderProps {
   children: ReactNode;
@@ -191,13 +191,11 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                   boxShadow: mode === 'light'
                     ? '10px 10px 20px rgba(0, 0, 0, 0.18), -10px -10px 20px rgba(255, 255, 255, 0.95), 0 8px 24px rgba(255, 119, 0, 0.4)'
                     : '0 20px 40px rgba(0, 0, 0, 0.9), 0 10px 20px rgba(0, 0, 0, 0.75), -6px -6px 15px rgba(255, 255, 255, 0.05), 0 6px 20px rgba(255, 146, 51, 0.35)',
-                  transform: 'translateY(-2px)',
                 },
                 '&:hover::before': {
                   left: '100%',
                 },
                 '&:active': {
-                  transform: 'translateY(0)',
                   boxShadow: mode === 'light'
                     ? '3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(255, 255, 255, 0.95)'
                     : '5px 5px 10px rgba(0, 0, 0, 0.7), -3px -3px 8px rgba(255, 255, 255, 0.05), 1px 1px 3px rgba(0, 0, 0, 0.85) inset',
@@ -262,7 +260,6 @@ export const DjoppieThemeProvider = ({ children }: DjoppieThemeProviderProps) =>
                   boxShadow: mode === 'light'
                     ? '10px 10px 20px rgba(0, 0, 0, 0.18), -10px -10px 20px rgba(255, 255, 255, 0.95), 0 4px 16px rgba(255, 119, 0, 0.25)'
                     : '0 20px 40px rgba(0, 0, 0, 0.9), 0 10px 20px rgba(0, 0, 0, 0.75), -6px -6px 15px rgba(255, 255, 255, 0.05), 0 6px 20px rgba(255, 146, 51, 0.35)',
-                  transform: 'translateY(-4px)',
                 },
               },
             },

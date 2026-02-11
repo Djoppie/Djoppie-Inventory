@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Autocomplete,
@@ -55,7 +56,7 @@ const UserAutocomplete = ({
           setOptions(users);
         } catch (error) {
           // Silently fall back to manual input - Graph search is optional
-          console.warn('Graph user search unavailable, using manual input:', error);
+          logger.warn('Graph user search unavailable, using manual input:', error);
           setSearchError(null);
           setOptions([]);
         } finally {

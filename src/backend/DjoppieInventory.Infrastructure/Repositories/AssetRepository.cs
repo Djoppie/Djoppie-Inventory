@@ -5,16 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DjoppieInventory.Infrastructure.Repositories;
 
+/// <summary>
+/// Repository implementation for Asset data access operations
+/// </summary>
 public class AssetRepository : IAssetRepository
 {
     private readonly ApplicationDbContext _context;
 
     public AssetRepository(ApplicationDbContext context)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public async Task<IEnumerable<Asset>> GetAllAsync(string? statusFilter = null)
+    public async Task<IEnumerable<Asset>> GetAllAsync(string? statusFilter = null, CancellationToken cancellationToken = default)
     {
         var query = _context.Assets.AsQueryable();
 
@@ -26,61 +29,67 @@ public class AssetRepository : IAssetRepository
             }
         }
 
-        return await query.OrderByDescending(a => a.CreatedAt).ToListAsync();
+        return await query
+            .OrderByDescending(a => a.CreatedAt)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<Asset?> GetByIdAsync(int id)
+    public async Task<Asset?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _context.Assets.FindAsync(id);
+        return await _context.Assets.FindAsync(new object[] { id }, cancellationToken);
     }
 
-    public async Task<Asset?> GetByAssetCodeAsync(string assetCode)
+    public async Task<Asset?> GetByAssetCodeAsync(string assetCode, CancellationToken cancellationToken = default)
     {
-        return await _context.Assets.FirstOrDefaultAsync(a => a.AssetCode == assetCode);
+        return await _context.Assets
+            .FirstOrDefaultAsync(a => a.AssetCode == assetCode, cancellationToken);
     }
 
-    public async Task<Asset> CreateAsync(Asset asset)
+    public async Task<Asset> CreateAsync(Asset asset, CancellationToken cancellationToken = default)
     {
         asset.CreatedAt = DateTime.UtcNow;
         asset.UpdatedAt = DateTime.UtcNow;
 
         _context.Assets.Add(asset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         return asset;
     }
 
-    public async Task<Asset> UpdateAsync(Asset asset)
+    public async Task<Asset> UpdateAsync(Asset asset, CancellationToken cancellationToken = default)
     {
         asset.UpdatedAt = DateTime.UtcNow;
 
         _context.Assets.Update(asset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         return asset;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var asset = await _context.Assets.FindAsync(id);
+        var asset = await _context.Assets.FindAsync(new object[] { id }, cancellationToken);
         if (asset == null)
             return false;
 
         _context.Assets.Remove(asset);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
 
-    public async Task<bool> AssetCodeExistsAsync(string assetCode)
+    public async Task<bool> AssetCodeExistsAsync(string assetCode, CancellationToken cancellationToken = default)
     {
-        return await _context.Assets.AnyAsync(a => a.AssetCode == assetCode);
+        return await _context.Assets
+            .AnyAsync(a => a.AssetCode == assetCode, cancellationToken);
     }
 
-    public async Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false)
+    public async Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false, CancellationToken cancellationToken = default)
     {
         var prefixPattern = prefix + "-";
         var assetCodes = await _context.Assets
             .Where(a => a.AssetCode.StartsWith(prefixPattern))
             .Select(a => a.AssetCode)
-            .ToListAsync();
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
         if (isDummy)
         {
@@ -112,7 +121,7 @@ public class AssetRepository : IAssetRepository
         }
     }
 
-    public async Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null)
+    public async Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null, CancellationToken cancellationToken = default)
     {
         var query = _context.Assets.Where(a => a.SerialNumber == serialNumber);
 
@@ -121,11 +130,12 @@ public class AssetRepository : IAssetRepository
             query = query.Where(a => a.Id != excludeAssetId.Value);
         }
 
-        return await query.AnyAsync();
+        return await query.AnyAsync(cancellationToken);
     }
 
-    public async Task<Asset?> GetBySerialNumberAsync(string serialNumber)
+    public async Task<Asset?> GetBySerialNumberAsync(string serialNumber, CancellationToken cancellationToken = default)
     {
-        return await _context.Assets.FirstOrDefaultAsync(a => a.SerialNumber == serialNumber);
+        return await _context.Assets
+            .FirstOrDefaultAsync(a => a.SerialNumber == serialNumber, cancellationToken);
     }
 }

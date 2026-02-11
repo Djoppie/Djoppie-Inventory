@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -66,7 +67,7 @@ const BulkCreateAssetPage = () => {
         );
       }
     } catch (error) {
-      console.error('Error creating assets:', error);
+      logger.error('Error creating assets:', error);
     }
   };
 
@@ -138,7 +139,7 @@ const BulkCreateAssetPage = () => {
           }
         }
         errors.push(`Row ${i + 1} (${asset.serialNumber}): ${errorMessage}`);
-        console.error(`Error creating asset ${asset.serialNumber}:`, error);
+        logger.error(`Error creating asset ${asset.serialNumber}:`, error);
       }
     }
 
