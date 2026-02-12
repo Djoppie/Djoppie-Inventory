@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useEffect, useRef, useState } from 'react';
 import { Box, Typography, Alert, Button } from '@mui/material';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -74,7 +75,7 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
         },
         (errorMessage) => {
           // Scanning in progress, errors can be ignored
-          console.debug('QR scan error:', errorMessage);
+          logger.debug('QR scan error:', errorMessage);
         }
       );
 
@@ -115,7 +116,7 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
         await scannerRef.current.stop();
         setIsScanning(false);
       } catch (err) {
-        console.error('Error stopping scanner:', err);
+        logger.error('Error stopping scanner:', err);
       }
     }
   };
@@ -131,7 +132,7 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
       if (scannerRef.current) {
         scannerRef.current
           .stop()
-          .catch((err) => console.error('Error stopping scanner on unmount:', err))
+          .catch((err) => logger.error('Error stopping scanner on unmount:', err))
           .finally(() => {
             scannerRef.current = null;
           });

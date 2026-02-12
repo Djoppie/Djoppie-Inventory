@@ -312,5 +312,27 @@
     "english": "Engels",
     "dutch": "Nederlands",
     "selectLanguage": "Selecteer taal"
+  },
+  "printLabel": {
+    "title": "Label Afdrukken",
+    "previewTitle": "Label Voorbeeld",
+    "actualSize": "Werkelijke Grootte (25mm)",
+    "preview": "Voorbeeld (150%)",
+    "print": "Label Afdrukken",
+    "printing": "Afdrukken...",
+    "instructions": {
+      "title": "Afdruk Instructies",
+      "step1": "Zorg ervoor dat uw Dymo 400 labelprinter is aangesloten en ingeschakeld",
+      "step2": "Plaats 25mm x 25mm vierkante labels in de printer",
+      "step3": "Selecteer 'Dymo LabelWriter 400' als uw printer in het afdrukvenster",
+      "step4": "Klik op Afdrukken en controleer of het label correct wordt afgedrukt"
+    },
+    "printerSettings": {
+      "title": "Aanbevolen Printerinstellingen",
+      "dymoLabel": "Label Grootte",
+      "quality": "Afdrukkwaliteit",
+      "highQuality": "Hoog (Thermisch)",
+      "scale": "Schaal"
+    }
   }
 }

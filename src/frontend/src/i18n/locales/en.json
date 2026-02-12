@@ -312,5 +312,27 @@
     "english": "English",
     "dutch": "Nederlands",
     "selectLanguage": "Select Language"
+  },
+  "printLabel": {
+    "title": "Print Label",
+    "previewTitle": "Label Preview",
+    "actualSize": "Actual Size (25mm)",
+    "preview": "Preview (150%)",
+    "print": "Print Label",
+    "printing": "Printing...",
+    "instructions": {
+      "title": "Printing Instructions",
+      "step1": "Ensure your Dymo 400 labelprinter is connected and powered on",
+      "step2": "Load 25mm x 25mm square labels into the printer",
+      "step3": "Select 'Dymo LabelWriter 400' as your printer in the print dialog",
+      "step4": "Click Print and verify the label prints correctly"
+    },
+    "printerSettings": {
+      "title": "Recommended Printer Settings",
+      "dymoLabel": "Label Size",
+      "quality": "Print Quality",
+      "highQuality": "High (Thermal)",
+      "scale": "Scale"
+    }
   }
 }

@@ -1,11 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as assetsApi from '../api/assets.api';
-import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto } from '../types/asset.types';
+import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, PaginationParams } from '../types/asset.types';
 
+/**
+ * Hook to fetch all assets (unpaginated). Use for client-side filtering/sorting.
+ */
 export const useAssets = (statusFilter?: string) => {
   return useQuery({
     queryKey: ['assets', statusFilter],
     queryFn: () => assetsApi.getAssets(statusFilter),
+  });
+};
+
+/**
+ * Hook to fetch assets with server-side pagination.
+ * @param statusFilter Optional status filter
+ * @param pagination Pagination parameters
+ */
+export const useAssetsPaged = (statusFilter?: string, pagination?: PaginationParams) => {
+  return useQuery({
+    queryKey: ['assets', 'paged', statusFilter, pagination?.pageNumber, pagination?.pageSize],
+    queryFn: () => assetsApi.getAssetsPaged(statusFilter, pagination),
   });
 };
 

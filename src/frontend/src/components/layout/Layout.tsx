@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, AppBar, Toolbar, Container, Typography, IconButton, Tooltip } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import DjoppieLogo from '../common/DjoppieLogo';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserProfile from '../auth/UserProfile';
 import { useThemeMode } from '../../hooks/useThemeMode';
+import { ROUTES } from '../../constants/routes';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,6 +17,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const { mode, toggleTheme } = useThemeMode();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -91,79 +94,90 @@ const Layout = ({ children }: LayoutProps) => {
             },
           }}
         >
-          {/* Logo and Title - Vertical Layout */}
+          {/* Logo and Title - Clickable to Dashboard */}
           <Box
+            onClick={() => navigate(ROUTES.DASHBOARD)}
             sx={{
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              gap: 0.5,
+              gap: 2.5,
               position: 'relative',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              py: 0.5,
+              px: 1.5,
+              borderRadius: 3,
+              '&:hover': {
+                transform: 'scale(1.02)',
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.05)'
+                    : 'rgba(255, 119, 0, 0.03)',
+              },
             }}
           >
-            {/* Djoppie Head with Ambient Glow */}
+            {/* Logo Container - No extra decorations, logo has concentric rings built-in */}
             <Box
               sx={{
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  width: '140%',
-                  height: '140%',
-                  borderRadius: '50%',
-                  background: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'radial-gradient(circle, rgba(255, 168, 65, 0.08) 0%, transparent 70%)'
-                      : 'radial-gradient(circle, rgba(212, 145, 12, 0.06) 0%, transparent 70%)',
-                  animation: 'ambientPulse 4s ease-in-out infinite',
-                  zIndex: 0,
-                },
-                '@keyframes ambientPulse': {
-                  '0%, 100%': {
-                    transform: 'scale(1)',
-                    opacity: 0.6,
-                  },
-                  '50%': {
-                    transform: 'scale(1.1)',
-                    opacity: 1,
-                  },
-                },
               }}
             >
               <DjoppieLogo
-                size={60}
+                size={64}
                 animate
-                intensity="high"
                 headerMode
-                headOnly
               />
             </Box>
 
-            {/* Title Below Logo */}
-            <Typography
-              variant="subtitle2"
-              component="div"
-              sx={{
-                color: 'primary.main',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                textAlign: 'center',
-                background: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'linear-gradient(90deg, var(--djoppie-orange-400), var(--djoppie-red-400))'
-                    : 'linear-gradient(90deg, var(--djoppie-orange-600), var(--djoppie-red-600))',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Djoppie Inventory
-            </Typography>
+            {/* Title Next to Logo - Clean and Professional */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontFamily: '"Segoe UI", "Roboto", "Arial", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  fontSize: { xs: '1.3rem', sm: '1.6rem', md: '1.8rem' },
+                  lineHeight: 1.1,
+                  background: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #FFFFFF 0%, #FFD966 40%, #FF9933 80%, #FF7700 100%)'
+                      : 'linear-gradient(135deg, #2C3E50 0%, #FF7700 60%, #E06600 100%)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: 'none',
+                  filter: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'drop-shadow(0 2px 12px rgba(255, 119, 0, 0.4))'
+                      : 'drop-shadow(0 1px 4px rgba(255, 119, 0, 0.2))',
+                }}
+              >
+                Djoppie Inventory
+              </Typography>
+              <Typography
+                variant="caption"
+                component="span"
+                sx={{
+                  fontFamily: '"Segoe UI", "Roboto", "Arial", sans-serif',
+                  fontWeight: 500,
+                  letterSpacing: '0.08em',
+                  fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                  textTransform: 'uppercase',
+                  color: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 153, 51, 0.8)'
+                      : 'rgba(255, 119, 0, 0.7)',
+                  ml: 0.3,
+                }}
+              >
+                Asset Management System
+              </Typography>
+            </Box>
           </Box>
 
           {/* Spacer to push controls to the right */}

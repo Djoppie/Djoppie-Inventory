@@ -1,0 +1,43 @@
+<svg width="32" height="32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="helmetGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFB347"/>
+      <stop offset="50%" stop-color="#FF9933"/>
+      <stop offset="100%" stop-color="#E07D15"/>
+    </linearGradient>
+    <linearGradient id="visorGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5C3D2E"/>
+      <stop offset="100%" stop-color="#3D251B"/>
+    </linearGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFEECC"/>
+      <stop offset="100%" stop-color="#FFB347"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- Main helmet -->
+  <ellipse cx="100" cy="95" rx="65" ry="60" fill="url(#helmetGradient)"/>
+  
+  <!-- Visor -->
+  <ellipse cx="100" cy="105" rx="50" ry="40" fill="url(#visorGradient)"/>
+  <ellipse cx="100" cy="105" rx="52" ry="42" fill="none" stroke="#E07D15" stroke-width="3"/>
+  
+  <!-- Left headphone -->
+  <ellipse cx="38" cy="100" rx="18" ry="25" fill="#FF9933"/>
+  <ellipse cx="35" cy="100" rx="10" ry="16" fill="#4A2F23"/>
+  
+  <!-- Right headphone -->
+  <ellipse cx="162" cy="100" rx="18" ry="25" fill="#FF9933"/>
+  <ellipse cx="165" cy="100" rx="10" ry="16" fill="#4A2F23"/>
+  
+  <!-- Left eye -->
+  <circle cx="75" cy="105" r="20" fill="none" stroke="url(#eyeGlow)" stroke-width="5"/>
+  <circle cx="75" cy="105" r="12" fill="#2D1810"/>
+  
+  <!-- Right eye -->
+  <circle cx="125" cy="105" r="20" fill="none" stroke="url(#eyeGlow)" stroke-width="5"/>
+  <circle cx="125" cy="105" r="12" fill="#2D1810"/>
+  
+  <!-- Chin -->
+  <path d="M 60 145 Q 100 160 140 145" fill="url(#helmetGradient)"/>
+</svg>

@@ -249,7 +249,7 @@ npm run lint -- --fix
 
 The application uses **Azure Key Vault** for production secret management:
 
-- **Development**: Secrets stored in `appsettings.Development.json` (local file, not committed with real values)
+- **Development**: Secrets stored in .NET User Secrets (never committed to git)
 - **Production**: Secrets stored in Azure Key Vault (`kv-djoppie-dev-k5xdqp`)
 - **Authentication**: App Service uses Managed Identity to access Key Vault
 - **Configuration**: Key Vault secrets override appsettings.json values
@@ -269,6 +269,15 @@ For detailed Key Vault management, see:
 
 ### Local Development Setup
 
+**Setting up User Secrets** (one-time setup for secrets):
+
+```bash
+cd src/backend/DjoppieInventory.API
+
+# Set the Entra ID client secret (get from Azure Portal or team lead)
+dotnet user-secrets set "AzureAd:ClientSecret" "your-client-secret-here"
+```
+
 **Backend** (`src/backend/DjoppieInventory.API/appsettings.Development.json`):
 
 ```json
@@ -280,7 +289,7 @@ For detailed Key Vault management, see:
     "Instance": "https://login.microsoftonline.com/",
     "TenantId": "7db28d6f-d542-40c1-b529-5e5ed2aad545",
     "ClientId": "eb5bcf06-8032-494f-a363-92b6802c44bf",
-    "ClientSecret": "vu-8Q~Z_KOrU5jQGlmGYXLDBDpmDd83hRg2AscA_",
+    "ClientSecret": "SET_VIA_USER_SECRETS",
     "Domain": "diepenbeek.onmicrosoft.com",
     "Audience": "api://eb5bcf06-8032-494f-a363-92b6802c44bf",
     "Scopes": "access_as_user"

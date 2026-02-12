@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Alert, Snackbar, Paper, Button, Stack } from '@mui/material';
 import { useState } from 'react';
@@ -30,7 +31,7 @@ const AddAssetPage = () => {
       // Redirect to dashboard after short delay
       setTimeout(() => navigate('/'), 1500);
     } catch (error) {
-      console.error('Error creating asset:', error);
+      logger.error('Error creating asset:', error);
     }
   };
 

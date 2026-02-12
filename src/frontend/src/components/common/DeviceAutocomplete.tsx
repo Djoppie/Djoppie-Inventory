@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Autocomplete,
@@ -70,7 +71,7 @@ const DeviceAutocomplete = ({
             setOptions(devices);
           }
         } catch (error) {
-          console.error('Error searching devices:', error);
+          logger.error('Error searching devices:', error);
           setSearchError('Failed to search devices. Please try again.');
           setOptions([]);
         } finally {

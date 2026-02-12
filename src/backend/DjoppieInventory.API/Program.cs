@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using DjoppieInventory.API.Extensions;
 using DjoppieInventory.API.Middleware;
 
@@ -25,8 +26,72 @@ builder.Services.AddApplicationServices();
 // Configure CORS
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 
+// Configure Rate Limiting (Security: Prevent brute force and DDoS attacks)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Global rate limit: 100 requests per minute per IP
+    options.AddPolicy("fixed", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 10
+            }));
+
+    // Stricter limit for Intune/Graph API calls: 20 requests per minute per IP
+    options.AddPolicy("intune", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 5
+            }));
+
+    // Stricter limit for bulk operations: 5 requests per minute per IP
+    options.AddPolicy("bulk", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString();
+        }
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            error = "Too many requests. Please try again later.",
+            statusCode = 429,
+            retryAfterSeconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry)
+                ? (int)retry.TotalSeconds
+                : 60
+        }, cancellationToken);
+    };
+});
+
 // Validate required secrets are present (Production only)
 builder.Services.ValidateRequiredSecrets(builder.Configuration, builder.Environment);
+
+// Configure Health Checks
+builder.Services.AddHealthCheckServices(builder.Configuration);
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -78,6 +143,9 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline
 
+// Correlation ID middleware (must be first to ensure all logs have correlation ID)
+app.UseCorrelationId();
+
 // Global exception handling middleware (must be early in pipeline)
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
@@ -97,10 +165,15 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
 
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map health check endpoints
+app.MapHealthCheckEndpoints();
 
 // Ensure database is ready
 app.EnsureDatabaseReady();

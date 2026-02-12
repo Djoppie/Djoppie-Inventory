@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Alert, Snackbar, Paper, Fade, useTheme } from '@mui/material';
 import { useState } from 'react';
@@ -23,7 +24,7 @@ const EditAssetPage = () => {
       // Redirect to detail page after short delay
       setTimeout(() => navigate(`/assets/${id}`), 1500);
     } catch (error) {
-      console.error('Error updating asset:', error);
+      logger.error('Error updating asset:', error);
     }
   };
 

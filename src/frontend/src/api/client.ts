@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import axios from 'axios';
 
 export const apiClient = axios.create({
@@ -13,7 +14,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      console.error('API Error:', error.response.data);
+      logger.error('API Error:', error.response.data);
     }
     return Promise.reject(error);
   }

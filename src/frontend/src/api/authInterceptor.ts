@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { tokenRequest } from '../config/authConfig';
 import { apiClient } from './client';
@@ -25,7 +26,7 @@ export const setupAuthInterceptor = (msalInstance: PublicClientApplication) => {
           // Add the token to the Authorization header
           config.headers.Authorization = `Bearer ${response.accessToken}`;
         } catch (error) {
-          console.warn('Failed to acquire token silently:', error);
+          logger.warn('Failed to acquire token silently:', error);
           // Token acquisition failed - request will proceed without token
           // The backend should return 401, which will trigger user login
         }

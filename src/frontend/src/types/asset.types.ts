@@ -41,7 +41,7 @@ export interface CreateAssetDto {
   department?: string;
   officeLocation?: string;
   jobTitle?: string;
-  status?: string;
+  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
   purchaseDate?: string;
@@ -57,7 +57,7 @@ export interface UpdateAssetDto {
   department?: string;
   officeLocation?: string;
   jobTitle?: string;
-  status?: string;
+  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
   serialNumber?: string; // Can be updated, but must remain unique
@@ -123,7 +123,7 @@ export interface BulkCreateAssetDto {
   owner?: string; // Primary user (optional)
   department?: string;
   officeLocation?: string;
-  status?: string;
+  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
   purchaseDate?: string;
@@ -138,4 +138,25 @@ export interface BulkCreateAssetResultDto {
   createdAssets: Asset[];
   errors: string[];
   isFullySuccessful: boolean;
+}
+
+/**
+ * Generic paginated result type matching the backend PagedResultDto<T>
+ */
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+/**
+ * Pagination parameters for API requests
+ */
+export interface PaginationParams {
+  pageNumber?: number;
+  pageSize?: number;
 }

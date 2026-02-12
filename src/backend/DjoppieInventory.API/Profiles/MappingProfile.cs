@@ -40,6 +40,6 @@ public class MappingProfile : Profile
     {
         return Enum.TryParse<AssetStatus>(statusString, true, out var status)
             ? status
-            : AssetStatus.InGebruik;
+            : AssetStatus.Stock; // Default to Stock, not InGebruik
     }
 }

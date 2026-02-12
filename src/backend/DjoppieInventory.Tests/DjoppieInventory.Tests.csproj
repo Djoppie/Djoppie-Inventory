@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DjoppieInventory.API\DjoppieInventory.API.csproj" />
     <ProjectReference Include="..\DjoppieInventory.Core\DjoppieInventory.Core.csproj" />
+    <ProjectReference Include="..\DjoppieInventory.Infrastructure\DjoppieInventory.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

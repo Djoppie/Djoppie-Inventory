@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useMsal } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
 import { tokenRequest } from '../config/authConfig';
@@ -20,7 +21,7 @@ export const useAuth = () => {
    */
   const getAccessToken = async (): Promise<string | null> => {
     if (!account) {
-      console.warn('No account available for token acquisition');
+      logger.warn('No account available for token acquisition');
       return null;
     }
 
@@ -32,7 +33,7 @@ export const useAuth = () => {
       });
       return response.accessToken;
     } catch (error) {
-      console.warn('Silent token acquisition failed, trying popup', error);
+      logger.warn('Silent token acquisition failed, trying popup', error);
 
       try {
         // Fall back to interactive redirect
@@ -40,7 +41,7 @@ export const useAuth = () => {
         // After redirect, the token will be available via silent acquisition
         return null;
       } catch (redirectError) {
-        console.error('Token acquisition failed:', redirectError);
+        logger.error('Token acquisition failed:', redirectError);
         return null;
       }
     }
@@ -55,7 +56,7 @@ export const useAuth = () => {
         scopes: ['User.Read'],
       });
     } catch (error) {
-      console.error('Login failed:', error);
+      logger.error('Login failed:', error);
       throw error;
     }
   };
@@ -69,7 +70,7 @@ export const useAuth = () => {
         account: account,
       });
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', error);
       throw error;
     }
   };

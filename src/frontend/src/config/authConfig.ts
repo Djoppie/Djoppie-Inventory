@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { Configuration, RedirectRequest } from '@azure/msal-browser';
 
 /**
@@ -26,16 +27,16 @@ export const msalConfig: Configuration = {
         }
         switch (level) {
           case 0: // Error
-            console.error(message);
+            logger.error(message);
             break;
           case 1: // Warning
-            console.warn(message);
+            logger.warn(message);
             break;
           case 2: // Info
-            console.info(message);
+            logger.info(message);
             break;
           case 3: // Verbose
-            console.debug(message);
+            logger.debug(message);
             break;
         }
       },

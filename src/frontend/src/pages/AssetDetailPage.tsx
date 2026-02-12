@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
@@ -28,11 +29,13 @@ import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { QRCodeSVG } from 'qrcode.react';
+import PrintIcon from '@mui/icons-material/Print';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useAsset, useDeleteAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
+import PrintLabelDialog from '../components/print/PrintLabelDialog';
 
 // Helper: check if an asset code has a number >= 9000 (dummy/test asset)
 const isDummyAsset = (assetCode: string): boolean => {
@@ -102,6 +105,7 @@ const AssetDetailPage = () => {
   const { data: asset, isLoading, error } = useAsset(Number(id));
   const deleteAsset = useDeleteAsset();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
   const handleEdit = () => {
     navigate(`/assets/${id}/edit`);
@@ -112,7 +116,7 @@ const AssetDetailPage = () => {
       await deleteAsset.mutateAsync(Number(id));
       navigate('/');
     } catch (error) {
-      console.error('Error deleting asset:', error);
+      logger.error('Error deleting asset:', error);
     }
   };
 
@@ -554,22 +558,28 @@ const AssetDetailPage = () => {
                   <Button
                     fullWidth
                     variant="outlined"
-                    sx={{ mt: 3 }}
-                    onClick={() => {
-                      const svg = document.querySelector('#asset-qr-code');
-                      if (svg) {
-                        const svgData = new XMLSerializer().serializeToString(svg);
-                        const blob = new Blob([svgData], { type: 'image/svg+xml' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.download = `${asset.assetCode}-QR-Label.svg`;
-                        link.href = url;
-                        link.click();
-                        URL.revokeObjectURL(url);
-                      }
+                    startIcon={<PrintIcon />}
+                    sx={{
+                      mt: 3,
+                      background: theme.palette.mode === 'light'
+                        ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)}, ${alpha(theme.palette.primary.light, 0.1)})`
+                        : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.2)}, ${alpha(theme.palette.primary.main, 0.1)})`,
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
+                      fontWeight: 600,
+                      '&:hover': {
+                        background: theme.palette.mode === 'light'
+                          ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.light, 0.2)})`
+                          : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.3)}, ${alpha(theme.palette.primary.main, 0.2)})`,
+                        borderColor: theme.palette.primary.dark,
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+                      },
+                      transition: 'all 0.3s ease',
                     }}
+                    onClick={() => setPrintDialogOpen(true)}
                   >
-                    Print Label
+                    {t('printLabel.title')}
                   </Button>
                 </CardContent>
               </Card>
@@ -603,6 +613,14 @@ const AssetDetailPage = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Print Label Dialog */}
+        <PrintLabelDialog
+          open={printDialogOpen}
+          onClose={() => setPrintDialogOpen(false)}
+          assetCode={asset.assetCode}
+          assetName={asset.assetName}
+        />
       </Box>
     </Fade>
   );

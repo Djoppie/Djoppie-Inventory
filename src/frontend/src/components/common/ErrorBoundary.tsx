@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -33,7 +34,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
       errorInfo,
