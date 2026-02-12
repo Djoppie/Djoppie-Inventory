@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next';
 import { useAsset, useDeleteAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
+import PrintLabelDialog from '../components/print/PrintLabelDialog';
 
 // Helper: check if an asset code has a number >= 9000 (dummy/test asset)
 const isDummyAsset = (assetCode: string): boolean => {
@@ -104,6 +105,7 @@ const AssetDetailPage = () => {
   const { data: asset, isLoading, error } = useAsset(Number(id));
   const deleteAsset = useDeleteAsset();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
   const handleEdit = () => {
     navigate(`/assets/${id}/edit`);
@@ -557,42 +559,27 @@ const AssetDetailPage = () => {
                     fullWidth
                     variant="outlined"
                     startIcon={<PrintIcon />}
-                    sx={{ mt: 3 }}
-                    onClick={() => {
-                      const svg = document.querySelector('#asset-qr-code');
-                      if (svg) {
-                        const svgData = new XMLSerializer().serializeToString(svg);
-                        const printWindow = window.open('', '_blank', 'width=400,height=400');
-                        if (printWindow) {
-                          printWindow.document.write(`
-                            <!DOCTYPE html>
-                            <html>
-                              <head>
-                                <title>Print QR Label - ${asset.assetCode}</title>
-                                <style>
-                                  * { margin: 0; padding: 0; box-sizing: border-box; }
-                                  body { display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #fff; }
-                                  .label { display: flex; flex-direction: column; align-items: center; padding: 16px; gap: 8px; }
-                                  .qr-code svg { width: 150px; height: 150px; }
-                                  .asset-code { font-size: 18px; font-weight: 700; color: #000; text-align: center; }
-                                  @media print { body { min-height: auto; } .label { padding: 8px; } .qr-code svg { width: 120px; height: 120px; } .asset-code { font-size: 14pt; } }
-                                </style>
-                              </head>
-                              <body>
-                                <div class="label">
-                                  <div class="qr-code">${svgData}</div>
-                                  <div class="asset-code">${asset.assetCode}</div>
-                                </div>
-                                <script>window.onload = function() { setTimeout(function() { window.print(); window.onafterprint = function() { window.close(); }; }, 250); };<\/script>
-                              </body>
-                            </html>
-                          `);
-                          printWindow.document.close();
-                        }
-                      }
+                    sx={{
+                      mt: 3,
+                      background: theme.palette.mode === 'light'
+                        ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)}, ${alpha(theme.palette.primary.light, 0.1)})`
+                        : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.2)}, ${alpha(theme.palette.primary.main, 0.1)})`,
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
+                      fontWeight: 600,
+                      '&:hover': {
+                        background: theme.palette.mode === 'light'
+                          ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.light, 0.2)})`
+                          : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.3)}, ${alpha(theme.palette.primary.main, 0.2)})`,
+                        borderColor: theme.palette.primary.dark,
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+                      },
+                      transition: 'all 0.3s ease',
                     }}
+                    onClick={() => setPrintDialogOpen(true)}
                   >
-                    Print Label
+                    {t('printLabel.title')}
                   </Button>
                 </CardContent>
               </Card>
@@ -626,6 +613,14 @@ const AssetDetailPage = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Print Label Dialog */}
+        <PrintLabelDialog
+          open={printDialogOpen}
+          onClose={() => setPrintDialogOpen(false)}
+          assetCode={asset.assetCode}
+          assetName={asset.assetName}
+        />
       </Box>
     </Fade>
   );
