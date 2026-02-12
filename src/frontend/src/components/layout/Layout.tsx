@@ -100,175 +100,82 @@ const Layout = ({ children }: LayoutProps) => {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 2,
+              gap: 2.5,
               position: 'relative',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
               py: 0.5,
-              px: 1,
-              borderRadius: 2,
+              px: 1.5,
+              borderRadius: 3,
               '&:hover': {
                 transform: 'scale(1.02)',
-                '& .logo-glow': {
-                  opacity: 1,
-                  transform: 'scale(1.2)',
-                },
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.05)'
+                    : 'rgba(255, 119, 0, 0.03)',
               },
             }}
           >
-            {/* Djoppie Head with 3D Halo Effect */}
+            {/* Logo Container - No extra decorations, logo has concentric rings built-in */}
             <Box
               sx={{
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 70,
-                height: 70,
-                // Outer halo ring - furthest back
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  width: '130%',
-                  height: '130%',
-                  borderRadius: '50%',
-                  background: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'conic-gradient(from 0deg, rgba(255, 119, 0, 0.4), rgba(204, 0, 0, 0.3), rgba(255, 119, 0, 0.1), rgba(255, 200, 100, 0.4), rgba(255, 119, 0, 0.4))'
-                      : 'conic-gradient(from 0deg, rgba(255, 119, 0, 0.3), rgba(204, 0, 0, 0.2), rgba(255, 119, 0, 0.1), rgba(255, 200, 100, 0.3), rgba(255, 119, 0, 0.3))',
-                  filter: 'blur(8px)',
-                  animation: 'haloRotate 8s linear infinite',
-                  zIndex: 0,
-                },
-                // Middle glow layer
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  width: '115%',
-                  height: '115%',
-                  borderRadius: '50%',
-                  background: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'radial-gradient(ellipse at 30% 30%, rgba(255, 200, 150, 0.25) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(255, 119, 0, 0.3) 0%, transparent 50%)'
-                      : 'radial-gradient(ellipse at 30% 30%, rgba(255, 200, 150, 0.2) 0%, transparent 50%), radial-gradient(ellipse at 70% 70%, rgba(255, 119, 0, 0.2) 0%, transparent 50%)',
-                  filter: 'blur(4px)',
-                  animation: 'haloPulse 3s ease-in-out infinite',
-                  zIndex: 1,
-                },
-                '@keyframes haloRotate': {
-                  '0%': {
-                    transform: 'rotate(0deg) scale(1)',
-                  },
-                  '50%': {
-                    transform: 'rotate(180deg) scale(1.05)',
-                  },
-                  '100%': {
-                    transform: 'rotate(360deg) scale(1)',
-                  },
-                },
-                '@keyframes haloPulse': {
-                  '0%, 100%': {
-                    opacity: 0.7,
-                    transform: 'scale(1)',
-                  },
-                  '50%': {
-                    opacity: 1,
-                    transform: 'scale(1.1)',
-                  },
-                },
               }}
             >
-              {/* Inner 3D ring effect */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  background: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(0, 0, 0, 0.2) 100%)'
-                      : 'linear-gradient(145deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%, rgba(0, 0, 0, 0.1) 100%)',
-                  border: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? '2px solid rgba(255, 119, 0, 0.3)'
-                      : '2px solid rgba(255, 119, 0, 0.2)',
-                  boxShadow: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'inset 0 -4px 12px rgba(255, 119, 0, 0.3), inset 0 4px 12px rgba(255, 200, 150, 0.2), 0 0 20px rgba(255, 119, 0, 0.4), 0 0 40px rgba(255, 119, 0, 0.2), 0 0 60px rgba(204, 0, 0, 0.1)'
-                      : 'inset 0 -4px 12px rgba(255, 119, 0, 0.2), inset 0 4px 12px rgba(255, 200, 150, 0.15), 0 0 20px rgba(255, 119, 0, 0.25), 0 0 40px rgba(255, 119, 0, 0.1)',
-                  zIndex: 2,
-                  animation: 'ringGlow 4s ease-in-out infinite',
-                  '@keyframes ringGlow': {
-                    '0%, 100%': {
-                      boxShadow: (theme: { palette: { mode: string } }) =>
-                        theme.palette.mode === 'dark'
-                          ? 'inset 0 -4px 12px rgba(255, 119, 0, 0.3), inset 0 4px 12px rgba(255, 200, 150, 0.2), 0 0 20px rgba(255, 119, 0, 0.4), 0 0 40px rgba(255, 119, 0, 0.2)'
-                          : 'inset 0 -4px 12px rgba(255, 119, 0, 0.2), inset 0 4px 12px rgba(255, 200, 150, 0.15), 0 0 20px rgba(255, 119, 0, 0.25)',
-                    },
-                    '50%': {
-                      boxShadow: (theme: { palette: { mode: string } }) =>
-                        theme.palette.mode === 'dark'
-                          ? 'inset 0 -6px 16px rgba(255, 119, 0, 0.4), inset 0 6px 16px rgba(255, 200, 150, 0.3), 0 0 30px rgba(255, 119, 0, 0.5), 0 0 60px rgba(255, 119, 0, 0.3)'
-                          : 'inset 0 -6px 16px rgba(255, 119, 0, 0.3), inset 0 6px 16px rgba(255, 200, 150, 0.2), 0 0 30px rgba(255, 119, 0, 0.35)',
-                    },
-                  },
-                }}
+              <DjoppieLogo
+                size={64}
+                animate
+                headerMode
               />
-              {/* Logo container with z-index to appear in front */}
-              <Box sx={{ position: 'relative', zIndex: 3 }}>
-                <DjoppieLogo
-                  size={48}
-                  animate
-                  intensity="high"
-                  headerMode
-                  headOnly
-                />
-              </Box>
             </Box>
 
-            {/* Title Next to Logo - Bigger and More Prominent */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {/* Title Next to Logo - Clean and Professional */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
               <Typography
-                variant="h5"
+                variant="h4"
                 component="h1"
                 sx={{
-                  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                  fontWeight: 800,
-                  letterSpacing: '0.04em',
-                  fontSize: { xs: '1.1rem', sm: '1.4rem', md: '1.6rem' },
-                  textTransform: 'uppercase',
+                  fontFamily: '"Segoe UI", "Roboto", "Arial", sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  fontSize: { xs: '1.3rem', sm: '1.6rem', md: '1.8rem' },
                   lineHeight: 1.1,
                   background: (theme) =>
                     theme.palette.mode === 'dark'
-                      ? 'linear-gradient(135deg, #FFFFFF 0%, #FF9233 50%, #FF7700 100%)'
-                      : 'linear-gradient(135deg, #1A1D29 0%, #FF7700 50%, #CC0000 100%)',
+                      ? 'linear-gradient(135deg, #FFFFFF 0%, #FFD966 40%, #FF9933 80%, #FF7700 100%)'
+                      : 'linear-gradient(135deg, #2C3E50 0%, #FF7700 60%, #E06600 100%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   textShadow: 'none',
                   filter: (theme) =>
                     theme.palette.mode === 'dark'
-                      ? 'drop-shadow(0 0 20px rgba(255, 119, 0, 0.3))'
-                      : 'none',
+                      ? 'drop-shadow(0 2px 12px rgba(255, 119, 0, 0.4))'
+                      : 'drop-shadow(0 1px 4px rgba(255, 119, 0, 0.2))',
                 }}
               >
-                Djoppie
+                Djoppie Inventory
               </Typography>
               <Typography
                 variant="caption"
                 component="span"
                 sx={{
-                  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-                  fontWeight: 600,
-                  letterSpacing: '0.15em',
-                  fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.75rem' },
+                  fontFamily: '"Segoe UI", "Roboto", "Arial", sans-serif',
+                  fontWeight: 500,
+                  letterSpacing: '0.08em',
+                  fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
                   textTransform: 'uppercase',
-                  color: 'text.secondary',
-                  ml: 0.5,
+                  color: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 153, 51, 0.8)'
+                      : 'rgba(255, 119, 0, 0.7)',
+                  ml: 0.3,
                 }}
               >
-                Inventory
+                Asset Management System
               </Typography>
             </Box>
           </Box>
