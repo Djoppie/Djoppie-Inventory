@@ -1,6 +1,9 @@
+using System.Threading.RateLimiting;
+using DjoppieInventory.API.Helpers;
 using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Graph.Models;
 
 namespace DjoppieInventory.API.Controllers;
@@ -12,6 +15,7 @@ namespace DjoppieInventory.API.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("intune")]
 public class IntuneController : ControllerBase
 {
     private readonly IIntuneService _intuneService;
@@ -74,9 +78,9 @@ public class IntuneController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
+            if (!InputValidator.ValidateDeviceId(deviceId, out var errorMessage))
             {
-                return BadRequest(new { error = "Device ID cannot be empty" });
+                return BadRequest(new { error = errorMessage });
             }
 
             _logger.LogInformation("API request to retrieve device with ID: {DeviceId}", deviceId);
@@ -119,9 +123,9 @@ public class IntuneController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(serialNumber))
+            if (!InputValidator.ValidateSerialNumber(serialNumber, out var errorMessage))
             {
-                return BadRequest(new { error = "Serial number cannot be empty" });
+                return BadRequest(new { error = errorMessage });
             }
 
             _logger.LogInformation("API request to search device by serial number: {SerialNumber}", serialNumber);
@@ -162,9 +166,9 @@ public class IntuneController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (!InputValidator.ValidateSearchTerm(name, 100, out var errorMessage))
             {
-                return BadRequest(new { error = "Search name cannot be empty" });
+                return BadRequest(new { error = errorMessage });
             }
 
             _logger.LogInformation("API request to search devices by name: {DeviceName}", name);
@@ -199,9 +203,9 @@ public class IntuneController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(os))
+            if (!InputValidator.ValidateSearchTerm(os, 50, out var errorMessage))
             {
-                return BadRequest(new { error = "Operating system cannot be empty" });
+                return BadRequest(new { error = errorMessage });
             }
 
             _logger.LogInformation("API request to retrieve devices by OS: {OperatingSystem}", os);
@@ -238,9 +242,9 @@ public class IntuneController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
+            if (!InputValidator.ValidateDeviceId(deviceId, out var errorMessage))
             {
-                return BadRequest(new { error = "Device ID cannot be empty" });
+                return BadRequest(new { error = errorMessage });
             }
 
             _logger.LogInformation("API request to check compliance for device: {DeviceId}", deviceId);

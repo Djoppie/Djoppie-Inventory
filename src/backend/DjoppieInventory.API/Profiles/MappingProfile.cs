@@ -13,12 +13,18 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
         CreateMap<CreateAssetDto, Asset>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)));
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)))
+            .ForMember(dest => dest.AssetCode, opt => opt.Ignore()) // Auto-generated in service
+            .ForMember(dest => dest.IsDummy, opt => opt.Ignore()) // Set manually in service
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
 
         CreateMap<UpdateAssetDto, Asset>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)))
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.AssetCode, opt => opt.Ignore())
+            .ForMember(dest => dest.IsDummy, opt => opt.Ignore()) // Cannot change after creation
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
 
@@ -34,6 +40,6 @@ public class MappingProfile : Profile
     {
         return Enum.TryParse<AssetStatus>(statusString, true, out var status)
             ? status
-            : AssetStatus.InGebruik;
+            : AssetStatus.Stock; // Default to Stock, not InGebruik
     }
 }

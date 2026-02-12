@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Autocomplete,
@@ -70,7 +71,7 @@ const DeviceAutocomplete = ({
             setOptions(devices);
           }
         } catch (error) {
-          console.error('Error searching devices:', error);
+          logger.error('Error searching devices:', error);
           setSearchError('Failed to search devices. Please try again.');
           setOptions([]);
         } finally {
@@ -109,7 +110,7 @@ const DeviceAutocomplete = ({
   };
 
   const getComplianceIcon = (device: IntuneDevice) => {
-    const state = device.complianceState?.toLowerCase() || '';
+    const state = String(device.complianceState || '').toLowerCase();
     if (state === 'compliant') {
       return <Check sx={{ fontSize: 16, color: 'success.main' }} />;
     }
@@ -220,10 +221,10 @@ const DeviceAutocomplete = ({
           )}
           {selectedDevice.complianceState && (
             <Chip
-              icon={selectedDevice.complianceState === 'Compliant' ? <Check /> : <Warning />}
-              label={selectedDevice.complianceState}
+              icon={String(selectedDevice.complianceState).toLowerCase() === 'compliant' ? <Check /> : <Warning />}
+              label={String(selectedDevice.complianceState)}
               size="small"
-              color={selectedDevice.complianceState === 'Compliant' ? 'success' : 'warning'}
+              color={String(selectedDevice.complianceState).toLowerCase() === 'compliant' ? 'success' : 'warning'}
               variant="outlined"
             />
           )}

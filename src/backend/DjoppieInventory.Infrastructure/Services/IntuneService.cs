@@ -1,4 +1,5 @@
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Infrastructure.Helpers;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Extensions.Logging;
@@ -120,10 +121,17 @@ public class IntuneService : IIntuneService
 
             _logger.LogInformation("Searching for managed device with serial number: {SerialNumber}", serialNumber);
 
+            // Validate input to prevent injection attacks
+            if (!ODataSanitizer.IsValidFilterValue(serialNumber))
+            {
+                _logger.LogWarning("Invalid serial number format detected, possible injection attempt: {SerialNumber}", serialNumber);
+                throw new ArgumentException("Invalid serial number format", nameof(serialNumber));
+            }
+
             var devices = await _graphClient.DeviceManagement.ManagedDevices
                 .GetAsync(requestConfiguration =>
                 {
-                    requestConfiguration.QueryParameters.Filter = $"serialNumber eq '{serialNumber}'";
+                    requestConfiguration.QueryParameters.Filter = ODataSanitizer.CreateEqualityFilter("serialNumber", serialNumber);
                     requestConfiguration.QueryParameters.Select = new[]
                     {
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
@@ -169,10 +177,17 @@ public class IntuneService : IIntuneService
 
             _logger.LogInformation("Searching for managed devices with name containing: {DeviceName}", deviceName);
 
+            // Validate input to prevent injection attacks
+            if (!ODataSanitizer.IsValidFilterValue(deviceName))
+            {
+                _logger.LogWarning("Invalid device name format detected, possible injection attempt: {DeviceName}", deviceName);
+                throw new ArgumentException("Invalid device name format", nameof(deviceName));
+            }
+
             var devices = await _graphClient.DeviceManagement.ManagedDevices
                 .GetAsync(requestConfiguration =>
                 {
-                    requestConfiguration.QueryParameters.Filter = $"startswith(deviceName, '{deviceName}')";
+                    requestConfiguration.QueryParameters.Filter = ODataSanitizer.CreateStartsWithFilter("deviceName", deviceName);
                     requestConfiguration.QueryParameters.Select = new[]
                     {
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
@@ -209,10 +224,17 @@ public class IntuneService : IIntuneService
 
             _logger.LogInformation("Retrieving managed devices with OS: {OperatingSystem}", operatingSystem);
 
+            // Validate input to prevent injection attacks
+            if (!ODataSanitizer.IsValidFilterValue(operatingSystem))
+            {
+                _logger.LogWarning("Invalid OS format detected, possible injection attempt: {OperatingSystem}", operatingSystem);
+                throw new ArgumentException("Invalid operating system format", nameof(operatingSystem));
+            }
+
             var devices = await _graphClient.DeviceManagement.ManagedDevices
                 .GetAsync(requestConfiguration =>
                 {
-                    requestConfiguration.QueryParameters.Filter = $"operatingSystem eq '{operatingSystem}'";
+                    requestConfiguration.QueryParameters.Filter = ODataSanitizer.CreateEqualityFilter("operatingSystem", operatingSystem);
                     requestConfiguration.QueryParameters.Select = new[]
                     {
                         "id", "deviceName", "serialNumber", "manufacturer", "model",

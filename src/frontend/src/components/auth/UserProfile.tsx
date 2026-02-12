@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useState, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -40,7 +41,7 @@ const UserProfile = () => {
     try {
       await login();
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
     }
   };
 
@@ -49,7 +50,7 @@ const UserProfile = () => {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 

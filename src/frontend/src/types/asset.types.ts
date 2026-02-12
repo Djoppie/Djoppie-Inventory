@@ -9,16 +9,19 @@ export enum AssetStatus {
 export interface Asset {
   id: number;
   assetCode: string;
-  assetName: string;
+  assetName: string; // Official device name (DeviceName) - auto-fetched from Intune
+  alias?: string; // Optional readable name
   category: string;
-  owner: string;
-  building: string;
-  department: string;
+  isDummy: boolean;
+  building?: string; // Installation location (optional)
+  owner?: string; // Primary user (optional)
+  department?: string; // Optional
   officeLocation?: string;
+  jobTitle?: string;
   status: AssetStatus;
   brand?: string;
   model?: string;
-  serialNumber?: string;
+  serialNumber: string; // REQUIRED - unique identifier for the device
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -27,32 +30,37 @@ export interface Asset {
 }
 
 export interface CreateAssetDto {
-  assetCode: string;
-  assetName: string;
+  assetCodePrefix: string;
+  serialNumber: string; // REQUIRED - unique identifier for the device
+  assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
+  alias?: string; // Optional readable name
   category: string;
-  owner: string;
-  building: string;
-  department: string;
+  isDummy?: boolean;
+  building?: string; // Installation location (optional)
+  owner?: string; // Primary user (optional)
+  department?: string;
   officeLocation?: string;
-  status?: string;
+  jobTitle?: string;
+  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
-  serialNumber?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
 }
 
 export interface UpdateAssetDto {
-  assetName: string;
-  owner: string;
-  building: string;
-  department: string;
+  assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
+  alias?: string; // Optional readable name
+  owner?: string; // Primary user (optional)
+  building?: string; // Installation location (optional)
+  department?: string;
   officeLocation?: string;
-  status?: string;
+  jobTitle?: string;
+  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
-  serialNumber?: string;
+  serialNumber?: string; // Can be updated, but must remain unique
   category?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
@@ -62,14 +70,13 @@ export interface UpdateAssetDto {
 export interface AssetTemplate {
   id: number;
   templateName: string;
-  assetName: string;
+  assetName?: string;  // Optional - alias/description
   category: string;
-  brand: string;
-  model: string;
-  owner: string;
-  building: string;
-  department: string;
-  officeLocation?: string;
+  brand?: string;
+  model?: string;
+  owner?: string;  // Optional - default primary user
+  building?: string;  // Optional - default location
+  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -77,14 +84,13 @@ export interface AssetTemplate {
 
 export interface CreateAssetTemplateDto {
   templateName: string;
-  assetName: string;
+  assetName?: string;  // Optional - alias/description
   category: string;
-  brand: string;
-  model: string;
-  owner: string;
-  building: string;
-  department: string;
-  officeLocation?: string;
+  brand?: string;
+  model?: string;
+  owner?: string;  // Optional - default primary user
+  building?: string;  // Optional - default location
+  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -92,14 +98,13 @@ export interface CreateAssetTemplateDto {
 
 export interface UpdateAssetTemplateDto {
   templateName: string;
-  assetName: string;
+  assetName?: string;  // Optional - alias/description
   category: string;
-  brand: string;
-  model: string;
-  owner: string;
-  building: string;
-  department: string;
-  officeLocation?: string;
+  brand?: string;
+  model?: string;
+  owner?: string;  // Optional - default primary user
+  building?: string;  // Optional - default location
+  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -107,19 +112,20 @@ export interface UpdateAssetTemplateDto {
 
 export interface BulkCreateAssetDto {
   assetCodePrefix: string;
-  startingNumber: number;
+  serialNumberPrefix: string; // REQUIRED - prefix for generating unique serial numbers
   quantity: number;
+  isDummy?: boolean;
   templateId?: number;
-  assetName: string;
+  assetName?: string; // Official device name (DeviceName)
+  alias?: string; // Optional readable name
   category: string;
-  owner: string;
-  building: string;
-  department: string;
+  building?: string; // Installation location (optional)
+  owner?: string; // Primary user (optional)
+  department?: string;
   officeLocation?: string;
-  status?: string;
+  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
-  serialNumberPrefix?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -132,4 +138,25 @@ export interface BulkCreateAssetResultDto {
   createdAssets: Asset[];
   errors: string[];
   isFullySuccessful: boolean;
+}
+
+/**
+ * Generic paginated result type matching the backend PagedResultDto<T>
+ */
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+/**
+ * Pagination parameters for API requests
+ */
+export interface PaginationParams {
+  pageNumber?: number;
+  pageSize?: number;
 }

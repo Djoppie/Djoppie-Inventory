@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useState, useMemo } from 'react';
 import {
   Dialog,
@@ -106,8 +107,8 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
           a.assetName.toLowerCase().includes(query) ||
           a.assetCode.toLowerCase().includes(query) ||
           a.category.toLowerCase().includes(query) ||
-          a.owner.toLowerCase().includes(query) ||
-          a.building.toLowerCase().includes(query) ||
+          a.owner?.toLowerCase().includes(query) ||
+          a.building?.toLowerCase().includes(query) ||
           a.brand?.toLowerCase().includes(query) ||
           a.model?.toLowerCase().includes(query)
       );
@@ -160,7 +161,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
         onClose();
       }, 2000);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
     }
   };
 
@@ -324,7 +325,6 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   borderColor: 'primary.main',
-                  transform: 'translateY(-2px)',
                   boxShadow: theme =>
                     format === 'xlsx'
                       ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`
@@ -361,7 +361,6 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   borderColor: 'primary.main',
-                  transform: 'translateY(-2px)',
                   boxShadow: theme =>
                     format === 'csv'
                       ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`

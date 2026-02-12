@@ -1,4 +1,6 @@
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Graph;
 using Microsoft.Identity.Web;
 
 namespace DjoppieInventory.API.Extensions;
@@ -19,8 +21,25 @@ public static class AuthenticationExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApi(configuration.GetSection("AzureAd"))
             .EnableTokenAcquisitionToCallDownstreamApi()
-            .AddMicrosoftGraph(configuration.GetSection("MicrosoftGraph"))
             .AddInMemoryTokenCaches();
+
+        // Configure GraphServiceClient manually to avoid version conflicts
+        services.AddSingleton(sp =>
+        {
+            var tenantId = configuration["AzureAd:TenantId"];
+            var clientId = configuration["AzureAd:ClientId"];
+            var clientSecret = configuration["AzureAd:ClientSecret"];
+
+            if (string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
+            {
+                throw new InvalidOperationException("AzureAd configuration (TenantId, ClientId, ClientSecret) is required for Graph API access.");
+            }
+
+            var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+            var scopes = new[] { "https://graph.microsoft.com/.default" };
+
+            return new GraphServiceClient(credential, scopes);
+        });
 
         // Configure Authorization
         services.AddAuthorization(options =>

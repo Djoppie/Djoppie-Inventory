@@ -4,24 +4,18 @@ namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
 /// DTO for bulk asset creation operations.
-/// Allows creating multiple assets based on a template with a shared prefix and common properties.
+/// Allows creating multiple assets with auto-generated sequential codes.
 /// </summary>
 public class BulkCreateAssetDto
 {
     /// <summary>
     /// The prefix to use for generating asset codes.
-    /// Example: "AST" will generate AST-0001, AST-0002, etc.
+    /// Example: "LAP" will generate LAP-0001, LAP-0002, etc. (normal)
+    /// or LAP-9000, LAP-9001, etc. (dummy)
     /// </summary>
     [Required]
     [StringLength(20)]
     public string AssetCodePrefix { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The starting number for asset code generation.
-    /// Default is 1. Will be zero-padded to 4 digits.
-    /// </summary>
-    [Range(1, 9999)]
-    public int StartingNumber { get; set; } = 1;
 
     /// <summary>
     /// The number of assets to create in bulk.
@@ -29,7 +23,12 @@ public class BulkCreateAssetDto
     /// </summary>
     [Required]
     [Range(1, 100)]
-    public int Quantity { get; set; }
+    public int Quantity { get; set; } = 1;
+
+    /// <summary>
+    /// If true, asset codes will be in the 9000+ range for dummy/test assets.
+    /// </summary>
+    public bool IsDummy { get; set; } = false;
 
     /// <summary>
     /// Optional: Template ID to use for auto-filling asset details.
@@ -38,12 +37,16 @@ public class BulkCreateAssetDto
     public int? TemplateId { get; set; }
 
     /// <summary>
-    /// The base name for the assets. Will be appended with a number.
-    /// Example: "Dell Latitude" becomes "Dell Latitude 1", "Dell Latitude 2", etc.
+    /// The official device name (DeviceName) for the assets.
     /// </summary>
-    [Required]
     [StringLength(200)]
     public string AssetName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional: Readable name/alias for the assets.
+    /// </summary>
+    [StringLength(200)]
+    public string? Alias { get; set; }
 
     /// <summary>
     /// Category for all assets in the bulk creation.
@@ -52,22 +55,19 @@ public class BulkCreateAssetDto
     public string Category { get; set; } = string.Empty;
 
     /// <summary>
-    /// Owner for all assets in the bulk creation.
+    /// Installation location for all assets (optional).
     /// </summary>
-    [Required]
-    public string Owner { get; set; } = string.Empty;
+    public string? Building { get; set; }
 
     /// <summary>
-    /// Building location for all assets in the bulk creation.
+    /// Primary user for all assets (optional - can be assigned later).
     /// </summary>
-    [Required]
-    public string Building { get; set; } = string.Empty;
+    public string? Owner { get; set; }
 
     /// <summary>
-    /// Department for all assets in the bulk creation.
+    /// Department for all assets (optional).
     /// </summary>
-    [Required]
-    public string Department { get; set; } = string.Empty;
+    public string? Department { get; set; }
 
     /// <summary>
     /// Optional: Office location for all assets in the bulk creation.
@@ -75,9 +75,9 @@ public class BulkCreateAssetDto
     public string? OfficeLocation { get; set; }
 
     /// <summary>
-    /// Status for all assets. Defaults to "InGebruik".
+    /// Status for all assets. Defaults to "Stock".
     /// </summary>
-    public string Status { get; set; } = "InGebruik";
+    public string Status { get; set; } = "Stock";
 
     /// <summary>
     /// Optional: Brand for all assets in the bulk creation.
@@ -90,12 +90,13 @@ public class BulkCreateAssetDto
     public string? Model { get; set; }
 
     /// <summary>
-    /// Optional: Serial number prefix for generating unique serial numbers.
-    /// If provided, will be combined with the asset number to create unique serial numbers.
+    /// Serial number prefix for generating unique serial numbers - REQUIRED.
+    /// Will be combined with the asset number to create unique serial numbers.
     /// Example: "SN" will generate SN-0001, SN-0002, etc.
     /// </summary>
+    [Required]
     [StringLength(50)]
-    public string? SerialNumberPrefix { get; set; }
+    public string SerialNumberPrefix { get; set; } = string.Empty;
 
     /// <summary>
     /// Optional: Purchase date for all assets in the bulk creation.
@@ -147,5 +148,5 @@ public class BulkCreateAssetResultDto
     /// <summary>
     /// Indicates if the operation was completely successful.
     /// </summary>
-    public bool IsFullySuccessful => Failed == 0;
+    public bool IsFullySuccessful => Failed == 0 && SuccessfullyCreated == TotalRequested;
 }

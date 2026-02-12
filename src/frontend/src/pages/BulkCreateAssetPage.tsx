@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -18,6 +19,7 @@ import {
   Paper,
   Fade,
   Zoom,
+  useTheme,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -27,15 +29,18 @@ import {
 } from '@mui/icons-material';
 import { useState } from 'react';
 import BulkAssetCreationForm from '../components/assets/BulkAssetCreationForm';
-import { useBulkCreateAssets } from '../hooks/useAssets';
-import { BulkCreateAssetDto, BulkCreateAssetResultDto } from '../types/asset.types';
+import { useBulkCreateAssets, useCreateAsset } from '../hooks/useAssets';
+import { BulkCreateAssetDto, BulkCreateAssetResultDto, CreateAssetDto, Asset } from '../types/asset.types';
 
 const BulkCreateAssetPage = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const bulkCreate = useBulkCreateAssets();
+  const createAsset = useCreateAsset();
   const [successMessage, setSuccessMessage] = useState('');
   const [result, setResult] = useState<BulkCreateAssetResultDto | null>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
+  const [isCreatingMultiple, setIsCreatingMultiple] = useState(false);
 
   const handleSubmit = async (data: BulkCreateAssetDto) => {
     try {
@@ -44,7 +49,7 @@ const BulkCreateAssetPage = () => {
         ...data,
         brand: data.brand || undefined,
         model: data.model || undefined,
-        serialNumberPrefix: data.serialNumberPrefix || undefined,
+        // serialNumberPrefix is required, don't clean it
         purchaseDate: data.purchaseDate || undefined,
         warrantyExpiry: data.warrantyExpiry || undefined,
         installationDate: data.installationDate || undefined,
@@ -62,7 +67,102 @@ const BulkCreateAssetPage = () => {
         );
       }
     } catch (error) {
-      console.error('Error creating assets:', error);
+      logger.error('Error creating assets:', error);
+    }
+  };
+
+  // Helper to convert date string to ISO format for backend
+  const formatDateForApi = (dateStr: string | undefined): string | undefined => {
+    if (!dateStr) return undefined;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return undefined;
+      return date.toISOString();
+    } catch {
+      return undefined;
+    }
+  };
+
+  // Handle CSV import - create assets one by one
+  const handleSubmitMultiple = async (assets: CreateAssetDto[]) => {
+    setIsCreatingMultiple(true);
+    const createdAssets: Asset[] = [];
+    const errors: string[] = [];
+
+    for (let i = 0; i < assets.length; i++) {
+      const asset = assets[i];
+      try {
+        // Build asset - required fields must be present, optional fields can be undefined
+        // Note: Backend expects empty strings for string fields, not null/undefined
+        const cleanedAsset: CreateAssetDto = {
+          // Required fields
+          serialNumber: asset.serialNumber,
+          assetCodePrefix: asset.assetCodePrefix || 'IMP',
+          category: asset.category,
+          // Fields with defaults
+          status: asset.status || 'Stock',
+          assetName: asset.assetName || '',
+          isDummy: asset.isDummy || false,
+        };
+
+        // Only add optional fields if they have actual values
+        if (asset.building) cleanedAsset.building = asset.building;
+        if (asset.owner) cleanedAsset.owner = asset.owner;
+        if (asset.department) cleanedAsset.department = asset.department;
+        if (asset.brand) cleanedAsset.brand = asset.brand;
+        if (asset.model) cleanedAsset.model = asset.model;
+
+        // Format dates to ISO format for backend
+        const purchaseDate = formatDateForApi(asset.purchaseDate);
+        const warrantyExpiry = formatDateForApi(asset.warrantyExpiry);
+        const installationDate = formatDateForApi(asset.installationDate);
+
+        if (purchaseDate) cleanedAsset.purchaseDate = purchaseDate;
+        if (warrantyExpiry) cleanedAsset.warrantyExpiry = warrantyExpiry;
+        if (installationDate) cleanedAsset.installationDate = installationDate;
+
+        const created = await createAsset.mutateAsync(cleanedAsset);
+        createdAssets.push(created);
+      } catch (error: unknown) {
+        let errorMessage = 'Unknown error';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        // Try to extract validation errors from axios error response
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { data?: { errors?: Record<string, string[]>; title?: string } } };
+          if (axiosError.response?.data?.errors) {
+            const validationErrors = Object.entries(axiosError.response.data.errors)
+              .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
+              .join('; ');
+            errorMessage = validationErrors || axiosError.response.data.title || errorMessage;
+          }
+        }
+        errors.push(`Row ${i + 1} (${asset.serialNumber}): ${errorMessage}`);
+        logger.error(`Error creating asset ${asset.serialNumber}:`, error);
+      }
+    }
+
+    // Build result similar to bulk create
+    const csvResult: BulkCreateAssetResultDto = {
+      totalRequested: assets.length,
+      successfullyCreated: createdAssets.length,
+      failed: errors.length,
+      isFullySuccessful: errors.length === 0,
+      createdAssets: createdAssets,
+      errors: errors,
+    };
+
+    setResult(csvResult);
+    setShowResultDialog(true);
+    setIsCreatingMultiple(false);
+
+    if (createdAssets.length > 0) {
+      setSuccessMessage(
+        csvResult.isFullySuccessful
+          ? `Successfully imported all ${createdAssets.length} assets!`
+          : `Imported ${createdAssets.length} of ${assets.length} assets`
+      );
     }
   };
 
@@ -124,126 +224,125 @@ const BulkCreateAssetPage = () => {
   };
 
   return (
-    <Box>
-      {/* Header Section with Animation */}
-      <Fade in={true} timeout={800}>
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 3,
-            p: 3,
-            background: (theme) =>
-              theme.palette.mode === 'light'
-                ? 'linear-gradient(135deg, rgba(255, 146, 51, 0.08), rgba(255, 119, 0, 0.12))'
-                : 'linear-gradient(135deg, rgba(255, 146, 51, 0.12), rgba(255, 119, 0, 0.15))',
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: 'linear-gradient(90deg, #FF9233, #FF7700, #CC0000)',
+    <Fade in timeout={600}>
+      <Box>
+        {/* Header Section with Animation */}
+        <Fade in timeout={400}>
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 3,
+              p: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 3,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
+                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light}, ${theme.palette.secondary.main})`,
+                borderRadius: '12px 12px 0 0',
+              },
+            }}
+          >
+            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+              <InventoryIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+              <Box>
+                <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 0.5 }}>
+                  Bulk Asset Creation
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Create multiple assets at once with sequential asset codes and shared properties.
+                </Typography>
+              </Box>
+            </Stack>
+            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Chip
+                label="Save Time"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+              <Chip
+                label="Sequential Codes"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+              <Chip
+                label="Template Support"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+          </Paper>
+        </Fade>
+
+        {/* Error Alert */}
+        {bulkCreate.isError && (
+          <Fade in timeout={500}>
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {bulkCreate.error instanceof Error
+                ? bulkCreate.error.message
+                : 'Failed to create assets. Please try again.'}
+            </Alert>
+          </Fade>
+        )}
+
+        {/* Form */}
+        <Fade in timeout={600}>
+          <Box>
+            <BulkAssetCreationForm
+              onSubmit={handleSubmit}
+              onSubmitMultiple={handleSubmitMultiple}
+              onCancel={handleCancel}
+              isLoading={bulkCreate.isPending || isCreatingMultiple}
+            />
+          </Box>
+        </Fade>
+
+        {/* Success Snackbar */}
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={4000}
+          onClose={() => setSuccessMessage('')}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            severity="success"
+            sx={{
+              width: '100%',
+              boxShadow: 3,
+            }}
+          >
+            {successMessage}
+          </Alert>
+        </Snackbar>
+
+        {/* Result Dialog with Animations */}
+        <Dialog
+          open={showResultDialog}
+          onClose={handleCloseDialog}
+          maxWidth="sm"
+          fullWidth
+          TransitionComponent={Zoom}
+          TransitionProps={{ timeout: 400 }}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              overflow: 'visible',
             },
           }}
         >
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
-            <InventoryIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-            <Box>
-              <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 0.5 }}>
-                Bulk Asset Creation
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Create multiple assets at once with sequential asset codes and shared properties.
-              </Typography>
-            </Box>
-          </Stack>
-          <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            <Chip
-              label="Save Time"
-              size="small"
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-            <Chip
-              label="Sequential Codes"
-              size="small"
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-            <Chip
-              label="Template Support"
-              size="small"
-              color="primary"
-              variant="outlined"
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
-        </Paper>
-      </Fade>
-
-      {/* Error Alert */}
-      {bulkCreate.isError && (
-        <Fade in={true}>
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {bulkCreate.error instanceof Error
-              ? bulkCreate.error.message
-              : 'Failed to create assets. Please try again.'}
-          </Alert>
-        </Fade>
-      )}
-
-      {/* Form */}
-      <Fade in={true} timeout={1000}>
-        <Box>
-          <BulkAssetCreationForm
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-            isLoading={bulkCreate.isPending}
-          />
-        </Box>
-      </Fade>
-
-      {/* Success Snackbar */}
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={4000}
-        onClose={() => setSuccessMessage('')}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          severity="success"
-          sx={{
-            width: '100%',
-            boxShadow: 3,
-          }}
-        >
-          {successMessage}
-        </Alert>
-      </Snackbar>
-
-      {/* Result Dialog with Animations */}
-      <Dialog
-        open={showResultDialog}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-        TransitionComponent={Zoom}
-        TransitionProps={{ timeout: 400 }}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            overflow: 'visible',
-          },
-        }}
-      >
         <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             {getDialogIcon()}
@@ -414,8 +513,9 @@ const BulkCreateAssetPage = () => {
             </>
           )}
         </DialogActions>
-      </Dialog>
-    </Box>
+        </Dialog>
+      </Box>
+    </Fade>
   );
 };
 
