@@ -74,6 +74,7 @@ Djoppie Inventory is a modern asset and inventory management system designed for
 ### Technology Stack
 
 **Backend:**
+
 - ASP.NET Core 8.0
 - Entity Framework Core
 - Microsoft.Identity.Web (Entra ID authentication)
@@ -81,6 +82,7 @@ Djoppie Inventory is a modern asset and inventory management system designed for
 - SQLite (development) / Azure SQL (production)
 
 **Frontend:**
+
 - React 19 with TypeScript
 - Material-UI (MUI)
 - MSAL React (authentication)
@@ -97,27 +99,27 @@ Install the following tools before beginning:
 
 1. **Azure CLI**
    - Version: 2.50.0 or higher
-   - Download: https://docs.microsoft.com/cli/azure/install-azure-cli
+   - Download: <https://docs.microsoft.com/cli/azure/install-azure-cli>
    - Verify: `az --version`
 
 2. **.NET SDK**
    - Version: 8.0 or higher
-   - Download: https://dotnet.microsoft.com/download
+   - Download: <https://dotnet.microsoft.com/download>
    - Verify: `dotnet --version`
 
 3. **Node.js**
    - Version: 20.x or higher
-   - Download: https://nodejs.org/
+   - Download: <https://nodejs.org/>
    - Verify: `node --version` and `npm --version`
 
 4. **Git**
    - Latest version
-   - Download: https://git-scm.com/
+   - Download: <https://git-scm.com/>
    - Verify: `git --version`
 
 5. **PowerShell** (for automation scripts)
    - Version: 7.0 or higher (PowerShell Core)
-   - Download: https://github.com/PowerShell/PowerShell
+   - Download: <https://github.com/PowerShell/PowerShell>
    - Verify: `pwsh --version`
 
 6. **Code Editor** (recommended)
@@ -209,6 +211,7 @@ az deployment sub create `
 ```
 
 This will create:
+
 - Static Web App (frontend hosting)
 - App Service Plan (Free F1 tier)
 - App Service (backend API)
@@ -328,6 +331,7 @@ az ad app permission add `
 ```
 
 Required permissions:
+
 - `DeviceManagementManagedDevices.Read.All` (Application)
 - `Device.Read.All` (Application)
 - `Directory.Read.All` (Application)
@@ -338,12 +342,14 @@ Required permissions:
 **Critical:** Admin consent is required for application permissions.
 
 **Option 1: Azure Portal**
+
 1. Go to Backend API app registration
 2. Click "API permissions"
 3. Click "Grant admin consent for [Your Organization]"
 4. Confirm
 
 **Option 2: Azure CLI**
+
 ```bash
 az ad app permission admin-consent --id eb5bcf06-8032-494f-a363-92b6802c44bf
 ```
@@ -612,6 +618,7 @@ cd C:\Djoppie\Djoppie-Inventory
 ```
 
 The script performs:
+
 1. Prerequisite checks
 2. Entra ID app verification
 3. Infrastructure deployment
@@ -672,6 +679,7 @@ Set up automated CI/CD:
 5. Import pipeline: `.azuredevops/azure-pipelines.yml`
 
 Pipeline stages:
+
 - Build Backend
 - Build Frontend
 - Deploy Infrastructure (Bicep)
@@ -702,11 +710,13 @@ az webapp log tail `
 ### Development Environment
 
 **Backend Configuration** (`appsettings.Development.json`):
+
 - Database: SQLite (local file)
 - Authentication: Shared DEV backend ClientId
 - CORS: localhost:5173, localhost:5174
 
 **Frontend Configuration** (`.env.development`):
+
 - API URL: `http://localhost:5052/api`
 - Entra Client ID: Frontend SPA app registration
 - Redirect URI: `http://localhost:5173`
@@ -714,12 +724,14 @@ az webapp log tail `
 ### Azure DEV Environment
 
 **Backend Configuration** (`appsettings.Production.json` + Key Vault):
+
 - Database: Azure SQL Database (serverless)
 - Auto-migrate: Enabled
 - Connection string: Stored in Key Vault
 - CORS: Azure Static Web App URL + localhost (for testing)
 
 **Frontend Configuration** (`.env.production`):
+
 - API URL: Azure App Service URL
 - Entra Client ID: Frontend SPA app registration
 - Redirect URI: Azure Static Web App URL
@@ -815,6 +827,7 @@ The `IntuneService` is automatically configured via dependency injection. Verify
 **Issue:** "Access denied" when calling Intune API
 
 **Solution:**
+
 1. Verify admin consent is granted for all Graph permissions
 2. Check service principal has correct roles
 3. Verify client secret is not expired
@@ -827,6 +840,7 @@ az ad app permission admin-consent --id eb5bcf06-8032-494f-a363-92b6802c44bf
 **Issue:** No devices returned from search
 
 **Solution:**
+
 1. Verify devices are enrolled in Intune
 2. Check device names match search query
 3. Ensure devices are synced recently (check last sync time in Intune portal)
@@ -984,6 +998,7 @@ az monitor app-insights component show `
 ### Log Analytics Queries
 
 **Failed Authentication Attempts:**
+
 ```kql
 requests
 | where timestamp > ago(24h)
@@ -993,6 +1008,7 @@ requests
 ```
 
 **Slow API Requests:**
+
 ```kql
 requests
 | where timestamp > ago(1h)
@@ -1002,6 +1018,7 @@ requests
 ```
 
 **Graph API Call Failures:**
+
 ```kql
 dependencies
 | where timestamp > ago(24h)
@@ -1045,11 +1062,13 @@ az webapp config appsettings set `
 **Symptoms:** Frontend cannot access backend API
 
 **Diagnostics:**
+
 1. Check browser console for CORS errors
 2. Verify access token is being sent
 3. Check token audience matches backend ClientId
 
 **Solutions:**
+
 ```bash
 # Verify CORS configuration
 az webapp config appsettings list `
@@ -1069,11 +1088,13 @@ az webapp config appsettings set `
 **Symptoms:** API returns 500 errors, logs show database timeout
 
 **Diagnostics:**
+
 1. Check SQL Server firewall rules
 2. Verify connection string in Key Vault
 3. Test database connectivity
 
 **Solutions:**
+
 ```bash
 # Allow Azure services access
 az sql server firewall-rule create `
@@ -1095,10 +1116,12 @@ az keyvault secret show `
 **Symptoms:** "Access denied to Key Vault" in logs
 
 **Diagnostics:**
+
 1. Verify managed identity is enabled
 2. Check Key Vault access policies
 
 **Solutions:**
+
 ```bash
 # Re-enable managed identity and grant access
 $principalId = az webapp identity assign `
@@ -1117,11 +1140,13 @@ az keyvault set-policy `
 **Symptoms:** Device search returns empty results
 
 **Diagnostics:**
+
 1. Check Graph API permissions
 2. Verify admin consent granted
 3. Check device enrollment status in Intune portal
 
 **Solutions:**
+
 ```bash
 # Re-grant admin consent
 az ad app permission admin-consent --id eb5bcf06-8032-494f-a363-92b6802c44bf
@@ -1143,6 +1168,7 @@ curl https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/health
 ```
 
 Set up availability tests in Application Insights:
+
 1. Go to Application Insights > Availability
 2. Add URL ping test
 3. Test URL: `https://your-app.azurewebsites.net/health`
@@ -1156,10 +1182,12 @@ Set up availability tests in Application Insights:
 ### 1. Principle of Least Privilege
 
 **App Service Managed Identity:**
+
 - Grant only `get` and `list` permissions to Key Vault
 - Do not grant `set`, `delete`, or `purge` permissions to production apps
 
 **Entra ID Roles:**
+
 - Use Application-level permissions for backend service
 - Use Delegated permissions for user-context operations
 - Grant admin consent only after thorough review
@@ -1167,11 +1195,13 @@ Set up availability tests in Application Insights:
 ### 2. Secret Management
 
 **Never commit secrets to source control:**
+
 - Use `.gitignore` to exclude configuration files with secrets
 - Store secrets in Key Vault (production) or User Secrets (development)
 - Rotate secrets every 6-12 months
 
 **Development secrets:**
+
 ```bash
 # Use .NET User Secrets for local development
 dotnet user-secrets init --project src/backend/DjoppieInventory.API
@@ -1181,6 +1211,7 @@ dotnet user-secrets set "AzureAd:ClientSecret" "your-dev-secret" --project src/b
 ### 3. Network Security
 
 **SQL Server Firewall:**
+
 ```bash
 # Restrict to Azure services only
 az sql server firewall-rule create `
@@ -1192,6 +1223,7 @@ az sql server firewall-rule create `
 ```
 
 **App Service:**
+
 - Enable HTTPS only
 - Use latest TLS version (1.2 or higher)
 - Configure IP restrictions if needed
@@ -1207,11 +1239,13 @@ az webapp update `
 ### 4. Authentication Security
 
 **Token Validation:**
+
 - Validate issuer, audience, and signature
 - Check token expiration
 - Verify required claims
 
 **CORS Configuration:**
+
 - Explicitly list allowed origins
 - Never use wildcard (`*`) in production
 - Include credentials in CORS policy
@@ -1219,11 +1253,13 @@ az webapp update `
 ### 5. Data Protection
 
 **SQL Database:**
+
 - Enable Transparent Data Encryption (TDE) - enabled by default
 - Configure backup retention (7-35 days)
 - Use serverless tier with auto-pause for cost optimization
 
 **Application:**
+
 - Sanitize user inputs
 - Use parameterized queries (EF Core does this automatically)
 - Implement rate limiting for APIs
@@ -1231,6 +1267,7 @@ az webapp update `
 ### 6. Monitoring and Auditing
 
 **Enable diagnostic logging:**
+
 ```bash
 # Key Vault audit logs
 az monitor diagnostic-settings create `
@@ -1251,10 +1288,12 @@ az sql db audit-policy update `
 ### 7. Compliance
 
 **Data Residency:**
+
 - Deploy resources in appropriate Azure regions (EU for GDPR compliance)
 - Configure data retention policies
 
 **Access Reviews:**
+
 - Regularly review Entra ID app permissions
 - Audit Key Vault access logs
 - Review SQL Database access
@@ -1266,11 +1305,13 @@ az sql db audit-policy update `
 ### Database Backup
 
 **Azure SQL Database** (Automated):
+
 - Automatic backups every 12 hours
 - Point-in-time restore up to 7 days (Basic tier) or 35 days (Standard/Premium)
 - Long-term retention available (up to 10 years)
 
 **Manual Backup:**
+
 ```bash
 # Export database to BACPAC
 az sql db export `
@@ -1285,6 +1326,7 @@ az sql db export `
 ```
 
 **Restore from Backup:**
+
 ```bash
 # Point-in-time restore
 az sql db restore `
@@ -1298,6 +1340,7 @@ az sql db restore `
 ### Application Configuration Backup
 
 **Export Key Vault Secrets:**
+
 ```powershell
 # Backup all secrets to file
 $vaultName = "kv-djoppie-dev-k5xdqp"
@@ -1315,6 +1358,7 @@ $backup | ConvertTo-Json | Out-File $backupFile
 ```
 
 **Restore Secrets:**
+
 ```powershell
 # Restore from backup file
 $backupFile = "keyvault-backup-20260211.json"
@@ -1354,6 +1398,7 @@ foreach ($property in $backup.PSObject.Properties) {
    - Perform smoke tests
 
 **Test Recovery Annually:**
+
 - Schedule disaster recovery drills
 - Document recovery times
 - Update procedures based on findings
@@ -1372,21 +1417,23 @@ foreach ($property in $backup.PSObject.Properties) {
 
 ### External Resources
 
-- **Azure Documentation:** https://docs.microsoft.com/azure/
-- **Microsoft Graph API:** https://docs.microsoft.com/graph/
-- **ASP.NET Core:** https://docs.microsoft.com/aspnet/core/
-- **React Documentation:** https://react.dev/
-- **Entra ID Documentation:** https://docs.microsoft.com/azure/active-directory/
+- **Azure Documentation:** <https://docs.microsoft.com/azure/>
+- **Microsoft Graph API:** <https://docs.microsoft.com/graph/>
+- **ASP.NET Core:** <https://docs.microsoft.com/aspnet/core/>
+- **React Documentation:** <https://react.dev/>
+- **Entra ID Documentation:** <https://docs.microsoft.com/azure/active-directory/>
 
 ### Support
 
 **Technical Support:**
-- Email: jo.wijnen@diepenbeek.be
-- GitHub Issues: https://github.com/Djoppie/Djoppie-Inventory/issues
+
+- Email: <jo.wijnen@diepenbeek.be>
+- GitHub Issues: <https://github.com/Djoppie/Djoppie-Inventory/issues>
 
 **Azure Support:**
-- Azure Portal: https://portal.azure.com
-- Azure Support Plans: https://azure.microsoft.com/support/plans/
+
+- Azure Portal: <https://portal.azure.com>
+- Azure Support Plans: <https://azure.microsoft.com/support/plans/>
 
 ---
 
@@ -1526,5 +1573,3 @@ Application Not Working
 
 **Document Version:** 1.0
 **Last Updated:** February 11, 2026
-**Author:** Claude Opus 4.5 with Djoppie Inventory Team
-**Contact:** jo.wijnen@diepenbeek.be

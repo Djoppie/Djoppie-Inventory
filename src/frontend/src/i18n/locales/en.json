@@ -320,11 +320,18 @@
     "preview": "Preview (150%)",
     "print": "Print Label",
     "printing": "Printing...",
+    "layoutTitle": "Label Layout",
+    "showLogo": "Djoppie logo in QR code",
+    "layouts": {
+      "codeQrName": "Code + QR + Name",
+      "qrCode": "QR + Code",
+      "qrName": "QR + Name"
+    },
     "instructions": {
       "title": "Printing Instructions",
-      "step1": "Ensure your Dymo 400 labelprinter is connected and powered on",
+      "step1": "Ensure your Dymo 400/450 labelprinter is connected and powered on",
       "step2": "Load 25mm x 25mm square labels into the printer",
-      "step3": "Select 'Dymo LabelWriter 400' as your printer in the print dialog",
+      "step3": "Select your Dymo LabelWriter as printer in the print dialog",
       "step4": "Click Print and verify the label prints correctly"
     },
     "printerSettings": {
