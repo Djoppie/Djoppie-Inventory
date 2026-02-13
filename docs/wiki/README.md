@@ -1,63 +1,95 @@
-# Djoppie Inventory - Wiki Documentation
+# Djoppie Inventory - Documentation
 
 > Official documentation for the Djoppie Inventory asset management system.
-> These documents are structured for use in the Azure DevOps Wiki.
 
 ---
 
-## Wiki Documents
+## User Guide
 
-| # | Document | Description |
-|---|----------|-------------|
-| 1 | [Installation Guide](01-INSTALLATION-GUIDE.md) | Step-by-step setup for local development and Azure DEV environments |
-| 2 | [Entra ID Configuration Guide](02-ENTRA-CONFIGURATION-GUIDE.md) | Microsoft Entra ID app registration setup, permissions, and maintenance |
-| 3 | [Deployment Manual](03-DEPLOYMENT-MANUAL.md) | Azure DevOps pipeline, Infrastructure as Code (Bicep), and deployment procedures |
-| 4 | [Architecture Design](04-ARCHITECTURE-DESIGN.md) | Top-level architecture, component design, technology stack, and integration points |
+Documentation for IT Support Staff and Inventory Managers.
 
-## Other Documentation
+| Document | Description |
+|----------|-------------|
+| [Getting Started](User-Guide/01-Getting-Started.md) | Login, dashboard overview, searching, QR scanning |
+| [Managing Assets](User-Guide/02-Managing-Assets.md) | Add, edit, view assets, status management, templates |
+| [Printing Labels](User-Guide/03-Printing-Labels.md) | Single and bulk QR label printing with Dymo |
+| [Exporting Data](User-Guide/04-Exporting-Data.md) | Export to Excel and CSV formats |
 
-These documents are available in the main repository:
+---
 
-| Document | Location | Description |
-|----------|----------|-------------|
-| [User Manual](../USER-MANUAL.md) | docs/ | End-user guide for IT support staff |
-| [Administrator Guide](../ADMINISTRATOR-GUIDE.md) | docs/ | IT administrator setup and configuration |
-| [Project Description](../../PROJECT-DESCRIPTION.md) | Root | Project overview for Azure DevOps |
-| [Developer Guide](../../CLAUDE.md) | Root | Development reference and coding standards |
-| [Print Label Feature](../PRINT-LABEL-FEATURE.md) | docs/ | Thermal label printing technical docs |
-| [Export Feature](../EXPORT-FEATURE.md) | docs/ | Excel/CSV export technical docs |
+## Administrator Guide
+
+Documentation for IT Administrators and System Administrators.
+
+| Document | Description |
+|----------|-------------|
+| [Installation](Administrator-Guide/01-Installation.md) | Local development and Azure setup |
+| [Entra Configuration](Administrator-Guide/02-Entra-Configuration.md) | Microsoft Entra ID app registrations |
+| [Deployment](Administrator-Guide/03-Deployment.md) | Azure DevOps pipelines and deployment |
+| [Key Vault](Administrator-Guide/04-Key-Vault.md) | Secret management and rotation |
+| [Troubleshooting](Administrator-Guide/05-Troubleshooting.md) | Common issues and solutions |
+
+---
+
+## Technical Reference
+
+Architecture and technical specifications.
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](Technical-Reference/01-Architecture.md) | System design, components, integrations |
+
+---
+
+## Quick Links
+
+| Task | Go To |
+|------|-------|
+| First time setup? | [Installation - Local Setup](Administrator-Guide/01-Installation.md) |
+| Deploy to Azure? | [Deployment](Administrator-Guide/03-Deployment.md) |
+| Auth not working? | [Troubleshooting - Authentication](Administrator-Guide/05-Troubleshooting.md#authentication-issues) |
+| Print labels? | [Printing Labels](User-Guide/03-Printing-Labels.md) |
+| Export data? | [Exporting Data](User-Guide/04-Exporting-Data.md) |
+| Rotate secrets? | [Key Vault - Secret Rotation](Administrator-Guide/04-Key-Vault.md#secret-rotation) |
+
+---
+
+## Application URLs
+
+| Environment | Frontend | Backend API |
+|-------------|----------|-------------|
+| **DEV** | https://blue-cliff-031d65b03.1.azurestaticapps.net | https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net |
+| **Production** | Contact IT Administrator | Contact IT Administrator |
+
+---
 
 ## Importing to Azure DevOps Wiki
 
-### Option 1: Publish as Code Wiki
+### Option 1: Publish as Code Wiki (Recommended)
 
 1. Go to **Azure DevOps** > **Overview** > **Wiki**
 2. Click **Publish code as wiki**
-3. Select the repository and branch (`main`)
+3. Select repository and branch (`main`)
 4. Set folder: `/docs/wiki`
-5. Set wiki name: `Djoppie Inventory Docs`
+5. Set wiki name: `Djoppie Inventory`
 6. Click **Publish**
 
-The wiki pages update automatically when files change on the branch.
+The wiki automatically updates when files change.
 
 ### Option 2: Copy to Project Wiki
 
-1. Go to **Azure DevOps** > **Overview** > **Wiki**
-2. Create a new **Project Wiki**
-3. Create pages matching the document names
-4. Copy the markdown content into each page
+1. Create a new **Project Wiki** in Azure DevOps
+2. Create pages matching the document structure
+3. Copy markdown content into each page
 
 ---
 
-## Quick Reference
+## Support
 
-| Topic | Go To |
-|-------|-------|
-| First time setup? | [Installation Guide - Local Setup](01-INSTALLATION-GUIDE.md#2-local-development-setup) |
-| Deploy to Azure? | [Deployment Manual - Pipeline Setup](03-DEPLOYMENT-MANUAL.md#3-azure-devops-pipeline-setup) |
-| Auth not working? | [Entra Guide - Troubleshooting](02-ENTRA-CONFIGURATION-GUIDE.md#8-maintenance-and-rotation) |
-| How does it work? | [Architecture Design](04-ARCHITECTURE-DESIGN.md#2-high-level-architecture) |
-| Add a redirect URI? | [Entra Guide - Maintenance](02-ENTRA-CONFIGURATION-GUIDE.md#8-maintenance-and-rotation) |
-| Rotate a secret? | [Entra Guide - Secret Rotation](02-ENTRA-CONFIGURATION-GUIDE.md#8-maintenance-and-rotation) |
-| Pipeline variables? | [Deployment Manual - Variable Group](03-DEPLOYMENT-MANUAL.md#step-2-create-variable-group) |
-| Bicep modules? | [Deployment Manual - IaC](03-DEPLOYMENT-MANUAL.md#2-infrastructure-as-code-bicep) |
+- **IT ServiceDesk**: https://diepenbeek.sharepoint.com/sites/IN-Servicedesk
+- **GitHub Issues**: https://github.com/Djoppie/Djoppie-Inventory/issues
+
+---
+
+**Version:** 2.0
+**Last Updated:** February 2026

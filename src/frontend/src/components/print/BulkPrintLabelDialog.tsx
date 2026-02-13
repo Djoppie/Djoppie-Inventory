@@ -82,7 +82,7 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
           <head>
             <meta charset="UTF-8">
             <title>${t('bulkPrintLabel.title')} - ${assetsToProcess.length} ${t('bulkPrintLabel.labels')}</title>
-            <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"><\/script>
+            <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></` + `script>
             <style>
               * {
                 margin: 0;
@@ -218,7 +218,7 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
                   window.close();
                 };
               }, 500);
-            <\/script>
+            </` + `script>
           </body>
         </html>
       `);
