@@ -47,7 +47,9 @@
       "Bash(npm run lint)",
       "Bash(node test-date-parsing.js:*)",
       "Bash(git checkout:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)"
     ]
   }
 }
