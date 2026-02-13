@@ -2,7 +2,14 @@
 
 ## Overview
 
-The Print Label feature provides professional, thermal-print-optimized QR code labels designed specifically for the Dymo 400 labelprinter with 25mm x 25mm square labels. This feature enables quick asset identification by printing high-quality, scannable labels with the asset code.
+The Print Label feature provides professional, thermal-print-optimized QR code labels designed specifically for the Dymo 400/450 labelprinter with 25mm x 25mm square labels. This feature enables quick asset identification by printing high-quality, scannable labels with the asset code.
+
+**Key Features:**
+- Single label printing from Asset Detail page
+- **Bulk label printing** (up to 20 labels) from Dashboard
+- Multiple layout options (Code+QR+Name, QR+Code, QR+Name)
+- Dynamic QR code sizing for optimal fit
+- Continuous Dymo roll printing support
 
 ## Design Philosophy
 
@@ -41,10 +48,16 @@ The core label rendering component with three size configurations:
 
 ```
 Physical Size: 25mm x 25mm
-QR Code: ~20mm x 20mm (80% of label)
-Text: 6pt font (for print)
-Padding: 1mm
-Gap: 0.5mm between QR and text
+Padding: 0.5mm
+Gap: 0.3mm between elements
+
+Layout: QR + Code (single text)
+- QR Code: 18mm x 18mm
+- Text: 7pt font
+
+Layout: Code + QR + Name (double text)
+- QR Code: 14mm x 14mm
+- Text: 6pt font (both lines)
 ```
 
 ### 2. PrintLabelDialog Component (`src/frontend/src/components/print/PrintLabelDialog.tsx`)
@@ -64,7 +77,51 @@ A professional dialog interface providing:
 - Smooth animations and transitions
 - Bilingual support (English/Dutch)
 
-### 3. Integration with AssetDetailPage
+### 3. BulkPrintLabelDialog Component (`src/frontend/src/components/print/BulkPrintLabelDialog.tsx`)
+
+A bulk printing interface for printing multiple labels at once:
+
+- **Asset Selection**: Select up to 20 assets from the Dashboard
+- **Layout Options**: Choose between three label layouts
+- **Preview**: Shows first label as preview with asset list
+- **Continuous Printing**: Labels print one after another for Dymo roll
+- **QR Code Generation**: Uses qrcode-generator library for print window
+
+**Key Features:**
+
+- Maximum 20 labels per batch (prevents accidental large print jobs)
+- Warning displayed when selection exceeds limit
+- Dynamic QR sizing based on selected layout
+- Bilingual support (English/Dutch)
+
+**Print Window for Bulk:**
+
+```css
+@page {
+  size: 25mm 25mm;
+  margin: 0;
+}
+
+.label-container {
+  page-break-after: always;  /* Each label on new "page" */
+  page-break-inside: avoid;
+}
+
+.label-container:last-child {
+  page-break-after: auto;
+}
+```
+
+### 4. Dashboard Integration
+
+The Dashboard provides bulk selection capabilities:
+
+- **Always-visible checkboxes**: Checkboxes appear next to each asset name
+- **Card view**: Checkbox inline with asset name for clean appearance
+- **Table view**: Checkbox column with "select all" header
+- **Print button**: Appears in toolbar when assets are selected (icon-only with badge)
+
+### 5. Integration with AssetDetailPage
 
 The Print Label button replaces the previous basic print functionality with:
 
@@ -129,20 +186,46 @@ Complete translation support for English and Dutch:
 - `printLabel.actualSize`: "Werkelijke Grootte (25mm)"
 - And corresponding translations for all strings...
 
+### Bulk Print Keys (English)
+
+- `bulkPrintLabel.title`: "Print Labels ({count})"
+- `bulkPrintLabel.selectLayout`: "Select Layout"
+- `bulkPrintLabel.assetsSelected`: "{count} assets selected"
+- `bulkPrintLabel.maxLabels`: "Maximum {max} labels per batch"
+- `bulkPrintLabel.print`: "Print {count} Labels"
+- `bulkPrintLabel.printing`: "Printing..."
+- `bulkPrintLabel.warningTooMany`: "Selection exceeds limit"
+
+### Bulk Print Keys (Dutch)
+
+- `bulkPrintLabel.title`: "Labels Afdrukken ({count})"
+- `bulkPrintLabel.selectLayout`: "Selecteer Indeling"
+- `bulkPrintLabel.assetsSelected`: "{count} assets geselecteerd"
+- `bulkPrintLabel.maxLabels`: "Maximaal {max} labels per batch"
+- `bulkPrintLabel.print`: "{count} Labels Afdrukken"
+- `bulkPrintLabel.printing`: "Bezig met afdrukken..."
+- `bulkPrintLabel.warningTooMany`: "Selectie overschrijdt limiet"
+
 ## File Structure
 
 ```
 src/frontend/src/
 ├── components/
+│   ├── assets/
+│   │   ├── AssetCard.tsx              # Card view with selection checkbox
+│   │   ├── AssetTableView.tsx         # Table view with selection column
+│   │   └── AssetList.tsx              # List container with selection props
 │   └── print/
-│       ├── PrintLabel.tsx              # Core label component
-│       └── PrintLabelDialog.tsx        # Dialog with preview & print
+│       ├── PrintLabel.tsx             # Core label component
+│       ├── PrintLabelDialog.tsx       # Single label dialog
+│       └── BulkPrintLabelDialog.tsx   # Bulk label dialog (up to 20)
 ├── pages/
-│   └── AssetDetailPage.tsx             # Integration point
+│   ├── AssetDetailPage.tsx            # Single print integration
+│   └── DashboardPage.tsx              # Bulk print integration
 └── i18n/
     └── locales/
-        ├── en.json                     # English translations
-        └── nl.json                     # Dutch translations
+        ├── en.json                    # English translations
+        └── nl.json                    # Dutch translations
 ```
 
 ## Design System Integration
@@ -228,24 +311,27 @@ The QR codes are generated with:
 
 ### QR Code Specifications
 
-- **Library**: qrcode.react v4.2.0
+- **Library**: qrcode.react v4.2.0 (preview), qrcode-generator (print window)
 - **Error Correction**: Level H (30% damage tolerance)
 - **Background**: #FFFFFF (white)
 - **Foreground**: #000000 (black)
-- **Size**: 20mm x 20mm (physical print)
+- **Dynamic Sizing**:
+  - Single text layouts (QR+Code, QR+Name): 18mm x 18mm
+  - Double text layout (Code+QR+Name): 14mm x 14mm
 - **Margin**: None (includeMargin: false)
 
 ### File Sizes
 
 - **PrintLabel.tsx**: ~3.2 KB
 - **PrintLabelDialog.tsx**: ~7.8 KB
-- **Total addition to bundle**: ~11 KB (minified)
+- **BulkPrintLabelDialog.tsx**: ~6.5 KB
+- **Total addition to bundle**: ~17.5 KB (minified)
 
 ## Future Enhancements
 
 Potential improvements for future iterations:
 
-1. **Bulk Printing**: Print multiple labels in one operation
+1. ~~**Bulk Printing**: Print multiple labels in one operation~~ ✅ **Implemented**
 2. **Label Variants**: Support for different Dymo label sizes (e.g., 19mm x 51mm)
 3. **Custom Fields**: Optional additional text (location, owner name)
 4. **Print Preview PDF**: Export labels as PDF for record-keeping
@@ -257,6 +343,7 @@ Potential improvements for future iterations:
 
 ### Manual Testing Checklist
 
+#### Single Label Printing
 - [ ] Open Asset Detail page
 - [ ] Click "Print Label" button
 - [ ] Verify dialog opens with correct asset code
@@ -269,6 +356,23 @@ Potential improvements for future iterations:
 - [ ] Scan QR code with phone to verify asset code
 - [ ] Test on different browsers (Chrome, Firefox, Edge)
 - [ ] Test language switching (EN ↔ NL)
+
+#### Bulk Label Printing
+- [ ] Open Dashboard page
+- [ ] Verify checkboxes appear next to each asset
+- [ ] Select multiple assets (2-5 for test)
+- [ ] Verify print button appears with badge count
+- [ ] Click print button to open bulk dialog
+- [ ] Verify selected assets are listed
+- [ ] Test all three layout options
+- [ ] Click "Print X Labels" button
+- [ ] Verify all labels appear in print window
+- [ ] Check page breaks between labels
+- [ ] Print test batch on Dymo 400
+- [ ] Scan each QR code to verify correctness
+- [ ] Test with exactly 20 assets (maximum)
+- [ ] Test with >20 assets (should show warning)
+- [ ] Test "Select All" in table view
 
 ### Visual Regression Testing
 
@@ -321,7 +425,14 @@ The implementation is clean, maintainable, and extensible, providing a solid fou
 
 ---
 
-**Version**: 1.0
-**Last Updated**: 2026-02-12
+**Version**: 1.1
+**Last Updated**: 2026-02-13
 **Author**: Claude Code (Anthropic)
 **Project**: Djoppie Inventory System
+
+### Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.1 | 2026-02-13 | Added bulk printing feature, dynamic QR sizing, Dashboard integration |
+| 1.0 | 2026-02-12 | Initial documentation for single label printing |

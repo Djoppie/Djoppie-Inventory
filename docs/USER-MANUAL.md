@@ -623,6 +623,51 @@ The application supports printing professional QR code labels for IT assets usin
 - Verify asset code text is readable
 - Test scan the QR code with your phone
 
+### Printing Multiple Labels (Bulk Printing)
+
+Print labels for multiple assets at once from the Dashboard.
+
+**Step 1: Select Assets**
+
+- Go to the Dashboard
+- Each asset card has a checkbox on the left side of the asset name
+- Click the checkbox to select assets you want to label
+- In Table View, use the header checkbox to select all visible assets
+
+**Step 2: Open Bulk Print Dialog**
+
+- After selecting assets, a print button appears in the toolbar
+- The button shows a badge with the number of selected assets
+- Click the print button to open the bulk print dialog
+
+**Step 3: Choose Layout**
+
+Three layout options are available:
+
+- **QR + Code** - QR code (18mm) with asset code below
+- **QR + Name** - QR code (18mm) with asset name below
+- **Code + QR + Name** - Asset code, QR code (14mm), and name (compact)
+
+**Step 4: Review and Print**
+
+- The dialog shows a preview of the first label
+- Lists all selected assets with their codes and names
+- Maximum 20 labels per batch (warning shown if exceeded)
+- Click **"Print X Labels"** button to open print dialog
+
+**Step 5: Print on Dymo**
+
+- Select Dymo LabelWriter 400 as printer
+- Labels print continuously on the Dymo roll
+- Each label is on a separate "page" for the Dymo feed
+
+**Tips for Bulk Printing:**
+
+- Select a consistent layout for all labels in a batch
+- Print in batches of 10-20 for efficiency
+- Test with 2-3 labels first to verify settings
+- Labels are printed in selection order
+
 ### Recommended Printer Settings
 
 | Setting | Value | Reason |
@@ -939,6 +984,14 @@ Establish a consistent naming scheme:
 
 ---
 
-**Document Version:** 1.1
-**Application Version:** 1.0
+**Document Version:** 1.2
+**Application Version:** 1.1
 **Last Updated:** February 13, 2026
+
+### Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.2 | 2026-02-13 | Added bulk label printing instructions |
+| 1.1 | 2026-02-12 | Added single label printing and export instructions |
+| 1.0 | 2026-02-01 | Initial version |
