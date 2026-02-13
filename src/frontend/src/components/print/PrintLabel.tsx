@@ -19,16 +19,48 @@ const DJOPPIE_LOGO_SVG = `data:image/svg+xml,${encodeURIComponent(
   '</svg>'
 )}`;
 
-// Preview scales: QR is 80% of container (20mm/25mm), text gets remaining space
+// Dynamic QR sizing based on layout:
+// - qrCode/qrName: QR ~18mm (single text line, more space for QR)
+// - codeQrName: QR ~14mm (two text lines, less space for QR)
+// Preview scales proportionally (container represents 25mm label)
 const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', showLogo = false }: PrintLabelProps) => {
+  const isDoubleText = layout === 'codeQrName';
+
+  // QR sizes: 18mm for single text layouts, 14mm for double text layout
+  // Scale factor: container/25 (since label is 25mm)
   const sizeConfig = {
-    small:  { container: 100, qr: 80,  fontSize: 7,  fontSizeSmall: 5.5, logoSize: 18 },
-    medium: { container: 150, qr: 120, fontSize: 10, fontSizeSmall: 8,   logoSize: 26 },
-    large:  { container: 200, qr: 160, fontSize: 14, fontSizeSmall: 10,  logoSize: 36 },
+    small:  {
+      container: 100,
+      qrSingle: 72,  // 18mm scaled (18/25 * 100)
+      qrDouble: 56,  // 14mm scaled (14/25 * 100)
+      fontSize: 8,
+      fontSizeSmall: 6,
+      logoSizeSingle: 16,
+      logoSizeDouble: 12,
+    },
+    medium: {
+      container: 150,
+      qrSingle: 108, // 18mm scaled (18/25 * 150)
+      qrDouble: 84,  // 14mm scaled (14/25 * 150)
+      fontSize: 11,
+      fontSizeSmall: 9,
+      logoSizeSingle: 24,
+      logoSizeDouble: 18,
+    },
+    large:  {
+      container: 200,
+      qrSingle: 144, // 18mm scaled (18/25 * 200)
+      qrDouble: 112, // 14mm scaled (14/25 * 200)
+      fontSize: 15,
+      fontSizeSmall: 12,
+      logoSizeSingle: 32,
+      logoSizeDouble: 24,
+    },
   };
 
   const config = sizeConfig[size];
-  const isDoubleText = layout === 'codeQrName';
+  const qrSize = isDoubleText ? config.qrDouble : config.qrSingle;
+  const logoSize = isDoubleText ? config.logoSizeDouble : config.logoSizeSingle;
   const textFontSize = isDoubleText ? config.fontSizeSmall : config.fontSize;
 
   const topText = layout === 'codeQrName' ? assetCode : undefined;
@@ -74,17 +106,18 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
             fontWeight: 700,
             color: '#000000',
             textAlign: 'center',
-            lineHeight: 1.1,
+            lineHeight: 1,
             letterSpacing: '-0.02em',
             fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
             wordBreak: 'break-all',
-            maxWidth: '100%',
+            width: '100%',
             flexShrink: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             '@media print': {
-              fontSize: isDoubleText ? '5pt' : '7pt',
+              fontSize: '6pt',
+              width: '24mm',
             },
           }}
         >
@@ -92,20 +125,24 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
         </Typography>
       )}
 
-      {/* QR Code - fixed 20mm on print, 80% of container on screen */}
+      {/* QR Code - dynamic size based on layout (18mm single text, 14mm double text) */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          width: `${config.qr}px`,
-          height: `${config.qr}px`,
+          width: `${qrSize}px`,
+          height: `${qrSize}px`,
+          '@media print': {
+            width: isDoubleText ? '14mm' : '18mm',
+            height: isDoubleText ? '14mm' : '18mm',
+          },
         }}
       >
         <QRCodeSVG
           value={assetCode}
-          size={config.qr}
+          size={qrSize}
           level="H"
           bgColor="#FFFFFF"
           fgColor="#000000"
@@ -115,8 +152,8 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
               src: DJOPPIE_LOGO_SVG,
               x: undefined,
               y: undefined,
-              height: config.logoSize,
-              width: config.logoSize,
+              height: logoSize,
+              width: logoSize,
               excavate: true,
             },
           } : {})}
@@ -136,17 +173,18 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
             fontWeight: 700,
             color: '#000000',
             textAlign: 'center',
-            lineHeight: 1.1,
+            lineHeight: 1,
             letterSpacing: '-0.02em',
             fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
             wordBreak: 'break-all',
-            maxWidth: '100%',
+            width: '100%',
             flexShrink: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             '@media print': {
-              fontSize: isDoubleText ? '5pt' : '7pt',
+              fontSize: isDoubleText ? '6pt' : '7pt',
+              width: '24mm',
             },
           }}
         >

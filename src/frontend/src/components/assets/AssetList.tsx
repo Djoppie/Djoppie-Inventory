@@ -8,11 +8,22 @@ import { ViewMode } from '../common/ViewToggle';
 interface AssetListProps {
   assets: Asset[];
   viewMode: ViewMode;
+  selectable?: boolean;
+  selectedAssetIds?: Set<number>;
+  onSelectionChange?: (assetId: number, selected: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-const AssetList = ({ assets, viewMode }: AssetListProps) => {
+const AssetList = ({
+  assets,
+  viewMode,
+  selectable = false,
+  selectedAssetIds = new Set(),
+  onSelectionChange,
+  onSelectAll,
+}: AssetListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   if (assets.length === 0) {
@@ -30,7 +41,15 @@ const AssetList = ({ assets, viewMode }: AssetListProps) => {
 
   // If table view, delegate to AssetTableView component
   if (viewMode === 'table') {
-    return <AssetTableView assets={assets} />;
+    return (
+      <AssetTableView
+        assets={assets}
+        selectable={selectable}
+        selectedAssetIds={selectedAssetIds}
+        onSelectionChange={onSelectionChange}
+        onSelectAll={onSelectAll}
+      />
+    );
   }
 
   // Card view logic (existing implementation)
@@ -60,7 +79,13 @@ const AssetList = ({ assets, viewMode }: AssetListProps) => {
         }}
       >
         {currentAssets.map((asset) => (
-          <AssetCard key={asset.id} asset={asset} />
+          <AssetCard
+            key={asset.id}
+            asset={asset}
+            selectable={selectable}
+            selected={selectedAssetIds.has(asset.id)}
+            onSelectionChange={onSelectionChange}
+          />
         ))}
       </Box>
 

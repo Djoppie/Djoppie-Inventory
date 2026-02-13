@@ -341,5 +341,28 @@
       "highQuality": "High (Thermal)",
       "scale": "Scale"
     }
+  },
+  "bulkPrintLabel": {
+    "title": "Bulk Print Labels",
+    "labels": "labels",
+    "labelsSelected": "labels selected",
+    "maxLimitReached": "Max {{max}} labels",
+    "excessWarning": "You selected {{total}} assets, but only the first {{max}} will be printed.",
+    "previewFirstLabel": "Preview (First Label)",
+    "assetsToprint": "Assets to Print",
+    "printMode": "Print Mode",
+    "continuous": "Continuous (Dymo Roll)",
+    "printAll": "Print {{count}} Labels",
+    "select": "Select",
+    "selecting": "Selecting",
+    "enterSelectMode": "Enter selection mode to select multiple assets for bulk printing",
+    "exitSelectMode": "Exit selection mode",
+    "printSelected": "Print Labels",
+    "instructions": {
+      "title": "Bulk Printing Instructions",
+      "step1": "Labels will print continuously on your Dymo label roll",
+      "step2": "Ensure you have enough labels loaded in the printer",
+      "step3": "Each label will be 25mm x 25mm"
+    }
   }
 }

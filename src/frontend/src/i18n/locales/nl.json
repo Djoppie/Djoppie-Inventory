@@ -341,5 +341,28 @@
       "highQuality": "Hoog (Thermisch)",
       "scale": "Schaal"
     }
+  },
+  "bulkPrintLabel": {
+    "title": "Labels Bulk Afdrukken",
+    "labels": "labels",
+    "labelsSelected": "labels geselecteerd",
+    "maxLimitReached": "Max {{max}} labels",
+    "excessWarning": "U heeft {{total}} assets geselecteerd, maar alleen de eerste {{max}} worden afgedrukt.",
+    "previewFirstLabel": "Voorbeeld (Eerste Label)",
+    "assetsToprint": "Te Printen Assets",
+    "printMode": "Afdrukmodus",
+    "continuous": "Doorlopend (Dymo Rol)",
+    "printAll": "{{count}} Labels Afdrukken",
+    "select": "Selecteren",
+    "selecting": "Selecteren",
+    "enterSelectMode": "Ga naar selectiemodus om meerdere assets te selecteren voor bulk afdrukken",
+    "exitSelectMode": "Selectiemodus verlaten",
+    "printSelected": "Labels Afdrukken",
+    "instructions": {
+      "title": "Bulk Afdruk Instructies",
+      "step1": "Labels worden doorlopend afgedrukt op uw Dymo labelrol",
+      "step2": "Zorg ervoor dat u voldoende labels in de printer heeft",
+      "step3": "Elk label is 25mm x 25mm"
+    }
   }
 }

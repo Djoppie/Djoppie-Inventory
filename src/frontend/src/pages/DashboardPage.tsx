@@ -13,6 +13,7 @@ import {
   TextField,
   InputAdornment,
   Button,
+  Badge,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAssets } from '../hooks/useAssets';
@@ -21,6 +22,7 @@ import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
 import ExportDialog from '../components/export/ExportDialog';
+import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SortIcon from '@mui/icons-material/Sort';
@@ -32,6 +34,9 @@ import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import PrintIcon from '@mui/icons-material/Print';
 
 // Subtle glow pulse for the header
 const headerGlow = keyframes`
@@ -67,6 +72,9 @@ const DashboardPage = () => {
   const [discussionExpanded, setDiscussionExpanded] = useState<boolean>(false);
   const [discussionText, setDiscussionText] = useState<string>('');
   const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
+  const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState<boolean>(false);
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load view mode from localStorage on mount
     const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -213,6 +221,42 @@ const DashboardPage = () => {
     setCategoryFilter(category);
     handleCategoryMenuClose();
   };
+
+  // Selection handlers
+  const handleSelectionModeToggle = () => {
+    if (selectionMode) {
+      // Exiting selection mode - clear selections
+      setSelectedAssetIds(new Set());
+    }
+    setSelectionMode(!selectionMode);
+  };
+
+  const handleSelectionChange = (assetId: number, selected: boolean) => {
+    setSelectedAssetIds((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(assetId);
+      } else {
+        newSet.delete(assetId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      // Select all currently visible/filtered assets
+      setSelectedAssetIds(new Set(filteredAndSortedAssets.map((a) => a.id)));
+    } else {
+      setSelectedAssetIds(new Set());
+    }
+  };
+
+  // Get selected assets for bulk print dialog
+  const selectedAssets = useMemo(() => {
+    if (!assets) return [];
+    return assets.filter((a) => selectedAssetIds.has(a.id));
+  }, [assets, selectedAssetIds]);
 
   if (isLoading) return <Loading message="[LOAD] Loading asset inventory..." />;
 
@@ -495,9 +539,59 @@ const DashboardPage = () => {
         }}
       >
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          {/* Left side - View Toggle & Export Button */}
+          {/* Left side - View Toggle, Select Mode & Export/Print Buttons */}
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <ViewToggle value={viewMode} onChange={handleViewModeChange} />
+
+            {/* Selection Mode Toggle */}
+            <Tooltip title={selectionMode ? t('bulkPrintLabel.exitSelectMode') : t('bulkPrintLabel.enterSelectMode')}>
+              <Button
+                variant={selectionMode ? 'contained' : 'outlined'}
+                size="small"
+                startIcon={selectionMode ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+                onClick={handleSelectionModeToggle}
+                sx={{
+                  borderRadius: 2,
+                  minWidth: 100,
+                  ...(selectionMode && {
+                    background: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(56, 142, 60, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(76, 175, 80, 1) 0%, rgba(56, 142, 60, 0.9) 100%)',
+                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+                  }),
+                }}
+              >
+                {selectionMode ? t('bulkPrintLabel.selecting') : t('bulkPrintLabel.select')}
+              </Button>
+            </Tooltip>
+
+            {/* Bulk Print Button - shows when assets are selected */}
+            {selectionMode && selectedAssetIds.size > 0 && (
+              <Badge badgeContent={selectedAssetIds.size} color="primary">
+                <Button
+                  variant="contained"
+                  startIcon={<PrintIcon />}
+                  onClick={() => setBulkPrintDialogOpen(true)}
+                  sx={{
+                    borderRadius: 2,
+                    px: 2,
+                    background: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.9) 0%, rgba(25, 118, 210, 0.8) 100%)'
+                        : 'linear-gradient(135deg, rgba(33, 150, 243, 1) 0%, rgba(25, 118, 210, 0.9) 100%)',
+                    boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
+                    },
+                  }}
+                >
+                  {t('bulkPrintLabel.printSelected')}
+                </Button>
+              </Badge>
+            )}
+
             <Button
               variant="contained"
               startIcon={<DownloadIcon />}
@@ -743,7 +837,14 @@ const DashboardPage = () => {
       </Menu>
 
       {/* Asset List */}
-      <AssetList assets={filteredAndSortedAssets} viewMode={viewMode} />
+      <AssetList
+        assets={filteredAndSortedAssets}
+        viewMode={viewMode}
+        selectable={selectionMode}
+        selectedAssetIds={selectedAssetIds}
+        onSelectionChange={handleSelectionChange}
+        onSelectAll={handleSelectAll}
+      />
 
       {/* Discussion Section */}
       <Paper
@@ -863,6 +964,13 @@ const DashboardPage = () => {
         open={exportDialogOpen}
         onClose={() => setExportDialogOpen(false)}
         assets={assets || []}
+      />
+
+      {/* Bulk Print Dialog */}
+      <BulkPrintLabelDialog
+        open={bulkPrintDialogOpen}
+        onClose={() => setBulkPrintDialogOpen(false)}
+        assets={selectedAssets}
       />
     </Box>
   );

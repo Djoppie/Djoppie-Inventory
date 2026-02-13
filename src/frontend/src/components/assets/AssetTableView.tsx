@@ -19,6 +19,7 @@ import {
   SelectChangeEvent,
   IconButton,
   Tooltip,
+  Checkbox,
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
@@ -28,17 +29,31 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 interface AssetTableViewProps {
   assets: Asset[];
+  selectable?: boolean;
+  selectedAssetIds?: Set<number>;
+  onSelectionChange?: (assetId: number, selected: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 type SortField = 'assetCode' | 'assetName' | 'category' | 'owner' | 'building' | 'status';
 type SortOrder = 'asc' | 'desc';
 
-const AssetTableView = ({ assets }: AssetTableViewProps) => {
+const AssetTableView = ({
+  assets,
+  selectable = false,
+  selectedAssetIds = new Set(),
+  onSelectionChange,
+  onSelectAll,
+}: AssetTableViewProps) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortField, setSortField] = useState<SortField>('assetCode');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  // Calculate if all visible assets are selected
+  const allSelected = assets.length > 0 && assets.every(a => selectedAssetIds.has(a.id));
+  const someSelected = assets.some(a => selectedAssetIds.has(a.id)) && !allSelected;
 
   // Sort assets
   const sortedAssets = [...assets].sort((a, b) => {
@@ -125,6 +140,17 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                 borderColor: 'divider',
               }}
             >
+              {/* Selection Checkbox Column */}
+              {selectable && (
+                <TableCell padding="checkbox" sx={{ width: 50 }}>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onChange={(e) => onSelectAll?.(e.target.checked)}
+                    color="primary"
+                  />
+                </TableCell>
+              )}
               <TableCell
                 sx={{
                   fontWeight: 700,
@@ -304,7 +330,9 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {currentAssets.map((asset, index) => (
+            {currentAssets.map((asset, index) => {
+              const isSelected = selectedAssetIds.has(asset.id);
+              return (
               <TableRow
                 key={asset.id}
                 onClick={() => handleRowClick(asset.id)}
@@ -313,8 +341,12 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                   borderBottom: '1px solid',
                   borderColor: 'divider',
-                  backgroundColor:
-                    index % 2 === 0
+                  backgroundColor: isSelected
+                    ? (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(255, 119, 0, 0.12)'
+                          : 'rgba(255, 119, 0, 0.08)'
+                    : index % 2 === 0
                       ? (theme) =>
                           theme.palette.mode === 'dark'
                             ? 'rgba(255, 255, 255, 0.02)'
@@ -336,6 +368,20 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                   },
                 }}
               >
+                {/* Row Selection Checkbox */}
+                {selectable && (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onSelectionChange?.(asset.id, e.target.checked);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      color="primary"
+                    />
+                  </TableCell>
+                )}
                 <TableCell
                   sx={{
                     fontFamily: 'monospace',
@@ -409,7 +455,8 @@ const AssetTableView = ({ assets }: AssetTableViewProps) => {
                   </Tooltip>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

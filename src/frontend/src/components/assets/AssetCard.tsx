@@ -7,6 +7,7 @@ import {
   Typography,
   Box,
   Chip,
+  Checkbox,
   keyframes,
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
@@ -18,6 +19,9 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 interface AssetCardProps {
   asset: Asset;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectionChange?: (assetId: number, selected: boolean) => void;
 }
 
 // Pulse animation for hover effect
@@ -30,9 +34,14 @@ const glowPulse = keyframes`
   }
 `;
 
-const AssetCard = ({ asset }: AssetCardProps) => {
+const AssetCard = ({ asset, selectable = false, selected = false, onSelectionChange }: AssetCardProps) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectionChange?.(asset.id, !selected);
+  };
 
   return (
     <Card
@@ -41,14 +50,18 @@ const AssetCard = ({ asset }: AssetCardProps) => {
       sx={{
         height: '100%',
         position: 'relative',
-        border: '1px solid',
-        borderColor: 'divider',
+        border: '2px solid',
+        borderColor: selected ? 'primary.main' : 'divider',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         overflow: 'hidden',
         background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.02) 0%, transparent 50%)'
-            : 'none',
+          selected
+            ? theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, transparent 50%)'
+              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.05) 0%, transparent 50%)'
+            : theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.02) 0%, transparent 50%)'
+              : 'none',
         '&:hover': {
           borderColor: 'primary.main',
           animation: `${glowPulse} 2s ease-in-out infinite`,
@@ -77,6 +90,37 @@ const AssetCard = ({ asset }: AssetCardProps) => {
         },
       }}
     >
+      {/* Selection Checkbox */}
+      {selectable && (
+        <Box
+          onClick={handleCheckboxClick}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 10,
+          }}
+        >
+          <Checkbox
+            checked={selected}
+            color="primary"
+            sx={{
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(0, 0, 0, 0.6)'
+                  : 'rgba(255, 255, 255, 0.9)',
+              borderRadius: 1,
+              padding: 0.5,
+              '&:hover': {
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(0, 0, 0, 0.8)'
+                    : 'rgba(255, 255, 255, 1)',
+              },
+            }}
+          />
+        </Box>
+      )}
       <CardActionArea
         onClick={() => navigate(`/assets/${asset.id}`)}
         sx={{ height: '100%' }}

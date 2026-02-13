@@ -17,6 +17,7 @@ import {
   ToggleButton,
   FormControlLabel,
   Switch,
+  Chip,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import CloseIcon from '@mui/icons-material/Close';
@@ -25,40 +26,54 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import PrintLabel from './PrintLabel';
 import type { LabelLayout } from './PrintLabel';
+import type { Asset } from '../../types/asset.types';
 
-interface PrintLabelDialogProps {
+interface BulkPrintLabelDialogProps {
   open: boolean;
   onClose: () => void;
-  assetCode: string;
-  assetName?: string;
+  assets: Asset[];
 }
 
-const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDialogProps) => {
+const MAX_BULK_PRINT = 20;
+
+const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const [isPrinting, setIsPrinting] = useState(false);
   const [layout, setLayout] = useState<LabelLayout>('qrCode');
   const [showLogo, setShowLogo] = useState(false);
 
+  const assetsToProcess = assets.slice(0, MAX_BULK_PRINT);
+  const hasExcess = assets.length > MAX_BULK_PRINT;
+
   const handlePrint = () => {
     setIsPrinting(true);
 
-    // Extract the actual rendered QR code SVG from the DOM
-    const qrElement = document.querySelector('.print-label svg');
-    const qrSvgHtml = qrElement ? qrElement.outerHTML : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="50" text-anchor="middle" fill="#000">${assetCode}</text></svg>`;
-
-    // Determine text content based on layout
-    const bottomText = layout === 'qrName' ? (assetName || assetCode) : assetCode;
-    const topText = layout === 'codeQrName' ? assetCode : '';
-    const bottomLabel = layout === 'codeQrName' ? (assetName || '') : bottomText;
     const isDoubleText = layout === 'codeQrName';
-
-    const printWindow = window.open('', '_blank', 'width=400,height=400');
-
-    // Font sizes: 7pt for single text, 6pt for double text (codeQrName)
     const printFontSize = isDoubleText ? '6pt' : '7pt';
-    // QR sizes: 18mm for single text, 14mm for double text to fit on 25mm label
     const qrSize = isDoubleText ? '14mm' : '18mm';
+
+    // Generate labels HTML for all selected assets
+    const labelsHtml = assetsToProcess.map((asset) => {
+      const bottomText = layout === 'qrName' ? (asset.assetName || asset.assetCode) : asset.assetCode;
+      const topText = layout === 'codeQrName' ? asset.assetCode : '';
+      const bottomLabel = layout === 'codeQrName' ? (asset.assetName || '') : bottomText;
+
+      // Generate QR code SVG inline (simplified version without logo for bulk printing)
+      const qrValue = asset.assetCode;
+
+      return `
+        <div class="label-container">
+          ${topText ? `<div class="top-text">${topText}</div>` : ''}
+          <div class="qr-code">
+            <div class="qr-placeholder" data-value="${qrValue}"></div>
+          </div>
+          ${bottomLabel ? `<div class="bottom-text">${bottomLabel}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
 
     if (printWindow) {
       printWindow.document.write(`
@@ -66,7 +81,8 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
         <html>
           <head>
             <meta charset="UTF-8">
-            <title>${t('printLabel.title')} - ${assetCode}</title>
+            <title>${t('bulkPrintLabel.title')} - ${assetsToProcess.length} ${t('bulkPrintLabel.labels')}</title>
+            <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"><\/script>
             <style>
               * {
                 margin: 0;
@@ -81,15 +97,19 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
 
               html, body {
                 width: 100%;
-                height: 100%;
                 font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
                 background: #FFFFFF;
-                overflow: hidden;
+              }
+
+              .labels-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
               }
 
               .label-container {
-                width: 100vw;
-                height: 100vh;
+                width: 25mm;
+                height: 25mm;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -98,6 +118,12 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 padding: 0.5mm;
                 background: #FFFFFF;
                 overflow: hidden;
+                page-break-after: always;
+                page-break-inside: avoid;
+              }
+
+              .label-container:last-child {
+                page-break-after: auto;
               }
 
               .top-text, .bottom-text {
@@ -123,7 +149,7 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 height: ${qrSize};
               }
 
-              .qr-code svg {
+              .qr-code svg, .qr-code img {
                 display: block;
                 width: ${qrSize};
                 height: ${qrSize};
@@ -132,36 +158,67 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
               @media print {
                 html, body {
                   width: 100%;
-                  height: 100%;
+                }
+              }
+
+              /* Screen preview styles */
+              @media screen {
+                body {
+                  padding: 20px;
+                  background: #f5f5f5;
+                }
+
+                .labels-wrapper {
+                  gap: 10px;
                 }
 
                 .label-container {
-                  width: 100%;
-                  height: 100%;
-                  page-break-inside: avoid;
-                  margin: 0;
+                  border: 1px dashed #ccc;
+                  background: #fff;
                 }
               }
             </style>
           </head>
           <body>
-            <div class="label-container">
-              ${topText ? `<div class="top-text">${topText}</div>` : ''}
-              <div class="qr-code">
-                ${qrSvgHtml}
-              </div>
-              ${bottomLabel ? `<div class="bottom-text">${bottomLabel}</div>` : ''}
+            <div class="labels-wrapper">
+              ${labelsHtml}
             </div>
             <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  window.onafterprint = function() {
-                    window.close();
-                  };
-                }, 250);
-              };
-            </script>
+              // Generate QR codes for each placeholder
+              document.querySelectorAll('.qr-placeholder').forEach(function(placeholder) {
+                var value = placeholder.getAttribute('data-value');
+                var qr = qrcode(0, 'H');
+                qr.addData(value);
+                qr.make();
+
+                // Create SVG from QR code
+                var moduleCount = qr.getModuleCount();
+                var cellSize = 4;
+                var size = moduleCount * cellSize;
+
+                var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '">';
+                svg += '<rect width="' + size + '" height="' + size + '" fill="#FFFFFF"/>';
+
+                for (var row = 0; row < moduleCount; row++) {
+                  for (var col = 0; col < moduleCount; col++) {
+                    if (qr.isDark(row, col)) {
+                      svg += '<rect x="' + (col * cellSize) + '" y="' + (row * cellSize) + '" width="' + cellSize + '" height="' + cellSize + '" fill="#000000"/>';
+                    }
+                  }
+                }
+
+                svg += '</svg>';
+                placeholder.innerHTML = svg;
+              });
+
+              // Auto-print after QR codes are generated
+              setTimeout(function() {
+                window.print();
+                window.onafterprint = function() {
+                  window.close();
+                };
+              }, 500);
+            <\/script>
           </body>
         </html>
       `);
@@ -172,6 +229,9 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
       setIsPrinting(false);
     }, 1000);
   };
+
+  // Get first asset for preview
+  const previewAsset = assetsToProcess[0];
 
   return (
     <Dialog
@@ -229,13 +289,24 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
             </Box>
             <Box>
               <Typography variant="h6" component="div" fontWeight={700}>
-                {t('printLabel.title')}
+                {t('bulkPrintLabel.title')}
               </Typography>
-              {assetName && (
-                <Typography variant="caption" color="text.secondary">
-                  {assetName}
-                </Typography>
-              )}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip
+                  label={`${assetsToProcess.length} ${t('bulkPrintLabel.labelsSelected')}`}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                {hasExcess && (
+                  <Chip
+                    label={t('bulkPrintLabel.maxLimitReached', { max: MAX_BULK_PRINT })}
+                    size="small"
+                    color="warning"
+                    variant="outlined"
+                  />
+                )}
+              </Box>
             </Box>
           </Box>
           <IconButton
@@ -255,6 +326,13 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
       </Box>
 
       <DialogContent sx={{ pt: 2, pb: 3 }}>
+        {/* Warning for excess assets */}
+        {hasExcess && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t('bulkPrintLabel.excessWarning', { total: assets.length, max: MAX_BULK_PRINT })}
+          </Alert>
+        )}
+
         {/* Layout Selection */}
         <Paper
           elevation={0}
@@ -325,54 +403,86 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
         </Paper>
 
         {/* Label Preview */}
+        {previewAsset && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 2,
+              bgcolor: theme.palette.mode === 'light' ? '#FAFAFA' : alpha('#000000', 0.15),
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ mb: 2 }}>
+              {t('bulkPrintLabel.previewFirstLabel')}
+            </Typography>
+
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-end',
+                gap: 3,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Box sx={{ textAlign: 'center' }}>
+                <PrintLabel
+                  assetCode={previewAsset.assetCode}
+                  assetName={previewAsset.assetName}
+                  size="small"
+                  layout={layout}
+                  showLogo={showLogo}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  {t('printLabel.actualSize')}
+                </Typography>
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <PrintLabel
+                  assetCode={previewAsset.assetCode}
+                  assetName={previewAsset.assetName}
+                  size="medium"
+                  layout={layout}
+                  showLogo={showLogo}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  {t('printLabel.preview')}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        )}
+
+        {/* Asset List Preview */}
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: 2,
             mb: 2,
             bgcolor: theme.palette.mode === 'light' ? '#FAFAFA' : alpha('#000000', 0.15),
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
+            maxHeight: 150,
+            overflow: 'auto',
           }}
         >
-          <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ mb: 2 }}>
-            {t('printLabel.previewTitle')}
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            {t('bulkPrintLabel.assetsToprint')}
           </Typography>
-
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-end',
-              gap: 3,
-              flexWrap: 'wrap',
-            }}
-          >
-            <Box sx={{ textAlign: 'center' }}>
-              <PrintLabel
-                assetCode={assetCode}
-                assetName={assetName}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {assetsToProcess.map((asset) => (
+              <Chip
+                key={asset.id}
+                label={asset.assetCode}
                 size="small"
-                layout={layout}
-                showLogo={showLogo}
+                variant="outlined"
+                sx={{ fontSize: '0.7rem' }}
               />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                {t('printLabel.actualSize')}
-              </Typography>
-            </Box>
-            <Box sx={{ textAlign: 'center' }}>
-              <PrintLabel
-                assetCode={assetCode}
-                assetName={assetName}
-                size="medium"
-                layout={layout}
-                showLogo={showLogo}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                {t('printLabel.preview')}
-              </Typography>
-            </Box>
+            ))}
           </Box>
         </Paper>
 
@@ -388,27 +498,22 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
           }}
         >
           <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-            {t('printLabel.instructions.title')}
+            {t('bulkPrintLabel.instructions.title')}
           </Typography>
           <Box component="ul" sx={{ mt: 1, pl: 2, mb: 0 }}>
             <li>
               <Typography variant="body2">
-                {t('printLabel.instructions.step1')}
+                {t('bulkPrintLabel.instructions.step1')}
               </Typography>
             </li>
             <li>
               <Typography variant="body2">
-                {t('printLabel.instructions.step2')}
+                {t('bulkPrintLabel.instructions.step2')}
               </Typography>
             </li>
             <li>
               <Typography variant="body2">
-                {t('printLabel.instructions.step3')}
-              </Typography>
-            </li>
-            <li>
-              <Typography variant="body2">
-                {t('printLabel.instructions.step4')}
+                {t('bulkPrintLabel.instructions.step3')}
               </Typography>
             </li>
           </Box>
@@ -435,7 +540,7 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 {t('printLabel.printerSettings.dymoLabel')}: <strong>25mm x 25mm</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('printLabel.printerSettings.quality')}: <strong>{t('printLabel.printerSettings.highQuality')}</strong>
+                {t('bulkPrintLabel.printMode')}: <strong>{t('bulkPrintLabel.continuous')}</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {t('printLabel.printerSettings.scale')}: <strong>100%</strong>
@@ -459,20 +564,22 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
           onClick={handlePrint}
           variant="contained"
           startIcon={<PrintIcon />}
-          disabled={isPrinting}
+          disabled={isPrinting || assetsToProcess.length === 0}
           sx={{
-            minWidth: 120,
+            minWidth: 140,
             background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
             '&:hover': {
               background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
             },
           }}
         >
-          {isPrinting ? t('printLabel.printing') : t('printLabel.print')}
+          {isPrinting
+            ? t('printLabel.printing')
+            : t('bulkPrintLabel.printAll', { count: assetsToProcess.length })}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default PrintLabelDialog;
+export default BulkPrintLabelDialog;
