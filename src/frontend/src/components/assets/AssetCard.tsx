@@ -90,43 +90,12 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
         },
       }}
     >
-      {/* Selection Checkbox */}
-      {selectable && (
-        <Box
-          onClick={handleCheckboxClick}
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            zIndex: 10,
-          }}
-        >
-          <Checkbox
-            checked={selected}
-            color="primary"
-            sx={{
-              bgcolor: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'rgba(0, 0, 0, 0.6)'
-                  : 'rgba(255, 255, 255, 0.9)',
-              borderRadius: 1,
-              padding: 0.5,
-              '&:hover': {
-                bgcolor: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'rgba(0, 0, 0, 0.8)'
-                    : 'rgba(255, 255, 255, 1)',
-              },
-            }}
-          />
-        </Box>
-      )}
       <CardActionArea
         onClick={() => navigate(`/assets/${asset.id}`)}
         sx={{ height: '100%' }}
       >
         <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {/* Header with Title and Status */}
+          {/* Header with Checkbox, Title and Status */}
           <Box
             sx={{
               display: 'flex',
@@ -135,21 +104,40 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
               mb: 2,
             }}
           >
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{
-                color: isHovered ? 'primary.main' : 'text.primary',
-                fontWeight: 700,
-                letterSpacing: '0.02em',
-                transition: 'color 0.3s ease',
-                textShadow: isHovered
-                  ? '0 0 8px rgba(255, 215, 0, 0.3)'
-                  : 'none',
-              }}
-            >
-              {asset.assetName}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, minWidth: 0 }}>
+              {/* Selection Checkbox */}
+              {selectable && (
+                <Checkbox
+                  checked={selected}
+                  color="primary"
+                  size="small"
+                  onClick={handleCheckboxClick}
+                  sx={{
+                    p: 0.5,
+                    ml: -0.5,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{
+                  color: isHovered ? 'primary.main' : 'text.primary',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  transition: 'color 0.3s ease',
+                  textShadow: isHovered
+                    ? '0 0 8px rgba(255, 215, 0, 0.3)'
+                    : 'none',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {asset.assetName}
+              </Typography>
+            </Box>
             <StatusBadge status={asset.status} />
           </Box>
 

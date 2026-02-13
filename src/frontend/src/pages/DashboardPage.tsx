@@ -12,7 +12,6 @@ import {
   Divider,
   TextField,
   InputAdornment,
-  Button,
   Badge,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -34,8 +33,6 @@ import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import PrintIcon from '@mui/icons-material/Print';
 
 // Subtle glow pulse for the header
@@ -73,7 +70,6 @@ const DashboardPage = () => {
   const [discussionText, setDiscussionText] = useState<string>('');
   const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState<boolean>(false);
-  const [selectionMode, setSelectionMode] = useState<boolean>(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load view mode from localStorage on mount
@@ -223,14 +219,6 @@ const DashboardPage = () => {
   };
 
   // Selection handlers
-  const handleSelectionModeToggle = () => {
-    if (selectionMode) {
-      // Exiting selection mode - clear selections
-      setSelectedAssetIds(new Set());
-    }
-    setSelectionMode(!selectionMode);
-  };
-
   const handleSelectionChange = (assetId: number, selected: boolean) => {
     setSelectedAssetIds((prev) => {
       const newSet = new Set(prev);
@@ -539,79 +527,56 @@ const DashboardPage = () => {
         }}
       >
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          {/* Left side - View Toggle, Select Mode & Export/Print Buttons */}
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          {/* Left side - View Toggle & Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             <ViewToggle value={viewMode} onChange={handleViewModeChange} />
 
-            {/* Selection Mode Toggle */}
-            <Tooltip title={selectionMode ? t('bulkPrintLabel.exitSelectMode') : t('bulkPrintLabel.enterSelectMode')}>
-              <Button
-                variant={selectionMode ? 'contained' : 'outlined'}
-                size="small"
-                startIcon={selectionMode ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
-                onClick={handleSelectionModeToggle}
-                sx={{
-                  borderRadius: 2,
-                  minWidth: 100,
-                  ...(selectionMode && {
-                    background: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(56, 142, 60, 0.8) 100%)'
-                        : 'linear-gradient(135deg, rgba(76, 175, 80, 1) 0%, rgba(56, 142, 60, 0.9) 100%)',
-                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
-                  }),
-                }}
-              >
-                {selectionMode ? t('bulkPrintLabel.selecting') : t('bulkPrintLabel.select')}
-              </Button>
-            </Tooltip>
-
             {/* Bulk Print Button - shows when assets are selected */}
-            {selectionMode && selectedAssetIds.size > 0 && (
-              <Badge badgeContent={selectedAssetIds.size} color="primary">
-                <Button
-                  variant="contained"
-                  startIcon={<PrintIcon />}
-                  onClick={() => setBulkPrintDialogOpen(true)}
-                  sx={{
-                    borderRadius: 2,
-                    px: 2,
-                    background: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.9) 0%, rgba(25, 118, 210, 0.8) 100%)'
-                        : 'linear-gradient(135deg, rgba(33, 150, 243, 1) 0%, rgba(25, 118, 210, 0.9) 100%)',
-                    boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
-                    },
-                  }}
-                >
-                  {t('bulkPrintLabel.printSelected')}
-                </Button>
-              </Badge>
+            {selectedAssetIds.size > 0 && (
+              <Tooltip title={t('bulkPrintLabel.printSelected')}>
+                <Badge badgeContent={selectedAssetIds.size} color="primary">
+                  <IconButton
+                    onClick={() => setBulkPrintDialogOpen(true)}
+                    sx={{
+                      borderRadius: 2,
+                      background: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.9) 0%, rgba(25, 118, 210, 0.8) 100%)'
+                          : 'linear-gradient(135deg, rgba(33, 150, 243, 1) 0%, rgba(25, 118, 210, 0.9) 100%)',
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
+                      },
+                    }}
+                  >
+                    <PrintIcon />
+                  </IconButton>
+                </Badge>
+              </Tooltip>
             )}
 
-            <Button
-              variant="contained"
-              startIcon={<DownloadIcon />}
-              onClick={() => setExportDialogOpen(true)}
-              sx={{
-                borderRadius: 2,
-                px: 2,
-                background: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.9) 0%, rgba(204, 0, 0, 0.8) 100%)'
-                    : 'linear-gradient(135deg, rgba(255, 119, 0, 1) 0%, rgba(204, 0, 0, 0.9) 100%)',
-                boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: '0 6px 16px rgba(255, 119, 0, 0.4)',
-                },
-              }}
-            >
-              {t('export.title')}
-            </Button>
+            <Tooltip title={t('export.title')}>
+              <IconButton
+                onClick={() => setExportDialogOpen(true)}
+                sx={{
+                  borderRadius: 2,
+                  background: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.9) 0%, rgba(204, 0, 0, 0.8) 100%)'
+                      : 'linear-gradient(135deg, rgba(255, 119, 0, 1) 0%, rgba(204, 0, 0, 0.9) 100%)',
+                  color: '#fff',
+                  boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    boxShadow: '0 6px 16px rgba(255, 119, 0, 0.4)',
+                  },
+                }}
+              >
+                <DownloadIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           {/* Center - Search */}
@@ -840,7 +805,7 @@ const DashboardPage = () => {
       <AssetList
         assets={filteredAndSortedAssets}
         viewMode={viewMode}
-        selectable={selectionMode}
+        selectable={true}
         selectedAssetIds={selectedAssetIds}
         onSelectionChange={handleSelectionChange}
         onSelectAll={handleSelectAll}
