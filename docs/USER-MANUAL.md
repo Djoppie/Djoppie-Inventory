@@ -19,9 +19,10 @@
 9. [Editing Assets](#editing-assets)
 10. [Changing Asset Status](#changing-asset-status)
 11. [Exporting Assets](#exporting-assets)
-12. [Language Switching](#language-switching)
-13. [Dark/Light Mode](#darklight-mode)
-14. [Troubleshooting](#troubleshooting)
+12. [Printing Labels](#printing-labels)
+13. [Language Switching](#language-switching)
+14. [Dark/Light Mode](#darklight-mode)
+15. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -570,6 +571,109 @@ The export feature allows you to download asset data to Excel or CSV formats.
 
 ---
 
+## Printing Labels
+
+The application supports printing professional QR code labels for IT assets using a Dymo LabelWriter 400 thermal printer.
+
+### Requirements
+
+**Hardware:**
+
+- Dymo LabelWriter 400 (or compatible thermal printer)
+- 25mm x 25mm square labels (Dymo part #30334 or compatible)
+- USB connection to computer
+
+**Software:**
+
+- Dymo LabelWriter drivers installed
+- Modern web browser (Chrome, Firefox, Edge recommended)
+
+### Printing a Label
+
+**Step 1: Navigate to Asset**
+
+- Open the asset detail page for the asset you want to label
+- Locate the QR Code section on the page
+
+**Step 2: Click Print Label**
+
+- Click the **"Print Label"** button below the QR code
+- A dialog opens showing a preview of the label
+
+**Step 3: Review Preview**
+
+- Verify the asset code is correct
+- Preview shows actual size (25mm) and enlarged view (150%)
+- Read the printing instructions if this is your first time
+
+**Step 4: Print**
+
+- Click the **"Print"** button in the dialog
+- Browser print dialog opens
+- Select **Dymo LabelWriter 400** as the printer
+- Verify settings:
+  - Scale: 100% (important!)
+  - Paper size: 25mm x 25mm
+  - Margins: None
+- Click **Print**
+
+**Step 5: Verify Label**
+
+- Check that the QR code is clear and fully printed
+- Verify asset code text is readable
+- Test scan the QR code with your phone
+
+### Recommended Printer Settings
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| Printer | Dymo LabelWriter 400 | Required for thermal printing |
+| Scale | 100% | Ensures accurate sizing |
+| Paper Size | 25mm x 25mm | Matches physical label |
+| Margins | None | Edge-to-edge printing |
+| Quality | High/Best | Crisp QR codes |
+
+### Label Placement Best Practices
+
+**Recommended Locations:**
+
+- **Laptops**: Bottom case, near serial number sticker
+- **Desktops**: Front or top panel, visible when deployed
+- **Monitors**: Back of monitor, near base
+- **Peripherals**: Flat surface on underside
+- **Mobile devices**: On protective case (not device itself)
+
+**Avoid:**
+
+- Surfaces that get hot (near vents, power supplies)
+- Curved surfaces (QR codes may not scan well)
+- Frequently touched areas (labels may wear quickly)
+
+### Troubleshooting Label Printing
+
+**Label is too small or too large:**
+
+- Check that scale is set to 100%, not "Fit to page"
+
+**QR code doesn't scan:**
+
+- Clean printer head with alcohol wipe
+- Use high-quality thermal labels
+- Set print quality to "High" or "Best"
+
+**Text is cut off:**
+
+- Verify label is properly loaded in printer
+- Set margins to "None" in print dialog
+
+**Printer not found:**
+
+- Check USB cable connection
+- Verify printer is powered on
+- Reinstall Dymo LabelWriter drivers
+
+---
+
 ## Language Switching
 
 The application supports Dutch and English languages.
@@ -835,6 +939,6 @@ Establish a consistent naming scheme:
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Application Version:** 1.0
-**Last Updated:** February 2026
+**Last Updated:** February 13, 2026

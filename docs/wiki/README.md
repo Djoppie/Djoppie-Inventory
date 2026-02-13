@@ -5,7 +5,7 @@
 
 ---
 
-## Documents
+## Wiki Documents
 
 | # | Document | Description |
 |---|----------|-------------|
@@ -13,6 +13,19 @@
 | 2 | [Entra ID Configuration Guide](02-ENTRA-CONFIGURATION-GUIDE.md) | Microsoft Entra ID app registration setup, permissions, and maintenance |
 | 3 | [Deployment Manual](03-DEPLOYMENT-MANUAL.md) | Azure DevOps pipeline, Infrastructure as Code (Bicep), and deployment procedures |
 | 4 | [Architecture Design](04-ARCHITECTURE-DESIGN.md) | Top-level architecture, component design, technology stack, and integration points |
+
+## Other Documentation
+
+These documents are available in the main repository:
+
+| Document | Location | Description |
+|----------|----------|-------------|
+| [User Manual](../USER-MANUAL.md) | docs/ | End-user guide for IT support staff |
+| [Administrator Guide](../ADMINISTRATOR-GUIDE.md) | docs/ | IT administrator setup and configuration |
+| [Project Description](../../PROJECT-DESCRIPTION.md) | Root | Project overview for Azure DevOps |
+| [Developer Guide](../../CLAUDE.md) | Root | Development reference and coding standards |
+| [Print Label Feature](../PRINT-LABEL-FEATURE.md) | docs/ | Thermal label printing technical docs |
+| [Export Feature](../EXPORT-FEATURE.md) | docs/ | Excel/CSV export technical docs |
 
 ## Importing to Azure DevOps Wiki
 

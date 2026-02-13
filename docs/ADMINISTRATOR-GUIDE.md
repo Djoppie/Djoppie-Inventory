@@ -1410,10 +1410,12 @@ foreach ($property in $backup.PSObject.Properties) {
 ### Documentation
 
 - **User Manual:** [USER-MANUAL.md](USER-MANUAL.md)
-- **Installation Guide:** [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md)
+- **Installation Guide:** [INSTALLATION-GUIDE.md](../INSTALLATION-GUIDE.md)
 - **Backend Configuration:** [BACKEND-CONFIGURATION-GUIDE.md](BACKEND-CONFIGURATION-GUIDE.md)
-- **Key Vault Configuration:** [KEYVAULT-CONFIGURATION-GUIDE.md](KEYVAULT-CONFIGURATION-GUIDE.md)
+- **Key Vault Quick Reference:** [KEYVAULT-QUICK-REFERENCE.md](../KEYVAULT-QUICK-REFERENCE.md)
 - **Developer Guide:** [CLAUDE.md](../CLAUDE.md)
+- **Print Label Feature:** [PRINT-LABEL-FEATURE.md](PRINT-LABEL-FEATURE.md)
+- **Export Feature:** [EXPORT-FEATURE.md](EXPORT-FEATURE.md)
 
 ### External Resources
 
@@ -1571,5 +1573,5 @@ Application Not Working
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** February 11, 2026
+**Document Version:** 1.1
+**Last Updated:** February 13, 2026
