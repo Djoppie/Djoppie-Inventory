@@ -39,7 +39,15 @@
       "Bash(curl:*)",
       "Bash(az keyvault secret show:*)",
       "Bash(az sql server firewall-rule create:*)",
-      "Bash(sqlcmd:*)"
+      "Bash(sqlcmd:*)",
+      "Bash(az webapp config appsettings list:*)",
+      "Bash(az webapp identity show:*)",
+      "Bash(az keyvault show:*)",
+      "Bash(az keyvault set-policy:*)",
+      "Bash(npm run lint)",
+      "Bash(node test-date-parsing.js:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)"
     ]
   }
 }
