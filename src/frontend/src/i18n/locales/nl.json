@@ -320,11 +320,18 @@
     "preview": "Voorbeeld (150%)",
     "print": "Label Afdrukken",
     "printing": "Afdrukken...",
+    "layoutTitle": "Label Indeling",
+    "showLogo": "Djoppie logo in QR-code",
+    "layouts": {
+      "codeQrName": "Code + QR + Naam",
+      "qrCode": "QR + Code",
+      "qrName": "QR + Naam"
+    },
     "instructions": {
       "title": "Afdruk Instructies",
-      "step1": "Zorg ervoor dat uw Dymo 400 labelprinter is aangesloten en ingeschakeld",
+      "step1": "Zorg ervoor dat uw Dymo 400/450 labelprinter is aangesloten en ingeschakeld",
       "step2": "Plaats 25mm x 25mm vierkante labels in de printer",
-      "step3": "Selecteer 'Dymo LabelWriter 400' als uw printer in het afdrukvenster",
+      "step3": "Selecteer uw Dymo LabelWriter als printer in het afdrukvenster",
       "step4": "Klik op Afdrukken en controleer of het label correct wordt afgedrukt"
     },
     "printerSettings": {

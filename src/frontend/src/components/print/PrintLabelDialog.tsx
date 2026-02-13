@@ -13,6 +13,10 @@ import {
   useTheme,
   alpha,
   IconButton,
+  ToggleButtonGroup,
+  ToggleButton,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import CloseIcon from '@mui/icons-material/Close';
@@ -20,6 +24,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import PrintLabel from './PrintLabel';
+import type { LabelLayout } from './PrintLabel';
 
 interface PrintLabelDialogProps {
   open: boolean;
@@ -28,19 +33,12 @@ interface PrintLabelDialogProps {
   assetName?: string;
 }
 
-/**
- * PrintLabelDialog Component
- *
- * Provides a professional preview and print interface for asset labels.
- * Features:
- * - Visual preview of the label at multiple sizes
- * - Print instructions and best practices
- * - Optimized print styles for Dymo 400 thermal printer
- */
 const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDialogProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const [isPrinting, setIsPrinting] = useState(false);
+  const [layout, setLayout] = useState<LabelLayout>('qrCode');
+  const [showLogo, setShowLogo] = useState(false);
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -49,8 +47,15 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
     const qrElement = document.querySelector('.print-label svg');
     const qrSvgHtml = qrElement ? qrElement.outerHTML : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="50" text-anchor="middle" fill="#000">${assetCode}</text></svg>`;
 
-    // Create a hidden print window with optimized styles
+    // Determine text content based on layout
+    const bottomText = layout === 'qrName' ? (assetName || assetCode) : assetCode;
+    const topText = layout === 'codeQrName' ? assetCode : '';
+    const bottomLabel = layout === 'codeQrName' ? (assetName || '') : bottomText;
+
     const printWindow = window.open('', '_blank', 'width=400,height=400');
+
+    // Font size: 7pt for single text, 5pt for double text (codeQrName)
+    const printFontSize = layout === 'codeQrName' ? '5pt' : '7pt';
 
     if (printWindow) {
       printWindow.document.write(`
@@ -60,14 +65,12 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
             <meta charset="UTF-8">
             <title>${t('printLabel.title')} - ${assetCode}</title>
             <style>
-              /* Reset and base styles */
               * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
               }
 
-              /* Page size hint for Chromium browsers */
               @page {
                 size: 25mm 25mm;
                 margin: 0;
@@ -81,7 +84,6 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 overflow: hidden;
               }
 
-              /* Label fills entire page - adapts to whatever size the printer driver reports */
               .label-container {
                 width: 100vw;
                 height: 100vh;
@@ -89,41 +91,39 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2%;
-                padding: 4%;
+                gap: 0.3mm;
+                padding: 0.5mm;
                 background: #FFFFFF;
                 overflow: hidden;
               }
 
-              /* QR Code container - fills available space */
+              .top-text, .bottom-text {
+                font-size: ${printFontSize};
+                font-weight: 700;
+                color: #000000;
+                text-align: center;
+                line-height: 1.1;
+                letter-spacing: -0.01em;
+                max-width: 100%;
+                flex-shrink: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
+
               .qr-code {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                flex: 1 1 auto;
-                min-height: 0;
-                width: 100%;
+                flex-shrink: 0;
+                width: 20mm;
+                height: 20mm;
               }
 
               .qr-code svg {
                 display: block;
-                width: 100%;
-                height: 100%;
-                max-width: 100%;
-                max-height: 100%;
-              }
-
-              /* Asset code text */
-              .asset-code {
-                font-size: 6pt;
-                font-weight: 700;
-                color: #000000;
-                text-align: center;
-                line-height: 1.2;
-                letter-spacing: -0.01em;
-                word-break: break-all;
-                max-width: 100%;
-                flex-shrink: 0;
+                width: 20mm;
+                height: 20mm;
               }
 
               @media print {
@@ -143,13 +143,13 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
           </head>
           <body>
             <div class="label-container">
+              ${topText ? `<div class="top-text">${topText}</div>` : ''}
               <div class="qr-code">
                 ${qrSvgHtml}
               </div>
-              <div class="asset-code">${assetCode}</div>
+              ${bottomLabel ? `<div class="bottom-text">${bottomLabel}</div>` : ''}
             </div>
             <script>
-              // Auto-print when loaded
               window.onload = function() {
                 setTimeout(function() {
                   window.print();
@@ -165,7 +165,6 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
       printWindow.document.close();
     }
 
-    // Reset printing state after a delay
     setTimeout(() => {
       setIsPrinting(false);
     }, 1000);
@@ -253,13 +252,82 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
       </Box>
 
       <DialogContent sx={{ pt: 2, pb: 3 }}>
-        {/* Label Preview Section */}
+        {/* Layout Selection */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 2,
+            bgcolor: theme.palette.mode === 'light' ? '#F5F5F5' : alpha('#000000', 0.2),
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            {t('printLabel.layoutTitle')}
+          </Typography>
+
+          <ToggleButtonGroup
+            value={layout}
+            exclusive
+            onChange={(_, val) => val && setLayout(val)}
+            size="small"
+            sx={{
+              display: 'flex',
+              mb: 1.5,
+              '& .MuiToggleButton-root': {
+                flex: 1,
+                textTransform: 'none',
+                fontSize: '0.75rem',
+                py: 0.75,
+                '&.Mui-selected': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.12),
+                  color: theme.palette.primary.main,
+                  fontWeight: 600,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  },
+                },
+              },
+            }}
+          >
+            <ToggleButton value="codeQrName">
+              {t('printLabel.layouts.codeQrName')}
+            </ToggleButton>
+            <ToggleButton value="qrCode">
+              {t('printLabel.layouts.qrCode')}
+            </ToggleButton>
+            <ToggleButton value="qrName">
+              {t('printLabel.layouts.qrName')}
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          {/* Logo toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showLogo}
+                onChange={(e) => setShowLogo(e.target.checked)}
+                size="small"
+                color="primary"
+              />
+            }
+            label={
+              <Typography variant="body2">
+                {t('printLabel.showLogo')}
+              </Typography>
+            }
+          />
+        </Paper>
+
+        {/* Label Preview */}
         <Paper
           elevation={0}
           sx={{
             p: 3,
-            mb: 3,
-            bgcolor: theme.palette.mode === 'light' ? '#F5F5F5' : alpha('#000000', 0.2),
+            mb: 2,
+            bgcolor: theme.palette.mode === 'light' ? '#FAFAFA' : alpha('#000000', 0.15),
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
@@ -269,7 +337,6 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
             {t('printLabel.previewTitle')}
           </Typography>
 
-          {/* Preview at different sizes */}
           <Box
             sx={{
               display: 'flex',
@@ -280,13 +347,25 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
             }}
           >
             <Box sx={{ textAlign: 'center' }}>
-              <PrintLabel assetCode={assetCode} size="small" />
+              <PrintLabel
+                assetCode={assetCode}
+                assetName={assetName}
+                size="small"
+                layout={layout}
+                showLogo={showLogo}
+              />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 {t('printLabel.actualSize')}
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
-              <PrintLabel assetCode={assetCode} size="medium" />
+              <PrintLabel
+                assetCode={assetCode}
+                assetName={assetName}
+                size="medium"
+                layout={layout}
+                showLogo={showLogo}
+              />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 {t('printLabel.preview')}
               </Typography>
