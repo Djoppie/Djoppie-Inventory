@@ -164,7 +164,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     category: initialData?.category || '',
 
     // New relational fields
-    assetTypeId: initialData?.assetTypeId,
+    assetTypeId: initialData?.assetTypeId ?? 0,
     serviceId: initialData?.serviceId,
     installationLocation: initialData?.installationLocation || '',
 
@@ -545,7 +545,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               <AssetTypeSelect
                 value={formData.assetTypeId ?? null}
                 onChange={(value) => {
-                  setFormData(prev => ({ ...prev, assetTypeId: value ?? undefined }));
+                  setFormData(prev => ({ ...prev, assetTypeId: value ?? 0 }));
                   if (errors.assetTypeId) {
                     setErrors(prev => ({ ...prev, assetTypeId: '' }));
                   }

@@ -86,14 +86,6 @@ export const useBulkCreateAssets = () => {
   });
 };
 
-export const useNextAssetNumber = (prefix: string, isDummy: boolean = false) => {
-  return useQuery({
-    queryKey: ['assets', 'next-number', prefix, isDummy],
-    queryFn: () => assetsApi.getNextAssetNumber(prefix, isDummy),
-    enabled: !!prefix && prefix.length >= 2,
-  });
-};
-
 export const useAssetCodeExists = (code: string) => {
   return useQuery({
     queryKey: ['assets', 'code-exists', code],
