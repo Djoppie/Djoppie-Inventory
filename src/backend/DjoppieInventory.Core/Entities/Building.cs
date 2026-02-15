@@ -49,9 +49,4 @@ public class Building
     /// Timestamp when the building was last updated
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
-
-    /// <summary>
-    /// Assets installed in this building
-    /// </summary>
-    public ICollection<Asset> Assets { get; set; } = new List<Asset>();
 }

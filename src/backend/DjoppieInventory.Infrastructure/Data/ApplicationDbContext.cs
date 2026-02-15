@@ -49,11 +49,6 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.AssetTypeId)
                 .OnDelete(DeleteBehavior.Restrict); // Don't allow deleting asset type if assets exist
 
-            entity.HasOne(e => e.Building)
-                .WithMany(b => b.Assets)
-                .HasForeignKey(e => e.BuildingId)
-                .OnDelete(DeleteBehavior.SetNull); // If building deleted, set FK to null
-
             entity.HasOne(e => e.Service)
                 .WithMany(s => s.Assets)
                 .HasForeignKey(e => e.ServiceId)
@@ -184,8 +179,40 @@ public class ApplicationDbContext : DbContext
         // Seed data - Sectors
         modelBuilder.Entity<Sector>().HasData(
             new Sector { Id = 1, Code = "ORG", Name = "Organisatie", SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Sector { Id = 2, Code = "RUI", Name = "Ruimte", SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Sector { Id = 3, Code = "ZOR", Name = "Zorg", SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new Sector { Id = 2, Code = "FIN", Name = "Financiën", SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Sector { Id = 3, Code = "RUI", Name = "Ruimte", SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Sector { Id = 4, Code = "MENS", Name = "Mens", SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Sector { Id = 5, Code = "ZORG", Name = "Zorg", SortOrder = 5, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+        );
+
+        // Seed data - Services (linked to Sectors)
+        modelBuilder.Entity<Service>().HasData(
+            // Sector Organisatie (Id = 1)
+            new Service { Id = 1, Code = "BSEC", Name = "Bestuurssecretariaat", SectorId = 1, SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 2, Code = "COM", Name = "Dienst Communicatie", SectorId = 1, SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 3, Code = "IT", Name = "Dienst IT", SectorId = 1, SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 4, Code = "ORGB", Name = "Dienst Organisatiebeheersing", SectorId = 1, SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 5, Code = "HR", Name = "Dienst HR", SectorId = 1, SortOrder = 5, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 6, Code = "PREV", Name = "Dienst Preventie - GIS & Noodplanning", SectorId = 1, SortOrder = 6, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Sector Financiën (Id = 2)
+            new Service { Id = 7, Code = "AANK", Name = "Dienst Aankopen", SectorId = 2, SortOrder = 7, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 8, Code = "FINZ", Name = "Dienst Financiën", SectorId = 2, SortOrder = 8, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Sector Ruimte (Id = 3)
+            new Service { Id = 9, Code = "RO", Name = "Ruimtelijke Ontwikkeling", SectorId = 3, SortOrder = 9, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 10, Code = "INFRA", Name = "Infrastructuurprojecten", SectorId = 3, SortOrder = 10, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 11, Code = "FAC", Name = "Facilitaire Ondersteuning", SectorId = 3, SortOrder = 11, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 12, Code = "OD", Name = "Openbaar Domein", SectorId = 3, SortOrder = 12, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Sector Mens (Id = 4)
+            new Service { Id = 13, Code = "BB", Name = "Beleven & Bewegen", SectorId = 4, SortOrder = 13, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 14, Code = "BURG", Name = "Burgerzaken", SectorId = 4, SortOrder = 14, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 15, Code = "GO", Name = "Gezin & Onderwijs", SectorId = 4, SortOrder = 15, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 16, Code = "GBS", Name = "Gemeentelijke Basisschool", SectorId = 4, SortOrder = 16, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 17, Code = "SOC", Name = "Sociale Dienst", SectorId = 4, SortOrder = 17, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Sector Zorg (Id = 5)
+            new Service { Id = 18, Code = "THUIS", Name = "Thuiszorg", SectorId = 5, SortOrder = 18, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 19, Code = "ASWO", Name = "Assistentiewoningen", SectorId = 5, SortOrder = 19, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 20, Code = "CDV", Name = "Centrum Dagverzorging", SectorId = 5, SortOrder = 20, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Service { Id = 21, Code = "WZC", Name = "Woonzorgcentrum", SectorId = 5, SortOrder = 21, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
 
         // Seed data - 5 pre-defined templates

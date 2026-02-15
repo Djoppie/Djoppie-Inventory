@@ -119,11 +119,6 @@ public class Asset
     public int? AssetTypeId { get; set; }
 
     /// <summary>
-    /// Foreign key to the building/location (optional)
-    /// </summary>
-    public int? BuildingId { get; set; }
-
-    /// <summary>
     /// Foreign key to the service/department (optional)
     /// </summary>
     public int? ServiceId { get; set; }
@@ -140,11 +135,6 @@ public class Asset
     /// The asset type/category this asset belongs to
     /// </summary>
     public AssetType? AssetType { get; set; }
-
-    /// <summary>
-    /// The building where this asset is installed
-    /// </summary>
-    public Building? Building { get; set; }
 
     /// <summary>
     /// The service/department this asset is assigned to
@@ -190,5 +180,10 @@ public enum AssetStatus
     /// <summary>
     /// Uit dienst (decommissioned) - Asset has been retired from service
     /// </summary>
-    UitDienst = 4
+    UitDienst = 4,
+
+    /// <summary>
+    /// Nieuw (new) - Asset has been added to inventory but not yet in use
+    /// </summary>
+    Nieuw = 5
 }

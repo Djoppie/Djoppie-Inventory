@@ -25,6 +25,15 @@ export const csvImportApi = {
     return response.data;
   },
 
+  validateCsv: async (file: File): Promise<CsvImportResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<CsvImportResult>('/csvimport/validate', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   downloadTemplate: async (): Promise<Blob> => {
     const response = await apiClient.get('/csvimport/template', {
       responseType: 'blob',

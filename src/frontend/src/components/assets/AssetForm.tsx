@@ -47,7 +47,6 @@ import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../type
 import { GraphUser, IntuneDevice } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
 import AssetTypeSelect from '../common/AssetTypeSelect';
-import BuildingSelect from '../common/BuildingSelect';
 import ServiceSelect from '../common/ServiceSelect';
 import { intuneApi } from '../../api/intune.api';
 import { serialNumberExists } from '../../api/assets.api';
@@ -158,7 +157,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
 
     // New relational fields
     assetTypeId: initialData?.assetTypeId,
-    buildingId: initialData?.buildingId,
     serviceId: initialData?.serviceId,
     installationLocation: initialData?.installationLocation || '',
 
@@ -621,6 +619,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                       <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
                       <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
                       <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
+                      <MenuItem value="Nieuw">{t('statuses.nieuw')}</MenuItem>
                     </Select>
                   </FormControl>
                 </Box>
@@ -641,16 +640,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
               />
               <Stack spacing={2.5}>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <Box sx={{ flex: '1 1 300px' }}>
-                    <BuildingSelect
-                      value={formData.buildingId ?? null}
-                      onChange={(value) => {
-                        setFormData(prev => ({ ...prev, buildingId: value ?? undefined }));
-                      }}
-                      label={t('assetForm.building')}
-                      helperText={t('assetForm.buildingHint')}
-                    />
-                  </Box>
                   <Box sx={{ flex: '1 1 300px' }}>
                     <ServiceSelect
                       value={formData.serviceId ?? null}

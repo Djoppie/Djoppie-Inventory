@@ -3,6 +3,7 @@ using System;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215111618_SeedServices")]
+    partial class SeedServices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -43,6 +46,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<string>("Brand")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -111,6 +117,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("AssetTypeId");
+
+                    b.HasIndex("BuildingId");
 
                     b.HasIndex("SerialNumber")
                         .IsUnique();
@@ -582,38 +590,20 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         new
                         {
                             Id = 2,
-                            Code = "FIN",
+                            Code = "RUI",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Financiën",
+                            Name = "Ruimte",
                             SortOrder = 2
                         },
                         new
                         {
                             Id = 3,
-                            Code = "RUI",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Ruimte",
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Code = "MENS",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Mens",
-                            SortOrder = 4
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Code = "ZORG",
+                            Code = "ZOR",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Name = "Zorg",
-                            SortOrder = 5
+                            SortOrder = 3
                         });
                 });
 
@@ -661,212 +651,92 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            Code = "BSEC",
+                            Code = "IT",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Bestuurssecretariaat",
+                            Name = "Informatica",
                             SectorId = 1,
                             SortOrder = 1
                         },
                         new
                         {
                             Id = 2,
-                            Code = "COM",
+                            Code = "FIN",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst Communicatie",
+                            Name = "Financiën",
                             SectorId = 1,
                             SortOrder = 2
                         },
                         new
                         {
                             Id = 3,
-                            Code = "IT",
+                            Code = "HR",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst IT",
+                            Name = "Human Resources",
                             SectorId = 1,
                             SortOrder = 3
                         },
                         new
                         {
                             Id = 4,
-                            Code = "ORGB",
+                            Code = "COM",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst Organisatiebeheersing",
+                            Name = "Communicatie",
                             SectorId = 1,
                             SortOrder = 4
                         },
                         new
                         {
                             Id = 5,
-                            Code = "HR",
+                            Code = "SEC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst HR",
+                            Name = "Secretariaat",
                             SectorId = 1,
                             SortOrder = 5
                         },
                         new
                         {
                             Id = 6,
-                            Code = "PREV",
+                            Code = "TD",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst Preventie - GIS & Noodplanning",
-                            SectorId = 1,
+                            Name = "Technische Dienst",
+                            SectorId = 2,
                             SortOrder = 6
                         },
                         new
                         {
                             Id = 7,
-                            Code = "AANK",
+                            Code = "RO",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst Aankopen",
+                            Name = "Ruimtelijke Ordening",
                             SectorId = 2,
                             SortOrder = 7
                         },
                         new
                         {
                             Id = 8,
-                            Code = "FINZ",
+                            Code = "OCMW",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Dienst Financiën",
-                            SectorId = 2,
+                            Name = "OCMW",
+                            SectorId = 3,
                             SortOrder = 8
                         },
                         new
                         {
                             Id = 9,
-                            Code = "RO",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Ruimtelijke Ontwikkeling",
-                            SectorId = 3,
-                            SortOrder = 9
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Code = "INFRA",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Infrastructuurprojecten",
-                            SectorId = 3,
-                            SortOrder = 10
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Code = "FAC",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Facilitaire Ondersteuning",
-                            SectorId = 3,
-                            SortOrder = 11
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Code = "OD",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Openbaar Domein",
-                            SectorId = 3,
-                            SortOrder = 12
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Code = "BB",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Beleven & Bewegen",
-                            SectorId = 4,
-                            SortOrder = 13
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Code = "BURG",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Burgerzaken",
-                            SectorId = 4,
-                            SortOrder = 14
-                        },
-                        new
-                        {
-                            Id = 15,
-                            Code = "GO",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Gezin & Onderwijs",
-                            SectorId = 4,
-                            SortOrder = 15
-                        },
-                        new
-                        {
-                            Id = 16,
-                            Code = "GBS",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Gemeentelijke Basisschool",
-                            SectorId = 4,
-                            SortOrder = 16
-                        },
-                        new
-                        {
-                            Id = 17,
-                            Code = "SOC",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Sociale Dienst",
-                            SectorId = 4,
-                            SortOrder = 17
-                        },
-                        new
-                        {
-                            Id = 18,
-                            Code = "THUIS",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Thuiszorg",
-                            SectorId = 5,
-                            SortOrder = 18
-                        },
-                        new
-                        {
-                            Id = 19,
-                            Code = "ASWO",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Assistentiewoningen",
-                            SectorId = 5,
-                            SortOrder = 19
-                        },
-                        new
-                        {
-                            Id = 20,
-                            Code = "CDV",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Centrum Dagverzorging",
-                            SectorId = 5,
-                            SortOrder = 20
-                        },
-                        new
-                        {
-                            Id = 21,
                             Code = "WZC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
                             Name = "Woonzorgcentrum",
-                            SectorId = 5,
-                            SortOrder = 21
+                            SectorId = 3,
+                            SortOrder = 9
                         });
                 });
 
@@ -877,12 +747,19 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("AssetTypeId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany("Assets")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
                         .WithMany("Assets")
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AssetType");
+
+                    b.Navigation("Building");
 
                     b.Navigation("Service");
                 });
@@ -938,6 +815,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Assets");
 
                     b.Navigation("Templates");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Building", b =>
+                {
+                    b.Navigation("Assets");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>

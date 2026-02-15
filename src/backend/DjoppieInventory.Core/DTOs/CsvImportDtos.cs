@@ -2,6 +2,7 @@ namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
 /// Represents a single row from the CSV import file
+/// Simplified structure - Intune will auto-fill missing device info
 /// </summary>
 public record CsvImportRowDto
 {
@@ -16,74 +17,64 @@ public record CsvImportRowDto
     public string SerialNumber { get; init; } = string.Empty;
 
     /// <summary>
-    /// Official device name
+    /// Asset type code (e.g., LAP, DESK, MON) - REQUIRED
+    /// </summary>
+    public string AssetTypeCode { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Status (InGebruik, Stock, Herstelling, Defect, UitDienst) - REQUIRED, default: Stock
+    /// </summary>
+    public string Status { get; init; } = "Stock";
+
+    /// <summary>
+    /// Purchase date (format: yyyy-MM-dd) - REQUIRED
+    /// </summary>
+    public string PurchaseDate { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Device name - optional, will be fetched from Intune (DeviceName) if exists
     /// </summary>
     public string? AssetName { get; init; }
 
     /// <summary>
-    /// Asset category (e.g., Laptop, Desktop, Monitor)
-    /// </summary>
-    public string Category { get; init; } = string.Empty;
-
-    /// <summary>
-    /// Asset type code (e.g., LAP, DESK, MON) - will be validated against AssetType table
-    /// </summary>
-    public string? AssetTypeCode { get; init; }
-
-    /// <summary>
-    /// Building code (e.g., DBK, WZC) - will be validated against Building table
-    /// </summary>
-    public string? BuildingCode { get; init; }
-
-    /// <summary>
-    /// Service/Department code (e.g., IT, FIN) - will be validated against Service table
+    /// Service/Department code (e.g., IT, FIN) - optional, used as location
     /// </summary>
     public string? ServiceCode { get; init; }
 
     /// <summary>
-    /// Primary user assigned to this asset
+    /// Primary user - optional, will be fetched from Intune (Primary User) if exists
     /// </summary>
     public string? Owner { get; init; }
 
     /// <summary>
-    /// Brand of the asset
+    /// Brand - optional, will be fetched from Intune if exists
     /// </summary>
     public string? Brand { get; init; }
 
     /// <summary>
-    /// Model of the asset
+    /// Model - optional, will be fetched from Intune if exists
     /// </summary>
     public string? Model { get; init; }
 
     /// <summary>
-    /// Status (InGebruik, Stock, Herstelling, Defect, UitDienst)
-    /// </summary>
-    public string? Status { get; init; }
-
-    /// <summary>
-    /// Purchase date (format: yyyy-MM-dd)
-    /// </summary>
-    public string? PurchaseDate { get; init; }
-
-    /// <summary>
-    /// Warranty expiry date (format: yyyy-MM-dd)
-    /// </summary>
-    public string? WarrantyExpiry { get; init; }
-
-    /// <summary>
-    /// Installation date (format: yyyy-MM-dd)
+    /// Installation date (format: yyyy-MM-dd) - optional
     /// </summary>
     public string? InstallationDate { get; init; }
 
     /// <summary>
-    /// Installation location (room/floor within building)
+    /// Warranty expiry date (format: yyyy-MM-dd) - optional
     /// </summary>
-    public string? InstallationLocation { get; init; }
+    public string? WarrantyExpiry { get; init; }
 
     /// <summary>
-    /// Additional notes
+    /// Additional notes - optional
     /// </summary>
     public string? Notes { get; init; }
+
+    /// <summary>
+    /// Is this a dummy/placeholder asset - optional, default: false
+    /// </summary>
+    public bool IsDummy { get; init; } = false;
 }
 
 /// <summary>

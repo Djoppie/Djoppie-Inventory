@@ -3,6 +3,7 @@ using System;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215143306_ResetSectorsAndServices")]
+    partial class ResetSectorsAndServices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -43,6 +46,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<string>("Brand")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -111,6 +117,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("AssetTypeId");
+
+                    b.HasIndex("BuildingId");
 
                     b.HasIndex("SerialNumber")
                         .IsUnique();
@@ -877,12 +885,19 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("AssetTypeId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany("Assets")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
                         .WithMany("Assets")
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AssetType");
+
+                    b.Navigation("Building");
 
                     b.Navigation("Service");
                 });
@@ -938,6 +953,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Assets");
 
                     b.Navigation("Templates");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Building", b =>
+                {
+                    b.Navigation("Assets");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>

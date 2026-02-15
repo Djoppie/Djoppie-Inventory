@@ -3,7 +3,8 @@ export enum AssetStatus {
   Stock = 'Stock',
   Herstelling = 'Herstelling',
   Defect = 'Defect',
-  UitDienst = 'UitDienst'
+  UitDienst = 'UitDienst',
+  Nieuw = 'Nieuw'
 }
 
 export interface Asset {
@@ -14,16 +15,14 @@ export interface Asset {
   category: string;
   isDummy: boolean;
 
-  // New relational fields
+  // Relational fields
   assetTypeId?: number;
   assetType?: { id: number; code: string; name: string };
-  buildingId?: number;
-  building?: { id: number; code: string; name: string };
   serviceId?: number;
-  service?: { id: number; code: string; name: string };
+  service?: { id: number; code: string; name: string }; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
 
-  // Legacy fields (for migration)
+  // Legacy fields (for historical data)
   legacyBuilding?: string;
   legacyDepartment?: string;
 
@@ -50,10 +49,9 @@ export interface CreateAssetDto {
   category: string;
   isDummy?: boolean;
 
-  // New relational fields
+  // Relational fields
   assetTypeId?: number;
-  buildingId?: number;
-  serviceId?: number;
+  serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
 
   // User assignment fields
@@ -73,10 +71,9 @@ export interface UpdateAssetDto {
   assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
   alias?: string; // Optional readable name
 
-  // New relational fields
+  // Relational fields
   assetTypeId?: number;
-  buildingId?: number;
-  serviceId?: number;
+  serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
 
   // User assignment fields

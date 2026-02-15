@@ -21,7 +21,8 @@
     "actions": "Actions",
     "saving": "Saving...",
     "deleting": "Deleting...",
-    "or": "or"
+    "or": "or",
+    "rowsPerPage": "Rows per page"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -232,7 +233,8 @@
     "stock": "Stock",
     "herstelling": "Repair",
     "defect": "Defective",
-    "uitdienst": "Decommissioned"
+    "uitdienst": "Decommissioned",
+    "nieuw": "New"
   },
   "export": {
     "title": "Export Inventory",
@@ -392,7 +394,18 @@
     "failed": "failed",
     "successfulImports": "Successfully Imported",
     "errors": "Errors",
-    "downloadErrors": "Download Error Report"
+    "downloadErrors": "Download Error Report",
+    "preview": "CSV Preview",
+    "emptyFile": "CSV file is empty or contains no data",
+    "parseError": "Error reading CSV file",
+    "rowsToImport": "rows to import",
+    "rowsWithWarnings": "rows with warnings",
+    "rowsWithErrors": "rows with errors",
+    "validRows": "valid",
+    "validating": "Validating...",
+    "importing": "Importing",
+    "import": "Import",
+    "assets": "assets"
   },
   "assetEvents": {
     "title": "Event History",

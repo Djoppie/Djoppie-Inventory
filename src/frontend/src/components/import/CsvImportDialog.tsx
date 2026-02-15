@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger';
-import { useState, useRef, DragEvent } from 'react';
+import { useState, useRef, DragEvent, useMemo } from 'react';
 import {
   Box,
   Dialog,
@@ -22,6 +22,15 @@ import {
   useTheme,
   IconButton,
   Collapse,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   CloudUpload as CloudUploadIcon,
@@ -31,6 +40,9 @@ import {
   Close as CloseIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  ArrowBack as ArrowBackIcon,
+  TableChart as TableChartIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { csvImportApi, CsvImportResult, CsvRowResult } from '../../api/csvImport.api';
 import { useTranslation } from 'react-i18next';
@@ -41,19 +53,138 @@ interface CsvImportDialogProps {
   onSuccess?: () => void;
 }
 
+// CSV row structure for preview (parsed locally for display)
+interface CsvPreviewRow {
+  rowNumber: number;
+  serialNumber: string;
+  assetTypeCode: string;
+  status: string;
+  purchaseDate: string;
+  isDummy: string;
+  assetName: string;
+  buildingCode: string;
+  serviceCode: string;
+  owner: string;
+  brand: string;
+  model: string;
+  installationDate: string;
+  warrantyExpiry: string;
+  notes: string;
+  // Validation from server
+  hasError: boolean;
+  errorMessage: string;
+}
+
+type DialogStep = 'upload' | 'preview' | 'result';
+
 const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const [file, setFile] = useState<File | null>(null);
+  const [step, setStep] = useState<DialogStep>('upload');
+  const [previewData, setPreviewData] = useState<CsvPreviewRow[]>([]);
+  const [validating, setValidating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<CsvImportResult | null>(null);
+  const [validationResult, setValidationResult] = useState<CsvImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (selectedFile: File) => {
+  // Expected CSV headers
+  const expectedHeaders = [
+    'SerialNumber',
+    'AssetTypeCode',
+    'Status',
+    'PurchaseDate',
+    'IsDummy',
+    'AssetName',
+    'BuildingCode',
+    'ServiceCode',
+    'Owner',
+    'Brand',
+    'Model',
+    'InstallationDate',
+    'WarrantyExpiry',
+    'Notes',
+  ];
+
+  const parseCsvFile = (content: string, validationResults?: CsvRowResult[]): CsvPreviewRow[] => {
+    const lines = content.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#'));
+    if (lines.length < 2) return [];
+
+    // Create a map of validation errors by row number
+    const errorsByRow = new Map<number, string[]>();
+    if (validationResults) {
+      validationResults.forEach((r) => {
+        if (!r.success && r.errors.length > 0) {
+          errorsByRow.set(r.rowNumber, r.errors);
+        }
+      });
+    }
+
+    const rows: CsvPreviewRow[] = [];
+    // Skip header row
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCsvLine(lines[i]);
+      if (values.length === 0 || values.every((v) => !v.trim())) continue;
+
+      const rowNumber = i;
+      const errors = errorsByRow.get(rowNumber) || [];
+
+      rows.push({
+        rowNumber,
+        serialNumber: values[0] || '',
+        assetTypeCode: values[1] || '',
+        status: values[2] || 'Stock',
+        purchaseDate: values[3] || '',
+        isDummy: values[4] || 'false',
+        assetName: values[5] || '',
+        buildingCode: values[6] || '',
+        serviceCode: values[7] || '',
+        owner: values[8] || '',
+        brand: values[9] || '',
+        model: values[10] || '',
+        installationDate: values[11] || '',
+        warrantyExpiry: values[12] || '',
+        notes: values[13] || '',
+        hasError: errors.length > 0,
+        errorMessage: errors.join('; '),
+      });
+    }
+    return rows;
+  };
+
+  const parseCsvLine = (line: string): string[] => {
+    const values: string[] = [];
+    let currentValue = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+          currentValue += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        values.push(currentValue.trim());
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    values.push(currentValue.trim());
+    return values;
+  };
+
+  const handleFileSelect = async (selectedFile: File) => {
     if (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv')) {
       if (selectedFile.size > 5 * 1024 * 1024) {
         setError(t('csvImport.fileTooLarge'));
@@ -61,6 +192,33 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
       }
       setFile(selectedFile);
       setError(null);
+      setValidating(true);
+
+      try {
+        // Read file content for display
+        const content = await selectedFile.text();
+
+        // Validate with backend API
+        const validation = await csvImportApi.validateCsv(selectedFile);
+        setValidationResult(validation);
+
+        // Parse CSV with validation results for display
+        const rows = parseCsvFile(content, validation.results);
+        if (rows.length === 0) {
+          setError(t('csvImport.emptyFile'));
+          setValidating(false);
+          return;
+        }
+
+        setPreviewData(rows);
+        setStep('preview');
+        setPage(0);
+      } catch (err) {
+        logger.error('CSV validation failed:', err);
+        setError(err instanceof Error ? err.message : t('csvImport.parseError'));
+      } finally {
+        setValidating(false);
+      }
     } else {
       setError(t('csvImport.invalidFileType'));
     }
@@ -102,6 +260,7 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
     try {
       const importResult = await csvImportApi.importCsv(file);
       setResult(importResult);
+      setStep('result');
 
       if (importResult.successCount > 0 && onSuccess) {
         onSuccess();
@@ -150,28 +309,67 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
     window.URL.revokeObjectURL(url);
   };
 
+  const handleBack = () => {
+    setStep('upload');
+    setPreviewData([]);
+    setValidationResult(null);
+    setFile(null);
+  };
+
   const handleClose = () => {
     setFile(null);
+    setStep('upload');
+    setPreviewData([]);
     setResult(null);
+    setValidationResult(null);
     setError(null);
     setShowErrors(false);
     setShowSuccess(false);
+    setPage(0);
     onClose();
+  };
+
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const successResults = result?.results.filter((r) => r.success) || [];
   const errorResults = result?.results.filter((r) => !r.success) || [];
+  const rowsWithErrors = useMemo(() => previewData.filter((r) => r.hasError).length, [previewData]);
+  const validRows = useMemo(() => previewData.filter((r) => !r.hasError).length, [previewData]);
+
+  // Visible columns for preview table
+  const visibleColumns = [
+    { id: 'serialNumber', label: 'SerialNumber', minWidth: 120 },
+    { id: 'assetTypeCode', label: 'Type', minWidth: 70 },
+    { id: 'status', label: 'Status', minWidth: 90 },
+    { id: 'purchaseDate', label: 'Purchase', minWidth: 100 },
+    { id: 'isDummy', label: 'Dummy', minWidth: 60 },
+    { id: 'buildingCode', label: 'Building', minWidth: 80 },
+    { id: 'serviceCode', label: 'Service', minWidth: 80 },
+    { id: 'assetName', label: 'Name', minWidth: 120 },
+  ];
+
+  const paginatedData = useMemo(() => {
+    return previewData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [previewData, page, rowsPerPage]);
 
   return (
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           overflow: 'visible',
+          minHeight: step === 'preview' ? '80vh' : 'auto',
         },
       }}
     >
@@ -183,9 +381,19 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h5" fontWeight={700}>
-            {t('csvImport.title')}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {step === 'preview' && (
+              <IconButton onClick={handleBack} sx={{ color: '#fff', mr: 1 }}>
+                <ArrowBackIcon />
+              </IconButton>
+            )}
+            <TableChartIcon sx={{ mr: 1 }} />
+            <Typography variant="h5" fontWeight={700}>
+              {step === 'upload' && t('csvImport.title')}
+              {step === 'preview' && t('csvImport.preview')}
+              {step === 'result' && t('csvImport.importSummary')}
+            </Typography>
+          </Box>
           <IconButton
             onClick={handleClose}
             sx={{
@@ -206,8 +414,281 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
           </Alert>
         )}
 
-        {/* Results Display */}
-        {result ? (
+        {/* STEP 1: Upload */}
+        {step === 'upload' && (
+          <Box>
+            {/* Download Template Button */}
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<FileDownloadIcon />}
+              onClick={handleDownloadTemplate}
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+                fontWeight: 600,
+                py: 1.5,
+                '&:hover': {
+                  borderColor: theme.palette.primary.dark,
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                },
+              }}
+            >
+              {t('csvImport.downloadTemplate')}
+            </Button>
+
+            <Divider sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('common.or')}
+              </Typography>
+            </Divider>
+
+            {/* Upload Area */}
+            <Paper
+              elevation={0}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => !validating && fileInputRef.current?.click()}
+              sx={{
+                p: 4,
+                borderRadius: 3,
+                border: '2px dashed',
+                borderColor: isDragActive ? theme.palette.primary.main : 'divider',
+                bgcolor: isDragActive
+                  ? alpha(theme.palette.primary.main, 0.05)
+                  : alpha(theme.palette.primary.main, 0.02),
+                cursor: validating ? 'wait' : 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow:
+                  theme.palette.mode === 'light'
+                    ? '2px 2px 8px rgba(0, 0, 0, 0.1), -2px -2px 8px rgba(255, 255, 255, 0.9)'
+                    : '3px 3px 10px rgba(0, 0, 0, 0.6), -2px -2px 6px rgba(255, 255, 255, 0.03)',
+                '&:hover': validating
+                  ? {}
+                  : {
+                      borderColor: theme.palette.primary.main,
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      transform: 'translateY(-2px)',
+                    },
+              }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleFileInputChange}
+                style={{ display: 'none' }}
+                disabled={validating}
+              />
+              <Box sx={{ textAlign: 'center' }}>
+                {validating ? (
+                  <>
+                    <CircularProgress size={60} sx={{ mb: 2 }} />
+                    <Typography variant="h6" gutterBottom fontWeight={600}>
+                      {t('csvImport.validating')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {file?.name}
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <CloudUploadIcon
+                      sx={{
+                        fontSize: 60,
+                        color: theme.palette.primary.main,
+                        mb: 2,
+                        opacity: 0.7,
+                      }}
+                    />
+                    <Typography variant="h6" gutterBottom fontWeight={600}>
+                      {isDragActive ? t('csvImport.dropHere') : t('csvImport.dragDropOrClick')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t('csvImport.maxFileSize')} • {t('csvImport.csvOnly')}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </Paper>
+          </Box>
+        )}
+
+        {/* STEP 2: Preview Table */}
+        {step === 'preview' && (
+          <Box>
+            {/* Summary */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                mb: 2,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                border: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                <Chip
+                  icon={<CheckCircleIcon />}
+                  label={`${validRows} ${t('csvImport.validRows')}`}
+                  color="success"
+                  sx={{ fontWeight: 600 }}
+                />
+                {rowsWithErrors > 0 && (
+                  <Chip
+                    icon={<ErrorIcon />}
+                    label={`${rowsWithErrors} ${t('csvImport.rowsWithErrors')}`}
+                    color="error"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+                  {file?.name}
+                </Typography>
+              </Stack>
+            </Paper>
+
+            {/* Preview Table */}
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                maxHeight: 'calc(80vh - 350px)',
+                boxShadow:
+                  theme.palette.mode === 'light'
+                    ? '4px 4px 10px rgba(0, 0, 0, 0.1), -4px -4px 10px rgba(255, 255, 255, 0.9)'
+                    : '4px 4px 12px rgba(0, 0, 0, 0.5), -2px -2px 8px rgba(255, 255, 255, 0.04)',
+              }}
+            >
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700, bgcolor: 'background.paper' }}>#</TableCell>
+                    {visibleColumns.map((col) => (
+                      <TableCell
+                        key={col.id}
+                        sx={{
+                          fontWeight: 700,
+                          minWidth: col.minWidth,
+                          bgcolor: 'background.paper',
+                        }}
+                      >
+                        {col.label}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedData.map((row, idx) => (
+                    <TableRow
+                      key={row.rowNumber}
+                      sx={{
+                        bgcolor: row.hasError
+                          ? alpha(theme.palette.error.main, 0.1)
+                          : idx % 2 === 0
+                          ? 'background.default'
+                          : 'background.paper',
+                        '&:hover': {
+                          bgcolor: row.hasError
+                            ? alpha(theme.palette.error.main, 0.15)
+                            : alpha(theme.palette.primary.main, 0.05),
+                        },
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {row.hasError ? (
+                            <Tooltip title={row.errorMessage}>
+                              <ErrorIcon color="error" fontSize="small" />
+                            </Tooltip>
+                          ) : (
+                            <CheckCircleIcon color="success" fontSize="small" />
+                          )}
+                          {row.rowNumber}
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{row.serialNumber || '-'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={row.assetTypeCode || '-'}
+                          size="small"
+                          color={row.assetTypeCode ? 'primary' : 'default'}
+                          sx={{ fontWeight: 600, fontSize: '0.75rem' }}
+                        />
+                      </TableCell>
+                      <TableCell>{row.status || 'Stock'}</TableCell>
+                      <TableCell>{row.purchaseDate || '-'}</TableCell>
+                      <TableCell>
+                        {row.isDummy.toLowerCase() === 'true' ||
+                        row.isDummy === '1' ||
+                        row.isDummy.toLowerCase() === 'ja' ? (
+                          <Chip label="Ja" size="small" color="secondary" sx={{ fontSize: '0.7rem' }} />
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            Nee
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>{row.buildingCode || '-'}</TableCell>
+                      <TableCell>{row.serviceCode || '-'}</TableCell>
+                      <TableCell
+                        sx={{
+                          maxWidth: 150,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {row.assetName || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Pagination */}
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              component="div"
+              count={previewData.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage={t('common.rowsPerPage')}
+            />
+
+            {/* Upload Progress */}
+            {uploading && (
+              <Box sx={{ mt: 2 }}>
+                <LinearProgress
+                  sx={{
+                    borderRadius: 5,
+                    height: 8,
+                    '& .MuiLinearProgress-bar': {
+                      background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+                    },
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                  {t('csvImport.importing')}...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* STEP 3: Results */}
+        {step === 'result' && result && (
           <Box>
             {/* Summary */}
             <Paper
@@ -234,10 +715,7 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                     : '3px 3px 10px rgba(0, 0, 0, 0.6), -2px -2px 6px rgba(255, 255, 255, 0.03)',
               }}
             >
-              <Typography variant="h6" gutterBottom fontWeight={700}>
-                {t('csvImport.importSummary')}
-              </Typography>
-              <Stack spacing={2} sx={{ mt: 2 }}>
+              <Stack spacing={2} sx={{ mt: 1 }}>
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2" color="text.secondary">
@@ -398,143 +876,27 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
               </Box>
             )}
           </Box>
-        ) : (
-          <Box>
-            {/* Download Template Button */}
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<FileDownloadIcon />}
-              onClick={handleDownloadTemplate}
-              sx={{
-                mb: 3,
-                borderRadius: 2,
-                borderColor: theme.palette.primary.main,
-                color: theme.palette.primary.main,
-                fontWeight: 600,
-                py: 1.5,
-                '&:hover': {
-                  borderColor: theme.palette.primary.dark,
-                  bgcolor: alpha(theme.palette.primary.main, 0.05),
-                },
-              }}
-            >
-              {t('csvImport.downloadTemplate')}
-            </Button>
-
-            <Divider sx={{ mb: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                {t('common.or')}
-              </Typography>
-            </Divider>
-
-            {/* Upload Area */}
-            <Paper
-              elevation={0}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              sx={{
-                p: 4,
-                borderRadius: 3,
-                border: '2px dashed',
-                borderColor: isDragActive ? theme.palette.primary.main : 'divider',
-                bgcolor: isDragActive
-                  ? alpha(theme.palette.primary.main, 0.05)
-                  : alpha(theme.palette.primary.main, 0.02),
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow:
-                  theme.palette.mode === 'light'
-                    ? '2px 2px 8px rgba(0, 0, 0, 0.1), -2px -2px 8px rgba(255, 255, 255, 0.9)'
-                    : '3px 3px 10px rgba(0, 0, 0, 0.6), -2px -2px 6px rgba(255, 255, 255, 0.03)',
-                '&:hover': {
-                  borderColor: theme.palette.primary.main,
-                  bgcolor: alpha(theme.palette.primary.main, 0.05),
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileInputChange}
-                style={{ display: 'none' }}
-              />
-              <Box sx={{ textAlign: 'center' }}>
-                <CloudUploadIcon
-                  sx={{
-                    fontSize: 60,
-                    color: theme.palette.primary.main,
-                    mb: 2,
-                    opacity: 0.7,
-                  }}
-                />
-                <Typography variant="h6" gutterBottom fontWeight={600}>
-                  {isDragActive
-                    ? t('csvImport.dropHere')
-                    : file
-                    ? file.name
-                    : t('csvImport.dragDropOrClick')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('csvImport.maxFileSize')} • {t('csvImport.csvOnly')}
-                </Typography>
-              </Box>
-            </Paper>
-
-            {/* Upload Progress */}
-            {uploading && (
-              <Box sx={{ mt: 3 }}>
-                <LinearProgress
-                  sx={{
-                    borderRadius: 5,
-                    height: 8,
-                    '& .MuiLinearProgress-bar': {
-                      background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                    },
-                  }}
-                />
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1, textAlign: 'center' }}
-                >
-                  {t('csvImport.uploading')}
-                </Typography>
-              </Box>
-            )}
-          </Box>
         )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        {result ? (
+        {step === 'upload' && (
+          <Button onClick={handleClose}>{t('common.cancel')}</Button>
+        )}
+
+        {step === 'preview' && (
           <>
-            {result.errorCount > 0 && (
-              <Button
-                variant="outlined"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleDownloadErrorReport}
-              >
-                {t('csvImport.downloadErrors')}
-              </Button>
-            )}
-            <Button variant="contained" onClick={handleClose}>
-              {t('common.close')}
+            <Button onClick={handleBack} disabled={uploading} startIcon={<ArrowBackIcon />}>
+              {t('common.back')}
             </Button>
-          </>
-        ) : (
-          <>
+            <Box sx={{ flex: 1 }} />
             <Button onClick={handleClose} disabled={uploading}>
               {t('common.cancel')}
             </Button>
             <Button
               variant="contained"
               onClick={handleUpload}
-              disabled={!file || uploading}
+              disabled={uploading || validRows === 0}
               sx={{
                 background: `linear-gradient(145deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
                 '&:hover': {
@@ -542,7 +904,22 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                 },
               }}
             >
-              {uploading ? t('csvImport.uploading') : t('csvImport.upload')}
+              {uploading
+                ? t('csvImport.importing')
+                : `${t('csvImport.import')} (${validRows} ${t('csvImport.assets')})`}
+            </Button>
+          </>
+        )}
+
+        {step === 'result' && (
+          <>
+            {result && result.errorCount > 0 && (
+              <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={handleDownloadErrorReport}>
+                {t('csvImport.downloadErrors')}
+              </Button>
+            )}
+            <Button variant="contained" onClick={handleClose}>
+              {t('common.close')}
             </Button>
           </>
         )}

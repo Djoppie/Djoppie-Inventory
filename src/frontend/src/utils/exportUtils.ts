@@ -37,6 +37,7 @@ const formatStatus = (status: AssetStatus): string => {
     [AssetStatus.Herstelling]: 'Herstelling',
     [AssetStatus.Defect]: 'Defect',
     [AssetStatus.UitDienst]: 'Uit dienst',
+    [AssetStatus.Nieuw]: 'Nieuw',
   };
   return statusMap[status] || status;
 };

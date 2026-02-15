@@ -219,14 +219,16 @@ function AdminDataTable<T extends Record<string, unknown>>({
                     <TableCell align="center">
                       {item.isActive ? (
                         <Chip
-                          icon={<CheckCircleIcon sx={{ color: '#FFFFFF !important' }} />}
+                          icon={<CheckCircleIcon />}
                           label="Active"
                           size="small"
+                          color="success"
                           sx={{
                             fontWeight: 600,
                             borderRadius: '20px',
-                            backgroundColor: '#10B981',
-                            color: '#FFFFFF',
+                            '& .MuiChip-label': {
+                              color: '#FFFFFF',
+                            },
                             '& .MuiChip-icon': {
                               color: '#FFFFFF',
                             },
@@ -234,7 +236,7 @@ function AdminDataTable<T extends Record<string, unknown>>({
                         />
                       ) : (
                         <Chip
-                          icon={<CancelIcon sx={{ color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280' }} />}
+                          icon={<CancelIcon />}
                           label="Inactive"
                           size="small"
                           sx={{
@@ -245,6 +247,9 @@ function AdminDataTable<T extends Record<string, unknown>>({
                                 ? 'rgba(255, 255, 255, 0.15)'
                                 : 'rgba(0, 0, 0, 0.12)',
                             color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                            '& .MuiChip-icon': {
+                              color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                            },
                           }}
                         />
                       )}

@@ -19,8 +19,10 @@ import {
 // ============================================================
 
 export const assetTypesApi = {
-  getAll: async (): Promise<AssetType[]> => {
-    const response = await apiClient.get<AssetType[]>('/admin/assettypes');
+  getAll: async (includeInactive = true): Promise<AssetType[]> => {
+    const response = await apiClient.get<AssetType[]>('/admin/assettypes', {
+      params: { includeInactive },
+    });
     return response.data;
   },
 
@@ -49,8 +51,10 @@ export const assetTypesApi = {
 // ============================================================
 
 export const buildingsApi = {
-  getAll: async (): Promise<Building[]> => {
-    const response = await apiClient.get<Building[]>('/admin/buildings');
+  getAll: async (includeInactive = true): Promise<Building[]> => {
+    const response = await apiClient.get<Building[]>('/admin/buildings', {
+      params: { includeInactive },
+    });
     return response.data;
   },
 
@@ -79,8 +83,10 @@ export const buildingsApi = {
 // ============================================================
 
 export const sectorsApi = {
-  getAll: async (): Promise<Sector[]> => {
-    const response = await apiClient.get<Sector[]>('/admin/sectors');
+  getAll: async (includeInactive = true): Promise<Sector[]> => {
+    const response = await apiClient.get<Sector[]>('/admin/sectors', {
+      params: { includeInactive },
+    });
     return response.data;
   },
 
@@ -109,8 +115,10 @@ export const sectorsApi = {
 // ============================================================
 
 export const servicesApi = {
-  getAll: async (): Promise<Service[]> => {
-    const response = await apiClient.get<Service[]>('/admin/services');
+  getAll: async (includeInactive = true): Promise<Service[]> => {
+    const response = await apiClient.get<Service[]>('/admin/services', {
+      params: { includeInactive },
+    });
     return response.data;
   },
 

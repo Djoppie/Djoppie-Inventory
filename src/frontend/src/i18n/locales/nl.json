@@ -21,7 +21,8 @@
     "actions": "Acties",
     "saving": "Opslaan...",
     "deleting": "Verwijderen...",
-    "or": "of"
+    "or": "of",
+    "rowsPerPage": "Rijen per pagina"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -232,7 +233,8 @@
     "stock": "Stock",
     "herstelling": "Herstelling",
     "defect": "Defect",
-    "uitdienst": "Uit dienst"
+    "uitdienst": "Uit dienst",
+    "nieuw": "Nieuw"
   },
   "export": {
     "title": "Inventaris Exporteren",
@@ -392,7 +394,18 @@
     "failed": "mislukt",
     "successfulImports": "Succesvol Geïmporteerd",
     "errors": "Fouten",
-    "downloadErrors": "Download Foutenrapport"
+    "downloadErrors": "Download Foutenrapport",
+    "preview": "CSV Voorbeeld",
+    "emptyFile": "CSV-bestand is leeg of bevat geen data",
+    "parseError": "Fout bij lezen van CSV-bestand",
+    "rowsToImport": "rijen te importeren",
+    "rowsWithWarnings": "rijen met waarschuwingen",
+    "rowsWithErrors": "rijen met fouten",
+    "validRows": "geldig",
+    "validating": "Valideren...",
+    "importing": "Importeren",
+    "import": "Importeer",
+    "assets": "assets"
   },
   "assetEvents": {
     "title": "Gebeurtenissen Historie",

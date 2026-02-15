@@ -108,7 +108,7 @@ const CSV_COLUMNS = [
   { key: 'isDummy', label: 'Is Dummy', required: false },
 ];
 
-const VALID_STATUSES = ['InGebruik', 'Stock', 'Herstelling', 'Defect', 'UitDienst'];
+const VALID_STATUSES = ['InGebruik', 'Stock', 'Herstelling', 'Defect', 'UitDienst', 'Nieuw'];
 
 // Parse date string in multiple formats (DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD)
 // Returns ISO date string (YYYY-MM-DD) or null if invalid
@@ -739,6 +739,7 @@ const BulkAssetCreationForm = ({ onSubmit, onSubmitMultiple, onCancel, isLoading
                         <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
                         <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
                         <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
+                        <MenuItem value="Nieuw">{t('statuses.nieuw')}</MenuItem>
                       </Select>
                     </FormControl>
                   </Box>

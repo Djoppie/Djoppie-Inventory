@@ -8,42 +8,41 @@ using Microsoft.Extensions.Logging;
 namespace DjoppieInventory.Infrastructure.Services;
 
 /// <summary>
-/// Service for importing assets from CSV files with validation and automatic event creation
+/// Service for importing assets from CSV files with validation and automatic event creation.
+/// Simplified CSV structure - optional fields can be auto-filled from Intune.
 /// </summary>
 public class CsvImportService : ICsvImportService
 {
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetTypeRepository _assetTypeRepository;
-    private readonly IBuildingRepository _buildingRepository;
     private readonly IServiceRepository _serviceRepository;
     private readonly IAssetEventService _assetEventService;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly ILogger<CsvImportService> _logger;
 
-    // Expected CSV columns in order
+    // Simplified CSV columns
+    // Required: SerialNumber, AssetTypeCode, Status, PurchaseDate
+    // Optional: IsDummy, AssetName, ServiceCode, Owner, Brand, Model, InstallationDate, WarrantyExpiry, Notes
     private static readonly string[] ExpectedHeaders =
     {
-        "SerialNumber",
-        "AssetName",
-        "Category",
-        "AssetTypeCode",
-        "BuildingCode",
-        "ServiceCode",
-        "Owner",
-        "Brand",
-        "Model",
-        "Status",
-        "PurchaseDate",
-        "WarrantyExpiry",
-        "InstallationDate",
-        "InstallationLocation",
-        "Notes"
+        "SerialNumber",      // 0 - REQUIRED
+        "AssetTypeCode",     // 1 - REQUIRED
+        "Status",            // 2 - REQUIRED (default: Stock)
+        "PurchaseDate",      // 3 - REQUIRED
+        "IsDummy",           // 4 - optional (default: false) - true/false or 1/0
+        "AssetName",         // 5 - optional (Intune: DeviceName)
+        "ServiceCode",       // 6 - optional (location/department)
+        "Owner",             // 7 - optional (Intune: Primary User)
+        "Brand",             // 8 - optional (Intune)
+        "Model",             // 9 - optional (Intune)
+        "InstallationDate",  // 10 - optional
+        "WarrantyExpiry",    // 11 - optional
+        "Notes"              // 12 - optional
     };
 
     public CsvImportService(
         IAssetRepository assetRepository,
         IAssetTypeRepository assetTypeRepository,
-        IBuildingRepository buildingRepository,
         IServiceRepository serviceRepository,
         IAssetEventService assetEventService,
         IAssetCodeGenerator assetCodeGenerator,
@@ -51,7 +50,6 @@ public class CsvImportService : ICsvImportService
     {
         _assetRepository = assetRepository;
         _assetTypeRepository = assetTypeRepository;
-        _buildingRepository = buildingRepository;
         _serviceRepository = serviceRepository;
         _assetEventService = assetEventService;
         _assetCodeGenerator = assetCodeGenerator;
@@ -76,8 +74,6 @@ public class CsvImportService : ICsvImportService
             // Pre-fetch reference data for validation (avoid N+1 queries)
             var assetTypes = (await _assetTypeRepository.GetAllAsync(includeInactive: false, cancellationToken))
                 .ToDictionary(at => at.Code, at => at, StringComparer.OrdinalIgnoreCase);
-            var buildings = (await _buildingRepository.GetAllAsync(includeInactive: false, cancellationToken))
-                .ToDictionary(b => b.Code, b => b, StringComparer.OrdinalIgnoreCase);
             var services = (await _serviceRepository.GetAllAsync(includeInactive: false, cancellationToken: cancellationToken))
                 .ToDictionary(s => s.Code, s => s, StringComparer.OrdinalIgnoreCase);
 
@@ -90,7 +86,6 @@ public class CsvImportService : ICsvImportService
                 var rowResult = await ProcessCsvRowAsync(
                     csvRow,
                     assetTypes,
-                    buildings,
                     services,
                     existingSerialNumbers,
                     performedBy,
@@ -129,10 +124,187 @@ public class CsvImportService : ICsvImportService
         return result;
     }
 
+    public async Task<CsvImportResultDto> ValidateAssetsAsync(
+        Stream csvStream,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new CsvImportResultDto();
+        var rowResults = new List<CsvRowResultDto>();
+
+        try
+        {
+            // Parse CSV file
+            var csvRows = ParseCsvStream(csvStream);
+            result = result with { TotalRows = csvRows.Count };
+
+            // Pre-fetch reference data for validation (avoid N+1 queries)
+            var assetTypes = (await _assetTypeRepository.GetAllAsync(includeInactive: false, cancellationToken))
+                .ToDictionary(at => at.Code, at => at, StringComparer.OrdinalIgnoreCase);
+            var services = (await _serviceRepository.GetAllAsync(includeInactive: false, cancellationToken: cancellationToken))
+                .ToDictionary(s => s.Code, s => s, StringComparer.OrdinalIgnoreCase);
+
+            // Track serial numbers within this CSV for duplicate detection
+            var serialNumbersInCsv = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Process each row for validation only
+            foreach (var csvRow in csvRows)
+            {
+                var rowResult = await ValidateCsvRowAsync(
+                    csvRow,
+                    assetTypes,
+                    services,
+                    serialNumbersInCsv,
+                    cancellationToken);
+
+                rowResults.Add(rowResult);
+
+                // Track serial numbers to detect duplicates within this import
+                if (!string.IsNullOrWhiteSpace(csvRow.SerialNumber))
+                {
+                    serialNumbersInCsv.Add(csvRow.SerialNumber);
+                }
+            }
+
+            var successCount = rowResults.Count(r => r.Success);
+            var errorCount = rowResults.Count(r => !r.Success);
+
+            result = result with
+            {
+                SuccessCount = successCount,
+                ErrorCount = errorCount,
+                Results = rowResults
+            };
+
+            _logger.LogInformation(
+                "CSV validation completed: {SuccessCount} valid, {ErrorCount} invalid out of {TotalRows} rows",
+                successCount, errorCount, result.TotalRows);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CSV validation failed with exception");
+            throw;
+        }
+
+        return result;
+    }
+
+    private async Task<CsvRowResultDto> ValidateCsvRowAsync(
+        CsvImportRowDto csvRow,
+        Dictionary<string, AssetType> assetTypes,
+        Dictionary<string, Service> services,
+        HashSet<string> serialNumbersInCsv,
+        CancellationToken cancellationToken)
+    {
+        var errors = new List<string>();
+
+        // Validate REQUIRED fields
+        if (string.IsNullOrWhiteSpace(csvRow.SerialNumber))
+        {
+            errors.Add("SerialNumber is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(csvRow.AssetTypeCode))
+        {
+            errors.Add("AssetTypeCode is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(csvRow.PurchaseDate))
+        {
+            errors.Add("PurchaseDate is required");
+        }
+
+        // Validate serial number uniqueness
+        if (!string.IsNullOrWhiteSpace(csvRow.SerialNumber))
+        {
+            if (serialNumbersInCsv.Contains(csvRow.SerialNumber))
+            {
+                errors.Add($"SerialNumber '{csvRow.SerialNumber}' is duplicated in this CSV");
+            }
+            else if (await _assetRepository.SerialNumberExistsAsync(csvRow.SerialNumber, excludeAssetId: null, cancellationToken))
+            {
+                errors.Add($"SerialNumber '{csvRow.SerialNumber}' already exists in the database");
+            }
+        }
+
+        // Validate AssetTypeCode (required)
+        if (!string.IsNullOrWhiteSpace(csvRow.AssetTypeCode))
+        {
+            if (!assetTypes.ContainsKey(csvRow.AssetTypeCode))
+            {
+                var validCodes = string.Join(", ", assetTypes.Keys.OrderBy(k => k));
+                errors.Add($"AssetTypeCode '{csvRow.AssetTypeCode}' not found. Valid: {validCodes}");
+            }
+        }
+
+        // Validate ServiceCode if provided
+        if (!string.IsNullOrWhiteSpace(csvRow.ServiceCode))
+        {
+            if (!services.ContainsKey(csvRow.ServiceCode))
+            {
+                var validCodes = string.Join(", ", services.Keys.OrderBy(k => k));
+                errors.Add($"ServiceCode '{csvRow.ServiceCode}' not found. Valid: {validCodes}");
+            }
+        }
+
+        // Validate Status (default: Stock)
+        var statusValue = string.IsNullOrWhiteSpace(csvRow.Status) ? "Stock" : csvRow.Status;
+        if (!Enum.TryParse<AssetStatus>(statusValue, ignoreCase: true, out _))
+        {
+            errors.Add($"Invalid Status '{csvRow.Status}'. Valid: InGebruik, Stock, Herstelling, Defect, UitDienst");
+        }
+
+        // Validate dates
+        ValidateDateFormat(csvRow.PurchaseDate, "PurchaseDate", errors, required: true);
+        ValidateDateFormat(csvRow.WarrantyExpiry, "WarrantyExpiry", errors, required: false);
+        ValidateDateFormat(csvRow.InstallationDate, "InstallationDate", errors, required: false);
+
+        return new CsvRowResultDto
+        {
+            RowNumber = csvRow.RowNumber,
+            Success = errors.Count == 0,
+            SerialNumber = csvRow.SerialNumber,
+            Errors = errors
+        };
+    }
+
+    private void ValidateDateFormat(string? dateString, string fieldName, List<string> errors, bool required)
+    {
+        if (string.IsNullOrWhiteSpace(dateString))
+        {
+            if (required)
+            {
+                errors.Add($"{fieldName} is required");
+            }
+            return;
+        }
+
+        // Supported date formats (European and ISO)
+        var formats = new[]
+        {
+            "dd-MM-yyyy", "dd/MM/yyyy", "d-M-yyyy", "d/M/yyyy",
+            "yyyy-MM-dd", "yyyy/MM/dd"
+        };
+
+        foreach (var format in formats)
+        {
+            if (DateTime.TryParseExact(dateString.Trim(), format, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            {
+                return; // Valid date
+            }
+        }
+
+        // Try generic parsing as fallback
+        if (DateTime.TryParse(dateString, new CultureInfo("nl-BE"), DateTimeStyles.None, out _))
+        {
+            return; // Valid date
+        }
+
+        errors.Add($"{fieldName} '{dateString}' is invalid. Use DD-MM-YYYY or YYYY-MM-DD");
+    }
+
     private async Task<CsvRowResultDto> ProcessCsvRowAsync(
         CsvImportRowDto csvRow,
         Dictionary<string, AssetType> assetTypes,
-        Dictionary<string, Building> buildings,
         Dictionary<string, Service> services,
         HashSet<string> existingSerialNumbers,
         string performedBy,
@@ -141,15 +313,10 @@ public class CsvImportService : ICsvImportService
     {
         var errors = new List<string>();
 
-        // Validate required fields
+        // Validate REQUIRED fields
         if (string.IsNullOrWhiteSpace(csvRow.SerialNumber))
         {
             errors.Add("SerialNumber is required");
-        }
-
-        if (string.IsNullOrWhiteSpace(csvRow.Category))
-        {
-            errors.Add("Category is required");
         }
 
         if (string.IsNullOrWhiteSpace(csvRow.AssetTypeCode))
@@ -157,12 +324,17 @@ public class CsvImportService : ICsvImportService
             errors.Add("AssetTypeCode is required");
         }
 
+        if (string.IsNullOrWhiteSpace(csvRow.PurchaseDate))
+        {
+            errors.Add("PurchaseDate is required");
+        }
+
         // Validate serial number uniqueness
         if (!string.IsNullOrWhiteSpace(csvRow.SerialNumber))
         {
             if (existingSerialNumbers.Contains(csvRow.SerialNumber))
             {
-                errors.Add($"SerialNumber '{csvRow.SerialNumber}' already exists or is duplicated in this import");
+                errors.Add($"SerialNumber '{csvRow.SerialNumber}' is duplicated in this import");
             }
             else if (await _assetRepository.SerialNumberExistsAsync(csvRow.SerialNumber, excludeAssetId: null, cancellationToken))
             {
@@ -176,17 +348,8 @@ public class CsvImportService : ICsvImportService
         {
             if (!assetTypes.TryGetValue(csvRow.AssetTypeCode, out assetType))
             {
-                errors.Add($"AssetTypeCode '{csvRow.AssetTypeCode}' not found in the system");
-            }
-        }
-
-        // Validate BuildingCode if provided
-        Building? building = null;
-        if (!string.IsNullOrWhiteSpace(csvRow.BuildingCode))
-        {
-            if (!buildings.TryGetValue(csvRow.BuildingCode, out building))
-            {
-                errors.Add($"BuildingCode '{csvRow.BuildingCode}' not found");
+                var validCodes = string.Join(", ", assetTypes.Keys.OrderBy(k => k));
+                errors.Add($"AssetTypeCode '{csvRow.AssetTypeCode}' not found. Valid codes: {validCodes}");
             }
         }
 
@@ -196,24 +359,23 @@ public class CsvImportService : ICsvImportService
         {
             if (!services.TryGetValue(csvRow.ServiceCode, out service))
             {
-                errors.Add($"ServiceCode '{csvRow.ServiceCode}' not found");
+                var validCodes = string.Join(", ", services.Keys.OrderBy(k => k));
+                errors.Add($"ServiceCode '{csvRow.ServiceCode}' not found. Valid codes: {validCodes}");
             }
         }
 
-        // Validate and parse Status
-        AssetStatus status = AssetStatus.Stock; // Default
-        if (!string.IsNullOrWhiteSpace(csvRow.Status))
+        // Validate and parse Status (default: Stock)
+        AssetStatus status = AssetStatus.Stock;
+        var statusValue = string.IsNullOrWhiteSpace(csvRow.Status) ? "Stock" : csvRow.Status;
+        if (!Enum.TryParse<AssetStatus>(statusValue, ignoreCase: true, out status))
         {
-            if (!Enum.TryParse<AssetStatus>(csvRow.Status, ignoreCase: true, out status))
-            {
-                errors.Add($"Invalid Status '{csvRow.Status}'. Valid values: InGebruik, Stock, Herstelling, Defect, UitDienst");
-            }
+            errors.Add($"Invalid Status '{csvRow.Status}'. Valid values: InGebruik, Stock, Herstelling, Defect, UitDienst");
         }
 
         // Validate and parse dates
-        DateTime? purchaseDate = ParseDate(csvRow.PurchaseDate, "PurchaseDate", errors);
-        DateTime? warrantyExpiry = ParseDate(csvRow.WarrantyExpiry, "WarrantyExpiry", errors);
-        DateTime? installationDate = ParseDate(csvRow.InstallationDate, "InstallationDate", errors);
+        DateTime? purchaseDate = ParseDate(csvRow.PurchaseDate, "PurchaseDate", errors, required: true);
+        DateTime? warrantyExpiry = ParseDate(csvRow.WarrantyExpiry, "WarrantyExpiry", errors, required: false);
+        DateTime? installationDate = ParseDate(csvRow.InstallationDate, "InstallationDate", errors, required: false);
 
         // If there are validation errors, return failure result
         if (errors.Count > 0)
@@ -230,26 +392,27 @@ public class CsvImportService : ICsvImportService
         // Create the asset
         try
         {
-            // Determine year from purchase date, installation date, or current year
-            int year = purchaseDate?.Year ?? installationDate?.Year ?? DateTime.UtcNow.Year;
+            // Determine year from purchase date or current year
+            int year = purchaseDate?.Year ?? DateTime.UtcNow.Year;
 
             // Generate asset code using the new format
-            // assetType is guaranteed to be non-null here due to validation above
             var assetCode = await _assetCodeGenerator.GenerateCodeAsync(
                 assetType!.Id,
-                building?.Id,
+                null, // No building - using service as location
                 year,
-                isDummy: false,
+                isDummy: csvRow.IsDummy,
                 cancellationToken);
+
+            // Use AssetType.Name as Category
+            var category = assetType.Name;
 
             var asset = new Asset
             {
                 AssetCode = assetCode,
                 SerialNumber = csvRow.SerialNumber,
                 AssetName = csvRow.AssetName ?? string.Empty,
-                Category = csvRow.Category,
-                AssetTypeId = assetType?.Id,
-                BuildingId = building?.Id,
+                Category = category,
+                AssetTypeId = assetType.Id,
                 ServiceId = service?.Id,
                 Owner = csvRow.Owner,
                 Brand = csvRow.Brand,
@@ -258,14 +421,12 @@ public class CsvImportService : ICsvImportService
                 PurchaseDate = purchaseDate,
                 WarrantyExpiry = warrantyExpiry,
                 InstallationDate = installationDate,
-                InstallationLocation = csvRow.InstallationLocation,
-                IsDummy = false
+                IsDummy = csvRow.IsDummy
             };
 
             var createdAsset = await _assetRepository.CreateAsync(asset, cancellationToken);
 
             // Create "Created" event with notes from CSV
-            var eventDescription = $"Asset created via CSV import by {performedBy}";
             await _assetEventService.CreateCreatedEventAsync(
                 createdAsset.Id,
                 performedBy,
@@ -286,6 +447,17 @@ public class CsvImportService : ICsvImportService
                 Errors = new List<string>()
             };
         }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx) when (dbEx.InnerException?.Message.Contains("UNIQUE constraint failed") == true)
+        {
+            _logger.LogWarning("CSV import: Duplicate serial number detected for row {RowNumber}: {SerialNumber}", csvRow.RowNumber, csvRow.SerialNumber);
+            return new CsvRowResultDto
+            {
+                RowNumber = csvRow.RowNumber,
+                Success = false,
+                SerialNumber = csvRow.SerialNumber,
+                Errors = new List<string> { $"SerialNumber '{csvRow.SerialNumber}' already exists in the database" }
+            };
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create asset from CSV row {RowNumber}", csvRow.RowNumber);
@@ -299,25 +471,43 @@ public class CsvImportService : ICsvImportService
         }
     }
 
-    private DateTime? ParseDate(string? dateString, string fieldName, List<string> errors)
+    private DateTime? ParseDate(string? dateString, string fieldName, List<string> errors, bool required)
     {
         if (string.IsNullOrWhiteSpace(dateString))
         {
+            if (required)
+            {
+                errors.Add($"{fieldName} is required");
+            }
             return null;
         }
 
-        if (DateTime.TryParseExact(dateString, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        // Supported date formats (European and ISO)
+        var formats = new[]
         {
-            return date;
+            "dd-MM-yyyy",   // European: 15-01-2024
+            "dd/MM/yyyy",   // European with slash: 15/01/2024
+            "d-M-yyyy",     // European short: 5-1-2024
+            "d/M/yyyy",     // European short with slash: 5/1/2024
+            "yyyy-MM-dd",   // ISO: 2024-01-15
+            "yyyy/MM/dd",   // ISO with slash: 2024/01/15
+        };
+
+        foreach (var format in formats)
+        {
+            if (DateTime.TryParseExact(dateString.Trim(), format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                return date;
+            }
         }
 
-        // Try other common formats
-        if (DateTime.TryParse(dateString, CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
+        // Try generic parsing as fallback
+        if (DateTime.TryParse(dateString, new CultureInfo("nl-BE"), DateTimeStyles.None, out var nlDate))
         {
-            return date;
+            return nlDate;
         }
 
-        errors.Add($"{fieldName} '{dateString}' is not a valid date. Expected format: yyyy-MM-dd");
+        errors.Add($"{fieldName} '{dateString}' is not a valid date. Supported formats: DD-MM-YYYY or YYYY-MM-DD");
         return null;
     }
 
@@ -338,12 +528,12 @@ public class CsvImportService : ICsvImportService
         ValidateHeaders(headers);
 
         // Read data rows
-        int rowNumber = 1; // Row number for data rows (excluding header)
+        int rowNumber = 1;
         string? line;
         while ((line = reader.ReadLine()) != null)
         {
-            // Skip empty lines
-            if (string.IsNullOrWhiteSpace(line))
+            // Skip empty lines and comment lines (starting with #)
+            if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith('#'))
             {
                 continue;
             }
@@ -360,20 +550,18 @@ public class CsvImportService : ICsvImportService
             {
                 RowNumber = rowNumber,
                 SerialNumber = GetValue(values, 0),
-                AssetName = GetValueOrNull(values, 1),
-                Category = GetValue(values, 2),
-                AssetTypeCode = GetValueOrNull(values, 3),
-                BuildingCode = GetValueOrNull(values, 4),
-                ServiceCode = GetValueOrNull(values, 5),
-                Owner = GetValueOrNull(values, 6),
-                Brand = GetValueOrNull(values, 7),
-                Model = GetValueOrNull(values, 8),
-                Status = GetValueOrNull(values, 9),
-                PurchaseDate = GetValueOrNull(values, 10),
+                AssetTypeCode = GetValue(values, 1),
+                Status = GetValueOrDefault(values, 2, "Stock"),
+                PurchaseDate = GetValue(values, 3),
+                IsDummy = ParseBool(GetValueOrNull(values, 4)),
+                AssetName = GetValueOrNull(values, 5),
+                ServiceCode = GetValueOrNull(values, 6),
+                Owner = GetValueOrNull(values, 7),
+                Brand = GetValueOrNull(values, 8),
+                Model = GetValueOrNull(values, 9),
+                InstallationDate = GetValueOrNull(values, 10),
                 WarrantyExpiry = GetValueOrNull(values, 11),
-                InstallationDate = GetValueOrNull(values, 12),
-                InstallationLocation = GetValueOrNull(values, 13),
-                Notes = GetValueOrNull(values, 14)
+                Notes = GetValueOrNull(values, 12)
             };
 
             rows.Add(row);
@@ -385,19 +573,22 @@ public class CsvImportService : ICsvImportService
 
     private void ValidateHeaders(List<string> headers)
     {
-        if (headers.Count != ExpectedHeaders.Length)
+        // Check minimum required headers (at least the 4 required columns)
+        if (headers.Count < 4)
         {
             throw new InvalidOperationException(
-                $"CSV file has {headers.Count} columns, expected {ExpectedHeaders.Length}. " +
-                $"Expected headers: {string.Join(", ", ExpectedHeaders)}");
+                $"CSV file has {headers.Count} columns, expected at least 4 required columns. " +
+                $"Required: SerialNumber, AssetTypeCode, Status, PurchaseDate");
         }
 
-        for (int i = 0; i < ExpectedHeaders.Length; i++)
+        // Validate first 4 headers are correct (required columns)
+        var requiredHeaders = new[] { "SerialNumber", "AssetTypeCode", "Status", "PurchaseDate" };
+        for (int i = 0; i < requiredHeaders.Length && i < headers.Count; i++)
         {
-            if (!headers[i].Equals(ExpectedHeaders[i], StringComparison.OrdinalIgnoreCase))
+            if (!headers[i].Equals(requiredHeaders[i], StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
-                    $"CSV header mismatch at column {i + 1}. Expected '{ExpectedHeaders[i]}', got '{headers[i]}'");
+                    $"CSV header mismatch at column {i + 1}. Expected '{requiredHeaders[i]}', got '{headers[i]}'");
             }
         }
     }
@@ -416,19 +607,16 @@ public class CsvImportService : ICsvImportService
             {
                 if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
                 {
-                    // Escaped quote
                     currentValue.Append('"');
-                    i++; // Skip next quote
+                    i++;
                 }
                 else
                 {
-                    // Toggle quote mode
                     inQuotes = !inQuotes;
                 }
             }
             else if (c == ',' && !inQuotes)
             {
-                // End of field
                 values.Add(currentValue.ToString().Trim());
                 currentValue.Clear();
             }
@@ -438,9 +626,7 @@ public class CsvImportService : ICsvImportService
             }
         }
 
-        // Add last field
         values.Add(currentValue.ToString().Trim());
-
         return values;
     }
 
@@ -449,65 +635,113 @@ public class CsvImportService : ICsvImportService
         return index < values.Count ? values[index] : string.Empty;
     }
 
+    private string GetValueOrDefault(List<string> values, int index, string defaultValue)
+    {
+        var value = GetValue(values, index);
+        return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
+    }
+
     private string? GetValueOrNull(List<string> values, int index)
     {
         var value = GetValue(values, index);
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    public byte[] GenerateCsvTemplate()
+    private bool ParseBool(string? value)
     {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        // Support various boolean formats
+        var lower = value.ToLowerInvariant().Trim();
+        return lower == "true" || lower == "1" || lower == "yes" || lower == "ja";
+    }
+
+    public async Task<byte[]> GenerateCsvTemplateAsync(CancellationToken cancellationToken = default)
+    {
+        // Fetch current service codes for the comments
+        var services = await _serviceRepository.GetAllAsync(includeInactive: false, cancellationToken: cancellationToken);
+        var assetTypes = await _assetTypeRepository.GetAllAsync(includeInactive: false, cancellationToken);
+
         var sb = new StringBuilder();
 
         // Header row
         sb.AppendLine(string.Join(",", ExpectedHeaders));
 
-        // Example row with sample data
+        // Example row with sample data (using European date format)
         var exampleRow = new[]
         {
-            "ABC123",                           // SerialNumber
-            "Laptop IT-001",                    // AssetName
-            "Laptop",                           // Category
-            "LAP",                              // AssetTypeCode
-            "DBK",                              // BuildingCode
-            "IT",                               // ServiceCode
-            "Jan Janssen",                      // Owner
-            "Dell",                             // Brand
-            "Latitude 5520",                    // Model
-            "Stock",                            // Status
-            "2024-01-15",                       // PurchaseDate
-            "2027-01-15",                       // WarrantyExpiry
-            "2024-02-01",                       // InstallationDate
-            "Kantoor 101",                      // InstallationLocation
-            "Test import from CSV template"     // Notes
+            "ABC123",           // SerialNumber (REQUIRED)
+            "LAP",              // AssetTypeCode (REQUIRED)
+            "Stock",            // Status (REQUIRED, default: Stock)
+            "15-01-2024",       // PurchaseDate (REQUIRED) - DD-MM-YYYY
+            "false",            // IsDummy (optional, default: false)
+            "",                 // AssetName (optional - Intune)
+            "IT",               // ServiceCode (optional - location)
+            "",                 // Owner (optional - Intune)
+            "",                 // Brand (optional - Intune)
+            "",                 // Model (optional - Intune)
+            "",                 // InstallationDate (optional)
+            "15-01-2027",       // WarrantyExpiry (optional) - DD-MM-YYYY
+            "Imported asset"    // Notes (optional)
         };
 
         sb.AppendLine(string.Join(",", exampleRow.Select(EscapeCsvValue)));
 
-        // Add comments explaining the format
+        // Add instructions as comments
         sb.AppendLine();
-        sb.AppendLine("# CSV Import Template for Djoppie Inventory");
-        sb.AppendLine("# ");
-        sb.AppendLine("# Required columns:");
-        sb.AppendLine("#   - SerialNumber: Unique serial number (required)");
-        sb.AppendLine("#   - Category: Asset category (required)");
-        sb.AppendLine("# ");
-        sb.AppendLine("# Optional columns:");
-        sb.AppendLine("#   - AssetName: Device name");
-        sb.AppendLine("#   - AssetTypeCode: Must match an existing asset type code (e.g., LAP, DESK, MON)");
-        sb.AppendLine("#   - BuildingCode: Must match an existing building code (e.g., DBK, WZC)");
-        sb.AppendLine("#   - ServiceCode: Must match an existing service code (e.g., IT, FIN)");
-        sb.AppendLine("#   - Owner: Primary user name");
-        sb.AppendLine("#   - Brand: Manufacturer/brand");
-        sb.AppendLine("#   - Model: Model name/number");
-        sb.AppendLine("#   - Status: InGebruik, Stock, Herstelling, Defect, or UitDienst (default: Stock)");
-        sb.AppendLine("#   - PurchaseDate: Format yyyy-MM-dd");
-        sb.AppendLine("#   - WarrantyExpiry: Format yyyy-MM-dd");
-        sb.AppendLine("#   - InstallationDate: Format yyyy-MM-dd");
-        sb.AppendLine("#   - InstallationLocation: Room/floor within building");
+        sb.AppendLine("# ========================================");
+        sb.AppendLine("# CSV Import Template - Djoppie Inventory");
+        sb.AppendLine("# ========================================");
+        sb.AppendLine("#");
+        sb.AppendLine("# REQUIRED COLUMNS:");
+        sb.AppendLine("#   - SerialNumber: Unique device serial number");
+        sb.AppendLine("#   - AssetTypeCode: Type code (see below)");
+        sb.AppendLine("#   - Status: InGebruik, Stock, Herstelling, Defect, UitDienst, Nieuw");
+        sb.AppendLine("#   - PurchaseDate: DD-MM-YYYY (European) or YYYY-MM-DD (ISO)");
+        sb.AppendLine("#");
+        sb.AppendLine("# OPTIONAL COLUMNS:");
+        sb.AppendLine("#   - IsDummy: true/false, 1/0, yes/no, ja/nee (default: false)");
+        sb.AppendLine("#             Dummy assets get 'DUM-' prefix in asset code");
+        sb.AppendLine("#");
+        sb.AppendLine("# OPTIONAL COLUMNS (will be auto-filled from Intune if available):");
+        sb.AppendLine("#   - AssetName: Device name (Intune: DeviceName)");
+        sb.AppendLine("#   - Owner: Primary user (Intune: Primary User)");
+        sb.AppendLine("#   - Brand: Manufacturer (Intune)");
+        sb.AppendLine("#   - Model: Model name (Intune)");
+        sb.AppendLine("#");
+        sb.AppendLine("# OTHER OPTIONAL COLUMNS:");
+        sb.AppendLine("#   - ServiceCode: Department/Location code (see below)");
+        sb.AppendLine("#   - InstallationDate: DD-MM-YYYY or YYYY-MM-DD");
+        sb.AppendLine("#   - WarrantyExpiry: DD-MM-YYYY or YYYY-MM-DD");
         sb.AppendLine("#   - Notes: Additional information");
+        sb.AppendLine("#");
+
+        // List valid AssetTypeCodes
+        sb.AppendLine("# ASSET TYPE CODES:");
+        foreach (var at in assetTypes.OrderBy(a => a.SortOrder))
+        {
+            sb.AppendLine($"#   {at.Code} = {at.Name}");
+        }
+        sb.AppendLine("#");
+
+        // List valid ServiceCodes (used as location)
+        sb.AppendLine("# SERVICE CODES (Location):");
+        foreach (var s in services.OrderBy(s => s.SortOrder))
+        {
+            sb.AppendLine($"#   {s.Code} = {s.Name}");
+        }
+        sb.AppendLine("#");
+        sb.AppendLine("# DELETE THIS EXAMPLE ROW AND ADD YOUR DATA BELOW");
+        sb.AppendLine("# ========================================");
 
         return Encoding.UTF8.GetBytes(sb.ToString());
+    }
+
+    // Legacy synchronous method for backwards compatibility
+    public byte[] GenerateCsvTemplate()
+    {
+        return GenerateCsvTemplateAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 
     private string EscapeCsvValue(string value)
@@ -517,7 +751,6 @@ public class CsvImportService : ICsvImportService
             return string.Empty;
         }
 
-        // If value contains comma, quote, or newline, wrap in quotes and escape internal quotes
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";

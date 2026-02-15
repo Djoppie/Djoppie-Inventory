@@ -125,8 +125,84 @@ public class CsvImportController : ControllerBase
     }
 
     /// <summary>
+    /// Validates a CSV file without importing. Used for preview functionality.
+    /// Returns validation results with detailed errors for each row.
+    /// </summary>
+    /// <param name="file">The CSV file to validate (max 5 MB)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Validation results with errors for each row</returns>
+    /// <response code="200">Validation completed - check results for errors</response>
+    /// <response code="400">Invalid file format</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpPost("validate")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(CsvImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<CsvImportResultDto>> ValidateCsv(
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate file is provided
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest("No file uploaded. Please provide a CSV file.");
+        }
+
+        // Validate file size
+        if (file.Length > MaxFileSizeBytes)
+        {
+            return BadRequest($"File size exceeds maximum allowed size of {MaxFileSizeBytes / 1024 / 1024} MB.");
+        }
+
+        // Validate file extension
+        var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (fileExtension != ".csv")
+        {
+            return BadRequest("Invalid file type. Only CSV files (.csv) are allowed.");
+        }
+
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown User";
+        _logger.LogInformation(
+            "CSV validation started by {UserName}. File: {FileName}, Size: {FileSize} bytes",
+            userName, file.FileName, file.Length);
+
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var result = await _csvImportService.ValidateAssetsAsync(stream, cancellationToken);
+
+            _logger.LogInformation(
+                "CSV validation completed by {UserName}. Valid: {SuccessCount}, Invalid: {ErrorCount}",
+                userName, result.SuccessCount, result.ErrorCount);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "CSV validation failed for user {UserName}", userName);
+            return BadRequest(new
+            {
+                error = "CSV file validation failed",
+                message = ex.Message,
+                statusCode = 400
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CSV validation failed with unexpected error for user {UserName}", userName);
+            return StatusCode(500, new
+            {
+                error = "CSV validation failed",
+                message = "An unexpected error occurred. Please check the file format and try again.",
+                statusCode = 500
+            });
+        }
+    }
+
+    /// <summary>
     /// Downloads a CSV template file with example data and format documentation.
-    /// Use this template to understand the expected CSV structure for imports.
+    /// Includes all valid BuildingCodes, ServiceCodes, and AssetTypeCodes in comments.
     /// </summary>
     /// <returns>CSV template file</returns>
     /// <response code="200">CSV template file</response>
@@ -134,12 +210,12 @@ public class CsvImportController : ControllerBase
     [HttpGet("template")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult DownloadTemplate()
+    public async Task<IActionResult> DownloadTemplate(CancellationToken cancellationToken = default)
     {
         var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown User";
         _logger.LogInformation("CSV template downloaded by {UserName}", userName);
 
-        var templateBytes = _csvImportService.GenerateCsvTemplate();
+        var templateBytes = await _csvImportService.GenerateCsvTemplateAsync(cancellationToken);
         var fileName = $"asset-import-template_{DateTime.UtcNow:yyyyMMdd}.csv";
 
         return File(templateBytes, "text/csv", fileName);

@@ -281,6 +281,7 @@ const DashboardPage = () => {
   const herstellingCount = realAssets.filter(a => a.status === 'Herstelling').length;
   const defectCount = realAssets.filter(a => a.status === 'Defect').length;
   const uitDienstCount = realAssets.filter(a => a.status === 'UitDienst').length;
+  const nieuwCount = realAssets.filter(a => a.status === 'Nieuw').length;
   const dummyCount = dummyAssets.length;
 
   return (
@@ -476,6 +477,31 @@ const DashboardPage = () => {
                 opacity: 1,
                 backgroundColor: 'rgba(158, 158, 158, 0.3)',
                 boxShadow: '0 0 12px rgba(158, 158, 158, 0.5)',
+                transform: 'scale(1.05)',
+              },
+            }}
+          />
+          <Chip
+            label={`${nieuwCount} Nieuw`}
+            onClick={() => handleStatusChipClick('Nieuw')}
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              px: 1,
+              cursor: 'pointer',
+              backgroundColor: statusFilter === 'Nieuw' ? 'rgba(0, 188, 212, 0.25)' : 'rgba(0, 188, 212, 0.15)',
+              color: 'rgb(0, 151, 167)',
+              border: '1px solid rgba(0, 188, 212, 0.4)',
+              opacity: statusFilter === '' || statusFilter === 'Nieuw' ? 1 : 0.5,
+              transform: statusFilter === 'Nieuw' ? 'scale(1.05)' : 'scale(1)',
+              transition: 'all 0.2s ease',
+              '& .MuiChip-label': {
+                color: 'rgb(0, 151, 167)',
+              },
+              '&:hover': {
+                opacity: 1,
+                backgroundColor: 'rgba(0, 188, 212, 0.3)',
+                boxShadow: '0 0 12px rgba(0, 188, 212, 0.5)',
                 transform: 'scale(1.05)',
               },
             }}
