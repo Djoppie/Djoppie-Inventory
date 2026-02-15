@@ -22,6 +22,7 @@ import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
 import ExportDialog from '../components/export/ExportDialog';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
+import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SortIcon from '@mui/icons-material/Sort';
@@ -812,6 +813,11 @@ const DashboardPage = () => {
         onSelectionChange={handleSelectionChange}
         onSelectAll={handleSelectAll}
       />
+
+      {/* Expiring Leases Widget */}
+      <Box sx={{ mt: 4 }}>
+        <ExpiringLeasesWidget />
+      </Box>
 
       {/* Discussion Section */}
       <Paper

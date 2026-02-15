@@ -4,6 +4,7 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace DjoppieInventory.API.Controllers;
 
@@ -122,7 +123,11 @@ public class AssetsController : ControllerBase
         CreateAssetDto createAssetDto,
         CancellationToken cancellationToken = default)
     {
-        var assetDto = await _assetService.CreateAssetAsync(createAssetDto);
+        // Get user information from claims for event tracking
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value;
+
+        var assetDto = await _assetService.CreateAssetAsync(createAssetDto, userName, userEmail);
         return CreatedAtAction(nameof(GetAsset), new { id = assetDto.Id }, assetDto);
     }
 
@@ -141,7 +146,11 @@ public class AssetsController : ControllerBase
         UpdateAssetDto updateAssetDto,
         CancellationToken cancellationToken = default)
     {
-        var assetDto = await _assetService.UpdateAssetAsync(id, updateAssetDto);
+        // Get user information from claims for event tracking
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value;
+
+        var assetDto = await _assetService.UpdateAssetAsync(id, updateAssetDto, userName, userEmail);
         return Ok(assetDto);
     }
 

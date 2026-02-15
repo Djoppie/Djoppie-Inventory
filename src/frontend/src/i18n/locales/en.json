@@ -20,7 +20,8 @@
     "tryAgain": "Try Again",
     "actions": "Actions",
     "saving": "Saving...",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "or": "or"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -370,6 +371,93 @@
       "step1": "Labels will print continuously on your Dymo label roll",
       "step2": "Ensure you have enough labels loaded in the printer",
       "step3": "Each label will be 25mm x 25mm"
+    }
+  },
+  "csvImport": {
+    "title": "CSV Import",
+    "downloadTemplate": "Download CSV Template",
+    "dragDropOrClick": "Drag & drop your CSV file here or click to select",
+    "dropHere": "Drop your file here",
+    "maxFileSize": "Max 5MB",
+    "csvOnly": ".csv files only",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "invalidFileType": "Please select a valid CSV file",
+    "fileTooLarge": "File is too large (max 5MB)",
+    "uploadFailed": "Upload failed. Please try again.",
+    "templateDownloadFailed": "Template download failed",
+    "importSummary": "Import Summary",
+    "progress": "Progress",
+    "imported": "imported",
+    "failed": "failed",
+    "successfulImports": "Successfully Imported",
+    "errors": "Errors",
+    "downloadErrors": "Download Error Report"
+  },
+  "assetEvents": {
+    "title": "Event History",
+    "loadError": "Failed to load events",
+    "noEvents": "No events found for this asset",
+    "performedBy": "Performed by",
+    "changed": "Changed",
+    "notes": "Notes",
+    "types": {
+      "created": "Created",
+      "create": "Created",
+      "updated": "Updated",
+      "update": "Updated",
+      "edited": "Edited",
+      "edit": "Edited",
+      "statuschange": "Status Change",
+      "status_change": "Status Change",
+      "status": "Status Change",
+      "ownerchange": "Owner Change",
+      "owner_change": "Owner Change",
+      "owner": "Owner Change",
+      "locationchange": "Location Change",
+      "location_change": "Location Change",
+      "location": "Location Change",
+      "maintenance": "Maintenance",
+      "repair": "Repair",
+      "deleted": "Deleted",
+      "delete": "Deleted"
+    }
+  },
+  "lease": {
+    "sectionTitle": "Lease Information",
+    "currentContract": "Current Contract",
+    "noActiveContract": "No active lease contract",
+    "addContract": "Add Contract",
+    "editContract": "Edit Contract",
+    "contractNumber": "Contract Number",
+    "contractNumberPlaceholder": "e.g., LC-2024-001",
+    "vendor": "Vendor",
+    "vendorPlaceholder": "e.g., Dell Financial Services",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "monthlyRate": "Monthly Rate (€)",
+    "totalValue": "Total Value (€)",
+    "notes": "Notes",
+    "notesPlaceholder": "Additional information about the contract...",
+    "daysRemaining": "{{days}} days remaining",
+    "expired": "Expired {{days}} days ago",
+    "expiredDays": "Expired {{days}}d ago",
+    "expiringLeases": "Expiring Lease Contracts",
+    "expiringLeasesDescription": "Contracts expiring within 90 days",
+    "noExpiringLeases": "No expiring lease contracts",
+    "status": {
+      "label": "Status",
+      "active": "Active",
+      "expiring": "Expiring Soon",
+      "expired": "Expired",
+      "terminated": "Terminated",
+      "renewed": "Renewed"
+    },
+    "validation": {
+      "startDateRequired": "Start date is required",
+      "endDateRequired": "End date is required",
+      "endDateAfterStart": "End date must be after start date",
+      "invalidNumber": "Please enter a valid number"
     }
   }
 }

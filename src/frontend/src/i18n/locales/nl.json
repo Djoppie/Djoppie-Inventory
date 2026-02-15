@@ -20,7 +20,8 @@
     "tryAgain": "Opnieuw proberen",
     "actions": "Acties",
     "saving": "Opslaan...",
-    "deleting": "Verwijderen..."
+    "deleting": "Verwijderen...",
+    "or": "of"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -370,6 +371,93 @@
       "step1": "Labels worden doorlopend afgedrukt op uw Dymo labelrol",
       "step2": "Zorg ervoor dat u voldoende labels in de printer heeft",
       "step3": "Elk label is 25mm x 25mm"
+    }
+  },
+  "csvImport": {
+    "title": "CSV Importeren",
+    "downloadTemplate": "CSV Sjabloon Downloaden",
+    "dragDropOrClick": "Sleep uw CSV-bestand hier of klik om te selecteren",
+    "dropHere": "Laat uw bestand hier vallen",
+    "maxFileSize": "Max 5MB",
+    "csvOnly": "Alleen .csv bestanden",
+    "upload": "Uploaden",
+    "uploading": "Uploaden...",
+    "invalidFileType": "Selecteer een geldig CSV-bestand",
+    "fileTooLarge": "Bestand is te groot (max 5MB)",
+    "uploadFailed": "Upload mislukt. Probeer het opnieuw.",
+    "templateDownloadFailed": "Sjabloon download mislukt",
+    "importSummary": "Import Samenvatting",
+    "progress": "Voortgang",
+    "imported": "geïmporteerd",
+    "failed": "mislukt",
+    "successfulImports": "Succesvol Geïmporteerd",
+    "errors": "Fouten",
+    "downloadErrors": "Download Foutenrapport"
+  },
+  "assetEvents": {
+    "title": "Gebeurtenissen Historie",
+    "loadError": "Fout bij laden gebeurtenissen",
+    "noEvents": "Geen gebeurtenissen gevonden voor deze asset",
+    "performedBy": "Uitgevoerd door",
+    "changed": "Gewijzigd",
+    "notes": "Notities",
+    "types": {
+      "created": "Aangemaakt",
+      "create": "Aangemaakt",
+      "updated": "Bijgewerkt",
+      "update": "Bijgewerkt",
+      "edited": "Bewerkt",
+      "edit": "Bewerkt",
+      "statuschange": "Status Wijziging",
+      "status_change": "Status Wijziging",
+      "status": "Status Wijziging",
+      "ownerchange": "Eigenaar Wijziging",
+      "owner_change": "Eigenaar Wijziging",
+      "owner": "Eigenaar Wijziging",
+      "locationchange": "Locatie Wijziging",
+      "location_change": "Locatie Wijziging",
+      "location": "Locatie Wijziging",
+      "maintenance": "Onderhoud",
+      "repair": "Reparatie",
+      "deleted": "Verwijderd",
+      "delete": "Verwijderd"
+    }
+  },
+  "lease": {
+    "sectionTitle": "Lease Informatie",
+    "currentContract": "Huidig Contract",
+    "noActiveContract": "Geen actief leasecontract",
+    "addContract": "Contract Toevoegen",
+    "editContract": "Contract Bewerken",
+    "contractNumber": "Contractnummer",
+    "contractNumberPlaceholder": "bijv., LC-2024-001",
+    "vendor": "Leverancier",
+    "vendorPlaceholder": "bijv., Dell Financial Services",
+    "startDate": "Startdatum",
+    "endDate": "Einddatum",
+    "monthlyRate": "Maandelijks Tarief (€)",
+    "totalValue": "Totale Waarde (€)",
+    "notes": "Notities",
+    "notesPlaceholder": "Aanvullende informatie over het contract...",
+    "daysRemaining": "{{days}} dagen resterend",
+    "expired": "{{days}} dagen geleden verlopen",
+    "expiredDays": "{{days}}d geleden verlopen",
+    "expiringLeases": "Verlopende Leasecontracten",
+    "expiringLeasesDescription": "Contracten die binnen 90 dagen verlopen",
+    "noExpiringLeases": "Geen verlopende leasecontracten",
+    "status": {
+      "label": "Status",
+      "active": "Actief",
+      "expiring": "Verloopt Binnenkort",
+      "expired": "Verlopen",
+      "terminated": "Beëindigd",
+      "renewed": "Vernieuwd"
+    },
+    "validation": {
+      "startDateRequired": "Startdatum is verplicht",
+      "endDateRequired": "Einddatum is verplicht",
+      "endDateAfterStart": "Einddatum moet na startdatum liggen",
+      "invalidNumber": "Voer een geldig nummer in"
     }
   }
 }

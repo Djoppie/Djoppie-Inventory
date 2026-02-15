@@ -26,9 +26,11 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon,
   Inventory as InventoryIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import BulkAssetCreationForm from '../components/assets/BulkAssetCreationForm';
+import CsvImportDialog from '../components/import/CsvImportDialog';
 import { useBulkCreateAssets, useCreateAsset } from '../hooks/useAssets';
 import { BulkCreateAssetDto, BulkCreateAssetResultDto, CreateAssetDto, Asset } from '../types/asset.types';
 
@@ -41,6 +43,7 @@ const BulkCreateAssetPage = () => {
   const [result, setResult] = useState<BulkCreateAssetResultDto | null>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [isCreatingMultiple, setIsCreatingMultiple] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const handleSubmit = async (data: BulkCreateAssetDto) => {
     try {
@@ -264,28 +267,46 @@ const BulkCreateAssetPage = () => {
                 </Typography>
               </Box>
             </Stack>
-            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              <Chip
-                label="Save Time"
-                size="small"
-                color="primary"
+            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                <Chip
+                  label="Save Time"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+                <Chip
+                  label="Sequential Codes"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+                <Chip
+                  label="Template Support"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+              <Button
                 variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-              <Chip
-                label="Sequential Codes"
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-              <Chip
-                label="Template Support"
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
+                startIcon={<UploadIcon />}
+                onClick={() => setCsvImportOpen(true)}
+                sx={{
+                  borderColor: theme.palette.primary.main,
+                  color: theme.palette.primary.main,
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: theme.palette.primary.dark,
+                    bgcolor: `${theme.palette.primary.main}15`,
+                  },
+                }}
+              >
+                Import from CSV
+              </Button>
             </Box>
           </Paper>
         </Fade>
@@ -517,6 +538,16 @@ const BulkCreateAssetPage = () => {
           )}
         </DialogActions>
         </Dialog>
+
+        {/* CSV Import Dialog */}
+        <CsvImportDialog
+          open={csvImportOpen}
+          onClose={() => setCsvImportOpen(false)}
+          onSuccess={() => {
+            setSuccessMessage('Assets imported successfully from CSV!');
+            setCsvImportOpen(false);
+          }}
+        />
       </Box>
     </Fade>
   );

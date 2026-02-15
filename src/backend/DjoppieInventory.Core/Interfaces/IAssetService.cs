@@ -34,12 +34,19 @@ public interface IAssetService
     /// <summary>
     /// Creates a new asset
     /// </summary>
-    Task<AssetDto> CreateAssetAsync(CreateAssetDto createAssetDto);
+    /// <param name="createAssetDto">Asset creation data</param>
+    /// <param name="performedBy">Display name of the user creating the asset (for event tracking)</param>
+    /// <param name="performedByEmail">Email address of the user creating the asset (for event tracking)</param>
+    Task<AssetDto> CreateAssetAsync(CreateAssetDto createAssetDto, string? performedBy = null, string? performedByEmail = null);
 
     /// <summary>
     /// Updates an existing asset
     /// </summary>
-    Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto);
+    /// <param name="id">The asset ID</param>
+    /// <param name="updateAssetDto">Updated asset data</param>
+    /// <param name="performedBy">Display name of the user updating the asset (for event tracking)</param>
+    /// <param name="performedByEmail">Email address of the user updating the asset (for event tracking)</param>
+    Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto, string? performedBy = null, string? performedByEmail = null);
 
     /// <summary>
     /// Deletes an asset by ID

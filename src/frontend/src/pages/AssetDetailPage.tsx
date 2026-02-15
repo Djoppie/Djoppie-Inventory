@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { QRCodeSVG } from 'qrcode.react';
 import PrintIcon from '@mui/icons-material/Print';
 import { format } from 'date-fns';
@@ -36,6 +37,17 @@ import { useAsset, useDeleteAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
 import PrintLabelDialog from '../components/print/PrintLabelDialog';
+import AssetEventHistory from '../components/assets/AssetEventHistory';
+import LeaseContractCard from '../components/assets/LeaseContractCard';
+import LeaseContractDialog from '../components/assets/LeaseContractDialog';
+import {
+  getActiveLeaseContract,
+  createLeaseContract,
+  updateLeaseContract,
+  LeaseContract,
+  CreateLeaseContract,
+  UpdateLeaseContract,
+} from '../api/leaseContracts.api';
 
 // Helper: check if an asset code has a number >= 9000 (dummy/test asset)
 const isDummyAsset = (assetCode: string): boolean => {
@@ -106,6 +118,10 @@ const AssetDetailPage = () => {
   const deleteAsset = useDeleteAsset();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [leaseDialogOpen, setLeaseDialogOpen] = useState(false);
+  const [activeLease, setActiveLease] = useState<LeaseContract | null>(null);
+  const [isEditingLease, setIsEditingLease] = useState(false);
+  const [isLoadingLease, setIsLoadingLease] = useState(false);
 
   const handleEdit = () => {
     navigate(`/assets/${id}/edit`);
@@ -117,6 +133,50 @@ const AssetDetailPage = () => {
       navigate('/');
     } catch (error) {
       logger.error('Error deleting asset:', error);
+    }
+  };
+
+  // Fetch active lease contract
+  useEffect(() => {
+    const fetchLease = async () => {
+      if (id) {
+        setIsLoadingLease(true);
+        try {
+          const lease = await getActiveLeaseContract(Number(id));
+          setActiveLease(lease);
+        } catch (error) {
+          logger.error('Error fetching lease contract:', error);
+          setActiveLease(null);
+        } finally {
+          setIsLoadingLease(false);
+        }
+      }
+    };
+    fetchLease();
+  }, [id]);
+
+  const handleAddLease = () => {
+    setIsEditingLease(false);
+    setLeaseDialogOpen(true);
+  };
+
+  const handleEditLease = () => {
+    setIsEditingLease(true);
+    setLeaseDialogOpen(true);
+  };
+
+  const handleSaveLease = async (data: CreateLeaseContract | UpdateLeaseContract) => {
+    try {
+      if (isEditingLease && activeLease) {
+        const updated = await updateLeaseContract(activeLease.id, data as UpdateLeaseContract);
+        setActiveLease(updated);
+      } else {
+        const created = await createLeaseContract(data as CreateLeaseContract);
+        setActiveLease(created);
+      }
+    } catch (error) {
+      logger.error('Error saving lease contract:', error);
+      throw error;
     }
   };
 
@@ -502,6 +562,77 @@ const AssetDetailPage = () => {
                 </CardContent>
               </Card>
             </Fade>
+
+            {/* Lease Information */}
+            <Fade in timeout={850}>
+              <Card
+                elevation={0}
+                sx={{
+                  mb: 3,
+                  borderRadius: 3,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+                  },
+                }}
+              >
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <SectionHeader
+                    icon={<DescriptionIcon />}
+                    title={t('lease.sectionTitle')}
+                  />
+                  {isLoadingLease ? (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {t('common.loading')}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <LeaseContractCard
+                      leaseContract={activeLease}
+                      onEdit={handleEditLease}
+                      onAdd={handleAddLease}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </Fade>
+
+            {/* Event History */}
+            <Fade in timeout={900}>
+              <Card
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+                  },
+                }}
+              >
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <AssetEventHistory assetId={asset.id} />
+                </CardContent>
+              </Card>
+            </Fade>
           </Box>
 
           {/* QR Code Section */}
@@ -632,6 +763,16 @@ const AssetDetailPage = () => {
           onClose={() => setPrintDialogOpen(false)}
           assetCode={asset.assetCode}
           assetName={asset.assetName}
+        />
+
+        {/* Lease Contract Dialog */}
+        <LeaseContractDialog
+          open={leaseDialogOpen}
+          onClose={() => setLeaseDialogOpen(false)}
+          onSave={handleSaveLease}
+          assetId={asset.id}
+          leaseContract={activeLease}
+          isEdit={isEditingLease}
         />
       </Box>
     </Fade>

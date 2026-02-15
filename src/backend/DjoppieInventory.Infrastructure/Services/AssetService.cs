@@ -12,15 +12,18 @@ namespace DjoppieInventory.Infrastructure.Services;
 public class AssetService : IAssetService
 {
     private readonly IAssetRepository _assetRepository;
+    private readonly IAssetEventService _assetEventService;
     private readonly IMapper _mapper;
     private readonly ILogger<AssetService> _logger;
 
     public AssetService(
         IAssetRepository assetRepository,
+        IAssetEventService assetEventService,
         IMapper mapper,
         ILogger<AssetService> logger)
     {
         _assetRepository = assetRepository;
+        _assetEventService = assetEventService;
         _mapper = mapper;
         _logger = logger;
     }
@@ -63,7 +66,7 @@ public class AssetService : IAssetService
         return asset == null ? null : _mapper.Map<AssetDto>(asset);
     }
 
-    public async Task<AssetDto> CreateAssetAsync(CreateAssetDto createAssetDto)
+    public async Task<AssetDto> CreateAssetAsync(CreateAssetDto createAssetDto, string? performedBy = null, string? performedByEmail = null)
     {
         if (createAssetDto == null)
             throw new ArgumentNullException(nameof(createAssetDto));
@@ -82,6 +85,17 @@ public class AssetService : IAssetService
 
         _logger.LogInformation("Created asset {AssetCode} (IsDummy: {IsDummy}) with ID {AssetId}",
             createdAsset.AssetCode, createdAsset.IsDummy, createdAsset.Id);
+
+        // Create "Created" event
+        if (!string.IsNullOrWhiteSpace(performedBy))
+        {
+            await _assetEventService.CreateCreatedEventAsync(
+                createdAsset.Id,
+                performedBy,
+                performedByEmail,
+                notes: null,
+                cancellationToken: default);
+        }
 
         return _mapper.Map<AssetDto>(createdAsset);
     }
@@ -108,7 +122,7 @@ public class AssetService : IAssetService
         throw new InvalidOperationException($"Unable to generate unique asset code for prefix '{prefix}' after {maxAttempts} attempts");
     }
 
-    public async Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto)
+    public async Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto, string? performedBy = null, string? performedByEmail = null)
     {
         if (updateAssetDto == null)
             throw new ArgumentNullException(nameof(updateAssetDto));
@@ -119,11 +133,59 @@ public class AssetService : IAssetService
             throw new KeyNotFoundException($"Asset with ID {id} not found");
         }
 
+        // Capture old values for event tracking
+        var oldStatus = existingAsset.Status;
+        var oldOwner = existingAsset.Owner;
+        var oldBuilding = existingAsset.LegacyBuilding;
+
         _mapper.Map(updateAssetDto, existingAsset);
         var updatedAsset = await _assetRepository.UpdateAsync(existingAsset);
 
         _logger.LogInformation("Updated asset {AssetCode} (ID: {AssetId})",
             updatedAsset.AssetCode, updatedAsset.Id);
+
+        // Create events for significant changes (only if user information is provided)
+        if (!string.IsNullOrWhiteSpace(performedBy))
+        {
+            // Status changed
+            if (oldStatus != updatedAsset.Status)
+            {
+                await _assetEventService.CreateStatusChangedEventAsync(
+                    updatedAsset.Id,
+                    oldStatus,
+                    updatedAsset.Status,
+                    performedBy,
+                    performedByEmail,
+                    notes: null,
+                    cancellationToken: default);
+            }
+
+            // Owner changed
+            if (oldOwner != updatedAsset.Owner)
+            {
+                await _assetEventService.CreateOwnerChangedEventAsync(
+                    updatedAsset.Id,
+                    oldOwner,
+                    updatedAsset.Owner,
+                    performedBy,
+                    performedByEmail,
+                    notes: null,
+                    cancellationToken: default);
+            }
+
+            // Building/Location changed
+            if (oldBuilding != updatedAsset.LegacyBuilding)
+            {
+                await _assetEventService.CreateLocationChangedEventAsync(
+                    updatedAsset.Id,
+                    oldBuilding,
+                    updatedAsset.LegacyBuilding,
+                    performedBy,
+                    performedByEmail,
+                    notes: null,
+                    cancellationToken: default);
+            }
+        }
 
         return _mapper.Map<AssetDto>(updatedAsset);
     }
