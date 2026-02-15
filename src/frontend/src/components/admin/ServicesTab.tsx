@@ -58,12 +58,12 @@ const ServicesTab = () => {
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['services'],
-    queryFn: servicesApi.getAll,
+    queryFn: () => servicesApi.getAll(),
   });
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: sectorsApi.getAll,
+    queryFn: () => sectorsApi.getAll(),
   });
 
   const createMutation = useMutation({

@@ -26,7 +26,7 @@ const BuildingSelect = ({
 }: BuildingSelectProps) => {
   const { data: buildings, isLoading } = useQuery<Building[]>({
     queryKey: ['buildings'],
-    queryFn: buildingsApi.getAll,
+    queryFn: () => buildingsApi.getAll(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 

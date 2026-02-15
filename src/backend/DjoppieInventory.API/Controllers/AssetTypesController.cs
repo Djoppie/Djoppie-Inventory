@@ -39,7 +39,8 @@ public class AssetTypesController : ControllerBase
             at.Name,
             at.Description,
             at.IsActive,
-            at.SortOrder
+            at.SortOrder,
+            at.CategoryId
         ));
 
         return Ok(dtos);
@@ -65,7 +66,8 @@ public class AssetTypesController : ControllerBase
             assetType.Name,
             assetType.Description,
             assetType.IsActive,
-            assetType.SortOrder
+            assetType.SortOrder,
+            assetType.CategoryId
         );
 
         return Ok(dto);
@@ -95,6 +97,7 @@ public class AssetTypesController : ControllerBase
             Name = dto.Name,
             Description = dto.Description,
             SortOrder = dto.SortOrder,
+            CategoryId = dto.CategoryId,
             IsActive = true
         };
 
@@ -106,7 +109,8 @@ public class AssetTypesController : ControllerBase
             created.Name,
             created.Description,
             created.IsActive,
-            created.SortOrder
+            created.SortOrder,
+            created.CategoryId
         );
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, resultDto);
@@ -135,6 +139,7 @@ public class AssetTypesController : ControllerBase
         assetType.Description = dto.Description;
         assetType.IsActive = dto.IsActive;
         assetType.SortOrder = dto.SortOrder;
+        assetType.CategoryId = dto.CategoryId;
 
         var updated = await _assetTypeRepository.UpdateAsync(assetType, cancellationToken);
 
@@ -144,7 +149,8 @@ public class AssetTypesController : ControllerBase
             updated.Name,
             updated.Description,
             updated.IsActive,
-            updated.SortOrder
+            updated.SortOrder,
+            updated.CategoryId
         );
 
         return Ok(resultDto);

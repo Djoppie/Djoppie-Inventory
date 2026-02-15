@@ -239,7 +239,7 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                   color: 'text.primary',
                 }}
               >
-                {asset.building?.name || asset.legacyBuilding || '-'}
+                {asset.service?.name || asset.legacyBuilding || '-'}
               </Typography>
               <Typography
                 variant="caption"

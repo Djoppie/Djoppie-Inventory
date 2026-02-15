@@ -55,7 +55,7 @@ const AssetTypesTab = () => {
 
   const { data: assetTypes = [], isLoading } = useQuery({
     queryKey: ['assetTypes'],
-    queryFn: assetTypesApi.getAll,
+    queryFn: () => assetTypesApi.getAll(),
   });
 
   const createMutation = useMutation({

@@ -28,7 +28,7 @@ const ServiceSelect = ({
 }: ServiceSelectProps) => {
   const { data: services, isLoading } = useQuery<Service[]>({
     queryKey: sectorId ? ['services', 'by-sector', sectorId] : ['services'],
-    queryFn: sectorId ? () => servicesApi.getBySector(sectorId) : servicesApi.getAll,
+    queryFn: sectorId ? () => servicesApi.getBySector(sectorId) : () => servicesApi.getAll(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 

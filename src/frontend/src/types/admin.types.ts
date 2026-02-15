@@ -15,6 +15,8 @@ export interface AssetType {
   description?: string;
   isActive: boolean;
   sortOrder: number;
+  categoryId?: number;
+  category?: Category; // Navigation property
 }
 
 export interface CreateAssetTypeDto {
@@ -22,9 +24,45 @@ export interface CreateAssetTypeDto {
   name: string;
   description?: string;
   sortOrder?: number;
+  categoryId?: number;
 }
 
 export interface UpdateAssetTypeDto {
+  name: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+  categoryId?: number;
+}
+
+// ============================================================
+// Category - Groups for AssetTypes (Computing, Werkplek, etc.)
+// ============================================================
+
+export interface Category {
+  [key: string]: unknown;
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+  assetTypeCount?: number;
+}
+
+export interface CategoryWithAssetTypes extends Category {
+  assetTypes: AssetType[];
+}
+
+export interface CreateCategoryDto {
+  code: string;
+  name: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateCategoryDto {
+  code: string;
   name: string;
   description?: string;
   isActive: boolean;

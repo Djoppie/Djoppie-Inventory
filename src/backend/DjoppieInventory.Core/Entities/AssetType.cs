@@ -41,6 +41,16 @@ public class AssetType
     public int SortOrder { get; set; }
 
     /// <summary>
+    /// Foreign key to the category this asset type belongs to (optional)
+    /// </summary>
+    public int? CategoryId { get; set; }
+
+    /// <summary>
+    /// The category this asset type belongs to
+    /// </summary>
+    public Category? Category { get; set; }
+
+    /// <summary>
     /// Timestamp when the asset type was created
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

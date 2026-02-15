@@ -388,14 +388,6 @@ const AssetDetailPage = () => {
                     </Box>
                     <Box sx={{ flex: '1 1 200px' }}>
                       <Typography variant="caption" color="text.secondary">
-                        {t('assetForm.building')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {asset.building ? `${asset.building.code} - ${asset.building.name}` : '-'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 200px' }}>
-                      <Typography variant="caption" color="text.secondary">
                         {t('assetForm.service')}
                       </Typography>
                       <Typography variant="body1">

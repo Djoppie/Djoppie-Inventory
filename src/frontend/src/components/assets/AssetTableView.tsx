@@ -35,7 +35,7 @@ interface AssetTableViewProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-type SortField = 'assetCode' | 'assetName' | 'category' | 'owner' | 'building' | 'status';
+type SortField = 'assetCode' | 'assetName' | 'category' | 'owner' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 const AssetTableView = ({
@@ -296,23 +296,7 @@ const AssetTableView = ({
                   color: 'primary.main',
                 }}
               >
-                <TableSortLabel
-                  active={sortField === 'building'}
-                  direction={sortField === 'building' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('building')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
-                  sx={{
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
-                    },
-                  }}
-                >
-                  Location
-                </TableSortLabel>
+                Location
               </TableCell>
               <TableCell
                 align="center"
@@ -425,10 +409,10 @@ const AssetTableView = ({
                 >
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {asset.building?.name || asset.legacyBuilding || '-'}
+                      {asset.service?.name || asset.legacyBuilding || '-'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {asset.service?.name || asset.legacyDepartment || '-'} {asset.officeLocation && `/ ${asset.officeLocation}`}
+                      {asset.legacyDepartment || '-'} {asset.officeLocation && `/ ${asset.officeLocation}`}
                     </Typography>
                   </Box>
                 </TableCell>

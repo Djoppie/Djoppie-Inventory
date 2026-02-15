@@ -55,7 +55,7 @@ const BuildingsTab = () => {
 
   const { data: buildings = [], isLoading } = useQuery({
     queryKey: ['buildings'],
-    queryFn: buildingsApi.getAll,
+    queryFn: () => buildingsApi.getAll(),
   });
 
   const createMutation = useMutation({

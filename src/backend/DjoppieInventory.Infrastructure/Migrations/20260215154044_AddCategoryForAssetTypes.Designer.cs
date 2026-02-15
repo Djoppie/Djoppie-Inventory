@@ -3,6 +3,7 @@ using System;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215154044_AddCategoryForAssetTypes")]
+    partial class AddCategoryForAssetTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -479,149 +482,47 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            Address = "Dienst IT, Aankoopdienst, Grondgebiedzaken",
-                            Code = "POORT",
+                            Code = "DBK",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Het Poortgebouw",
+                            Name = "Gemeentehuis Diepenbeek",
                             SortOrder = 1
                         },
                         new
                         {
                             Id = 2,
-                            Address = "Algemeen directeur, Financiën, Burgerzaken",
-                            Code = "GHUIS",
+                            Code = "WZC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Het Gemeentehuis",
+                            Name = "WZC De Visserij",
                             SortOrder = 2
                         },
                         new
                         {
                             Id = 3,
-                            Address = "Sector Mens",
-                            Code = "PLAK",
+                            Code = "GBS",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "De Plak",
+                            Name = "Gemeentelijke Basisschool",
                             SortOrder = 3
                         },
                         new
                         {
                             Id = 4,
-                            Code = "WZC",
+                            Code = "PLAG",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Het Woonzorgcentrum",
+                            Name = "Plaatselijk Comité",
                             SortOrder = 4
                         },
                         new
                         {
                             Id = 5,
-                            Code = "BKOC",
+                            Code = "BIB",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            Name = "Buitenschoolse kinderopvang centrum",
-                            SortOrder = 10
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Code = "BKOR",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Buitenschoolse kinderopvang Rooierheide",
-                            SortOrder = 11
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Code = "BKOL",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Buitenschoolse kinderopvang Lutselus",
-                            SortOrder = 12
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Code = "BKOG",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Buitenschoolse kinderopvang gemeenteschool",
-                            SortOrder = 13
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Code = "OCL",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Ontmoetingscentrum Lutselus",
-                            SortOrder = 14
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Code = "OCR",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Ontmoetingscentrum Rooierheide",
-                            SortOrder = 15
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Code = "GILDE",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Gildezaal",
-                            SortOrder = 16
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Code = "KEI",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Zaal de Kei",
-                            SortOrder = 17
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Code = "TERL",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Zaal Terloght",
-                            SortOrder = 18
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Code = "HEIZ",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Jeugdhuis Heizoe",
-                            SortOrder = 19
-                        },
-                        new
-                        {
-                            Id = 15,
-                            Code = "SENH",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "Seniorenhuis",
-                            SortOrder = 20
-                        },
-                        new
-                        {
-                            Id = 16,
-                            Code = "ROZEN",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            IsActive = true,
-                            Name = "School Rozendaal",
-                            SortOrder = 21
+                            Name = "Bibliotheek",
+                            SortOrder = 5
                         });
                 });
 

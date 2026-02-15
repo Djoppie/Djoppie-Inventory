@@ -9,7 +9,8 @@ public record AssetTypeDto(
     string Name,
     string? Description,
     bool IsActive,
-    int SortOrder
+    int SortOrder,
+    int? CategoryId
 );
 
 /// <summary>
@@ -19,7 +20,8 @@ public record CreateAssetTypeDto(
     string Code,
     string Name,
     string? Description,
-    int SortOrder = 0
+    int SortOrder = 0,
+    int? CategoryId = null
 );
 
 /// <summary>
@@ -29,5 +31,6 @@ public record UpdateAssetTypeDto(
     string Name,
     string? Description,
     bool IsActive,
-    int SortOrder
+    int SortOrder,
+    int? CategoryId
 );

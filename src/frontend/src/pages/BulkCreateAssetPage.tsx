@@ -109,9 +109,8 @@ const BulkCreateAssetPage = () => {
         };
 
         // Only add optional fields if they have actual values
-        // Note: Building/Service are now relational - use assetTypeId, buildingId, serviceId
+        // Note: Service is now used as location - use assetTypeId, serviceId
         if (asset.assetTypeId) cleanedAsset.assetTypeId = asset.assetTypeId;
-        if (asset.buildingId) cleanedAsset.buildingId = asset.buildingId;
         if (asset.serviceId) cleanedAsset.serviceId = asset.serviceId;
         if (asset.installationLocation) cleanedAsset.installationLocation = asset.installationLocation;
         if (asset.owner) cleanedAsset.owner = asset.owner;

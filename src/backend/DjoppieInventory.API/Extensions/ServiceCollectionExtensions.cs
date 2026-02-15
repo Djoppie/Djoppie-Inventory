@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetRepository, AssetRepository>();
         services.AddScoped<IAssetTemplateRepository, AssetTemplateRepository>();
         services.AddScoped<IAssetTypeRepository, AssetTypeRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IBuildingRepository, BuildingRepository>();
         services.AddScoped<ISectorRepository, SectorRepository>();
         services.AddScoped<IServiceRepository, ServiceRepository>();

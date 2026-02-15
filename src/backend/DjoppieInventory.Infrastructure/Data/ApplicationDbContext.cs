@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Asset> Assets { get; set; }
     public DbSet<AssetTemplate> AssetTemplates { get; set; }
     public DbSet<AssetType> AssetTypes { get; set; }
+    public DbSet<Category> Categories { get; set; }
     public DbSet<Building> Buildings { get; set; }
     public DbSet<Sector> Sectors { get; set; }
     public DbSet<Service> Services { get; set; }
@@ -69,6 +70,16 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.LegacyDepartment).HasMaxLength(100);  // Optional (legacy)
         });
 
+        // Category configuration
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+        });
+
         // AssetType configuration
         modelBuilder.Entity<AssetType>(entity =>
         {
@@ -77,6 +88,12 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Code).IsRequired().HasMaxLength(10);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).HasMaxLength(500);
+
+            // Relationship with Category
+            entity.HasOne(e => e.Category)
+                .WithMany(c => c.AssetTypes)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull); // If category deleted, set FK to null
         });
 
         // Building configuration
@@ -156,24 +173,55 @@ public class ApplicationDbContext : DbContext
 
         // ===== SEED DATA =====
 
-        // Seed data - AssetTypes
-        modelBuilder.Entity<AssetType>().HasData(
-            new AssetType { Id = 1, Code = "LAP", Name = "Laptop", SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new AssetType { Id = 2, Code = "DESK", Name = "Desktop", SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new AssetType { Id = 3, Code = "MON", Name = "Monitor", SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new AssetType { Id = 4, Code = "TAB", Name = "Tablet", SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new AssetType { Id = 5, Code = "PRN", Name = "Printer", SortOrder = 5, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new AssetType { Id = 6, Code = "TEL", Name = "Telefoon", SortOrder = 6, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new AssetType { Id = 7, Code = "NET", Name = "Netwerk", SortOrder = 7, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+        // Seed data - Categories (groups for AssetTypes)
+        modelBuilder.Entity<Category>().HasData(
+            new Category { Id = 1, Code = "COMP", Name = "Computing", Description = "Computers en rekenkracht", SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Category { Id = 2, Code = "WORK", Name = "Werkplek", Description = "Werkplekaccessoires en randapparatuur", SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Category { Id = 3, Code = "PERIPH", Name = "Peripherals", Description = "Printers, scanners en andere randapparatuur", SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Category { Id = 4, Code = "NET", Name = "Networking", Description = "Netwerkapparatuur", SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Category { Id = 5, Code = "MOBILE", Name = "Mobile", Description = "Mobiele apparaten", SortOrder = 5, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Category { Id = 6, Code = "AV", Name = "Audio/Video", Description = "Audio- en videoapparatuur", SortOrder = 6, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
 
-        // Seed data - Buildings
+        // Seed data - AssetTypes (with CategoryId)
+        modelBuilder.Entity<AssetType>().HasData(
+            // Computing (CategoryId = 1)
+            new AssetType { Id = 1, Code = "LAP", Name = "Laptop", CategoryId = 1, SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new AssetType { Id = 2, Code = "DESK", Name = "Desktop", CategoryId = 1, SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Werkplek (CategoryId = 2)
+            new AssetType { Id = 3, Code = "MON", Name = "Monitor", CategoryId = 2, SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new AssetType { Id = 8, Code = "DOCK", Name = "Docking Station", CategoryId = 2, SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new AssetType { Id = 9, Code = "KEYB", Name = "Keyboard", CategoryId = 2, SortOrder = 5, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new AssetType { Id = 10, Code = "MOUSE", Name = "Mouse", CategoryId = 2, SortOrder = 6, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Peripherals (CategoryId = 3)
+            new AssetType { Id = 5, Code = "PRN", Name = "Printer", CategoryId = 3, SortOrder = 7, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Networking (CategoryId = 4)
+            new AssetType { Id = 7, Code = "NET", Name = "Netwerk", CategoryId = 4, SortOrder = 8, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // Mobile (CategoryId = 5)
+            new AssetType { Id = 4, Code = "TAB", Name = "Tablet", CategoryId = 5, SortOrder = 9, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new AssetType { Id = 6, Code = "TEL", Name = "Telefoon", CategoryId = 5, SortOrder = 10, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+        );
+
+        // Seed data - Buildings (Locaties)
+        // 4 Hoofdlocaties (Main locations)
         modelBuilder.Entity<Building>().HasData(
-            new Building { Id = 1, Code = "DBK", Name = "Gemeentehuis Diepenbeek", SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Building { Id = 2, Code = "WZC", Name = "WZC De Visserij", SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Building { Id = 3, Code = "GBS", Name = "Gemeentelijke Basisschool", SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Building { Id = 4, Code = "PLAG", Name = "Plaatselijk Comité", SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Building { Id = 5, Code = "BIB", Name = "Bibliotheek", SortOrder = 5, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new Building { Id = 1, Code = "POORT", Name = "Het Poortgebouw", Address = "Dienst IT, Aankoopdienst, Grondgebiedzaken", SortOrder = 1, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 2, Code = "GHUIS", Name = "Het Gemeentehuis", Address = "Algemeen directeur, Financiën, Burgerzaken", SortOrder = 2, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 3, Code = "PLAK", Name = "De Plak", Address = "Sector Mens", SortOrder = 3, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 4, Code = "WZC", Name = "Het Woonzorgcentrum", SortOrder = 4, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            // 12 Sateliet locaties (Satellite locations)
+            new Building { Id = 5, Code = "BKOC", Name = "Buitenschoolse kinderopvang centrum", SortOrder = 10, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 6, Code = "BKOR", Name = "Buitenschoolse kinderopvang Rooierheide", SortOrder = 11, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 7, Code = "BKOL", Name = "Buitenschoolse kinderopvang Lutselus", SortOrder = 12, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 8, Code = "BKOG", Name = "Buitenschoolse kinderopvang gemeenteschool", SortOrder = 13, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 9, Code = "OCL", Name = "Ontmoetingscentrum Lutselus", SortOrder = 14, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 10, Code = "OCR", Name = "Ontmoetingscentrum Rooierheide", SortOrder = 15, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 11, Code = "GILDE", Name = "Gildezaal", SortOrder = 16, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 12, Code = "KEI", Name = "Zaal de Kei", SortOrder = 17, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 13, Code = "TERL", Name = "Zaal Terloght", SortOrder = 18, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 14, Code = "HEIZ", Name = "Jeugdhuis Heizoe", SortOrder = 19, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 15, Code = "SENH", Name = "Seniorenhuis", SortOrder = 20, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Building { Id = 16, Code = "ROZEN", Name = "School Rozendaal", SortOrder = 21, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
 
         // Seed data - Sectors

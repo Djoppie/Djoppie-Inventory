@@ -3,6 +3,10 @@ import {
   AssetType,
   CreateAssetTypeDto,
   UpdateAssetTypeDto,
+  Category,
+  CategoryWithAssetTypes,
+  CreateCategoryDto,
+  UpdateCategoryDto,
   Building,
   CreateBuildingDto,
   UpdateBuildingDto,
@@ -43,6 +47,38 @@ export const assetTypesApi = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/admin/assettypes/${id}`);
+  },
+};
+
+// ============================================================
+// Categories API
+// ============================================================
+
+export const categoriesApi = {
+  getAll: async (includeInactive = true): Promise<Category[]> => {
+    const response = await apiClient.get<Category[]>('/admin/categories', {
+      params: { includeInactive },
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<CategoryWithAssetTypes> => {
+    const response = await apiClient.get<CategoryWithAssetTypes>(`/admin/categories/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateCategoryDto): Promise<Category> => {
+    const response = await apiClient.post<Category>('/admin/categories', data);
+    return response.data;
+  },
+
+  update: async (id: number, data: UpdateCategoryDto): Promise<Category> => {
+    const response = await apiClient.put<Category>(`/admin/categories/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/admin/categories/${id}`);
   },
 };
 

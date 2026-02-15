@@ -26,7 +26,7 @@ const AssetTypeSelect = ({
 }: AssetTypeSelectProps) => {
   const { data: assetTypes, isLoading } = useQuery<AssetType[]>({
     queryKey: ['assetTypes'],
-    queryFn: assetTypesApi.getAll,
+    queryFn: () => assetTypesApi.getAll(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 

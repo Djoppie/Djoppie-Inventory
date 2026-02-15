@@ -108,8 +108,6 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
           a.assetCode.toLowerCase().includes(query) ||
           a.category.toLowerCase().includes(query) ||
           a.owner?.toLowerCase().includes(query) ||
-          a.building?.name?.toLowerCase().includes(query) ||
-          a.building?.code?.toLowerCase().includes(query) ||
           a.service?.name?.toLowerCase().includes(query) ||
           a.service?.code?.toLowerCase().includes(query) ||
           a.brand?.toLowerCase().includes(query) ||

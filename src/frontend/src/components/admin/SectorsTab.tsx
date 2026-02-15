@@ -55,7 +55,7 @@ const SectorsTab = () => {
 
   const { data: sectors = [], isLoading } = useQuery({
     queryKey: ['sectors'],
-    queryFn: sectorsApi.getAll,
+    queryFn: () => sectorsApi.getAll(),
   });
 
   const createMutation = useMutation({

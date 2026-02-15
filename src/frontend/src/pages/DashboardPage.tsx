@@ -117,7 +117,6 @@ const DashboardPage = () => {
         a.category.toLowerCase().includes(query) ||
         a.owner?.toLowerCase().includes(query) ||
         a.legacyBuilding?.toLowerCase().includes(query) ||
-        a.building?.name?.toLowerCase().includes(query) ||
         a.legacyDepartment?.toLowerCase().includes(query) ||
         a.service?.name?.toLowerCase().includes(query) ||
         a.officeLocation?.toLowerCase().includes(query) ||
