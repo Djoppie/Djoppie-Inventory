@@ -13,17 +13,23 @@ public class AssetService : IAssetService
 {
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetEventService _assetEventService;
+    private readonly IAssetCodeGenerator _codeGenerator;
+    private readonly IAssetTypeRepository _assetTypeRepository;
     private readonly IMapper _mapper;
     private readonly ILogger<AssetService> _logger;
 
     public AssetService(
         IAssetRepository assetRepository,
         IAssetEventService assetEventService,
+        IAssetCodeGenerator codeGenerator,
+        IAssetTypeRepository assetTypeRepository,
         IMapper mapper,
         ILogger<AssetService> logger)
     {
         _assetRepository = assetRepository;
         _assetEventService = assetEventService;
+        _codeGenerator = codeGenerator;
+        _assetTypeRepository = assetTypeRepository;
         _mapper = mapper;
         _logger = logger;
     }
@@ -71,15 +77,25 @@ public class AssetService : IAssetService
         if (createAssetDto == null)
             throw new ArgumentNullException(nameof(createAssetDto));
 
-        if (string.IsNullOrWhiteSpace(createAssetDto.AssetCodePrefix))
-            throw new ArgumentException("Asset code prefix is required", nameof(createAssetDto));
+        if (createAssetDto.AssetTypeId <= 0)
+            throw new ArgumentException("Asset type is required", nameof(createAssetDto));
 
-        // Auto-generate asset code
-        var assetCode = await GenerateAssetCodeAsync(createAssetDto.AssetCodePrefix, createAssetDto.IsDummy);
+        // Auto-generate asset code: [DUM-]TYPE-YY-MERK-NUMMER
+        var assetCode = await _codeGenerator.GenerateCodeAsync(
+            createAssetDto.AssetTypeId,
+            createAssetDto.Brand,
+            DateTime.UtcNow.Year,
+            createAssetDto.IsDummy);
 
         var asset = _mapper.Map<Asset>(createAssetDto);
         asset.AssetCode = assetCode;
         asset.IsDummy = createAssetDto.IsDummy;
+
+        // Auto-generate alias if not provided: <AssetType>-<Owner>-<Brand>-<Model>
+        if (string.IsNullOrWhiteSpace(asset.Alias))
+        {
+            asset.Alias = await GenerateAliasAsync(asset.AssetTypeId, asset.Owner, asset.Brand, asset.Model);
+        }
 
         var createdAsset = await _assetRepository.CreateAsync(asset);
 
@@ -100,28 +116,6 @@ public class AssetService : IAssetService
         return _mapper.Map<AssetDto>(createdAsset);
     }
 
-    private async Task<string> GenerateAssetCodeAsync(string prefix, bool isDummy)
-    {
-        const int maxAttempts = 100;
-        var attempt = 0;
-
-        while (attempt < maxAttempts)
-        {
-            var nextNumber = await _assetRepository.GetNextAssetNumberAsync(prefix, isDummy);
-            var assetCode = $"{prefix}-{nextNumber:D4}";
-
-            // Verify code doesn't exist (race condition protection)
-            if (!await _assetRepository.AssetCodeExistsAsync(assetCode))
-            {
-                return assetCode;
-            }
-
-            attempt++;
-        }
-
-        throw new InvalidOperationException($"Unable to generate unique asset code for prefix '{prefix}' after {maxAttempts} attempts");
-    }
-
     public async Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto, string? performedBy = null, string? performedByEmail = null)
     {
         if (updateAssetDto == null)
@@ -139,6 +133,13 @@ public class AssetService : IAssetService
         var oldBuilding = existingAsset.LegacyBuilding;
 
         _mapper.Map(updateAssetDto, existingAsset);
+
+        // Auto-generate alias if not provided: <AssetType>-<Owner>-<Brand>-<Model>
+        if (string.IsNullOrWhiteSpace(existingAsset.Alias))
+        {
+            existingAsset.Alias = await GenerateAliasAsync(existingAsset.AssetTypeId, existingAsset.Owner, existingAsset.Brand, existingAsset.Model);
+        }
+
         var updatedAsset = await _assetRepository.UpdateAsync(existingAsset);
 
         _logger.LogInformation("Updated asset {AssetCode} (ID: {AssetId})",
@@ -211,8 +212,8 @@ public class AssetService : IAssetService
         if (bulkCreateDto == null)
             throw new ArgumentNullException(nameof(bulkCreateDto));
 
-        if (string.IsNullOrWhiteSpace(bulkCreateDto.AssetCodePrefix))
-            throw new ArgumentException("Asset code prefix is required", nameof(bulkCreateDto));
+        if (bulkCreateDto.AssetTypeId <= 0)
+            throw new ArgumentException("Asset type is required", nameof(bulkCreateDto));
 
         if (string.IsNullOrWhiteSpace(bulkCreateDto.SerialNumberPrefix))
             throw new ArgumentException("Serial number prefix is required", nameof(bulkCreateDto));
@@ -230,37 +231,28 @@ public class AssetService : IAssetService
 
         try
         {
-            // Get all existing asset codes for this prefix in a single query (avoid N+1)
-            var existingCodes = await _assetRepository.GetExistingAssetCodesAsync(bulkCreateDto.AssetCodePrefix);
-
-            // Get starting number based on whether it's a dummy asset
-            var startingNumber = await _assetRepository.GetNextAssetNumberAsync(bulkCreateDto.AssetCodePrefix, bulkCreateDto.IsDummy);
-            var currentNumber = startingNumber;
-            var maxNumber = bulkCreateDto.IsDummy ? 9999 : 8999;
+            // Generate all asset codes using the code generator
+            var codes = (await _codeGenerator.GenerateBulkCodesAsync(
+                bulkCreateDto.AssetTypeId,
+                bulkCreateDto.Brand,
+                DateTime.UtcNow.Year,
+                bulkCreateDto.IsDummy,
+                bulkCreateDto.Quantity)).ToList();
 
             // Parse status once
             var assetStatus = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
                 ? status
                 : AssetStatus.Stock;
 
-            // Prepare all assets in memory first
+            // Prepare all assets in memory
             var assetsToCreate = new List<Asset>();
-
-            while (assetsToCreate.Count < bulkCreateDto.Quantity && currentNumber <= maxNumber)
+            for (int i = 0; i < codes.Count; i++)
             {
-                var assetCode = $"{bulkCreateDto.AssetCodePrefix}-{currentNumber:D4}";
-
-                // Check against in-memory set (no database call)
-                if (existingCodes.Contains(assetCode))
-                {
-                    currentNumber++;
-                    continue;
-                }
-
-                // Create asset with the next available number
+                var serialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{(i + 1):D4}";
                 var asset = new Asset
                 {
-                    AssetCode = assetCode,
+                    AssetCode = codes[i],
+                    AssetTypeId = bulkCreateDto.AssetTypeId,
                     AssetName = bulkCreateDto.AssetName,
                     Alias = bulkCreateDto.Alias,
                     Category = bulkCreateDto.Category,
@@ -272,18 +264,15 @@ public class AssetService : IAssetService
                     Status = assetStatus,
                     Brand = bulkCreateDto.Brand,
                     Model = bulkCreateDto.Model,
-                    SerialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{currentNumber:D4}",
+                    SerialNumber = serialNumber,
                     PurchaseDate = bulkCreateDto.PurchaseDate,
                     WarrantyExpiry = bulkCreateDto.WarrantyExpiry,
                     InstallationDate = bulkCreateDto.InstallationDate
                 };
-
                 assetsToCreate.Add(asset);
-                existingCodes.Add(assetCode); // Track newly added codes
-                currentNumber++;
             }
 
-            // Bulk insert all assets in a single database operation
+            // Bulk insert all assets
             if (assetsToCreate.Count > 0)
             {
                 var createdAssets = await _assetRepository.BulkCreateAsync(assetsToCreate);
@@ -291,7 +280,6 @@ public class AssetService : IAssetService
                 result.SuccessfullyCreated = assetsToCreate.Count;
             }
 
-            // Commit transaction
             await transaction.CommitAsync();
 
             _logger.LogInformation(
@@ -300,25 +288,16 @@ public class AssetService : IAssetService
         }
         catch (Exception ex)
         {
-            // Rollback transaction on any error
             await transaction.RollbackAsync();
 
             result.Failed = bulkCreateDto.Quantity;
             result.Errors.Add($"Bulk operation failed: {ex.Message}");
             _logger.LogError(ex, "Bulk asset creation failed, transaction rolled back");
 
-            throw; // Re-throw to let the controller handle the error response
+            throw;
         }
 
         return result;
-    }
-
-    public async Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false)
-    {
-        if (string.IsNullOrWhiteSpace(prefix))
-            throw new ArgumentException("Prefix is required", nameof(prefix));
-
-        return await _assetRepository.GetNextAssetNumberAsync(prefix, isDummy);
     }
 
     public async Task<bool> SerialNumberExistsAsync(string serialNumber, int? excludeAssetId = null)
@@ -336,5 +315,25 @@ public class AssetService : IAssetService
 
         var asset = await _assetRepository.GetBySerialNumberAsync(serialNumber);
         return asset == null ? null : _mapper.Map<AssetDto>(asset);
+    }
+
+    /// <summary>
+    /// Generates an alias from asset components: AssetType-Owner-Brand-Model.
+    /// Empty components are skipped.
+    /// </summary>
+    private async Task<string?> GenerateAliasAsync(int? assetTypeId, string? owner, string? brand, string? model)
+    {
+        string? assetTypeName = null;
+        if (assetTypeId.HasValue && assetTypeId.Value > 0)
+        {
+            var assetType = await _assetTypeRepository.GetByIdAsync(assetTypeId.Value);
+            assetTypeName = assetType?.Name;
+        }
+
+        var parts = new[] { assetTypeName, owner, brand, model }
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToArray();
+
+        return parts.Length > 0 ? string.Join("-", parts) : null;
     }
 }

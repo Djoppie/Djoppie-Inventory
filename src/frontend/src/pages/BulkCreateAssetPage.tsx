@@ -16,34 +16,27 @@ import {
   Chip,
   Stack,
   LinearProgress,
-  Paper,
-  Fade,
+  Card,
+  CardContent,
   Zoom,
-  useTheme,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
   Inventory as InventoryIcon,
-  Upload as UploadIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import BulkAssetCreationForm from '../components/assets/BulkAssetCreationForm';
-import CsvImportDialog from '../components/import/CsvImportDialog';
-import { useBulkCreateAssets, useCreateAsset } from '../hooks/useAssets';
-import { BulkCreateAssetDto, BulkCreateAssetResultDto, CreateAssetDto, Asset } from '../types/asset.types';
+import { useBulkCreateAssets } from '../hooks/useAssets';
+import { BulkCreateAssetDto, BulkCreateAssetResultDto } from '../types/asset.types';
 
 const BulkCreateAssetPage = () => {
   const navigate = useNavigate();
-  const theme = useTheme();
   const bulkCreate = useBulkCreateAssets();
-  const createAsset = useCreateAsset();
   const [successMessage, setSuccessMessage] = useState('');
   const [result, setResult] = useState<BulkCreateAssetResultDto | null>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
-  const [isCreatingMultiple, setIsCreatingMultiple] = useState(false);
-  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const handleSubmit = async (data: BulkCreateAssetDto) => {
     try {
@@ -52,7 +45,6 @@ const BulkCreateAssetPage = () => {
         ...data,
         brand: data.brand || undefined,
         model: data.model || undefined,
-        // serialNumberPrefix is required, don't clean it
         purchaseDate: data.purchaseDate || undefined,
         warrantyExpiry: data.warrantyExpiry || undefined,
         installationDate: data.installationDate || undefined,
@@ -61,7 +53,6 @@ const BulkCreateAssetPage = () => {
       setResult(response);
       setShowResultDialog(true);
 
-      // Show success message if at least some assets were created
       if (response.successfullyCreated > 0) {
         setSuccessMessage(
           response.isFullySuccessful
@@ -74,101 +65,9 @@ const BulkCreateAssetPage = () => {
     }
   };
 
-  // Helper to convert date string to ISO format for backend
-  const formatDateForApi = (dateStr: string | undefined): string | undefined => {
-    if (!dateStr) return undefined;
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return undefined;
-      return date.toISOString();
-    } catch {
-      return undefined;
-    }
-  };
-
-  // Handle CSV import - create assets one by one
-  const handleSubmitMultiple = async (assets: CreateAssetDto[]) => {
-    setIsCreatingMultiple(true);
-    const createdAssets: Asset[] = [];
-    const errors: string[] = [];
-
-    for (let i = 0; i < assets.length; i++) {
-      const asset = assets[i];
-      try {
-        // Build asset - required fields must be present, optional fields can be undefined
-        // Note: Backend expects empty strings for string fields, not null/undefined
-        const cleanedAsset: CreateAssetDto = {
-          // Required fields
-          serialNumber: asset.serialNumber,
-          assetCodePrefix: asset.assetCodePrefix || 'IMP',
-          category: asset.category,
-          // Fields with defaults
-          status: asset.status || 'Stock',
-          assetName: asset.assetName || '',
-          isDummy: asset.isDummy || false,
-        };
-
-        // Only add optional fields if they have actual values
-        // Note: Service is now used as location - use assetTypeId, serviceId
-        if (asset.assetTypeId) cleanedAsset.assetTypeId = asset.assetTypeId;
-        if (asset.serviceId) cleanedAsset.serviceId = asset.serviceId;
-        if (asset.installationLocation) cleanedAsset.installationLocation = asset.installationLocation;
-        if (asset.owner) cleanedAsset.owner = asset.owner;
-        if (asset.brand) cleanedAsset.brand = asset.brand;
-        if (asset.model) cleanedAsset.model = asset.model;
-
-        // Format dates to ISO format for backend
-        const purchaseDate = formatDateForApi(asset.purchaseDate);
-        const warrantyExpiry = formatDateForApi(asset.warrantyExpiry);
-        const installationDate = formatDateForApi(asset.installationDate);
-
-        if (purchaseDate) cleanedAsset.purchaseDate = purchaseDate;
-        if (warrantyExpiry) cleanedAsset.warrantyExpiry = warrantyExpiry;
-        if (installationDate) cleanedAsset.installationDate = installationDate;
-
-        const created = await createAsset.mutateAsync(cleanedAsset);
-        createdAssets.push(created);
-      } catch (error: unknown) {
-        let errorMessage = 'Unknown error';
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-        // Try to extract validation errors from axios error response
-        if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as { response?: { data?: { errors?: Record<string, string[]>; title?: string } } };
-          if (axiosError.response?.data?.errors) {
-            const validationErrors = Object.entries(axiosError.response.data.errors)
-              .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
-              .join('; ');
-            errorMessage = validationErrors || axiosError.response.data.title || errorMessage;
-          }
-        }
-        errors.push(`Row ${i + 1} (${asset.serialNumber}): ${errorMessage}`);
-        logger.error(`Error creating asset ${asset.serialNumber}:`, error);
-      }
-    }
-
-    // Build result similar to bulk create
-    const csvResult: BulkCreateAssetResultDto = {
-      totalRequested: assets.length,
-      successfullyCreated: createdAssets.length,
-      failed: errors.length,
-      isFullySuccessful: errors.length === 0,
-      createdAssets: createdAssets,
-      errors: errors,
-    };
-
-    setResult(csvResult);
-    setShowResultDialog(true);
-    setIsCreatingMultiple(false);
-
-    if (createdAssets.length > 0) {
-      setSuccessMessage(
-        csvResult.isFullySuccessful
-          ? `Successfully imported all ${createdAssets.length} assets!`
-          : `Imported ${createdAssets.length} of ${assets.length} assets`
-      );
-    }
+  const handleCsvImportSuccess = () => {
+    setSuccessMessage('Assets imported successfully from CSV!');
+    setTimeout(() => navigate('/'), 1500);
   };
 
   const handleCancel = () => {
@@ -178,7 +77,6 @@ const BulkCreateAssetPage = () => {
   const handleCloseDialog = () => {
     setShowResultDialog(false);
     if (result?.isFullySuccessful) {
-      // Redirect to dashboard after successful creation
       setTimeout(() => navigate('/'), 500);
     }
   };
@@ -205,18 +103,7 @@ const BulkCreateAssetPage = () => {
     } else if (result.successfullyCreated > 0) {
       return (
         <Zoom in={showResultDialog}>
-          <WarningIcon
-            sx={{
-              fontSize: 80,
-              color: 'warning.main',
-              animation: 'shake 0.5s',
-              '@keyframes shake': {
-                '0%, 100%': { transform: 'translateX(0)' },
-                '25%': { transform: 'translateX(-10px)' },
-                '75%': { transform: 'translateX(10px)' },
-              },
-            }}
-          />
+          <WarningIcon sx={{ fontSize: 80, color: 'warning.main' }} />
         </Zoom>
       );
     } else {
@@ -229,143 +116,112 @@ const BulkCreateAssetPage = () => {
   };
 
   return (
-    <Fade in timeout={600}>
-      <Box>
-        {/* Header Section with Animation */}
-        <Fade in timeout={400}>
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 3,
-              p: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 3,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light}, ${theme.palette.secondary.main})`,
-                borderRadius: '12px 12px 0 0',
-              },
-            }}
-          >
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
-              <InventoryIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-              <Box>
-                <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 0.5 }}>
-                  Bulk Asset Creation
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Create multiple assets at once with sequential asset codes and shared properties.
-                </Typography>
-              </Box>
-            </Stack>
-            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                <Chip
-                  label="Save Time"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
-                />
-                <Chip
-                  label="Sequential Codes"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
-                />
-                <Chip
-                  label="Template Support"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
-                />
-              </Box>
-              <Button
-                variant="outlined"
-                startIcon={<UploadIcon />}
-                onClick={() => setCsvImportOpen(true)}
-                sx={{
-                  borderColor: theme.palette.primary.main,
-                  color: theme.palette.primary.main,
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: theme.palette.primary.dark,
-                    bgcolor: `${theme.palette.primary.main}15`,
-                  },
-                }}
-              >
-                Import from CSV
-              </Button>
-            </Box>
-          </Paper>
-        </Fade>
-
-        {/* Error Alert */}
-        {bulkCreate.isError && (
-          <Fade in timeout={500}>
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {bulkCreate.error instanceof Error
-                ? bulkCreate.error.message
-                : 'Failed to create assets. Please try again.'}
-            </Alert>
-          </Fade>
-        )}
-
-        {/* Form */}
-        <Fade in timeout={600}>
-          <Box>
-            <BulkAssetCreationForm
-              onSubmit={handleSubmit}
-              onSubmitMultiple={handleSubmitMultiple}
-              onCancel={handleCancel}
-              isLoading={bulkCreate.isPending || isCreatingMultiple}
+    <Box>
+      {/* Header - Scanner style */}
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                : '0 4px 20px rgba(253, 185, 49, 0.3)',
+          },
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <InventoryIcon
+              sx={{
+                fontSize: 40,
+                color: 'primary.main',
+                filter: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                    : 'none',
+              }}
             />
-          </Box>
-        </Fade>
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight={700}>
+                Bulk Asset Creation
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Create multiple assets at once with sequential asset codes and shared properties.
+              </Typography>
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
 
-        {/* Success Snackbar */}
-        <Snackbar
-          open={!!successMessage}
-          autoHideDuration={4000}
-          onClose={() => setSuccessMessage('')}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert
-            severity="success"
-            sx={{
-              width: '100%',
-              boxShadow: 3,
-            }}
-          >
-            {successMessage}
-          </Alert>
-        </Snackbar>
-
-        {/* Result Dialog with Animations */}
-        <Dialog
-          open={showResultDialog}
-          onClose={handleCloseDialog}
-          maxWidth="sm"
-          fullWidth
-          TransitionComponent={Zoom}
-          TransitionProps={{ timeout: 400 }}
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
-              overflow: 'visible',
-            },
+      {/* Error Alert */}
+      {bulkCreate.isError && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'error.main',
+            fontWeight: 600,
           }}
         >
+          {bulkCreate.error instanceof Error
+            ? bulkCreate.error.message
+            : 'Failed to create assets. Please try again.'}
+        </Alert>
+      )}
+
+      {/* Form */}
+      <BulkAssetCreationForm
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        onCsvImportSuccess={handleCsvImportSuccess}
+        isLoading={bulkCreate.isPending}
+      />
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage('')}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          sx={{
+            width: '100%',
+            border: '1px solid',
+            borderColor: 'success.main',
+            fontWeight: 600,
+            boxShadow: 3,
+          }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
+
+      {/* Result Dialog */}
+      <Dialog
+        open={showResultDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+        TransitionComponent={Zoom}
+        TransitionProps={{ timeout: 400 }}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
         <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             {getDialogIcon()}
@@ -383,56 +239,52 @@ const BulkCreateAssetPage = () => {
           {result && (
             <Box>
               {/* Progress Summary */}
-              <Paper
+              <Card
                 elevation={0}
                 sx={{
-                  p: 2,
                   mb: 3,
-                  bgcolor: 'background.default',
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: 2,
                 }}
               >
-                <Stack spacing={2}>
-                  <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Creation Progress
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {result.successfullyCreated} / {result.totalRequested}
-                      </Typography>
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Creation Progress
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {result.successfullyCreated} / {result.totalRequested}
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(result.successfullyCreated / result.totalRequested) * 100}
+                        sx={{ height: 10, borderRadius: 5 }}
+                      />
                     </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(result.successfullyCreated / result.totalRequested) * 100}
-                      sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: 'background.paper',
-                      }}
-                    />
-                  </Box>
 
-                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                    <Chip
-                      icon={<CheckCircleIcon />}
-                      label={`${result.successfullyCreated} Created`}
-                      color="success"
-                      sx={{ fontWeight: 600 }}
-                    />
-                    {result.failed > 0 && (
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                       <Chip
-                        icon={<ErrorIcon />}
-                        label={`${result.failed} Failed`}
-                        color="error"
+                        icon={<CheckCircleIcon />}
+                        label={`${result.successfullyCreated} Created`}
+                        color="success"
                         sx={{ fontWeight: 600 }}
                       />
-                    )}
-                  </Box>
-                </Stack>
-              </Paper>
+                      {result.failed > 0 && (
+                        <Chip
+                          icon={<ErrorIcon />}
+                          label={`${result.failed} Failed`}
+                          color="error"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      )}
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
 
               {/* Successfully Created Assets */}
               {result.createdAssets.length > 0 && (
@@ -536,19 +388,8 @@ const BulkCreateAssetPage = () => {
             </>
           )}
         </DialogActions>
-        </Dialog>
-
-        {/* CSV Import Dialog */}
-        <CsvImportDialog
-          open={csvImportOpen}
-          onClose={() => setCsvImportOpen(false)}
-          onSuccess={() => {
-            setSuccessMessage('Assets imported successfully from CSV!');
-            setCsvImportOpen(false);
-          }}
-        />
-      </Box>
-    </Fade>
+      </Dialog>
+    </Box>
   );
 };
 

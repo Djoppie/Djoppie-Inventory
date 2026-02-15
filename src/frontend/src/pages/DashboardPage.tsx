@@ -3,8 +3,8 @@ import {
   Box,
   Typography,
   Paper,
+  Card,
   Chip,
-  keyframes,
   Tooltip,
   IconButton,
   Menu,
@@ -35,16 +35,6 @@ import CommentIcon from '@mui/icons-material/Comment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import PrintIcon from '@mui/icons-material/Print';
-
-// Subtle glow pulse for the header
-const headerGlow = keyframes`
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(255, 119, 0, 0.2), inset 0 0 10px rgba(255, 119, 0, 0.05);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(255, 119, 0, 0.4), inset 0 0 15px rgba(255, 119, 0, 0.1);
-  }
-`;
 
 const VIEW_MODE_STORAGE_KEY = 'djoppie-dashboard-view-mode';
 
@@ -283,257 +273,232 @@ const DashboardPage = () => {
   const nieuwCount = realAssets.filter(a => a.status === 'Nieuw').length;
   const dummyCount = dummyAssets.length;
 
+  // Status card definitions for the dashboard grid
+  const statusCards: Array<{
+    key: string;
+    label: string;
+    count: number;
+    color: string;
+    bgLight: string;
+    bgDark: string;
+  }> = [
+    { key: 'InGebruik', label: 'In gebruik', count: inGebruikCount, color: '#4CAF50', bgLight: 'rgba(76,175,80,0.08)', bgDark: 'rgba(76,175,80,0.15)' },
+    { key: 'Stock', label: 'Stock', count: stockCount, color: '#2196F3', bgLight: 'rgba(33,150,243,0.08)', bgDark: 'rgba(33,150,243,0.15)' },
+    { key: 'Herstelling', label: 'Herstelling', count: herstellingCount, color: '#FF7700', bgLight: 'rgba(255,119,0,0.08)', bgDark: 'rgba(255,119,0,0.15)' },
+    { key: 'Defect', label: 'Defect', count: defectCount, color: '#F44336', bgLight: 'rgba(244,67,54,0.08)', bgDark: 'rgba(244,67,54,0.15)' },
+    { key: 'UitDienst', label: 'Uit dienst', count: uitDienstCount, color: '#9E9E9E', bgLight: 'rgba(158,158,158,0.08)', bgDark: 'rgba(158,158,158,0.15)' },
+    { key: 'Nieuw', label: 'Nieuw', count: nieuwCount, color: '#00BCD4', bgLight: 'rgba(0,188,212,0.08)', bgDark: 'rgba(0,188,212,0.15)' },
+  ];
+
   return (
     <Box>
-      {/* Terminal-style Header */}
-      <Paper
+      {/* Dashboard Header - Scanner style */}
+      <Card
         elevation={0}
         sx={{
-          mb: 4,
-          p: 3,
+          mb: 3,
+          overflow: 'hidden',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 2,
-          animation: `${headerGlow} 3s ease-in-out infinite`,
-          background: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(204, 0, 0, 0.03) 50%, transparent 100%)'
-              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.06) 0%, rgba(204, 0, 0, 0.02) 50%, transparent 100%)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                : '0 4px 20px rgba(253, 185, 49, 0.3)',
+          },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          {/* Dashboard icon */}
-          <DashboardIcon
-            sx={{
-              color: 'primary.main',
-              fontSize: '2rem',
-              filter: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'drop-shadow(0 0 8px rgba(255, 119, 0, 0.5))'
-                  : 'none',
-            }}
-          />
-
-          {/* Title */}
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              color: 'primary.main',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              background: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'linear-gradient(90deg, var(--djoppie-orange-400), var(--djoppie-red-400))'
-                  : 'linear-gradient(90deg, var(--djoppie-orange-600), var(--djoppie-red-600))',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('dashboard.title')}
-          </Typography>
-        </Box>
-
-        {/* Stats Row */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip
-            icon={<InventoryIcon />}
-            label={`${assetCount} Totaal`}
-            onClick={() => handleStatusChipClick('')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              opacity: statusFilter === '' ? 1 : 0.6,
-              transform: statusFilter === '' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                opacity: 1,
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${inGebruikCount} In gebruik`}
-            onClick={() => handleStatusChipClick('InGebruik')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'InGebruik' ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)',
-              color: 'rgb(76, 175, 80)',
-              border: '1px solid rgba(76, 175, 80, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'InGebruik' ? 1 : 0.5,
-              transform: statusFilter === 'InGebruik' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(76, 175, 80)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(76, 175, 80, 0.35)',
-                boxShadow: '0 0 12px rgba(76, 175, 80, 0.4)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${stockCount} Stock`}
-            onClick={() => handleStatusChipClick('Stock')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Stock' ? 'rgba(33, 150, 243, 0.25)' : 'rgba(33, 150, 243, 0.15)',
-              color: 'rgb(33, 150, 243)',
-              border: '1px solid rgba(33, 150, 243, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Stock' ? 1 : 0.5,
-              transform: statusFilter === 'Stock' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(33, 150, 243)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(33, 150, 243, 0.3)',
-                boxShadow: '0 0 12px rgba(33, 150, 243, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${herstellingCount} Herstelling`}
-            onClick={() => handleStatusChipClick('Herstelling')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Herstelling' ? 'rgba(255, 119, 0, 0.25)' : 'rgba(255, 119, 0, 0.15)',
-              color: 'rgb(255, 119, 0)',
-              border: '1px solid rgba(255, 119, 0, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Herstelling' ? 1 : 0.5,
-              transform: statusFilter === 'Herstelling' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(255, 119, 0)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(255, 119, 0, 0.3)',
-                boxShadow: '0 0 12px rgba(255, 119, 0, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${defectCount} Defect`}
-            onClick={() => handleStatusChipClick('Defect')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Defect' ? 'rgba(244, 67, 54, 0.25)' : 'rgba(244, 67, 54, 0.15)',
-              color: 'rgb(244, 67, 54)',
-              border: '1px solid rgba(244, 67, 54, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Defect' ? 1 : 0.5,
-              transform: statusFilter === 'Defect' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(244, 67, 54)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(244, 67, 54, 0.3)',
-                boxShadow: '0 0 12px rgba(244, 67, 54, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${uitDienstCount} Uit dienst`}
-            onClick={() => handleStatusChipClick('UitDienst')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'UitDienst' ? 'rgba(158, 158, 158, 0.25)' : 'rgba(158, 158, 158, 0.15)',
-              color: 'rgb(97, 97, 97)',
-              border: '1px solid rgba(158, 158, 158, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'UitDienst' ? 1 : 0.5,
-              transform: statusFilter === 'UitDienst' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(97, 97, 97)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(158, 158, 158, 0.3)',
-                boxShadow: '0 0 12px rgba(158, 158, 158, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${nieuwCount} Nieuw`}
-            onClick={() => handleStatusChipClick('Nieuw')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Nieuw' ? 'rgba(0, 188, 212, 0.25)' : 'rgba(0, 188, 212, 0.15)',
-              color: 'rgb(0, 151, 167)',
-              border: '1px solid rgba(0, 188, 212, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Nieuw' ? 1 : 0.5,
-              transform: statusFilter === 'Nieuw' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(0, 151, 167)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(0, 188, 212, 0.3)',
-                boxShadow: '0 0 12px rgba(0, 188, 212, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          {dummyCount > 0 && (
-            <Chip
-              label={`${dummyCount} Dummy`}
-              onClick={() => handleStatusChipClick('Dummy')}
+        {/* Title bar */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <DashboardIcon
               sx={{
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                px: 1,
-                cursor: 'pointer',
-                backgroundColor: statusFilter === 'Dummy' ? 'rgba(156, 39, 176, 0.25)' : 'rgba(156, 39, 176, 0.12)',
-                color: 'rgb(156, 39, 176)',
-                border: '1px solid rgba(156, 39, 176, 0.4)',
-                opacity: statusFilter === 'Dummy' ? 1 : 0.5,
-                transform: statusFilter === 'Dummy' ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.2s ease',
-                '& .MuiChip-label': {
-                  color: 'rgb(156, 39, 176)',
-                },
-                '&:hover': {
-                  opacity: 1,
-                  backgroundColor: 'rgba(156, 39, 176, 0.3)',
-                  boxShadow: '0 0 12px rgba(156, 39, 176, 0.5)',
-                  transform: 'scale(1.05)',
-                },
+                fontSize: 32,
+                color: 'primary.main',
+                filter: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                    : 'none',
               }}
             />
+            <Typography variant="h5" component="h1" fontWeight={700}>
+              {t('dashboard.title')}
+            </Typography>
+          </Box>
+          {/* Total count badge */}
+          <Chip
+            icon={<InventoryIcon />}
+            label={`${assetCount} assets`}
+            onClick={() => handleStatusChipClick('')}
+            sx={{
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              border: statusFilter === '' ? '2px solid' : '1px solid',
+              borderColor: statusFilter === '' ? 'primary.main' : 'divider',
+              color: statusFilter === '' ? 'primary.main' : 'text.primary',
+            }}
+          />
+        </Box>
+
+        {/* Status cards grid */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(2, 1fr)',
+              sm: 'repeat(3, 1fr)',
+              md: `repeat(${statusCards.length + (dummyCount > 0 ? 1 : 0)}, 1fr)`,
+            },
+            gap: 0,
+          }}
+        >
+          {statusCards.map((card) => (
+            <Box
+              key={card.key}
+              onClick={() => handleStatusChipClick(card.key)}
+              sx={{
+                px: 2,
+                py: 1.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                borderBottom: '1px solid',
+                borderRight: '1px solid',
+                borderColor: 'divider',
+                bgcolor: (theme) =>
+                  statusFilter === card.key
+                    ? (theme.palette.mode === 'dark' ? card.bgDark : card.bgLight)
+                    : 'transparent',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                '&::after': statusFilter === card.key ? {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: card.color,
+                } : {},
+                opacity: statusFilter === '' || statusFilter === card.key ? 1 : 0.5,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? card.bgDark : card.bgLight,
+                  opacity: 1,
+                },
+              }}
+            >
+              {/* Color dot */}
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: card.color,
+                  flexShrink: 0,
+                  boxShadow: statusFilter === card.key ? `0 0 8px ${card.color}` : 'none',
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  lineHeight={1.2}
+                  sx={{ color: statusFilter === card.key ? card.color : 'text.primary' }}
+                >
+                  {card.count}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {card.label}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+          {dummyCount > 0 && (
+            <Box
+              onClick={() => handleStatusChipClick('Dummy')}
+              sx={{
+                px: 2,
+                py: 1.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                bgcolor: (theme) =>
+                  statusFilter === 'Dummy'
+                    ? (theme.palette.mode === 'dark' ? 'rgba(156,39,176,0.15)' : 'rgba(156,39,176,0.08)')
+                    : 'transparent',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                '&::after': statusFilter === 'Dummy' ? {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: '#9C27B0',
+                } : {},
+                opacity: statusFilter === 'Dummy' ? 1 : 0.5,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(156,39,176,0.15)' : 'rgba(156,39,176,0.08)',
+                  opacity: 1,
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: '#9C27B0',
+                  flexShrink: 0,
+                  boxShadow: statusFilter === 'Dummy' ? '0 0 8px #9C27B0' : 'none',
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  lineHeight={1.2}
+                  sx={{ color: statusFilter === 'Dummy' ? '#9C27B0' : 'text.primary' }}
+                >
+                  {dummyCount}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 500, lineHeight: 1 }}
+                >
+                  Dummy
+                </Typography>
+              </Box>
+            </Box>
           )}
         </Box>
-      </Paper>
+      </Card>
 
       {/* Sticky Toolbar for View/Sort/Filter */}
       <Paper

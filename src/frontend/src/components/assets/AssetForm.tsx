@@ -140,7 +140,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const theme = useTheme();
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
 
-  const [assetCodePrefix, setAssetCodePrefix] = useState('');
   const [isDummy, setIsDummy] = useState(initialData?.isDummy || false);
   const [selectedUserUpn, setSelectedUserUpn] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
@@ -151,7 +150,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const [isSerialUnique, setIsSerialUnique] = useState<boolean | null>(null);
   const [isCheckingUniqueness, setIsCheckingUniqueness] = useState(false);
 
-  const [formData, setFormData] = useState<Omit<CreateAssetDto, 'assetCodePrefix' | 'isDummy'>>({
+  const [formData, setFormData] = useState<Omit<CreateAssetDto, 'isDummy'>>({
     assetName: initialData?.assetName || '',
     category: initialData?.category || '',
 
@@ -241,25 +240,21 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     }
   }, [isEditMode, initialData?.id, t]);
 
-  // Debounce serial number uniqueness check
+  // Debounce serial number uniqueness check + Intune lookup
   useEffect(() => {
     const timer = setTimeout(() => {
       if (formData.serialNumber) {
         checkSerialUniqueness(formData.serialNumber);
+        lookupDeviceBySerial(formData.serialNumber);
       } else {
         setIsSerialUnique(null);
+        setSelectedDevice(null);
+        setSerialLookupError(null);
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [formData.serialNumber, checkSerialUniqueness]);
-
-  // Auto-lookup device from Intune when editing an asset with existing serial number
-  useEffect(() => {
-    if (isEditMode && initialData?.serialNumber) {
-      lookupDeviceBySerial(initialData.serialNumber);
-    }
-  }, [isEditMode, initialData?.serialNumber, lookupDeviceBySerial]);
+  }, [formData.serialNumber, checkSerialUniqueness, lookupDeviceBySerial]);
 
   const handleTemplateChange = (templateId: number) => {
     setSelectedTemplate(templateId);
@@ -270,13 +265,15 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     if (template) {
       setFormData(prev => ({
         ...prev,
-        assetName: template.assetName,
-        category: template.category,
-        brand: template.brand,
-        model: template.model,
+        assetName: template.assetName || prev.assetName,
+        category: template.category || prev.category,
+        brand: template.brand || prev.brand,
+        model: template.model || prev.model,
         owner: template.owner || prev.owner,
-        // Note: Templates use legacy string fields, not relational IDs
-        // Keep existing relational field values
+        assetTypeId: template.assetTypeId ?? prev.assetTypeId,
+        serviceId: template.serviceId ?? prev.serviceId,
+        installationLocation: template.installationLocation || prev.installationLocation,
+        status: template.status || prev.status,
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
         installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
@@ -287,9 +284,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!isEditMode) {
-      if (!assetCodePrefix.trim()) newErrors.assetCodePrefix = t('assetForm.validationError');
-    }
     // SerialNumber is REQUIRED and must be unique
     if (!formData.serialNumber.trim()) {
       newErrors.serialNumber = t('assetForm.serialNumberRequired');
@@ -309,9 +303,9 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   };
 
   // Convert empty strings to undefined so the API receives null instead of ""
-  // Keep required fields (serialNumber, assetCodePrefix, assetTypeId) as-is
+  // Keep required fields (serialNumber, assetTypeId) as-is
   const cleanData = <T extends object>(data: T): T => {
-    const requiredFields = ['serialNumber', 'assetCodePrefix', 'assetTypeId', 'status'];
+    const requiredFields = ['serialNumber', 'assetTypeId', 'status'];
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       if (requiredFields.includes(key)) {
@@ -338,7 +332,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
       const createData: CreateAssetDto = {
         ...formData,
         alias: alias || undefined,
-        assetCodePrefix: assetCodePrefix.toUpperCase(),
         isDummy,
       };
       onSubmit(cleanData(createData));
@@ -406,7 +399,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     </MenuItem>
                     {templates?.map((template: AssetTemplate) => (
                       <MenuItem key={template.id} value={template.id}>
-                        {template.templateName} - {template.category}
+                        {template.templateName}{template.assetType ? ` - ${template.assetType.name}` : ''}
                       </MenuItem>
                     ))}
                   </Select>
@@ -450,29 +443,14 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     )}
                   </Box>
                 ) : (
-                  // Create mode: show prefix input and dummy checkbox
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    <TextField
-                      sx={{ flex: '1 1 200px' }}
-                      label={t('assetForm.codePrefix')}
-                      value={assetCodePrefix}
-                      onChange={(e) => {
-                        setAssetCodePrefix(e.target.value.toUpperCase());
-                        if (errors.assetCodePrefix) {
-                          setErrors(prev => ({ ...prev, assetCodePrefix: '' }));
-                        }
-                      }}
-                      error={!!errors.assetCodePrefix}
-                      helperText={errors.assetCodePrefix || t('assetForm.codePrefixHint')}
-                      required
-                      inputProps={{ maxLength: 20 }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <QrCode sx={{ color: 'primary.main' }} />
-                          </InputAdornment>
-                        ),
-                      }}
+                  // Create mode: asset code is auto-generated, show dummy checkbox
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Chip
+                      icon={<QrCode />}
+                      label={t('assetForm.codeAutoGenerated')}
+                      color="primary"
+                      variant="outlined"
+                      sx={{ fontWeight: 500 }}
                     />
                     <FormControlLabel
                       control={
@@ -489,7 +467,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                         </Box>
                       }
                       sx={{
-                        mt: 1,
                         ml: 0,
                         p: 1,
                         borderRadius: 2,

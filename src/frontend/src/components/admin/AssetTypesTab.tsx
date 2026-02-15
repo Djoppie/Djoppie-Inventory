@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -14,13 +14,14 @@ import {
   FormControlLabel,
   Switch,
   Divider,
+  MenuItem,
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
 import AdminDataTable, { Column } from './AdminDataTable';
 import AdminFormDialog from './AdminFormDialog';
-import { AssetType, CreateAssetTypeDto, UpdateAssetTypeDto } from '../../types/admin.types';
-import { assetTypesApi } from '../../api/admin.api';
+import { AssetType, CreateAssetTypeDto, UpdateAssetTypeDto, Category } from '../../types/admin.types';
+import { assetTypesApi, categoriesApi } from '../../api/admin.api';
 import Loading from '../common/Loading';
 
 interface FormData {
@@ -29,6 +30,7 @@ interface FormData {
   description: string;
   sortOrder: string;
   isActive: boolean;
+  categoryId: string;
 }
 
 const initialFormData: FormData = {
@@ -37,6 +39,7 @@ const initialFormData: FormData = {
   description: '',
   sortOrder: '0',
   isActive: true,
+  categoryId: '',
 };
 
 const AssetTypesTab = () => {
@@ -57,6 +60,17 @@ const AssetTypesTab = () => {
     queryKey: ['assetTypes'],
     queryFn: () => assetTypesApi.getAll(),
   });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoriesApi.getAll(false),
+  });
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
 
   const createMutation = useMutation({
     mutationFn: assetTypesApi.create,
@@ -104,6 +118,7 @@ const AssetTypesTab = () => {
         description: item.description || '',
         sortOrder: String(item.sortOrder),
         isActive: item.isActive,
+        categoryId: item.categoryId ? String(item.categoryId) : '',
       });
     } else {
       setEditingItem(null);
@@ -171,6 +186,7 @@ const AssetTypesTab = () => {
           description: formData.description.trim() || undefined,
           isActive: formData.isActive,
           sortOrder,
+          categoryId: formData.categoryId ? Number(formData.categoryId) : undefined,
         };
         await updateMutation.mutateAsync({ id: editingItem.id, data: dto });
       } else {
@@ -179,6 +195,7 @@ const AssetTypesTab = () => {
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
           sortOrder,
+          categoryId: formData.categoryId ? Number(formData.categoryId) : undefined,
         };
         await createMutation.mutateAsync(dto);
       }
@@ -204,6 +221,15 @@ const AssetTypesTab = () => {
       ),
     },
     { id: 'name', label: 'Name', minWidth: 150 },
+    {
+      id: 'categoryId',
+      label: 'Category',
+      minWidth: 120,
+      format: (item) => {
+        const cat = item.categoryId ? categoryMap.get(item.categoryId) : null;
+        return cat ? cat.name : '-';
+      },
+    },
     { id: 'description', label: 'Description', minWidth: 200 },
     { id: 'sortOrder', label: 'Sort Order', minWidth: 80, align: 'center' },
   ];
@@ -281,6 +307,24 @@ const AssetTypesTab = () => {
             required
             fullWidth
           />
+
+          <TextField
+            label="Category"
+            select
+            value={formData.categoryId}
+            onChange={handleInputChange('categoryId')}
+            helperText="Group this asset type under a category"
+            fullWidth
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {categories.map((cat) => (
+              <MenuItem key={cat.id} value={String(cat.id)}>
+                {cat.name}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             label="Description"

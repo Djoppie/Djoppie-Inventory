@@ -3,16 +3,16 @@ using System.ComponentModel.DataAnnotations;
 namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
-/// DTO for creating a new asset. AssetCode is auto-generated based on prefix.
+/// DTO for creating a new asset. AssetCode is auto-generated from AssetType + Year + Brand.
+/// Format: [DUM-]TYPE-YY-MERK-NUMMER (e.g., LAP-26-DELL-00001)
 /// </summary>
 public class CreateAssetDto
 {
     /// <summary>
-    /// Prefix for auto-generating asset code (e.g., "LAP", "MON", "PRINT")
+    /// Asset type ID - required for auto-generating asset code (determines TYPE component).
     /// </summary>
     [Required]
-    [StringLength(20)]
-    public string AssetCodePrefix { get; set; } = string.Empty;
+    public int AssetTypeId { get; set; }
 
     /// <summary>
     /// Serial number of the device - REQUIRED and must be unique

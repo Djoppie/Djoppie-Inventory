@@ -20,6 +20,8 @@ public class AssetTemplateRepository : IAssetTemplateRepository
     public async Task<IEnumerable<AssetTemplate>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.AssetTemplates
+            .Include(t => t.AssetType)
+            .Include(t => t.Service)
             .Where(t => t.IsActive)
             .OrderBy(t => t.TemplateName)
             .AsNoTracking()
@@ -29,6 +31,8 @@ public class AssetTemplateRepository : IAssetTemplateRepository
     public async Task<AssetTemplate?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.AssetTemplates
+            .Include(t => t.AssetType)
+            .Include(t => t.Service)
             .FirstOrDefaultAsync(t => t.Id == id && t.IsActive, cancellationToken);
     }
 

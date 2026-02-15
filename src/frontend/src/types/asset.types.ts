@@ -42,7 +42,7 @@ export interface Asset {
 }
 
 export interface CreateAssetDto {
-  assetCodePrefix: string;
+  assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset code
   serialNumber: string; // REQUIRED - unique identifier for the device
   assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
   alias?: string; // Optional readable name
@@ -50,7 +50,6 @@ export interface CreateAssetDto {
   isDummy?: boolean;
 
   // Relational fields
-  assetTypeId?: number;
   serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
 
@@ -95,12 +94,19 @@ export interface AssetTemplate {
   id: number;
   templateName: string;
   assetName?: string;  // Optional - alias/description
-  category: string;
+  category?: string;  // Optional - derived from AssetType
+
+  // Relational fields
+  assetTypeId?: number;
+  assetType?: { id: number; code: string; name: string };
+  serviceId?: number;
+  service?: { id: number; code: string; name: string };
+  installationLocation?: string;
+  status?: string;
+
   brand?: string;
   model?: string;
   owner?: string;  // Optional - default primary user
-  building?: string;  // Optional - default location
-  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -109,12 +115,16 @@ export interface AssetTemplate {
 export interface CreateAssetTemplateDto {
   templateName: string;
   assetName?: string;  // Optional - alias/description
-  category: string;
+  category?: string;  // Optional - derived from AssetType
+
+  assetTypeId?: number;
+  serviceId?: number;
+  installationLocation?: string;
+  status?: string;
+
   brand?: string;
   model?: string;
   owner?: string;  // Optional - default primary user
-  building?: string;  // Optional - default location
-  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -123,19 +133,23 @@ export interface CreateAssetTemplateDto {
 export interface UpdateAssetTemplateDto {
   templateName: string;
   assetName?: string;  // Optional - alias/description
-  category: string;
+  category?: string;  // Optional - derived from AssetType
+
+  assetTypeId?: number;
+  serviceId?: number;
+  installationLocation?: string;
+  status?: string;
+
   brand?: string;
   model?: string;
   owner?: string;  // Optional - default primary user
-  building?: string;  // Optional - default location
-  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
 }
 
 export interface BulkCreateAssetDto {
-  assetCodePrefix: string;
+  assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset codes
   serialNumberPrefix: string; // REQUIRED - prefix for generating unique serial numbers
   quantity: number;
   isDummy?: boolean;

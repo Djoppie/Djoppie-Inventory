@@ -6,17 +6,17 @@ using Microsoft.EntityFrameworkCore;
 namespace DjoppieInventory.Infrastructure.Services;
 
 /// <summary>
-/// Service for generating and validating asset codes following the format: [DUM-]TYPE-YY-[LOC-]NUMMER
-/// Examples: LAP-25-DBK-00001, DUM-LAP-25-WZC-90001
+/// Service for generating and validating asset codes following the format: [DUM-]TYPE-YY-MERK-NUMMER
+/// Examples: LAP-26-DELL-00001, DUM-LAP-26-HP-90001
 /// </summary>
 public class AssetCodeGeneratorService : IAssetCodeGenerator
 {
     private readonly ApplicationDbContext _context;
 
     // Regex pattern to validate asset code format
-    // Matches: [DUM-]TYPE-YY-[LOC-]NNNNN
+    // Matches: [DUM-]TYPE-YY-MERK-NNNNN
     private static readonly Regex AssetCodePattern = new(
-        @"^(?<dummy>DUM-)?(?<type>[A-Z]{2,10})-(?<year>\d{2})(?:-(?<building>[A-Z0-9]{2,10}))?-(?<number>\d{5})$",
+        @"^(?<dummy>DUM-)?(?<type>[A-Z]{2,10})-(?<year>\d{2})-(?<brand>[A-Z0-9]{1,4})-(?<number>\d{5})$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase
     );
 
@@ -25,9 +25,23 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
+    /// <summary>
+    /// Converts a brand name to a max 4-char uppercase code.
+    /// E.g., "Dell Inc." -> "DELL", "Hewlett-Packard" -> "HEWL", "HP" -> "HP"
+    /// </summary>
+    private static string ToBrandCode(string? brand)
+    {
+        if (string.IsNullOrWhiteSpace(brand))
+            return "XXXX";
+
+        // Take only alphanumeric characters, uppercase, max 4 chars
+        var cleaned = new string(brand.Where(char.IsLetterOrDigit).ToArray()).ToUpper();
+        return cleaned.Length > 4 ? cleaned[..4] : cleaned.Length > 0 ? cleaned : "XXXX";
+    }
+
     public async Task<string> GenerateCodeAsync(
         int assetTypeId,
-        int? buildingId,
+        string? brand,
         int year,
         bool isDummy,
         CancellationToken cancellationToken = default)
@@ -37,41 +51,27 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         if (assetType == null)
             throw new ArgumentException($"AssetType with ID {assetTypeId} not found.", nameof(assetTypeId));
 
-        // 2. Get the Building code (optional)
-        string? buildingCode = null;
-        if (buildingId.HasValue)
-        {
-            var building = await _context.Buildings.FindAsync(new object[] { buildingId.Value }, cancellationToken);
-            if (building == null)
-                throw new ArgumentException($"Building with ID {buildingId.Value} not found.", nameof(buildingId));
-
-            buildingCode = building.Code;
-        }
+        // 2. Convert brand to 4-char code
+        var brandCode = ToBrandCode(brand);
 
         // 3. Format year as 2 digits
         var yearTwoDigit = (year % 100).ToString("D2");
 
-        // 4. Build the prefix pattern for querying existing codes
+        // 4. Build the prefix: [DUM-]TYPE-YY-MERK
         var prefix = isDummy
-            ? $"DUM-{assetType.Code}-{yearTwoDigit}"
-            : $"{assetType.Code}-{yearTwoDigit}";
-
-        if (!string.IsNullOrEmpty(buildingCode))
-        {
-            prefix += $"-{buildingCode}";
-        }
+            ? $"DUM-{assetType.Code}-{yearTwoDigit}-{brandCode}"
+            : $"{assetType.Code}-{yearTwoDigit}-{brandCode}";
 
         // 5. Calculate the next number
         var nextNumber = await GetNextNumberAsync(prefix, isDummy, cancellationToken);
 
         // 6. Build and return the complete asset code
-        var assetCode = $"{prefix}-{nextNumber:D5}";
-        return assetCode;
+        return $"{prefix}-{nextNumber:D5}";
     }
 
     public async Task<IEnumerable<string>> GenerateBulkCodesAsync(
         int assetTypeId,
-        int? buildingId,
+        string? brand,
         int year,
         bool isDummy,
         int count,
@@ -88,29 +88,16 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         if (assetType == null)
             throw new ArgumentException($"AssetType with ID {assetTypeId} not found.", nameof(assetTypeId));
 
-        // 2. Get the Building code (optional)
-        string? buildingCode = null;
-        if (buildingId.HasValue)
-        {
-            var building = await _context.Buildings.FindAsync(new object[] { buildingId.Value }, cancellationToken);
-            if (building == null)
-                throw new ArgumentException($"Building with ID {buildingId.Value} not found.", nameof(buildingId));
-
-            buildingCode = building.Code;
-        }
+        // 2. Convert brand to 4-char code
+        var brandCode = ToBrandCode(brand);
 
         // 3. Format year as 2 digits
         var yearTwoDigit = (year % 100).ToString("D2");
 
-        // 4. Build the prefix pattern
+        // 4. Build the prefix: [DUM-]TYPE-YY-MERK
         var prefix = isDummy
-            ? $"DUM-{assetType.Code}-{yearTwoDigit}"
-            : $"{assetType.Code}-{yearTwoDigit}";
-
-        if (!string.IsNullOrEmpty(buildingCode))
-        {
-            prefix += $"-{buildingCode}";
-        }
+            ? $"DUM-{assetType.Code}-{yearTwoDigit}-{brandCode}"
+            : $"{assetType.Code}-{yearTwoDigit}-{brandCode}";
 
         // 5. Get the starting number
         var startNumber = await GetNextNumberAsync(prefix, isDummy, cancellationToken);
@@ -121,7 +108,6 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         {
             var number = startNumber + i;
 
-            // Validate number range
             if (isDummy && number > 99999)
                 throw new InvalidOperationException("Dummy asset number exceeded maximum (99999).");
 
@@ -151,18 +137,16 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         if (!match.Success)
             return null;
 
-        var components = new AssetCodeComponents
+        return new AssetCodeComponents
         {
             IsDummy = match.Groups["dummy"].Success,
             AssetTypeCode = match.Groups["type"].Value.ToUpper(),
             Year = int.Parse(match.Groups["year"].Value),
-            BuildingCode = match.Groups["building"].Success
-                ? match.Groups["building"].Value.ToUpper()
+            BrandCode = match.Groups["brand"].Success
+                ? match.Groups["brand"].Value.ToUpper()
                 : null,
             Number = int.Parse(match.Groups["number"].Value)
         };
-
-        return components;
     }
 
     /// <summary>
@@ -172,7 +156,6 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
     /// </summary>
     private async Task<int> GetNextNumberAsync(string prefix, bool isDummy, CancellationToken cancellationToken)
     {
-        // Query all asset codes that start with this prefix
         var prefixPattern = prefix + "-";
         var existingCodes = await _context.Assets
             .Where(a => a.AssetCode.StartsWith(prefixPattern))
@@ -182,30 +165,28 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
 
         if (isDummy)
         {
-            // For dummy assets: find max number >= 90001, start at 90001 if none exist
             int maxDummyNumber = 90000;
             foreach (var code in existingCodes)
             {
-                // Extract the number part (last 5 digits)
-                var numberPart = code.Substring(code.Length - 5);
-                if (int.TryParse(numberPart, out var number) && number >= 90001 && number > maxDummyNumber)
+                if (code.Length >= 5)
                 {
-                    maxDummyNumber = number;
+                    var numberPart = code[^5..];
+                    if (int.TryParse(numberPart, out var number) && number >= 90001 && number > maxDummyNumber)
+                        maxDummyNumber = number;
                 }
             }
             return maxDummyNumber + 1;
         }
         else
         {
-            // For normal assets: find max number < 90000, start at 1
             int maxNumber = 0;
             foreach (var code in existingCodes)
             {
-                // Extract the number part (last 5 digits)
-                var numberPart = code.Substring(code.Length - 5);
-                if (int.TryParse(numberPart, out var number) && number < 90000 && number > maxNumber)
+                if (code.Length >= 5)
                 {
-                    maxNumber = number;
+                    var numberPart = code[^5..];
+                    if (int.TryParse(numberPart, out var number) && number < 90000 && number > maxNumber)
+                        maxNumber = number;
                 }
             }
             return maxNumber + 1;

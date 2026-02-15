@@ -11,14 +11,16 @@ public class CreateAssetTemplateDto
     [StringLength(200)]
     public string? AssetName { get; set; }  // Optional - alias/description
 
-    [Required]
-    public string Category { get; set; } = string.Empty;
+    public string? Category { get; set; }  // Optional - derived from AssetType
+
+    public int? AssetTypeId { get; set; }  // Optional - determines TYPE in asset code
+    public int? ServiceId { get; set; }  // Optional - default service/department
+    public string? InstallationLocation { get; set; }  // Optional - specific location
+    public string? Status { get; set; }  // Optional - default status
 
     public string? Brand { get; set; }
     public string? Model { get; set; }
     public string? Owner { get; set; }  // Optional - default primary user
-    public string? Building { get; set; }  // Optional - default location
-    public string? Department { get; set; }  // Optional - default department
     public DateTime? PurchaseDate { get; set; }
     public DateTime? WarrantyExpiry { get; set; }
     public DateTime? InstallationDate { get; set; }

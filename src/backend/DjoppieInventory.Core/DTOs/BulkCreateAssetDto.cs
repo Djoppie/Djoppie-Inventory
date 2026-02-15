@@ -4,18 +4,16 @@ namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
 /// DTO for bulk asset creation operations.
-/// Allows creating multiple assets with auto-generated sequential codes.
+/// Asset codes are auto-generated from AssetType + Year + Brand.
+/// Format: [DUM-]TYPE-YY-MERK-NUMMER (e.g., LAP-26-DELL-00001)
 /// </summary>
 public class BulkCreateAssetDto
 {
     /// <summary>
-    /// The prefix to use for generating asset codes.
-    /// Example: "LAP" will generate LAP-0001, LAP-0002, etc. (normal)
-    /// or LAP-9000, LAP-9001, etc. (dummy)
+    /// Asset type ID - required for auto-generating asset codes (determines TYPE component).
     /// </summary>
     [Required]
-    [StringLength(20)]
-    public string AssetCodePrefix { get; set; } = string.Empty;
+    public int AssetTypeId { get; set; }
 
     /// <summary>
     /// The number of assets to create in bulk.

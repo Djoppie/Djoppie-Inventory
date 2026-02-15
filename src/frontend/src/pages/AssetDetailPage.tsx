@@ -15,10 +15,7 @@ import {
   DialogContentText,
   DialogActions,
   Chip,
-  Paper,
-  Fade,
-  alpha,
-  useTheme,
+  Stack,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -58,60 +55,56 @@ const isDummyAsset = (assetCode: string): boolean => {
   return !isNaN(num) && num >= 9000;
 };
 
-// Section Header Component (matching AssetForm style)
+// Scanner-style card wrapper
+const scannerCardSx = {
+  mb: 3,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: 'divider',
+  overflow: 'hidden',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    borderColor: 'primary.main',
+    boxShadow: (theme: { palette: { mode: string } }) =>
+      theme.palette.mode === 'dark'
+        ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+        : '0 4px 20px rgba(253, 185, 49, 0.3)',
+  },
+};
+
+// Section Header Component
 interface SectionHeaderProps {
   icon: React.ReactNode;
   title: string;
 }
 
-const SectionHeader = ({ icon, title }: SectionHeaderProps) => {
-  const theme = useTheme();
-
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 40,
-          height: 40,
-          borderRadius: 2,
-          background: theme.palette.mode === 'light'
-            ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.light, 0.2)})`
-            : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.3)}, ${alpha(theme.palette.primary.main, 0.2)})`,
-          color: theme.palette.primary.main,
-          boxShadow: theme.palette.mode === 'light'
-            ? '2px 2px 4px rgba(0, 0, 0, 0.1), -2px -2px 4px rgba(255, 255, 255, 0.9)'
-            : '3px 3px 6px rgba(0, 0, 0, 0.6), -2px -2px 4px rgba(255, 255, 255, 0.03)',
-          transition: 'all 0.3s ease',
-          '&:hover': {
-            transform: 'rotate(5deg) scale(1.05)',
-          },
-        }}
-      >
-        {icon}
-      </Box>
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 700,
-          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.02em',
-        }}
-      >
-        {title}
-      </Typography>
+const SectionHeader = ({ icon, title }: SectionHeaderProps) => (
+  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 36,
+        height: 36,
+        borderRadius: 1.5,
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'rgba(255, 215, 0, 0.1)'
+            : 'rgba(253, 185, 49, 0.1)',
+        color: 'primary.main',
+      }}
+    >
+      {icon}
     </Box>
-  );
-};
+    <Typography variant="h6" fontWeight={700} color="primary.main">
+      {title}
+    </Typography>
+  </Stack>
+);
 
 const AssetDetailPage = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: asset, isLoading, error } = useAsset(Number(id));
@@ -194,7 +187,14 @@ const AssetDetailPage = () => {
   if (error || !asset) {
     return (
       <Box>
-        <Alert severity="error">
+        <Alert
+          severity="error"
+          sx={{
+            border: '1px solid',
+            borderColor: 'error.main',
+            fontWeight: 600,
+          }}
+        >
           {error instanceof Error ? error.message : 'Failed to load asset'}
         </Alert>
         <Button
@@ -209,565 +209,387 @@ const AssetDetailPage = () => {
   }
 
   return (
-    <Fade in timeout={600}>
-      <Box>
-        {/* Header */}
-        <Fade in timeout={400}>
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 3,
-              p: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 3,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light}, ${theme.palette.secondary.main})`,
-                borderRadius: '12px 12px 0 0',
-              },
-            }}
+    <Box>
+      {/* Header - Scanner style */}
+      <Card elevation={0} sx={scannerCardSx}>
+        <CardContent sx={{ p: 3 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/')}
+            sx={{ mb: 2 }}
           >
-            <Button
-              startIcon={<ArrowBackIcon />}
-              onClick={() => navigate('/')}
-              sx={{ mb: 2 }}
-            >
-              Back to Dashboard
-            </Button>
+            Back to Dashboard
+          </Button>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
-              <Box>
-                <Typography variant="h4" component="h1" gutterBottom>
-                  {asset.assetName}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
+                {asset.assetName}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="h6" color="text.secondary">
+                  {asset.assetCode}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Typography variant="h6" color="text.secondary">
-                    {asset.assetCode}
-                  </Typography>
-                  <StatusBadge status={asset.status} />
-                  {isDummyAsset(asset.assetCode) && (
-                    <Chip
-                      icon={<ScienceIcon />}
-                      label={t('assetForm.dummyAsset')}
-                      color="warning"
-                      variant="outlined"
-                      size="small"
-                    />
-                  )}
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  onClick={handleEdit}
-                >
-                  {t('common.edit')}
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  {t('common.delete')}
-                </Button>
+                <StatusBadge status={asset.status} />
+                {isDummyAsset(asset.assetCode) && (
+                  <Chip
+                    icon={<ScienceIcon />}
+                    label={t('assetForm.dummyAsset')}
+                    color="warning"
+                    variant="outlined"
+                    size="small"
+                  />
+                )}
               </Box>
             </Box>
-          </Paper>
-        </Fade>
 
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-          {/* Main Information */}
-          <Box sx={{ flex: 1 }}>
-            {/* Identification */}
-            <Fade in timeout={500}>
-              <Card
-                elevation={0}
-                sx={{
-                  mb: 3,
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={handleEdit}
               >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <SectionHeader
-                    icon={<QrCodeIcon />}
-                    title={t('assetForm.identificationSection')}
-                  />
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                    <Box sx={{ flex: '1 1 200px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.assetCode')}
-                      </Typography>
-                      <Typography variant="body1" fontWeight="bold">
-                        {asset.assetCode}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 200px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.category')}
-                      </Typography>
-                      <Typography variant="body1">{asset.category}</Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 200px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetForm.assetNameDevice')}
-                      </Typography>
-                      <Typography variant="body1">{asset.assetName}</Typography>
-                    </Box>
-                    {asset.alias && (
-                      <Box sx={{ flex: '1 1 200px' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t('assetForm.alias')}
-                        </Typography>
-                        <Typography variant="body1">{asset.alias}</Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Fade>
-
-            {/* Assignment Details */}
-            <Fade in timeout={600}>
-              <Card
-                elevation={0}
-                sx={{
-                  mb: 3,
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
+                {t('common.edit')}
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={() => setDeleteDialogOpen(true)}
               >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <SectionHeader
-                    icon={<PersonIcon />}
-                    title={t('assetForm.assignmentSection')}
-                  />
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                    <Box sx={{ flex: '1 1 200px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.primaryUser')}
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {asset.owner}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 200px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetForm.service')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {asset.service ? `${asset.service.code} - ${asset.service.name}` : '-'}
-                      </Typography>
-                    </Box>
-                    {asset.installationLocation && (
-                      <Box sx={{ flex: '1 1 200px' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t('assetForm.installationLocation')}
-                        </Typography>
-                        <Typography variant="body1">{asset.installationLocation}</Typography>
-                      </Box>
-                    )}
-                    {asset.jobTitle && (
-                      <Box sx={{ flex: '1 1 200px' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t('assetDetail.jobTitle')}
-                        </Typography>
-                        <Typography variant="body1">{asset.jobTitle}</Typography>
-                      </Box>
-                    )}
-                    {asset.officeLocation && (
-                      <Box sx={{ flex: '1 1 200px' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t('assetDetail.officeLocation')}
-                        </Typography>
-                        <Typography variant="body1">{asset.officeLocation}</Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Fade>
-
-            {/* Technical Specifications */}
-            <Fade in timeout={700}>
-              <Card
-                elevation={0}
-                sx={{
-                  mb: 3,
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <SectionHeader
-                    icon={<ComputerIcon />}
-                    title={t('assetForm.technicalSection')}
-                  />
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                    <Box sx={{ flex: '1 1 150px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.brand')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {asset.brand || '-'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 150px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.model')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {asset.model || '-'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 150px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.serialNumber')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {asset.serialNumber || '-'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Fade>
-
-            {/* Lifecycle Information */}
-            <Fade in timeout={800}>
-              <Card
-                elevation={0}
-                sx={{
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <SectionHeader
-                    icon={<CalendarMonthIcon />}
-                    title={t('assetForm.lifecycleSection')}
-                  />
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                    <Box sx={{ flex: '1 1 150px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.purchaseDate')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(asset.purchaseDate)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 150px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.warrantyExpiry')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(asset.warrantyExpiry)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 150px' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.installationDate')}
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(asset.installationDate)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Divider sx={{ my: 2 }} />
-                  <Box sx={{ display: 'flex', gap: 3 }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Created
-                      </Typography>
-                      <Typography variant="body2">
-                        {formatDate(asset.createdAt)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Last Updated
-                      </Typography>
-                      <Typography variant="body2">
-                        {formatDate(asset.updatedAt)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Fade>
-
-            {/* Lease Information */}
-            <Fade in timeout={850}>
-              <Card
-                elevation={0}
-                sx={{
-                  mb: 3,
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <SectionHeader
-                    icon={<DescriptionIcon />}
-                    title={t('lease.sectionTitle')}
-                  />
-                  {isLoadingLease ? (
-                    <Box sx={{ textAlign: 'center', py: 3 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('common.loading')}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <LeaseContractCard
-                      leaseContract={activeLease}
-                      onEdit={handleEditLease}
-                      onAdd={handleAddLease}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Fade>
-
-            {/* Event History */}
-            <Fade in timeout={900}>
-              <Card
-                elevation={0}
-                sx={{
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <AssetEventHistory assetId={asset.id} />
-                </CardContent>
-              </Card>
-            </Fade>
+                {t('common.delete')}
+              </Button>
+            </Box>
           </Box>
+        </CardContent>
+      </Card>
 
-          {/* QR Code Section */}
-          <Box sx={{ width: { xs: '100%', md: '350px' } }}>
-            <Fade in timeout={900}>
-              <Card
-                elevation={0}
-                sx={{
-                  position: { md: 'sticky' },
-                  top: 16,
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 4,
-                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                  },
-                }}
-              >
-                <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" color="primary" gutterBottom>
-                    QR Code
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
+        {/* Main Information */}
+        <Box sx={{ flex: 1 }}>
+          {/* Identification */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader
+                icon={<QrCodeIcon />}
+                title={t('assetForm.identificationSection')}
+              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.assetCode')}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                    Scan to quickly access this asset
+                  <Typography variant="body1" fontWeight="bold">
+                    {asset.assetCode}
                   </Typography>
-
-                  <Box
-                    id="qr-code-container"
-                    sx={{
-                      p: 3,
-                      bgcolor: '#FFFFFF',
-                      borderRadius: 2,
-                      display: 'inline-block',
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? '0 4px 12px rgba(255, 255, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05)'
-                          : '0 2px 8px rgba(0, 0, 0, 0.1)',
-                      border: '3px solid',
-                      borderColor: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255, 119, 0, 0.3)'
-                          : 'rgba(255, 119, 0, 0.2)',
-                    }}
-                  >
-                    <QRCodeSVG
-                      id="asset-qr-code"
-                      value={asset.assetCode}
-                      size={200}
-                      level="H"
-                      bgColor="#FFFFFF"
-                      fgColor="#000000"
-                    />
+                </Box>
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.category')}
+                  </Typography>
+                  <Typography variant="body1">{asset.category}</Typography>
+                </Box>
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetForm.assetNameDevice')}
+                  </Typography>
+                  <Typography variant="body1">{asset.assetName}</Typography>
+                </Box>
+                {asset.alias && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetForm.alias')}
+                    </Typography>
+                    <Typography variant="body1">{asset.alias}</Typography>
                   </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
 
-                  <Typography variant="caption" display="block" sx={{ mt: 2 }} color="text.secondary">
-                    Asset Code: {asset.assetCode}
+          {/* Assignment Details */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader
+                icon={<PersonIcon />}
+                title={t('assetForm.assignmentSection')}
+              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.primaryUser')}
                   </Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {asset.owner}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetForm.service')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {asset.service ? `${asset.service.code} - ${asset.service.name}` : '-'}
+                  </Typography>
+                </Box>
+                {asset.installationLocation && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetForm.installationLocation')}
+                    </Typography>
+                    <Typography variant="body1">{asset.installationLocation}</Typography>
+                  </Box>
+                )}
+                {asset.jobTitle && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetDetail.jobTitle')}
+                    </Typography>
+                    <Typography variant="body1">{asset.jobTitle}</Typography>
+                  </Box>
+                )}
+                {asset.officeLocation && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetDetail.officeLocation')}
+                    </Typography>
+                    <Typography variant="body1">{asset.officeLocation}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
 
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<PrintIcon />}
-                    sx={{
-                      mt: 3,
-                      background: theme.palette.mode === 'light'
-                        ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)}, ${alpha(theme.palette.primary.light, 0.1)})`
-                        : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.2)}, ${alpha(theme.palette.primary.main, 0.1)})`,
-                      borderColor: theme.palette.primary.main,
-                      color: theme.palette.primary.main,
-                      fontWeight: 600,
-                      '&:hover': {
-                        background: theme.palette.mode === 'light'
-                          ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.light, 0.2)})`
-                          : `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.3)}, ${alpha(theme.palette.primary.main, 0.2)})`,
-                        borderColor: theme.palette.primary.dark,
-                        transform: 'translateY(-2px)',
-                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
-                      },
-                      transition: 'all 0.3s ease',
-                    }}
-                    onClick={() => setPrintDialogOpen(true)}
-                  >
-                    {t('printLabel.title')}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Fade>
-          </Box>
+          {/* Technical Specifications */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader
+                icon={<ComputerIcon />}
+                title={t('assetForm.technicalSection')}
+              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ flex: '1 1 150px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.brand')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {asset.brand || '-'}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: '1 1 150px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.model')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {asset.model || '-'}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: '1 1 150px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.serialNumber')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {asset.serialNumber || '-'}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Lifecycle Information */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader
+                icon={<CalendarMonthIcon />}
+                title={t('assetForm.lifecycleSection')}
+              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                <Box sx={{ flex: '1 1 150px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.purchaseDate')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatDate(asset.purchaseDate)}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: '1 1 150px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.warrantyExpiry')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatDate(asset.warrantyExpiry)}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: '1 1 150px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetDetail.installationDate')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatDate(asset.installationDate)}
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ my: 2 }} />
+              <Box sx={{ display: 'flex', gap: 3 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Created
+                  </Typography>
+                  <Typography variant="body2">
+                    {formatDate(asset.createdAt)}
+                  </Typography>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Last Updated
+                  </Typography>
+                  <Typography variant="body2">
+                    {formatDate(asset.updatedAt)}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Lease Information */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader
+                icon={<DescriptionIcon />}
+                title={t('lease.sectionTitle')}
+              />
+              {isLoadingLease ? (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    {t('common.loading')}
+                  </Typography>
+                </Box>
+              ) : (
+                <LeaseContractCard
+                  leaseContract={activeLease}
+                  onEdit={handleEditLease}
+                  onAdd={handleAddLease}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Event History */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <AssetEventHistory assetId={asset.id} />
+            </CardContent>
+          </Card>
         </Box>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-        >
-          <DialogTitle>Delete Asset</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Are you sure you want to delete <strong>{asset.assetName}</strong> ({asset.assetCode})?
-              This action cannot be undone.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button
-              onClick={() => {
-                setDeleteDialogOpen(false);
-                handleDelete();
-              }}
-              color="error"
-              variant="contained"
-            >
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* QR Code Section */}
+        <Box sx={{ width: { xs: '100%', md: '350px' } }}>
+          <Card
+            elevation={0}
+            sx={{
+              ...scannerCardSx,
+              position: { md: 'sticky' },
+              top: 16,
+            }}
+          >
+            <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" color="primary" gutterBottom fontWeight={700}>
+                QR Code
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Scan to quickly access this asset
+              </Typography>
 
-        {/* Print Label Dialog */}
-        <PrintLabelDialog
-          open={printDialogOpen}
-          onClose={() => setPrintDialogOpen(false)}
-          assetCode={asset.assetCode}
-          assetName={asset.assetName}
-        />
+              <Box
+                id="qr-code-container"
+                sx={{
+                  p: 3,
+                  bgcolor: '#FFFFFF',
+                  borderRadius: 2,
+                  display: 'inline-block',
+                  boxShadow: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? '0 4px 12px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(255, 215, 0, 0.05)'
+                      : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  border: '3px solid',
+                  borderColor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 215, 0, 0.3)'
+                      : 'rgba(253, 185, 49, 0.3)',
+                }}
+              >
+                <QRCodeSVG
+                  id="asset-qr-code"
+                  value={asset.assetCode}
+                  size={200}
+                  level="H"
+                  bgColor="#FFFFFF"
+                  fgColor="#000000"
+                />
+              </Box>
 
-        {/* Lease Contract Dialog */}
-        <LeaseContractDialog
-          open={leaseDialogOpen}
-          onClose={() => setLeaseDialogOpen(false)}
-          onSave={handleSaveLease}
-          assetId={asset.id}
-          leaseContract={activeLease}
-          isEdit={isEditingLease}
-        />
+              <Typography variant="caption" display="block" sx={{ mt: 2 }} color="text.secondary">
+                Asset Code: {asset.assetCode}
+              </Typography>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<PrintIcon />}
+                sx={{ mt: 3 }}
+                onClick={() => setPrintDialogOpen(true)}
+              >
+                {t('printLabel.title')}
+              </Button>
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
-    </Fade>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Asset</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete <strong>{asset.assetName}</strong> ({asset.assetCode})?
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              handleDelete();
+            }}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Print Label Dialog */}
+      <PrintLabelDialog
+        open={printDialogOpen}
+        onClose={() => setPrintDialogOpen(false)}
+        assetCode={asset.assetCode}
+        assetName={asset.assetName}
+      />
+
+      {/* Lease Contract Dialog */}
+      <LeaseContractDialog
+        open={leaseDialogOpen}
+        onClose={() => setLeaseDialogOpen(false)}
+        onSave={handleSaveLease}
+        assetId={asset.id}
+        leaseContract={activeLease}
+        isEdit={isEditingLease}
+      />
+    </Box>
   );
 };
 

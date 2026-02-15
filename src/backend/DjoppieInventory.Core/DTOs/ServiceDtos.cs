@@ -1,6 +1,15 @@
 namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
+/// Lightweight sector info for embedding in ServiceDto
+/// </summary>
+public record SectorInfoDto(
+    int Id,
+    string Code,
+    string Name
+);
+
+/// <summary>
 /// DTO for returning service information
 /// </summary>
 public record ServiceDto(
@@ -8,7 +17,7 @@ public record ServiceDto(
     string Code,
     string Name,
     int? SectorId,
-    string? SectorName,
+    SectorInfoDto? Sector,
     bool IsActive,
     int SortOrder
 );

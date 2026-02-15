@@ -29,11 +29,21 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
 
         // AssetTemplate mappings
-        CreateMap<AssetTemplate, AssetTemplateDto>();
-        CreateMap<CreateAssetTemplateDto, AssetTemplate>();
+        CreateMap<AssetTemplate, AssetTemplateDto>()
+            .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+            .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
+                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
+
+        CreateMap<CreateAssetTemplateDto, AssetTemplate>()
+            .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore());
+
         CreateMap<UpdateAssetTemplateDto, AssetTemplate>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.Ignore());
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore());
     }
 
     private static AssetStatus ParseAssetStatus(string statusString)

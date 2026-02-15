@@ -59,13 +59,6 @@ public interface IAssetService
     Task<BulkCreateAssetResultDto> BulkCreateAssetsAsync(BulkCreateAssetDto bulkCreateDto);
 
     /// <summary>
-    /// Gets the next available asset number for a given prefix.
-    /// For normal assets: 1-8999
-    /// For dummy assets: 9000+
-    /// </summary>
-    Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false);
-
-    /// <summary>
     /// Checks if a serial number already exists in the system.
     /// </summary>
     /// <param name="serialNumber">The serial number to check</param>

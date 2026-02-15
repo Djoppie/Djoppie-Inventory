@@ -12,9 +12,8 @@ public class CreateAssetDtoValidator : AbstractValidator<CreateAssetDto>
     public CreateAssetDtoValidator()
     {
         // Required fields
-        RuleFor(x => x.AssetCodePrefix)
-            .NotEmpty().WithMessage("Asset code prefix is required")
-            .MaximumLength(20).WithMessage("Asset code prefix cannot exceed 20 characters");
+        RuleFor(x => x.AssetTypeId)
+            .GreaterThan(0).WithMessage("Asset type is required");
 
         RuleFor(x => x.SerialNumber)
             .NotEmpty().WithMessage("Serial number is required")

@@ -345,7 +345,7 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
 
   // Visible columns for preview table
   const visibleColumns = [
-    { id: 'serialNumber', label: 'SerialNumber', minWidth: 120 },
+    { id: 'serialNumber', label: 'Serial Number', minWidth: 120 },
     { id: 'assetTypeCode', label: 'Type', minWidth: 70 },
     { id: 'status', label: 'Status', minWidth: 90 },
     { id: 'purchaseDate', label: 'Purchase', minWidth: 100 },
@@ -375,20 +375,29 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
     >
       <DialogTitle
         sx={{
-          background: `linear-gradient(145deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark || '#cc5f00'} 100%)`,
           color: '#fff',
-          pb: 2,
+          py: 2,
+          px: 3,
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {step === 'preview' && (
-              <IconButton onClick={handleBack} sx={{ color: '#fff', mr: 1 }}>
-                <ArrowBackIcon />
+              <IconButton
+                onClick={handleBack}
+                size="small"
+                sx={{
+                  color: '#fff',
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' },
+                }}
+              >
+                <ArrowBackIcon fontSize="small" />
               </IconButton>
             )}
-            <TableChartIcon sx={{ mr: 1 }} />
-            <Typography variant="h5" fontWeight={700}>
+            <TableChartIcon />
+            <Typography variant="h6" component="span" fontWeight={700}>
               {step === 'upload' && t('csvImport.title')}
               {step === 'preview' && t('csvImport.preview')}
               {step === 'result' && t('csvImport.importSummary')}
@@ -396,12 +405,14 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
           </Box>
           <IconButton
             onClick={handleClose}
+            size="small"
             sx={{
               color: '#fff',
-              '&:hover': { bgcolor: alpha('#fff', 0.1) },
+              bgcolor: 'rgba(255,255,255,0.15)',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' },
             }}
           >
-            <CloseIcon />
+            <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
       </DialogTitle>
@@ -571,14 +582,37 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
               <Table stickyHeader size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: 'background.paper' }}>#</TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: (t) => t.palette.mode === 'dark'
+                          ? alpha(theme.palette.primary.main, 0.08)
+                          : alpha(theme.palette.primary.main, 0.04),
+                        borderBottom: '2px solid',
+                        borderColor: 'primary.main',
+                      }}
+                    >
+                      #
+                    </TableCell>
                     {visibleColumns.map((col) => (
                       <TableCell
                         key={col.id}
                         sx={{
                           fontWeight: 700,
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: 'text.secondary',
                           minWidth: col.minWidth,
-                          bgcolor: 'background.paper',
+                          bgcolor: (t) => t.palette.mode === 'dark'
+                            ? alpha(theme.palette.primary.main, 0.08)
+                            : alpha(theme.palette.primary.main, 0.04),
+                          borderBottom: '2px solid',
+                          borderColor: 'primary.main',
                         }}
                       >
                         {col.label}
@@ -615,14 +649,29 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                           {row.rowNumber}
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>{row.serialNumber || '-'}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={row.assetTypeCode || '-'}
-                          size="small"
-                          color={row.assetTypeCode ? 'primary' : 'default'}
-                          sx={{ fontWeight: 600, fontSize: '0.75rem' }}
-                        />
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                          {row.serialNumber || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {row.assetTypeCode ? (
+                          <Chip
+                            label={row.assetTypeCode}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: '0.7rem',
+                              letterSpacing: '0.05em',
+                              borderColor: 'primary.main',
+                              color: 'primary.main',
+                              bgcolor: (t) => alpha(t.palette.primary.main, 0.08),
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="body2" color="text.disabled">-</Typography>
+                        )}
                       </TableCell>
                       <TableCell>{row.status || 'Stock'}</TableCell>
                       <TableCell>{row.purchaseDate || '-'}</TableCell>
@@ -886,21 +935,31 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
 
         {step === 'preview' && (
           <>
-            <Button onClick={handleBack} disabled={uploading} startIcon={<ArrowBackIcon />}>
+            <Button
+              onClick={handleBack}
+              disabled={uploading}
+              startIcon={<ArrowBackIcon />}
+              sx={{ color: 'text.secondary' }}
+            >
               {t('common.back')}
             </Button>
             <Box sx={{ flex: 1 }} />
-            <Button onClick={handleClose} disabled={uploading}>
+            <Button onClick={handleClose} disabled={uploading} sx={{ color: 'text.secondary' }}>
               {t('common.cancel')}
             </Button>
             <Button
               variant="contained"
               onClick={handleUpload}
               disabled={uploading || validRows === 0}
+              size="large"
               sx={{
-                background: `linear-gradient(145deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+                px: 4,
+                fontWeight: 700,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark || '#cc5f00'})`,
+                boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}`,
                 '&:hover': {
-                  background: `linear-gradient(145deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.dark || '#cc5f00'}, ${theme.palette.primary.main})`,
+                  boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.5)}`,
                 },
               }}
             >

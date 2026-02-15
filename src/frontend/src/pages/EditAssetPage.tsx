@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Alert, Snackbar, Paper, Fade, useTheme } from '@mui/material';
+import { Box, Typography, Alert, Snackbar, Card, CardContent, Stack } from '@mui/material';
 import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
 import AssetForm from '../components/assets/AssetForm';
@@ -11,7 +11,6 @@ import Loading from '../components/common/Loading';
 const EditAssetPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const theme = useTheme();
   const { data: asset, isLoading, error } = useAsset(Number(id));
   const updateAsset = useUpdateAsset();
   const [successMessage, setSuccessMessage] = useState('');
@@ -37,7 +36,14 @@ const EditAssetPage = () => {
   if (error || !asset) {
     return (
       <Box>
-        <Alert severity="error">
+        <Alert
+          severity="error"
+          sx={{
+            border: '1px solid',
+            borderColor: 'error.main',
+            fontWeight: 600,
+          }}
+        >
           {error instanceof Error ? error.message : 'Failed to load asset'}
         </Alert>
       </Box>
@@ -45,81 +51,97 @@ const EditAssetPage = () => {
   }
 
   return (
-    <Fade in timeout={600}>
-      <Box>
-        {/* Header */}
-        <Fade in timeout={400}>
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 3,
-              p: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 3,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light}, ${theme.palette.secondary.main})`,
-                borderRadius: '12px 12px 0 0',
-              },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <EditIcon sx={{ color: 'primary.main', fontSize: '2rem' }} />
-              <Typography variant="h4" component="h1">
+    <Box>
+      {/* Header - Scanner style */}
+      <Card
+        elevation={0}
+        sx={{
+          mb: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                : '0 4px 20px rgba(253, 185, 49, 0.3)',
+          },
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <EditIcon
+              sx={{
+                fontSize: 40,
+                color: 'primary.main',
+                filter: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                    : 'none',
+              }}
+            />
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight={700}>
                 Edit Asset
               </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Update asset information for <strong>{asset.assetCode}</strong>
+              </Typography>
             </Box>
-            <Typography variant="body1" color="text.secondary">
-              Update asset information for <strong>{asset.assetCode}</strong>
-            </Typography>
-          </Paper>
-        </Fade>
+          </Stack>
+        </CardContent>
+      </Card>
 
-        {/* Error Alert */}
-        {updateAsset.isError && (
-          <Fade in timeout={500}>
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {updateAsset.error instanceof Error
-                ? updateAsset.error.message
-                : 'Failed to update asset. Please try again.'}
-            </Alert>
-          </Fade>
-        )}
-
-        {/* Asset Form */}
-        <Fade in timeout={600}>
-          <Box>
-            <AssetForm
-              initialData={asset}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-              isLoading={updateAsset.isPending}
-              isEditMode={true}
-            />
-          </Box>
-        </Fade>
-
-        {/* Success Snackbar */}
-        <Snackbar
-          open={!!successMessage}
-          autoHideDuration={3000}
-          onClose={() => setSuccessMessage('')}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      {/* Error Alert */}
+      {updateAsset.isError && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'error.main',
+            fontWeight: 600,
+          }}
         >
-          <Alert severity="success" sx={{ width: '100%', boxShadow: 3 }}>
-            {successMessage}
-          </Alert>
-        </Snackbar>
-      </Box>
-    </Fade>
+          {updateAsset.error instanceof Error
+            ? updateAsset.error.message
+            : 'Failed to update asset. Please try again.'}
+        </Alert>
+      )}
+
+      {/* Asset Form */}
+      <AssetForm
+        initialData={asset}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        isLoading={updateAsset.isPending}
+        isEditMode={true}
+      />
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={3000}
+        onClose={() => setSuccessMessage('')}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          sx={{
+            width: '100%',
+            border: '1px solid',
+            borderColor: 'success.main',
+            fontWeight: 600,
+            boxShadow: 3,
+          }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

@@ -62,12 +62,26 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.TemplateName).IsRequired().HasMaxLength(200);
             entity.Property(e => e.AssetName).HasMaxLength(200);  // Optional alias
-            entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Category).HasMaxLength(100);  // Optional - derived from AssetType
             entity.Property(e => e.Brand).HasMaxLength(100);  // Optional
             entity.Property(e => e.Model).HasMaxLength(200);  // Optional
             entity.Property(e => e.Owner).HasMaxLength(200);  // Optional - default primary user
-            entity.Property(e => e.LegacyBuilding).HasMaxLength(100);  // Optional - default location (legacy)
-            entity.Property(e => e.LegacyDepartment).HasMaxLength(100);  // Optional (legacy)
+            entity.Property(e => e.InstallationLocation).HasMaxLength(200);  // Optional - specific location
+            entity.Property(e => e.Status).HasMaxLength(50);  // Optional - default status
+            entity.Property(e => e.LegacyBuilding).HasMaxLength(100);  // Legacy (kept for historical data)
+            entity.Property(e => e.LegacyDepartment).HasMaxLength(100);  // Legacy (kept for historical data)
+
+            // Foreign key to AssetType (optional)
+            entity.HasOne(e => e.AssetType)
+                .WithMany(at => at.Templates)
+                .HasForeignKey(e => e.AssetTypeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to Service (optional)
+            entity.HasOne(e => e.Service)
+                .WithMany()
+                .HasForeignKey(e => e.ServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Category configuration
@@ -263,7 +277,7 @@ public class ApplicationDbContext : DbContext
             new Service { Id = 21, Code = "WZC", Name = "Woonzorgcentrum", SectorId = 5, SortOrder = 21, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
 
-        // Seed data - 5 pre-defined templates
+        // Seed data - 5 pre-defined templates (with AssetTypeId references)
         modelBuilder.Entity<AssetTemplate>().HasData(
             new AssetTemplate
             {
@@ -271,6 +285,7 @@ public class ApplicationDbContext : DbContext
                 TemplateName = "Dell Latitude Laptop",
                 AssetName = "Dell Latitude Laptop",
                 Category = "Computing",
+                AssetTypeId = 1, // LAP
                 Brand = "Dell",
                 Model = "Latitude 5420",
                 IsActive = true
@@ -281,6 +296,7 @@ public class ApplicationDbContext : DbContext
                 TemplateName = "HP LaserJet Printer",
                 AssetName = "HP LaserJet Printer",
                 Category = "Peripherals",
+                AssetTypeId = 5, // PRN
                 Brand = "HP",
                 Model = "LaserJet Pro M404dn",
                 IsActive = true
@@ -291,6 +307,7 @@ public class ApplicationDbContext : DbContext
                 TemplateName = "Cisco Network Switch",
                 AssetName = "Cisco Network Switch",
                 Category = "Networking",
+                AssetTypeId = 7, // NET
                 Brand = "Cisco",
                 Model = "Catalyst 2960",
                 IsActive = true
@@ -301,6 +318,7 @@ public class ApplicationDbContext : DbContext
                 TemplateName = "Samsung Monitor 27\"",
                 AssetName = "Samsung Monitor 27\"",
                 Category = "Displays",
+                AssetTypeId = 3, // MON
                 Brand = "Samsung",
                 Model = "27\" LED Monitor",
                 IsActive = true
@@ -311,6 +329,7 @@ public class ApplicationDbContext : DbContext
                 TemplateName = "Logitech Wireless Mouse",
                 AssetName = "Logitech Wireless Mouse",
                 Category = "Peripherals",
+                AssetTypeId = 10, // MOUSE
                 Brand = "Logitech",
                 Model = "MX Master 3",
                 IsActive = true

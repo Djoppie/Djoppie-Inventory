@@ -222,15 +222,16 @@ function AdminDataTable<T extends Record<string, unknown>>({
                           icon={<CheckCircleIcon />}
                           label="Active"
                           size="small"
-                          color="success"
                           sx={{
                             fontWeight: 600,
                             borderRadius: '20px',
-                            '& .MuiChip-label': {
-                              color: '#FFFFFF',
-                            },
+                            backgroundColor:
+                              theme.palette.mode === 'dark'
+                                ? 'rgba(46, 125, 50, 0.2)'
+                                : 'rgba(46, 125, 50, 0.1)',
+                            color: theme.palette.mode === 'dark' ? '#66BB6A' : '#2E7D32',
                             '& .MuiChip-icon': {
-                              color: '#FFFFFF',
+                              color: theme.palette.mode === 'dark' ? '#66BB6A' : '#2E7D32',
                             },
                           }}
                         />
@@ -244,11 +245,11 @@ function AdminDataTable<T extends Record<string, unknown>>({
                             borderRadius: '20px',
                             backgroundColor:
                               theme.palette.mode === 'dark'
-                                ? 'rgba(255, 255, 255, 0.15)'
-                                : 'rgba(0, 0, 0, 0.12)',
-                            color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                                ? 'rgba(211, 47, 47, 0.2)'
+                                : 'rgba(211, 47, 47, 0.1)',
+                            color: theme.palette.mode === 'dark' ? '#EF5350' : '#C62828',
                             '& .MuiChip-icon': {
-                              color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                              color: theme.palette.mode === 'dark' ? '#EF5350' : '#C62828',
                             },
                           }}
                         />

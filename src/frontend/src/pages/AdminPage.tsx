@@ -2,11 +2,11 @@ import { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
+  Card,
+  CardContent,
   Tabs,
   Tab,
-  keyframes,
-  useTheme,
+  Stack,
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -17,16 +17,6 @@ import AssetTypesTab from '../components/admin/AssetTypesTab';
 import BuildingsTab from '../components/admin/BuildingsTab';
 import SectorsTab from '../components/admin/SectorsTab';
 import ServicesTab from '../components/admin/ServicesTab';
-
-// Glow animation for header
-const headerGlow = keyframes`
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(255, 119, 0, 0.2), inset 0 0 10px rgba(255, 119, 0, 0.05);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(255, 119, 0, 0.4), inset 0 0 15px rgba(255, 119, 0, 0.1);
-  }
-`;
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -48,7 +38,6 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
 };
 
 const AdminPage = () => {
-  const theme = useTheme();
   const [currentTab, setCurrentTab] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -57,74 +46,65 @@ const AdminPage = () => {
 
   return (
     <Box sx={{ pb: 10 }}>
-      {/* Header Section */}
-      <Paper
+      {/* Header - Scanner style */}
+      <Card
         elevation={0}
         sx={{
-          mb: 4,
-          p: 3,
+          mb: 3,
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 2,
-          animation: `${headerGlow} 3s ease-in-out infinite`,
-          background:
-            theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(204, 0, 0, 0.03) 50%, transparent 100%)'
-              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.06) 0%, rgba(204, 0, 0, 0.02) 50%, transparent 100%)',
+          overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                : '0 4px 20px rgba(253, 185, 49, 0.3)',
+          },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Admin icon */}
-          <AdminPanelSettingsIcon
-            sx={{
-              color: 'primary.main',
-              fontSize: '2.5rem',
-              filter:
-                theme.palette.mode === 'dark'
-                  ? 'drop-shadow(0 0 8px rgba(255, 119, 0, 0.5))'
-                  : 'none',
-            }}
-          />
-
-          {/* Title */}
-          <Box>
-            <Typography
-              variant="h4"
-              component="h1"
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <AdminPanelSettingsIcon
               sx={{
+                fontSize: 40,
                 color: 'primary.main',
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                background:
+                filter: (theme) =>
                   theme.palette.mode === 'dark'
-                    ? 'linear-gradient(90deg, #FF9233, #CC0000)'
-                    : 'linear-gradient(90deg, #FF7700, #CC0000)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                    ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                    : 'none',
               }}
-            >
-              Administration
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Manage reference data and system configuration
-            </Typography>
-          </Box>
-        </Box>
-      </Paper>
+            />
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight={700}>
+                Administration
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Manage reference data and system configuration
+              </Typography>
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      {/* Tabs Navigation */}
-      <Paper
+      {/* Tabs Card - Scanner style */}
+      <Card
         elevation={0}
         sx={{
-          mb: 0,
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: '16px 16px 0 0',
-          boxShadow:
-            theme.palette.mode === 'light'
-              ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
-              : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06)',
+          borderRadius: 2,
+          overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                : '0 4px 20px rgba(253, 185, 49, 0.3)',
+          },
         }}
       >
         <Tabs
@@ -139,19 +119,15 @@ const AdminPage = () => {
             '& .MuiTab-root': {
               minHeight: 64,
               fontWeight: 600,
-              fontSize: '0.9375rem',
-              textTransform: 'none',
-              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontSize: '0.95rem',
+              letterSpacing: '0.05em',
+              transition: 'all 0.3s ease',
               '&:hover': {
                 color: 'primary.main',
-                backgroundColor:
-                  theme.palette.mode === 'dark'
-                    ? 'rgba(255, 119, 0, 0.05)'
-                    : 'rgba(255, 119, 0, 0.02)',
               },
-              '&.Mui-selected': {
-                color: 'primary.main',
-              },
+            },
+            '& .Mui-selected': {
+              color: 'primary.main',
             },
           }}
         >
@@ -184,36 +160,22 @@ const AdminPage = () => {
             aria-controls="admin-tabpanel-3"
           />
         </Tabs>
-      </Paper>
 
-      {/* Tab Content */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderTop: 'none',
-          borderRadius: '0 0 16px 16px',
-          boxShadow:
-            theme.palette.mode === 'light'
-              ? '6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(255, 255, 255, 0.95)'
-              : '8px 8px 18px rgba(0, 0, 0, 0.75), -5px -5px 12px rgba(255, 255, 255, 0.06)',
-        }}
-      >
-        <TabPanel value={currentTab} index={0}>
-          <AssetTypesTab />
-        </TabPanel>
-        <TabPanel value={currentTab} index={1}>
-          <BuildingsTab />
-        </TabPanel>
-        <TabPanel value={currentTab} index={2}>
-          <SectorsTab />
-        </TabPanel>
-        <TabPanel value={currentTab} index={3}>
-          <ServicesTab />
-        </TabPanel>
-      </Paper>
+        <CardContent sx={{ p: 3 }}>
+          <TabPanel value={currentTab} index={0}>
+            <AssetTypesTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={1}>
+            <BuildingsTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={2}>
+            <SectorsTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={3}>
+            <ServicesTab />
+          </TabPanel>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

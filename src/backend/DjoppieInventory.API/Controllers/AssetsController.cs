@@ -189,29 +189,6 @@ public class AssetsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the next available asset number for a given prefix.
-    /// For normal assets: 1-8999
-    /// For dummy assets: 9000+
-    /// </summary>
-    /// <param name="prefix">The asset code prefix (e.g., LAP, MON)</param>
-    /// <param name="isDummy">Whether this is a dummy asset</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    [HttpGet("next-number")]
-    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<int>> GetNextAssetNumber(
-        [FromQuery] string prefix,
-        [FromQuery] bool isDummy = false,
-        CancellationToken cancellationToken = default)
-    {
-        if (!InputValidator.ValidatePrefix(prefix, out var errorMessage))
-            return BadRequest(errorMessage);
-
-        var nextNumber = await _assetService.GetNextAssetNumberAsync(prefix, isDummy);
-        return Ok(nextNumber);
-    }
-
-    /// <summary>
     /// Checks if an asset code already exists.
     /// </summary>
     /// <param name="code">The asset code to check</param>

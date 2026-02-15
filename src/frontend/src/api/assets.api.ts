@@ -66,11 +66,6 @@ export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCr
   return response.data;
 };
 
-export const getNextAssetNumber = async (prefix: string, isDummy: boolean = false): Promise<number> => {
-  const response = await apiClient.get<number>('/assets/next-number', { params: { prefix, isDummy } });
-  return response.data;
-};
-
 export const assetCodeExists = async (code: string): Promise<boolean> => {
   const response = await apiClient.get<boolean>('/assets/code-exists', { params: { code } });
   return response.data;

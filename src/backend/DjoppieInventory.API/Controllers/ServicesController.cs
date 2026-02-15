@@ -40,7 +40,7 @@ public class ServicesController : ControllerBase
             s.Code,
             s.Name,
             s.SectorId,
-            s.Sector?.Name,
+            s.Sector != null ? new SectorInfoDto(s.Sector.Id, s.Sector.Code, s.Sector.Name) : null,
             s.IsActive,
             s.SortOrder
         ));
@@ -67,7 +67,7 @@ public class ServicesController : ControllerBase
             service.Code,
             service.Name,
             service.SectorId,
-            service.Sector?.Name,
+            service.Sector != null ? new SectorInfoDto(service.Sector.Id, service.Sector.Code, service.Sector.Name) : null,
             service.IsActive,
             service.SortOrder
         );
@@ -109,7 +109,7 @@ public class ServicesController : ControllerBase
             created.Code,
             created.Name,
             created.SectorId,
-            created.Sector?.Name,
+            created.Sector != null ? new SectorInfoDto(created.Sector.Id, created.Sector.Code, created.Sector.Name) : null,
             created.IsActive,
             created.SortOrder
         );
@@ -148,7 +148,7 @@ public class ServicesController : ControllerBase
             updated.Code,
             updated.Name,
             updated.SectorId,
-            updated.Sector?.Name,
+            updated.Sector != null ? new SectorInfoDto(updated.Sector.Id, updated.Sector.Code, updated.Sector.Name) : null,
             updated.IsActive,
             updated.SortOrder
         );
