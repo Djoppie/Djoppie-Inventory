@@ -16,7 +16,7 @@ export interface AssetEvent {
 
 export const assetEventsApi = {
   getByAssetId: async (assetId: number): Promise<AssetEvent[]> => {
-    const response = await apiClient.get<AssetEvent[]>(`/assetevents/asset/${assetId}`);
+    const response = await apiClient.get<AssetEvent[]>(`/assetevents/by-asset/${assetId}`);
     return response.data;
   },
 

@@ -90,6 +90,14 @@ public class AssetService : IAssetService
         var asset = _mapper.Map<Asset>(createAssetDto);
         asset.AssetCode = assetCode;
         asset.IsDummy = createAssetDto.IsDummy;
+        asset.AssetName ??= string.Empty;
+
+        // Auto-derive category from AssetType name when not provided
+        if (string.IsNullOrWhiteSpace(asset.Category))
+        {
+            var assetType = await _assetTypeRepository.GetByIdAsync(createAssetDto.AssetTypeId);
+            asset.Category = assetType?.Name ?? string.Empty;
+        }
 
         // Auto-generate alias if not provided: <AssetType>-<Owner>-<Brand>-<Model>
         if (string.IsNullOrWhiteSpace(asset.Alias))
@@ -244,6 +252,14 @@ public class AssetService : IAssetService
                 ? status
                 : AssetStatus.Stock;
 
+            // Auto-derive category from AssetType name when not provided
+            var category = bulkCreateDto.Category;
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                var assetType = await _assetTypeRepository.GetByIdAsync(bulkCreateDto.AssetTypeId);
+                category = assetType?.Name ?? string.Empty;
+            }
+
             // Prepare all assets in memory
             var assetsToCreate = new List<Asset>();
             for (int i = 0; i < codes.Count; i++)
@@ -253,14 +269,13 @@ public class AssetService : IAssetService
                 {
                     AssetCode = codes[i],
                     AssetTypeId = bulkCreateDto.AssetTypeId,
-                    AssetName = bulkCreateDto.AssetName,
+                    AssetName = bulkCreateDto.AssetName ?? string.Empty,
                     Alias = bulkCreateDto.Alias,
-                    Category = bulkCreateDto.Category,
+                    Category = category,
                     IsDummy = bulkCreateDto.IsDummy,
                     Owner = bulkCreateDto.Owner,
-                    LegacyBuilding = bulkCreateDto.Building,
-                    LegacyDepartment = bulkCreateDto.Department,
-                    OfficeLocation = bulkCreateDto.OfficeLocation,
+                    ServiceId = bulkCreateDto.ServiceId,
+                    InstallationLocation = bulkCreateDto.InstallationLocation,
                     Status = assetStatus,
                     Brand = bulkCreateDto.Brand,
                     Model = bulkCreateDto.Model,

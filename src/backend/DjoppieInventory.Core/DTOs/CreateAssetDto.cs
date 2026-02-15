@@ -22,10 +22,10 @@ public class CreateAssetDto
     public string SerialNumber { get; set; } = string.Empty;
 
     /// <summary>
-    /// Device name from Intune (auto-fetched based on SerialNumber)
+    /// Device name from Intune (auto-fetched based on SerialNumber, optional)
     /// </summary>
     [StringLength(200)]
-    public string AssetName { get; set; } = string.Empty;
+    public string? AssetName { get; set; }
 
     /// <summary>
     /// Optional readable name for the asset (user-defined alias)
@@ -33,8 +33,10 @@ public class CreateAssetDto
     [StringLength(200)]
     public string? Alias { get; set; }
 
-    [Required]
-    public string Category { get; set; } = string.Empty;
+    /// <summary>
+    /// Category (optional - auto-derived from AssetType if not provided)
+    /// </summary>
+    public string? Category { get; set; }
 
     /// <summary>
     /// If true, asset code will be in the 9000+ range for dummy/test assets
@@ -42,16 +44,19 @@ public class CreateAssetDto
     public bool IsDummy { get; set; } = false;
 
     /// <summary>
-    /// Installation location (optional)
+    /// Service/department ID for location (optional)
     /// </summary>
-    public string? Building { get; set; }
+    public int? ServiceId { get; set; }
+
+    /// <summary>
+    /// Specific installation location details (e.g., room number, floor)
+    /// </summary>
+    public string? InstallationLocation { get; set; }
 
     /// <summary>
     /// Primary user (optional - can be assigned later)
     /// </summary>
     public string? Owner { get; set; }
-
-    public string? Department { get; set; }
 
     public string? JobTitle { get; set; }
 

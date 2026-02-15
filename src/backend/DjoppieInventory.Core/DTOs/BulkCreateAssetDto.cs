@@ -35,10 +35,10 @@ public class BulkCreateAssetDto
     public int? TemplateId { get; set; }
 
     /// <summary>
-    /// The official device name (DeviceName) for the assets.
+    /// The official device name (DeviceName) for the assets (optional).
     /// </summary>
     [StringLength(200)]
-    public string AssetName { get; set; } = string.Empty;
+    public string? AssetName { get; set; }
 
     /// <summary>
     /// Optional: Readable name/alias for the assets.
@@ -47,30 +47,24 @@ public class BulkCreateAssetDto
     public string? Alias { get; set; }
 
     /// <summary>
-    /// Category for all assets in the bulk creation.
+    /// Category for all assets in the bulk creation (optional - derived from AssetType).
     /// </summary>
-    [Required]
-    public string Category { get; set; } = string.Empty;
+    public string? Category { get; set; }
 
     /// <summary>
-    /// Installation location for all assets (optional).
+    /// Service/department ID for all assets (optional).
     /// </summary>
-    public string? Building { get; set; }
+    public int? ServiceId { get; set; }
+
+    /// <summary>
+    /// Specific installation location details (e.g., room number, floor) for all assets (optional).
+    /// </summary>
+    public string? InstallationLocation { get; set; }
 
     /// <summary>
     /// Primary user for all assets (optional - can be assigned later).
     /// </summary>
     public string? Owner { get; set; }
-
-    /// <summary>
-    /// Department for all assets (optional).
-    /// </summary>
-    public string? Department { get; set; }
-
-    /// <summary>
-    /// Optional: Office location for all assets in the bulk creation.
-    /// </summary>
-    public string? OfficeLocation { get; set; }
 
     /// <summary>
     /// Status for all assets. Defaults to "Stock".

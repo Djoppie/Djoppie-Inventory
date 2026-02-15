@@ -20,8 +20,8 @@ public class CreateAssetDtoValidator : AbstractValidator<CreateAssetDto>
             .MaximumLength(100).WithMessage("Serial number cannot exceed 100 characters");
 
         RuleFor(x => x.Category)
-            .NotEmpty().WithMessage("Category is required")
-            .MaximumLength(100).WithMessage("Category cannot exceed 100 characters");
+            .MaximumLength(100).WithMessage("Category cannot exceed 100 characters")
+            .When(x => !string.IsNullOrEmpty(x.Category));
 
         // Optional fields with length validation
         RuleFor(x => x.AssetName)
@@ -32,13 +32,9 @@ public class CreateAssetDtoValidator : AbstractValidator<CreateAssetDto>
             .MaximumLength(200).WithMessage("Owner cannot exceed 200 characters")
             .When(x => !string.IsNullOrEmpty(x.Owner));
 
-        RuleFor(x => x.Building)
-            .MaximumLength(200).WithMessage("Building cannot exceed 200 characters")
-            .When(x => !string.IsNullOrEmpty(x.Building));
-
-        RuleFor(x => x.Department)
-            .MaximumLength(100).WithMessage("Department cannot exceed 100 characters")
-            .When(x => !string.IsNullOrEmpty(x.Department));
+        RuleFor(x => x.InstallationLocation)
+            .MaximumLength(200).WithMessage("Installation location cannot exceed 200 characters")
+            .When(x => !string.IsNullOrEmpty(x.InstallationLocation));
 
         RuleFor(x => x.OfficeLocation)
             .MaximumLength(100).WithMessage("Office location cannot exceed 100 characters")

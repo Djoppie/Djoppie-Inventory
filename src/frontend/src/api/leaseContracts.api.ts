@@ -41,7 +41,7 @@ export interface UpdateLeaseContract {
  * Get all lease contracts for a specific asset
  */
 export const getAssetLeaseContracts = async (assetId: number): Promise<LeaseContract[]> => {
-  const response = await apiClient.get<LeaseContract[]>(`/assets/${assetId}/lease-contracts`);
+  const response = await apiClient.get<LeaseContract[]>(`/leasecontracts/by-asset/${assetId}`);
   return response.data;
 };
 
@@ -49,7 +49,7 @@ export const getAssetLeaseContracts = async (assetId: number): Promise<LeaseCont
  * Get active lease contract for a specific asset
  */
 export const getActiveLeaseContract = async (assetId: number): Promise<LeaseContract | null> => {
-  const response = await apiClient.get<LeaseContract | null>(`/assets/${assetId}/lease-contracts/active`);
+  const response = await apiClient.get<LeaseContract | null>(`/leasecontracts/active/${assetId}`);
   return response.data;
 };
 
@@ -57,7 +57,7 @@ export const getActiveLeaseContract = async (assetId: number): Promise<LeaseCont
  * Get all expiring lease contracts (within specified days)
  */
 export const getExpiringLeaseContracts = async (daysThreshold: number = 90): Promise<LeaseContract[]> => {
-  const response = await apiClient.get<LeaseContract[]>('/lease-contracts/expiring', {
+  const response = await apiClient.get<LeaseContract[]>('/leasecontracts/expiring', {
     params: { daysThreshold }
   });
   return response.data;
@@ -67,7 +67,7 @@ export const getExpiringLeaseContracts = async (daysThreshold: number = 90): Pro
  * Get a specific lease contract by ID
  */
 export const getLeaseContractById = async (id: number): Promise<LeaseContract> => {
-  const response = await apiClient.get<LeaseContract>(`/lease-contracts/${id}`);
+  const response = await apiClient.get<LeaseContract>(`/leasecontracts/${id}`);
   return response.data;
 };
 
@@ -75,7 +75,7 @@ export const getLeaseContractById = async (id: number): Promise<LeaseContract> =
  * Create a new lease contract
  */
 export const createLeaseContract = async (data: CreateLeaseContract): Promise<LeaseContract> => {
-  const response = await apiClient.post<LeaseContract>('/lease-contracts', data);
+  const response = await apiClient.post<LeaseContract>('/leasecontracts', data);
   return response.data;
 };
 
@@ -83,7 +83,7 @@ export const createLeaseContract = async (data: CreateLeaseContract): Promise<Le
  * Update an existing lease contract
  */
 export const updateLeaseContract = async (id: number, data: UpdateLeaseContract): Promise<LeaseContract> => {
-  const response = await apiClient.put<LeaseContract>(`/lease-contracts/${id}`, data);
+  const response = await apiClient.put<LeaseContract>(`/leasecontracts/${id}`, data);
   return response.data;
 };
 
@@ -91,5 +91,5 @@ export const updateLeaseContract = async (id: number, data: UpdateLeaseContract)
  * Delete a lease contract
  */
 export const deleteLeaseContract = async (id: number): Promise<void> => {
-  await apiClient.delete(`/lease-contracts/${id}`);
+  await apiClient.delete(`/leasecontracts/${id}`);
 };

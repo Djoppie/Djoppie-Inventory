@@ -20,7 +20,10 @@ public class AssetRepository : IAssetRepository
 
     public async Task<IEnumerable<Asset>> GetAllAsync(string? statusFilter = null, CancellationToken cancellationToken = default)
     {
-        var query = _context.Assets.AsQueryable();
+        var query = _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(statusFilter))
         {
@@ -42,7 +45,10 @@ public class AssetRepository : IAssetRepository
         int pageSize = 50,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.Assets.AsQueryable();
+        var query = _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .AsQueryable();
 
         if (!string.IsNullOrEmpty(statusFilter))
         {
@@ -68,12 +74,17 @@ public class AssetRepository : IAssetRepository
 
     public async Task<Asset?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _context.Assets.FindAsync(new object[] { id }, cancellationToken);
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
     public async Task<Asset?> GetByAssetCodeAsync(string assetCode, CancellationToken cancellationToken = default)
     {
         return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
             .FirstOrDefaultAsync(a => a.AssetCode == assetCode, cancellationToken);
     }
 
@@ -84,7 +95,12 @@ public class AssetRepository : IAssetRepository
 
         _context.Assets.Add(asset);
         await _context.SaveChangesAsync(cancellationToken);
-        return asset;
+
+        // Reload with navigation properties for mapping
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .FirstAsync(a => a.Id == asset.Id, cancellationToken);
     }
 
     public async Task<Asset> UpdateAsync(Asset asset, CancellationToken cancellationToken = default)
@@ -167,6 +183,8 @@ public class AssetRepository : IAssetRepository
     public async Task<Asset?> GetBySerialNumberAsync(string serialNumber, CancellationToken cancellationToken = default)
     {
         return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
             .FirstOrDefaultAsync(a => a.SerialNumber == serialNumber, cancellationToken);
     }
 
@@ -186,7 +204,13 @@ public class AssetRepository : IAssetRepository
         await _context.Assets.AddRangeAsync(assetList, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return assetList;
+        // Reload with navigation properties for mapping
+        var ids = assetList.Select(a => a.Id).ToList();
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Where(a => ids.Contains(a.Id))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<HashSet<string>> GetExistingAssetCodesAsync(string prefix, CancellationToken cancellationToken = default)

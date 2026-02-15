@@ -40,9 +40,14 @@ const BulkCreateAssetPage = () => {
 
   const handleSubmit = async (data: BulkCreateAssetDto) => {
     try {
-      // Clean up empty strings — ASP.NET Core can't deserialize "" as DateTime?
+      // Clean up empty strings — ASP.NET Core rejects "" for non-nullable strings and DateTime?
       const cleanedData = {
         ...data,
+        assetName: data.assetName || undefined,
+        alias: data.alias || undefined,
+        category: data.category || undefined,
+        owner: data.owner || undefined,
+        installationLocation: data.installationLocation || undefined,
         brand: data.brand || undefined,
         model: data.model || undefined,
         purchaseDate: data.purchaseDate || undefined,

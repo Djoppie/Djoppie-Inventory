@@ -156,11 +156,13 @@ export interface BulkCreateAssetDto {
   templateId?: number;
   assetName?: string; // Official device name (DeviceName)
   alias?: string; // Optional readable name
-  category: string;
-  building?: string; // Installation location (optional)
+  category?: string; // Optional - derived from AssetType
+
+  // Relational fields
+  serviceId?: number; // Service/department (optional)
+  installationLocation?: string; // Specific location details (optional)
+
   owner?: string; // Primary user (optional)
-  department?: string;
-  officeLocation?: string;
   status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
