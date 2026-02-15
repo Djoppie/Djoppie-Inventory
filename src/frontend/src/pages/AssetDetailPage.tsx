@@ -328,16 +328,28 @@ const AssetDetailPage = () => {
                     </Box>
                     <Box sx={{ flex: '1 1 200px' }}>
                       <Typography variant="caption" color="text.secondary">
-                        {t('assetForm.installationLocation')}
+                        {t('assetForm.building')}
                       </Typography>
-                      <Typography variant="body1">{asset.building}</Typography>
+                      <Typography variant="body1">
+                        {asset.building ? `${asset.building.code} - ${asset.building.name}` : '-'}
+                      </Typography>
                     </Box>
                     <Box sx={{ flex: '1 1 200px' }}>
                       <Typography variant="caption" color="text.secondary">
-                        {t('assetDetail.department')}
+                        {t('assetForm.service')}
                       </Typography>
-                      <Typography variant="body1">{asset.department || '-'}</Typography>
+                      <Typography variant="body1">
+                        {asset.service ? `${asset.service.code} - ${asset.service.name}` : '-'}
+                      </Typography>
                     </Box>
+                    {asset.installationLocation && (
+                      <Box sx={{ flex: '1 1 200px' }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {t('assetForm.installationLocation')}
+                        </Typography>
+                        <Typography variant="body1">{asset.installationLocation}</Typography>
+                      </Box>
+                    )}
                     {asset.jobTitle && (
                       <Box sx={{ flex: '1 1 200px' }}>
                         <Typography variant="caption" color="text.secondary">

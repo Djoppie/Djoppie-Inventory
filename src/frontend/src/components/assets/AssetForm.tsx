@@ -46,6 +46,9 @@ import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
 import { GraphUser, IntuneDevice } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
+import AssetTypeSelect from '../common/AssetTypeSelect';
+import BuildingSelect from '../common/BuildingSelect';
+import ServiceSelect from '../common/ServiceSelect';
 import { intuneApi } from '../../api/intune.api';
 import { serialNumberExists } from '../../api/assets.api';
 
@@ -152,11 +155,18 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const [formData, setFormData] = useState<Omit<CreateAssetDto, 'assetCodePrefix' | 'isDummy'>>({
     assetName: initialData?.assetName || '',
     category: initialData?.category || '',
-    building: initialData?.building || '',
+
+    // New relational fields
+    assetTypeId: initialData?.assetTypeId,
+    buildingId: initialData?.buildingId,
+    serviceId: initialData?.serviceId,
+    installationLocation: initialData?.installationLocation || '',
+
+    // User assignment fields
     owner: initialData?.owner || '',
-    department: initialData?.department || '',
     officeLocation: initialData?.officeLocation || '',
     jobTitle: initialData?.jobTitle || '',
+
     status: initialData?.status || 'Stock',
     brand: initialData?.brand || '',
     model: initialData?.model || '',
@@ -267,9 +277,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         brand: template.brand,
         model: template.model,
         owner: template.owner || prev.owner,
-        building: template.building || prev.building,
-        department: template.department || prev.department,
-        // officeLocation not in template - keep existing value
+        // Note: Templates use legacy string fields, not relational IDs
+        // Keep existing relational field values
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
         installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
@@ -289,9 +298,12 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     } else if (isSerialUnique === false) {
       newErrors.serialNumber = t('assetForm.serialNumberNotUnique');
     }
-    if (!formData.category.trim()) newErrors.category = t('assetForm.validationError');
+    // AssetType is REQUIRED
+    if (!formData.assetTypeId) {
+      newErrors.assetTypeId = t('assetForm.validationError');
+    }
     // Owner is optional - removed validation
-    // Building (Installation Location) is optional
+    // Building and Service are optional
     // Status is required but has default value
 
     setErrors(newErrors);
@@ -299,9 +311,9 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   };
 
   // Convert empty strings to undefined so the API receives null instead of ""
-  // Keep required fields (serialNumber, category, assetCodePrefix) as-is
+  // Keep required fields (serialNumber, assetCodePrefix, assetTypeId) as-is
   const cleanData = <T extends object>(data: T): T => {
-    const requiredFields = ['serialNumber', 'category', 'assetCodePrefix', 'status'];
+    const requiredFields = ['serialNumber', 'assetCodePrefix', 'assetTypeId', 'status'];
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       if (requiredFields.includes(key)) {
@@ -580,24 +592,23 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   helperText={t('assetForm.aliasHint')}
                 />
 
-                {/* Category and Status */}
+                {/* Asset Type and Status */}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <TextField
-                    sx={{ flex: '1 1 300px' }}
-                    label={t('assetDetail.category')}
-                    value={formData.category}
-                    onChange={(e) => handleChange('category', e.target.value)}
-                    error={!!errors.category}
-                    helperText={errors.category || 'e.g., Computing, Peripherals'}
-                    required
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <CategoryIcon sx={{ color: 'primary.main' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
+                  <Box sx={{ flex: '1 1 300px' }}>
+                    <AssetTypeSelect
+                      value={formData.assetTypeId ?? null}
+                      onChange={(value) => {
+                        setFormData(prev => ({ ...prev, assetTypeId: value ?? undefined }));
+                        if (errors.assetTypeId) {
+                          setErrors(prev => ({ ...prev, assetTypeId: '' }));
+                        }
+                      }}
+                      label={t('assetDetail.category')}
+                      helperText={errors.assetTypeId}
+                      error={!!errors.assetTypeId}
+                      required
+                    />
+                  </Box>
                   <FormControl sx={{ flex: '1 1 200px' }} required>
                     <InputLabel>{t('assetDetail.status')}</InputLabel>
                     <Select
@@ -613,18 +624,54 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     </Select>
                   </FormControl>
                 </Box>
+              </Stack>
+            </Box>
+          </Fade>
 
-                {/* Installation Location (Building) */}
+          <Divider sx={{ my: 4 }} />
+
+          {/* Location Section */}
+          <Fade in timeout={450}>
+            <Box sx={{ mb: 4 }}>
+              <SectionHeader
+                icon={<Business />}
+                title={t('assetForm.locationSection')}
+                description={t('assetForm.locationSectionDesc')}
+                theme={theme}
+              />
+              <Stack spacing={2.5}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Box sx={{ flex: '1 1 300px' }}>
+                    <BuildingSelect
+                      value={formData.buildingId ?? null}
+                      onChange={(value) => {
+                        setFormData(prev => ({ ...prev, buildingId: value ?? undefined }));
+                      }}
+                      label={t('assetForm.building')}
+                      helperText={t('assetForm.buildingHint')}
+                    />
+                  </Box>
+                  <Box sx={{ flex: '1 1 300px' }}>
+                    <ServiceSelect
+                      value={formData.serviceId ?? null}
+                      onChange={(value) => {
+                        setFormData(prev => ({ ...prev, serviceId: value ?? undefined }));
+                      }}
+                      label={t('assetForm.service')}
+                      helperText={t('assetForm.serviceHint')}
+                    />
+                  </Box>
+                </Box>
                 <TextField
                   fullWidth
                   label={t('assetForm.installationLocation')}
-                  value={formData.building}
-                  onChange={(e) => handleChange('building', e.target.value)}
+                  value={formData.installationLocation}
+                  onChange={(e) => handleChange('installationLocation', e.target.value)}
                   helperText={t('assetForm.installationLocationHint')}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Business sx={{ color: 'primary.main' }} />
+                        <LocationOn sx={{ color: 'primary.main' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -651,12 +698,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     handleChange('owner', displayName);
                     // Store UPN for device validation
                     setSelectedUserUpn(user?.userPrincipalName || null);
-                    // Auto-populate department, job title, and office location if user selected
+                    // Auto-populate job title and office location if user selected
                     if (user) {
-                      if (user.department) {
-                        handleChange('department', user.department);
-                        markFieldAsAutoFilled('department');
-                      }
                       if (user.jobTitle) {
                         handleChange('jobTitle', user.jobTitle);
                         markFieldAsAutoFilled('jobTitle');
@@ -667,7 +710,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                       }
                     } else {
                       // Clear auto-filled fields when user is cleared
-                      handleChange('department', '');
                       handleChange('jobTitle', '');
                       handleChange('officeLocation', '');
                     }
@@ -678,7 +720,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 />
 
                 {/* User info display (read-only) */}
-                {(formData.department || formData.jobTitle || formData.officeLocation) && (
+                {(formData.jobTitle || formData.officeLocation) && (
                   <Box
                     sx={{
                       display: 'flex',
@@ -691,17 +733,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                       borderRadius: '0 8px 8px 0',
                     }}
                   >
-                    {formData.department && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Business sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {t('assetDetail.department')}:
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600}>
-                          {formData.department}
-                        </Typography>
-                      </Box>
-                    )}
                     {formData.jobTitle && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Work sx={{ fontSize: 18, color: 'text.secondary' }} />

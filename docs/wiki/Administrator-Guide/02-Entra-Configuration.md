@@ -374,7 +374,7 @@ az keyvault secret set \
   --value "<new-secret-value>"
 ```
 
-5. Restart the App Service to pick up the new secret:
+1. Restart the App Service to pick up the new secret:
 
 ```powershell
 az webapp restart \
@@ -382,8 +382,8 @@ az webapp restart \
   --name app-djoppie-inv-dev-api-<suffix>
 ```
 
-6. Verify the application still authenticates correctly
-7. Delete the old secret from the app registration
+1. Verify the application still authenticates correctly
+2. Delete the old secret from the app registration
 
 ### Adding New Redirect URIs
 

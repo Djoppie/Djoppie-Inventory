@@ -37,13 +37,15 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("AssetTypeId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Brand")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Building")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -53,17 +55,25 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Department")
-                        .HasMaxLength(100)
+                    b.Property<DateTime?>("InstallationDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("InstallationDate")
+                    b.Property<string>("InstallationLocation")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDummy")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("JobTitle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LegacyBuilding")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LegacyDepartment")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Model")
@@ -86,6 +96,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
@@ -100,10 +113,68 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("AssetCode")
                         .IsUnique();
 
+                    b.HasIndex("AssetTypeId");
+
+                    b.HasIndex("BuildingId");
+
                     b.HasIndex("SerialNumber")
                         .IsUnique();
 
+                    b.HasIndex("ServiceId");
+
                     b.ToTable("Assets");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EventDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EventType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PerformedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PerformedByEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("EventDate");
+
+                    b.ToTable("AssetEvents");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
@@ -116,11 +187,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Brand")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                    b.Property<int?>("AssetTypeId")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<string>("Building")
+                    b.Property<string>("Brand")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -129,15 +199,19 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Department")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime?>("InstallationDate")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("LegacyBuilding")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LegacyDepartment")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Model")
                         .HasMaxLength(200)
@@ -162,6 +236,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssetTypeId");
 
                     b.ToTable("AssetTemplates");
 
@@ -216,6 +292,449 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Model = "MX Master 3",
                             TemplateName = "Logitech Wireless Mouse"
                         });
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("AssetTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "LAP",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Laptop",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "DESK",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Desktop",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "MON",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Monitor",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "TAB",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Tablet",
+                            SortOrder = 4
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "PRN",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Printer",
+                            SortOrder = 5
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = "TEL",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Telefoon",
+                            SortOrder = 6
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = "NET",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Netwerk",
+                            SortOrder = 7
+                        });
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Building", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Buildings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "DBK",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Gemeentehuis Diepenbeek",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "WZC",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "WZC De Visserij",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "GBS",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Gemeentelijke Basisschool",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "PLAG",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Plaatselijk Comité",
+                            SortOrder = 4
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "BIB",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Bibliotheek",
+                            SortOrder = 5
+                        });
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.LeaseContract", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ContractNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("MonthlyRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("TotalValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Vendor")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("EndDate");
+
+                    b.ToTable("LeaseContracts");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Sectors");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "ORG",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Organisatie",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "RUI",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Ruimte",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "ZOR",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            Name = "Zorg",
+                            SortOrder = 3
+                        });
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Service", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SectorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("SectorId");
+
+                    b.ToTable("Services");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Asset", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.AssetType", "AssetType")
+                        .WithMany("Assets")
+                        .HasForeignKey("AssetTypeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany("Assets")
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
+                        .WithMany("Assets")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AssetType");
+
+                    b.Navigation("Building");
+
+                    b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetEvent", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Asset")
+                        .WithMany("Events")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.AssetType", null)
+                        .WithMany("Templates")
+                        .HasForeignKey("AssetTypeId");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.LeaseContract", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Asset")
+                        .WithMany("LeaseContracts")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Service", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Sector", "Sector")
+                        .WithMany("Services")
+                        .HasForeignKey("SectorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Sector");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Asset", b =>
+                {
+                    b.Navigation("Events");
+
+                    b.Navigation("LeaseContracts");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetType", b =>
+                {
+                    b.Navigation("Assets");
+
+                    b.Navigation("Templates");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Building", b =>
+                {
+                    b.Navigation("Assets");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>
+                {
+                    b.Navigation("Services");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Service", b =>
+                {
+                    b.Navigation("Assets");
                 });
 #pragma warning restore 612, 618
         }

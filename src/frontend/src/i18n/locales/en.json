@@ -26,7 +26,8 @@
     "dashboard": "Dashboard",
     "scan": "Scan",
     "assets": "Assets",
-    "templates": "Templates"
+    "templates": "Templates",
+    "admin": "Admin"
   },
   "dashboard": {
     "title": "Asset Dashboard",
@@ -129,6 +130,12 @@
     "templateSectionDesc": "Select a template to auto-fill common asset details",
     "noTemplate": "No Template - Enter Manually",
     "identificationSection": "Asset Identification",
+    "locationSection": "Location Information",
+    "locationSectionDesc": "Where is this asset located?",
+    "building": "Building",
+    "buildingHint": "Select the building where this asset is located",
+    "service": "Service / Department",
+    "serviceHint": "Select the responsible service or department",
     "assignmentSection": "Assignment Details",
     "assignmentSectionDesc": "Search for the primary user of the asset",
     "technicalSection": "Technical Details",
@@ -153,7 +160,7 @@
     "ownerOptionalHint": "Optional - can be assigned later",
     "dummyAsset": "Dummy asset (test)",
     "installationLocation": "Installation Location",
-    "installationLocationHint": "Fixed location / department",
+    "installationLocationHint": "Specific location details (e.g., room number, floor)",
     "deviceLinkedToUser": "Device linked to selected user",
     "deviceLinkedToOther": "Device linked to another user",
     "deviceNotLinked": "Device not linked to any user in Intune",

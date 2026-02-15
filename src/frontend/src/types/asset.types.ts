@@ -13,9 +13,22 @@ export interface Asset {
   alias?: string; // Optional readable name
   category: string;
   isDummy: boolean;
-  building?: string; // Installation location (optional)
+
+  // New relational fields
+  assetTypeId?: number;
+  assetType?: { id: number; code: string; name: string };
+  buildingId?: number;
+  building?: { id: number; code: string; name: string };
+  serviceId?: number;
+  service?: { id: number; code: string; name: string };
+  installationLocation?: string; // Specific location details (e.g., room number)
+
+  // Legacy fields (for migration)
+  legacyBuilding?: string;
+  legacyDepartment?: string;
+
+  // Existing fields
   owner?: string; // Primary user (optional)
-  department?: string; // Optional
   officeLocation?: string;
   jobTitle?: string;
   status: AssetStatus;
@@ -36,11 +49,18 @@ export interface CreateAssetDto {
   alias?: string; // Optional readable name
   category: string;
   isDummy?: boolean;
-  building?: string; // Installation location (optional)
+
+  // New relational fields
+  assetTypeId?: number;
+  buildingId?: number;
+  serviceId?: number;
+  installationLocation?: string; // Specific location details (e.g., room number)
+
+  // User assignment fields
   owner?: string; // Primary user (optional)
-  department?: string;
   officeLocation?: string;
   jobTitle?: string;
+
   status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
@@ -52,11 +72,18 @@ export interface CreateAssetDto {
 export interface UpdateAssetDto {
   assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
   alias?: string; // Optional readable name
+
+  // New relational fields
+  assetTypeId?: number;
+  buildingId?: number;
+  serviceId?: number;
+  installationLocation?: string; // Specific location details (e.g., room number)
+
+  // User assignment fields
   owner?: string; // Primary user (optional)
-  building?: string; // Installation location (optional)
-  department?: string;
   officeLocation?: string;
   jobTitle?: string;
+
   status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;

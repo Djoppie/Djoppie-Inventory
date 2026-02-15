@@ -24,6 +24,9 @@ export const ROUTES = {
 
   /** Asset templates management page */
   TEMPLATES: '/templates',
+
+  /** Admin management page */
+  ADMIN: '/admin',
 } as const;
 
 /**

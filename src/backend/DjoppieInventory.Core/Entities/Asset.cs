@@ -38,9 +38,11 @@ public class Asset
     public bool IsDummy { get; set; } = false;
 
     /// <summary>
-    /// Physical location or building where the asset is installed (optional)
+    /// [LEGACY] Physical location or building where the asset is installed (optional).
+    /// Use BuildingId and Building navigation property instead.
+    /// This field will be removed in a future migration after data migration is complete.
     /// </summary>
-    public string? Building { get; set; }
+    public string? LegacyBuilding { get; set; }
 
     /// <summary>
     /// Primary user assigned to this asset (optional)
@@ -48,9 +50,11 @@ public class Asset
     public string? Owner { get; set; }
 
     /// <summary>
-    /// Department of the assigned user (optional)
+    /// [LEGACY] Department of the assigned user (optional).
+    /// Use ServiceId and Service navigation property instead.
+    /// This field will be removed in a future migration after data migration is complete.
     /// </summary>
-    public string? Department { get; set; }
+    public string? LegacyDepartment { get; set; }
 
     /// <summary>
     /// Job title of the assigned user (optional)
@@ -106,6 +110,56 @@ public class Asset
     /// Timestamp when the asset was last updated
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // ===== New Relational Properties =====
+
+    /// <summary>
+    /// Foreign key to the asset type (optional during migration, will become required)
+    /// </summary>
+    public int? AssetTypeId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the building/location (optional)
+    /// </summary>
+    public int? BuildingId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the service/department (optional)
+    /// </summary>
+    public int? ServiceId { get; set; }
+
+    /// <summary>
+    /// Specific location within the building (e.g., "Room 201", "2nd Floor IT Office").
+    /// Free text field for detailed location information beyond the building level.
+    /// </summary>
+    public string? InstallationLocation { get; set; }
+
+    // ===== Navigation Properties =====
+
+    /// <summary>
+    /// The asset type/category this asset belongs to
+    /// </summary>
+    public AssetType? AssetType { get; set; }
+
+    /// <summary>
+    /// The building where this asset is installed
+    /// </summary>
+    public Building? Building { get; set; }
+
+    /// <summary>
+    /// The service/department this asset is assigned to
+    /// </summary>
+    public Service? Service { get; set; }
+
+    /// <summary>
+    /// Historical events and changes for this asset
+    /// </summary>
+    public ICollection<AssetEvent> Events { get; set; } = new List<AssetEvent>();
+
+    /// <summary>
+    /// Lease contracts associated with this asset
+    /// </summary>
+    public ICollection<LeaseContract> LeaseContracts { get; set; } = new List<LeaseContract>();
 }
 
 /// <summary>

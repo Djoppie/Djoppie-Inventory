@@ -425,10 +425,10 @@ const AssetTableView = ({
                 >
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {asset.building}
+                      {asset.building?.name || asset.legacyBuilding || '-'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {asset.department} {asset.officeLocation && `/ ${asset.officeLocation}`}
+                      {asset.service?.name || asset.legacyDepartment || '-'} {asset.officeLocation && `/ ${asset.officeLocation}`}
                     </Typography>
                   </Box>
                 </TableCell>

@@ -26,7 +26,8 @@
     "dashboard": "Dashboard",
     "scan": "Scannen",
     "assets": "Activa",
-    "templates": "Sjablonen"
+    "templates": "Sjablonen",
+    "admin": "Beheer"
   },
   "dashboard": {
     "title": "Activa Dashboard",
@@ -129,6 +130,12 @@
     "templateSectionDesc": "Selecteer een sjabloon om veelvoorkomende activa-gegevens automatisch in te vullen",
     "noTemplate": "Geen sjabloon - Handmatig invoeren",
     "identificationSection": "Activa identificatie",
+    "locationSection": "Locatie informatie",
+    "locationSectionDesc": "Waar is dit activa geplaatst?",
+    "building": "Gebouw",
+    "buildingHint": "Selecteer het gebouw waar dit activa zich bevindt",
+    "service": "Dienst / Afdeling",
+    "serviceHint": "Selecteer de verantwoordelijke dienst of afdeling",
     "assignmentSection": "Toewijzingsgegevens",
     "assignmentSectionDesc": "Zoek de hoofdgebruiker van de activa",
     "technicalSection": "Technische details",
@@ -153,7 +160,7 @@
     "ownerOptionalHint": "Optioneel - kan later worden toegewezen",
     "dummyAsset": "Dummy asset (test)",
     "installationLocation": "Installatielocatie",
-    "installationLocationHint": "Vaste locatie / dienst",
+    "installationLocationHint": "Specifieke locatie details (bijv. kamernummer, verdieping)",
     "deviceLinkedToUser": "Apparaat gekoppeld aan geselecteerde gebruiker",
     "deviceLinkedToOther": "Apparaat gekoppeld aan andere gebruiker",
     "deviceNotLinked": "Apparaat niet gekoppeld aan een gebruiker in Intune",

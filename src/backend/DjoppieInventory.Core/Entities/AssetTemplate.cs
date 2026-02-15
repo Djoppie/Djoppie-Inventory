@@ -42,14 +42,16 @@ public class AssetTemplate
     public string? Owner { get; set; }
 
     /// <summary>
-    /// Default installation location or building (optional)
+    /// [LEGACY] Default installation location or building (optional).
+    /// This field will be replaced with AssetTypeId, BuildingId, and ServiceId FKs in a future update.
     /// </summary>
-    public string? Building { get; set; }
+    public string? LegacyBuilding { get; set; }
 
     /// <summary>
-    /// Default department assignment (optional)
+    /// [LEGACY] Default department assignment (optional).
+    /// This field will be replaced with ServiceId FK in a future update.
     /// </summary>
-    public string? Department { get; set; }
+    public string? LegacyDepartment { get; set; }
 
     /// <summary>
     /// Default office location (optional)
