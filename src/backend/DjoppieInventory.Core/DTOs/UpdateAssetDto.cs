@@ -10,9 +10,8 @@ public class UpdateAssetDto
     /// <summary>
     /// Official device name (DeviceName), typically auto-fetched from Intune
     /// </summary>
-    [Required]
     [StringLength(200)]
-    public string AssetName { get; set; } = string.Empty;
+    public string? AssetName { get; set; }
 
     /// <summary>
     /// Optional user-friendly name or alias for the asset
@@ -21,29 +20,32 @@ public class UpdateAssetDto
     public string? Alias { get; set; }
 
     /// <summary>
-    /// Asset category (required)
+    /// Category (optional - auto-derived from AssetType if not provided)
     /// </summary>
-    [Required]
     [StringLength(100)]
-    public string Category { get; set; } = string.Empty;
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// Asset type ID (optional - typically set at creation, but can be corrected)
+    /// </summary>
+    public int? AssetTypeId { get; set; }
+
+    /// <summary>
+    /// Service/department ID for location (optional)
+    /// </summary>
+    public int? ServiceId { get; set; }
+
+    /// <summary>
+    /// Specific installation location details (e.g., room number, floor)
+    /// </summary>
+    [StringLength(200)]
+    public string? InstallationLocation { get; set; }
 
     /// <summary>
     /// Primary user assigned to this asset (optional)
     /// </summary>
     [StringLength(200)]
     public string? Owner { get; set; }
-
-    /// <summary>
-    /// Physical location or building where the asset is installed (optional)
-    /// </summary>
-    [StringLength(100)]
-    public string? Building { get; set; }
-
-    /// <summary>
-    /// Department of the assigned user (optional)
-    /// </summary>
-    [StringLength(100)]
-    public string? Department { get; set; }
 
     /// <summary>
     /// Job title of the assigned user (optional)

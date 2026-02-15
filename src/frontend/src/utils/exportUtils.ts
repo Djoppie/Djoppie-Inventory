@@ -37,6 +37,7 @@ const formatStatus = (status: AssetStatus): string => {
     [AssetStatus.Herstelling]: 'Herstelling',
     [AssetStatus.Defect]: 'Defect',
     [AssetStatus.UitDienst]: 'Uit dienst',
+    [AssetStatus.Nieuw]: 'Nieuw',
   };
   return statusMap[status] || status;
 };
@@ -233,8 +234,8 @@ export const getDefaultExportColumns = (): ExportColumn[] => [
   { key: 'category', label: 'Category', enabled: true },
   { key: 'status', label: 'Status', enabled: true },
   { key: 'owner', label: 'Owner', enabled: true },
-  { key: 'building', label: 'Building', enabled: true },
-  { key: 'department', label: 'Department', enabled: true },
+  { key: 'legacyBuilding', label: 'Building', enabled: true },
+  { key: 'legacyDepartment', label: 'Department', enabled: true },
   { key: 'officeLocation', label: 'Office Location', enabled: false },
   { key: 'brand', label: 'Brand', enabled: true },
   { key: 'model', label: 'Model', enabled: true },

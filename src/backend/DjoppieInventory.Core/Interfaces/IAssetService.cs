@@ -34,12 +34,19 @@ public interface IAssetService
     /// <summary>
     /// Creates a new asset
     /// </summary>
-    Task<AssetDto> CreateAssetAsync(CreateAssetDto createAssetDto);
+    /// <param name="createAssetDto">Asset creation data</param>
+    /// <param name="performedBy">Display name of the user creating the asset (for event tracking)</param>
+    /// <param name="performedByEmail">Email address of the user creating the asset (for event tracking)</param>
+    Task<AssetDto> CreateAssetAsync(CreateAssetDto createAssetDto, string? performedBy = null, string? performedByEmail = null);
 
     /// <summary>
     /// Updates an existing asset
     /// </summary>
-    Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto);
+    /// <param name="id">The asset ID</param>
+    /// <param name="updateAssetDto">Updated asset data</param>
+    /// <param name="performedBy">Display name of the user updating the asset (for event tracking)</param>
+    /// <param name="performedByEmail">Email address of the user updating the asset (for event tracking)</param>
+    Task<AssetDto> UpdateAssetAsync(int id, UpdateAssetDto updateAssetDto, string? performedBy = null, string? performedByEmail = null);
 
     /// <summary>
     /// Deletes an asset by ID
@@ -50,13 +57,6 @@ public interface IAssetService
     /// Creates multiple assets in a single operation
     /// </summary>
     Task<BulkCreateAssetResultDto> BulkCreateAssetsAsync(BulkCreateAssetDto bulkCreateDto);
-
-    /// <summary>
-    /// Gets the next available asset number for a given prefix.
-    /// For normal assets: 1-8999
-    /// For dummy assets: 9000+
-    /// </summary>
-    Task<int> GetNextAssetNumberAsync(string prefix, bool isDummy = false);
 
     /// <summary>
     /// Checks if a serial number already exists in the system.

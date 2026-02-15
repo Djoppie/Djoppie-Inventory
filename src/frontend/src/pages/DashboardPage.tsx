@@ -3,8 +3,8 @@ import {
   Box,
   Typography,
   Paper,
+  Card,
   Chip,
-  keyframes,
   Tooltip,
   IconButton,
   Menu,
@@ -13,6 +13,9 @@ import {
   TextField,
   InputAdornment,
   Badge,
+  Popover,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAssets } from '../hooks/useAssets';
@@ -22,6 +25,9 @@ import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
 import ExportDialog from '../components/export/ExportDialog';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
+import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
+import { getExpiringLeaseContracts } from '../api/leaseContracts.api';
+import { logger } from '../utils/logger';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SortIcon from '@mui/icons-material/Sort';
@@ -31,19 +37,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import DownloadIcon from '@mui/icons-material/Download';
 import CommentIcon from '@mui/icons-material/Comment';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import EventIcon from '@mui/icons-material/Event';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import PrintIcon from '@mui/icons-material/Print';
-
-// Subtle glow pulse for the header
-const headerGlow = keyframes`
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(255, 119, 0, 0.2), inset 0 0 10px rgba(255, 119, 0, 0.05);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(255, 119, 0, 0.4), inset 0 0 15px rgba(255, 119, 0, 0.1);
-  }
-`;
 
 const VIEW_MODE_STORAGE_KEY = 'djoppie-dashboard-view-mode';
 
@@ -60,25 +56,43 @@ const isDummyAsset = (assetCode: string): boolean => {
 
 const DashboardPage = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortOption>('date-newest');
   const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
-  const [discussionExpanded, setDiscussionExpanded] = useState<boolean>(false);
-  const [discussionText, setDiscussionText] = useState<string>('');
   const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState<boolean>(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    // Load view mode from localStorage on mount
     const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
     return (savedMode === 'card' || savedMode === 'table') ? savedMode : 'card';
   });
 
+  // Popover anchors for header icons
+  const [leasesAnchor, setLeasesAnchor] = useState<null | HTMLElement>(null);
+  const [notesAnchor, setNotesAnchor] = useState<null | HTMLElement>(null);
+  const [alarmsAnchor, setAlarmsAnchor] = useState<null | HTMLElement>(null);
+  const [discussionText, setDiscussionText] = useState<string>('');
+  const [expiringLeasesCount, setExpiringLeasesCount] = useState<number>(0);
+
   // Always fetch all assets; filtering is done client-side
   const { data: assets, isLoading, error, refetch } = useAssets();
+
+  // Fetch expiring leases count for badge
+  useEffect(() => {
+    const fetchLeaseCount = async () => {
+      try {
+        const leases = await getExpiringLeaseContracts(90);
+        setExpiringLeasesCount(leases.length);
+      } catch (err) {
+        logger.error('Error fetching lease count:', err);
+      }
+    };
+    fetchLeaseCount();
+  }, []);
 
   // Save view mode to localStorage whenever it changes
   useEffect(() => {
@@ -115,8 +129,9 @@ const DashboardPage = () => {
         a.assetCode.toLowerCase().includes(query) ||
         a.category.toLowerCase().includes(query) ||
         a.owner?.toLowerCase().includes(query) ||
-        a.building?.toLowerCase().includes(query) ||
-        a.department?.toLowerCase().includes(query) ||
+        a.legacyBuilding?.toLowerCase().includes(query) ||
+        a.legacyDepartment?.toLowerCase().includes(query) ||
+        a.service?.name?.toLowerCase().includes(query) ||
         a.officeLocation?.toLowerCase().includes(query) ||
         a.brand?.toLowerCase().includes(query) ||
         a.model?.toLowerCase().includes(query) ||
@@ -278,234 +293,319 @@ const DashboardPage = () => {
   const herstellingCount = realAssets.filter(a => a.status === 'Herstelling').length;
   const defectCount = realAssets.filter(a => a.status === 'Defect').length;
   const uitDienstCount = realAssets.filter(a => a.status === 'UitDienst').length;
+  const nieuwCount = realAssets.filter(a => a.status === 'Nieuw').length;
   const dummyCount = dummyAssets.length;
+
+  // Status card definitions for the dashboard grid
+  const statusCards: Array<{
+    key: string;
+    label: string;
+    count: number;
+    color: string;
+    bgLight: string;
+    bgDark: string;
+  }> = [
+    { key: 'InGebruik', label: 'In gebruik', count: inGebruikCount, color: '#4CAF50', bgLight: 'rgba(76,175,80,0.08)', bgDark: 'rgba(76,175,80,0.15)' },
+    { key: 'Stock', label: 'Stock', count: stockCount, color: '#2196F3', bgLight: 'rgba(33,150,243,0.08)', bgDark: 'rgba(33,150,243,0.15)' },
+    { key: 'Herstelling', label: 'Herstelling', count: herstellingCount, color: '#FF7700', bgLight: 'rgba(255,119,0,0.08)', bgDark: 'rgba(255,119,0,0.15)' },
+    { key: 'Defect', label: 'Defect', count: defectCount, color: '#F44336', bgLight: 'rgba(244,67,54,0.08)', bgDark: 'rgba(244,67,54,0.15)' },
+    { key: 'UitDienst', label: 'Uit dienst', count: uitDienstCount, color: '#9E9E9E', bgLight: 'rgba(158,158,158,0.08)', bgDark: 'rgba(158,158,158,0.15)' },
+    { key: 'Nieuw', label: 'Nieuw', count: nieuwCount, color: '#00BCD4', bgLight: 'rgba(0,188,212,0.08)', bgDark: 'rgba(0,188,212,0.15)' },
+  ];
 
   return (
     <Box>
-      {/* Terminal-style Header */}
-      <Paper
+      {/* Dashboard Header - Scanner style */}
+      <Card
         elevation={0}
         sx={{
-          mb: 4,
-          p: 3,
+          mb: 3,
+          overflow: 'hidden',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 2,
-          animation: `${headerGlow} 3s ease-in-out infinite`,
-          background: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(204, 0, 0, 0.03) 50%, transparent 100%)'
-              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.06) 0%, rgba(204, 0, 0, 0.02) 50%, transparent 100%)',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            borderColor: 'primary.main',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                : '0 4px 20px rgba(253, 185, 49, 0.3)',
+          },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          {/* Dashboard icon */}
-          <DashboardIcon
-            sx={{
-              color: 'primary.main',
-              fontSize: '2rem',
-              filter: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'drop-shadow(0 0 8px rgba(255, 119, 0, 0.5))'
-                  : 'none',
-            }}
-          />
-
-          {/* Title */}
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              color: 'primary.main',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              background: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'linear-gradient(90deg, var(--djoppie-orange-400), var(--djoppie-red-400))'
-                  : 'linear-gradient(90deg, var(--djoppie-orange-600), var(--djoppie-red-600))',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('dashboard.title')}
-          </Typography>
-        </Box>
-
-        {/* Stats Row */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip
-            icon={<InventoryIcon />}
-            label={`${assetCount} Totaal`}
-            onClick={() => handleStatusChipClick('')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              opacity: statusFilter === '' ? 1 : 0.6,
-              transform: statusFilter === '' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                opacity: 1,
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${inGebruikCount} In gebruik`}
-            onClick={() => handleStatusChipClick('InGebruik')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'InGebruik' ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)',
-              color: 'rgb(76, 175, 80)',
-              border: '1px solid rgba(76, 175, 80, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'InGebruik' ? 1 : 0.5,
-              transform: statusFilter === 'InGebruik' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(76, 175, 80)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(76, 175, 80, 0.35)',
-                boxShadow: '0 0 12px rgba(76, 175, 80, 0.4)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${stockCount} Stock`}
-            onClick={() => handleStatusChipClick('Stock')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Stock' ? 'rgba(33, 150, 243, 0.25)' : 'rgba(33, 150, 243, 0.15)',
-              color: 'rgb(33, 150, 243)',
-              border: '1px solid rgba(33, 150, 243, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Stock' ? 1 : 0.5,
-              transform: statusFilter === 'Stock' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(33, 150, 243)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(33, 150, 243, 0.3)',
-                boxShadow: '0 0 12px rgba(33, 150, 243, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${herstellingCount} Herstelling`}
-            onClick={() => handleStatusChipClick('Herstelling')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Herstelling' ? 'rgba(255, 119, 0, 0.25)' : 'rgba(255, 119, 0, 0.15)',
-              color: 'rgb(255, 119, 0)',
-              border: '1px solid rgba(255, 119, 0, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Herstelling' ? 1 : 0.5,
-              transform: statusFilter === 'Herstelling' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(255, 119, 0)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(255, 119, 0, 0.3)',
-                boxShadow: '0 0 12px rgba(255, 119, 0, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${defectCount} Defect`}
-            onClick={() => handleStatusChipClick('Defect')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'Defect' ? 'rgba(244, 67, 54, 0.25)' : 'rgba(244, 67, 54, 0.15)',
-              color: 'rgb(244, 67, 54)',
-              border: '1px solid rgba(244, 67, 54, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'Defect' ? 1 : 0.5,
-              transform: statusFilter === 'Defect' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(244, 67, 54)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(244, 67, 54, 0.3)',
-                boxShadow: '0 0 12px rgba(244, 67, 54, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <Chip
-            label={`${uitDienstCount} Uit dienst`}
-            onClick={() => handleStatusChipClick('UitDienst')}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-              cursor: 'pointer',
-              backgroundColor: statusFilter === 'UitDienst' ? 'rgba(158, 158, 158, 0.25)' : 'rgba(158, 158, 158, 0.15)',
-              color: 'rgb(97, 97, 97)',
-              border: '1px solid rgba(158, 158, 158, 0.4)',
-              opacity: statusFilter === '' || statusFilter === 'UitDienst' ? 1 : 0.5,
-              transform: statusFilter === 'UitDienst' ? 'scale(1.05)' : 'scale(1)',
-              transition: 'all 0.2s ease',
-              '& .MuiChip-label': {
-                color: 'rgb(97, 97, 97)',
-              },
-              '&:hover': {
-                opacity: 1,
-                backgroundColor: 'rgba(158, 158, 158, 0.3)',
-                boxShadow: '0 0 12px rgba(158, 158, 158, 0.5)',
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          {dummyCount > 0 && (
-            <Chip
-              label={`${dummyCount} Dummy`}
-              onClick={() => handleStatusChipClick('Dummy')}
+        {/* Title bar */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <DashboardIcon
               sx={{
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                px: 1,
-                cursor: 'pointer',
-                backgroundColor: statusFilter === 'Dummy' ? 'rgba(156, 39, 176, 0.25)' : 'rgba(156, 39, 176, 0.12)',
-                color: 'rgb(156, 39, 176)',
-                border: '1px solid rgba(156, 39, 176, 0.4)',
-                opacity: statusFilter === 'Dummy' ? 1 : 0.5,
-                transform: statusFilter === 'Dummy' ? 'scale(1.05)' : 'scale(1)',
-                transition: 'all 0.2s ease',
-                '& .MuiChip-label': {
-                  color: 'rgb(156, 39, 176)',
-                },
-                '&:hover': {
-                  opacity: 1,
-                  backgroundColor: 'rgba(156, 39, 176, 0.3)',
-                  boxShadow: '0 0 12px rgba(156, 39, 176, 0.5)',
-                  transform: 'scale(1.05)',
-                },
+                fontSize: 32,
+                color: 'primary.main',
+                filter: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                    : 'none',
               }}
             />
+            <Typography variant="h5" component="h1" fontWeight={700}>
+              {t('dashboard.title')}
+            </Typography>
+          </Box>
+
+          {/* Right side: icon buttons + total count */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Leasing contracts */}
+            <Tooltip title={t('lease.expiringLeases')}>
+              <IconButton
+                onClick={(e) => setLeasesAnchor(e.currentTarget)}
+                size="small"
+                sx={{
+                  border: '1px solid',
+                  borderColor: leasesAnchor ? 'primary.main' : 'divider',
+                  borderRadius: 1.5,
+                  color: leasesAnchor ? 'primary.main' : 'text.secondary',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  },
+                }}
+              >
+                <Badge
+                  badgeContent={expiringLeasesCount}
+                  color="warning"
+                  max={99}
+                  sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}
+                >
+                  <EventIcon fontSize="small" />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+
+            {/* Discussion & Notes */}
+            <Tooltip title="Discussion & Notes">
+              <IconButton
+                onClick={(e) => setNotesAnchor(e.currentTarget)}
+                size="small"
+                sx={{
+                  border: '1px solid',
+                  borderColor: notesAnchor ? 'primary.main' : 'divider',
+                  borderRadius: 1.5,
+                  color: notesAnchor ? 'primary.main' : 'text.secondary',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  },
+                }}
+              >
+                <Badge
+                  variant={discussionText ? 'dot' : 'standard'}
+                  color="primary"
+                  invisible={!discussionText}
+                >
+                  <CommentIcon fontSize="small" />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+
+            {/* Upcoming Alarms / Requests */}
+            <Tooltip title={t('dashboard.alarms', { defaultValue: 'Alarms & Requests' })}>
+              <IconButton
+                onClick={(e) => setAlarmsAnchor(e.currentTarget)}
+                size="small"
+                sx={{
+                  border: '1px solid',
+                  borderColor: alarmsAnchor ? 'primary.main' : 'divider',
+                  borderRadius: 1.5,
+                  color: alarmsAnchor ? 'primary.main' : 'text.secondary',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  },
+                }}
+              >
+                <NotificationsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            {/* Total count badge */}
+            <Chip
+              icon={<InventoryIcon />}
+              label={`${assetCount} assets`}
+              onClick={() => handleStatusChipClick('')}
+              sx={{
+                ml: 0.5,
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                border: statusFilter === '' ? '2px solid' : '1px solid',
+                borderColor: statusFilter === '' ? 'primary.main' : 'divider',
+                color: statusFilter === '' ? 'primary.main' : 'text.primary',
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Status cards grid */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(2, 1fr)',
+              sm: 'repeat(3, 1fr)',
+              md: `repeat(${statusCards.length + (dummyCount > 0 ? 1 : 0)}, 1fr)`,
+            },
+            gap: 0,
+          }}
+        >
+          {statusCards.map((card) => (
+            <Box
+              key={card.key}
+              onClick={() => handleStatusChipClick(card.key)}
+              sx={{
+                px: 2,
+                py: 1.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                borderBottom: '1px solid',
+                borderRight: '1px solid',
+                borderColor: 'divider',
+                bgcolor: (theme) =>
+                  statusFilter === card.key
+                    ? (theme.palette.mode === 'dark' ? card.bgDark : card.bgLight)
+                    : 'transparent',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                '&::after': statusFilter === card.key ? {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: card.color,
+                } : {},
+                opacity: statusFilter === '' || statusFilter === card.key ? 1 : 0.5,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? card.bgDark : card.bgLight,
+                  opacity: 1,
+                },
+              }}
+            >
+              {/* Color dot */}
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: card.color,
+                  flexShrink: 0,
+                  boxShadow: statusFilter === card.key ? `0 0 8px ${card.color}` : 'none',
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  lineHeight={1.2}
+                  sx={{ color: statusFilter === card.key ? card.color : 'text.primary' }}
+                >
+                  {card.count}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {card.label}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+          {dummyCount > 0 && (
+            <Box
+              onClick={() => handleStatusChipClick('Dummy')}
+              sx={{
+                px: 2,
+                py: 1.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                bgcolor: (theme) =>
+                  statusFilter === 'Dummy'
+                    ? (theme.palette.mode === 'dark' ? 'rgba(156,39,176,0.15)' : 'rgba(156,39,176,0.08)')
+                    : 'transparent',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                '&::after': statusFilter === 'Dummy' ? {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  bgcolor: '#9C27B0',
+                } : {},
+                opacity: statusFilter === 'Dummy' ? 1 : 0.5,
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(156,39,176,0.15)' : 'rgba(156,39,176,0.08)',
+                  opacity: 1,
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  bgcolor: '#9C27B0',
+                  flexShrink: 0,
+                  boxShadow: statusFilter === 'Dummy' ? '0 0 8px #9C27B0' : 'none',
+                }}
+              />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  lineHeight={1.2}
+                  sx={{ color: statusFilter === 'Dummy' ? '#9C27B0' : 'text.primary' }}
+                >
+                  {dummyCount}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', fontWeight: 500, lineHeight: 1 }}
+                >
+                  Dummy
+                </Typography>
+              </Box>
+            </Box>
           )}
         </Box>
-      </Paper>
+      </Card>
 
       {/* Sticky Toolbar for View/Sort/Filter */}
       <Paper
@@ -811,118 +911,145 @@ const DashboardPage = () => {
         onSelectAll={handleSelectAll}
       />
 
-      {/* Discussion Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          mt: 4,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          overflow: 'hidden',
+      {/* Leasing Contracts Popover */}
+      <Popover
+        open={Boolean(leasesAnchor)}
+        anchorEl={leasesAnchor}
+        onClose={() => setLeasesAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              width: { xs: 340, sm: 420 },
+              maxHeight: 480,
+              overflow: 'auto',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(0,0,0,0.5)'
+                : '0 8px 32px rgba(0,0,0,0.12)',
+            },
+          },
         }}
       >
-        {/* Discussion Header */}
-        <Box
-          sx={{
-            p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? 'rgba(255, 119, 0, 0.05)'
-                : 'rgba(255, 119, 0, 0.02)',
-            borderBottom: discussionExpanded ? '1px solid' : 'none',
-            borderColor: 'divider',
-            '&:hover': {
-              backgroundColor: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'rgba(255, 119, 0, 0.1)'
-                  : 'rgba(255, 119, 0, 0.05)',
+        <ExpiringLeasesWidget />
+      </Popover>
+
+      {/* Discussion & Notes Popover */}
+      <Popover
+        open={Boolean(notesAnchor)}
+        anchorEl={notesAnchor}
+        onClose={() => setNotesAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              width: { xs: 340, sm: 400 },
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(0,0,0,0.5)'
+                : '0 8px 32px rgba(0,0,0,0.12)',
             },
-            transition: 'background-color 0.2s ease',
-          }}
-          onClick={() => setDiscussionExpanded(!discussionExpanded)}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <CommentIcon sx={{ color: 'primary.main' }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          },
+        }}
+      >
+        <Box sx={{ p: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <CommentIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+            <Typography variant="subtitle1" fontWeight={700} color="primary.main">
               Discussion & Notes
             </Typography>
-            {discussionText && !discussionExpanded && (
-              <Chip
-                label="Has content"
-                size="small"
-                sx={{
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'rgba(255, 119, 0, 0.15)',
-                  color: 'primary.main',
-                  fontSize: '0.75rem',
-                }}
-              />
-            )}
           </Box>
-          <IconButton size="small">
-            {discussionExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          </IconButton>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+            Add notes or observations about the current inventory status. Stored locally in your browser.
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={5}
+            placeholder="Enter your notes here..."
+            value={discussionText}
+            onChange={(e) => setDiscussionText(e.target.value)}
+            size="small"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': { borderColor: 'primary.main' },
+                '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+              },
+            }}
+          />
+          {discussionText && (
+            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                {discussionText.length} characters
+              </Typography>
+              <Tooltip title="Clear all notes">
+                <IconButton
+                  size="small"
+                  onClick={() => setDiscussionText('')}
+                  sx={{ color: 'error.main' }}
+                >
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
         </Box>
+      </Popover>
 
-        {/* Discussion Content */}
-        {discussionExpanded && (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Add notes, observations, or discussions about the current inventory status.
-              This content is only stored locally in your browser.
+      {/* Alarms & Requests Popover */}
+      <Popover
+        open={Boolean(alarmsAnchor)}
+        anchorEl={alarmsAnchor}
+        onClose={() => setAlarmsAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              width: { xs: 300, sm: 360 },
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 8px 32px rgba(0,0,0,0.5)'
+                : '0 8px 32px rgba(0,0,0,0.12)',
+            },
+          },
+        }}
+      >
+        <Box sx={{ p: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <NotificationsIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+            <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+              {t('dashboard.alarms', { defaultValue: 'Alarms & Requests' })}
             </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={6}
-              placeholder="Enter your notes here..."
-              value={discussionText}
-              onChange={(e) => setDiscussionText(e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
-            />
-            {discussionText && (
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="caption" color="text.secondary">
-                  {discussionText.length} characters
-                </Typography>
-                <Tooltip title="Clear all notes">
-                  <IconButton
-                    size="small"
-                    onClick={() => setDiscussionText('')}
-                    sx={{
-                      color: 'error.main',
-                      '&:hover': {
-                        backgroundColor: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? 'rgba(244, 67, 54, 0.1)'
-                            : 'rgba(244, 67, 54, 0.05)',
-                      },
-                    }}
-                  >
-                    <ClearIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            )}
           </Box>
-        )}
-      </Paper>
+          <Box
+            sx={{
+              py: 4,
+              textAlign: 'center',
+              border: '1px dashed',
+              borderColor: 'divider',
+              borderRadius: 2,
+              bgcolor: alpha(theme.palette.background.default, 0.5),
+            }}
+          >
+            <NotificationsIcon sx={{ fontSize: 36, color: 'text.disabled', mb: 1 }} />
+            <Typography variant="body2" color="text.secondary">
+              {t('dashboard.noAlarms', { defaultValue: 'No upcoming alarms or requests' })}
+            </Typography>
+          </Box>
+        </Box>
+      </Popover>
 
       {/* Export Dialog */}
       <ExportDialog

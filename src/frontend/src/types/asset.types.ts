@@ -3,7 +3,8 @@ export enum AssetStatus {
   Stock = 'Stock',
   Herstelling = 'Herstelling',
   Defect = 'Defect',
-  UitDienst = 'UitDienst'
+  UitDienst = 'UitDienst',
+  Nieuw = 'Nieuw'
 }
 
 export interface Asset {
@@ -13,9 +14,20 @@ export interface Asset {
   alias?: string; // Optional readable name
   category: string;
   isDummy: boolean;
-  building?: string; // Installation location (optional)
+
+  // Relational fields
+  assetTypeId?: number;
+  assetType?: { id: number; code: string; name: string };
+  serviceId?: number;
+  service?: { id: number; code: string; name: string }; // Service is used as location
+  installationLocation?: string; // Specific location details (e.g., room number)
+
+  // Legacy fields (for historical data)
+  legacyBuilding?: string;
+  legacyDepartment?: string;
+
+  // Existing fields
   owner?: string; // Primary user (optional)
-  department?: string; // Optional
   officeLocation?: string;
   jobTitle?: string;
   status: AssetStatus;
@@ -30,17 +42,22 @@ export interface Asset {
 }
 
 export interface CreateAssetDto {
-  assetCodePrefix: string;
+  assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset code
   serialNumber: string; // REQUIRED - unique identifier for the device
   assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
   alias?: string; // Optional readable name
   category: string;
   isDummy?: boolean;
-  building?: string; // Installation location (optional)
+
+  // Relational fields
+  serviceId?: number; // Service is used as location
+  installationLocation?: string; // Specific location details (e.g., room number)
+
+  // User assignment fields
   owner?: string; // Primary user (optional)
-  department?: string;
   officeLocation?: string;
   jobTitle?: string;
+
   status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
@@ -52,11 +69,17 @@ export interface CreateAssetDto {
 export interface UpdateAssetDto {
   assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
   alias?: string; // Optional readable name
+
+  // Relational fields
+  assetTypeId?: number;
+  serviceId?: number; // Service is used as location
+  installationLocation?: string; // Specific location details (e.g., room number)
+
+  // User assignment fields
   owner?: string; // Primary user (optional)
-  building?: string; // Installation location (optional)
-  department?: string;
   officeLocation?: string;
   jobTitle?: string;
+
   status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
@@ -71,12 +94,19 @@ export interface AssetTemplate {
   id: number;
   templateName: string;
   assetName?: string;  // Optional - alias/description
-  category: string;
+  category?: string;  // Optional - derived from AssetType
+
+  // Relational fields
+  assetTypeId?: number;
+  assetType?: { id: number; code: string; name: string };
+  serviceId?: number;
+  service?: { id: number; code: string; name: string };
+  installationLocation?: string;
+  status?: string;
+
   brand?: string;
   model?: string;
   owner?: string;  // Optional - default primary user
-  building?: string;  // Optional - default location
-  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -85,12 +115,16 @@ export interface AssetTemplate {
 export interface CreateAssetTemplateDto {
   templateName: string;
   assetName?: string;  // Optional - alias/description
-  category: string;
+  category?: string;  // Optional - derived from AssetType
+
+  assetTypeId?: number;
+  serviceId?: number;
+  installationLocation?: string;
+  status?: string;
+
   brand?: string;
   model?: string;
   owner?: string;  // Optional - default primary user
-  building?: string;  // Optional - default location
-  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -99,30 +133,36 @@ export interface CreateAssetTemplateDto {
 export interface UpdateAssetTemplateDto {
   templateName: string;
   assetName?: string;  // Optional - alias/description
-  category: string;
+  category?: string;  // Optional - derived from AssetType
+
+  assetTypeId?: number;
+  serviceId?: number;
+  installationLocation?: string;
+  status?: string;
+
   brand?: string;
   model?: string;
   owner?: string;  // Optional - default primary user
-  building?: string;  // Optional - default location
-  department?: string;  // Optional - default department
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
 }
 
 export interface BulkCreateAssetDto {
-  assetCodePrefix: string;
+  assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset codes
   serialNumberPrefix: string; // REQUIRED - prefix for generating unique serial numbers
   quantity: number;
   isDummy?: boolean;
   templateId?: number;
   assetName?: string; // Official device name (DeviceName)
   alias?: string; // Optional readable name
-  category: string;
-  building?: string; // Installation location (optional)
+  category?: string; // Optional - derived from AssetType
+
+  // Relational fields
+  serviceId?: number; // Service/department (optional)
+  installationLocation?: string; // Specific location details (optional)
+
   owner?: string; // Primary user (optional)
-  department?: string;
-  officeLocation?: string;
   status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;

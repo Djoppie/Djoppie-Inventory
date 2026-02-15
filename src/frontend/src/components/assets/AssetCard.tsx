@@ -239,7 +239,7 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                   color: 'text.primary',
                 }}
               >
-                {asset.building}
+                {asset.service?.name || asset.legacyBuilding || '-'}
               </Typography>
               <Typography
                 variant="caption"
@@ -247,7 +247,7 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                   color: 'text.secondary',
                 }}
               >
-                {asset.department}
+                {asset.service?.name || asset.legacyDepartment || '-'}
               </Typography>
               {asset.officeLocation && (
                 <Typography

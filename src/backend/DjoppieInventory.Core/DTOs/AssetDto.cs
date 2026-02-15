@@ -12,10 +12,19 @@ public class AssetDto
     public string Category { get; set; } = string.Empty;
     public bool IsDummy { get; set; }
 
-    // These fields are optional in the entity, so they should be nullable in the DTO
-    public string? Building { get; set; }
+    // Relational fields
+    public int? AssetTypeId { get; set; }
+    public AssetTypeInfo? AssetType { get; set; }
+    public int? ServiceId { get; set; }
+    public ServiceInfo? Service { get; set; }
+    public string? InstallationLocation { get; set; }
+
+    // Legacy fields (for historical data)
+    public string? LegacyBuilding { get; set; }
+    public string? LegacyDepartment { get; set; }
+
+    // User assignment fields
     public string? Owner { get; set; }
-    public string? Department { get; set; }
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
 
