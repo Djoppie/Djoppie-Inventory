@@ -56,9 +56,9 @@ export const getActiveLeaseContract = async (assetId: number): Promise<LeaseCont
 /**
  * Get all expiring lease contracts (within specified days)
  */
-export const getExpiringLeaseContracts = async (daysThreshold: number = 90): Promise<LeaseContract[]> => {
+export const getExpiringLeaseContracts = async (daysAhead: number = 90): Promise<LeaseContract[]> => {
   const response = await apiClient.get<LeaseContract[]>('/leasecontracts/expiring', {
-    params: { daysThreshold }
+    params: { daysAhead }
   });
   return response.data;
 };
