@@ -16,6 +16,8 @@ import {
   DialogActions,
   Chip,
   Stack,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -55,7 +57,7 @@ const isDummyAsset = (assetCode: string): boolean => {
   return !isNaN(num) && num >= 9000;
 };
 
-// Scanner-style card wrapper
+// Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
   mb: 3,
   borderRadius: 2,
@@ -72,14 +74,39 @@ const scannerCardSx = {
   },
 };
 
-// Section Header Component
+// Consistent icon button style
+const iconButtonSx = {
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 2,
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    borderColor: 'primary.main',
+    boxShadow: (theme: { palette: { mode: string } }) =>
+      theme.palette.mode === 'dark'
+        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
+        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+  },
+};
+
+// Section Header Component - consistent with ScanPage tabs style
 interface SectionHeaderProps {
   icon: React.ReactNode;
   title: string;
 }
 
 const SectionHeader = ({ icon, title }: SectionHeaderProps) => (
-  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+  <Stack
+    direction="row"
+    spacing={1.5}
+    alignItems="center"
+    sx={{
+      mb: 2,
+      pb: 2,
+      borderBottom: '1px solid',
+      borderColor: 'divider',
+    }}
+  >
     <Box
       sx={{
         display: 'flex',
@@ -87,17 +114,27 @@ const SectionHeader = ({ icon, title }: SectionHeaderProps) => (
         justifyContent: 'center',
         width: 36,
         height: 36,
-        borderRadius: 1.5,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
         bgcolor: (theme) =>
           theme.palette.mode === 'dark'
-            ? 'rgba(255, 215, 0, 0.1)'
-            : 'rgba(253, 185, 49, 0.1)',
+            ? 'rgba(255, 215, 0, 0.08)'
+            : 'rgba(253, 185, 49, 0.08)',
         color: 'primary.main',
+        transition: 'all 0.3s ease',
       }}
     >
       {icon}
     </Box>
-    <Typography variant="h6" fontWeight={700} color="primary.main">
+    <Typography
+      variant="h6"
+      fontWeight={700}
+      sx={{
+        color: 'primary.main',
+        letterSpacing: '0.02em',
+      }}
+    >
       {title}
     </Typography>
   </Stack>
@@ -210,17 +247,27 @@ const AssetDetailPage = () => {
 
   return (
     <Box>
+      {/* Back Button - Outside card */}
+      <Tooltip title={t('common.backToDashboard', { defaultValue: 'Back to Dashboard' })}>
+        <IconButton
+          onClick={() => navigate('/')}
+          sx={{
+            ...iconButtonSx,
+            mb: 2,
+            color: 'text.secondary',
+            '&:hover': {
+              ...iconButtonSx['&:hover'],
+              color: 'primary.main',
+            },
+          }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+      </Tooltip>
+
       {/* Header - Scanner style */}
       <Card elevation={0} sx={scannerCardSx}>
         <CardContent sx={{ p: 3 }}>
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate('/')}
-            sx={{ mb: 2 }}
-          >
-            Back to Dashboard
-          </Button>
-
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
             <Box>
               <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
@@ -244,21 +291,35 @@ const AssetDetailPage = () => {
             </Box>
 
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                onClick={handleEdit}
-              >
-                {t('common.edit')}
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                {t('common.delete')}
-              </Button>
+              <Tooltip title={t('common.edit')}>
+                <IconButton
+                  onClick={handleEdit}
+                  sx={{
+                    ...iconButtonSx,
+                    color: 'primary.main',
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('common.delete')}>
+                <IconButton
+                  onClick={() => setDeleteDialogOpen(true)}
+                  sx={{
+                    ...iconButtonSx,
+                    color: 'error.main',
+                    '&:hover': {
+                      borderColor: 'error.main',
+                      boxShadow: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? '0 4px 16px rgba(244, 67, 54, 0.3)'
+                          : '0 2px 12px rgba(244, 67, 54, 0.2)',
+                    },
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
             </Box>
           </Box>
         </CardContent>
@@ -492,9 +553,46 @@ const AssetDetailPage = () => {
             }}
           >
             <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
-              <Typography variant="h6" color="primary" gutterBottom fontWeight={700}>
-                QR Code
-              </Typography>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                alignItems="center"
+                justifyContent="center"
+                sx={{
+                  mb: 2,
+                  pb: 2,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(255, 215, 0, 0.08)'
+                        : 'rgba(253, 185, 49, 0.08)',
+                    color: 'primary.main',
+                  }}
+                >
+                  <QrCodeIcon />
+                </Box>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{ color: 'primary.main', letterSpacing: '0.02em' }}
+                >
+                  QR Code
+                </Typography>
+              </Stack>
+
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                 Scan to quickly access this asset
               </Typography>
@@ -506,15 +604,16 @@ const AssetDetailPage = () => {
                   bgcolor: '#FFFFFF',
                   borderRadius: 2,
                   display: 'inline-block',
-                  boxShadow: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? '0 4px 12px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(255, 215, 0, 0.05)'
-                      : '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  border: '3px solid',
-                  borderColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 215, 0, 0.3)'
-                      : 'rgba(253, 185, 49, 0.3)',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    boxShadow: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
+                        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+                  },
                 }}
               >
                 <QRCodeSVG
@@ -527,19 +626,31 @@ const AssetDetailPage = () => {
                 />
               </Box>
 
-              <Typography variant="caption" display="block" sx={{ mt: 2 }} color="text.secondary">
-                Asset Code: {asset.assetCode}
+              <Typography
+                variant="caption"
+                display="block"
+                sx={{
+                  mt: 2,
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                }}
+              >
+                {asset.assetCode}
               </Typography>
 
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<PrintIcon />}
-                sx={{ mt: 3 }}
-                onClick={() => setPrintDialogOpen(true)}
-              >
-                {t('printLabel.title')}
-              </Button>
+              <Tooltip title={t('printLabel.title')}>
+                <IconButton
+                  onClick={() => setPrintDialogOpen(true)}
+                  sx={{
+                    ...iconButtonSx,
+                    mt: 3,
+                    color: 'primary.main',
+                  }}
+                >
+                  <PrintIcon />
+                </IconButton>
+              </Tooltip>
             </CardContent>
           </Card>
         </Box>

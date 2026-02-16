@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -31,8 +32,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tooltip,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
   useAssetTemplates,
   useCreateAssetTemplate,
@@ -56,6 +59,38 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BusinessIcon from '@mui/icons-material/Business';
+
+// Scanner-style card wrapper - consistent with ScanPage
+const scannerCardSx = {
+  mb: 3,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: 'divider',
+  overflow: 'hidden',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    borderColor: 'primary.main',
+    boxShadow: (thm: { palette: { mode: string } }) =>
+      thm.palette.mode === 'dark'
+        ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+        : '0 4px 20px rgba(253, 185, 49, 0.3)',
+  },
+};
+
+// Consistent icon button style
+const iconButtonSx = {
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 2,
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    borderColor: 'primary.main',
+    boxShadow: (thm: { palette: { mode: string } }) =>
+      thm.palette.mode === 'dark'
+        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
+        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+  },
+};
 
 interface FormData {
   templateName: string;
@@ -95,6 +130,7 @@ type SnackbarState = {
 
 const AssetTemplatesPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -275,37 +311,56 @@ const AssetTemplatesPage = () => {
 
   return (
     <Box sx={{ pb: 10 }}>
+      {/* Back Button - Outside card */}
+      <Tooltip title="Back to Dashboard">
+        <IconButton
+          onClick={() => navigate('/')}
+          sx={{
+            ...iconButtonSx,
+            mb: 2,
+            color: 'text.secondary',
+            '&:hover': {
+              ...iconButtonSx['&:hover'],
+              color: 'primary.main',
+            },
+          }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+      </Tooltip>
+
       {/* Header - Scanner style */}
-      <Card
-        elevation={0}
-        sx={{
-          mb: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          overflow: 'hidden',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            borderColor: 'primary.main',
-            boxShadow: (thm: { palette: { mode: string } }) =>
-              thm.palette.mode === 'dark'
-                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-                : '0 4px 20px rgba(253, 185, 49, 0.3)',
-          },
-        }}
-      >
+      <Card elevation={0} sx={scannerCardSx}>
         <CardContent sx={{ p: 3 }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            <CategoryIcon
+            <Box
               sx={{
-                fontSize: 40,
-                color: 'primary.main',
-                filter: (thm: { palette: { mode: string } }) =>
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: (thm) =>
                   thm.palette.mode === 'dark'
-                    ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
-                    : 'none',
+                    ? 'rgba(255, 215, 0, 0.08)'
+                    : 'rgba(253, 185, 49, 0.08)',
+                transition: 'all 0.3s ease',
               }}
-            />
+            >
+              <CategoryIcon
+                sx={{
+                  fontSize: 28,
+                  color: 'primary.main',
+                  filter: (thm: { palette: { mode: string } }) =>
+                    thm.palette.mode === 'dark'
+                      ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                      : 'none',
+                }}
+              />
+            </Box>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h4" component="h1" fontWeight={700}>
                 {t('templates.title')}
