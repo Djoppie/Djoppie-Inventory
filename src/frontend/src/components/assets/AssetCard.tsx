@@ -8,7 +8,6 @@ import {
   Box,
   Chip,
   Checkbox,
-  keyframes,
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
@@ -23,16 +22,6 @@ interface AssetCardProps {
   selected?: boolean;
   onSelectionChange?: (assetId: number, selected: boolean) => void;
 }
-
-// Pulse animation for hover effect
-const glowPulse = keyframes`
-  0%, 100% {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
-  }
-  50% {
-    box-shadow: 0 12px 40px rgba(255, 152, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-`;
 
 const AssetCard = ({ asset, selectable = false, selected = false, onSelectionChange }: AssetCardProps) => {
   const navigate = useNavigate();
