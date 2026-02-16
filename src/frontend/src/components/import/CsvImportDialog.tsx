@@ -42,7 +42,6 @@ import {
   ExpandLess as ExpandLessIcon,
   ArrowBack as ArrowBackIcon,
   TableChart as TableChartIcon,
-  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { csvImportApi, CsvImportResult, CsvRowResult } from '../../api/csvImport.api';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +85,7 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
   const [validating, setValidating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<CsvImportResult | null>(null);
-  const [validationResult, setValidationResult] = useState<CsvImportResult | null>(null);
+  const [, setValidationResult] = useState<CsvImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -94,24 +93,6 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Expected CSV headers
-  const expectedHeaders = [
-    'SerialNumber',
-    'AssetTypeCode',
-    'Status',
-    'PurchaseDate',
-    'IsDummy',
-    'AssetName',
-    'BuildingCode',
-    'ServiceCode',
-    'Owner',
-    'Brand',
-    'Model',
-    'InstallationDate',
-    'WarrantyExpiry',
-    'Notes',
-  ];
 
   const parseCsvFile = (content: string, validationResults?: CsvRowResult[]): CsvPreviewRow[] => {
     const lines = content.split('\n').filter((line) => line.trim() && !line.trim().startsWith('#'));

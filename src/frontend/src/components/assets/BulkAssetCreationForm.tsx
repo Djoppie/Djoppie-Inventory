@@ -44,7 +44,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { BulkCreateAssetDto, AssetTemplate } from '../../types/asset.types';
-import { GraphUser } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
 import AssetTypeSelect from '../common/AssetTypeSelect';
 import ServiceSelect from '../common/ServiceSelect';
@@ -473,7 +472,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
           >
             <UserAutocomplete
               value={formData.owner || ''}
-              onChange={(displayName: string, _user: GraphUser | null) => {
+              onChange={(displayName: string) => {
                 handleChange('owner', displayName);
               }}
               label={t('assetDetail.primaryUser')}

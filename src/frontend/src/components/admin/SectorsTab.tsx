@@ -182,7 +182,7 @@ const SectorsTab = () => {
         };
         await createMutation.mutateAsync(dto);
       }
-    } catch (error) {
+    } catch {
       // Error handled by mutation callbacks
     }
   };
