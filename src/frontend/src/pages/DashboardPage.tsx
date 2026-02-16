@@ -302,15 +302,64 @@ const DashboardPage = () => {
     label: string;
     count: number;
     color: string;
-    bgLight: string;
-    bgDark: string;
+    gradientLight: string;
+    gradientDark: string;
+    shadowColor: string;
   }> = [
-    { key: 'InGebruik', label: 'In gebruik', count: inGebruikCount, color: '#4CAF50', bgLight: 'rgba(76,175,80,0.08)', bgDark: 'rgba(76,175,80,0.15)' },
-    { key: 'Stock', label: 'Stock', count: stockCount, color: '#2196F3', bgLight: 'rgba(33,150,243,0.08)', bgDark: 'rgba(33,150,243,0.15)' },
-    { key: 'Herstelling', label: 'Herstelling', count: herstellingCount, color: '#FF7700', bgLight: 'rgba(255,119,0,0.08)', bgDark: 'rgba(255,119,0,0.15)' },
-    { key: 'Defect', label: 'Defect', count: defectCount, color: '#F44336', bgLight: 'rgba(244,67,54,0.08)', bgDark: 'rgba(244,67,54,0.15)' },
-    { key: 'UitDienst', label: 'Uit dienst', count: uitDienstCount, color: '#9E9E9E', bgLight: 'rgba(158,158,158,0.08)', bgDark: 'rgba(158,158,158,0.15)' },
-    { key: 'Nieuw', label: 'Nieuw', count: nieuwCount, color: '#00BCD4', bgLight: 'rgba(0,188,212,0.08)', bgDark: 'rgba(0,188,212,0.15)' },
+    {
+      key: 'InGebruik',
+      label: 'In gebruik',
+      count: inGebruikCount,
+      color: '#4CAF50',
+      gradientLight: 'linear-gradient(135deg, rgba(76,175,80,0.15) 0%, rgba(129,199,132,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(76,175,80,0.25) 0%, rgba(56,142,60,0.15) 100%)',
+      shadowColor: 'rgba(76,175,80,0.3)',
+    },
+    {
+      key: 'Stock',
+      label: 'Stock',
+      count: stockCount,
+      color: '#2196F3',
+      gradientLight: 'linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(100,181,246,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(33,150,243,0.25) 0%, rgba(25,118,210,0.15) 100%)',
+      shadowColor: 'rgba(33,150,243,0.3)',
+    },
+    {
+      key: 'Herstelling',
+      label: 'Herstelling',
+      count: herstellingCount,
+      color: '#FF9800',
+      gradientLight: 'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, rgba(255,183,77,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(255,152,0,0.25) 0%, rgba(245,124,0,0.15) 100%)',
+      shadowColor: 'rgba(255,152,0,0.3)',
+    },
+    {
+      key: 'Defect',
+      label: 'Defect',
+      count: defectCount,
+      color: '#F44336',
+      gradientLight: 'linear-gradient(135deg, rgba(244,67,54,0.15) 0%, rgba(239,83,80,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(244,67,54,0.25) 0%, rgba(211,47,47,0.15) 100%)',
+      shadowColor: 'rgba(244,67,54,0.3)',
+    },
+    {
+      key: 'UitDienst',
+      label: 'Uit dienst',
+      count: uitDienstCount,
+      color: '#78909C',
+      gradientLight: 'linear-gradient(135deg, rgba(120,144,156,0.15) 0%, rgba(176,190,197,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(120,144,156,0.25) 0%, rgba(84,110,122,0.15) 100%)',
+      shadowColor: 'rgba(120,144,156,0.3)',
+    },
+    {
+      key: 'Nieuw',
+      label: 'Nieuw',
+      count: nieuwCount,
+      color: '#00BCD4',
+      gradientLight: 'linear-gradient(135deg, rgba(0,188,212,0.15) 0%, rgba(77,208,225,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(0,188,212,0.25) 0%, rgba(0,151,167,0.15) 100%)',
+      shadowColor: 'rgba(0,188,212,0.3)',
+    },
   ];
 
   return (
@@ -469,7 +518,8 @@ const DashboardPage = () => {
               sm: 'repeat(3, 1fr)',
               md: `repeat(${statusCards.length + (dummyCount > 0 ? 1 : 0)}, 1fr)`,
             },
-            gap: 0,
+            gap: 1.5,
+            p: 2,
           }}
         >
           {statusCards.map((card) => (
@@ -478,63 +528,80 @@ const DashboardPage = () => {
               onClick={() => handleStatusChipClick(card.key)}
               sx={{
                 px: 2,
-                py: 1.5,
+                py: 2,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.5,
-                borderBottom: '1px solid',
-                borderRight: '1px solid',
-                borderColor: 'divider',
-                bgcolor: (theme) =>
-                  statusFilter === card.key
-                    ? (theme.palette.mode === 'dark' ? card.bgDark : card.bgLight)
-                    : 'transparent',
-                transition: 'all 0.2s ease',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: statusFilter === card.key ? card.color : 'divider',
+                background: (theme) =>
+                  theme.palette.mode === 'dark' ? card.gradientDark : card.gradientLight,
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
-                '&::after': statusFilter === card.key ? {
+                overflow: 'hidden',
+                boxShadow: statusFilter === card.key
+                  ? `0 4px 20px ${card.shadowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+                transform: statusFilter === card.key ? 'translateY(-2px)' : 'none',
+                '&::before': {
                   content: '""',
                   position: 'absolute',
-                  bottom: 0,
+                  top: 0,
                   left: 0,
                   right: 0,
                   height: 3,
-                  bgcolor: card.color,
-                } : {},
-                opacity: statusFilter === '' || statusFilter === card.key ? 1 : 0.5,
+                  background: statusFilter === card.key
+                    ? `linear-gradient(90deg, ${card.color}, ${alpha(card.color, 0.6)})`
+                    : 'transparent',
+                  transition: 'background 0.2s ease',
+                },
+                opacity: statusFilter === '' || statusFilter === card.key ? 1 : 0.6,
                 '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? card.bgDark : card.bgLight,
+                  borderColor: card.color,
+                  boxShadow: `0 6px 24px ${card.shadowColor}, inset 0 1px 0 rgba(255,255,255,0.15)`,
+                  transform: 'translateY(-2px)',
                   opacity: 1,
+                  '&::before': {
+                    background: `linear-gradient(90deg, ${card.color}, ${alpha(card.color, 0.6)})`,
+                  },
                 },
               }}
             >
-              {/* Color dot */}
+              {/* Color indicator bar */}
               <Box
                 sx={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
+                  width: 4,
+                  height: 36,
+                  borderRadius: 1,
                   bgcolor: card.color,
                   flexShrink: 0,
-                  boxShadow: statusFilter === card.key ? `0 0 8px ${card.color}` : 'none',
+                  boxShadow: `0 0 12px ${card.shadowColor}`,
                 }}
               />
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography
-                  variant="h6"
-                  fontWeight={700}
-                  lineHeight={1.2}
-                  sx={{ color: statusFilter === card.key ? card.color : 'text.primary' }}
+                  variant="h5"
+                  fontWeight={800}
+                  lineHeight={1.1}
+                  sx={{
+                    color: statusFilter === card.key ? card.color : 'text.primary',
+                    textShadow: statusFilter === card.key ? `0 0 20px ${card.shadowColor}` : 'none',
+                  }}
                 >
                   {card.count}
                 </Typography>
                 <Typography
                   variant="caption"
                   sx={{
-                    color: 'text.secondary',
-                    fontWeight: 500,
-                    lineHeight: 1,
+                    color: statusFilter === card.key ? card.color : 'text.secondary',
+                    fontWeight: 600,
+                    lineHeight: 1.2,
                     whiteSpace: 'nowrap',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontSize: '0.65rem',
                   }}
                 >
                   {card.label}
@@ -547,57 +614,82 @@ const DashboardPage = () => {
               onClick={() => handleStatusChipClick('Dummy')}
               sx={{
                 px: 2,
-                py: 1.5,
+                py: 2,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.5,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                bgcolor: (theme) =>
-                  statusFilter === 'Dummy'
-                    ? (theme.palette.mode === 'dark' ? 'rgba(156,39,176,0.15)' : 'rgba(156,39,176,0.08)')
-                    : 'transparent',
-                transition: 'all 0.2s ease',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: statusFilter === 'Dummy' ? '#9C27B0' : 'divider',
+                background: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(156,39,176,0.25) 0%, rgba(123,31,162,0.15) 100%)'
+                    : 'linear-gradient(135deg, rgba(156,39,176,0.15) 0%, rgba(186,104,200,0.08) 100%)',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
-                '&::after': statusFilter === 'Dummy' ? {
+                overflow: 'hidden',
+                boxShadow: statusFilter === 'Dummy'
+                  ? '0 4px 20px rgba(156,39,176,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+                transform: statusFilter === 'Dummy' ? 'translateY(-2px)' : 'none',
+                '&::before': {
                   content: '""',
                   position: 'absolute',
-                  bottom: 0,
+                  top: 0,
                   left: 0,
                   right: 0,
                   height: 3,
-                  bgcolor: '#9C27B0',
-                } : {},
-                opacity: statusFilter === 'Dummy' ? 1 : 0.5,
+                  background: statusFilter === 'Dummy'
+                    ? 'linear-gradient(90deg, #9C27B0, rgba(156,39,176,0.6))'
+                    : 'transparent',
+                  transition: 'background 0.2s ease',
+                },
+                opacity: statusFilter === 'Dummy' ? 1 : 0.6,
                 '&:hover': {
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(156,39,176,0.15)' : 'rgba(156,39,176,0.08)',
+                  borderColor: '#9C27B0',
+                  boxShadow: '0 6px 24px rgba(156,39,176,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+                  transform: 'translateY(-2px)',
                   opacity: 1,
+                  '&::before': {
+                    background: 'linear-gradient(90deg, #9C27B0, rgba(156,39,176,0.6))',
+                  },
                 },
               }}
             >
               <Box
                 sx={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
+                  width: 4,
+                  height: 36,
+                  borderRadius: 1,
                   bgcolor: '#9C27B0',
                   flexShrink: 0,
-                  boxShadow: statusFilter === 'Dummy' ? '0 0 8px #9C27B0' : 'none',
+                  boxShadow: '0 0 12px rgba(156,39,176,0.3)',
                 }}
               />
-              <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography
-                  variant="h6"
-                  fontWeight={700}
-                  lineHeight={1.2}
-                  sx={{ color: statusFilter === 'Dummy' ? '#9C27B0' : 'text.primary' }}
+                  variant="h5"
+                  fontWeight={800}
+                  lineHeight={1.1}
+                  sx={{
+                    color: statusFilter === 'Dummy' ? '#9C27B0' : 'text.primary',
+                    textShadow: statusFilter === 'Dummy' ? '0 0 20px rgba(156,39,176,0.3)' : 'none',
+                  }}
                 >
                   {dummyCount}
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ color: 'text.secondary', fontWeight: 500, lineHeight: 1 }}
+                  sx={{
+                    color: statusFilter === 'Dummy' ? '#9C27B0' : 'text.secondary',
+                    fontWeight: 600,
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontSize: '0.65rem',
+                  }}
                 >
                   Dummy
                 </Typography>
