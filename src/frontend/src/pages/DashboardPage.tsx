@@ -307,6 +307,15 @@ const DashboardPage = () => {
     shadowColor: string;
   }> = [
     {
+      key: 'Nieuw',
+      label: 'Nieuw',
+      count: nieuwCount,
+      color: '#00BCD4',
+      gradientLight: 'linear-gradient(135deg, rgba(0,188,212,0.15) 0%, rgba(77,208,225,0.08) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(0,188,212,0.25) 0%, rgba(0,151,167,0.15) 100%)',
+      shadowColor: 'rgba(0,188,212,0.3)',
+    },
+    {
       key: 'InGebruik',
       label: 'In gebruik',
       count: inGebruikCount,
@@ -350,15 +359,6 @@ const DashboardPage = () => {
       gradientLight: 'linear-gradient(135deg, rgba(120,144,156,0.15) 0%, rgba(176,190,197,0.08) 100%)',
       gradientDark: 'linear-gradient(135deg, rgba(120,144,156,0.25) 0%, rgba(84,110,122,0.15) 100%)',
       shadowColor: 'rgba(120,144,156,0.3)',
-    },
-    {
-      key: 'Nieuw',
-      label: 'Nieuw',
-      count: nieuwCount,
-      color: '#00BCD4',
-      gradientLight: 'linear-gradient(135deg, rgba(0,188,212,0.15) 0%, rgba(77,208,225,0.08) 100%)',
-      gradientDark: 'linear-gradient(135deg, rgba(0,188,212,0.25) 0%, rgba(0,151,167,0.15) 100%)',
-      shadowColor: 'rgba(0,188,212,0.3)',
     },
   ];
 
