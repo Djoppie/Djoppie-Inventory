@@ -137,26 +137,29 @@ BEGIN
     );
     CREATE UNIQUE INDEX [IX_Buildings_Code] ON [Buildings] ([Code]);
 
-    -- Seed Buildings
+    -- Seed Buildings (17 records: 5 hoofdlocaties + 12 satellieten)
     SET IDENTITY_INSERT [Buildings] ON;
     INSERT INTO [Buildings] ([Id], [Code], [Name], [Address], [SortOrder], [IsActive], [CreatedAt])
     VALUES
+        -- 5 Hoofdlocaties
         (1, 'POORT', 'Het Poortgebouw', 'Dienst IT, Aankoopdienst, Grondgebiedzaken', 1, 1, '2025-01-01'),
         (2, 'GHUIS', 'Het Gemeentehuis', 'Algemeen directeur, Financien, Burgerzaken', 2, 1, '2025-01-01'),
         (3, 'PLAK', 'De Plak', 'Sector Mens', 3, 1, '2025-01-01'),
         (4, 'WZC', 'Het Woonzorgcentrum', NULL, 4, 1, '2025-01-01'),
-        (5, 'BKOC', 'Buitenschoolse kinderopvang centrum', NULL, 10, 1, '2025-01-01'),
-        (6, 'BKOR', 'Buitenschoolse kinderopvang Rooierheide', NULL, 11, 1, '2025-01-01'),
-        (7, 'BKOL', 'Buitenschoolse kinderopvang Lutselus', NULL, 12, 1, '2025-01-01'),
-        (8, 'BKOG', 'Buitenschoolse kinderopvang gemeenteschool', NULL, 13, 1, '2025-01-01'),
-        (9, 'OCL', 'Ontmoetingscentrum Lutselus', NULL, 14, 1, '2025-01-01'),
-        (10, 'OCR', 'Ontmoetingscentrum Rooierheide', NULL, 15, 1, '2025-01-01'),
-        (11, 'GILDE', 'Gildezaal', NULL, 16, 1, '2025-01-01'),
-        (12, 'KEI', 'Zaal de Kei', NULL, 17, 1, '2025-01-01'),
-        (13, 'TERL', 'Zaal Terloght', NULL, 18, 1, '2025-01-01'),
-        (14, 'HEIZ', 'Jeugdhuis Heizoe', NULL, 19, 1, '2025-01-01'),
-        (15, 'SENH', 'Seniorenhuis', NULL, 20, 1, '2025-01-01'),
-        (16, 'ROZEN', 'School Rozendaal', NULL, 21, 1, '2025-01-01');
+        (5, 'DEMER', 'Sportcomplex Demerstrand', 'Sport en recreatie', 5, 1, '2025-01-01'),
+        -- 12 Sateliet locaties
+        (6, 'BKOC', 'Buitenschoolse kinderopvang centrum', NULL, 10, 1, '2025-01-01'),
+        (7, 'BKOR', 'Buitenschoolse kinderopvang Rooierheide', NULL, 11, 1, '2025-01-01'),
+        (8, 'BKOL', 'Buitenschoolse kinderopvang Lutselus', NULL, 12, 1, '2025-01-01'),
+        (9, 'BKOG', 'Buitenschoolse kinderopvang gemeenteschool', NULL, 13, 1, '2025-01-01'),
+        (10, 'OCL', 'Ontmoetingscentrum Lutselus', NULL, 14, 1, '2025-01-01'),
+        (11, 'OCR', 'Ontmoetingscentrum Rooierheide', NULL, 15, 1, '2025-01-01'),
+        (12, 'GILDE', 'Gildezaal', NULL, 16, 1, '2025-01-01'),
+        (13, 'KEI', 'Zaal de Kei', NULL, 17, 1, '2025-01-01'),
+        (14, 'TERL', 'Zaal Terloght', NULL, 18, 1, '2025-01-01'),
+        (15, 'HEIZ', 'Jeugdhuis Heizoe', NULL, 19, 1, '2025-01-01'),
+        (16, 'SENH', 'Seniorenhuis', NULL, 20, 1, '2025-01-01'),
+        (17, 'ROZEN', 'School Rozendaal', NULL, 21, 1, '2025-01-01');
     SET IDENTITY_INSERT [Buildings] OFF;
 END
 GO
@@ -169,7 +172,7 @@ BEGIN
     CREATE TABLE [Services] (
         [Id] INT NOT NULL IDENTITY(1,1),
         [SectorId] INT NULL,
-        [Code] NVARCHAR(10) NOT NULL,
+        [Code] NVARCHAR(50) NOT NULL,
         [Name] NVARCHAR(200) NOT NULL,
         [IsActive] BIT NOT NULL DEFAULT 1,
         [SortOrder] INT NOT NULL DEFAULT 0,
@@ -181,32 +184,76 @@ BEGIN
     CREATE UNIQUE INDEX [IX_Services_Code] ON [Services] ([Code]);
     CREATE INDEX [IX_Services_SectorId] ON [Services] ([SectorId]);
 
-    -- Seed Services
+    -- Seed Services (38 records: 25 active, 13 inactive)
+    -- Codes match Entra MG- group names for personnel management integration
     SET IDENTITY_INSERT [Services] ON;
     INSERT INTO [Services] ([Id], [Code], [Name], [SectorId], [SortOrder], [IsActive], [CreatedAt])
     VALUES
-        (1, 'BSEC', 'Bestuurssecretariaat', 1, 1, 1, '2025-01-01'),
-        (2, 'COM', 'Dienst Communicatie', 1, 2, 1, '2025-01-01'),
-        (3, 'IT', 'Dienst IT', 1, 3, 1, '2025-01-01'),
-        (4, 'ORGB', 'Dienst Organisatiebeheersing', 1, 4, 1, '2025-01-01'),
-        (5, 'HR', 'Dienst HR', 1, 5, 1, '2025-01-01'),
-        (6, 'PREV', 'Dienst Preventie - GIS & Noodplanning', 1, 6, 1, '2025-01-01'),
-        (7, 'AANK', 'Dienst Aankopen', 2, 7, 1, '2025-01-01'),
-        (8, 'FINZ', 'Dienst Financien', 2, 8, 1, '2025-01-01'),
-        (9, 'RO', 'Ruimtelijke Ontwikkeling', 3, 9, 1, '2025-01-01'),
-        (10, 'INFRA', 'Infrastructuurprojecten', 3, 10, 1, '2025-01-01'),
-        (11, 'FAC', 'Facilitaire Ondersteuning', 3, 11, 1, '2025-01-01'),
-        (12, 'OD', 'Openbaar Domein', 3, 12, 1, '2025-01-01'),
-        (13, 'BB', 'Beleven & Bewegen', 4, 13, 1, '2025-01-01'),
-        (14, 'BURG', 'Burgerzaken', 4, 14, 1, '2025-01-01'),
-        (15, 'GO', 'Gezin & Onderwijs', 4, 15, 1, '2025-01-01'),
-        (16, 'GBS', 'Gemeentelijke Basisschool', 4, 16, 1, '2025-01-01'),
-        (17, 'SOC', 'Sociale Dienst', 4, 17, 1, '2025-01-01'),
-        (18, 'THUIS', 'Thuiszorg', 5, 18, 1, '2025-01-01'),
-        (19, 'ASWO', 'Assistentiewoningen', 5, 19, 1, '2025-01-01'),
-        (20, 'CDV', 'Centrum Dagverzorging', 5, 20, 1, '2025-01-01'),
-        (21, 'WZC', 'Woonzorgcentrum', 5, 21, 1, '2025-01-01');
+        -- Sector Organisatie (Id = 1) - MG-SECTOR-organisatie
+        (1,  'bestuurssecretariaat',      'Bestuurssecretariaat',                    1,  1, 1, '2025-01-01'),
+        (2,  'communicatie',              'Communicatie',                            1,  2, 1, '2025-01-01'),
+        (3,  'IT',                        'IT',                                      1,  3, 1, '2025-01-01'),
+        (4,  'organisatiebeheersing',     'Organisatiebeheersing',                   1,  4, 1, '2025-01-01'),
+        (5,  'HR',                        'HR',                                      1,  5, 1, '2025-01-01'),
+        (6,  'preventie',                 'Preventie',                               1,  6, 1, '2025-01-01'),
+        -- Bestuurlijke groepen (inactive - no assets)
+        (23, 'college',                   'College van Burgemeester en Schepenen',   1, 23, 0, '2025-01-01'),
+        (24, 'gemeenteraad',              'Gemeenteraad',                            1, 24, 0, '2025-01-01'),
+        (25, 'managementteam',            'Managementteam',                          1, 25, 0, '2025-01-01'),
+        (26, 'sectormanager',             'Sectormanagers',                          1, 26, 0, '2025-01-01'),
+        (27, 'iedereenpersoneel',         'Iedereen Personeel',                      1, 27, 0, '2025-01-01'),
+
+        -- Sector Financien (Id = 2)
+        (7,  'aankopen',                  'Aankopen',                                2,  7, 1, '2025-01-01'),
+        (8,  'financien',                 'Financien',                               2,  8, 1, '2025-01-01'),
+
+        -- Sector Ruimte (Id = 3) - MG-SECTOR-ruimte
+        (9,  'ruimte',                    'Ruimte',                                  3,  9, 1, '2025-01-01'),
+        (10, 'infrastructuur',            'Infrastructuur',                          3, 10, 1, '2025-01-01'),
+        (11, 'facilitaire-ondersteuning', 'Facilitaire Ondersteuning',               3, 11, 1, '2025-01-01'),
+        (12, 'openbaardomein',            'Openbaar Domein',                         3, 12, 1, '2025-01-01'),
+        (28, 'poetspool',                 'Poetspool',                               3, 28, 1, '2025-01-01'),
+        (29, 'deplak',                    'De Plak (Facilitair)',                    3, 29, 1, '2025-01-01'),
+        -- Onthaal (inactive - assets belong to building)
+        (36, 'onthaal-td',                'Onthaal Technische Dienst',               3, 36, 0, '2025-01-01'),
+
+        -- Sector Mens (Id = 4) - MG-SECTOR-mens
+        (13, 'beleven-bewegen',           'Beleven & Bewegen',                       4, 13, 1, '2025-01-01'),
+        (14, 'bibliotheek',               'Bibliotheek',                             4, 14, 1, '2025-01-01'),
+        (15, 'burgerzaken',               'Burgerzaken',                             4, 15, 1, '2025-01-01'),
+        (16, 'gezin-onderwijs',           'Gezin & Onderwijs',                       4, 16, 1, '2025-01-01'),
+        (17, 'GBS',                       'Gemeentelijke Basisschool',               4, 17, 1, '2025-01-01'),
+        (18, 'socialedienst',             'Sociale Dienst',                          4, 18, 1, '2025-01-01'),
+        (22, 'begeleiders-BKO',           'Begeleiders BKO',                         4, 22, 1, '2025-01-01'),
+        (31, 'demerstrand',               'Demerstrand',                             4, 31, 1, '2025-01-01'),
+        -- Bestuurlijk (inactive)
+        (30, 'bijzonder-comite-sociale-dienst', 'Bijzonder Comite Sociale Dienst',   4, 30, 0, '2025-01-01'),
+        -- Onthaal (inactive - assets belong to building)
+        (32, 'onthaalbalies',             'Onthaalbalies',                           4, 32, 0, '2025-01-01'),
+        (33, 'onthaal-gemeentehuis',      'Onthaal Gemeentehuis',                    4, 33, 0, '2025-01-01'),
+        (34, 'onthaal-poortgebouw',       'Onthaal Poortgebouw',                     4, 34, 0, '2025-01-01'),
+        (35, 'onthaal-sociaalhuis',       'Onthaal Sociaal Huis',                    4, 35, 0, '2025-01-01'),
+        (37, 'onthaal-vrijetijdsloket',   'Onthaal Vrijetijdsloket',                 4, 37, 0, '2025-01-01'),
+
+        -- Sector Zorg (Id = 5) - MG-SECTOR-zorg
+        (19, 'thuiszorg',                 'Thuiszorg',                               5, 19, 1, '2025-01-01'),
+        (20, 'dagverzorging',             'Dagverzorging',                           5, 20, 1, '2025-01-01'),
+        (21, 'WZC',                       'Woonzorgcentrum',                         5, 21, 1, '2025-01-01'),
+        -- Onthaal (inactive - assets belong to building)
+        (38, 'onthaal-wzc',               'Onthaal Woonzorgcentrum',                 5, 38, 0, '2025-01-01');
     SET IDENTITY_INSERT [Services] OFF;
+END
+GO
+
+-- Upgrade existing Services.Code column from NVARCHAR(10) to NVARCHAR(50) if needed
+-- This supports Entra MG- group names (e.g., "bestuurssecretariaat", "facilitaire-ondersteuning")
+IF EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'Services' AND COLUMN_NAME = 'Code' AND CHARACTER_MAXIMUM_LENGTH = 10
+)
+BEGIN
+    ALTER TABLE [Services] ALTER COLUMN [Code] NVARCHAR(50) NOT NULL;
+    PRINT 'Services.Code column expanded from NVARCHAR(10) to NVARCHAR(50)';
 END
 GO
 
@@ -439,6 +486,9 @@ IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = '2026
 
 IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260215185002_AlignTemplatesWithAssetForm')
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ('20260215185002_AlignTemplatesWithAssetForm', '8.0.11');
+
+IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = '20260217174941_ExpandServiceCodeLength')
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES ('20260217174941_ExpandServiceCodeLength', '8.0.11');
 GO
 
 PRINT 'Schema update completed successfully!';
