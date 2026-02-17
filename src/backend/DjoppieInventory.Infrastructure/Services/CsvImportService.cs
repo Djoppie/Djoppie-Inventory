@@ -395,10 +395,10 @@ public class CsvImportService : ICsvImportService
             // Determine year from purchase date or current year
             int year = purchaseDate?.Year ?? DateTime.UtcNow.Year;
 
-            // Generate asset code using the new format
+            // Generate asset code using the new format (TYPE-YY-MERK-NUMMER)
             var assetCode = await _assetCodeGenerator.GenerateCodeAsync(
                 assetType!.Id,
-                null, // No building - using service as location
+                csvRow.Brand, // Brand for asset code (e.g., DELL, HP)
                 year,
                 isDummy: csvRow.IsDummy,
                 cancellationToken);
