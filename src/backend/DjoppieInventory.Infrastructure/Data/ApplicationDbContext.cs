@@ -130,11 +130,12 @@ public class ApplicationDbContext : DbContext
         });
 
         // Service configuration
+        // Code uses Entra MG- group names (e.g., "bestuurssecretariaat", "facilitaire-ondersteuning")
         modelBuilder.Entity<Service>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Code).IsUnique();
-            entity.Property(e => e.Code).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
 
             // Foreign key to Sector (optional)

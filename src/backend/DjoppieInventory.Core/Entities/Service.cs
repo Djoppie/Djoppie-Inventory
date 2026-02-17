@@ -19,8 +19,8 @@ public class Service
     public int? SectorId { get; set; }
 
     /// <summary>
-    /// Short code for the service (2-10 characters, uppercase).
-    /// Examples: "IT", "FIN", "BZ", "COM"
+    /// Code for the service, matching Entra MG- group names (max 50 characters).
+    /// Examples: "IT", "HR", "bestuurssecretariaat", "facilitaire-ondersteuning"
     /// </summary>
     public string Code { get; set; } = string.Empty;
 
