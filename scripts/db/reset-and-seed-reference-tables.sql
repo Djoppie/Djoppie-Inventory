@@ -15,7 +15,7 @@
    - dbo.Categories       (6 records: COMP, WORK, PERIPH, NET, MOBILE, AV)
    - dbo.LeaseContracts   (wordt leeggemaakt - geen seed data)
    - dbo.Sectors          (5 records: ORG, FIN, RUI, MENS, ZORG)
-   - dbo.Services         (38 records: alle Entra MG- groepen per Sector)
+   - dbo.Services         (38 records: 25 actief, 13 inactief - Entra MG- groepen)
 
    WAARSCHUWING:
    - Dit script verwijdert ALLE data uit bovenstaande tabellen
@@ -202,7 +202,7 @@ BEGIN TRY
 
     /* --- SERVICES --- */
     /* Codes komen overeen met MG- groepen in Microsoft Entra ID */
-    PRINT '  Invoegen: Services (38 records, gelinkt aan Sectors, alle Entra MG- groepen)...';
+    PRINT '  Invoegen: Services (38 records: 25 actief, 13 inactief)...';
 
     SET IDENTITY_INSERT dbo.Services ON;
 
@@ -215,11 +215,12 @@ BEGIN TRY
         (4,  'organisatiebeheersing',     'Organisatiebeheersing',                   1,  4, 1, '2025-01-01 00:00:00'),
         (5,  'HR',                        'HR',                                      1,  5, 1, '2025-01-01 00:00:00'),
         (6,  'preventie',                 'Preventie',                               1,  6, 1, '2025-01-01 00:00:00'),
-        (23, 'college',                   'College van Burgemeester en Schepenen',   1, 23, 1, '2025-01-01 00:00:00'),
-        (24, 'gemeenteraad',              'Gemeenteraad',                            1, 24, 1, '2025-01-01 00:00:00'),
-        (25, 'managementteam',            'Managementteam',                          1, 25, 1, '2025-01-01 00:00:00'),
-        (26, 'sectormanager',             'Sectormanagers',                          1, 26, 1, '2025-01-01 00:00:00'),
-        (27, 'iedereenpersoneel',         'Iedereen Personeel',                      1, 27, 1, '2025-01-01 00:00:00'),
+        -- Bestuurlijke groepen (inactief - geen assets)
+        (23, 'college',                   'College van Burgemeester en Schepenen',   1, 23, 0, '2025-01-01 00:00:00'),
+        (24, 'gemeenteraad',              'Gemeenteraad',                            1, 24, 0, '2025-01-01 00:00:00'),
+        (25, 'managementteam',            'Managementteam',                          1, 25, 0, '2025-01-01 00:00:00'),
+        (26, 'sectormanager',             'Sectormanagers',                          1, 26, 0, '2025-01-01 00:00:00'),
+        (27, 'iedereenpersoneel',         'Iedereen Personeel',                      1, 27, 0, '2025-01-01 00:00:00'),
 
         -- Sector Financien (Id = 2)
         (7,  'aankopen',                  'Aankopen',                                2,  7, 1, '2025-01-01 00:00:00'),
@@ -232,7 +233,8 @@ BEGIN TRY
         (12, 'openbaardomein',            'Openbaar Domein',                         3, 12, 1, '2025-01-01 00:00:00'),
         (28, 'poetspool',                 'Poetspool',                               3, 28, 1, '2025-01-01 00:00:00'),
         (29, 'deplak',                    'De Plak (Facilitair)',                    3, 29, 1, '2025-01-01 00:00:00'),
-        (36, 'onthaal-td',                'Onthaal Technische Dienst',               3, 36, 1, '2025-01-01 00:00:00'),
+        -- Onthaal (inactief - assets vallen onder building)
+        (36, 'onthaal-td',                'Onthaal Technische Dienst',               3, 36, 0, '2025-01-01 00:00:00'),
 
         -- Sector Mens (Id = 4) - MG-SECTOR-mens
         (13, 'beleven-bewegen',           'Beleven & Bewegen',                       4, 13, 1, '2025-01-01 00:00:00'),
@@ -242,19 +244,22 @@ BEGIN TRY
         (17, 'GBS',                       'Gemeentelijke Basisschool',               4, 17, 1, '2025-01-01 00:00:00'),
         (18, 'socialedienst',             'Sociale Dienst',                          4, 18, 1, '2025-01-01 00:00:00'),
         (22, 'begeleiders-BKO',           'Begeleiders BKO',                         4, 22, 1, '2025-01-01 00:00:00'),
-        (30, 'bijzonder-comite-sociale-dienst', 'Bijzonder Comite Sociale Dienst',   4, 30, 1, '2025-01-01 00:00:00'),
         (31, 'demerstrand',               'Demerstrand',                             4, 31, 1, '2025-01-01 00:00:00'),
-        (32, 'onthaalbalies',             'Onthaalbalies',                           4, 32, 1, '2025-01-01 00:00:00'),
-        (33, 'onthaal-gemeentehuis',      'Onthaal Gemeentehuis',                    4, 33, 1, '2025-01-01 00:00:00'),
-        (34, 'onthaal-poortgebouw',       'Onthaal Poortgebouw',                     4, 34, 1, '2025-01-01 00:00:00'),
-        (35, 'onthaal-sociaalhuis',       'Onthaal Sociaal Huis',                    4, 35, 1, '2025-01-01 00:00:00'),
-        (37, 'onthaal-vrijetijdsloket',   'Onthaal Vrijetijdsloket',                 4, 37, 1, '2025-01-01 00:00:00'),
+        -- Bestuurlijk (inactief)
+        (30, 'bijzonder-comite-sociale-dienst', 'Bijzonder Comite Sociale Dienst',   4, 30, 0, '2025-01-01 00:00:00'),
+        -- Onthaal (inactief - assets vallen onder building)
+        (32, 'onthaalbalies',             'Onthaalbalies',                           4, 32, 0, '2025-01-01 00:00:00'),
+        (33, 'onthaal-gemeentehuis',      'Onthaal Gemeentehuis',                    4, 33, 0, '2025-01-01 00:00:00'),
+        (34, 'onthaal-poortgebouw',       'Onthaal Poortgebouw',                     4, 34, 0, '2025-01-01 00:00:00'),
+        (35, 'onthaal-sociaalhuis',       'Onthaal Sociaal Huis',                    4, 35, 0, '2025-01-01 00:00:00'),
+        (37, 'onthaal-vrijetijdsloket',   'Onthaal Vrijetijdsloket',                 4, 37, 0, '2025-01-01 00:00:00'),
 
         -- Sector Zorg (Id = 5) - MG-SECTOR-zorg
         (19, 'thuiszorg',                 'Thuiszorg',                               5, 19, 1, '2025-01-01 00:00:00'),
         (20, 'dagverzorging',             'Dagverzorging',                           5, 20, 1, '2025-01-01 00:00:00'),
         (21, 'WZC',                       'Woonzorgcentrum',                         5, 21, 1, '2025-01-01 00:00:00'),
-        (38, 'onthaal-wzc',               'Onthaal Woonzorgcentrum',                 5, 38, 1, '2025-01-01 00:00:00');
+        -- Onthaal (inactief - assets vallen onder building)
+        (38, 'onthaal-wzc',               'Onthaal Woonzorgcentrum',                 5, 38, 0, '2025-01-01 00:00:00');
 
     SET IDENTITY_INSERT dbo.Services OFF;
 
@@ -338,7 +343,7 @@ BEGIN TRY
     PRINT '- Categories gereset en gevuld (6 records)';
     PRINT '- Buildings gereset en gevuld (17 records)';
     PRINT '- Sectors gereset en gevuld (5 records)';
-    PRINT '- Services gereset en gevuld (38 records, alle Entra MG- groepen)';
+    PRINT '- Services gereset en gevuld (38 records: 25 actief, 13 inactief)';
     PRINT '- LeaseContracts geleegd (0 records)';
     PRINT '';
     PRINT 'OPMERKING:';
