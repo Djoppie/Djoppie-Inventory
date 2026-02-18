@@ -47,10 +47,22 @@ export const getAssetLeaseContracts = async (assetId: number): Promise<LeaseCont
 
 /**
  * Get active lease contract for a specific asset
+ * Returns null if no active lease exists (404)
  */
 export const getActiveLeaseContract = async (assetId: number): Promise<LeaseContract | null> => {
-  const response = await apiClient.get<LeaseContract | null>(`/leasecontracts/active/${assetId}`);
-  return response.data;
+  try {
+    const response = await apiClient.get<LeaseContract>(`/leasecontracts/active/${assetId}`);
+    return response.data;
+  } catch (error: unknown) {
+    // Return null for 404 (no active lease) - this is expected
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 404) {
+        return null;
+      }
+    }
+    throw error;
+  }
 };
 
 /**
