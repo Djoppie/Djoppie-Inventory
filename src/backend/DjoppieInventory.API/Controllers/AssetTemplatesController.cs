@@ -62,12 +62,31 @@ public class AssetTemplatesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<AssetTemplateDto>> CreateTemplate(CreateAssetTemplateDto createDto)
     {
-        _logger.LogInformation("Creating new asset template: {TemplateName}", createDto.TemplateName);
-        var template = _mapper.Map<AssetTemplate>(createDto);
-        var created = await _templateRepository.CreateAsync(template);
-        var templateDto = _mapper.Map<AssetTemplateDto>(created);
-        _logger.LogInformation("Created template {TemplateId}: {TemplateName}", templateDto.Id, templateDto.TemplateName);
-        return CreatedAtAction(nameof(GetTemplate), new { id = templateDto.Id }, templateDto);
+        try
+        {
+            _logger.LogInformation("Creating new asset template: {TemplateName}", createDto.TemplateName);
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for template creation");
+                return BadRequest(ModelState);
+            }
+
+            var template = _mapper.Map<AssetTemplate>(createDto);
+            var created = await _templateRepository.CreateAsync(template);
+
+            // Reload with navigation properties
+            var reloaded = await _templateRepository.GetByIdAsync(created.Id);
+            var templateDto = _mapper.Map<AssetTemplateDto>(reloaded);
+
+            _logger.LogInformation("Created template {TemplateId}: {TemplateName}", templateDto.Id, templateDto.TemplateName);
+            return CreatedAtAction(nameof(GetTemplate), new { id = templateDto.Id }, templateDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating asset template: {TemplateName}", createDto.TemplateName);
+            return StatusCode(500, new { error = "Failed to create template", message = ex.Message });
+        }
     }
 
     /// <summary>
@@ -76,19 +95,38 @@ public class AssetTemplatesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<AssetTemplateDto>> UpdateTemplate(int id, UpdateAssetTemplateDto updateDto)
     {
-        _logger.LogInformation("Updating template {TemplateId}", id);
-        var existing = await _templateRepository.GetByIdAsync(id);
-        if (existing == null)
+        try
         {
-            _logger.LogWarning("Template with ID {TemplateId} not found for update", id);
-            return NotFound($"Template with ID {id} not found");
-        }
+            _logger.LogInformation("Updating template {TemplateId}", id);
 
-        _mapper.Map(updateDto, existing);
-        var updated = await _templateRepository.UpdateAsync(existing);
-        var templateDto = _mapper.Map<AssetTemplateDto>(updated);
-        _logger.LogInformation("Updated template {TemplateId}", id);
-        return Ok(templateDto);
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid model state for template update");
+                return BadRequest(ModelState);
+            }
+
+            var existing = await _templateRepository.GetByIdAsync(id);
+            if (existing == null)
+            {
+                _logger.LogWarning("Template with ID {TemplateId} not found for update", id);
+                return NotFound($"Template with ID {id} not found");
+            }
+
+            _mapper.Map(updateDto, existing);
+            var updated = await _templateRepository.UpdateAsync(existing);
+
+            // Reload with navigation properties
+            var reloaded = await _templateRepository.GetByIdAsync(updated.Id);
+            var templateDto = _mapper.Map<AssetTemplateDto>(reloaded);
+
+            _logger.LogInformation("Updated template {TemplateId}", id);
+            return Ok(templateDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating template {TemplateId}", id);
+            return StatusCode(500, new { error = "Failed to update template", message = ex.Message });
+        }
     }
 
     /// <summary>

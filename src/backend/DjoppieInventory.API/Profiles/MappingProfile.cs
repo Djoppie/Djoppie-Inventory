@@ -50,7 +50,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())
             .ForMember(dest => dest.OfficeLocation, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
-            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore());
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
+            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category ?? null));
 
         CreateMap<UpdateAssetTemplateDto, AssetTemplate>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -59,7 +60,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())
             .ForMember(dest => dest.OfficeLocation, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
-            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore());
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
+            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category ?? null));
     }
 
     private static AssetStatus ParseAssetStatus(string statusString)
