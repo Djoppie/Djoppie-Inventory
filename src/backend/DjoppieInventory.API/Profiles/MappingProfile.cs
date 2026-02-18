@@ -44,12 +44,20 @@ public class MappingProfile : Profile
                 src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
 
         CreateMap<CreateAssetTemplateDto, AssetTemplate>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AssetType, opt => opt.Ignore())
+            .ForMember(dest => dest.Service, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.OfficeLocation, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore());
 
         CreateMap<UpdateAssetTemplateDto, AssetTemplate>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AssetType, opt => opt.Ignore())
+            .ForMember(dest => dest.Service, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.OfficeLocation, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore());
     }
