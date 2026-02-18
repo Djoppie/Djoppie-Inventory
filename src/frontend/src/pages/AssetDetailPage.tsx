@@ -660,6 +660,7 @@ const AssetDetailPage = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        disableRestoreFocus
       >
         <DialogTitle>Delete Asset</DialogTitle>
         <DialogContent>

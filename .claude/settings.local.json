@@ -53,7 +53,10 @@
       "Bash(git pull:*)",
       "Bash(git merge:*)",
       "Bash(git stash:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(az pipelines runs list:*)",
+      "Bash(az ad group list:*)",
+      "Bash(az webapp log tail:*)"
     ]
   }
 }

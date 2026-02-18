@@ -179,6 +179,7 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      disableRestoreFocus
       PaperProps={{
         sx: {
           borderRadius: 3,

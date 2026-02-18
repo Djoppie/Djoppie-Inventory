@@ -149,6 +149,7 @@ const LeaseContractDialog = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      disableRestoreFocus
       PaperProps={{
         sx: {
           borderRadius: 3,
