@@ -85,7 +85,18 @@ public class AssetTemplatesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating asset template: {TemplateName}", createDto.TemplateName);
-            return StatusCode(500, new { error = "Failed to create template", message = ex.Message });
+            var innerMessage = ex.InnerException?.Message ?? ex.Message;
+            var fullMessage = ex.InnerException != null
+                ? $"{ex.Message} Inner: {ex.InnerException.Message}"
+                : ex.Message;
+            return StatusCode(500, new
+            {
+                error = "Failed to create template",
+                message = ex.Message,
+                innerException = innerMessage,
+                fullDetails = fullMessage,
+                stackTrace = ex.StackTrace?.Split('\n').Take(5).ToArray()
+            });
         }
     }
 
