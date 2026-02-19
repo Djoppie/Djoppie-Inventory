@@ -173,9 +173,10 @@ const AssetDetailPage = () => {
         setIsLoadingLease(true);
         try {
           const lease = await getActiveLeaseContract(Number(id));
-          setActiveLease(lease);
+          setActiveLease(lease); // null if no active lease (404)
         } catch (error) {
-          logger.error('Error fetching lease contract:', error);
+          // Only logs actual errors (404s are handled gracefully by the API)
+          logger.error('Unexpected error fetching lease contract:', error);
           setActiveLease(null);
         } finally {
           setIsLoadingLease(false);
