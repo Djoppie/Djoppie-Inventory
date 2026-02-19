@@ -142,6 +142,20 @@ public class AssetService : IAssetService
 
         _mapper.Map(updateAssetDto, existingAsset);
 
+        // Explicitly handle nullable fields to allow clearing them (AutoMapper ignores null by default)
+        // This ensures that when the frontend sends null, we actually set the field to null
+        existingAsset.Owner = updateAssetDto.Owner;
+        existingAsset.JobTitle = updateAssetDto.JobTitle;
+        existingAsset.OfficeLocation = updateAssetDto.OfficeLocation;
+        existingAsset.Brand = updateAssetDto.Brand;
+        existingAsset.Model = updateAssetDto.Model;
+        existingAsset.Alias = updateAssetDto.Alias;
+        existingAsset.InstallationLocation = updateAssetDto.InstallationLocation;
+        existingAsset.ServiceId = updateAssetDto.ServiceId;
+        existingAsset.PurchaseDate = updateAssetDto.PurchaseDate;
+        existingAsset.WarrantyExpiry = updateAssetDto.WarrantyExpiry;
+        existingAsset.InstallationDate = updateAssetDto.InstallationDate;
+
         // Auto-generate alias if not provided: <AssetType>-<Owner>-<Brand>-<Model>
         if (string.IsNullOrWhiteSpace(existingAsset.Alias))
         {

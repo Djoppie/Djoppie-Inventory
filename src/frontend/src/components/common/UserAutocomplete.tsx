@@ -39,6 +39,15 @@ const UserAutocomplete = ({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<GraphUser | null>(null);
 
+  // Sync internal state with parent value prop
+  useEffect(() => {
+    setInputValue(value);
+    // If value is empty, clear the selected user
+    if (!value || value.trim() === '') {
+      setSelectedUser(null);
+    }
+  }, [value]);
+
   // Debounced search function
   const searchUsers = useMemo(
     () =>
@@ -78,18 +87,29 @@ const UserAutocomplete = ({
   };
 
   const handleChange = (_event: React.SyntheticEvent, newValue: GraphUser | string | null) => {
+    console.log('[UserAutocomplete] handleChange:', { newValue, type: typeof newValue });
+
     if (typeof newValue === 'string') {
       // User typed a custom value (free text)
-      setSelectedUser(null);
-      setInputValue(newValue);
-      onChange(newValue, null);
+      if (newValue.trim() === '') {
+        // Empty string means clear
+        console.log('[UserAutocomplete] Clearing (empty string)');
+        setSelectedUser(null);
+        setInputValue('');
+        onChange('', null);
+      } else {
+        setSelectedUser(null);
+        setInputValue(newValue);
+        onChange(newValue, null);
+      }
     } else if (newValue) {
       // User selected from dropdown
       setSelectedUser(newValue);
       setInputValue(newValue.displayName);
       onChange(newValue.displayName, newValue);
     } else {
-      // Cleared selection
+      // Cleared selection (null)
+      console.log('[UserAutocomplete] Clearing (null value)');
       setSelectedUser(null);
       setInputValue('');
       onChange('', null);
@@ -100,6 +120,9 @@ const UserAutocomplete = ({
     <Box sx={{ width: '100%' }}>
       <Autocomplete
         freeSolo
+        clearOnBlur
+        clearOnEscape
+        disableClearable={false}
         options={options}
         loading={loading}
         disabled={disabled}

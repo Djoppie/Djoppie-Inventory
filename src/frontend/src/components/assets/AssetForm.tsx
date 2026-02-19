@@ -311,9 +311,17 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
       if (requiredFields.includes(key)) {
         cleaned[key] = value;
       } else {
-        cleaned[key] = typeof value === 'string' && value.trim() === '' ? undefined : value;
+        // Convert empty strings to null (not undefined) so they're sent to the backend
+        const cleanedValue = typeof value === 'string' && value.trim() === '' ? null : value;
+        cleaned[key] = cleanedValue;
+
+        // Debug: Log owner field changes
+        if (key === 'owner') {
+          console.log('[AssetForm] cleanData - owner:', { original: value, cleaned: cleanedValue });
+        }
       }
     }
+    console.log('[AssetForm] cleanData result:', cleaned);
     return cleaned as T;
   };
 
@@ -617,6 +625,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
           <UserAutocomplete
             value={formData.owner || ''}
             onChange={(displayName: string, user: GraphUser | null) => {
+              console.log('[AssetForm] UserAutocomplete onChange:', { displayName, user });
               handleChange('owner', displayName);
               setSelectedUserUpn(user?.userPrincipalName || null);
               if (user) {
@@ -629,6 +638,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                   markFieldAsAutoFilled('officeLocation');
                 }
               } else {
+                console.log('[AssetForm] Clearing jobTitle and officeLocation');
                 handleChange('jobTitle', '');
                 handleChange('officeLocation', '');
               }
