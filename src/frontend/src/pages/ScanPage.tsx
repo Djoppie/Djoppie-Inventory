@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -15,6 +15,7 @@ import QRScanner from '../components/scanner/QRScanner';
 import ManualEntry from '../components/scanner/ManualEntry';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { useAssetByCode } from '../hooks/useAssets';
+import { logger } from '../utils/logger';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -35,6 +36,7 @@ const ScanPage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [searchCode, setSearchCode] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const isProcessingRef = useRef(false); // Prevent duplicate processing
 
   const {
     data: _asset, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -44,15 +46,41 @@ const ScanPage = () => {
   } = useAssetByCode(searchCode);
 
   const handleScanSuccess = async (assetCode: string) => {
-    setSearchCode(assetCode);
-    // Trigger the query
-    const result = await refetch();
+    // Prevent duplicate processing
+    if (isProcessingRef.current) {
+      logger.warn('[ScanPage] Already processing a scan, ignoring duplicate:', assetCode);
+      return;
+    }
 
-    if (result.data) {
-      // Navigate to asset detail page
-      navigate(`/assets/${result.data.id}`);
-    } else {
-      setErrorMessage(`Asset not found: ${assetCode}`);
+    try {
+      isProcessingRef.current = true;
+      logger.info('[ScanPage] Processing scanned asset code:', assetCode);
+
+      setSearchCode(assetCode);
+      setErrorMessage(''); // Clear any previous errors
+
+      // Trigger the query
+      const result = await refetch();
+
+      if (result.data) {
+        logger.info('[ScanPage] Asset found, navigating to detail page:', result.data.id);
+        // Navigate to asset detail page
+        navigate(`/assets/${result.data.id}`);
+      } else if (result.error) {
+        logger.error('[ScanPage] Error fetching asset:', result.error);
+        setErrorMessage(`Asset not found: ${assetCode}`);
+      } else {
+        logger.warn('[ScanPage] No data returned for asset code:', assetCode);
+        setErrorMessage(`Asset not found: ${assetCode}`);
+      }
+    } catch (error) {
+      logger.error('[ScanPage] Unexpected error during scan processing:', error);
+      setErrorMessage(`Error processing scan: ${assetCode}`);
+    } finally {
+      // Reset processing flag after a delay
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 1000);
     }
   };
 
