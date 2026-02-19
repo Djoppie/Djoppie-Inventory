@@ -54,6 +54,7 @@ const UserAutocomplete = ({
         setSelectedUser(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]); // Note: selectedUser intentionally NOT in deps to avoid loop
 
   // Debounced search function

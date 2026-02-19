@@ -76,7 +76,8 @@ const ScanPage = () => {
         navigate(`/assets/${result.data.id}`);
       } else if (result.error) {
         logger.error('[ScanPage] Error fetching asset:', result.error);
-        const errorMsg = (result.error as any)?.response?.data?.message || (result.error as Error)?.message || 'Unknown error';
+        const error = result.error as Error & { response?: { data?: { message?: string } } };
+        const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
         setErrorMessage(`Asset "${normalizedCode}" not found. Error: ${errorMsg}`);
       } else {
         logger.warn('[ScanPage] No data returned for asset code:', normalizedCode);
