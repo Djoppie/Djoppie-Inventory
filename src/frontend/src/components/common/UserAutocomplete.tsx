@@ -41,12 +41,20 @@ const UserAutocomplete = ({
 
   // Sync internal state with parent value prop
   useEffect(() => {
-    setInputValue(value);
-    // If value is empty, clear the selected user
+    // Sync both states atomically when parent's value changes
     if (!value || value.trim() === '') {
+      // Parent is clearing - reset both states
+      setInputValue('');
       setSelectedUser(null);
+    } else {
+      // Parent is setting a value
+      setInputValue(value);
+      // Only clear selectedUser if the value doesn't match current selection
+      if (selectedUser && selectedUser.displayName !== value) {
+        setSelectedUser(null);
+      }
     }
-  }, [value]);
+  }, [value]); // Note: selectedUser intentionally NOT in deps to avoid loop
 
   // Debounced search function
   const searchUsers = useMemo(
@@ -126,7 +134,7 @@ const UserAutocomplete = ({
         options={options}
         loading={loading}
         disabled={disabled}
-        value={selectedUser}
+        value={selectedUser || inputValue}
         inputValue={inputValue}
         onInputChange={handleInputChange}
         onChange={handleChange}

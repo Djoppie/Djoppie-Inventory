@@ -62,10 +62,11 @@ public class InputValidatorTests
     #region ValidateAssetCode Tests
 
     [Theory]
-    [InlineData("LAP-0001", true)]
-    [InlineData("MON-9999", true)]
-    [InlineData("PC123-0001", true)]
-    [InlineData("A-0000", true)]
+    [InlineData("LAP-24-DBK-00001", true)]
+    [InlineData("MON-26-DELL-99999", true)]
+    [InlineData("PC-23-HP-00001", true)]
+    [InlineData("DUM-LAP-24-ASUS-90001", true)]
+    [InlineData("lap-24-dbk-00001", true)] // Case insensitive
     public void ValidateAssetCode_ValidInputs_ReturnsTrue(string code, bool expected)
     {
         var result = InputValidator.ValidateAssetCode(code, out var errorMessage);
@@ -87,18 +88,20 @@ public class InputValidatorTests
     }
 
     [Theory]
-    [InlineData("LAP0001")] // missing dash
-    [InlineData("LAP-001")] // only 3 digits
-    [InlineData("LAP-00001")] // 5 digits
-    [InlineData("lap-0001")] // lowercase
-    [InlineData("-0001")] // no prefix
-    [InlineData("LAP-")] // no number
+    [InlineData("LAP0001")] // missing dashes
+    [InlineData("LAP-001")] // wrong format
+    [InlineData("LAP-00001")] // wrong format
+    [InlineData("LAP-0001")] // old format (4 digits)
+    [InlineData("-24-DBK-00001")] // no type
+    [InlineData("LAP-24-00001")] // missing brand
+    [InlineData("LAP-24-DBK-0001")] // only 4 digits (needs 5)
+    [InlineData("L-24-DBK-00001")] // type too short (needs 2-10 chars)
     public void ValidateAssetCode_InvalidFormat_ReturnsFalse(string code)
     {
         var result = InputValidator.ValidateAssetCode(code, out var errorMessage);
 
         Assert.False(result);
-        Assert.Contains("PREFIX-0000", errorMessage);
+        Assert.Contains("TYPE-YY-MERK-NNNNN", errorMessage);
     }
 
     #endregion

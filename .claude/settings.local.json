@@ -56,7 +56,16 @@
       "Bash(git fetch:*)",
       "Bash(az pipelines runs list:*)",
       "Bash(az ad group list:*)",
-      "Bash(az webapp log tail:*)"
+      "Bash(az webapp log tail:*)",
+      "Bash(grep:*)",
+      "Bash(az sql db show-connection-string:*)",
+      "Bash(az sql db query:*)",
+      "Bash(powershell -Command \"Invoke-Sqlcmd -ServerInstance ''sql-djoppie-inventory-dev-k5xdqp.database.windows.net'' -Database ''sqldb-djoppie-inventory-dev'' -Username ''sqladmin'' -Password ''Dj0ppenbeek026'' -Query ''ALTER TABLE AssetTemplates ALTER COLUMN Category NVARCHAR\\(100\\) NULL;'' -Encrypt\")",
+      "Bash(powershell -Command \"Invoke-Sqlcmd -ServerInstance ''sql-djoppie-inventory-dev-k5xdqp.database.windows.net'' -Database ''sqldb-djoppie-inventory-dev'' -Username ''sqladmin'' -Password ''Dj0ppenbeek026'' -Query \"\"SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ''AssetTemplates'' AND COLUMN_NAME = ''Category'';\"\" -Encrypt\")",
+      "Bash(powershell -Command \"Invoke-Sqlcmd -ServerInstance ''sql-djoppie-inventory-dev-k5xdqp.database.windows.net'' -Database ''sqldb-djoppie-inventory-dev'' -Username ''sqladmin'' -Password ''Dj0ppenbeek026'' -Query \"\"SELECT TOP 3 MigrationId, ProductVersion FROM __EFMigrationsHistory ORDER BY MigrationId DESC;\"\" -Encrypt\")",
+      "Bash(python3:*)",
+      "Bash(dotnet test:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

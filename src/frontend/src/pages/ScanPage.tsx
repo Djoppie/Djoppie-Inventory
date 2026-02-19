@@ -54,9 +54,17 @@ const ScanPage = () => {
 
     try {
       isProcessingRef.current = true;
-      logger.info('[ScanPage] Processing scanned asset code:', assetCode);
 
-      setSearchCode(assetCode);
+      // Normalize the scanned code: trim whitespace and convert to uppercase
+      const normalizedCode = assetCode.trim().toUpperCase();
+      logger.info('[ScanPage] Processing scanned asset code:', {
+        original: assetCode,
+        normalized: normalizedCode,
+        length: assetCode.length,
+        hasWhitespace: assetCode !== assetCode.trim()
+      });
+
+      setSearchCode(normalizedCode);
       setErrorMessage(''); // Clear any previous errors
 
       // Trigger the query
@@ -68,14 +76,15 @@ const ScanPage = () => {
         navigate(`/assets/${result.data.id}`);
       } else if (result.error) {
         logger.error('[ScanPage] Error fetching asset:', result.error);
-        setErrorMessage(`Asset not found: ${assetCode}`);
+        const errorMsg = (result.error as any)?.response?.data?.message || (result.error as Error)?.message || 'Unknown error';
+        setErrorMessage(`Asset "${normalizedCode}" not found. Error: ${errorMsg}`);
       } else {
-        logger.warn('[ScanPage] No data returned for asset code:', assetCode);
-        setErrorMessage(`Asset not found: ${assetCode}`);
+        logger.warn('[ScanPage] No data returned for asset code:', normalizedCode);
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system. Please verify the code and try again.`);
       }
     } catch (error) {
       logger.error('[ScanPage] Unexpected error during scan processing:', error);
-      setErrorMessage(`Error processing scan: ${assetCode}`);
+      setErrorMessage(`Error processing scan. Please try again.`);
     } finally {
       // Reset processing flag after a delay
       setTimeout(() => {
@@ -85,13 +94,15 @@ const ScanPage = () => {
   };
 
   const handleManualSearch = async (assetCode: string) => {
-    setSearchCode(assetCode);
+    // Normalize the code: trim whitespace and convert to uppercase
+    const normalizedCode = assetCode.trim().toUpperCase();
+    setSearchCode(normalizedCode);
     const result = await refetch();
 
     if (result.data) {
       navigate(`/assets/${result.data.id}`);
     } else {
-      setErrorMessage(`Asset not found: ${assetCode}`);
+      setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
     }
   };
 

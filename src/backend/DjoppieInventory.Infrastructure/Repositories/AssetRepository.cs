@@ -82,10 +82,11 @@ public class AssetRepository : IAssetRepository
 
     public async Task<Asset?> GetByAssetCodeAsync(string assetCode, CancellationToken cancellationToken = default)
     {
+        // Use case-insensitive comparison for reliable QR code lookups
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
-            .FirstOrDefaultAsync(a => a.AssetCode == assetCode, cancellationToken);
+            .FirstOrDefaultAsync(a => a.AssetCode.ToUpper() == assetCode.ToUpper(), cancellationToken);
     }
 
     public async Task<Asset> CreateAsync(Asset asset, CancellationToken cancellationToken = default)

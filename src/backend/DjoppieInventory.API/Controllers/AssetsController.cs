@@ -101,12 +101,15 @@ public class AssetsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AssetDto>> GetAssetByCode(string code, CancellationToken cancellationToken = default)
     {
-        if (!InputValidator.ValidateAssetCode(code, out var errorMessage))
+        // Normalize code: trim whitespace and convert to uppercase for consistent lookups
+        var normalizedCode = code?.Trim().ToUpperInvariant() ?? string.Empty;
+
+        if (!InputValidator.ValidateAssetCode(normalizedCode, out var errorMessage))
             return BadRequest(errorMessage);
 
-        var asset = await _assetService.GetAssetByCodeAsync(code);
+        var asset = await _assetService.GetAssetByCodeAsync(normalizedCode);
         if (asset == null)
-            return NotFound($"Asset with code '{code}' not found");
+            return NotFound($"Asset with code '{normalizedCode}' not found");
 
         return Ok(asset);
     }
