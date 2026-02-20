@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as assetsApi from '../api/assets.api';
 import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, PaginationParams } from '../types/asset.types';
+import { isValidAssetCode } from '../utils/validation';
 
 /**
  * Hook to fetch all assets (unpaginated). Use for client-side filtering/sorting.
@@ -36,7 +37,7 @@ export const useAssetByCode = (assetCode: string) => {
   return useQuery({
     queryKey: ['asset', 'code', assetCode],
     queryFn: () => assetsApi.getAssetByCode(assetCode),
-    enabled: !!assetCode,
+    enabled: !!assetCode && isValidAssetCode(assetCode),
   });
 };
 

@@ -16,6 +16,7 @@ import ManualEntry from '../components/scanner/ManualEntry';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { useAssetByCode } from '../hooks/useAssets';
 import { logger } from '../utils/logger';
+import { validateAssetCode, normalizeAssetCode } from '../utils/validation';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,13 +57,21 @@ const ScanPage = () => {
       isProcessingRef.current = true;
 
       // Normalize the scanned code: trim whitespace and convert to uppercase
-      const normalizedCode = assetCode.trim().toUpperCase();
+      const normalizedCode = normalizeAssetCode(assetCode);
       logger.info('[ScanPage] Processing scanned asset code:', {
         original: assetCode,
         normalized: normalizedCode,
         length: assetCode.length,
         hasWhitespace: assetCode !== assetCode.trim()
       });
+
+      // Validate the asset code format
+      const validation = validateAssetCode(normalizedCode);
+      if (!validation.isValid) {
+        logger.warn('[ScanPage] Invalid asset code format:', normalizedCode);
+        setErrorMessage(validation.errorMessage || 'Invalid asset code format');
+        return;
+      }
 
       setSearchCode(normalizedCode);
       setErrorMessage(''); // Clear any previous errors
@@ -96,7 +105,16 @@ const ScanPage = () => {
 
   const handleManualSearch = async (assetCode: string) => {
     // Normalize the code: trim whitespace and convert to uppercase
-    const normalizedCode = assetCode.trim().toUpperCase();
+    const normalizedCode = normalizeAssetCode(assetCode);
+
+    // Validate the asset code format
+    const validation = validateAssetCode(normalizedCode);
+    if (!validation.isValid) {
+      logger.warn('[ScanPage] Invalid asset code format from manual entry:', normalizedCode);
+      setErrorMessage(validation.errorMessage || 'Invalid asset code format');
+      return;
+    }
+
     setSearchCode(normalizedCode);
     const result = await refetch();
 
@@ -216,7 +234,8 @@ const ScanPage = () => {
         open={!!errorMessage}
         autoHideDuration={4000}
         onClose={() => setErrorMessage('')}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 4 }}
       >
         <Alert
           severity="error"
