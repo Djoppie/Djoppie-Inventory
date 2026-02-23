@@ -14,7 +14,7 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import QRScanner from '../components/scanner/QRScanner';
 import ManualEntry from '../components/scanner/ManualEntry';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { useAssetByCode } from '../hooks/useAssets';
+import { getAssetByCode } from '../api/assets.api';
 import { logger } from '../utils/logger';
 import { validateAssetCode, normalizeAssetCode } from '../utils/validation';
 
@@ -35,16 +35,9 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
 const ScanPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
-  const [searchCode, setSearchCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const isProcessingRef = useRef(false); // Prevent duplicate processing
-
-  const {
-    data: _asset, // eslint-disable-line @typescript-eslint/no-unused-vars
-    isLoading,
-    error: _error, // eslint-disable-line @typescript-eslint/no-unused-vars
-    refetch,
-  } = useAssetByCode(searchCode);
 
   const handleScanSuccess = async (assetCode: string) => {
     // Prevent duplicate processing
@@ -55,6 +48,7 @@ const ScanPage = () => {
 
     try {
       isProcessingRef.current = true;
+      setIsLoading(true);
 
       // Normalize the scanned code: trim whitespace and convert to uppercase
       const normalizedCode = normalizeAssetCode(assetCode);
@@ -73,29 +67,31 @@ const ScanPage = () => {
         return;
       }
 
-      setSearchCode(normalizedCode);
       setErrorMessage(''); // Clear any previous errors
 
-      // Trigger the query
-      const result = await refetch();
+      // Directly call the API with the normalized code
+      const asset = await getAssetByCode(normalizedCode);
 
-      if (result.data) {
-        logger.info('[ScanPage] Asset found, navigating to detail page:', result.data.id);
+      if (asset) {
+        logger.info('[ScanPage] Asset found, navigating to detail page:', asset.id);
         // Navigate to asset detail page
-        navigate(`/assets/${result.data.id}`);
-      } else if (result.error) {
-        logger.error('[ScanPage] Error fetching asset:', result.error);
-        const error = result.error as Error & { response?: { data?: { message?: string } } };
-        const errorMsg = error?.response?.data?.message || error?.message || 'Unknown error';
-        setErrorMessage(`Asset "${normalizedCode}" not found. Error: ${errorMsg}`);
+        navigate(`/assets/${asset.id}`);
       } else {
         logger.warn('[ScanPage] No data returned for asset code:', normalizedCode);
         setErrorMessage(`Asset "${normalizedCode}" not found in the system. Please verify the code and try again.`);
       }
     } catch (error) {
-      logger.error('[ScanPage] Unexpected error during scan processing:', error);
-      setErrorMessage(`Error processing scan. Please try again.`);
+      logger.error('[ScanPage] Error fetching asset:', error);
+      const err = error as Error & { response?: { status?: number; data?: { message?: string } } };
+      if (err?.response?.status === 404) {
+        const normalizedCode = normalizeAssetCode(assetCode);
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system. Please verify the code and try again.`);
+      } else {
+        const errorMsg = err?.response?.data?.message || err?.message || 'Unknown error';
+        setErrorMessage(`Error processing scan: ${errorMsg}`);
+      }
     } finally {
+      setIsLoading(false);
       // Reset processing flag after a delay
       setTimeout(() => {
         isProcessingRef.current = false;
@@ -115,13 +111,28 @@ const ScanPage = () => {
       return;
     }
 
-    setSearchCode(normalizedCode);
-    const result = await refetch();
+    try {
+      setIsLoading(true);
+      setErrorMessage('');
 
-    if (result.data) {
-      navigate(`/assets/${result.data.id}`);
-    } else {
-      setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
+      const asset = await getAssetByCode(normalizedCode);
+
+      if (asset) {
+        navigate(`/assets/${asset.id}`);
+      } else {
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
+      }
+    } catch (error) {
+      logger.error('[ScanPage] Error fetching asset by manual entry:', error);
+      const err = error as Error & { response?: { status?: number; data?: { message?: string } } };
+      if (err?.response?.status === 404) {
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
+      } else {
+        const errorMsg = err?.response?.data?.message || err?.message || 'Unknown error';
+        setErrorMessage(`Error: ${errorMsg}`);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -190,7 +201,6 @@ const ScanPage = () => {
             <ErrorBoundary
               onReset={() => {
                 setErrorMessage('');
-                setSearchCode('');
               }}
             >
               <QRScanner
