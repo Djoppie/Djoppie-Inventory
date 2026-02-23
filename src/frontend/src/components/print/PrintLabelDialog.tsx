@@ -24,7 +24,8 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import PrintLabel from './PrintLabel';
-import type { LabelLayout } from './PrintLabel';
+import { LABEL_CONFIG } from './labelConfig';
+import type { LabelLayout } from './labelConfig';
 
 interface PrintLabelDialogProps {
   open: boolean;
@@ -57,8 +58,12 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
 
     // Font sizes: 7pt for single text, 6pt for double text (codeQrName)
     const printFontSize = isDoubleText ? '6pt' : '7pt';
-    // QR sizes: 18mm for single text, 14mm for double text to fit on 25mm label
-    const qrSize = isDoubleText ? '14mm' : '18mm';
+    // QR sizes: 70% of label for single text, 56% for double text
+    // This ensures equal margins on left and right with QR centered
+    const qrPercentage = isDoubleText ? LABEL_CONFIG.qrPercentageDouble : LABEL_CONFIG.qrPercentageSingle;
+    const qrSizeMm = LABEL_CONFIG.sizeMm * qrPercentage;
+    const qrSize = `${qrSizeMm}mm`;
+    const labelSize = `${LABEL_CONFIG.sizeMm}mm`;
 
     if (printWindow) {
       printWindow.document.write(`
@@ -75,7 +80,7 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
               }
 
               @page {
-                size: 25mm 25mm;
+                size: ${labelSize} ${labelSize};
                 margin: 0;
               }
 
@@ -107,7 +112,7 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 text-align: center;
                 line-height: 1;
                 letter-spacing: -0.01em;
-                width: 24mm;
+                width: ${LABEL_CONFIG.sizeMm - 1}mm; /* Label size minus 0.5mm padding on each side */
                 flex-shrink: 0;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -433,7 +438,10 @@ const PrintLabelDialog = ({ open, onClose, assetCode, assetName }: PrintLabelDia
                 {t('printLabel.printerSettings.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('printLabel.printerSettings.dymoLabel')}: <strong>25mm x 25mm</strong>
+                {t('printLabel.printerSettings.dymoLabel')}: <strong>{LABEL_CONFIG.sizeMm}mm x {LABEL_CONFIG.sizeMm}mm</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('printLabel.printerSettings.qrSize')}: <strong>{(LABEL_CONFIG.sizeMm * (layout === 'codeQrName' ? LABEL_CONFIG.qrPercentageDouble : LABEL_CONFIG.qrPercentageSingle)).toFixed(1)}mm ({Math.round((layout === 'codeQrName' ? LABEL_CONFIG.qrPercentageDouble : LABEL_CONFIG.qrPercentageSingle) * 100)}%)</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {t('printLabel.printerSettings.quality')}: <strong>{t('printLabel.printerSettings.highQuality')}</strong>

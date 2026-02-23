@@ -25,7 +25,8 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTranslation } from 'react-i18next';
 import PrintLabel from './PrintLabel';
-import type { LabelLayout } from './PrintLabel';
+import { LABEL_CONFIG } from './labelConfig';
+import type { LabelLayout } from './labelConfig';
 import type { Asset } from '../../types/asset.types';
 
 interface BulkPrintLabelDialogProps {
@@ -51,7 +52,12 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
 
     const isDoubleText = layout === 'codeQrName';
     const printFontSize = isDoubleText ? '6pt' : '7pt';
-    const qrSize = isDoubleText ? '14mm' : '18mm';
+    // QR sizes: 70% of label for single text, 56% for double text
+    // This ensures equal margins on left and right with QR centered
+    const qrPercentage = isDoubleText ? LABEL_CONFIG.qrPercentageDouble : LABEL_CONFIG.qrPercentageSingle;
+    const qrSizeMm = LABEL_CONFIG.sizeMm * qrPercentage;
+    const qrSize = `${qrSizeMm}mm`;
+    const labelSize = `${LABEL_CONFIG.sizeMm}mm`;
 
     // Generate labels HTML for all selected assets
     const labelsHtml = assetsToProcess.map((asset) => {
@@ -91,7 +97,7 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
               }
 
               @page {
-                size: 25mm 25mm;
+                size: ${labelSize} ${labelSize};
                 margin: 0;
               }
 
@@ -108,8 +114,8 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
               }
 
               .label-container {
-                width: 25mm;
-                height: 25mm;
+                width: ${labelSize};
+                height: ${labelSize};
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -133,7 +139,7 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
                 text-align: center;
                 line-height: 1;
                 letter-spacing: -0.01em;
-                width: 24mm;
+                width: ${LABEL_CONFIG.sizeMm - 1}mm; /* Label size minus 0.5mm padding on each side */
                 flex-shrink: 0;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -537,7 +543,10 @@ const BulkPrintLabelDialog = ({ open, onClose, assets }: BulkPrintLabelDialogPro
                 {t('printLabel.printerSettings.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t('printLabel.printerSettings.dymoLabel')}: <strong>25mm x 25mm</strong>
+                {t('printLabel.printerSettings.dymoLabel')}: <strong>{LABEL_CONFIG.sizeMm}mm x {LABEL_CONFIG.sizeMm}mm</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('printLabel.printerSettings.qrSize')}: <strong>{(LABEL_CONFIG.sizeMm * (layout === 'codeQrName' ? LABEL_CONFIG.qrPercentageDouble : LABEL_CONFIG.qrPercentageSingle)).toFixed(1)}mm ({Math.round((layout === 'codeQrName' ? LABEL_CONFIG.qrPercentageDouble : LABEL_CONFIG.qrPercentageSingle) * 100)}%)</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {t('bulkPrintLabel.printMode')}: <strong>{t('bulkPrintLabel.continuous')}</strong>

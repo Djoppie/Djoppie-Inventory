@@ -352,6 +352,7 @@
     "printerSettings": {
       "title": "Aanbevolen Printerinstellingen",
       "dymoLabel": "Label Grootte",
+      "qrSize": "QR-code Grootte",
       "quality": "Afdrukkwaliteit",
       "highQuality": "Hoog (Thermisch)",
       "scale": "Schaal"

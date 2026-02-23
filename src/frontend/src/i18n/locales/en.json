@@ -352,6 +352,7 @@
     "printerSettings": {
       "title": "Recommended Printer Settings",
       "dymoLabel": "Label Size",
+      "qrSize": "QR Code Size",
       "quality": "Print Quality",
       "highQuality": "High (Thermal)",
       "scale": "Scale"
