@@ -55,6 +55,12 @@ public interface IAssetRepository
     Task<HashSet<string>> GetExistingAssetCodesAsync(string prefix, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets all serial numbers that start with a given prefix.
+    /// Used for bulk operations to find the next available serial number.
+    /// </summary>
+    Task<IEnumerable<string>> GetSerialNumbersByPrefixAsync(string prefix, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Begins a database transaction for atomic operations.
     /// </summary>
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

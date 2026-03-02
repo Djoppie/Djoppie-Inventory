@@ -274,11 +274,26 @@ public class AssetService : IAssetService
                 category = assetType?.Name ?? string.Empty;
             }
 
+            // Find the next available serial number by checking existing ones with this prefix
+            var serialPrefix = bulkCreateDto.SerialNumberPrefix + "-";
+            var existingSerialNumbers = await _assetRepository.GetSerialNumbersByPrefixAsync(serialPrefix);
+            var maxSerialNumber = 0;
+            foreach (var sn in existingSerialNumbers)
+            {
+                // Extract the number part after the prefix (e.g., "SN-0001" -> 1)
+                var numberPart = sn.Substring(serialPrefix.Length);
+                if (int.TryParse(numberPart, out var number) && number > maxSerialNumber)
+                {
+                    maxSerialNumber = number;
+                }
+            }
+            var startSerialNumber = maxSerialNumber + 1;
+
             // Prepare all assets in memory
             var assetsToCreate = new List<Asset>();
             for (int i = 0; i < codes.Count; i++)
             {
-                var serialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{(i + 1):D4}";
+                var serialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{(startSerialNumber + i):D4}";
                 var asset = new Asset
                 {
                     AssetCode = codes[i],

@@ -231,4 +231,13 @@ public class AssetRepository : IAssetRepository
     {
         return await _context.Database.BeginTransactionAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<string>> GetSerialNumbersByPrefixAsync(string prefix, CancellationToken cancellationToken = default)
+    {
+        return await _context.Assets
+            .Where(a => a.SerialNumber.StartsWith(prefix))
+            .Select(a => a.SerialNumber)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 }
