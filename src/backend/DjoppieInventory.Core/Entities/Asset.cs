@@ -82,9 +82,9 @@ public class Asset
     public string? Model { get; set; }
 
     /// <summary>
-    /// Serial number - required and must be unique across all assets
+    /// Serial number - optional, must be unique when provided
     /// </summary>
-    public string SerialNumber { get; set; } = string.Empty;
+    public string? SerialNumber { get; set; }
 
     /// <summary>
     /// Date when the asset was purchased (optional)

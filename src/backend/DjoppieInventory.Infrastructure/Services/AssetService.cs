@@ -237,8 +237,7 @@ public class AssetService : IAssetService
         if (bulkCreateDto.AssetTypeId <= 0)
             throw new ArgumentException("Asset type is required", nameof(bulkCreateDto));
 
-        if (string.IsNullOrWhiteSpace(bulkCreateDto.SerialNumberPrefix))
-            throw new ArgumentException("Serial number prefix is required", nameof(bulkCreateDto));
+        // SerialNumberPrefix is optional - if not provided, assets will have no serial numbers
 
         if (bulkCreateDto.Quantity < 1 || bulkCreateDto.Quantity > 100)
             throw new ArgumentException("Quantity must be between 1 and 100", nameof(bulkCreateDto));
@@ -274,25 +273,35 @@ public class AssetService : IAssetService
         }
 
         // Find the next available serial number by checking existing ones with this prefix
-        var serialPrefix = bulkCreateDto.SerialNumberPrefix + "-";
-        var existingSerialNumbers = await _assetRepository.GetSerialNumbersByPrefixAsync(serialPrefix);
-        var maxSerialNumber = 0;
-        foreach (var sn in existingSerialNumbers)
+        // Only do this if SerialNumberPrefix is provided
+        var startSerialNumber = 1;
+        var hasSerialPrefix = !string.IsNullOrWhiteSpace(bulkCreateDto.SerialNumberPrefix);
+        if (hasSerialPrefix)
         {
-            // Extract the number part after the prefix (e.g., "SN-0001" -> 1)
-            var numberPart = sn.Substring(serialPrefix.Length);
-            if (int.TryParse(numberPart, out var number) && number > maxSerialNumber)
+            var serialPrefix = bulkCreateDto.SerialNumberPrefix + "-";
+            var existingSerialNumbers = await _assetRepository.GetSerialNumbersByPrefixAsync(serialPrefix);
+            var maxSerialNumber = 0;
+            foreach (var sn in existingSerialNumbers)
             {
-                maxSerialNumber = number;
+                // Extract the number part after the prefix (e.g., "SN-0001" -> 1)
+                var numberPart = sn.Substring(serialPrefix.Length);
+                if (int.TryParse(numberPart, out var number) && number > maxSerialNumber)
+                {
+                    maxSerialNumber = number;
+                }
             }
+            startSerialNumber = maxSerialNumber + 1;
         }
-        var startSerialNumber = maxSerialNumber + 1;
 
         // Prepare all assets in memory
         var assetsToCreate = new List<Asset>();
         for (int i = 0; i < codes.Count; i++)
         {
-            var serialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{(startSerialNumber + i):D4}";
+            // Only generate serial number if prefix is provided
+            string? serialNumber = hasSerialPrefix
+                ? $"{bulkCreateDto.SerialNumberPrefix}-{(startSerialNumber + i):D4}"
+                : null;
+
             var asset = new Asset
             {
                 AssetCode = codes[i],

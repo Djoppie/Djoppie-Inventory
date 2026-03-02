@@ -235,8 +235,8 @@ public class AssetRepository : IAssetRepository
     public async Task<IEnumerable<string>> GetSerialNumbersByPrefixAsync(string prefix, CancellationToken cancellationToken = default)
     {
         return await _context.Assets
-            .Where(a => a.SerialNumber.StartsWith(prefix))
-            .Select(a => a.SerialNumber)
+            .Where(a => a.SerialNumber != null && a.SerialNumber.StartsWith(prefix))
+            .Select(a => a.SerialNumber!)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }

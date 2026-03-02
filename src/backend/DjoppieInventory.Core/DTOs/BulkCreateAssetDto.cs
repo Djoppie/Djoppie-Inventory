@@ -82,13 +82,13 @@ public class BulkCreateAssetDto
     public string? Model { get; set; }
 
     /// <summary>
-    /// Serial number prefix for generating unique serial numbers - REQUIRED.
-    /// Will be combined with the asset number to create unique serial numbers.
+    /// Serial number prefix for generating unique serial numbers - optional.
+    /// If provided, will be combined with the asset number to create unique serial numbers.
     /// Example: "SN" will generate SN-0001, SN-0002, etc.
+    /// If not provided, assets will be created without serial numbers.
     /// </summary>
-    [Required]
     [StringLength(50)]
-    public string SerialNumberPrefix { get; set; } = string.Empty;
+    public string? SerialNumberPrefix { get; set; }
 
     /// <summary>
     /// Optional: Purchase date for all assets in the bulk creation.

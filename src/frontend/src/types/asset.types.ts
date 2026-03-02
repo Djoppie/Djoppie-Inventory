@@ -33,7 +33,7 @@ export interface Asset {
   status: AssetStatus;
   brand?: string;
   model?: string;
-  serialNumber: string; // REQUIRED - unique identifier for the device
+  serialNumber?: string; // Optional - can be filled in later
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -43,7 +43,7 @@ export interface Asset {
 
 export interface CreateAssetDto {
   assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset code
-  serialNumber: string; // REQUIRED - unique identifier for the device
+  serialNumber?: string; // Optional - can be filled in later
   assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
   alias?: string; // Optional readable name
   category: string;
@@ -150,7 +150,7 @@ export interface UpdateAssetTemplateDto {
 
 export interface BulkCreateAssetDto {
   assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset codes
-  serialNumberPrefix: string; // REQUIRED - prefix for generating unique serial numbers
+  serialNumberPrefix?: string; // Optional - prefix for generating serial numbers
   quantity: number;
   isDummy?: boolean;
   templateId?: number;

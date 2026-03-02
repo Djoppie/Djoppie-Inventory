@@ -211,7 +211,7 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.assetTypeId || formData.assetTypeId <= 0) newErrors.assetTypeId = t('assetForm.validationError');
-    if (!formData.serialNumberPrefix.trim()) newErrors.serialNumberPrefix = t('bulkCreate.serialNumberPrefixRequired');
+    // SerialNumberPrefix is now optional
     if (formData.quantity < 1 || formData.quantity > 100) {
       newErrors.quantity = t('bulkCreate.quantityError');
     }
@@ -384,11 +384,10 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
                 <TextField
                   sx={{ flex: '1 1 200px' }}
                   label={t('bulkCreate.serialNumberPrefix')}
-                  value={formData.serialNumberPrefix}
+                  value={formData.serialNumberPrefix || ''}
                   onChange={(e) => handleChange('serialNumberPrefix', e.target.value.toUpperCase())}
                   error={!!errors.serialNumberPrefix}
-                  helperText={errors.serialNumberPrefix || t('bulkCreate.serialNumberPrefixHint')}
-                  required
+                  helperText={errors.serialNumberPrefix || t('bulkCreate.serialNumberPrefixOptionalHint')}
                   inputProps={{ maxLength: 50 }}
                 />
                 <TextField

@@ -291,9 +291,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.serialNumber.trim()) {
-      newErrors.serialNumber = t('assetForm.serialNumberRequired');
-    } else if (isSerialUnique === false) {
+    // SerialNumber is optional, but if provided must be unique
+    if (formData.serialNumber?.trim() && isSerialUnique === false) {
       newErrors.serialNumber = t('assetForm.serialNumberNotUnique');
     }
     if (!formData.assetTypeId) {
@@ -305,7 +304,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   };
 
   const cleanData = <T extends object>(data: T): T => {
-    const requiredFields = ['serialNumber', 'assetTypeId', 'status'];
+    const requiredFields = ['assetTypeId', 'status'];
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       if (requiredFields.includes(key)) {
@@ -458,16 +457,15 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             </Box>
           )}
 
-          {/* SerialNumber */}
+          {/* SerialNumber - Optional */}
           <Box>
             <TextField
               fullWidth
               label={t('assetDetail.serialNumber')}
-              value={formData.serialNumber}
+              value={formData.serialNumber || ''}
               onChange={(e) => handleChange('serialNumber', e.target.value)}
               error={!!errors.serialNumber}
-              helperText={errors.serialNumber || t('assetForm.serialNumberHint')}
-              required
+              helperText={errors.serialNumber || t('assetForm.serialNumberOptionalHint')}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -486,8 +484,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                     <Tooltip title={t('assetForm.lookupDeviceBySerial')}>
                       <IconButton
                         size="small"
-                        onClick={() => lookupDeviceBySerial(formData.serialNumber)}
-                        disabled={!formData.serialNumber.trim() || isLookingUpSerial}
+                        onClick={() => lookupDeviceBySerial(formData.serialNumber || '')}
+                        disabled={!formData.serialNumber?.trim() || isLookingUpSerial}
                       >
                         {isLookingUpSerial ? (
                           <CircularProgress size={20} />

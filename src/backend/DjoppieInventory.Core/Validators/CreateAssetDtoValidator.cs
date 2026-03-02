@@ -4,8 +4,8 @@ using FluentValidation;
 namespace DjoppieInventory.Core.Validators;
 
 /// <summary>
-/// Validator for CreateAssetDto - Updated for new asset structure where SerialNumber is required
-/// and Owner, Building, Department are optional
+/// Validator for CreateAssetDto - Only AssetTypeId is required
+/// SerialNumber, Owner, Building, Department are all optional
 /// </summary>
 public class CreateAssetDtoValidator : AbstractValidator<CreateAssetDto>
 {
@@ -16,8 +16,8 @@ public class CreateAssetDtoValidator : AbstractValidator<CreateAssetDto>
             .GreaterThan(0).WithMessage("Asset type is required");
 
         RuleFor(x => x.SerialNumber)
-            .NotEmpty().WithMessage("Serial number is required")
-            .MaximumLength(100).WithMessage("Serial number cannot exceed 100 characters");
+            .MaximumLength(100).WithMessage("Serial number cannot exceed 100 characters")
+            .When(x => !string.IsNullOrEmpty(x.SerialNumber));
 
         RuleFor(x => x.Category)
             .MaximumLength(100).WithMessage("Category cannot exceed 100 characters")

@@ -15,11 +15,10 @@ public class CreateAssetDto
     public int AssetTypeId { get; set; }
 
     /// <summary>
-    /// Serial number of the device - REQUIRED and must be unique
+    /// Serial number of the device - optional, must be unique when provided
     /// </summary>
-    [Required]
     [StringLength(100)]
-    public string SerialNumber { get; set; } = string.Empty;
+    public string? SerialNumber { get; set; }
 
     /// <summary>
     /// Device name from Intune (auto-fetched based on SerialNumber, optional)

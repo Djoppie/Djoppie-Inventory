@@ -29,12 +29,12 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.AssetCode).IsUnique();
-            entity.HasIndex(e => e.SerialNumber).IsUnique(); // SerialNumber must be unique
+            entity.HasIndex(e => e.SerialNumber).IsUnique().HasFilter("[SerialNumber] IS NOT NULL"); // SerialNumber unique when provided
             entity.Property(e => e.AssetCode).IsRequired().HasMaxLength(50);
             entity.Property(e => e.AssetName).HasMaxLength(200); // DeviceName from Intune (auto-fetched)
             entity.Property(e => e.Alias).HasMaxLength(200); // Optional user-defined name
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.SerialNumber).IsRequired().HasMaxLength(100); // Required unique identifier
+            entity.Property(e => e.SerialNumber).HasMaxLength(100); // Optional - can be filled in later
             entity.Property(e => e.Owner).HasMaxLength(200); // Optional - primary user
             entity.Property(e => e.LegacyBuilding).HasMaxLength(100); // Legacy - will be migrated to BuildingId
             entity.Property(e => e.LegacyDepartment).HasMaxLength(100); // Legacy - will be migrated to ServiceId

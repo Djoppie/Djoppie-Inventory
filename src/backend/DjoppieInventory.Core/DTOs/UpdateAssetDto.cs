@@ -78,12 +78,11 @@ public class UpdateAssetDto
     public string? Model { get; set; }
 
     /// <summary>
-    /// Serial number - required and must be unique
+    /// Serial number - optional, must be unique when provided
     /// NOTE: While updatable, changing serial numbers should be rare and carefully validated
     /// </summary>
-    [Required]
     [StringLength(100)]
-    public string SerialNumber { get; set; } = string.Empty;
+    public string? SerialNumber { get; set; }
 
     /// <summary>
     /// Date when the asset was purchased (optional)

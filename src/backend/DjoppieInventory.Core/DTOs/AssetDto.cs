@@ -32,8 +32,8 @@ public class AssetDto
     public string? Brand { get; set; }
     public string? Model { get; set; }
 
-    // SerialNumber is required in the entity
-    public string SerialNumber { get; set; } = string.Empty;
+    // SerialNumber is optional - can be filled in later
+    public string? SerialNumber { get; set; }
 
     public DateTime? PurchaseDate { get; set; }
     public DateTime? WarrantyExpiry { get; set; }
