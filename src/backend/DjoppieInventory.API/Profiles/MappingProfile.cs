@@ -34,7 +34,13 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
             .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            // Category is required in DB - only update if not null to prevent constraint violation
+            .ForMember(dest => dest.Category, opt => opt.Condition(src => src.Category != null))
+            // SerialNumber is required and unique in DB - only update if not empty
+            .ForMember(dest => dest.SerialNumber, opt => opt.Condition(src => !string.IsNullOrEmpty(src.SerialNumber)))
+            // AssetName has a default - only update if not null to preserve existing value
+            .ForMember(dest => dest.AssetName, opt => opt.Condition(src => src.AssetName != null));
 
         // AssetTemplate mappings
         CreateMap<AssetTemplate, AssetTemplateDto>()
