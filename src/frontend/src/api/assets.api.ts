@@ -77,7 +77,7 @@ export const deleteAsset = async (id: number): Promise<void> => {
 
 export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCreateAssetResultDto> => {
   // Clean up data: convert empty strings to undefined for optional fields
-  // This is necessary because the backend expects DateTime? (nullable) and cannot parse empty strings
+  // This is necessary because the backend expects nullable types and cannot parse empty strings
   const cleanedData: BulkCreateAssetDto = {
     ...data,
     // Convert empty date strings to undefined
@@ -85,6 +85,7 @@ export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCr
     warrantyExpiry: data.warrantyExpiry || undefined,
     installationDate: data.installationDate || undefined,
     // Convert other empty optional strings to undefined
+    serialNumberPrefix: data.serialNumberPrefix || undefined,
     assetName: data.assetName || undefined,
     alias: data.alias || undefined,
     category: data.category || undefined,
