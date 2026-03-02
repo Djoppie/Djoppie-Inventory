@@ -248,98 +248,84 @@ public class AssetService : IAssetService
             TotalRequested = bulkCreateDto.Quantity
         };
 
-        // Use transaction for atomic operation - all succeed or all fail
-        await using var transaction = await _assetRepository.BeginTransactionAsync();
+        // Note: We don't use explicit transactions here because Azure SQL's EnableRetryOnFailure
+        // execution strategy doesn't support user-initiated transactions. The BulkCreateAsync
+        // uses AddRangeAsync + SaveChangesAsync which is atomic at the database level.
 
-        try
+        // Generate all asset codes using the code generator
+        var codes = (await _codeGenerator.GenerateBulkCodesAsync(
+            bulkCreateDto.AssetTypeId,
+            bulkCreateDto.Brand,
+            DateTime.UtcNow.Year,
+            bulkCreateDto.IsDummy,
+            bulkCreateDto.Quantity)).ToList();
+
+        // Parse status once
+        var assetStatus = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
+            ? status
+            : AssetStatus.Stock;
+
+        // Auto-derive category from AssetType name when not provided
+        var category = bulkCreateDto.Category;
+        if (string.IsNullOrWhiteSpace(category))
         {
-            // Generate all asset codes using the code generator
-            var codes = (await _codeGenerator.GenerateBulkCodesAsync(
-                bulkCreateDto.AssetTypeId,
-                bulkCreateDto.Brand,
-                DateTime.UtcNow.Year,
-                bulkCreateDto.IsDummy,
-                bulkCreateDto.Quantity)).ToList();
-
-            // Parse status once
-            var assetStatus = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
-                ? status
-                : AssetStatus.Stock;
-
-            // Auto-derive category from AssetType name when not provided
-            var category = bulkCreateDto.Category;
-            if (string.IsNullOrWhiteSpace(category))
-            {
-                var assetType = await _assetTypeRepository.GetByIdAsync(bulkCreateDto.AssetTypeId);
-                category = assetType?.Name ?? string.Empty;
-            }
-
-            // Find the next available serial number by checking existing ones with this prefix
-            var serialPrefix = bulkCreateDto.SerialNumberPrefix + "-";
-            var existingSerialNumbers = await _assetRepository.GetSerialNumbersByPrefixAsync(serialPrefix);
-            var maxSerialNumber = 0;
-            foreach (var sn in existingSerialNumbers)
-            {
-                // Extract the number part after the prefix (e.g., "SN-0001" -> 1)
-                var numberPart = sn.Substring(serialPrefix.Length);
-                if (int.TryParse(numberPart, out var number) && number > maxSerialNumber)
-                {
-                    maxSerialNumber = number;
-                }
-            }
-            var startSerialNumber = maxSerialNumber + 1;
-
-            // Prepare all assets in memory
-            var assetsToCreate = new List<Asset>();
-            for (int i = 0; i < codes.Count; i++)
-            {
-                var serialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{(startSerialNumber + i):D4}";
-                var asset = new Asset
-                {
-                    AssetCode = codes[i],
-                    AssetTypeId = bulkCreateDto.AssetTypeId,
-                    AssetName = bulkCreateDto.AssetName ?? string.Empty,
-                    Alias = bulkCreateDto.Alias,
-                    Category = category,
-                    IsDummy = bulkCreateDto.IsDummy,
-                    Owner = bulkCreateDto.Owner,
-                    ServiceId = bulkCreateDto.ServiceId,
-                    InstallationLocation = bulkCreateDto.InstallationLocation,
-                    Status = assetStatus,
-                    Brand = bulkCreateDto.Brand,
-                    Model = bulkCreateDto.Model,
-                    SerialNumber = serialNumber,
-                    PurchaseDate = bulkCreateDto.PurchaseDate,
-                    WarrantyExpiry = bulkCreateDto.WarrantyExpiry,
-                    InstallationDate = bulkCreateDto.InstallationDate
-                };
-                assetsToCreate.Add(asset);
-            }
-
-            // Bulk insert all assets
-            if (assetsToCreate.Count > 0)
-            {
-                var createdAssets = await _assetRepository.BulkCreateAsync(assetsToCreate);
-                result.CreatedAssets = _mapper.Map<List<AssetDto>>(createdAssets);
-                result.SuccessfullyCreated = assetsToCreate.Count;
-            }
-
-            await transaction.CommitAsync();
-
-            _logger.LogInformation(
-                "Bulk asset creation completed: {SuccessCount} successful out of {TotalCount} requested (IsDummy: {IsDummy})",
-                result.SuccessfullyCreated, result.TotalRequested, bulkCreateDto.IsDummy);
+            var assetType = await _assetTypeRepository.GetByIdAsync(bulkCreateDto.AssetTypeId);
+            category = assetType?.Name ?? string.Empty;
         }
-        catch (Exception ex)
+
+        // Find the next available serial number by checking existing ones with this prefix
+        var serialPrefix = bulkCreateDto.SerialNumberPrefix + "-";
+        var existingSerialNumbers = await _assetRepository.GetSerialNumbersByPrefixAsync(serialPrefix);
+        var maxSerialNumber = 0;
+        foreach (var sn in existingSerialNumbers)
         {
-            await transaction.RollbackAsync();
-
-            result.Failed = bulkCreateDto.Quantity;
-            result.Errors.Add($"Bulk operation failed: {ex.Message}");
-            _logger.LogError(ex, "Bulk asset creation failed, transaction rolled back");
-
-            throw;
+            // Extract the number part after the prefix (e.g., "SN-0001" -> 1)
+            var numberPart = sn.Substring(serialPrefix.Length);
+            if (int.TryParse(numberPart, out var number) && number > maxSerialNumber)
+            {
+                maxSerialNumber = number;
+            }
         }
+        var startSerialNumber = maxSerialNumber + 1;
+
+        // Prepare all assets in memory
+        var assetsToCreate = new List<Asset>();
+        for (int i = 0; i < codes.Count; i++)
+        {
+            var serialNumber = $"{bulkCreateDto.SerialNumberPrefix}-{(startSerialNumber + i):D4}";
+            var asset = new Asset
+            {
+                AssetCode = codes[i],
+                AssetTypeId = bulkCreateDto.AssetTypeId,
+                AssetName = bulkCreateDto.AssetName ?? string.Empty,
+                Alias = bulkCreateDto.Alias,
+                Category = category,
+                IsDummy = bulkCreateDto.IsDummy,
+                Owner = bulkCreateDto.Owner,
+                ServiceId = bulkCreateDto.ServiceId,
+                InstallationLocation = bulkCreateDto.InstallationLocation,
+                Status = assetStatus,
+                Brand = bulkCreateDto.Brand,
+                Model = bulkCreateDto.Model,
+                SerialNumber = serialNumber,
+                PurchaseDate = bulkCreateDto.PurchaseDate,
+                WarrantyExpiry = bulkCreateDto.WarrantyExpiry,
+                InstallationDate = bulkCreateDto.InstallationDate
+            };
+            assetsToCreate.Add(asset);
+        }
+
+        // Bulk insert all assets (atomic operation via SaveChangesAsync)
+        if (assetsToCreate.Count > 0)
+        {
+            var createdAssets = await _assetRepository.BulkCreateAsync(assetsToCreate);
+            result.CreatedAssets = _mapper.Map<List<AssetDto>>(createdAssets);
+            result.SuccessfullyCreated = assetsToCreate.Count;
+        }
+
+        _logger.LogInformation(
+            "Bulk asset creation completed: {SuccessCount} successful out of {TotalCount} requested (IsDummy: {IsDummy})",
+            result.SuccessfullyCreated, result.TotalRequested, bulkCreateDto.IsDummy);
 
         return result;
     }
