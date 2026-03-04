@@ -1,5 +1,6 @@
 import { logger } from '../../utils/logger';
 import { useState, useMemo } from 'react';
+import { csvImportApi } from '../../api/csvImport.api';
 import {
   Dialog,
   DialogTitle,
@@ -52,6 +53,8 @@ import LabelImportantIcon from '@mui/icons-material/LabelImportant';
 import BusinessIcon from '@mui/icons-material/Business';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import BuildIcon from '@mui/icons-material/Build';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
+import CircularProgress from '@mui/material/CircularProgress';
 import { Asset, AssetStatus } from '../../types/asset.types';
 import {
   exportAssets,
@@ -114,6 +117,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
   const [showColumns, setShowColumns] = useState(true); // Expanded by default
   const [showPreview, setShowPreview] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [backendExporting, setBackendExporting] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<'essential' | 'full' | 'custom'>('essential');
 
   // Get unique categories
@@ -263,6 +267,36 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
     }
   };
 
+  // Export using backend CSV format (matches import template)
+  const handleBackendExport = async () => {
+    setBackendExporting(true);
+    try {
+      // Use status filter if only one status is selected
+      const statusParam = statusFilter.length === 1 ? statusFilter[0] : undefined;
+      const blob = await csvImportApi.exportAssets(statusParam);
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `assets-import-export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setExportSuccess(true);
+      setTimeout(() => {
+        setExportSuccess(false);
+        onClose();
+      }, 2000);
+    } catch (error) {
+      logger.error('Backend CSV export failed:', error);
+    } finally {
+      setBackendExporting(false);
+    }
+  };
+
   const enabledColumnsCount = columns.filter(col => col.enabled).length;
   const hasActiveFilters = statusFilter.length > 0 || categoryFilter.length > 0 || searchQuery.trim() !== '';
 
@@ -383,37 +417,61 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             <Chip
               icon={<InventoryIcon />}
               label={`${filteredAssets.length} ${t('export.assetsToExport')}`}
-              color="primary"
+              variant="outlined"
               sx={{
                 fontWeight: 700,
                 fontSize: '0.95rem',
                 py: 2.5,
                 px: 1,
-                boxShadow: theme =>
-                  theme.palette.mode === 'dark'
-                    ? '0 4px 12px rgba(255, 119, 0, 0.3)'
-                    : '0 4px 12px rgba(255, 119, 0, 0.2)',
+                bgcolor: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255, 119, 0, 0.25)'
+                  : 'rgba(255, 119, 0, 0.15)',
+                borderColor: 'primary.main',
+                borderWidth: 2,
+                color: 'primary.main',
+                '& .MuiChip-icon': {
+                  color: 'primary.main',
+                },
               }}
             />
             <Chip
               icon={<ViewColumnIcon />}
               label={`${enabledColumnsCount} ${t('export.columnsSelected')}`}
               variant="outlined"
-              color="primary"
               sx={{
                 fontWeight: 700,
                 fontSize: '0.95rem',
                 py: 2.5,
                 px: 1,
+                bgcolor: theme => theme.palette.mode === 'dark'
+                  ? 'rgba(255, 119, 0, 0.25)'
+                  : 'rgba(255, 119, 0, 0.15)',
+                borderColor: 'primary.main',
                 borderWidth: 2,
+                color: 'primary.main',
+                '& .MuiChip-icon': {
+                  color: 'primary.main',
+                },
               }}
             />
             {hasActiveFilters && (
               <Chip
                 icon={<FilterAltIcon />}
                 label={t('export.filtersActive')}
-                color="secondary"
-                sx={{ fontWeight: 700, py: 2.5 }}
+                variant="outlined"
+                sx={{
+                  fontWeight: 700,
+                  py: 2.5,
+                  bgcolor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.25)'
+                    : 'rgba(255, 119, 0, 0.15)',
+                  borderColor: 'primary.main',
+                  borderWidth: 2,
+                  color: 'primary.main',
+                  '& .MuiChip-icon': {
+                    color: 'primary.main',
+                  },
+                }}
               />
             )}
           </Box>
@@ -594,19 +652,29 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               label="Essentieel"
               icon={<LabelImportantIcon />}
               onClick={() => handlePresetChange('essential')}
-              color={selectedPreset === 'essential' ? 'primary' : 'default'}
-              variant={selectedPreset === 'essential' ? 'filled' : 'outlined'}
+              variant="outlined"
               sx={{
                 fontWeight: 600,
                 py: 2.5,
                 px: 1,
                 transition: 'all 0.2s ease',
+                bgcolor: selectedPreset === 'essential'
+                  ? theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.25)'
+                    : 'rgba(255, 119, 0, 0.15)'
+                  : 'transparent',
+                borderColor: selectedPreset === 'essential' ? 'primary.main' : 'divider',
+                borderWidth: selectedPreset === 'essential' ? 2 : 1,
+                color: selectedPreset === 'essential' ? 'primary.main' : 'text.primary',
+                '& .MuiChip-icon': {
+                  color: selectedPreset === 'essential' ? 'primary.main' : 'text.secondary',
+                },
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: theme =>
-                    selectedPreset === 'essential'
-                      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
-                      : '0 4px 12px rgba(0,0,0,0.1)',
+                  bgcolor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.2)'
+                    : 'rgba(255, 119, 0, 0.1)',
+                  boxShadow: '0 4px 12px rgba(255, 119, 0, 0.2)',
                 },
               }}
             />
@@ -614,19 +682,29 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               label="Volledig"
               icon={<CheckCircleIcon />}
               onClick={() => handlePresetChange('full')}
-              color={selectedPreset === 'full' ? 'primary' : 'default'}
-              variant={selectedPreset === 'full' ? 'filled' : 'outlined'}
+              variant="outlined"
               sx={{
                 fontWeight: 600,
                 py: 2.5,
                 px: 1,
                 transition: 'all 0.2s ease',
+                bgcolor: selectedPreset === 'full'
+                  ? theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.25)'
+                    : 'rgba(255, 119, 0, 0.15)'
+                  : 'transparent',
+                borderColor: selectedPreset === 'full' ? 'primary.main' : 'divider',
+                borderWidth: selectedPreset === 'full' ? 2 : 1,
+                color: selectedPreset === 'full' ? 'primary.main' : 'text.primary',
+                '& .MuiChip-icon': {
+                  color: selectedPreset === 'full' ? 'primary.main' : 'text.secondary',
+                },
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: theme =>
-                    selectedPreset === 'full'
-                      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
-                      : '0 4px 12px rgba(0,0,0,0.1)',
+                  bgcolor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.2)'
+                    : 'rgba(255, 119, 0, 0.1)',
+                  boxShadow: '0 4px 12px rgba(255, 119, 0, 0.2)',
                 },
               }}
             />
@@ -634,19 +712,29 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               label="Aangepast"
               icon={<BuildIcon />}
               onClick={() => setSelectedPreset('custom')}
-              color={selectedPreset === 'custom' ? 'primary' : 'default'}
-              variant={selectedPreset === 'custom' ? 'filled' : 'outlined'}
+              variant="outlined"
               sx={{
                 fontWeight: 600,
                 py: 2.5,
                 px: 1,
                 transition: 'all 0.2s ease',
+                bgcolor: selectedPreset === 'custom'
+                  ? theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.25)'
+                    : 'rgba(255, 119, 0, 0.15)'
+                  : 'transparent',
+                borderColor: selectedPreset === 'custom' ? 'primary.main' : 'divider',
+                borderWidth: selectedPreset === 'custom' ? 2 : 1,
+                color: selectedPreset === 'custom' ? 'primary.main' : 'text.primary',
+                '& .MuiChip-icon': {
+                  color: selectedPreset === 'custom' ? 'primary.main' : 'text.secondary',
+                },
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: theme =>
-                    selectedPreset === 'custom'
-                      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
-                      : '0 4px 12px rgba(0,0,0,0.1)',
+                  bgcolor: theme => theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.2)'
+                    : 'rgba(255, 119, 0, 0.1)',
+                  boxShadow: '0 4px 12px rgba(255, 119, 0, 0.2)',
                 },
               }}
             />
@@ -680,7 +768,15 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 {t('export.filtersLabel')}
               </Typography>
               {hasActiveFilters && (
-                <Chip label={t('export.active')} size="small" color="secondary" />
+                <Chip
+                  label={t('export.active')}
+                  size="small"
+                  color="secondary"
+                  sx={{
+                    color: theme => theme.palette.mode === 'dark' ? '#fff' : '#1a1a1a',
+                    fontWeight: 600,
+                  }}
+                />
               )}
             </Box>
             <IconButton size="small">
@@ -718,47 +814,87 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               />
 
               {/* Status Filter */}
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
                 {t('export.statusFilter')}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                {Object.values(AssetStatus).map(status => (
-                  <Chip
-                    key={status}
-                    label={t(`statuses.${status.toLowerCase()}`)}
-                    onClick={() => handleStatusToggle(status)}
-                    color={statusFilter.includes(status) ? 'primary' : 'default'}
-                    variant={statusFilter.includes(status) ? 'filled' : 'outlined'}
-                    sx={{
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                      },
-                    }}
-                  />
-                ))}
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 3 }}>
+                {Object.values(AssetStatus).map(status => {
+                  const isSelected = statusFilter.includes(status);
+                  return (
+                    <Chip
+                      key={status}
+                      label={t(`statuses.${status.toLowerCase()}`)}
+                      onClick={() => handleStatusToggle(status)}
+                      color={isSelected ? 'primary' : 'default'}
+                      variant={isSelected ? 'filled' : 'outlined'}
+                      sx={{
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '0.875rem',
+                        py: 2,
+                        px: 0.5,
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                        color: isSelected
+                          ? theme => theme.palette.mode === 'dark' ? '#fff' : '#1a1a1a'
+                          : undefined,
+                        boxShadow: isSelected
+                          ? theme => theme.palette.mode === 'dark'
+                            ? '0 4px 16px rgba(255, 119, 0, 0.4), 0 0 0 2px rgba(255, 119, 0, 0.2)'
+                            : '0 4px 16px rgba(255, 119, 0, 0.35), 0 0 0 2px rgba(255, 119, 0, 0.15)'
+                          : 'none',
+                        borderWidth: isSelected ? 0 : 2,
+                        '&:hover': {
+                          transform: 'scale(1.08)',
+                          boxShadow: theme => theme.palette.mode === 'dark'
+                            ? '0 6px 20px rgba(255, 119, 0, 0.3)'
+                            : '0 6px 20px rgba(255, 119, 0, 0.25)',
+                        },
+                      }}
+                    />
+                  );
+                })}
               </Box>
 
               {/* Category Filter */}
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>
                 {t('export.categoryFilter')}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {categories.map(category => (
-                  <Chip
-                    key={category}
-                    label={category}
-                    onClick={() => handleCategoryToggle(category)}
-                    color={categoryFilter.includes(category) ? 'primary' : 'default'}
-                    variant={categoryFilter.includes(category) ? 'filled' : 'outlined'}
-                    sx={{
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                      },
-                    }}
-                  />
-                ))}
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                {categories.map(category => {
+                  const isSelected = categoryFilter.includes(category);
+                  return (
+                    <Chip
+                      key={category}
+                      label={category}
+                      onClick={() => handleCategoryToggle(category)}
+                      color={isSelected ? 'primary' : 'default'}
+                      variant={isSelected ? 'filled' : 'outlined'}
+                      sx={{
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '0.875rem',
+                        py: 2,
+                        px: 0.5,
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                        color: isSelected
+                          ? theme => theme.palette.mode === 'dark' ? '#fff' : '#1a1a1a'
+                          : undefined,
+                        boxShadow: isSelected
+                          ? theme => theme.palette.mode === 'dark'
+                            ? '0 4px 16px rgba(255, 119, 0, 0.4), 0 0 0 2px rgba(255, 119, 0, 0.2)'
+                            : '0 4px 16px rgba(255, 119, 0, 0.35), 0 0 0 2px rgba(255, 119, 0, 0.15)'
+                          : 'none',
+                        borderWidth: isSelected ? 0 : 2,
+                        '&:hover': {
+                          transform: 'scale(1.08)',
+                          boxShadow: theme => theme.palette.mode === 'dark'
+                            ? '0 6px 20px rgba(255, 119, 0, 0.3)'
+                            : '0 6px 20px rgba(255, 119, 0, 0.25)',
+                        },
+                      }}
+                    />
+                  );
+                })}
               </Box>
             </Paper>
           </Collapse>
@@ -794,7 +930,10 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 label={`${enabledColumnsCount}/${columns.length}`}
                 size="small"
                 color="primary"
-                sx={{ fontWeight: 700 }}
+                sx={{
+                  fontWeight: 700,
+                  color: theme => theme.palette.mode === 'dark' ? '#fff' : '#1a1a1a',
+                }}
               />
             </Box>
             <IconButton size="small">
@@ -1113,8 +1252,30 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             theme.palette.mode === 'dark'
               ? 'linear-gradient(180deg, transparent 0%, rgba(255, 119, 0, 0.05) 100%)'
               : 'linear-gradient(180deg, transparent 0%, rgba(255, 119, 0, 0.02) 100%)',
+          flexWrap: 'wrap',
+          gap: 1,
         }}
       >
+        <Tooltip title={t('export.importCompatibleTooltip')}>
+          <Button
+            onClick={handleBackendExport}
+            variant="outlined"
+            color="secondary"
+            startIcon={backendExporting ? <CircularProgress size={18} color="inherit" /> : <SyncAltIcon />}
+            disabled={backendExporting}
+            sx={{
+              borderRadius: 2,
+              fontWeight: 600,
+              borderWidth: 2,
+              '&:hover': {
+                borderWidth: 2,
+              },
+            }}
+          >
+            {t('export.importCompatible')}
+          </Button>
+        </Tooltip>
+        <Box sx={{ flex: 1 }} />
         <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2, fontWeight: 600 }}>
           {t('common.cancel')}
         </Button>

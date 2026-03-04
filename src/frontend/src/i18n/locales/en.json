@@ -261,6 +261,8 @@
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
     "exportButton": "Export",
+    "importCompatible": "Export for Import",
+    "importCompatibleTooltip": "Export CSV in the exact same format as the import template (21 columns)",
     "success": "Export completed successfully!",
     "error": "Export failed. Please try again.",
     "noAssets": "No assets to export",

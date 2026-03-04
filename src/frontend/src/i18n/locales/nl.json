@@ -261,6 +261,8 @@
     "selectAll": "Alles Selecteren",
     "deselectAll": "Alles Deselecteren",
     "exportButton": "Exporteren",
+    "importCompatible": "Export voor Import",
+    "importCompatibleTooltip": "Exporteer CSV in exact hetzelfde formaat als de import template (21 kolommen)",
     "success": "Export succesvol voltooid!",
     "error": "Export mislukt. Probeer het opnieuw.",
     "noAssets": "Geen activa te exporteren",
