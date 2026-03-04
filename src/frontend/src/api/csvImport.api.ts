@@ -40,4 +40,13 @@ export const csvImportApi = {
     });
     return response.data;
   },
+
+  exportAssets: async (status?: string): Promise<Blob> => {
+    const params = status ? { status } : {};
+    const response = await apiClient.get('/csvimport/export', {
+      responseType: 'blob',
+      params,
+    });
+    return response.data;
+  },
 };

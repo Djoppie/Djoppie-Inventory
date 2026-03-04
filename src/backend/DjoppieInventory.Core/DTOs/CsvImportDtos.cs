@@ -2,7 +2,7 @@ namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
 /// Represents a single row from the CSV import file
-/// Simplified structure - Intune will auto-fill missing device info
+/// Supports both creating new assets and updating existing ones (based on AssetCode)
 /// </summary>
 public record CsvImportRowDto
 {
@@ -12,22 +12,28 @@ public record CsvImportRowDto
     public int RowNumber { get; init; }
 
     /// <summary>
-    /// Serial number of the device - REQUIRED and must be unique
+    /// Asset code - If provided and exists, updates existing asset. If not provided or doesn't exist, creates new asset.
+    /// Format: TYPE-YY-MERK-NUMMER (e.g., LAP-26-DELL-00001) or DUM-TYPE-YY-MERK-NUMMER for dummy assets
     /// </summary>
-    public string SerialNumber { get; init; } = string.Empty;
+    public string? AssetCode { get; init; }
 
     /// <summary>
-    /// Asset type code (e.g., LAP, DESK, MON) - REQUIRED
+    /// Serial number of the device - OPTIONAL (only AssetCode must be unique, not SerialNumber)
+    /// </summary>
+    public string? SerialNumber { get; init; }
+
+    /// <summary>
+    /// Asset type code (e.g., LAP, DESK, MON) - REQUIRED for new assets
     /// </summary>
     public string AssetTypeCode { get; init; } = string.Empty;
 
     /// <summary>
-    /// Status (InGebruik, Stock, Herstelling, Defect, UitDienst) - REQUIRED, default: Stock
+    /// Status (InGebruik, Stock, Herstelling, Defect, UitDienst, Nieuw) - REQUIRED, default: Stock
     /// </summary>
     public string Status { get; init; } = "Stock";
 
     /// <summary>
-    /// Purchase date (format: yyyy-MM-dd) - REQUIRED
+    /// Purchase date (format: yyyy-MM-dd or dd-MM-yyyy) - REQUIRED for new assets
     /// </summary>
     public string PurchaseDate { get; init; } = string.Empty;
 
@@ -37,14 +43,34 @@ public record CsvImportRowDto
     public string? AssetName { get; init; }
 
     /// <summary>
+    /// User-friendly alias/nickname for the asset - optional
+    /// </summary>
+    public string? Alias { get; init; }
+
+    /// <summary>
     /// Service/Department code (e.g., IT, FIN) - optional, used as location
     /// </summary>
     public string? ServiceCode { get; init; }
 
     /// <summary>
+    /// Specific installation location within building (e.g., "Room 201") - optional
+    /// </summary>
+    public string? InstallationLocation { get; init; }
+
+    /// <summary>
     /// Primary user - optional, will be fetched from Intune (Primary User) if exists
     /// </summary>
     public string? Owner { get; init; }
+
+    /// <summary>
+    /// Job title of the assigned user - optional
+    /// </summary>
+    public string? JobTitle { get; init; }
+
+    /// <summary>
+    /// Office location of the assigned user - optional
+    /// </summary>
+    public string? OfficeLocation { get; init; }
 
     /// <summary>
     /// Brand - optional, will be fetched from Intune if exists
@@ -57,12 +83,12 @@ public record CsvImportRowDto
     public string? Model { get; init; }
 
     /// <summary>
-    /// Installation date (format: yyyy-MM-dd) - optional
+    /// Installation date (format: yyyy-MM-dd or dd-MM-yyyy) - optional
     /// </summary>
     public string? InstallationDate { get; init; }
 
     /// <summary>
-    /// Warranty expiry date (format: yyyy-MM-dd) - optional
+    /// Warranty expiry date (format: yyyy-MM-dd or dd-MM-yyyy) - optional
     /// </summary>
     public string? WarrantyExpiry { get; init; }
 
@@ -75,6 +101,16 @@ public record CsvImportRowDto
     /// Is this a dummy/placeholder asset - optional, default: false
     /// </summary>
     public bool IsDummy { get; init; } = false;
+
+    /// <summary>
+    /// Legacy building field (for historical data migration) - optional
+    /// </summary>
+    public string? LegacyBuilding { get; init; }
+
+    /// <summary>
+    /// Legacy department field (for historical data migration) - optional
+    /// </summary>
+    public string? LegacyDepartment { get; init; }
 }
 
 /// <summary>

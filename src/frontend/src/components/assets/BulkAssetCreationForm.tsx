@@ -37,6 +37,7 @@ import {
   TableChart,
   Description,
   Download as DownloadIcon,
+  Backup as ExportIcon,
   Computer,
   CalendarMonth,
   Category as CategoryIcon,
@@ -182,6 +183,21 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
     }
   }, []);
 
+  // Export all assets to CSV for backup
+  const handleExportAssets = useCallback(async () => {
+    try {
+      const blob = await csvImportApi.exportAssets();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      link.download = `assets-export-${timestamp}.csv`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // Silently fail - user can retry
+    }
+  }, []);
   // Template mode handlers - updated for relational template fields
   const handleTemplateChange = (templateId: number) => {
     setSelectedTemplate(templateId);
@@ -654,6 +670,17 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
                 onClick={() => setCsvDialogOpen(true)}
               >
                 {t('bulkCreate.csvUpload')}
+              </Button>
+            </Stack>
+            <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
+              <Button
+                variant="outlined"
+                color="success"
+                startIcon={<ExportIcon />}
+                onClick={handleExportAssets}
+                sx={{ textTransform: 'none' }}
+              >
+                {t('bulkCreate.exportAssets')}
               </Button>
             </Stack>
           </Paper>

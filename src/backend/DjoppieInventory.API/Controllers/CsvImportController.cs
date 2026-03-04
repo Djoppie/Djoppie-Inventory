@@ -220,4 +220,32 @@ public class CsvImportController : ControllerBase
 
         return File(templateBytes, "text/csv", fileName);
     }
+
+    /// <summary>
+    /// Exports all assets to CSV format for backup or re-import purposes.
+    /// Includes all asset fields in the same format as the import template.
+    /// Optionally filter by status.
+    /// </summary>
+    /// <param name="status">Optional status filter (InGebruik, Stock, etc.)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>CSV file containing all assets</returns>
+    /// <response code="200">CSV export file</response>
+    /// <response code="401">User not authenticated</response>
+    [HttpGet("export")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ExportAssets(
+        [FromQuery] string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown User";
+        _logger.LogInformation("CSV export requested by {UserName} with status filter: {Status}", userName, status ?? "All");
+
+        var csvBytes = await _csvImportService.ExportAssetsToCsvAsync(status, cancellationToken);
+
+        var statusSuffix = string.IsNullOrWhiteSpace(status) ? "all" : status.ToLowerInvariant();
+        var fileName = $"assets-export-{statusSuffix}_{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+
+        return File(csvBytes, "text/csv", fileName);
+    }
 }

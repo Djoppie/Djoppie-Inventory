@@ -53,22 +53,29 @@ interface CsvImportDialogProps {
 }
 
 // CSV row structure for preview (parsed locally for display)
+// Matches the 20-column backend CSV structure
 interface CsvPreviewRow {
   rowNumber: number;
-  serialNumber: string;
-  assetTypeCode: string;
-  status: string;
-  purchaseDate: string;
-  isDummy: string;
-  assetName: string;
-  buildingCode: string;
-  serviceCode: string;
-  owner: string;
-  brand: string;
-  model: string;
-  installationDate: string;
-  warrantyExpiry: string;
-  notes: string;
+  assetCode: string;           // 0 - For updates
+  serialNumber: string;        // 1
+  assetTypeCode: string;       // 2
+  status: string;              // 3
+  purchaseDate: string;        // 4
+  isDummy: string;             // 5
+  assetName: string;           // 6
+  alias: string;               // 7
+  serviceCode: string;         // 8
+  installationLocation: string; // 9
+  owner: string;               // 10
+  jobTitle: string;            // 11
+  officeLocation: string;      // 12
+  brand: string;               // 13
+  model: string;               // 14
+  installationDate: string;    // 15
+  warrantyExpiry: string;      // 16
+  notes: string;               // 17
+  legacyBuilding: string;      // 18
+  legacyDepartment: string;    // 19
   // Validation from server
   hasError: boolean;
   errorMessage: string;
@@ -119,20 +126,26 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
 
       rows.push({
         rowNumber,
-        serialNumber: values[0] || '',
-        assetTypeCode: values[1] || '',
-        status: values[2] || 'Stock',
-        purchaseDate: values[3] || '',
-        isDummy: values[4] || 'false',
-        assetName: values[5] || '',
-        buildingCode: values[6] || '',
-        serviceCode: values[7] || '',
-        owner: values[8] || '',
-        brand: values[9] || '',
-        model: values[10] || '',
-        installationDate: values[11] || '',
-        warrantyExpiry: values[12] || '',
-        notes: values[13] || '',
+        assetCode: values[0] || '',
+        serialNumber: values[1] || '',
+        assetTypeCode: values[2] || '',
+        status: values[3] || 'Stock',
+        purchaseDate: values[4] || '',
+        isDummy: values[5] || 'false',
+        assetName: values[6] || '',
+        alias: values[7] || '',
+        serviceCode: values[8] || '',
+        installationLocation: values[9] || '',
+        owner: values[10] || '',
+        jobTitle: values[11] || '',
+        officeLocation: values[12] || '',
+        brand: values[13] || '',
+        model: values[14] || '',
+        installationDate: values[15] || '',
+        warrantyExpiry: values[16] || '',
+        notes: values[17] || '',
+        legacyBuilding: values[18] || '',
+        legacyDepartment: values[19] || '',
         hasError: errors.length > 0,
         errorMessage: errors.join('; '),
       });
@@ -326,14 +339,14 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
 
   // Visible columns for preview table
   const visibleColumns = [
-    { id: 'serialNumber', label: 'Serial Number', minWidth: 120 },
-    { id: 'assetTypeCode', label: 'Type', minWidth: 70 },
-    { id: 'status', label: 'Status', minWidth: 90 },
-    { id: 'purchaseDate', label: 'Purchase', minWidth: 100 },
-    { id: 'isDummy', label: 'Dummy', minWidth: 60 },
-    { id: 'buildingCode', label: 'Building', minWidth: 80 },
-    { id: 'serviceCode', label: 'Service', minWidth: 80 },
-    { id: 'assetName', label: 'Name', minWidth: 120 },
+    { id: 'assetCode', label: 'Asset Code', minWidth: 100 },
+    { id: 'serialNumber', label: 'Serial', minWidth: 100 },
+    { id: 'assetTypeCode', label: 'Type', minWidth: 60 },
+    { id: 'status', label: 'Status', minWidth: 80 },
+    { id: 'purchaseDate', label: 'Purchase', minWidth: 90 },
+    { id: 'serviceCode', label: 'Service', minWidth: 70 },
+    { id: 'owner', label: 'Owner', minWidth: 100 },
+    { id: 'alias', label: 'Alias', minWidth: 100 },
   ];
 
   const paginatedData = useMemo(() => {
@@ -631,7 +644,12 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: row.assetCode ? 'primary.main' : 'text.secondary' }}>
+                          {row.assetCode || '(nieuw)'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                           {row.serialNumber || '-'}
                         </Typography>
                       </TableCell>
@@ -656,28 +674,26 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                       </TableCell>
                       <TableCell>{row.status || 'Stock'}</TableCell>
                       <TableCell>{row.purchaseDate || '-'}</TableCell>
-                      <TableCell>
-                        {row.isDummy.toLowerCase() === 'true' ||
-                        row.isDummy === '1' ||
-                        row.isDummy.toLowerCase() === 'ja' ? (
-                          <Chip label="Ja" size="small" color="secondary" sx={{ fontSize: '0.7rem' }} />
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            Nee
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>{row.buildingCode || '-'}</TableCell>
                       <TableCell>{row.serviceCode || '-'}</TableCell>
                       <TableCell
                         sx={{
-                          maxWidth: 150,
+                          maxWidth: 120,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {row.assetName || '-'}
+                        {row.owner || '-'}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          maxWidth: 120,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {row.alias || '-'}
                       </TableCell>
                     </TableRow>
                   ))}

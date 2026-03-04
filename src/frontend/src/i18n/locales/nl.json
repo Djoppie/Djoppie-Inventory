@@ -214,7 +214,8 @@
     "csvMissingColumns": "Ontbrekende verplichte kolommen: {{columns}}",
     "csvInvalidType": "Selecteer een CSV-bestand",
     "csvReadError": "Fout bij lezen bestand",
-    "csvNoValidAssets": "Geen geldige assets om te importeren"
+    "csvNoValidAssets": "Geen geldige assets om te importeren",
+    "exportAssets": "Alle assets exporteren"
   },
   "categories": {
     "computing": "Computers",

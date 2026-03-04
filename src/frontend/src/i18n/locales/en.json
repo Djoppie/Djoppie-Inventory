@@ -214,7 +214,8 @@
     "csvMissingColumns": "Missing required columns: {{columns}}",
     "csvInvalidType": "Please select a CSV file",
     "csvReadError": "Error reading file",
-    "csvNoValidAssets": "No valid assets to import"
+    "csvNoValidAssets": "No valid assets to import",
+    "exportAssets": "Export all assets"
   },
   "categories": {
     "computing": "Computing",

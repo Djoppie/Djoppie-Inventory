@@ -47,4 +47,13 @@ public interface ICsvImportService
     /// </summary>
     /// <returns>CSV template as byte array (UTF-8 encoded)</returns>
     byte[] GenerateCsvTemplate();
+
+    /// <summary>
+    /// Exports all assets to CSV format for backup/import purposes.
+    /// Includes all asset fields in the same format as the import template.
+    /// </summary>
+    /// <param name="status">Optional status filter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>CSV file as byte array (UTF-8 encoded)</returns>
+    Task<byte[]> ExportAssetsToCsvAsync(string? status = null, CancellationToken cancellationToken = default);
 }
