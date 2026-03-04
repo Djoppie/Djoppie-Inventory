@@ -256,7 +256,7 @@
     "active": "Active",
     "searchPlaceholder": "Search assets...",
     "statusFilter": "Filter by Status",
-    "categoryFilter": "Filter by Category",
+    "categoryFilter": "Filter by Asset Type",
     "columnsLabel": "Columns to Export",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",

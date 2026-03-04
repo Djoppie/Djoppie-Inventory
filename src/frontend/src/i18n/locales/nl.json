@@ -256,7 +256,7 @@
     "active": "Actief",
     "searchPlaceholder": "Zoek activa...",
     "statusFilter": "Filter op Status",
-    "categoryFilter": "Filter op Categorie",
+    "categoryFilter": "Filter op Asset Type",
     "columnsLabel": "Te Exporteren Kolommen",
     "selectAll": "Alles Selecteren",
     "deselectAll": "Alles Deselecteren",

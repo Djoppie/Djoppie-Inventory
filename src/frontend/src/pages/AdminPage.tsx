@@ -13,10 +13,12 @@ import {
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import CategoryIcon from '@mui/icons-material/Category';
+import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CategoriesTab from '../components/admin/CategoriesTab';
 import AssetTypesTab from '../components/admin/AssetTypesTab';
 import BuildingsTab from '../components/admin/BuildingsTab';
 import SectorsTab from '../components/admin/SectorsTab';
@@ -172,46 +174,56 @@ const AdminPage = () => {
           }}
         >
           <Tab
+            icon={<FolderIcon />}
+            iconPosition="start"
+            label="Categories"
+            id="admin-tab-0"
+            aria-controls="admin-tabpanel-0"
+          />
+          <Tab
             icon={<CategoryIcon />}
             iconPosition="start"
             label="Asset Types"
-            id="admin-tab-0"
-            aria-controls="admin-tabpanel-0"
+            id="admin-tab-1"
+            aria-controls="admin-tabpanel-1"
           />
           <Tab
             icon={<BusinessIcon />}
             iconPosition="start"
             label="Buildings"
-            id="admin-tab-1"
-            aria-controls="admin-tabpanel-1"
+            id="admin-tab-2"
+            aria-controls="admin-tabpanel-2"
           />
           <Tab
             icon={<AccountTreeIcon />}
             iconPosition="start"
             label="Sectors"
-            id="admin-tab-2"
-            aria-controls="admin-tabpanel-2"
+            id="admin-tab-3"
+            aria-controls="admin-tabpanel-3"
           />
           <Tab
             icon={<MiscellaneousServicesIcon />}
             iconPosition="start"
             label="Services"
-            id="admin-tab-3"
-            aria-controls="admin-tabpanel-3"
+            id="admin-tab-4"
+            aria-controls="admin-tabpanel-4"
           />
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
           <TabPanel value={currentTab} index={0}>
-            <AssetTypesTab />
+            <CategoriesTab />
           </TabPanel>
           <TabPanel value={currentTab} index={1}>
-            <BuildingsTab />
+            <AssetTypesTab />
           </TabPanel>
           <TabPanel value={currentTab} index={2}>
-            <SectorsTab />
+            <BuildingsTab />
           </TabPanel>
           <TabPanel value={currentTab} index={3}>
+            <SectorsTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={4}>
             <ServicesTab />
           </TabPanel>
         </CardContent>
