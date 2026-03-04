@@ -32,8 +32,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Tabs,
-  Tab,
   Badge,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -70,16 +68,6 @@ const pulse = keyframes`
   }
   50% {
     box-shadow: 0 0 0 10px rgba(255, 119, 0, 0);
-  }
-`;
-
-// Shimmer animation for preview section
-const shimmer = keyframes`
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
   }
 `;
 
@@ -976,7 +964,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
 
               {/* Column Groups */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {columnGroups.map((group, groupIndex) => {
+                {columnGroups.map((group) => {
                   const groupEnabledCount = group.columns.filter(c => c.enabled).length;
                   return (
                     <Paper
@@ -1200,7 +1188,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {previewAssets.map((asset, index) => (
+                    {previewAssets.map((asset) => (
                       <TableRow
                         key={asset.id}
                         sx={{
