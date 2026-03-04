@@ -204,21 +204,33 @@ public class CsvImportService : ICsvImportService
         CancellationToken cancellationToken)
     {
         var errors = new List<string>();
-        bool isUpdate = !string.IsNullOrWhiteSpace(csvRow.AssetCode);
-
-        // Validate AssetCode if provided (UPDATE mode)
-        if (isUpdate)
+        bool hasAssetCode = !string.IsNullOrWhiteSpace(csvRow.AssetCode);
+        bool hasSerialNumber = !string.IsNullOrWhiteSpace(csvRow.SerialNumber);
+        
+        // Check if AssetCode exists in database (determines UPDATE vs CREATE)
+        bool isUpdate = false;
+        if (hasAssetCode)
         {
             var existingAsset = await _assetRepository.GetByAssetCodeAsync(csvRow.AssetCode!, cancellationToken);
-            if (existingAsset == null)
-            {
-                errors.Add($"AssetCode '{csvRow.AssetCode}' does not exist in the database. Cannot update non-existent asset.");
-            }
+            isUpdate = existingAsset != null;
+        }
+        
+        // If AssetCode not found but SerialNumber provided, check if SerialNumber matches existing asset
+        if (!isUpdate && hasSerialNumber)
+        {
+            var assetBySerial = await _assetRepository.GetBySerialNumberAsync(csvRow.SerialNumber!, cancellationToken);
+            isUpdate = assetBySerial != null;
         }
 
         // Validate REQUIRED fields for CREATE mode
         if (!isUpdate)
         {
+            // If creating with a custom AssetCode, check it's not duplicated in this CSV
+            if (hasAssetCode && assetCodesInCsv.Contains(csvRow.AssetCode!))
+            {
+                errors.Add($"AssetCode '{csvRow.AssetCode}' is duplicated in this CSV file");
+            }
+            
             if (string.IsNullOrWhiteSpace(csvRow.AssetTypeCode))
             {
                 errors.Add("AssetTypeCode is required for new assets");
@@ -319,28 +331,37 @@ public class CsvImportService : ICsvImportService
         CancellationToken cancellationToken)
     {
         var errors = new List<string>();
-        bool isUpdate = !string.IsNullOrWhiteSpace(csvRow.AssetCode);
+        bool hasAssetCode = !string.IsNullOrWhiteSpace(csvRow.AssetCode);
+        bool hasSerialNumber = !string.IsNullOrWhiteSpace(csvRow.SerialNumber);
 
-        // Determine mode: UPDATE or CREATE
+        // Determine mode: UPDATE (exists by AssetCode or SerialNumber) or CREATE
         Asset? existingAsset = null;
-        if (isUpdate)
+        bool isUpdate = false;
+        string matchedBy = "";
+        
+        // First try to match by AssetCode
+        if (hasAssetCode)
         {
             existingAsset = await _assetRepository.GetByAssetCodeAsync(csvRow.AssetCode!, cancellationToken);
-            if (existingAsset == null)
+            if (existingAsset != null)
             {
-                errors.Add($"AssetCode '{csvRow.AssetCode}' does not exist. Cannot update non-existent asset.");
-                return new CsvRowResultDto
-                {
-                    RowNumber = csvRow.RowNumber,
-                    Success = false,
-                    AssetCode = csvRow.AssetCode,
-                    SerialNumber = csvRow.SerialNumber,
-                    Errors = errors
-                };
+                isUpdate = true;
+                matchedBy = "AssetCode";
+            }
+        }
+        
+        // If not found by AssetCode, try to match by SerialNumber
+        if (!isUpdate && hasSerialNumber)
+        {
+            existingAsset = await _assetRepository.GetBySerialNumberAsync(csvRow.SerialNumber!, cancellationToken);
+            if (existingAsset != null)
+            {
+                isUpdate = true;
+                matchedBy = "SerialNumber";
             }
         }
 
-        // Validate REQUIRED fields for CREATE mode only
+        // Validate REQUIRED fields for CREATE mode
         if (!isUpdate)
         {
             if (string.IsNullOrWhiteSpace(csvRow.AssetTypeCode))
@@ -415,7 +436,7 @@ public class CsvImportService : ICsvImportService
             {
                 // UPDATE mode: update existing asset
                 asset = existingAsset!;
-                operationMode = "Updated";
+                operationMode = $"Updated (by {matchedBy})";
 
                 // Update fields if provided in CSV (allowing partial updates)
                 if (!string.IsNullOrWhiteSpace(csvRow.SerialNumber))
@@ -499,16 +520,25 @@ public class CsvImportService : ICsvImportService
                 // CREATE mode: create new asset
                 operationMode = "Created";
 
-                // Determine year from purchase date or current year
-                int year = purchaseDate?.Year ?? DateTime.UtcNow.Year;
-
-                // Generate asset code using the new format (TYPE-YY-MERK-NUMMER)
-                var assetCode = await _assetCodeGenerator.GenerateCodeAsync(
-                    assetType!.Id,
-                    csvRow.Brand, // Brand for asset code (e.g., DELL, HP)
-                    year,
-                    isDummy: csvRow.IsDummy,
-                    cancellationToken);
+                // Use provided AssetCode if given, otherwise generate a new one
+                string assetCode;
+                if (hasAssetCode)
+                {
+                    // Use the provided AssetCode (already validated that it doesn't exist)
+                    assetCode = csvRow.AssetCode!;
+                    operationMode = "Created (with code)";
+                }
+                else
+                {
+                    // Generate new asset code using the format (TYPE-YY-MERK-NUMMER)
+                    int year = purchaseDate?.Year ?? DateTime.UtcNow.Year;
+                    assetCode = await _assetCodeGenerator.GenerateCodeAsync(
+                        assetType!.Id,
+                        csvRow.Brand, // Brand for asset code (e.g., DELL, HP)
+                        year,
+                        isDummy: csvRow.IsDummy,
+                        cancellationToken);
+                }
 
                 // Use AssetType.Name as Category
                 var category = assetType.Name;
