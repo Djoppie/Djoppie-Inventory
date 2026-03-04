@@ -24,6 +24,16 @@ import {
   Collapse,
   alpha,
   keyframes,
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  Tab,
+  Badge,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
@@ -36,6 +46,12 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import PreviewIcon from '@mui/icons-material/Preview';
+import LabelImportantIcon from '@mui/icons-material/LabelImportant';
+import BusinessIcon from '@mui/icons-material/Business';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import BuildIcon from '@mui/icons-material/Build';
 import { Asset, AssetStatus } from '../../types/asset.types';
 import {
   exportAssets,
@@ -54,10 +70,29 @@ const pulse = keyframes`
   }
 `;
 
+// Shimmer animation for preview section
+const shimmer = keyframes`
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+`;
+
 interface ExportDialogProps {
   open: boolean;
   onClose: () => void;
   assets: Asset[];
+}
+
+// Column groups for better organization
+interface ColumnGroup {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+  columns: ExportColumn[];
 }
 
 const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) => {
@@ -76,8 +111,10 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
 
   // UI state
   const [showFilters, setShowFilters] = useState(false);
-  const [showColumns, setShowColumns] = useState(false);
+  const [showColumns, setShowColumns] = useState(true); // Expanded by default
+  const [showPreview, setShowPreview] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<'essential' | 'full' | 'custom'>('essential');
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -118,18 +155,78 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
     return result;
   }, [assets, statusFilter, categoryFilter, searchQuery]);
 
+  // Organize columns into logical groups
+  const columnGroups: ColumnGroup[] = useMemo(() => {
+    return [
+      {
+        key: 'identification',
+        label: 'Identificatie',
+        icon: <LabelImportantIcon fontSize="small" />,
+        description: 'Basisinformatie voor asset identificatie',
+        columns: columns.filter(col =>
+          ['assetCode', 'assetName', 'category', 'status'].includes(col.key)
+        ),
+      },
+      {
+        key: 'ownership',
+        label: 'Eigenaarschap & Locatie',
+        icon: <BusinessIcon fontSize="small" />,
+        description: 'Eigenaar en locatiegegevens',
+        columns: columns.filter(col =>
+          ['owner', 'legacyBuilding', 'legacyDepartment', 'officeLocation'].includes(col.key)
+        ),
+      },
+      {
+        key: 'technical',
+        label: 'Technische Details',
+        icon: <BuildIcon fontSize="small" />,
+        description: 'Technische specificaties en kenmerken',
+        columns: columns.filter(col =>
+          ['brand', 'model', 'serialNumber'].includes(col.key)
+        ),
+      },
+      {
+        key: 'dates',
+        label: 'Datums',
+        icon: <CalendarTodayIcon fontSize="small" />,
+        description: 'Belangrijke datums en tijdslijnen',
+        columns: columns.filter(col =>
+          ['purchaseDate', 'warrantyExpiry', 'installationDate', 'createdAt', 'updatedAt'].includes(col.key)
+        ),
+      },
+    ];
+  }, [columns]);
+
   const handleColumnToggle = (key: keyof Asset) => {
     setColumns(prev =>
       prev.map(col => (col.key === key ? { ...col, enabled: !col.enabled } : col))
     );
+    setSelectedPreset('custom');
   };
 
   const handleSelectAllColumns = () => {
     setColumns(prev => prev.map(col => ({ ...col, enabled: true })));
+    setSelectedPreset('full');
   };
 
   const handleDeselectAllColumns = () => {
     setColumns(prev => prev.map(col => ({ ...col, enabled: false })));
+    setSelectedPreset('custom');
+  };
+
+  const handlePresetChange = (preset: 'essential' | 'full' | 'custom') => {
+    setSelectedPreset(preset);
+    if (preset === 'essential') {
+      // Enable only essential columns
+      setColumns(prev =>
+        prev.map(col => ({
+          ...col,
+          enabled: ['assetCode', 'assetName', 'category', 'status', 'owner', 'brand', 'model', 'serialNumber'].includes(col.key),
+        }))
+      );
+    } else if (preset === 'full') {
+      handleSelectAllColumns();
+    }
   };
 
   const handleStatusToggle = (status: AssetStatus) => {
@@ -169,11 +266,15 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
   const enabledColumnsCount = columns.filter(col => col.enabled).length;
   const hasActiveFilters = statusFilter.length > 0 || categoryFilter.length > 0 || searchQuery.trim() !== '';
 
+  // Get sample data for preview (first 3 assets)
+  const previewAssets = filteredAssets.slice(0, 3);
+  const enabledColumns = columns.filter(col => col.enabled);
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       disableRestoreFocus
       slotProps={{
@@ -195,6 +296,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             theme.palette.mode === 'dark'
               ? '0 8px 32px rgba(255, 119, 0, 0.15)'
               : '0 8px 32px rgba(0, 0, 0, 0.1)',
+          maxHeight: '90vh',
         },
       }}
     >
@@ -252,7 +354,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
           </Alert>
         </Collapse>
 
-        {/* Export Preview Stats */}
+        {/* Export Preview Stats - Enhanced with neumorphic design */}
         <Paper
           elevation={0}
           sx={{
@@ -260,36 +362,58 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             mb: 3,
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: 2,
+            borderRadius: 3,
             background: theme =>
               theme.palette.mode === 'dark'
-                ? 'rgba(255, 119, 0, 0.05)'
-                : 'rgba(255, 119, 0, 0.02)',
+                ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(204, 0, 0, 0.03) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 119, 0, 0.04) 0%, rgba(204, 0, 0, 0.02) 100%)',
+            boxShadow: theme =>
+              theme.palette.mode === 'dark'
+                ? 'inset 2px 2px 5px rgba(0, 0, 0, 0.5), inset -2px -2px 5px rgba(255, 119, 0, 0.03)'
+                : 'inset 2px 2px 5px rgba(0, 0, 0, 0.05), inset -2px -2px 5px rgba(255, 255, 255, 0.8)',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <InventoryIcon sx={{ color: 'primary.main' }} />
-            <Typography variant="h6" fontWeight={600}>
+            <InventoryIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+            <Typography variant="h6" fontWeight={700}>
               {t('export.preview')}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Chip
+              icon={<InventoryIcon />}
               label={`${filteredAssets.length} ${t('export.assetsToExport')}`}
               color="primary"
-              sx={{ fontWeight: 600, fontSize: '0.9rem' }}
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                py: 2.5,
+                px: 1,
+                boxShadow: theme =>
+                  theme.palette.mode === 'dark'
+                    ? '0 4px 12px rgba(255, 119, 0, 0.3)'
+                    : '0 4px 12px rgba(255, 119, 0, 0.2)',
+              }}
             />
             <Chip
+              icon={<ViewColumnIcon />}
               label={`${enabledColumnsCount} ${t('export.columnsSelected')}`}
               variant="outlined"
-              sx={{ fontWeight: 600, fontSize: '0.9rem' }}
+              color="primary"
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                py: 2.5,
+                px: 1,
+                borderWidth: 2,
+              }}
             />
             {hasActiveFilters && (
               <Chip
+                icon={<FilterAltIcon />}
                 label={t('export.filtersActive')}
                 color="secondary"
-                size="small"
-                sx={{ fontWeight: 600 }}
+                sx={{ fontWeight: 700, py: 2.5 }}
               />
             )}
           </Box>
@@ -301,7 +425,8 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             component="legend"
             sx={{
               mb: 1.5,
-              fontWeight: 600,
+              fontWeight: 700,
+              fontSize: '1rem',
               color: 'text.primary',
               display: 'flex',
               alignItems: 'center',
@@ -323,13 +448,18 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 border: '2px solid',
                 borderColor: format === 'xlsx' ? 'primary.main' : 'divider',
                 borderRadius: 2,
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: format === 'xlsx'
+                  ? theme => `0 6px 20px ${alpha(theme.palette.primary.main, 0.3)}`
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+                transform: format === 'xlsx' ? 'translateY(-2px)' : 'none',
                 '&:hover': {
                   borderColor: 'primary.main',
                   boxShadow: theme =>
                     format === 'xlsx'
-                      ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`
-                      : '0 4px 12px rgba(0,0,0,0.1)',
+                      ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.4)}`
+                      : '0 4px 16px rgba(0,0,0,0.12)',
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
@@ -340,7 +470,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1, px: 1 }}>
                     <TableViewIcon />
                     <Box>
-                      <Typography variant="body1" fontWeight={600}>
+                      <Typography variant="body1" fontWeight={700}>
                         Excel (.xlsx)
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -359,13 +489,18 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 border: '2px solid',
                 borderColor: format === 'csv' ? 'primary.main' : 'divider',
                 borderRadius: 2,
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: format === 'csv'
+                  ? theme => `0 6px 20px ${alpha(theme.palette.primary.main, 0.3)}`
+                  : '0 2px 8px rgba(0,0,0,0.08)',
+                transform: format === 'csv' ? 'translateY(-2px)' : 'none',
                 '&:hover': {
                   borderColor: 'primary.main',
                   boxShadow: theme =>
                     format === 'csv'
-                      ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`
-                      : '0 4px 12px rgba(0,0,0,0.1)',
+                      ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.4)}`
+                      : '0 4px 16px rgba(0,0,0,0.12)',
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
@@ -376,7 +511,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1, px: 1 }}>
                     <DescriptionIcon />
                     <Box>
-                      <Typography variant="body1" fontWeight={600}>
+                      <Typography variant="body1" fontWeight={700}>
                         CSV (.csv)
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
@@ -396,7 +531,8 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
           <FormLabel
             sx={{
               mb: 1.5,
-              fontWeight: 600,
+              fontWeight: 700,
+              fontSize: '1rem',
               color: 'text.primary',
               display: 'flex',
               alignItems: 'center',
@@ -417,6 +553,9 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                 '&:hover fieldset': {
                   borderColor: 'primary.main',
                 },
+                '&.Mui-focused': {
+                  boxShadow: theme => `0 0 0 3px ${alpha(theme.palette.primary.main, 0.1)}`,
+                },
               },
             }}
           />
@@ -434,6 +573,86 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
 
         <Divider sx={{ my: 3 }} />
 
+        {/* Column Selection Presets */}
+        <Box sx={{ mb: 3 }}>
+          <FormLabel
+            sx={{
+              mb: 1.5,
+              fontWeight: 700,
+              fontSize: '1rem',
+              color: 'text.primary',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            <ViewColumnIcon fontSize="small" />
+            Kolom Voorinstellingen
+          </FormLabel>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+            <Chip
+              label="Essentieel"
+              icon={<LabelImportantIcon />}
+              onClick={() => handlePresetChange('essential')}
+              color={selectedPreset === 'essential' ? 'primary' : 'default'}
+              variant={selectedPreset === 'essential' ? 'filled' : 'outlined'}
+              sx={{
+                fontWeight: 600,
+                py: 2.5,
+                px: 1,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme =>
+                    selectedPreset === 'essential'
+                      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
+                      : '0 4px 12px rgba(0,0,0,0.1)',
+                },
+              }}
+            />
+            <Chip
+              label="Volledig"
+              icon={<CheckCircleIcon />}
+              onClick={() => handlePresetChange('full')}
+              color={selectedPreset === 'full' ? 'primary' : 'default'}
+              variant={selectedPreset === 'full' ? 'filled' : 'outlined'}
+              sx={{
+                fontWeight: 600,
+                py: 2.5,
+                px: 1,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme =>
+                    selectedPreset === 'full'
+                      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
+                      : '0 4px 12px rgba(0,0,0,0.1)',
+                },
+              }}
+            />
+            <Chip
+              label="Aangepast"
+              icon={<BuildIcon />}
+              onClick={() => setSelectedPreset('custom')}
+              color={selectedPreset === 'custom' ? 'primary' : 'default'}
+              variant={selectedPreset === 'custom' ? 'filled' : 'outlined'}
+              sx={{
+                fontWeight: 600,
+                py: 2.5,
+                px: 1,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme =>
+                    selectedPreset === 'custom'
+                      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.3)}`
+                      : '0 4px 12px rgba(0,0,0,0.1)',
+                },
+              }}
+            />
+          </Box>
+        </Box>
+
         {/* Filters Section */}
         <Box sx={{ mb: 3 }}>
           <Box
@@ -443,16 +662,27 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               justifyContent: 'space-between',
               cursor: 'pointer',
               mb: 1,
+              p: 1.5,
+              borderRadius: 2,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: theme =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.05)'
+                    : 'rgba(255, 119, 0, 0.02)',
+              },
             }}
             onClick={() => setShowFilters(!showFilters)}
           >
-            <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FilterAltIcon />
-              {t('export.filtersLabel')}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FilterAltIcon sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight={700}>
+                {t('export.filtersLabel')}
+              </Typography>
               {hasActiveFilters && (
                 <Chip label={t('export.active')} size="small" color="secondary" />
               )}
-            </Typography>
+            </Box>
             <IconButton size="small">
               {showFilters ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
@@ -462,7 +692,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             <Paper
               elevation={0}
               sx={{
-                p: 2,
+                p: 2.5,
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
@@ -534,7 +764,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
           </Collapse>
         </Box>
 
-        {/* Columns Selection */}
+        {/* Enhanced Columns Selection with Groups */}
         <Box>
           <Box
             sx={{
@@ -543,14 +773,30 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               justifyContent: 'space-between',
               cursor: 'pointer',
               mb: 1,
+              p: 1.5,
+              borderRadius: 2,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: theme =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.05)'
+                    : 'rgba(255, 119, 0, 0.02)',
+              },
             }}
             onClick={() => setShowColumns(!showColumns)}
           >
-            <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ViewColumnIcon />
-              {t('export.columnsLabel')}
-              <Chip label={`${enabledColumnsCount}/${columns.length}`} size="small" />
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ViewColumnIcon sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight={700}>
+                {t('export.columnsLabel')}
+              </Typography>
+              <Chip
+                label={`${enabledColumnsCount}/${columns.length}`}
+                size="small"
+                color="primary"
+                sx={{ fontWeight: 700 }}
+              />
+            </Box>
             <IconButton size="small">
               {showColumns ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
@@ -560,7 +806,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
             <Paper
               elevation={0}
               sx={{
-                p: 2,
+                p: 2.5,
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
@@ -570,12 +816,12 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                     : 'rgba(0, 0, 0, 0.02)',
               }}
             >
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
                 <Button
                   size="small"
                   variant="outlined"
                   onClick={handleSelectAllColumns}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 2, fontWeight: 600 }}
                 >
                   {t('export.selectAll')}
                 </Button>
@@ -583,40 +829,276 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
                   size="small"
                   variant="outlined"
                   onClick={handleDeselectAllColumns}
-                  sx={{ borderRadius: 2 }}
+                  sx={{ borderRadius: 2, fontWeight: 600 }}
                 >
                   {t('export.deselectAll')}
                 </Button>
               </Box>
 
-              <FormGroup>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1 }}>
-                  {columns.map(column => (
-                    <FormControlLabel
-                      key={column.key}
-                      control={
-                        <Checkbox
-                          checked={column.enabled}
-                          onChange={() => handleColumnToggle(column.key)}
-                        />
-                      }
-                      label={column.label}
+              {/* Column Groups */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {columnGroups.map((group, groupIndex) => {
+                  const groupEnabledCount = group.columns.filter(c => c.enabled).length;
+                  return (
+                    <Paper
+                      key={group.key}
+                      elevation={0}
                       sx={{
-                        m: 0,
-                        p: 1,
-                        borderRadius: 1,
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        background: theme =>
+                          theme.palette.mode === 'dark'
+                            ? 'rgba(255, 119, 0, 0.03)'
+                            : 'rgba(255, 119, 0, 0.01)',
+                        transition: 'all 0.2s ease',
                         '&:hover': {
-                          background: theme =>
+                          borderColor: 'primary.main',
+                          boxShadow: theme =>
                             theme.palette.mode === 'dark'
-                              ? 'rgba(255, 119, 0, 0.05)'
-                              : 'rgba(255, 119, 0, 0.02)',
+                              ? '0 4px 12px rgba(255, 119, 0, 0.15)'
+                              : '0 4px 12px rgba(255, 119, 0, 0.1)',
                         },
                       }}
-                    />
-                  ))}
-                </Box>
-              </FormGroup>
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 36,
+                            height: 36,
+                            borderRadius: 2,
+                            bgcolor: theme =>
+                              theme.palette.mode === 'dark'
+                                ? 'rgba(255, 119, 0, 0.15)'
+                                : 'rgba(255, 119, 0, 0.08)',
+                            color: 'primary.main',
+                          }}
+                        >
+                          {group.icon}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="subtitle1" fontWeight={700}>
+                              {group.label}
+                            </Typography>
+                            <Badge
+                              badgeContent={`${groupEnabledCount}/${group.columns.length}`}
+                              color="primary"
+                              sx={{
+                                '& .MuiBadge-badge': {
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  minWidth: 32,
+                                },
+                              }}
+                            />
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {group.description}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <FormGroup>
+                        <Box
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                            gap: 0.5,
+                          }}
+                        >
+                          {group.columns.map(column => (
+                            <Tooltip
+                              key={column.key}
+                              title={`Kolom: ${column.label}`}
+                              placement="top"
+                            >
+                              <FormControlLabel
+                                control={
+                                  <Checkbox
+                                    checked={column.enabled}
+                                    onChange={() => handleColumnToggle(column.key)}
+                                    size="small"
+                                  />
+                                }
+                                label={
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: column.enabled ? 600 : 400,
+                                      color: column.enabled ? 'text.primary' : 'text.secondary',
+                                    }}
+                                  >
+                                    {column.label}
+                                  </Typography>
+                                }
+                                sx={{
+                                  m: 0,
+                                  p: 1,
+                                  borderRadius: 1,
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    background: theme =>
+                                      theme.palette.mode === 'dark'
+                                        ? 'rgba(255, 119, 0, 0.08)'
+                                        : 'rgba(255, 119, 0, 0.04)',
+                                  },
+                                }}
+                              />
+                            </Tooltip>
+                          ))}
+                        </Box>
+                      </FormGroup>
+                    </Paper>
+                  );
+                })}
+              </Box>
             </Paper>
+          </Collapse>
+        </Box>
+
+        {/* Data Preview Section */}
+        <Box sx={{ mt: 3 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              mb: 1,
+              p: 1.5,
+              borderRadius: 2,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: theme =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.05)'
+                    : 'rgba(255, 119, 0, 0.02)',
+              },
+            }}
+            onClick={() => setShowPreview(!showPreview)}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PreviewIcon sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight={700}>
+                Data Voorbeeld
+              </Typography>
+              <Tooltip title="Toont de eerste 3 rijen van de export">
+                <InfoOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+              </Tooltip>
+            </Box>
+            <IconButton size="small">
+              {showPreview ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          </Box>
+
+          <Collapse in={showPreview}>
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                maxHeight: 300,
+                background: theme =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(0, 0, 0, 0.2)'
+                    : 'rgba(0, 0, 0, 0.02)',
+              }}
+            >
+              {enabledColumns.length === 0 ? (
+                <Box
+                  sx={{
+                    p: 4,
+                    textAlign: 'center',
+                    color: 'text.secondary',
+                  }}
+                >
+                  <ViewColumnIcon sx={{ fontSize: 48, mb: 1, opacity: 0.3 }} />
+                  <Typography variant="body2">
+                    Selecteer minimaal één kolom om een voorbeeld te zien
+                  </Typography>
+                </Box>
+              ) : previewAssets.length === 0 ? (
+                <Box
+                  sx={{
+                    p: 4,
+                    textAlign: 'center',
+                    color: 'text.secondary',
+                  }}
+                >
+                  <InventoryIcon sx={{ fontSize: 48, mb: 1, opacity: 0.3 }} />
+                  <Typography variant="body2">
+                    Geen assets gevonden met de huidige filters
+                  </Typography>
+                </Box>
+              ) : (
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      {enabledColumns.map(col => (
+                        <TableCell
+                          key={col.key}
+                          sx={{
+                            fontWeight: 700,
+                            bgcolor: theme =>
+                              theme.palette.mode === 'dark'
+                                ? 'rgba(255, 119, 0, 0.15)'
+                                : 'rgba(255, 119, 0, 0.08)',
+                            borderBottom: '2px solid',
+                            borderColor: 'primary.main',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {col.label}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {previewAssets.map((asset, index) => (
+                      <TableRow
+                        key={asset.id}
+                        sx={{
+                          '&:nth-of-type(odd)': {
+                            bgcolor: theme =>
+                              theme.palette.mode === 'dark'
+                                ? 'rgba(255, 255, 255, 0.02)'
+                                : 'rgba(0, 0, 0, 0.02)',
+                          },
+                        }}
+                      >
+                        {enabledColumns.map(col => (
+                          <TableCell
+                            key={col.key}
+                            sx={{
+                              whiteSpace: 'nowrap',
+                              maxWidth: 200,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {String(asset[col.key] || '-')}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TableContainer>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 1, textAlign: 'center' }}
+            >
+              Preview toont maximaal 3 rijen • Totaal export: {filteredAssets.length} assets
+            </Typography>
           </Collapse>
         </Box>
       </DialogContent>
@@ -633,7 +1115,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
               : 'linear-gradient(180deg, transparent 0%, rgba(255, 119, 0, 0.02) 100%)',
         }}
       >
-        <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2 }}>
+        <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2, fontWeight: 600 }}>
           {t('common.cancel')}
         </Button>
         <Button
@@ -644,8 +1126,12 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
           sx={{
             borderRadius: 2,
             px: 3,
+            fontWeight: 700,
             animation: `${pulse} 2s infinite`,
             '&:hover': {
+              animation: 'none',
+            },
+            '&:disabled': {
               animation: 'none',
             },
           }}
