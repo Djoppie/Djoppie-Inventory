@@ -336,9 +336,12 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
   const errorResults = result?.results.filter((r) => !r.success) || [];
   const rowsWithErrors = useMemo(() => previewData.filter((r) => r.hasError).length, [previewData]);
   const validRows = useMemo(() => previewData.filter((r) => !r.hasError).length, [previewData]);
+  const newRows = useMemo(() => previewData.filter((r) => !r.hasError && !r.assetCode).length, [previewData]);
+  const updateRows = useMemo(() => previewData.filter((r) => !r.hasError && r.assetCode).length, [previewData]);
 
   // Visible columns for preview table
   const visibleColumns = [
+    { id: 'mode', label: 'Modus', minWidth: 70 },
     { id: 'assetCode', label: 'Asset Code', minWidth: 100 },
     { id: 'serialNumber', label: 'Serial', minWidth: 100 },
     { id: 'assetTypeCode', label: 'Type', minWidth: 60 },
@@ -544,6 +547,24 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                   color="success"
                   sx={{ fontWeight: 600 }}
                 />
+                {newRows > 0 && (
+                  <Chip
+                    label={`${newRows} nieuw`}
+                    color="success"
+                    variant="outlined"
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+                {updateRows > 0 && (
+                  <Chip
+                    label={`${updateRows} update`}
+                    color="info"
+                    variant="outlined"
+                    size="small"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
                 {rowsWithErrors > 0 && (
                   <Chip
                     icon={<ErrorIcon />}
@@ -644,8 +665,20 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                         </Box>
                       </TableCell>
                       <TableCell>
+                        <Chip
+                          label={row.assetCode ? 'Update' : 'Nieuw'}
+                          size="small"
+                          color={row.assetCode ? 'info' : 'success'}
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: '0.65rem',
+                            height: 20,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
                         <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: row.assetCode ? 'primary.main' : 'text.secondary' }}>
-                          {row.assetCode || '(nieuw)'}
+                          {row.assetCode || '(auto)'}
                         </Typography>
                       </TableCell>
                       <TableCell>
