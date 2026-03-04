@@ -33,19 +33,20 @@ public class CsvImportService : ICsvImportService
         "PurchaseDate",        // 4 - REQUIRED for new assets
         "IsDummy",             // 5 - Optional (default: false) - true/false or 1/0
         "AssetName",           // 6 - Optional (Intune: DeviceName)
-        "Alias",               // 7 - Optional user-friendly name
-        "ServiceCode",         // 8 - Optional (location/department)
-        "InstallationLocation", // 9 - Optional (specific location within building)
-        "Owner",               // 10 - Optional (Intune: Primary User)
-        "JobTitle",            // 11 - Optional (job title of assigned user)
-        "OfficeLocation",      // 12 - Optional (office location of assigned user)
-        "Brand",               // 13 - Optional (Intune)
-        "Model",               // 14 - Optional (Intune)
-        "InstallationDate",    // 15 - Optional
-        "WarrantyExpiry",      // 16 - Optional
-        "Notes",               // 17 - Optional
-        "LegacyBuilding",      // 18 - Optional (for historical data migration)
-        "LegacyDepartment"     // 19 - Optional (for historical data migration)
+        "Alias",               // 7 - Optional user-friendly name (auto-generated: AssetTypeName - Brand - Model)
+        "Sector",              // 8 - Optional (sector name for import/export)
+        "ServiceName",         // 9 - Optional (service name for import/export)
+        "InstallationLocation", // 10 - Optional (specific location within building)
+        "Owner",               // 11 - Optional (Intune: Primary User)
+        "JobTitle",            // 12 - Optional (job title of assigned user)
+        "OfficeLocation",      // 13 - Optional (office location of assigned user)
+        "Brand",               // 14 - Optional (Intune)
+        "Model",               // 15 - Optional (Intune)
+        "InstallationDate",    // 16 - Optional
+        "WarrantyExpiry",      // 17 - Optional
+        "Notes",               // 18 - Optional
+        "LegacyBuilding",      // 19 - Optional (for historical data migration)
+        "LegacyDepartment"     // 20 - Optional (for historical data migration)
     };
 
     public CsvImportService(
@@ -83,7 +84,7 @@ public class CsvImportService : ICsvImportService
             var assetTypes = (await _assetTypeRepository.GetAllAsync(includeInactive: false, cancellationToken))
                 .ToDictionary(at => at.Code, at => at, StringComparer.OrdinalIgnoreCase);
             var services = (await _serviceRepository.GetAllAsync(includeInactive: false, cancellationToken: cancellationToken))
-                .ToDictionary(s => s.Code, s => s, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(s => s.Name, s => s, StringComparer.OrdinalIgnoreCase);
 
             // Track asset codes in this import to detect duplicates
             var assetCodesInImport = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -149,7 +150,7 @@ public class CsvImportService : ICsvImportService
             var assetTypes = (await _assetTypeRepository.GetAllAsync(includeInactive: false, cancellationToken))
                 .ToDictionary(at => at.Code, at => at, StringComparer.OrdinalIgnoreCase);
             var services = (await _serviceRepository.GetAllAsync(includeInactive: false, cancellationToken: cancellationToken))
-                .ToDictionary(s => s.Code, s => s, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(s => s.Name, s => s, StringComparer.OrdinalIgnoreCase);
 
             // Track asset codes within this CSV for duplicate detection
             var assetCodesInCsv = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -255,13 +256,13 @@ public class CsvImportService : ICsvImportService
             }
         }
 
-        // Validate ServiceCode if provided
-        if (!string.IsNullOrWhiteSpace(csvRow.ServiceCode))
+        // Validate ServiceName if provided
+        if (!string.IsNullOrWhiteSpace(csvRow.ServiceName))
         {
-            if (!services.ContainsKey(csvRow.ServiceCode))
+            if (!services.ContainsKey(csvRow.ServiceName))
             {
-                var validCodes = string.Join(", ", services.Keys.OrderBy(k => k));
-                errors.Add($"ServiceCode '{csvRow.ServiceCode}' not found. Valid: {validCodes}");
+                var validNames = string.Join(", ", services.Keys.OrderBy(k => k));
+                errors.Add($"ServiceName '{csvRow.ServiceName}' not found. Valid: {validNames}");
             }
         }
 
@@ -389,14 +390,14 @@ public class CsvImportService : ICsvImportService
             }
         }
 
-        // Validate ServiceCode if provided
+        // Validate ServiceName if provided
         Service? service = null;
-        if (!string.IsNullOrWhiteSpace(csvRow.ServiceCode))
+        if (!string.IsNullOrWhiteSpace(csvRow.ServiceName))
         {
-            if (!services.TryGetValue(csvRow.ServiceCode, out service))
+            if (!services.TryGetValue(csvRow.ServiceName, out service))
             {
-                var validCodes = string.Join(", ", services.Keys.OrderBy(k => k));
-                errors.Add($"ServiceCode '{csvRow.ServiceCode}' not found. Valid codes: {validCodes}");
+                var validNames = string.Join(", ", services.Keys.OrderBy(k => k));
+                errors.Add($"ServiceName '{csvRow.ServiceName}' not found. Valid: {validNames}");
             }
         }
 
@@ -543,12 +544,22 @@ public class CsvImportService : ICsvImportService
                 // Use AssetType.Name as Category
                 var category = assetType.Name;
 
+                // Auto-generate Alias if not provided: AssetTypeName - Brand - Model
+                var alias = csvRow.Alias;
+                if (string.IsNullOrWhiteSpace(alias))
+                {
+                    var aliasParts = new[] { assetType.Name, csvRow.Brand, csvRow.Model }
+                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                        .ToArray();
+                    alias = aliasParts.Length > 0 ? string.Join(" - ", aliasParts) : null;
+                }
+
                 asset = new Asset
                 {
                     AssetCode = assetCode,
                     SerialNumber = csvRow.SerialNumber,
                     AssetName = csvRow.AssetName ?? string.Empty,
-                    Alias = csvRow.Alias,
+                    Alias = alias,
                     Category = category,
                     AssetTypeId = assetType.Id,
                     ServiceId = service?.Id,
@@ -691,18 +702,19 @@ public class CsvImportService : ICsvImportService
                 IsDummy = ParseBool(GetValueOrNull(values, 5)),
                 AssetName = GetValueOrNull(values, 6),
                 Alias = GetValueOrNull(values, 7),
-                ServiceCode = GetValueOrNull(values, 8),
-                InstallationLocation = GetValueOrNull(values, 9),
-                Owner = GetValueOrNull(values, 10),
-                JobTitle = GetValueOrNull(values, 11),
-                OfficeLocation = GetValueOrNull(values, 12),
-                Brand = GetValueOrNull(values, 13),
-                Model = GetValueOrNull(values, 14),
-                InstallationDate = GetValueOrNull(values, 15),
-                WarrantyExpiry = GetValueOrNull(values, 16),
-                Notes = GetValueOrNull(values, 17),
-                LegacyBuilding = GetValueOrNull(values, 18),
-                LegacyDepartment = GetValueOrNull(values, 19)
+                Sector = GetValueOrNull(values, 8),
+                ServiceName = GetValueOrNull(values, 9),
+                InstallationLocation = GetValueOrNull(values, 10),
+                Owner = GetValueOrNull(values, 11),
+                JobTitle = GetValueOrNull(values, 12),
+                OfficeLocation = GetValueOrNull(values, 13),
+                Brand = GetValueOrNull(values, 14),
+                Model = GetValueOrNull(values, 15),
+                InstallationDate = GetValueOrNull(values, 16),
+                WarrantyExpiry = GetValueOrNull(values, 17),
+                Notes = GetValueOrNull(values, 18),
+                LegacyBuilding = GetValueOrNull(values, 19),
+                LegacyDepartment = GetValueOrNull(values, 20)
             };
 
             rows.Add(row);
@@ -819,8 +831,9 @@ public class CsvImportService : ICsvImportService
             "15-01-2024",           // PurchaseDate (REQUIRED for new assets) - DD-MM-YYYY
             "false",                // IsDummy (optional, default: false)
             "",                     // AssetName (optional - Intune)
-            "My Laptop",            // Alias (optional - user-friendly name)
-            "IT",                   // ServiceCode (optional - location)
+            "",                     // Alias (optional - auto-generated: AssetTypeName - Brand - Model)
+            "Personeel",            // Sector (optional - sector name)
+            "ICT",                  // ServiceName (optional - service name for location)
             "Room 201",             // InstallationLocation (optional - specific location)
             "",                     // Owner (optional - Intune)
             "",                     // JobTitle (optional)
@@ -866,9 +879,10 @@ public class CsvImportService : ICsvImportService
         sb.AppendLine("#   - Model: Model name (Intune)");
         sb.AppendLine("#");
         sb.AppendLine("# OTHER OPTIONAL COLUMNS:");
-        sb.AppendLine("#   - Alias: User-friendly nickname for the asset");
+        sb.AppendLine("#   - Alias: User-friendly nickname (auto-generated: AssetTypeName - Brand - Model)");
         sb.AppendLine("#   - SerialNumber: Device serial number (optional, NOT unique)");
-        sb.AppendLine("#   - ServiceCode: Department/Location code (see below)");
+        sb.AppendLine("#   - Sector: Sector name (see below)");
+        sb.AppendLine("#   - ServiceName: Service/Department name (see below)");
         sb.AppendLine("#   - InstallationLocation: Specific location (e.g., Room 201)");
         sb.AppendLine("#   - JobTitle: Job title of assigned user");
         sb.AppendLine("#   - OfficeLocation: Office location of assigned user");
@@ -887,11 +901,11 @@ public class CsvImportService : ICsvImportService
         }
         sb.AppendLine("#");
 
-        // List valid ServiceCodes (used as location)
-        sb.AppendLine("# SERVICE CODES (Location):");
+        // List valid ServiceNames (used as location)
+        sb.AppendLine("# SERVICE NAMES (Location):");
         foreach (var s in services.OrderBy(s => s.SortOrder))
         {
-            sb.AppendLine($"#   {s.Code} = {s.Name}");
+            sb.AppendLine($"#   {s.Name} (Sector: {s.Sector?.Name ?? "N/A"})");
         }
         sb.AppendLine("#");
         sb.AppendLine("# DELETE THIS EXAMPLE ROW AND ADD YOUR DATA BELOW");
@@ -929,7 +943,8 @@ public class CsvImportService : ICsvImportService
                 asset.IsDummy ? "true" : "false",                                   // IsDummy
                 asset.AssetName ?? string.Empty,                                    // AssetName
                 asset.Alias ?? string.Empty,                                        // Alias
-                asset.Service?.Code ?? string.Empty,                                // ServiceCode
+                asset.Service?.Sector?.Name ?? string.Empty,                        // Sector
+                asset.Service?.Name ?? string.Empty,                                // ServiceName
                 asset.InstallationLocation ?? string.Empty,                         // InstallationLocation
                 asset.Owner ?? string.Empty,                                        // Owner
                 asset.JobTitle ?? string.Empty,                                     // JobTitle

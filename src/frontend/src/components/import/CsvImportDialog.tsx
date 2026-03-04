@@ -53,7 +53,7 @@ interface CsvImportDialogProps {
 }
 
 // CSV row structure for preview (parsed locally for display)
-// Matches the 20-column backend CSV structure
+// Matches the 21-column backend CSV structure
 interface CsvPreviewRow {
   rowNumber: number;
   assetCode: string;           // 0 - For updates
@@ -64,18 +64,19 @@ interface CsvPreviewRow {
   isDummy: string;             // 5
   assetName: string;           // 6
   alias: string;               // 7
-  serviceCode: string;         // 8
-  installationLocation: string; // 9
-  owner: string;               // 10
-  jobTitle: string;            // 11
-  officeLocation: string;      // 12
-  brand: string;               // 13
-  model: string;               // 14
-  installationDate: string;    // 15
-  warrantyExpiry: string;      // 16
-  notes: string;               // 17
-  legacyBuilding: string;      // 18
-  legacyDepartment: string;    // 19
+  sector: string;              // 8
+  serviceName: string;         // 9
+  installationLocation: string; // 10
+  owner: string;               // 11
+  jobTitle: string;            // 12
+  officeLocation: string;      // 13
+  brand: string;               // 14
+  model: string;               // 15
+  installationDate: string;    // 16
+  warrantyExpiry: string;      // 17
+  notes: string;               // 18
+  legacyBuilding: string;      // 19
+  legacyDepartment: string;    // 20
   // Validation from server
   hasError: boolean;
   errorMessage: string;
@@ -134,18 +135,19 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
         isDummy: values[5] || 'false',
         assetName: values[6] || '',
         alias: values[7] || '',
-        serviceCode: values[8] || '',
-        installationLocation: values[9] || '',
-        owner: values[10] || '',
-        jobTitle: values[11] || '',
-        officeLocation: values[12] || '',
-        brand: values[13] || '',
-        model: values[14] || '',
-        installationDate: values[15] || '',
-        warrantyExpiry: values[16] || '',
-        notes: values[17] || '',
-        legacyBuilding: values[18] || '',
-        legacyDepartment: values[19] || '',
+        sector: values[8] || '',
+        serviceName: values[9] || '',
+        installationLocation: values[10] || '',
+        owner: values[11] || '',
+        jobTitle: values[12] || '',
+        officeLocation: values[13] || '',
+        brand: values[14] || '',
+        model: values[15] || '',
+        installationDate: values[16] || '',
+        warrantyExpiry: values[17] || '',
+        notes: values[18] || '',
+        legacyBuilding: values[19] || '',
+        legacyDepartment: values[20] || '',
         hasError: errors.length > 0,
         errorMessage: errors.join('; '),
       });
@@ -347,7 +349,7 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
     { id: 'assetTypeCode', label: 'Type', minWidth: 60 },
     { id: 'status', label: 'Status', minWidth: 80 },
     { id: 'purchaseDate', label: 'Purchase', minWidth: 90 },
-    { id: 'serviceCode', label: 'Service', minWidth: 70 },
+    { id: 'serviceName', label: 'Service', minWidth: 70 },
     { id: 'owner', label: 'Owner', minWidth: 100 },
     { id: 'alias', label: 'Alias', minWidth: 100 },
   ];
@@ -707,7 +709,7 @@ const CsvImportDialog = ({ open, onClose, onSuccess }: CsvImportDialogProps) => 
                       </TableCell>
                       <TableCell>{row.status || 'Stock'}</TableCell>
                       <TableCell>{row.purchaseDate || '-'}</TableCell>
-                      <TableCell>{row.serviceCode || '-'}</TableCell>
+                      <TableCell>{row.serviceName || '-'}</TableCell>
                       <TableCell
                         sx={{
                           maxWidth: 120,

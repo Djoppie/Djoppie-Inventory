@@ -43,14 +43,19 @@ public record CsvImportRowDto
     public string? AssetName { get; init; }
 
     /// <summary>
-    /// User-friendly alias/nickname for the asset - optional
+    /// User-friendly alias/nickname for the asset - optional (auto-generated: AssetTypeName - Brand - Model)
     /// </summary>
     public string? Alias { get; init; }
 
     /// <summary>
-    /// Service/Department code (e.g., IT, FIN) - optional, used as location
+    /// Sector name (e.g., Personeel, Vrije Tijd) - optional, used for import/export
     /// </summary>
-    public string? ServiceCode { get; init; }
+    public string? Sector { get; init; }
+
+    /// <summary>
+    /// Service name (e.g., ICT, Financiën) - optional, used for import/export to look up service
+    /// </summary>
+    public string? ServiceName { get; init; }
 
     /// <summary>
     /// Specific installation location within building (e.g., "Room 201") - optional

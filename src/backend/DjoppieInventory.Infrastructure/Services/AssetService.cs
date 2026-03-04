@@ -357,7 +357,7 @@ public class AssetService : IAssetService
     }
 
     /// <summary>
-    /// Generates an alias from asset components: AssetType-Owner-Brand-Model.
+    /// Generates an alias from asset components: AssetTypeName - Brand - Model.
     /// Empty components are skipped.
     /// </summary>
     private async Task<string?> GenerateAliasAsync(int? assetTypeId, string? owner, string? brand, string? model)
@@ -369,10 +369,11 @@ public class AssetService : IAssetService
             assetTypeName = assetType?.Name;
         }
 
-        var parts = new[] { assetTypeName, owner, brand, model }
+        // Generate alias as: AssetTypeName - Brand - Model (Owner is excluded)
+        var parts = new[] { assetTypeName, brand, model }
             .Where(p => !string.IsNullOrWhiteSpace(p))
             .ToArray();
 
-        return parts.Length > 0 ? string.Join("-", parts) : null;
+        return parts.Length > 0 ? string.Join(" - ", parts) : null;
     }
 }
