@@ -14,6 +14,8 @@ const AddAssetPage = lazy(() => import('./pages/AddAssetPage'));
 const EditAssetPage = lazy(() => import('./pages/EditAssetPage'));
 const BulkCreateAssetPage = lazy(() => import('./pages/BulkCreateAssetPage'));
 const AssetTemplatesPage = lazy(() => import('./pages/AssetTemplatesPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const InstalledSoftwarePage = lazy(() => import('./pages/InstalledSoftwarePage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +42,9 @@ function App() {
                   <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
                   <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />
                   <Route path={ROUTES.ASSET_EDIT} element={<EditAssetPage />} />
+                  <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
+                  <Route path={ROUTES.ADMIN} element={<AdminPage />} />
                 </Routes>
               </Suspense>
             </Layout>

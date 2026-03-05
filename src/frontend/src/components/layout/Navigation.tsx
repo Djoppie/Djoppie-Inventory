@@ -5,6 +5,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import CategoryIcon from '@mui/icons-material/Category';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { ROUTES } from '../../constants/routes';
 
 /**
@@ -19,9 +20,10 @@ const Navigation = () => {
   // Derive value from current location instead of using state
   const getValue = () => {
     if (location.pathname === ROUTES.DASHBOARD) return 0;
-    if (location.pathname === ROUTES.SCAN) return 1;
-    if (location.pathname === ROUTES.ASSETS_NEW) return 2;
+    if (location.pathname === ROUTES.ASSETS_NEW) return 1;
+    if (location.pathname === ROUTES.SCAN) return 2;
     if (location.pathname === ROUTES.TEMPLATES) return 3;
+    if (location.pathname === ROUTES.ADMIN) return 4;
     return 0;
   };
 
@@ -31,13 +33,16 @@ const Navigation = () => {
         navigate(ROUTES.DASHBOARD);
         break;
       case 1:
-        navigate(ROUTES.SCAN);
+        navigate(ROUTES.ASSETS_NEW);
         break;
       case 2:
-        navigate(ROUTES.ASSETS_NEW);
+        navigate(ROUTES.SCAN);
         break;
       case 3:
         navigate(ROUTES.TEMPLATES);
+        break;
+      case 4:
+        navigate(ROUTES.ADMIN);
         break;
     }
   };
@@ -55,9 +60,10 @@ const Navigation = () => {
     >
       <BottomNavigation value={getValue()} onChange={handleChange}>
         <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
-        <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.assets')} icon={<AddBoxIcon />} />
+        <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.templates')} icon={<CategoryIcon />} />
+        <BottomNavigationAction label={t('navigation.admin')} icon={<AdminPanelSettingsIcon />} />
       </BottomNavigation>
     </Paper>
   );

@@ -58,16 +58,14 @@ public static class DatabaseExtensions
             {
                 try
                 {
-                    // Use EnsureCreated to generate schema matching the current provider (SQL Server)
-                    // Note: existing SQLite-based migrations are not compatible with SQL Server
-                    logger.LogInformation("Ensuring database schema exists...");
-                    db.Database.EnsureCreated();
-                    logger.LogInformation("Database schema ready.");
+                    logger.LogInformation("Applying pending database migrations...");
+                    db.Database.Migrate();
+                    logger.LogInformation("Database migrations applied successfully.");
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "An error occurred while initializing the database.");
-                    logger.LogWarning("Application will start without database initialization. Please run migrations manually.");
+                    logger.LogError(ex, "An error occurred while applying database migrations.");
+                    logger.LogWarning("Application will start without database migration. Please run migrations manually.");
                 }
             }
         }

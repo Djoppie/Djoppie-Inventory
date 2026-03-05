@@ -11,6 +11,7 @@ Click any asset card on the dashboard to view its full details.
 ### Information Sections
 
 **Identification**
+
 - **Asset Code** - Unique identifier (e.g., LAP-26-ICT-001)
 - **Asset Name** - Descriptive name
 - **Alias** - Optional friendly name
@@ -18,6 +19,7 @@ Click any asset card on the dashboard to view its full details.
 - **Status** - Current operational status
 
 **Assignment**
+
 - **Owner** - Person assigned to the asset
 - **Building** - Physical location
 - **Department** - Owner's department
@@ -25,16 +27,19 @@ Click any asset card on the dashboard to view its full details.
 - **Office Location** - Specific office or desk
 
 **Technical Specifications**
+
 - **Brand** - Manufacturer (e.g., Dell, HP, Cisco)
 - **Model** - Model number or name
 - **Serial Number** - Manufacturer's serial number
 
 **Lifecycle Information**
+
 - **Purchase Date** - When the asset was acquired
 - **Warranty Expiry** - End of warranty coverage
 - **Installation Date** - When the asset was deployed
 
 **QR Code**
+
 - A scannable QR code is displayed
 - Click **Download QR Code** to save as SVG for printing
 
@@ -80,12 +85,15 @@ Select a template or choose **"No template - Manual entry"**.
 ### Step 4: Fill Optional Fields
 
 **Assignment:**
+
 - Owner, Building, Department, Job Title, Office Location
 
 **Technical:**
+
 - Brand, Model, Serial Number (highly recommended)
 
 **Lifecycle:**
+
 - Purchase Date, Warranty Expiry, Installation Date
 
 ### Step 5: Save
@@ -108,14 +116,17 @@ Select a template or choose **"No template - Manual entry"**.
 ### Common Edit Scenarios
 
 **Reassigning an Asset:**
+
 - Change the **Owner** field
 - Update **Building** and **Office Location** if needed
 
 **Updating Location:**
+
 - Modify **Building** field
 - Update **Office Location** or **Space/Floor**
 
 **Updating Status:**
+
 - Change the **Status** dropdown
 - See Asset Status section below
 
@@ -134,25 +145,30 @@ Select a template or choose **"No template - Manual entry"**.
 ### When to Use Each Status
 
 **InGebruik** - Use when:
+
 - Asset is assigned to a user and functioning normally
 - Asset is deployed in production
 
 **Stock** - Use when:
+
 - New asset received but not yet assigned
 - Asset returned and available for reuse
 - Asset in storage awaiting deployment
 
 **Herstelling** - Use when:
+
 - Asset needs repair or maintenance
 - Sent to vendor for warranty service
 - Temporary issue that will be resolved
 
 **Defect** - Use when:
+
 - Asset is permanently broken
 - Repair cost exceeds replacement cost
 - Asset will be disposed of
 
 **UitDienst** - Use when:
+
 - Asset has reached end of life
 - Being retired due to obsolescence
 - Will not be used again

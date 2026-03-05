@@ -24,6 +24,12 @@ export const ROUTES = {
 
   /** Asset templates management page */
   TEMPLATES: '/templates',
+
+  /** Admin management page */
+  ADMIN: '/admin',
+
+  /** Installed software page (requires :id parameter) */
+  ASSET_SOFTWARE: '/assets/:id/software',
 } as const;
 
 /**
@@ -43,4 +49,11 @@ export const buildRoute = {
    * @returns The full route path
    */
   assetEdit: (id: number | string) => `/assets/${id}/edit`,
+
+  /**
+   * Builds the installed software route with the specified asset ID.
+   * @param id - The asset ID
+   * @returns The full route path
+   */
+  assetSoftware: (id: number | string) => `/assets/${id}/software`,
 } as const;

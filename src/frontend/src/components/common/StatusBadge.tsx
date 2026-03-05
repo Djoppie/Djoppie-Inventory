@@ -94,6 +94,23 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
           },
         };
 
+      case AssetStatus.Nieuw:
+      case 'Nieuw':
+        // Cyan/Teal - New (added to inventory, not yet in use)
+        return {
+          backgroundColor: 'rgba(0, 188, 212, 0.15)',
+          color: 'rgb(0, 131, 143)',
+          border: '2px solid rgba(0, 188, 212, 0.6)',
+          '& .MuiChip-label': {
+            color: 'rgb(0, 131, 143)',
+            fontWeight: 700,
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(0, 188, 212, 0.25)',
+            boxShadow: '0 0 8px rgba(0, 188, 212, 0.3)',
+          },
+        };
+
       default:
         // Default - Djoppie Orange for unknown statuses
         return {

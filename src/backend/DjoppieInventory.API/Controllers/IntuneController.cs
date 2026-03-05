@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using DjoppieInventory.API.Helpers;
+using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -325,6 +326,182 @@ public class IntuneController : ControllerBase
         {
             _logger.LogError(ex, "Unexpected error retrieving device statistics");
             return StatusCode(500, new { error = "An unexpected error occurred while retrieving statistics" });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves all installed applications/software for a specific managed device from Intune.
+    /// Uses Microsoft Graph Beta API to retrieve detected apps.
+    /// </summary>
+    /// <param name="deviceId">The Intune device identifier (GUID)</param>
+    /// <returns>Device information with list of installed applications</returns>
+    /// <response code="200">Returns the device information and installed applications</response>
+    /// <response code="400">Invalid device ID format</response>
+    /// <response code="404">Device not found</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /api/intune/devices/{deviceId}/apps
+    ///
+    /// This endpoint retrieves all detected/installed applications on a managed device.
+    /// The data includes application name, version, publisher, size, and platform information.
+    ///
+    /// Note: This endpoint uses the Microsoft Graph Beta API as the $expand=detectedApps
+    /// functionality is only available in the beta version.
+    /// </remarks>
+    [HttpGet("devices/{deviceId}/apps")]
+    [ProducesResponseType(typeof(DeviceDetectedAppsResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceDetectedAppsResponseDto>> GetDeviceInstalledApps(string deviceId)
+    {
+        try
+        {
+            if (!InputValidator.ValidateDeviceId(deviceId, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request to retrieve installed applications for device: {DeviceId}", deviceId);
+            var result = await _intuneService.GetDeviceInstalledAppsAsync(deviceId);
+
+            if (result == null)
+            {
+                return NotFound(new { error = $"Device with ID '{deviceId}' not found in Intune" });
+            }
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve installed apps for device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "Failed to retrieve installed applications", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving installed apps for device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "An unexpected error occurred while retrieving installed applications" });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves all installed applications/software for a device identified by serial number.
+    /// First looks up the device by serial number, then retrieves the installed apps from Intune.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Device information with list of installed applications</returns>
+    /// <response code="200">Returns the device information and installed applications</response>
+    /// <response code="400">Invalid serial number format</response>
+    /// <response code="404">Device not found with the given serial number</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /api/intune/devices/serial/{serialNumber}/apps
+    ///
+    /// This endpoint first finds the Intune device by serial number, then retrieves all
+    /// detected/installed applications. Useful when you only have the serial number (e.g., from asset inventory).
+    /// </remarks>
+    [HttpGet("devices/serial/{serialNumber}/apps")]
+    [ProducesResponseType(typeof(DeviceDetectedAppsResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceDetectedAppsResponseDto>> GetDeviceInstalledAppsBySerial(string serialNumber)
+    {
+        try
+        {
+            if (!InputValidator.ValidateSerialNumber(serialNumber, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request to retrieve installed applications for device with serial: {SerialNumber}", serialNumber);
+            var result = await _intuneService.GetDeviceInstalledAppsBySerialAsync(serialNumber);
+
+            if (result == null)
+            {
+                return NotFound(new { error = $"Device with serial number '{serialNumber}' not found in Intune" });
+            }
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve installed apps for device with serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "Failed to retrieve installed applications", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving installed apps for device with serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "An unexpected error occurred while retrieving installed applications" });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves device health information and ICT recommendations for a device identified by serial number.
+    /// Includes compliance status, storage, encryption, OS version, and improvement recommendations.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Device health information with recommendations</returns>
+    /// <response code="200">Returns the device health information and recommendations</response>
+    /// <response code="400">Invalid serial number format</response>
+    /// <response code="404">Device not found with the given serial number</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /api/intune/devices/serial/{serialNumber}/health
+    ///
+    /// This endpoint retrieves comprehensive device health information including:
+    /// - Compliance status
+    /// - Encryption status
+    /// - Storage usage
+    /// - Memory information
+    /// - OS version
+    /// - ICT recommendations for improvements
+    /// </remarks>
+    [HttpGet("devices/serial/{serialNumber}/health")]
+    [ProducesResponseType(typeof(DeviceHealthDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceHealthDto>> GetDeviceHealthBySerial(string serialNumber)
+    {
+        try
+        {
+            if (!InputValidator.ValidateSerialNumber(serialNumber, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request to retrieve device health for serial: {SerialNumber}", serialNumber);
+            var result = await _intuneService.GetDeviceHealthBySerialAsync(serialNumber);
+
+            if (result == null)
+            {
+                return NotFound(new { error = $"Device with serial number '{serialNumber}' not found in Intune" });
+            }
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve device health for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "Failed to retrieve device health", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving device health for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "An unexpected error occurred while retrieving device health" });
         }
     }
 }

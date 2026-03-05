@@ -48,12 +48,26 @@ export const getAssetByCode = async (code: string): Promise<Asset> => {
 };
 
 export const createAsset = async (data: CreateAssetDto): Promise<Asset> => {
-  const response = await apiClient.post<Asset>('/assets', data);
+  // Clean up data: convert empty strings to undefined for optional date fields
+  const cleanedData: CreateAssetDto = {
+    ...data,
+    purchaseDate: data.purchaseDate || undefined,
+    warrantyExpiry: data.warrantyExpiry || undefined,
+    installationDate: data.installationDate || undefined,
+  };
+  const response = await apiClient.post<Asset>('/assets', cleanedData);
   return response.data;
 };
 
 export const updateAsset = async (id: number, data: UpdateAssetDto): Promise<Asset> => {
-  const response = await apiClient.put<Asset>(`/assets/${id}`, data);
+  // Clean up data: convert empty strings to undefined for optional date fields
+  const cleanedData: UpdateAssetDto = {
+    ...data,
+    purchaseDate: data.purchaseDate || undefined,
+    warrantyExpiry: data.warrantyExpiry || undefined,
+    installationDate: data.installationDate || undefined,
+  };
+  const response = await apiClient.put<Asset>(`/assets/${id}`, cleanedData);
   return response.data;
 };
 
@@ -62,12 +76,26 @@ export const deleteAsset = async (id: number): Promise<void> => {
 };
 
 export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCreateAssetResultDto> => {
-  const response = await apiClient.post<BulkCreateAssetResultDto>('/assets/bulk', data);
-  return response.data;
-};
+  // Clean up data: convert empty strings to undefined for optional fields
+  // This is necessary because the backend expects nullable types and cannot parse empty strings
+  const cleanedData: BulkCreateAssetDto = {
+    ...data,
+    // Convert empty date strings to undefined
+    purchaseDate: data.purchaseDate || undefined,
+    warrantyExpiry: data.warrantyExpiry || undefined,
+    installationDate: data.installationDate || undefined,
+    // Convert other empty optional strings to undefined
+    serialNumberPrefix: data.serialNumberPrefix || undefined,
+    assetName: data.assetName || undefined,
+    alias: data.alias || undefined,
+    category: data.category || undefined,
+    owner: data.owner || undefined,
+    installationLocation: data.installationLocation || undefined,
+    brand: data.brand || undefined,
+    model: data.model || undefined,
+  };
 
-export const getNextAssetNumber = async (prefix: string, isDummy: boolean = false): Promise<number> => {
-  const response = await apiClient.get<number>('/assets/next-number', { params: { prefix, isDummy } });
+  const response = await apiClient.post<BulkCreateAssetResultDto>('/assets/bulk', cleanedData);
   return response.data;
 };
 

@@ -24,18 +24,21 @@ Djoppie Inventory is a web-based asset management system designed for IT support
 ## Technology Stack
 
 ### Frontend
+
 - React 19 with TypeScript
 - Material-UI (MUI) component library
 - Vite build tool
 - MSAL React for authentication
 
 ### Backend
+
 - ASP.NET Core 8.0 Web API
 - Entity Framework Core
 - Microsoft Graph SDK for Intune
 - SQLite (dev) / Azure SQL (production)
 
 ### Infrastructure
+
 - Azure Static Web Apps (frontend)
 - Azure App Service (backend)
 - Azure SQL Database
@@ -79,21 +82,24 @@ Djoppie Inventory is a web-based asset management system designed for IT support
 
 | Environment | Frontend URL | Backend URL |
 |-------------|--------------|-------------|
-| Development | http://localhost:5173 | http://localhost:5052 |
+| Development | <http://localhost:5173> | <http://localhost:5052> |
 | Azure DEV | *.azurestaticapps.net | *.azurewebsites.net |
 
 ## Quick Links
 
 ### Documentation
+
 - [User Manual](docs/USER-MANUAL.md) - End-user guide
 - [Administrator Guide](docs/ADMINISTRATOR-GUIDE.md) - IT admin setup
 - [Developer Guide](CLAUDE.md) - Development reference
 - [Installation Guide](INSTALLATION-GUIDE.md) - Setup instructions
 
 ### Azure DevOps Wiki
+
 - [Wiki Documentation](docs/wiki/README.md) - Structured documentation for Azure DevOps
 
 ### Feature Documentation
+
 - [Print Label Feature](docs/PRINT-LABEL-FEATURE.md) - Thermal label printing
 - [Export Feature](docs/EXPORT-FEATURE.md) - Excel/CSV export
 
@@ -120,6 +126,7 @@ Djoppie-Inventory/
 ## Getting Started
 
 ### Prerequisites
+
 - .NET 8.0 SDK
 - Node.js 20+
 - Azure CLI
@@ -138,7 +145,7 @@ npm install
 npm run dev
 ```
 
-Access the application at http://localhost:5173
+Access the application at <http://localhost:5173>
 
 ## Authentication
 
@@ -151,9 +158,9 @@ The application uses Microsoft Entra ID (Azure AD) for authentication:
 
 ## Contact
 
-- **Project Lead**: jo.wijnen@diepenbeek.be
-- **Repository**: https://github.com/Djoppie/Djoppie-Inventory
-- **IT ServiceDesk**: https://diepenbeek.sharepoint.com/sites/IN-Servicedesk
+- **Project Lead**: <jo.wijnen@diepenbeek.be>
+- **Repository**: <https://github.com/Djoppie/Djoppie-Inventory>
+- **IT ServiceDesk**: <https://diepenbeek.sharepoint.com/sites/IN-Servicedesk>
 
 ---
 

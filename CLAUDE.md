@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - QR code scanning for instant asset lookup
 - Intune-enhanced hardware inventory (Intune Managed, Microsoft Entra Joined, or Entra Hybrid joined devices)
-- Real-time inventory checks with filtering (All/InGebruik/Stock/Herstelling/Defect/UitDienst)
+- Real-time inventory checks with filtering (All/InGebruik/Stock/Herstelling/Defect/UitDienst/Nieuw)
 - Asset data management (owner, location, status, installation dates)
 - Digital QR code generation and download
 - Asset template library for quick creation
@@ -25,6 +25,7 @@ The system uses the following status values (defined in `DjoppieInventory.Core/E
 - `Herstelling` (2) - Herstelling (repair)
 - `Defect` (3) - Defect (broken/defective)
 - `UitDienst` (4) - Uit dienst (decommissioned)
+- `Nieuw` (5) - Nieuw (new) - Asset added to inventory but not yet in use
 
 ## Technology Stack
 

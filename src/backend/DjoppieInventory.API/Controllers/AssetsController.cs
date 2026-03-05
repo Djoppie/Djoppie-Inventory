@@ -4,6 +4,7 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace DjoppieInventory.API.Controllers;
 
@@ -100,12 +101,15 @@ public class AssetsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AssetDto>> GetAssetByCode(string code, CancellationToken cancellationToken = default)
     {
-        if (!InputValidator.ValidateAssetCode(code, out var errorMessage))
+        // Normalize code: trim whitespace and convert to uppercase for consistent lookups
+        var normalizedCode = code?.Trim().ToUpperInvariant() ?? string.Empty;
+
+        if (!InputValidator.ValidateAssetCode(normalizedCode, out var errorMessage))
             return BadRequest(errorMessage);
 
-        var asset = await _assetService.GetAssetByCodeAsync(code);
+        var asset = await _assetService.GetAssetByCodeAsync(normalizedCode);
         if (asset == null)
-            return NotFound($"Asset with code '{code}' not found");
+            return NotFound($"Asset with code '{normalizedCode}' not found");
 
         return Ok(asset);
     }
@@ -122,7 +126,11 @@ public class AssetsController : ControllerBase
         CreateAssetDto createAssetDto,
         CancellationToken cancellationToken = default)
     {
-        var assetDto = await _assetService.CreateAssetAsync(createAssetDto);
+        // Get user information from claims for event tracking
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value;
+
+        var assetDto = await _assetService.CreateAssetAsync(createAssetDto, userName, userEmail);
         return CreatedAtAction(nameof(GetAsset), new { id = assetDto.Id }, assetDto);
     }
 
@@ -141,7 +149,11 @@ public class AssetsController : ControllerBase
         UpdateAssetDto updateAssetDto,
         CancellationToken cancellationToken = default)
     {
-        var assetDto = await _assetService.UpdateAssetAsync(id, updateAssetDto);
+        // Get user information from claims for event tracking
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value;
+
+        var assetDto = await _assetService.UpdateAssetAsync(id, updateAssetDto, userName, userEmail);
         return Ok(assetDto);
     }
 
@@ -177,29 +189,6 @@ public class AssetsController : ControllerBase
     {
         var result = await _assetService.BulkCreateAssetsAsync(bulkCreateDto);
         return Ok(result);
-    }
-
-    /// <summary>
-    /// Gets the next available asset number for a given prefix.
-    /// For normal assets: 1-8999
-    /// For dummy assets: 9000+
-    /// </summary>
-    /// <param name="prefix">The asset code prefix (e.g., LAP, MON)</param>
-    /// <param name="isDummy">Whether this is a dummy asset</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    [HttpGet("next-number")]
-    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<int>> GetNextAssetNumber(
-        [FromQuery] string prefix,
-        [FromQuery] bool isDummy = false,
-        CancellationToken cancellationToken = default)
-    {
-        if (!InputValidator.ValidatePrefix(prefix, out var errorMessage))
-            return BadRequest(errorMessage);
-
-        var nextNumber = await _assetService.GetNextAssetNumberAsync(prefix, isDummy);
-        return Ok(nextNumber);
     }
 
     /// <summary>

@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
-
-export type LabelLayout = 'codeQrName' | 'qrCode' | 'qrName';
+import { LABEL_CONFIG } from './labelConfig';
+import type { LabelLayout } from './labelConfig';
 
 interface PrintLabelProps {
   assetCode: string;
@@ -19,48 +19,40 @@ const DJOPPIE_LOGO_SVG = `data:image/svg+xml,${encodeURIComponent(
   '</svg>'
 )}`;
 
-// Dynamic QR sizing based on layout:
-// - qrCode/qrName: QR ~18mm (single text line, more space for QR)
-// - codeQrName: QR ~14mm (two text lines, less space for QR)
-// Preview scales proportionally (container represents 25mm label)
+// Label dimensions and QR code sizing from exported config
+// QR code: 70% of label width for single text, 56% for double text
+// This ensures equal margins on left and right with QR centered
+const LABEL_SIZE_MM = LABEL_CONFIG.sizeMm;
+const QR_PERCENTAGE_SINGLE = LABEL_CONFIG.qrPercentageSingle;
+const QR_PERCENTAGE_DOUBLE = LABEL_CONFIG.qrPercentageDouble;
+
 const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', showLogo = false }: PrintLabelProps) => {
   const isDoubleText = layout === 'codeQrName';
 
-  // QR sizes: 18mm for single text layouts, 14mm for double text layout
-  // Scale factor: container/25 (since label is 25mm)
+  // Container sizes for preview (px) - proportional to 25mm label
+  // QR sizes calculated as percentage of container for consistent scaling
   const sizeConfig = {
     small:  {
       container: 100,
-      qrSingle: 72,  // 18mm scaled (18/25 * 100)
-      qrDouble: 56,  // 14mm scaled (14/25 * 100)
       fontSize: 8,
       fontSizeSmall: 6,
-      logoSizeSingle: 16,
-      logoSizeDouble: 12,
     },
     medium: {
       container: 150,
-      qrSingle: 108, // 18mm scaled (18/25 * 150)
-      qrDouble: 84,  // 14mm scaled (14/25 * 150)
       fontSize: 11,
       fontSizeSmall: 9,
-      logoSizeSingle: 24,
-      logoSizeDouble: 18,
     },
     large:  {
       container: 200,
-      qrSingle: 144, // 18mm scaled (18/25 * 200)
-      qrDouble: 112, // 14mm scaled (14/25 * 200)
       fontSize: 15,
       fontSizeSmall: 12,
-      logoSizeSingle: 32,
-      logoSizeDouble: 24,
     },
   };
 
   const config = sizeConfig[size];
-  const qrSize = isDoubleText ? config.qrDouble : config.qrSingle;
-  const logoSize = isDoubleText ? config.logoSizeDouble : config.logoSizeSingle;
+  const qrPercentage = isDoubleText ? QR_PERCENTAGE_DOUBLE : QR_PERCENTAGE_SINGLE;
+  const qrSize = Math.round(config.container * qrPercentage);
+  const logoSize = Math.round(qrSize * 0.22); // Logo is ~22% of QR size
   const textFontSize = isDoubleText ? config.fontSizeSmall : config.fontSize;
 
   const topText = layout === 'codeQrName' ? assetCode : undefined;
@@ -87,8 +79,8 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
         padding: '4px',
         boxSizing: 'border-box',
         '@media print': {
-          width: '25mm',
-          height: '25mm',
+          width: `${LABEL_SIZE_MM}mm`,
+          height: `${LABEL_SIZE_MM}mm`,
           border: 'none',
           borderRadius: 0,
           padding: '0.5mm',
@@ -117,7 +109,7 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
             whiteSpace: 'nowrap',
             '@media print': {
               fontSize: '6pt',
-              width: '24mm',
+              width: `${LABEL_SIZE_MM - 1}mm`, // Label size minus 0.5mm padding on each side
             },
           }}
         >
@@ -125,7 +117,7 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
         </Typography>
       )}
 
-      {/* QR Code - dynamic size based on layout (18mm single text, 14mm double text) */}
+      {/* QR Code - centered with equal margins (70% of label width for single text, 56% for double) */}
       <Box
         sx={{
           display: 'flex',
@@ -135,8 +127,9 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
           width: `${qrSize}px`,
           height: `${qrSize}px`,
           '@media print': {
-            width: isDoubleText ? '14mm' : '18mm',
-            height: isDoubleText ? '14mm' : '18mm',
+            // 70% of 25mm = 17.5mm for single text, 56% = 14mm for double text
+            width: isDoubleText ? `${LABEL_SIZE_MM * QR_PERCENTAGE_DOUBLE}mm` : `${LABEL_SIZE_MM * QR_PERCENTAGE_SINGLE}mm`,
+            height: isDoubleText ? `${LABEL_SIZE_MM * QR_PERCENTAGE_DOUBLE}mm` : `${LABEL_SIZE_MM * QR_PERCENTAGE_SINGLE}mm`,
           },
         }}
       >
@@ -184,7 +177,7 @@ const PrintLabel = ({ assetCode, assetName, size = 'medium', layout = 'qrCode', 
             whiteSpace: 'nowrap',
             '@media print': {
               fontSize: isDoubleText ? '6pt' : '7pt',
-              width: '24mm',
+              width: `${LABEL_SIZE_MM - 1}mm`, // Label size minus 0.5mm padding on each side
             },
           }}
         >

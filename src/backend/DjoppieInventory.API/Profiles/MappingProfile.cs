@@ -10,13 +10,19 @@ public class MappingProfile : Profile
     {
         // Asset mappings
         CreateMap<Asset, AssetDto>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+            .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
+                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
 
         CreateMap<CreateAssetDto, Asset>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)))
             .ForMember(dest => dest.AssetCode, opt => opt.Ignore()) // Auto-generated in service
             .ForMember(dest => dest.IsDummy, opt => opt.Ignore()) // Set manually in service
             .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
 
@@ -25,15 +31,43 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.AssetCode, opt => opt.Ignore())
             .ForMember(dest => dest.IsDummy, opt => opt.Ignore()) // Cannot change after creation
+            .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore());
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            // Category is required in DB - only update if not null to prevent constraint violation
+            .ForMember(dest => dest.Category, opt => opt.Condition(src => src.Category != null))
+            // SerialNumber is required and unique in DB - only update if not empty
+            .ForMember(dest => dest.SerialNumber, opt => opt.Condition(src => !string.IsNullOrEmpty(src.SerialNumber)))
+            // AssetName has a default - only update if not null to preserve existing value
+            .ForMember(dest => dest.AssetName, opt => opt.Condition(src => src.AssetName != null));
 
         // AssetTemplate mappings
-        CreateMap<AssetTemplate, AssetTemplateDto>();
-        CreateMap<CreateAssetTemplateDto, AssetTemplate>();
+        CreateMap<AssetTemplate, AssetTemplateDto>()
+            .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+            .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
+                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
+
+        CreateMap<CreateAssetTemplateDto, AssetTemplate>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.AssetType, opt => opt.Ignore())
+            .ForMember(dest => dest.Service, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.OfficeLocation, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
+            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category ?? null));
+
         CreateMap<UpdateAssetTemplateDto, AssetTemplate>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.Ignore());
+            .ForMember(dest => dest.AssetType, opt => opt.Ignore())
+            .ForMember(dest => dest.Service, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.OfficeLocation, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyBuilding, opt => opt.Ignore())
+            .ForMember(dest => dest.LegacyDepartment, opt => opt.Ignore())
+            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category ?? null));
     }
 
     private static AssetStatus ParseAssetStatus(string statusString)

@@ -22,9 +22,21 @@ public class AssetTemplate
     public string? AssetName { get; set; }
 
     /// <summary>
-    /// Asset category (e.g., Computing, Peripherals, Networking, Displays)
+    /// Asset category (e.g., Computing, Peripherals, Networking, Displays).
+    /// Optional — derived from AssetType.Category when AssetTypeId is set.
     /// </summary>
-    public string Category { get; set; } = string.Empty;
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// Foreign key to the asset type (optional).
+    /// Determines the TYPE component in auto-generated asset codes.
+    /// </summary>
+    public int? AssetTypeId { get; set; }
+
+    /// <summary>
+    /// Navigation property to the asset type
+    /// </summary>
+    public AssetType? AssetType { get; set; }
 
     /// <summary>
     /// Default manufacturer or brand (optional)
@@ -42,14 +54,37 @@ public class AssetTemplate
     public string? Owner { get; set; }
 
     /// <summary>
-    /// Default installation location or building (optional)
+    /// Foreign key to the service/department (optional).
+    /// Used as the default location for assets created from this template.
     /// </summary>
-    public string? Building { get; set; }
+    public int? ServiceId { get; set; }
 
     /// <summary>
-    /// Default department assignment (optional)
+    /// Navigation property to the service
     /// </summary>
-    public string? Department { get; set; }
+    public Service? Service { get; set; }
+
+    /// <summary>
+    /// Specific installation location details (e.g., room number, floor)
+    /// </summary>
+    public string? InstallationLocation { get; set; }
+
+    /// <summary>
+    /// Default status for assets created from this template (e.g., "Stock", "Nieuw")
+    /// </summary>
+    public string? Status { get; set; }
+
+    /// <summary>
+    /// [LEGACY] Default installation location or building (optional).
+    /// Kept for historical data — no longer used in new templates.
+    /// </summary>
+    public string? LegacyBuilding { get; set; }
+
+    /// <summary>
+    /// [LEGACY] Default department assignment (optional).
+    /// Kept for historical data — no longer used in new templates.
+    /// </summary>
+    public string? LegacyDepartment { get; set; }
 
     /// <summary>
     /// Default office location (optional)

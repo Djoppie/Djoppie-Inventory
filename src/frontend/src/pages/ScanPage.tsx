@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -14,7 +14,9 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import QRScanner from '../components/scanner/QRScanner';
 import ManualEntry from '../components/scanner/ManualEntry';
 import ErrorBoundary from '../components/common/ErrorBoundary';
-import { useAssetByCode } from '../hooks/useAssets';
+import { getAssetByCode } from '../api/assets.api';
+import { logger } from '../utils/logger';
+import { validateAssetCode, normalizeAssetCode } from '../utils/validation';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -33,37 +35,104 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
 const ScanPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
-  const [searchCode, setSearchCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const {
-    data: _asset, // eslint-disable-line @typescript-eslint/no-unused-vars
-    isLoading,
-    error: _error, // eslint-disable-line @typescript-eslint/no-unused-vars
-    refetch,
-  } = useAssetByCode(searchCode);
+  const isProcessingRef = useRef(false); // Prevent duplicate processing
 
   const handleScanSuccess = async (assetCode: string) => {
-    setSearchCode(assetCode);
-    // Trigger the query
-    const result = await refetch();
+    // Prevent duplicate processing
+    if (isProcessingRef.current) {
+      logger.warn('[ScanPage] Already processing a scan, ignoring duplicate:', assetCode);
+      return;
+    }
 
-    if (result.data) {
-      // Navigate to asset detail page
-      navigate(`/assets/${result.data.id}`);
-    } else {
-      setErrorMessage(`Asset not found: ${assetCode}`);
+    try {
+      isProcessingRef.current = true;
+      setIsLoading(true);
+
+      // Normalize the scanned code: trim whitespace and convert to uppercase
+      const normalizedCode = normalizeAssetCode(assetCode);
+      logger.info('[ScanPage] Processing scanned asset code:', {
+        original: assetCode,
+        normalized: normalizedCode,
+        length: assetCode.length,
+        hasWhitespace: assetCode !== assetCode.trim()
+      });
+
+      // Validate the asset code format
+      const validation = validateAssetCode(normalizedCode);
+      if (!validation.isValid) {
+        logger.warn('[ScanPage] Invalid asset code format:', normalizedCode);
+        setErrorMessage(validation.errorMessage || 'Invalid asset code format');
+        return;
+      }
+
+      setErrorMessage(''); // Clear any previous errors
+
+      // Directly call the API with the normalized code
+      const asset = await getAssetByCode(normalizedCode);
+
+      if (asset) {
+        logger.info('[ScanPage] Asset found, navigating to detail page:', asset.id);
+        // Navigate to asset detail page
+        navigate(`/assets/${asset.id}`);
+      } else {
+        logger.warn('[ScanPage] No data returned for asset code:', normalizedCode);
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system. Please verify the code and try again.`);
+      }
+    } catch (error) {
+      logger.error('[ScanPage] Error fetching asset:', error);
+      const err = error as Error & { response?: { status?: number; data?: { message?: string } } };
+      if (err?.response?.status === 404) {
+        const normalizedCode = normalizeAssetCode(assetCode);
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system. Please verify the code and try again.`);
+      } else {
+        const errorMsg = err?.response?.data?.message || err?.message || 'Unknown error';
+        setErrorMessage(`Error processing scan: ${errorMsg}`);
+      }
+    } finally {
+      setIsLoading(false);
+      // Reset processing flag after a delay
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 1000);
     }
   };
 
   const handleManualSearch = async (assetCode: string) => {
-    setSearchCode(assetCode);
-    const result = await refetch();
+    // Normalize the code: trim whitespace and convert to uppercase
+    const normalizedCode = normalizeAssetCode(assetCode);
 
-    if (result.data) {
-      navigate(`/assets/${result.data.id}`);
-    } else {
-      setErrorMessage(`Asset not found: ${assetCode}`);
+    // Validate the asset code format
+    const validation = validateAssetCode(normalizedCode);
+    if (!validation.isValid) {
+      logger.warn('[ScanPage] Invalid asset code format from manual entry:', normalizedCode);
+      setErrorMessage(validation.errorMessage || 'Invalid asset code format');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setErrorMessage('');
+
+      const asset = await getAssetByCode(normalizedCode);
+
+      if (asset) {
+        navigate(`/assets/${asset.id}`);
+      } else {
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
+      }
+    } catch (error) {
+      logger.error('[ScanPage] Error fetching asset by manual entry:', error);
+      const err = error as Error & { response?: { status?: number; data?: { message?: string } } };
+      if (err?.response?.status === 404) {
+        setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
+      } else {
+        const errorMsg = err?.response?.data?.message || err?.message || 'Unknown error';
+        setErrorMessage(`Error: ${errorMsg}`);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -132,7 +201,6 @@ const ScanPage = () => {
             <ErrorBoundary
               onReset={() => {
                 setErrorMessage('');
-                setSearchCode('');
               }}
             >
               <QRScanner
@@ -176,7 +244,8 @@ const ScanPage = () => {
         open={!!errorMessage}
         autoHideDuration={4000}
         onClose={() => setErrorMessage('')}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 4 }}
       >
         <Alert
           severity="error"

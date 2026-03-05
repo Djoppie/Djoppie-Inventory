@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
   Paper,
   Chip,
-  keyframes,
   Button,
   Dialog,
   DialogTitle,
@@ -21,14 +21,21 @@ import {
   TableHead,
   TableRow,
   Fab,
+  Stack,
   Snackbar,
   Alert,
   useMediaQuery,
   useTheme,
   Divider,
   alpha,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Tooltip,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
   useAssetTemplates,
   useCreateAssetTemplate,
@@ -41,6 +48,8 @@ import {
 } from '../types/asset.types';
 import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
+import AssetTypeSelect from '../components/common/AssetTypeSelect';
+import ServiceSelect from '../components/common/ServiceSelect';
 import CategoryIcon from '@mui/icons-material/Category';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -51,25 +60,48 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BusinessIcon from '@mui/icons-material/Business';
 
-// Subtle glow pulse for the header (matching DashboardPage)
-const headerGlow = keyframes`
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(255, 119, 0, 0.2), inset 0 0 10px rgba(255, 119, 0, 0.05);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(255, 119, 0, 0.4), inset 0 0 15px rgba(255, 119, 0, 0.1);
-  }
-`;
+// Scanner-style card wrapper - consistent with ScanPage
+const scannerCardSx = {
+  mb: 3,
+  borderRadius: 2,
+  border: '1px solid',
+  borderColor: 'divider',
+  overflow: 'hidden',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    borderColor: 'primary.main',
+    boxShadow: (thm: { palette: { mode: string } }) =>
+      thm.palette.mode === 'dark'
+        ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+        : '0 4px 20px rgba(253, 185, 49, 0.3)',
+  },
+};
+
+// Consistent icon button style
+const iconButtonSx = {
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 2,
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  '&:hover': {
+    borderColor: 'primary.main',
+    boxShadow: (thm: { palette: { mode: string } }) =>
+      thm.palette.mode === 'dark'
+        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
+        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+  },
+};
 
 interface FormData {
   templateName: string;
   assetName: string;
-  category: string;
+  assetTypeId: number | null;
+  serviceId: number | null;
+  installationLocation: string;
+  status: string;
   brand: string;
   model: string;
   owner: string;
-  building: string;
-  department: string;
   purchaseDate: string;
   warrantyExpiry: string;
   installationDate: string;
@@ -78,12 +110,13 @@ interface FormData {
 const initialFormData: FormData = {
   templateName: '',
   assetName: '',
-  category: '',
+  assetTypeId: null,
+  serviceId: null,
+  installationLocation: '',
+  status: '',
   brand: '',
   model: '',
   owner: '',
-  building: '',
-  department: '',
   purchaseDate: '',
   warrantyExpiry: '',
   installationDate: '',
@@ -97,6 +130,7 @@ type SnackbarState = {
 
 const AssetTemplatesPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -106,7 +140,7 @@ const AssetTemplatesPage = () => {
   const [editingTemplate, setEditingTemplate] = useState<AssetTemplate | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState<AssetTemplate | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
@@ -123,13 +157,14 @@ const AssetTemplatesPage = () => {
       setEditingTemplate(template);
       setFormData({
         templateName: template.templateName,
-        assetName: template.assetName || '',  // Handle undefined
-        category: template.category,
-        brand: template.brand || '',  // Handle undefined
-        model: template.model || '',  // Handle undefined
-        owner: template.owner || '',  // Handle undefined
-        building: template.building || '',  // Handle undefined
-        department: template.department || '',  // Handle undefined
+        assetName: template.assetName || '',
+        assetTypeId: template.assetTypeId ?? null,
+        serviceId: template.serviceId ?? null,
+        installationLocation: template.installationLocation || '',
+        status: template.status || '',
+        brand: template.brand || '',
+        model: template.model || '',
+        owner: template.owner || '',
         purchaseDate: template.purchaseDate?.split('T')[0] || '',
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || '',
         installationDate: template.installationDate?.split('T')[0] || '',
@@ -163,21 +198,16 @@ const AssetTemplatesPage = () => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setFormData((prev) => ({ ...prev, [field]: event.target.value }));
-    // Clear error for this field
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
   const validateForm = (): boolean => {
-    const errors: Partial<FormData> = {};
+    const errors: Partial<Record<keyof FormData, string>> = {};
 
     if (!formData.templateName.trim()) {
       errors.templateName = t('templates.required');
-    }
-    // assetName is now optional - removed validation
-    if (!formData.category.trim()) {
-      errors.category = t('templates.required');
     }
 
     setFormErrors(errors);
@@ -189,13 +219,14 @@ const AssetTemplatesPage = () => {
 
     const dto: CreateAssetTemplateDto = {
       templateName: formData.templateName.trim(),
-      assetName: formData.assetName.trim() || undefined,  // Optional
-      category: formData.category.trim(),
-      brand: formData.brand.trim() || undefined,  // Optional
-      model: formData.model.trim() || undefined,  // Optional
-      owner: formData.owner.trim() || undefined,  // Optional
-      building: formData.building.trim() || undefined,  // Optional
-      department: formData.department.trim() || undefined,  // Optional
+      assetName: formData.assetName.trim() || undefined,
+      assetTypeId: formData.assetTypeId ?? undefined,
+      serviceId: formData.serviceId ?? undefined,
+      installationLocation: formData.installationLocation.trim() || undefined,
+      status: formData.status || undefined,
+      brand: formData.brand.trim() || undefined,
+      model: formData.model.trim() || undefined,
+      owner: formData.owner.trim() || undefined,
       purchaseDate: formData.purchaseDate || undefined,
       warrantyExpiry: formData.warrantyExpiry || undefined,
       installationDate: formData.installationDate || undefined,
@@ -280,72 +311,72 @@ const AssetTemplatesPage = () => {
 
   return (
     <Box sx={{ pb: 10 }}>
-      {/* Header Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 4,
-          p: 3,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          animation: `${headerGlow} 3s ease-in-out infinite`,
-          background: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(204, 0, 0, 0.03) 50%, transparent 100%)'
-              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.06) 0%, rgba(204, 0, 0, 0.02) 50%, transparent 100%)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          {/* Template icon */}
-          <CategoryIcon
-            sx={{
+      {/* Back Button - Outside card */}
+      <Tooltip title="Back to Dashboard">
+        <IconButton
+          onClick={() => navigate('/')}
+          sx={{
+            ...iconButtonSx,
+            mb: 2,
+            color: 'text.secondary',
+            '&:hover': {
+              ...iconButtonSx['&:hover'],
               color: 'primary.main',
-              fontSize: '2rem',
-              filter: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'drop-shadow(0 0 8px rgba(255, 119, 0, 0.5))'
-                  : 'none',
-            }}
-          />
+            },
+          }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+      </Tooltip>
 
-          {/* Title */}
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              color: 'primary.main',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              background: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'linear-gradient(90deg, var(--djoppie-orange-400), var(--djoppie-red-400))'
-                  : 'linear-gradient(90deg, var(--djoppie-orange-600), var(--djoppie-red-600))',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {t('templates.title')}
-          </Typography>
-        </Box>
-
-        {/* Subtitle and Count */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            {t('templates.subtitle')}
-          </Typography>
-          <Chip
-            icon={<CategoryIcon />}
-            label={t('templates.templateCount', { count: templateCount })}
-            sx={{
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              px: 1,
-            }}
-          />
-        </Box>
-      </Paper>
+      {/* Header - Scanner style */}
+      <Card elevation={0} sx={scannerCardSx}>
+        <CardContent sx={{ p: 3 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: (thm) =>
+                  thm.palette.mode === 'dark'
+                    ? 'rgba(255, 215, 0, 0.08)'
+                    : 'rgba(253, 185, 49, 0.08)',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <CategoryIcon
+                sx={{
+                  fontSize: 28,
+                  color: 'primary.main',
+                  filter: (thm: { palette: { mode: string } }) =>
+                    thm.palette.mode === 'dark'
+                      ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
+                      : 'none',
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h4" component="h1" fontWeight={700}>
+                {t('templates.title')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {t('templates.subtitle')}
+              </Typography>
+            </Box>
+            <Chip
+              icon={<CategoryIcon />}
+              label={t('templates.templateCount', { count: templateCount })}
+              sx={{ fontWeight: 600, fontSize: '0.9rem', px: 1 }}
+            />
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Template List */}
       {templateCount === 0 ? (
@@ -399,8 +430,8 @@ const AssetTemplatesPage = () => {
                     '&:hover': {
                       boxShadow: (theme) =>
                         theme.palette.mode === 'dark'
-                          ? '0 8px 16px rgba(255, 119, 0, 0.2)'
-                          : '0 8px 16px rgba(0, 0, 0, 0.1)',
+                          ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
+                          : '0 4px 20px rgba(253, 185, 49, 0.3)',
                       borderColor: 'primary.main',
                     },
                   }}
@@ -420,14 +451,18 @@ const AssetTemplatesPage = () => {
                       </Typography>
 
                       {/* Asset Name */}
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        <strong>{t('templates.assetName')}:</strong> {template.assetName}
-                      </Typography>
+                      {template.assetName && (
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <strong>{t('templates.assetName')}:</strong> {template.assetName}
+                        </Typography>
+                      )}
 
-                      {/* Category */}
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        <strong>{t('templates.category')}:</strong> {template.category}
-                      </Typography>
+                      {/* Asset Type */}
+                      {template.assetType && (
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <strong>{t('templates.assetType')}:</strong> {template.assetType.name}
+                        </Typography>
+                      )}
 
                       {/* Brand | Model */}
                       {(template.brand || template.model) && (
@@ -444,11 +479,17 @@ const AssetTemplatesPage = () => {
                         </Typography>
                       )}
 
-                      {/* Building | Space */}
-                      {(template.building || template.department) && (
+                      {/* Service */}
+                      {template.service && (
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <strong>{t('templates.service')}:</strong> {template.service.name}
+                        </Typography>
+                      )}
+
+                      {/* Installation Location */}
+                      {template.installationLocation && (
                         <Typography variant="body2" color="text.secondary">
-                          <strong>{t('templates.building')}:</strong>{' '}
-                          {[template.building, template.department].filter(Boolean).join(' / ')}
+                          <strong>{t('templates.installationLocation')}:</strong> {template.installationLocation}
                         </Typography>
                       )}
                     </CardContent>
@@ -519,13 +560,13 @@ const AssetTemplatesPage = () => {
                       {t('templates.assetName')}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>
-                      {t('templates.category')}
+                      {t('templates.assetType')}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{t('templates.brand')}</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{t('templates.model')}</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>{t('templates.owner')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.building')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.department')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.service')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.installationLocation')}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 700 }}>
                       {t('common.actions')}
                     </TableCell>
@@ -547,13 +588,13 @@ const AssetTemplatesPage = () => {
                       <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
                         {template.templateName}
                       </TableCell>
-                      <TableCell>{template.assetName}</TableCell>
-                      <TableCell>{template.category}</TableCell>
+                      <TableCell>{template.assetName || '-'}</TableCell>
+                      <TableCell>{template.assetType?.name || '-'}</TableCell>
                       <TableCell>{template.brand || '-'}</TableCell>
                       <TableCell>{template.model || '-'}</TableCell>
                       <TableCell>{template.owner || '-'}</TableCell>
-                      <TableCell>{template.building || '-'}</TableCell>
-                      <TableCell>{template.department || '-'}</TableCell>
+                      <TableCell>{template.service?.name || '-'}</TableCell>
+                      <TableCell>{template.installationLocation || '-'}</TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                         <IconButton
                           size="small"
@@ -653,7 +694,7 @@ const AssetTemplatesPage = () => {
             borderColor: 'divider',
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
             {editingTemplate ? t('templates.editTemplate') : t('templates.addTemplate')}
           </Typography>
           <IconButton size="small" onClick={handleCloseDialog} edge="end">
@@ -702,25 +743,53 @@ const AssetTemplatesPage = () => {
               label={t('assetForm.alias')}
               value={formData.assetName}
               onChange={handleInputChange('assetName')}
-              error={!!formErrors.assetName}
-              helperText={formErrors.assetName || t('assetForm.aliasHelper')}
+              helperText={t('assetForm.aliasHelper') || t('assetForm.aliasHint')}
               fullWidth
             />
 
-            <TextField
-              label={t('templates.category')}
-              value={formData.category}
-              onChange={handleInputChange('category')}
-              error={!!formErrors.category}
-              helperText={formErrors.category || 'e.g., Computing, Peripherals'}
-              required
-              fullWidth
+            <AssetTypeSelect
+              value={formData.assetTypeId}
+              onChange={(value) => {
+                setFormData((prev) => ({ ...prev, assetTypeId: value }));
+              }}
+              label={t('templates.assetType')}
             />
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ flex: '1 1 200px' }}>
+                <ServiceSelect
+                  value={formData.serviceId}
+                  onChange={(value) => {
+                    setFormData((prev) => ({ ...prev, serviceId: value }));
+                  }}
+                  label={t('templates.service')}
+                />
+              </Box>
+              <FormControl sx={{ flex: '1 1 200px' }}>
+                <InputLabel>{t('templates.defaultStatus')}</InputLabel>
+                <Select
+                  value={formData.status}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                  label={t('templates.defaultStatus')}
+                >
+                  <MenuItem value="">
+                    <em>{t('assetForm.optional')}</em>
+                  </MenuItem>
+                  <MenuItem value="Stock">{t('statuses.stock')}</MenuItem>
+                  <MenuItem value="InGebruik">{t('statuses.ingebruik')}</MenuItem>
+                  <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
+                  <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
+                  <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
+                  <MenuItem value="Nieuw">{t('statuses.nieuw')}</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
             <TextField
               label={t('assetForm.installationLocation')}
-              value={formData.building}
-              onChange={handleInputChange('building')}
+              value={formData.installationLocation}
+              onChange={handleInputChange('installationLocation')}
+              helperText={t('assetForm.installationLocationHint')}
               fullWidth
               InputProps={{
                 startAdornment: (
@@ -793,22 +862,13 @@ const AssetTemplatesPage = () => {
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label={t('templates.owner')}
-                value={formData.owner}
-                onChange={handleInputChange('owner')}
-                sx={{ flex: '1 1 200px' }}
-                helperText={t('templates.ownerHint')}
-              />
-
-              <TextField
-                label={t('templates.department')}
-                value={formData.department}
-                onChange={handleInputChange('department')}
-                sx={{ flex: '1 1 200px' }}
-              />
-            </Box>
+            <TextField
+              label={t('templates.owner')}
+              value={formData.owner}
+              onChange={handleInputChange('owner')}
+              fullWidth
+              helperText={t('templates.ownerHint')}
+            />
 
             <Divider sx={{ my: 1 }} />
 

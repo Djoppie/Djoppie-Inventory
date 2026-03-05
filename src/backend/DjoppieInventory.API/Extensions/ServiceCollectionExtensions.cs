@@ -19,11 +19,21 @@ public static class ServiceCollectionExtensions
         // Register Repositories
         services.AddScoped<IAssetRepository, AssetRepository>();
         services.AddScoped<IAssetTemplateRepository, AssetTemplateRepository>();
+        services.AddScoped<IAssetTypeRepository, AssetTypeRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IBuildingRepository, BuildingRepository>();
+        services.AddScoped<ISectorRepository, SectorRepository>();
+        services.AddScoped<IServiceRepository, ServiceRepository>();
+        services.AddScoped<IAssetEventRepository, AssetEventRepository>();
+        services.AddScoped<ILeaseContractRepository, LeaseContractRepository>();
 
         // Register Services
         services.AddScoped<IAssetService, AssetService>();
+        services.AddScoped<IAssetEventService, AssetEventService>();
+        services.AddScoped<ICsvImportService, CsvImportService>();
         services.AddScoped<IIntuneService, IntuneService>();
         services.AddScoped<IGraphUserService, GraphUserService>();
+        services.AddScoped<IAssetCodeGenerator, AssetCodeGeneratorService>();
 
         // Configure AutoMapper
         services.AddAutoMapper(typeof(Program).Assembly);

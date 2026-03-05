@@ -8,7 +8,6 @@ import {
   Box,
   Chip,
   Checkbox,
-  keyframes,
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
@@ -16,6 +15,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import CategoryIcon from '@mui/icons-material/Category';
 import PersonIcon from '@mui/icons-material/Person';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AppsIcon from '@mui/icons-material/Apps';
 
 interface AssetCardProps {
   asset: Asset;
@@ -23,16 +23,6 @@ interface AssetCardProps {
   selected?: boolean;
   onSelectionChange?: (assetId: number, selected: boolean) => void;
 }
-
-// Pulse animation for hover effect
-const glowPulse = keyframes`
-  0%, 100% {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  }
-  50% {
-    box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3), inset 0 0 24px rgba(255, 215, 0, 0.05);
-  }
-`;
 
 const AssetCard = ({ asset, selectable = false, selected = false, onSelectionChange }: AssetCardProps) => {
   const navigate = useNavigate();
@@ -50,26 +40,57 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
       sx={{
         height: '100%',
         position: 'relative',
-        border: '2px solid',
-        borderColor: selected ? 'primary.main' : 'divider',
+        border: '1px solid',
+        borderColor: selected ? 'primary.main' : (theme) =>
+          theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+        borderRadius: 3,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         overflow: 'hidden',
+        transform: 'translateY(0)',
+        // 3D depth with layered shadows
+        boxShadow: (theme) => selected
+          ? theme.palette.mode === 'dark'
+            ? '0 8px 32px rgba(255, 152, 0, 0.2), 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)'
+            : '0 8px 32px rgba(255, 152, 0, 0.15), 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)'
+          : theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)'
+            : '0 4px 20px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,1)',
+        // Gradient background for depth
         background: (theme) =>
           selected
             ? theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, transparent 50%)'
-              : 'linear-gradient(135deg, rgba(255, 119, 0, 0.05) 0%, transparent 50%)'
+              ? 'linear-gradient(145deg, rgba(45, 45, 45, 1) 0%, rgba(35, 35, 35, 1) 100%)'
+              : 'linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(250, 248, 245, 1) 100%)'
             : theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.02) 0%, transparent 50%)'
-              : 'none',
+              ? 'linear-gradient(145deg, rgba(38, 38, 38, 1) 0%, rgba(28, 28, 28, 1) 100%)'
+              : 'linear-gradient(145deg, rgba(255, 255, 255, 1) 0%, rgba(252, 250, 248, 1) 100%)',
         '&:hover': {
           borderColor: 'primary.main',
-          animation: `${glowPulse} 2s ease-in-out infinite`,
+          transform: 'translateY(-4px)',
+          boxShadow: (theme) => theme.palette.mode === 'dark'
+            ? '0 16px 48px rgba(255, 152, 0, 0.15), 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)'
+            : '0 16px 48px rgba(255, 152, 0, 0.12), 0 8px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)',
           '&::before': {
             opacity: 1,
           },
         },
-        // Glow effect overlay
+        // Top accent line
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 3,
+          background: selected
+            ? 'linear-gradient(90deg, #FF9800, #F57C00)'
+            : 'transparent',
+          transition: 'background 0.3s ease',
+        },
+        '&:hover::after': {
+          background: 'linear-gradient(90deg, #FF9800, #F57C00)',
+        },
+        // Shine effect overlay
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -79,14 +100,15 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
           height: '100%',
           background: (theme) =>
             theme.palette.mode === 'dark'
-              ? 'linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent)'
-              : 'linear-gradient(90deg, transparent, rgba(253, 185, 49, 0.1), transparent)',
-          transition: 'left 0.5s ease, opacity 0.3s ease',
+              ? 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent)'
+              : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent)',
+          transition: 'left 0.6s ease, opacity 0.3s ease',
           opacity: 0,
           pointerEvents: 'none',
         },
         '&:hover::before': {
           left: '100%',
+          opacity: 1,
         },
       }}
     >
@@ -138,7 +160,42 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                 {asset.assetName}
               </Typography>
             </Box>
-            <StatusBadge status={asset.status} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {/* Software Icon for Laptops/Desktops */}
+              {(asset.category === 'Laptop' || asset.category === 'Desktop') && (
+                <Box
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/assets/${asset.id}/software`);
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    borderRadius: 1,
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(33, 150, 243, 0.15)'
+                        : 'rgba(33, 150, 243, 0.1)',
+                    color: 'info.main',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(33, 150, 243, 0.25)'
+                          : 'rgba(33, 150, 243, 0.2)',
+                      transform: 'scale(1.1)',
+                    },
+                  }}
+                >
+                  <AppsIcon sx={{ fontSize: '0.9rem' }} />
+                </Box>
+              )}
+              <StatusBadge status={asset.status} />
+            </Box>
           </Box>
 
           {/* Asset Code */}
@@ -239,7 +296,7 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                   color: 'text.primary',
                 }}
               >
-                {asset.building}
+                {asset.service?.name || asset.legacyBuilding || '-'}
               </Typography>
               <Typography
                 variant="caption"
@@ -247,7 +304,7 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                   color: 'text.secondary',
                 }}
               >
-                {asset.department}
+                {asset.service?.name || asset.legacyDepartment || '-'}
               </Typography>
               {asset.officeLocation && (
                 <Typography

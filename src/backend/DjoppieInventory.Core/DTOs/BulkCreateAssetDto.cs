@@ -4,18 +4,16 @@ namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
 /// DTO for bulk asset creation operations.
-/// Allows creating multiple assets with auto-generated sequential codes.
+/// Asset codes are auto-generated from AssetType + Year + Brand.
+/// Format: [DUM-]TYPE-YY-MERK-NUMMER (e.g., LAP-26-DELL-00001)
 /// </summary>
 public class BulkCreateAssetDto
 {
     /// <summary>
-    /// The prefix to use for generating asset codes.
-    /// Example: "LAP" will generate LAP-0001, LAP-0002, etc. (normal)
-    /// or LAP-9000, LAP-9001, etc. (dummy)
+    /// Asset type ID - required for auto-generating asset codes (determines TYPE component).
     /// </summary>
     [Required]
-    [StringLength(20)]
-    public string AssetCodePrefix { get; set; } = string.Empty;
+    public int AssetTypeId { get; set; }
 
     /// <summary>
     /// The number of assets to create in bulk.
@@ -37,10 +35,10 @@ public class BulkCreateAssetDto
     public int? TemplateId { get; set; }
 
     /// <summary>
-    /// The official device name (DeviceName) for the assets.
+    /// The official device name (DeviceName) for the assets (optional).
     /// </summary>
     [StringLength(200)]
-    public string AssetName { get; set; } = string.Empty;
+    public string? AssetName { get; set; }
 
     /// <summary>
     /// Optional: Readable name/alias for the assets.
@@ -49,30 +47,24 @@ public class BulkCreateAssetDto
     public string? Alias { get; set; }
 
     /// <summary>
-    /// Category for all assets in the bulk creation.
+    /// Category for all assets in the bulk creation (optional - derived from AssetType).
     /// </summary>
-    [Required]
-    public string Category { get; set; } = string.Empty;
+    public string? Category { get; set; }
 
     /// <summary>
-    /// Installation location for all assets (optional).
+    /// Service/department ID for all assets (optional).
     /// </summary>
-    public string? Building { get; set; }
+    public int? ServiceId { get; set; }
+
+    /// <summary>
+    /// Specific installation location details (e.g., room number, floor) for all assets (optional).
+    /// </summary>
+    public string? InstallationLocation { get; set; }
 
     /// <summary>
     /// Primary user for all assets (optional - can be assigned later).
     /// </summary>
     public string? Owner { get; set; }
-
-    /// <summary>
-    /// Department for all assets (optional).
-    /// </summary>
-    public string? Department { get; set; }
-
-    /// <summary>
-    /// Optional: Office location for all assets in the bulk creation.
-    /// </summary>
-    public string? OfficeLocation { get; set; }
 
     /// <summary>
     /// Status for all assets. Defaults to "Stock".
@@ -90,13 +82,13 @@ public class BulkCreateAssetDto
     public string? Model { get; set; }
 
     /// <summary>
-    /// Serial number prefix for generating unique serial numbers - REQUIRED.
-    /// Will be combined with the asset number to create unique serial numbers.
+    /// Serial number prefix for generating unique serial numbers - optional.
+    /// If provided, will be combined with the asset number to create unique serial numbers.
     /// Example: "SN" will generate SN-0001, SN-0002, etc.
+    /// If not provided, assets will be created without serial numbers.
     /// </summary>
-    [Required]
     [StringLength(50)]
-    public string SerialNumberPrefix { get; set; } = string.Empty;
+    public string? SerialNumberPrefix { get; set; }
 
     /// <summary>
     /// Optional: Purchase date for all assets in the bulk creation.

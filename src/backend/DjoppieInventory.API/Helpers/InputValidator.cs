@@ -28,9 +28,10 @@ public static class InputValidator
     private static readonly Regex PrefixPattern = new(@"^[A-Z0-9]+$", RegexOptions.Compiled);
 
     /// <summary>
-    /// Pattern for valid asset code (prefix-number format).
+    /// Pattern for valid asset code following the format: [DUM-]TYPE-YY-MERK-NNNNN
+    /// Examples: LAP-24-DBK-00001, DUM-LAP-26-HP-90001
     /// </summary>
-    private static readonly Regex AssetCodePattern = new(@"^[A-Z0-9]+-\d{4}$", RegexOptions.Compiled);
+    private static readonly Regex AssetCodePattern = new(@"^(?:DUM-)?[A-Z]{2,10}-\d{2}-[A-Z0-9]{1,4}-\d{5}$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     /// <summary>
     /// Validates an asset code prefix.
@@ -84,7 +85,7 @@ public static class InputValidator
 
         if (!AssetCodePattern.IsMatch(assetCode))
         {
-            errorMessage = "Asset code must be in format PREFIX-0000 (uppercase letters/numbers followed by dash and 4 digits)";
+            errorMessage = "Asset code must be in format TYPE-YY-MERK-NNNNN (e.g., LAP-24-DBK-00001) or DUM-TYPE-YY-MERK-NNNNN for dummy assets";
             return false;
         }
 

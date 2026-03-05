@@ -32,6 +32,8 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
   const [isInitializing, setIsInitializing] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isMountedRef = useRef(true);
+  const isProcessingRef = useRef(false); // Prevent multiple scans of the same code
+  const lastScannedCodeRef = useRef<string>(''); // Track last scanned code
 
   /**
    * Starts the QR code scanner and initializes the camera.
@@ -43,6 +45,10 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
     try {
       setIsInitializing(true);
       setError('');
+
+      // Reset processing flags when starting a new scan
+      isProcessingRef.current = false;
+      lastScannedCodeRef.current = '';
 
       // Check if camera is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -68,7 +74,17 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
         scannerConfig,
         (decodedText) => {
           // Successfully scanned
-          if (isMountedRef.current) {
+          if (isMountedRef.current && !isProcessingRef.current) {
+            // Prevent duplicate scans of the same code
+            if (decodedText === lastScannedCodeRef.current) {
+              logger.debug('QR code already processed, ignoring duplicate scan:', decodedText);
+              return;
+            }
+
+            logger.info('QR code scanned successfully:', decodedText);
+            isProcessingRef.current = true;
+            lastScannedCodeRef.current = decodedText;
+
             onScanSuccess(decodedText);
             stopScanning();
           }
@@ -115,6 +131,11 @@ const QRScanner = ({ onScanSuccess, onScanError }: QRScannerProps) => {
       try {
         await scannerRef.current.stop();
         setIsScanning(false);
+        // Reset processing flag after a delay to allow the scan result to be processed
+        setTimeout(() => {
+          isProcessingRef.current = false;
+          lastScannedCodeRef.current = '';
+        }, 1000);
       } catch (err) {
         logger.error('Error stopping scanner:', err);
       }
