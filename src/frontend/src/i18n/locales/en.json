@@ -447,6 +447,57 @@
       "delete": "Deleted"
     }
   },
+  "software": {
+    "title": "Installed Software",
+    "pageTitle": "Installed Software",
+    "backToAsset": "Back to Asset Details",
+    "viewSoftware": "View Software",
+    "viewSoftwareTooltip": "View installed software on this device",
+    "exportToCSV": "Export to CSV",
+    "noSerialNumber": "This asset has no serial number. Software information is only available for devices with a serial number registered in Intune.",
+    "deviceNotFound": "Device not found in Intune. The device may not be enrolled or the serial number may be incorrect.",
+    "noSoftwareFound": "No software found",
+    "noSoftwareAvailable": "No installed software data available for this asset",
+    "adjustFilters": "Try adjusting your filters",
+    "loadingSoftware": "Loading installed software...",
+    "showingResults": "Showing {{shown}} of {{total}} applications",
+    "statistics": {
+      "totalApps": "TOTAL APPS",
+      "totalSize": "TOTAL SIZE",
+      "categories": "CATEGORIES",
+      "publishers": "PUBLISHERS"
+    },
+    "filters": {
+      "search": "Search software by name, publisher, or version...",
+      "byCategory": "Filter by category",
+      "byPublisher": "Filter by publisher",
+      "allCategories": "All Categories",
+      "allPublishers": "All Publishers",
+      "activeFilters": "Active filters:",
+      "searchFilter": "Search: \"{{query}}\"",
+      "categoryFilter": "Category: {{category}}",
+      "publisherFilter": "Publisher: {{publisher}}"
+    },
+    "table": {
+      "applicationName": "APPLICATION NAME",
+      "version": "VERSION",
+      "publisher": "PUBLISHER",
+      "category": "CATEGORY",
+      "installDate": "INSTALL DATE",
+      "size": "SIZE"
+    },
+    "categories": {
+      "Productivity": "Productivity",
+      "Development": "Development",
+      "Security": "Security",
+      "Communication": "Communication",
+      "Utilities": "Utilities",
+      "Design": "Design",
+      "Browser": "Browser",
+      "System": "System",
+      "Other": "Other"
+    }
+  },
   "lease": {
     "sectionTitle": "Lease Information",
     "currentContract": "Current Contract",

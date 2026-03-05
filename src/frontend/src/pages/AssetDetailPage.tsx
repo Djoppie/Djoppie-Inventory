@@ -28,6 +28,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import DescriptionIcon from '@mui/icons-material/Description';
+import AppsIcon from '@mui/icons-material/Apps';
 import { QRCodeSVG } from 'qrcode.react';
 import PrintIcon from '@mui/icons-material/Print';
 import { format } from 'date-fns';
@@ -47,6 +48,7 @@ import {
   CreateLeaseContract,
   UpdateLeaseContract,
 } from '../api/leaseContracts.api';
+import { buildRoute } from '../constants/routes';
 
 // Helper: check if an asset code has a number >= 9000 (dummy/test asset)
 const isDummyAsset = (assetCode: string): boolean => {
@@ -292,6 +294,27 @@ const AssetDetailPage = () => {
             </Box>
 
             <Box sx={{ display: 'flex', gap: 1 }}>
+              {/* Show Software button only for Laptop and Desktop categories */}
+              {(asset.category === 'Laptop' || asset.category === 'Desktop') && (
+                <Tooltip title="View Installed Software">
+                  <IconButton
+                    onClick={() => navigate(buildRoute.assetSoftware(asset.id))}
+                    sx={{
+                      ...iconButtonSx,
+                      color: 'info.main',
+                      '&:hover': {
+                        borderColor: 'info.main',
+                        boxShadow: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? '0 4px 16px rgba(33, 150, 243, 0.3)'
+                            : '0 2px 12px rgba(33, 150, 243, 0.2)',
+                      },
+                    }}
+                  >
+                    <AppsIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title={t('common.edit')}>
                 <IconButton
                   onClick={handleEdit}

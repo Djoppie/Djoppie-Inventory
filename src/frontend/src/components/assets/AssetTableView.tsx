@@ -26,6 +26,7 @@ import StatusBadge from '../common/StatusBadge';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import AppsIcon from '@mui/icons-material/Apps';
 
 interface AssetTableViewProps {
   assets: Asset[];
@@ -417,26 +418,51 @@ const AssetTableView = ({
                   </Box>
                 </TableCell>
                 <TableCell align="center">
-                  <Tooltip title="View Details" arrow>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRowClick(asset.id);
-                      }}
-                      sx={{
-                        color: 'primary.main',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 119, 0, 0.15)',
-                          transform: 'scale(1.1)',
-                          boxShadow: '0 0 12px rgba(255, 119, 0, 0.4)',
-                        },
-                      }}
-                    >
-                      <VisibilityIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                    {/* Software Icon for Laptops/Desktops */}
+                    {(asset.category === 'Laptop' || asset.category === 'Desktop') && (
+                      <Tooltip title="View Installed Software" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/assets/${asset.id}/software`);
+                          }}
+                          sx={{
+                            color: 'info.main',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              backgroundColor: 'rgba(33, 150, 243, 0.15)',
+                              transform: 'scale(1.1)',
+                              boxShadow: '0 0 12px rgba(33, 150, 243, 0.4)',
+                            },
+                          }}
+                        >
+                          <AppsIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="View Details" arrow>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRowClick(asset.id);
+                        }}
+                        sx={{
+                          color: 'primary.main',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 119, 0, 0.15)',
+                            transform: 'scale(1.1)',
+                            boxShadow: '0 0 12px rgba(255, 119, 0, 0.4)',
+                          },
+                        }}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </TableCell>
               </TableRow>
               );

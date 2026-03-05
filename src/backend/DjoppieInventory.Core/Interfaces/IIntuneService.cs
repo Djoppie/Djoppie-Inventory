@@ -1,3 +1,4 @@
+using DjoppieInventory.Core.DTOs;
 using Microsoft.Graph.Models;
 
 namespace DjoppieInventory.Core.Interfaces;
@@ -48,4 +49,34 @@ public interface IIntuneService
     /// <param name="deviceId">The Intune device identifier</param>
     /// <returns>True if device is compliant, false otherwise</returns>
     Task<bool> IsDeviceCompliantAsync(string deviceId);
+
+    /// <summary>
+    /// Retrieves all detected/installed applications for a specific managed device.
+    /// Uses Microsoft Graph Beta API to expand detectedApps on the device.
+    /// </summary>
+    /// <param name="deviceId">The Intune device identifier</param>
+    /// <returns>Response containing device information and list of detected applications</returns>
+    /// <exception cref="ArgumentException">Thrown when deviceId is null or empty</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the Graph API call fails</exception>
+    Task<DeviceDetectedAppsResponseDto?> GetDeviceInstalledAppsAsync(string deviceId);
+
+    /// <summary>
+    /// Retrieves all detected/installed applications for a device identified by serial number.
+    /// First looks up the device by serial number, then retrieves installed apps.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Response containing device information and list of detected applications, or null if device not found</returns>
+    /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the Graph API call fails</exception>
+    Task<DeviceDetectedAppsResponseDto?> GetDeviceInstalledAppsBySerialAsync(string serialNumber);
+
+    /// <summary>
+    /// Retrieves device health information and ICT recommendations for a device identified by serial number.
+    /// Includes compliance status, storage, encryption, OS version, and improvement recommendations.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Device health information with recommendations, or null if device not found</returns>
+    /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the Graph API call fails</exception>
+    Task<DeviceHealthDto?> GetDeviceHealthBySerialAsync(string serialNumber);
 }

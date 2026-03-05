@@ -447,6 +447,57 @@
       "delete": "Verwijderd"
     }
   },
+  "software": {
+    "title": "Geïnstalleerde Software",
+    "pageTitle": "Geïnstalleerde Software",
+    "backToAsset": "Terug naar Activa Details",
+    "viewSoftware": "Bekijk Software",
+    "viewSoftwareTooltip": "Bekijk geïnstalleerde software op dit apparaat",
+    "exportToCSV": "Exporteren naar CSV",
+    "noSerialNumber": "Dit activa heeft geen serienummer. Software-informatie is alleen beschikbaar voor apparaten met een serienummer geregistreerd in Intune.",
+    "deviceNotFound": "Apparaat niet gevonden in Intune. Het apparaat is mogelijk niet ingeschreven of het serienummer is onjuist.",
+    "noSoftwareFound": "Geen software gevonden",
+    "noSoftwareAvailable": "Geen geïnstalleerde software-gegevens beschikbaar voor dit activa",
+    "adjustFilters": "Probeer uw filters aan te passen",
+    "loadingSoftware": "Geïnstalleerde software laden...",
+    "showingResults": "{{shown}} van {{total}} applicaties weergegeven",
+    "statistics": {
+      "totalApps": "TOTAAL APPS",
+      "totalSize": "TOTALE GROOTTE",
+      "categories": "CATEGORIEËN",
+      "publishers": "UITGEVERS"
+    },
+    "filters": {
+      "search": "Zoek software op naam, uitgever of versie...",
+      "byCategory": "Filter op categorie",
+      "byPublisher": "Filter op uitgever",
+      "allCategories": "Alle Categorieën",
+      "allPublishers": "Alle Uitgevers",
+      "activeFilters": "Actieve filters:",
+      "searchFilter": "Zoeken: \"{{query}}\"",
+      "categoryFilter": "Categorie: {{category}}",
+      "publisherFilter": "Uitgever: {{publisher}}"
+    },
+    "table": {
+      "applicationName": "APPLICATIENAAM",
+      "version": "VERSIE",
+      "publisher": "UITGEVER",
+      "category": "CATEGORIE",
+      "installDate": "INSTALLATIEDATUM",
+      "size": "GROOTTE"
+    },
+    "categories": {
+      "Productivity": "Productiviteit",
+      "Development": "Ontwikkeling",
+      "Security": "Beveiliging",
+      "Communication": "Communicatie",
+      "Utilities": "Hulpprogrammas",
+      "Design": "Ontwerp",
+      "Browser": "Browser",
+      "System": "Systeem",
+      "Other": "Overig"
+    }
+  },
   "lease": {
     "sectionTitle": "Lease Informatie",
     "currentContract": "Huidig Contract",

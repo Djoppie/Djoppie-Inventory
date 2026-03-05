@@ -15,6 +15,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import CategoryIcon from '@mui/icons-material/Category';
 import PersonIcon from '@mui/icons-material/Person';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import AppsIcon from '@mui/icons-material/Apps';
 
 interface AssetCardProps {
   asset: Asset;
@@ -159,7 +160,42 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
                 {asset.assetName}
               </Typography>
             </Box>
-            <StatusBadge status={asset.status} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {/* Software Icon for Laptops/Desktops */}
+              {(asset.category === 'Laptop' || asset.category === 'Desktop') && (
+                <Box
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/assets/${asset.id}/software`);
+                  }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    borderRadius: 1,
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? 'rgba(33, 150, 243, 0.15)'
+                        : 'rgba(33, 150, 243, 0.1)',
+                    color: 'info.main',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? 'rgba(33, 150, 243, 0.25)'
+                          : 'rgba(33, 150, 243, 0.2)',
+                      transform: 'scale(1.1)',
+                    },
+                  }}
+                >
+                  <AppsIcon sx={{ fontSize: '0.9rem' }} />
+                </Box>
+              )}
+              <StatusBadge status={asset.status} />
+            </Box>
           </Box>
 
           {/* Asset Code */}
