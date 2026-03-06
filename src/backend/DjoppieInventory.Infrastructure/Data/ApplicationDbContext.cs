@@ -20,6 +20,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<AssetEvent> AssetEvents { get; set; }
     public DbSet<LeaseContract> LeaseContracts { get; set; }
 
+    // Rollout workflow
+    public DbSet<RolloutSession> RolloutSessions { get; set; }
+    public DbSet<RolloutItem> RolloutItems { get; set; }
+    public DbSet<AssetSwap> AssetSwaps { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -184,6 +189,81 @@ public class ApplicationDbContext : DbContext
                 .WithMany(a => a.LeaseContracts)
                 .HasForeignKey(e => e.AssetId)
                 .OnDelete(DeleteBehavior.Cascade); // Delete lease contracts when asset deleted
+        });
+
+        // RolloutSession configuration
+        modelBuilder.Entity<RolloutSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.PlannedDate);
+            entity.Property(e => e.SessionName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.CreatedByEmail).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Status).HasConversion<int>();
+        });
+
+        // RolloutItem configuration
+        modelBuilder.Entity<RolloutItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RolloutSessionId);
+            entity.HasIndex(e => e.AssetId);
+            entity.HasIndex(e => e.Status);
+            entity.Property(e => e.TargetUser).HasMaxLength(200);
+            entity.Property(e => e.TargetUserEmail).HasMaxLength(200);
+            entity.Property(e => e.TargetLocation).HasMaxLength(200);
+            entity.Property(e => e.MonitorPosition).HasMaxLength(50);
+            entity.Property(e => e.CompletedBy).HasMaxLength(200);
+            entity.Property(e => e.CompletedByEmail).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.Status).HasConversion<int>();
+
+            entity.HasOne(e => e.RolloutSession)
+                .WithMany(r => r.Items)
+                .HasForeignKey(e => e.RolloutSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Asset)
+                .WithMany()
+                .HasForeignKey(e => e.AssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.TargetService)
+                .WithMany()
+                .HasForeignKey(e => e.TargetServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // AssetSwap configuration
+        modelBuilder.Entity<AssetSwap>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RolloutSessionId);
+            entity.HasIndex(e => e.OldAssetId);
+            entity.HasIndex(e => e.NewAssetId);
+            entity.Property(e => e.TargetUser).HasMaxLength(200);
+            entity.Property(e => e.TargetLocation).HasMaxLength(200);
+            entity.Property(e => e.SwappedBy).HasMaxLength(200);
+            entity.Property(e => e.SwappedByEmail).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.OldAssetNewStatus).HasConversion<int?>();
+
+            entity.HasOne(e => e.RolloutSession)
+                .WithMany(r => r.AssetSwaps)
+                .HasForeignKey(e => e.RolloutSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.OldAsset)
+                .WithMany()
+                .HasForeignKey(e => e.OldAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.NewAsset)
+                .WithMany()
+                .HasForeignKey(e => e.NewAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ===== SEED DATA =====

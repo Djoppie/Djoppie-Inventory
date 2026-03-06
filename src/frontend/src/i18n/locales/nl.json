@@ -29,6 +29,7 @@
     "scan": "Scannen",
     "assets": "Activa",
     "templates": "Sjablonen",
+    "rollouts": "Uitrol",
     "admin": "Beheer"
   },
   "dashboard": {
@@ -533,6 +534,109 @@
       "endDateRequired": "Einddatum is verplicht",
       "endDateAfterStart": "Einddatum moet na startdatum liggen",
       "invalidNumber": "Voer een geldig nummer in"
+    }
+  },
+  "rollout": {
+    "title": "Uitrolsessies",
+    "newSession": "Nieuwe Uitrol",
+    "editSession": "Uitrol Bewerken",
+    "sessionName": "Sessienaam",
+    "description": "Beschrijving",
+    "plannedDate": "Geplande Datum",
+    "createdBy": "Aangemaakt door",
+    "status": {
+      "planning": "Planning",
+      "ready": "Gereed",
+      "inProgress": "Bezig",
+      "completed": "Voltooid",
+      "cancelled": "Geannuleerd"
+    },
+    "itemStatus": {
+      "pending": "In afwachting",
+      "inProgress": "Bezig",
+      "completed": "Voltooid",
+      "failed": "Mislukt",
+      "skipped": "Overgeslagen"
+    },
+    "items": {
+      "title": "Items",
+      "addAsset": "Toestel Toevoegen",
+      "scanAsset": "Scan Toestel",
+      "bulkScan": "Meerdere Scannen",
+      "noItems": "Nog geen items toegevoegd",
+      "targetUser": "Doelgebruiker",
+      "targetLocation": "Locatie",
+      "removeItem": "Verwijderen"
+    },
+    "monitor": {
+      "position": "Monitorpositie",
+      "displayNumber": "Schermnummer",
+      "left": "Links",
+      "center": "Midden",
+      "right": "Rechts",
+      "primary": "Primair",
+      "secondary": "Secundair"
+    },
+    "swap": {
+      "title": "Toestel Verwisselen",
+      "oldDevice": "Oud Toestel",
+      "newDevice": "Nieuw Toestel",
+      "collect": "Ophalen",
+      "deploy": "Installeren",
+      "execute": "Uitvoeren",
+      "selectStatus": "Selecteer status voor oud toestel"
+    },
+    "progress": {
+      "title": "Voortgang",
+      "completed": "Voltooid",
+      "pending": "In Afwachting",
+      "failed": "Mislukt",
+      "total": "Totaal",
+      "swaps": "Verwisselingen"
+    },
+    "actions": {
+      "saveDraft": "Opslaan als Concept",
+      "markReady": "Markeer als Gereed",
+      "startRollout": "Start Uitrol",
+      "printLabels": "Labels Afdrukken",
+      "printChecklist": "Checklist Afdrukken",
+      "complete": "Voltooien",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "exportSummary": "Samenvatting Exporteren"
+    },
+    "execution": {
+      "title": "Uitvoering",
+      "scanOldDevice": "Scan oud toestel",
+      "scanNewDevice": "Scan nieuw toestel",
+      "currentUser": "Huidige Gebruiker",
+      "nextItem": "Volgend Item",
+      "allComplete": "Alle items voltooid!",
+      "markComplete": "Markeer als Voltooid"
+    },
+    "summary": {
+      "title": "Samenvatting",
+      "sessionComplete": "Sessie Voltooid",
+      "swapHistory": "Verwisselingsgeschiedenis",
+      "timeline": "Tijdlijn",
+      "duration": "Duur"
+    },
+    "validation": {
+      "nameRequired": "Sessienaam is verplicht",
+      "dateRequired": "Geplande datum is verplicht",
+      "noItems": "Voeg minimaal één item toe",
+      "assetInRollout": "Dit toestel zit al in een actieve uitrol"
+    },
+    "confirmations": {
+      "deleteSession": "Weet je zeker dat je deze uitrol wilt verwijderen?",
+      "startRollout": "Weet je zeker dat je de uitrol wilt starten?",
+      "completeSession": "Weet je zeker dat je de uitrol wilt afsluiten?"
+    },
+    "groupBy": {
+      "none": "Geen groepering",
+      "user": "Groepeer per Gebruiker",
+      "location": "Groepeer per Locatie",
+      "assetType": "Groepeer per Type"
     }
   }
 }

@@ -30,6 +30,18 @@ export const ROUTES = {
 
   /** Installed software page (requires :id parameter) */
   ASSET_SOFTWARE: '/assets/:id/software',
+
+  /** Rollout list page */
+  ROLLOUTS: '/rollouts',
+
+  /** New rollout planner page */
+  ROLLOUTS_NEW: '/rollouts/new',
+
+  /** Edit rollout planner page (requires :id parameter) */
+  ROLLOUT_EDIT: '/rollouts/:id',
+
+  /** Rollout execution page (requires :id parameter) */
+  ROLLOUT_EXECUTE: '/rollouts/:id/execute',
 } as const;
 
 /**
@@ -56,4 +68,18 @@ export const buildRoute = {
    * @returns The full route path
    */
   assetSoftware: (id: number | string) => `/assets/${id}/software`,
+
+  /**
+   * Builds the rollout edit route with the specified rollout ID.
+   * @param id - The rollout ID
+   * @returns The full route path
+   */
+  rolloutEdit: (id: number | string) => `/rollouts/${id}`,
+
+  /**
+   * Builds the rollout execution route with the specified rollout ID.
+   * @param id - The rollout ID
+   * @returns The full route path
+   */
+  rolloutExecute: (id: number | string) => `/rollouts/${id}/execute`,
 } as const;
