@@ -1,4 +1,3 @@
-using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
@@ -7,9 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace DjoppieInventory.Infrastructure.Repositories;
 
 /// <summary>
-/// Repository implementation for Rollout data access operations.
-/// Manages rollout sessions, items, asset swaps, and progress tracking with proper eager loading
-/// of navigation properties and optimized queries.
+/// Repository implementation for rollout workflow operations.
+/// Handles CRUD for sessions, days, and workplaces with optimized queries.
 /// </summary>
 public class RolloutRepository : IRolloutRepository
 {
@@ -17,14 +15,12 @@ public class RolloutRepository : IRolloutRepository
 
     public RolloutRepository(ApplicationDbContext context)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _context = context;
     }
 
-    // ===== Session Operations =====
+    // ===== RolloutSession Operations =====
 
-    public async Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(
-        RolloutSessionStatus? status = null,
-        CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(RolloutSessionStatus? status = null)
     {
         var query = _context.RolloutSessions.AsQueryable();
 
@@ -34,298 +30,286 @@ public class RolloutRepository : IRolloutRepository
         }
 
         return await query
-            .OrderByDescending(s => s.PlannedDate)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(s => s.PlannedStartDate)
+            .ToListAsync();
     }
 
-    public async Task<RolloutSession?> GetSessionByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<RolloutSession?> GetSessionByIdAsync(int id, bool includeDays = false, bool includeWorkplaces = false)
     {
-        return await _context.RolloutSessions
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        var query = _context.RolloutSessions.AsQueryable();
+
+        if (includeDays)
+        {
+            query = query.Include(s => s.Days);
+
+            if (includeWorkplaces)
+            {
+                query = query.Include(s => s.Days).ThenInclude(d => d.Workplaces);
+            }
+        }
+
+        return await query.FirstOrDefaultAsync(s => s.Id == id);
     }
 
-    public async Task<RolloutSession?> GetSessionWithItemsAsync(int id, CancellationToken cancellationToken = default)
-    {
-        return await _context.RolloutSessions
-            .Include(s => s.Items)
-                .ThenInclude(i => i.Asset)
-                    .ThenInclude(a => a.AssetType)
-            .Include(s => s.Items)
-                .ThenInclude(i => i.Asset)
-                    .ThenInclude(a => a.Service)
-            .Include(s => s.Items)
-                .ThenInclude(i => i.TargetService)
-            .Include(s => s.AssetSwaps)
-                .ThenInclude(swap => swap.OldAsset)
-            .Include(s => s.AssetSwaps)
-                .ThenInclude(swap => swap.NewAsset)
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
-    }
-
-    public async Task<RolloutSession> CreateSessionAsync(
-        RolloutSession session,
-        CancellationToken cancellationToken = default)
+    public async Task<RolloutSession> CreateSessionAsync(RolloutSession session)
     {
         session.CreatedAt = DateTime.UtcNow;
         session.UpdatedAt = DateTime.UtcNow;
 
         _context.RolloutSessions.Add(session);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync();
 
         return session;
     }
 
-    public async Task<RolloutSession> UpdateSessionAsync(
-        RolloutSession session,
-        CancellationToken cancellationToken = default)
+    public async Task<RolloutSession> UpdateSessionAsync(RolloutSession session)
     {
         session.UpdatedAt = DateTime.UtcNow;
 
         _context.RolloutSessions.Update(session);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync();
 
         return session;
     }
 
-    public async Task DeleteSessionAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteSessionAsync(int id)
     {
-        var session = await _context.RolloutSessions.FindAsync(new object[] { id }, cancellationToken);
+        var session = await _context.RolloutSessions.FindAsync(id);
         if (session == null)
         {
-            throw new InvalidOperationException($"Rollout session with ID {id} not found.");
+            return false;
         }
 
         _context.RolloutSessions.Remove(session);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 
-    // ===== Item Operations =====
+    // ===== RolloutDay Operations =====
 
-    public async Task<RolloutItem?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false)
     {
-        return await _context.RolloutItems
-            .Include(i => i.Asset)
-                .ThenInclude(a => a.AssetType)
-            .Include(i => i.Asset)
-                .ThenInclude(a => a.Service)
-            .Include(i => i.TargetService)
-            .Include(i => i.RolloutSession)
-            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+        var query = _context.RolloutDays
+            .Where(d => d.RolloutSessionId == sessionId);
+
+        if (includeWorkplaces)
+        {
+            query = query.Include(d => d.Workplaces);
+        }
+
+        return await query
+            .OrderBy(d => d.Date)
+            .ThenBy(d => d.DayNumber)
+            .ToListAsync();
     }
 
-    public async Task<RolloutItem> AddItemAsync(RolloutItem item, CancellationToken cancellationToken = default)
+    public async Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false)
     {
-        item.CreatedAt = DateTime.UtcNow;
-        item.UpdatedAt = DateTime.UtcNow;
+        var query = _context.RolloutDays.AsQueryable();
 
-        _context.RolloutItems.Add(item);
-        await _context.SaveChangesAsync(cancellationToken);
+        if (includeWorkplaces)
+        {
+            query = query.Include(d => d.Workplaces).ThenInclude(w => w.Service);
+        }
 
-        // Reload with navigation properties for mapping
-        return await _context.RolloutItems
-            .Include(i => i.Asset)
-                .ThenInclude(a => a.AssetType)
-            .Include(i => i.Asset)
-                .ThenInclude(a => a.Service)
-            .Include(i => i.TargetService)
-            .FirstAsync(i => i.Id == item.Id, cancellationToken);
+        return await query.FirstOrDefaultAsync(d => d.Id == id);
     }
 
-    public async Task<IEnumerable<RolloutItem>> AddItemsBulkAsync(
-        IEnumerable<RolloutItem> items,
-        CancellationToken cancellationToken = default)
+    public async Task<RolloutDay> CreateDayAsync(RolloutDay day)
     {
-        var itemList = items.ToList();
-        if (itemList.Count == 0)
-            return itemList;
+        day.CreatedAt = DateTime.UtcNow;
+        day.UpdatedAt = DateTime.UtcNow;
 
+        _context.RolloutDays.Add(day);
+        await _context.SaveChangesAsync();
+
+        return day;
+    }
+
+    public async Task<RolloutDay> UpdateDayAsync(RolloutDay day)
+    {
+        day.UpdatedAt = DateTime.UtcNow;
+
+        _context.RolloutDays.Update(day);
+        await _context.SaveChangesAsync();
+
+        return day;
+    }
+
+    public async Task<bool> DeleteDayAsync(int id)
+    {
+        var day = await _context.RolloutDays.FindAsync(id);
+        if (day == null)
+        {
+            return false;
+        }
+
+        _context.RolloutDays.Remove(day);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    // ===== RolloutWorkplace Operations =====
+
+    public async Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByDayIdAsync(int dayId)
+    {
+        return await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Where(w => w.RolloutDayId == dayId)
+            .OrderBy(w => w.Status)
+            .ThenBy(w => w.UserName)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByStatusAsync(int dayId, RolloutWorkplaceStatus status)
+    {
+        return await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Where(w => w.RolloutDayId == dayId && w.Status == status)
+            .OrderBy(w => w.UserName)
+            .ToListAsync();
+    }
+
+    public async Task<RolloutWorkplace?> GetWorkplaceByIdAsync(int id)
+    {
+        return await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.RolloutDay)
+                .ThenInclude(d => d.RolloutSession)
+            .FirstOrDefaultAsync(w => w.Id == id);
+    }
+
+    public async Task<RolloutWorkplace> CreateWorkplaceAsync(RolloutWorkplace workplace)
+    {
+        workplace.CreatedAt = DateTime.UtcNow;
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        _context.RolloutWorkplaces.Add(workplace);
+        await _context.SaveChangesAsync();
+
+        // Update day totals
+        await UpdateDayTotalsAsync(workplace.RolloutDayId);
+
+        return workplace;
+    }
+
+    public async Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace)
+    {
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        _context.RolloutWorkplaces.Update(workplace);
+        await _context.SaveChangesAsync();
+
+        // Update day totals
+        await UpdateDayTotalsAsync(workplace.RolloutDayId);
+
+        return workplace;
+    }
+
+    public async Task<bool> DeleteWorkplaceAsync(int id)
+    {
+        var workplace = await _context.RolloutWorkplaces.FindAsync(id);
+        if (workplace == null)
+        {
+            return false;
+        }
+
+        var dayId = workplace.RolloutDayId;
+
+        _context.RolloutWorkplaces.Remove(workplace);
+        await _context.SaveChangesAsync();
+
+        // Update day totals
+        await UpdateDayTotalsAsync(dayId);
+
+        return true;
+    }
+
+    // ===== Batch Operations =====
+
+    public async Task<IEnumerable<RolloutWorkplace>> CreateWorkplacesAsync(IEnumerable<RolloutWorkplace> workplaces)
+    {
+        var workplaceList = workplaces.ToList();
         var now = DateTime.UtcNow;
-        foreach (var item in itemList)
+
+        foreach (var workplace in workplaceList)
         {
-            item.CreatedAt = now;
-            item.UpdatedAt = now;
+            workplace.CreatedAt = now;
+            workplace.UpdatedAt = now;
         }
 
-        await _context.RolloutItems.AddRangeAsync(itemList, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        _context.RolloutWorkplaces.AddRange(workplaceList);
+        await _context.SaveChangesAsync();
 
-        // Reload with navigation properties for mapping
-        var ids = itemList.Select(i => i.Id).ToList();
-        return await _context.RolloutItems
-            .Include(i => i.Asset)
-                .ThenInclude(a => a.AssetType)
-            .Include(i => i.Asset)
-                .ThenInclude(a => a.Service)
-            .Include(i => i.TargetService)
-            .Where(i => ids.Contains(i.Id))
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<RolloutItem> UpdateItemAsync(RolloutItem item, CancellationToken cancellationToken = default)
-    {
-        item.UpdatedAt = DateTime.UtcNow;
-
-        _context.RolloutItems.Update(item);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return item;
-    }
-
-    public async Task DeleteItemAsync(int id, CancellationToken cancellationToken = default)
-    {
-        var item = await _context.RolloutItems.FindAsync(new object[] { id }, cancellationToken);
-        if (item == null)
+        // Update day totals for all affected days
+        var affectedDayIds = workplaceList.Select(w => w.RolloutDayId).Distinct();
+        foreach (var dayId in affectedDayIds)
         {
-            throw new InvalidOperationException($"Rollout item with ID {id} not found.");
+            await UpdateDayTotalsAsync(dayId);
         }
 
-        _context.RolloutItems.Remove(item);
-        await _context.SaveChangesAsync(cancellationToken);
+        return workplaceList;
     }
 
-    public async Task<bool> IsAssetInActiveRolloutAsync(int assetId, CancellationToken cancellationToken = default)
+    // ===== Statistics & Reporting =====
+
+    public async Task<RolloutSessionStats> GetSessionStatsAsync(int sessionId)
     {
-        // Active sessions: Planning, Ready, or InProgress
-        var activeStatuses = new[]
+        var days = await _context.RolloutDays
+            .Where(d => d.RolloutSessionId == sessionId)
+            .ToListAsync();
+
+        var workplaces = await _context.RolloutWorkplaces
+            .Where(w => days.Select(d => d.Id).Contains(w.RolloutDayId))
+            .ToListAsync();
+
+        var totalWorkplaces = workplaces.Count;
+        var completedWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Completed);
+        var pendingWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Pending);
+        var inProgressWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.InProgress);
+        var skippedWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Skipped);
+        var failedWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Failed);
+
+        var completionPercentage = totalWorkplaces > 0
+            ? Math.Round((decimal)completedWorkplaces / totalWorkplaces * 100, 2)
+            : 0;
+
+        return new RolloutSessionStats
         {
-            RolloutSessionStatus.Planning,
-            RolloutSessionStatus.Ready,
-            RolloutSessionStatus.InProgress
+            TotalDays = days.Count,
+            TotalWorkplaces = totalWorkplaces,
+            CompletedWorkplaces = completedWorkplaces,
+            PendingWorkplaces = pendingWorkplaces,
+            InProgressWorkplaces = inProgressWorkplaces,
+            SkippedWorkplaces = skippedWorkplaces,
+            FailedWorkplaces = failedWorkplaces,
+            CompletionPercentage = completionPercentage
         };
-
-        return await _context.RolloutItems
-            .Include(i => i.RolloutSession)
-            .AnyAsync(i => i.AssetId == assetId && activeStatuses.Contains(i.RolloutSession.Status), cancellationToken);
     }
 
-    // ===== Swap Operations =====
+    // ===== Helper Methods =====
 
-    public async Task<AssetSwap?> GetSwapByIdAsync(int id, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Updates the TotalWorkplaces and CompletedWorkplaces counts for a day
+    /// </summary>
+    private async Task UpdateDayTotalsAsync(int dayId)
     {
-        return await _context.AssetSwaps
-            .Include(s => s.OldAsset)
-                .ThenInclude(a => a!.AssetType)
-            .Include(s => s.OldAsset)
-                .ThenInclude(a => a!.Service)
-            .Include(s => s.NewAsset)
-                .ThenInclude(a => a.AssetType)
-            .Include(s => s.NewAsset)
-                .ThenInclude(a => a.Service)
-            .Include(s => s.RolloutSession)
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
-    }
-
-    public async Task<AssetSwap> CreateSwapAsync(AssetSwap swap, CancellationToken cancellationToken = default)
-    {
-        swap.CreatedAt = DateTime.UtcNow;
-        swap.UpdatedAt = DateTime.UtcNow;
-
-        _context.AssetSwaps.Add(swap);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        // Reload with navigation properties for mapping
-        return await _context.AssetSwaps
-            .Include(s => s.OldAsset)
-                .ThenInclude(a => a!.AssetType)
-            .Include(s => s.OldAsset)
-                .ThenInclude(a => a!.Service)
-            .Include(s => s.NewAsset)
-                .ThenInclude(a => a.AssetType)
-            .Include(s => s.NewAsset)
-                .ThenInclude(a => a.Service)
-            .FirstAsync(s => s.Id == swap.Id, cancellationToken);
-    }
-
-    public async Task<AssetSwap> UpdateSwapAsync(AssetSwap swap, CancellationToken cancellationToken = default)
-    {
-        swap.UpdatedAt = DateTime.UtcNow;
-
-        _context.AssetSwaps.Update(swap);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return swap;
-    }
-
-    // ===== Progress Tracking =====
-
-    public async Task<RolloutProgressDto> GetProgressAsync(int sessionId, CancellationToken cancellationToken = default)
-    {
-        // Get session with items to calculate progress
-        var session = await _context.RolloutSessions
-            .Include(s => s.Items)
-            .Include(s => s.AssetSwaps)
-            .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
-
-        if (session == null)
+        var day = await _context.RolloutDays.FindAsync(dayId);
+        if (day == null)
         {
-            throw new InvalidOperationException($"Rollout session with ID {sessionId} not found.");
+            return;
         }
 
-        var items = session.Items.ToList();
-        var swaps = session.AssetSwaps.ToList();
+        var workplaces = await _context.RolloutWorkplaces
+            .Where(w => w.RolloutDayId == dayId)
+            .ToListAsync();
 
-        // Calculate item counts by status
-        var totalItems = items.Count;
-        var pendingItems = items.Count(i => i.Status == RolloutItemStatus.Pending);
-        var inProgressItems = items.Count(i => i.Status == RolloutItemStatus.InProgress);
-        var completedItems = items.Count(i => i.Status == RolloutItemStatus.Completed);
-        var failedItems = items.Count(i => i.Status == RolloutItemStatus.Failed);
-        var skippedItems = items.Count(i => i.Status == RolloutItemStatus.Skipped);
+        day.TotalWorkplaces = workplaces.Count;
+        day.CompletedWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Completed);
+        day.UpdatedAt = DateTime.UtcNow;
 
-        // Calculate completion percentage
-        var finishedItems = completedItems + skippedItems;
-        var completionPercentage = totalItems > 0
-            ? Math.Round((decimal)finishedItems / totalItems * 100, 2)
-            : 0m;
-
-        // Calculate swap counts
-        var totalSwaps = swaps.Count;
-        var completedSwaps = swaps.Count(s => s.IsCompleted);
-        var pendingSwaps = swaps.Count(s => !s.IsCompleted);
-
-        // Calculate average completion time and estimate remaining time
-        TimeSpan? averageCompletionTime = null;
-        TimeSpan? estimatedTimeRemaining = null;
-
-        if (session.StartedAt.HasValue && completedItems > 0)
-        {
-            var completedItemsWithTime = items
-                .Where(i => i.Status == RolloutItemStatus.Completed && i.CompletedAt.HasValue)
-                .ToList();
-
-            if (completedItemsWithTime.Count > 0)
-            {
-                // Calculate average time per item based on session start to item completion
-                var totalCompletionTime = completedItemsWithTime
-                    .Sum(i => (i.CompletedAt!.Value - session.StartedAt.Value).TotalSeconds);
-
-                averageCompletionTime = TimeSpan.FromSeconds(totalCompletionTime / completedItemsWithTime.Count);
-
-                // Estimate remaining time based on pending + in-progress items
-                var remainingItems = pendingItems + inProgressItems;
-                if (remainingItems > 0)
-                {
-                    estimatedTimeRemaining = TimeSpan.FromSeconds(
-                        averageCompletionTime.Value.TotalSeconds * remainingItems);
-                }
-            }
-        }
-
-        return new RolloutProgressDto
-        {
-            TotalItems = totalItems,
-            PendingItems = pendingItems,
-            InProgressItems = inProgressItems,
-            CompletedItems = completedItems,
-            FailedItems = failedItems,
-            SkippedItems = skippedItems,
-            CompletionPercentage = completionPercentage,
-            TotalSwaps = totalSwaps,
-            CompletedSwaps = completedSwaps,
-            PendingSwaps = pendingSwaps,
-            AverageCompletionTime = averageCompletionTime,
-            EstimatedTimeRemaining = estimatedTimeRemaining
-        };
+        await _context.SaveChangesAsync();
     }
 }

@@ -20,10 +20,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<AssetEvent> AssetEvents { get; set; }
     public DbSet<LeaseContract> LeaseContracts { get; set; }
 
-    // Rollout workflow
+    // Rollout workflow (simplified architecture)
     public DbSet<RolloutSession> RolloutSessions { get; set; }
-    public DbSet<RolloutItem> RolloutItems { get; set; }
-    public DbSet<AssetSwap> AssetSwaps { get; set; }
+    public DbSet<RolloutDay> RolloutDays { get; set; }
+    public DbSet<RolloutWorkplace> RolloutWorkplaces { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -196,7 +196,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Status);
-            entity.HasIndex(e => e.PlannedDate);
+            entity.HasIndex(e => e.PlannedStartDate);
             entity.Property(e => e.SessionName).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Description).HasMaxLength(2000);
             entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(200);
@@ -204,66 +204,50 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status).HasConversion<int>();
         });
 
-        // RolloutItem configuration
-        modelBuilder.Entity<RolloutItem>(entity =>
+        // RolloutDay configuration
+        modelBuilder.Entity<RolloutDay>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.RolloutSessionId);
-            entity.HasIndex(e => e.AssetId);
+            entity.HasIndex(e => e.Date);
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.ScheduledServiceIds).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            // Foreign key to RolloutSession (cascade delete - if session deleted, delete days)
+            entity.HasOne(e => e.RolloutSession)
+                .WithMany(s => s.Days)
+                .HasForeignKey(e => e.RolloutSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // RolloutWorkplace configuration
+        modelBuilder.Entity<RolloutWorkplace>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RolloutDayId);
             entity.HasIndex(e => e.Status);
-            entity.Property(e => e.TargetUser).HasMaxLength(200);
-            entity.Property(e => e.TargetUserEmail).HasMaxLength(200);
-            entity.Property(e => e.TargetLocation).HasMaxLength(200);
-            entity.Property(e => e.MonitorPosition).HasMaxLength(50);
+            entity.HasIndex(e => e.ServiceId);
+            entity.Property(e => e.UserName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.UserEmail).HasMaxLength(200);
+            entity.Property(e => e.Location).HasMaxLength(200);
+            entity.Property(e => e.AssetPlansJson).IsRequired();
             entity.Property(e => e.CompletedBy).HasMaxLength(200);
             entity.Property(e => e.CompletedByEmail).HasMaxLength(200);
             entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.Status).HasConversion<int>();
 
-            entity.HasOne(e => e.RolloutSession)
-                .WithMany(r => r.Items)
-                .HasForeignKey(e => e.RolloutSessionId)
+            // Foreign key to RolloutDay (cascade delete - if day deleted, delete workplaces)
+            entity.HasOne(e => e.RolloutDay)
+                .WithMany(d => d.Workplaces)
+                .HasForeignKey(e => e.RolloutDayId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.Asset)
+            // Foreign key to Service (set null - if service deleted, set FK to null)
+            entity.HasOne(e => e.Service)
                 .WithMany()
-                .HasForeignKey(e => e.AssetId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(e => e.TargetService)
-                .WithMany()
-                .HasForeignKey(e => e.TargetServiceId)
+                .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // AssetSwap configuration
-        modelBuilder.Entity<AssetSwap>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.RolloutSessionId);
-            entity.HasIndex(e => e.OldAssetId);
-            entity.HasIndex(e => e.NewAssetId);
-            entity.Property(e => e.TargetUser).HasMaxLength(200);
-            entity.Property(e => e.TargetLocation).HasMaxLength(200);
-            entity.Property(e => e.SwappedBy).HasMaxLength(200);
-            entity.Property(e => e.SwappedByEmail).HasMaxLength(200);
-            entity.Property(e => e.Notes).HasMaxLength(2000);
-            entity.Property(e => e.OldAssetNewStatus).HasConversion<int?>();
-
-            entity.HasOne(e => e.RolloutSession)
-                .WithMany(r => r.AssetSwaps)
-                .HasForeignKey(e => e.RolloutSessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.OldAsset)
-                .WithMany()
-                .HasForeignKey(e => e.OldAssetId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasOne(e => e.NewAsset)
-                .WithMany()
-                .HasForeignKey(e => e.NewAssetId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ===== SEED DATA =====

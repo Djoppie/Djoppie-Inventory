@@ -3,32 +3,19 @@ using System.ComponentModel.DataAnnotations;
 namespace DjoppieInventory.Core.DTOs.Rollout;
 
 /// <summary>
-/// Data Transfer Object for creating a new rollout session
+/// DTO for creating a new rollout session
 /// </summary>
 public class CreateRolloutSessionDto
 {
-    /// <summary>
-    /// Name of the rollout session (required)
-    /// </summary>
-    [Required]
-    [StringLength(200, MinimumLength = 3)]
+    [Required(ErrorMessage = "Session name is required")]
+    [StringLength(200, ErrorMessage = "Session name cannot exceed 200 characters")]
     public string SessionName { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Optional detailed description of the rollout purpose and scope
-    /// </summary>
-    [StringLength(2000)]
+    [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters")]
     public string? Description { get; set; }
 
-    /// <summary>
-    /// Planned date for the rollout to begin (required)
-    /// </summary>
-    [Required]
-    public DateTime PlannedDate { get; set; }
+    [Required(ErrorMessage = "Planned start date is required")]
+    public DateTime PlannedStartDate { get; set; }
 
-    /// <summary>
-    /// Initial status (defaults to Planning if not specified)
-    /// Valid values: Planning, Ready
-    /// </summary>
-    public string? Status { get; set; }
+    public DateTime? PlannedEndDate { get; set; }
 }

@@ -4,8 +4,8 @@ import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import AddBoxIcon from '@mui/icons-material/AddBox';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import CategoryIcon from '@mui/icons-material/Category';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { ROUTES } from '../../constants/routes';
 
@@ -22,9 +22,9 @@ const Navigation = () => {
   const getValue = () => {
     if (location.pathname === ROUTES.DASHBOARD) return 0;
     if (location.pathname === ROUTES.ASSETS_NEW) return 1;
-    if (location.pathname.startsWith('/rollouts')) return 2;
-    if (location.pathname === ROUTES.SCAN) return 3;
-    if (location.pathname === ROUTES.TEMPLATES) return 4;
+    if (location.pathname === ROUTES.SCAN) return 2;
+    if (location.pathname === ROUTES.TEMPLATES) return 3;
+    if (location.pathname.startsWith('/rollouts')) return 4;
     if (location.pathname === ROUTES.ADMIN) return 5;
     return 0;
   };
@@ -38,13 +38,13 @@ const Navigation = () => {
         navigate(ROUTES.ASSETS_NEW);
         break;
       case 2:
-        navigate(ROUTES.ROLLOUTS);
-        break;
-      case 3:
         navigate(ROUTES.SCAN);
         break;
-      case 4:
+      case 3:
         navigate(ROUTES.TEMPLATES);
+        break;
+      case 4:
+        navigate(ROUTES.ROLLOUTS);
         break;
       case 5:
         navigate(ROUTES.ADMIN);
@@ -66,9 +66,9 @@ const Navigation = () => {
       <BottomNavigation value={getValue()} onChange={handleChange}>
         <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
         <BottomNavigationAction label={t('navigation.assets')} icon={<AddBoxIcon />} />
-        <BottomNavigationAction label={t('navigation.rollouts')} icon={<RocketLaunchIcon />} />
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.templates')} icon={<CategoryIcon />} />
+        <BottomNavigationAction label={t('navigation.rollouts')} icon={<RocketLaunchIcon />} />
         <BottomNavigationAction label={t('navigation.admin')} icon={<AdminPanelSettingsIcon />} />
       </BottomNavigation>
     </Paper>

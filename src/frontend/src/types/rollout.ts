@@ -1,0 +1,195 @@
+/**
+ * TypeScript types for Rollout workflow
+ * Matches backend DTOs from DjoppieInventory.Core/DTOs/Rollout/
+ */
+
+// ===== ENUMS =====
+
+export type RolloutSessionStatus = 'Planning' | 'Ready' | 'InProgress' | 'Completed' | 'Cancelled';
+export type RolloutWorkplaceStatus = 'Pending' | 'InProgress' | 'Completed' | 'Skipped' | 'Failed';
+export type EquipmentType = 'laptop' | 'docking' | 'monitor' | 'keyboard' | 'mouse';
+export type AssetPlanStatus = 'pending' | 'installed' | 'skipped';
+
+// ===== SESSION TYPES =====
+
+export interface RolloutSession {
+  id: number;
+  sessionName: string;
+  description?: string;
+  status: RolloutSessionStatus;
+  plannedStartDate: string;
+  plannedEndDate?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: string;
+  updatedAt: string;
+  totalDays: number;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  completionPercentage: number;
+  days?: RolloutDay[];
+}
+
+export interface CreateRolloutSession {
+  sessionName: string;
+  description?: string;
+  plannedStartDate: string;
+  plannedEndDate?: string;
+}
+
+export interface UpdateRolloutSession {
+  sessionName: string;
+  description?: string;
+  status: RolloutSessionStatus;
+  plannedStartDate: string;
+  plannedEndDate?: string;
+}
+
+// ===== DAY TYPES =====
+
+export interface RolloutDay {
+  id: number;
+  rolloutSessionId: number;
+  date: string;
+  name?: string;
+  dayNumber: number;
+  scheduledServiceIds: number[];
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  workplaces?: RolloutWorkplace[];
+}
+
+export interface CreateRolloutDay {
+  rolloutSessionId: number;
+  date: string;
+  name?: string;
+  dayNumber: number;
+  scheduledServiceIds: number[];
+  notes?: string;
+}
+
+export interface UpdateRolloutDay {
+  date: string;
+  name?: string;
+  dayNumber: number;
+  scheduledServiceIds: number[];
+  notes?: string;
+}
+
+// ===== WORKPLACE TYPES =====
+
+export interface RolloutWorkplace {
+  id: number;
+  rolloutDayId: number;
+  userName: string;
+  userEmail?: string;
+  location?: string;
+  serviceId?: number;
+  serviceName?: string;
+  isLaptopSetup: boolean;
+  assetPlans: AssetPlan[];
+  status: RolloutWorkplaceStatus;
+  totalItems: number;
+  completedItems: number;
+  completedAt?: string;
+  completedBy?: string;
+  completedByEmail?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRolloutWorkplace {
+  rolloutDayId: number;
+  userName: string;
+  userEmail?: string;
+  location?: string;
+  serviceId?: number;
+  isLaptopSetup: boolean;
+  assetPlans: AssetPlan[];
+  notes?: string;
+}
+
+export interface UpdateRolloutWorkplace {
+  userName: string;
+  userEmail?: string;
+  location?: string;
+  serviceId?: number;
+  isLaptopSetup: boolean;
+  assetPlans: AssetPlan[];
+  status: RolloutWorkplaceStatus;
+  notes?: string;
+}
+
+export interface CompleteWorkplace {
+  notes?: string;
+}
+
+// ===== ASSET PLAN TYPES =====
+
+export interface AssetPlan {
+  equipmentType: EquipmentType;
+  existingAssetId?: number;
+  existingAssetCode?: string;
+  existingAssetName?: string;
+  oldAssetId?: number;
+  oldAssetCode?: string;
+  oldAssetName?: string;
+  createNew: boolean;
+  brand?: string;
+  model?: string;
+  metadata: Record<string, string>;
+  status: AssetPlanStatus;
+  requiresSerialNumber: boolean;
+  requiresQRCode: boolean;
+}
+
+// ===== PROGRESS & REPORTING TYPES =====
+
+export interface RolloutProgress {
+  sessionId: number;
+  sessionName: string;
+  status: RolloutSessionStatus;
+  totalDays: number;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  pendingWorkplaces: number;
+  inProgressWorkplaces: number;
+  skippedWorkplaces: number;
+  failedWorkplaces: number;
+  completionPercentage: number;
+  dayProgress: DayProgress[];
+}
+
+export interface DayProgress {
+  dayId: number;
+  date: string;
+  name?: string;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  completionPercentage: number;
+}
+
+// ===== HELPER TYPES =====
+
+export interface RolloutSessionsQueryParams {
+  status?: RolloutSessionStatus;
+}
+
+export interface RolloutSessionQueryParams {
+  includeDays?: boolean;
+  includeWorkplaces?: boolean;
+}
+
+export interface RolloutDaysQueryParams {
+  includeWorkplaces?: boolean;
+}
+
+export interface RolloutWorkplacesQueryParams {
+  status?: RolloutWorkplaceStatus;
+}

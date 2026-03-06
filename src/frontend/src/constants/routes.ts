@@ -42,6 +42,9 @@ export const ROUTES = {
 
   /** Rollout execution page (requires :id parameter) */
   ROLLOUT_EXECUTE: '/rollouts/:id/execute',
+
+  /** Rollout report page (requires :id parameter) */
+  ROLLOUT_REPORT: '/rollouts/:id/report',
 } as const;
 
 /**
@@ -82,4 +85,11 @@ export const buildRoute = {
    * @returns The full route path
    */
   rolloutExecute: (id: number | string) => `/rollouts/${id}/execute`,
+
+  /**
+   * Builds the rollout report route with the specified rollout ID.
+   * @param id - The rollout ID
+   * @returns The full route path
+   */
+  rolloutReport: (id: number | string) => `/rollouts/${id}/report`,
 } as const;

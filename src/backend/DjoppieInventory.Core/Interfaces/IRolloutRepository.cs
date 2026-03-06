@@ -1,154 +1,125 @@
-using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 
 namespace DjoppieInventory.Core.Interfaces;
 
 /// <summary>
-/// Repository interface for Rollout data access operations.
-/// Manages rollout sessions, items, asset swaps, and progress tracking.
+/// Repository interface for managing rollout sessions, days, and workplaces.
+/// Provides CRUD operations and queries for the rollout workflow.
 /// </summary>
 public interface IRolloutRepository
 {
-    // ===== Session Operations =====
+    // ===== RolloutSession Operations =====
 
     /// <summary>
-    /// Gets all rollout sessions, optionally filtered by status.
-    /// Sessions are ordered by planned date (descending).
+    /// Gets all rollout sessions with optional status filtering
     /// </summary>
-    /// <param name="status">Optional status filter (e.g., Planning, InProgress)</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Collection of rollout sessions</returns>
-    Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(
-        RolloutSessionStatus? status = null,
-        CancellationToken cancellationToken = default);
+    Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(RolloutSessionStatus? status = null);
 
     /// <summary>
-    /// Gets a single rollout session by ID without related entities.
+    /// Gets a rollout session by ID, optionally including related days and workplaces
     /// </summary>
-    /// <param name="id">Session ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Rollout session if found, null otherwise</returns>
-    Task<RolloutSession?> GetSessionByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<RolloutSession?> GetSessionByIdAsync(int id, bool includeDays = false, bool includeWorkplaces = false);
 
     /// <summary>
-    /// Gets a rollout session by ID with all related items eagerly loaded.
-    /// Includes Asset, Service navigation properties for each item.
+    /// Creates a new rollout session
     /// </summary>
-    /// <param name="id">Session ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Rollout session with items if found, null otherwise</returns>
-    Task<RolloutSession?> GetSessionWithItemsAsync(int id, CancellationToken cancellationToken = default);
+    Task<RolloutSession> CreateSessionAsync(RolloutSession session);
 
     /// <summary>
-    /// Creates a new rollout session.
+    /// Updates an existing rollout session
     /// </summary>
-    /// <param name="session">The session to create</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Created session</returns>
-    Task<RolloutSession> CreateSessionAsync(RolloutSession session, CancellationToken cancellationToken = default);
+    Task<RolloutSession> UpdateSessionAsync(RolloutSession session);
 
     /// <summary>
-    /// Updates an existing rollout session.
+    /// Deletes a rollout session (cascade deletes days and workplaces)
     /// </summary>
-    /// <param name="session">The session to update</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Updated session</returns>
-    Task<RolloutSession> UpdateSessionAsync(RolloutSession session, CancellationToken cancellationToken = default);
+    Task<bool> DeleteSessionAsync(int id);
+
+    // ===== RolloutDay Operations =====
 
     /// <summary>
-    /// Deletes a rollout session and all associated items (cascade delete).
+    /// Gets all days for a specific session
     /// </summary>
-    /// <param name="id">Session ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    Task DeleteSessionAsync(int id, CancellationToken cancellationToken = default);
-
-    // ===== Item Operations =====
+    Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false);
 
     /// <summary>
-    /// Gets a single rollout item by ID with Asset and Service navigation properties loaded.
+    /// Gets a specific day by ID
     /// </summary>
-    /// <param name="id">Item ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Rollout item if found, null otherwise</returns>
-    Task<RolloutItem?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false);
 
     /// <summary>
-    /// Adds a single rollout item to a session.
+    /// Creates a new rollout day
     /// </summary>
-    /// <param name="item">The item to add</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Created item with navigation properties loaded</returns>
-    Task<RolloutItem> AddItemAsync(RolloutItem item, CancellationToken cancellationToken = default);
+    Task<RolloutDay> CreateDayAsync(RolloutDay day);
 
     /// <summary>
-    /// Adds multiple rollout items in a single database operation.
-    /// More efficient than calling AddItemAsync multiple times.
+    /// Updates an existing rollout day
     /// </summary>
-    /// <param name="items">Collection of items to add</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Created items with navigation properties loaded</returns>
-    Task<IEnumerable<RolloutItem>> AddItemsBulkAsync(
-        IEnumerable<RolloutItem> items,
-        CancellationToken cancellationToken = default);
+    Task<RolloutDay> UpdateDayAsync(RolloutDay day);
 
     /// <summary>
-    /// Updates an existing rollout item.
+    /// Deletes a rollout day (cascade deletes workplaces)
     /// </summary>
-    /// <param name="item">The item to update</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Updated item</returns>
-    Task<RolloutItem> UpdateItemAsync(RolloutItem item, CancellationToken cancellationToken = default);
+    Task<bool> DeleteDayAsync(int id);
+
+    // ===== RolloutWorkplace Operations =====
 
     /// <summary>
-    /// Deletes a rollout item from a session.
+    /// Gets all workplaces for a specific day
     /// </summary>
-    /// <param name="id">Item ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    Task DeleteItemAsync(int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByDayIdAsync(int dayId);
 
     /// <summary>
-    /// Checks if an asset is currently assigned to any active rollout session.
-    /// Active sessions are those with status Planning, Ready, or InProgress.
+    /// Gets workplaces by status for a specific day
     /// </summary>
-    /// <param name="assetId">Asset ID to check</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>True if asset is in an active rollout, false otherwise</returns>
-    Task<bool> IsAssetInActiveRolloutAsync(int assetId, CancellationToken cancellationToken = default);
-
-    // ===== Swap Operations =====
+    Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByStatusAsync(int dayId, RolloutWorkplaceStatus status);
 
     /// <summary>
-    /// Gets a single asset swap by ID with navigation properties loaded.
+    /// Gets a specific workplace by ID
     /// </summary>
-    /// <param name="id">Swap ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Asset swap if found, null otherwise</returns>
-    Task<AssetSwap?> GetSwapByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<RolloutWorkplace?> GetWorkplaceByIdAsync(int id);
 
     /// <summary>
-    /// Creates a new asset swap record.
+    /// Creates a new workplace
     /// </summary>
-    /// <param name="swap">The swap to create</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Created swap with navigation properties loaded</returns>
-    Task<AssetSwap> CreateSwapAsync(AssetSwap swap, CancellationToken cancellationToken = default);
+    Task<RolloutWorkplace> CreateWorkplaceAsync(RolloutWorkplace workplace);
 
     /// <summary>
-    /// Updates an existing asset swap record.
+    /// Updates an existing workplace
     /// </summary>
-    /// <param name="swap">The swap to update</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Updated swap</returns>
-    Task<AssetSwap> UpdateSwapAsync(AssetSwap swap, CancellationToken cancellationToken = default);
-
-    // ===== Progress Tracking =====
+    Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace);
 
     /// <summary>
-    /// Calculates and returns progress statistics for a rollout session.
-    /// Includes item counts by status, completion percentage, swap counts, and time estimates.
+    /// Deletes a workplace
     /// </summary>
-    /// <param name="sessionId">Session ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Progress statistics DTO</returns>
-    Task<RolloutProgressDto> GetProgressAsync(int sessionId, CancellationToken cancellationToken = default);
+    Task<bool> DeleteWorkplaceAsync(int id);
+
+    // ===== Batch Operations =====
+
+    /// <summary>
+    /// Creates multiple workplaces at once (for bulk import)
+    /// </summary>
+    Task<IEnumerable<RolloutWorkplace>> CreateWorkplacesAsync(IEnumerable<RolloutWorkplace> workplaces);
+
+    // ===== Statistics & Reporting =====
+
+    /// <summary>
+    /// Gets statistics for a session (total/completed workplaces, etc.)
+    /// </summary>
+    Task<RolloutSessionStats> GetSessionStatsAsync(int sessionId);
+}
+
+/// <summary>
+/// Statistics for a rollout session
+/// </summary>
+public class RolloutSessionStats
+{
+    public int TotalDays { get; set; }
+    public int TotalWorkplaces { get; set; }
+    public int CompletedWorkplaces { get; set; }
+    public int PendingWorkplaces { get; set; }
+    public int InProgressWorkplaces { get; set; }
+    public int SkippedWorkplaces { get; set; }
+    public int FailedWorkplaces { get; set; }
+    public decimal CompletionPercentage { get; set; }
 }

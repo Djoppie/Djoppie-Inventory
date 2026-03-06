@@ -21,7 +21,7 @@ public enum RolloutSessionStatus
     InProgress = 2,
 
     /// <summary>
-    /// Completed - All items in the session have been processed
+    /// Completed - All workplaces in the session have been processed
     /// </summary>
     Completed = 3,
 
@@ -32,9 +32,9 @@ public enum RolloutSessionStatus
 }
 
 /// <summary>
-/// Represents a rollout session for deploying multiple assets to users.
-/// A rollout session groups together assets that need to be deployed in a coordinated effort,
-/// tracking progress and managing asset swaps during the deployment process.
+/// Represents a rollout session for deploying assets to users over multiple days.
+/// A rollout session groups together days and workplaces that need to be configured
+/// in a coordinated effort (e.g., "Q1 2026 Laptop Refresh").
 /// </summary>
 public class RolloutSession
 {
@@ -44,7 +44,7 @@ public class RolloutSession
     public int Id { get; set; }
 
     /// <summary>
-    /// Name of the rollout session (e.g., "Q1 2026 Laptop Refresh")
+    /// Name of the rollout session (e.g., "Q1 2026 Laptop Refresh", "Dienst IT - Werkplek Upgrade")
     /// </summary>
     public string SessionName { get; set; } = string.Empty;
 
@@ -59,9 +59,14 @@ public class RolloutSession
     public RolloutSessionStatus Status { get; set; } = RolloutSessionStatus.Planning;
 
     /// <summary>
-    /// Planned date for the rollout to begin
+    /// Planned start date for the rollout
     /// </summary>
-    public DateTime PlannedDate { get; set; }
+    public DateTime PlannedStartDate { get; set; }
+
+    /// <summary>
+    /// Planned end date for the rollout (optional)
+    /// </summary>
+    public DateTime? PlannedEndDate { get; set; }
 
     /// <summary>
     /// Actual timestamp when the rollout was started (null if not yet started)
@@ -96,12 +101,7 @@ public class RolloutSession
     // ===== Navigation Properties =====
 
     /// <summary>
-    /// Collection of assets to be deployed in this rollout session
+    /// Collection of days planned for this rollout session
     /// </summary>
-    public ICollection<RolloutItem> Items { get; set; } = new List<RolloutItem>();
-
-    /// <summary>
-    /// Collection of asset swaps performed during this rollout
-    /// </summary>
-    public ICollection<AssetSwap> AssetSwaps { get; set; } = new List<AssetSwap>();
+    public ICollection<RolloutDay> Days { get; set; } = new List<RolloutDay>();
 }

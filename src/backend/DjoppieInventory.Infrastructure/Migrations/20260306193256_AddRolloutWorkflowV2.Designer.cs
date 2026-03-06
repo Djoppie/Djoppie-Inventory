@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260305224938_AddRolloutWorkflow")]
-    partial class AddRolloutWorkflow
+    [Migration("20260306193256_AddRolloutWorkflowV2")]
+    partial class AddRolloutWorkflowV2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -173,67 +173,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("EventDate");
 
                     b.ToTable("AssetEvents");
-                });
-
-            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetSwap", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("NewAssetId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("OldAssetId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("OldAssetNewStatus")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("RolloutSessionId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("SwapDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SwappedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SwappedByEmail")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TargetLocation")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TargetUser")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NewAssetId");
-
-                    b.HasIndex("OldAssetId");
-
-                    b.HasIndex("RolloutSessionId");
-
-                    b.ToTable("AssetSwaps");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
@@ -861,34 +800,26 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.ToTable("LeaseContracts");
                 });
 
-            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutItem", b =>
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("AssetId")
+                    b.Property<int>("CompletedWorkplaces")
                         .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CompletedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CompletedByEmail")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("MonitorDisplayNumber")
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DayNumber")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("MonitorPosition")
-                        .HasMaxLength(50)
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
@@ -898,38 +829,23 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<int>("RolloutSessionId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Status")
+                    b.Property<string>("ScheduledServiceIds")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TotalWorkplaces")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("TargetLocation")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("TargetServiceId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("TargetUser")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TargetUserEmail")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssetId");
+                    b.HasIndex("Date");
 
                     b.HasIndex("RolloutSessionId");
 
-                    b.HasIndex("Status");
-
-                    b.HasIndex("TargetServiceId");
-
-                    b.ToTable("RolloutItems");
+                    b.ToTable("RolloutDays");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutSession", b =>
@@ -958,7 +874,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("PlannedDate")
+                    b.Property<DateTime?>("PlannedEndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("PlannedStartDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SessionName")
@@ -977,11 +896,84 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PlannedDate");
+                    b.HasIndex("PlannedStartDate");
 
                     b.HasIndex("Status");
 
                     b.ToTable("RolloutSessions");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutWorkplace", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AssetPlansJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompletedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompletedByEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CompletedItems")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsLaptopSetup")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RolloutDayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TotalItems")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RolloutDayId");
+
+                    b.HasIndex("ServiceId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("RolloutWorkplaces");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>
@@ -1348,32 +1340,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Asset");
                 });
 
-            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetSwap", b =>
-                {
-                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "NewAsset")
-                        .WithMany()
-                        .HasForeignKey("NewAssetId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "OldAsset")
-                        .WithMany()
-                        .HasForeignKey("OldAssetId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "RolloutSession")
-                        .WithMany("AssetSwaps")
-                        .HasForeignKey("RolloutSessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("NewAsset");
-
-                    b.Navigation("OldAsset");
-
-                    b.Navigation("RolloutSession");
-                });
-
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
                 {
                     b.HasOne("DjoppieInventory.Core.Entities.AssetType", "AssetType")
@@ -1412,30 +1378,33 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Asset");
                 });
 
-            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutItem", b =>
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
                 {
-                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Asset")
-                        .WithMany()
-                        .HasForeignKey("AssetId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "RolloutSession")
-                        .WithMany("Items")
+                        .WithMany("Days")
                         .HasForeignKey("RolloutSessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DjoppieInventory.Core.Entities.Service", "TargetService")
+                    b.Navigation("RolloutSession");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutWorkplace", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.RolloutDay", "RolloutDay")
+                        .WithMany("Workplaces")
+                        .HasForeignKey("RolloutDayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
                         .WithMany()
-                        .HasForeignKey("TargetServiceId")
+                        .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("Asset");
+                    b.Navigation("RolloutDay");
 
-                    b.Navigation("RolloutSession");
-
-                    b.Navigation("TargetService");
+                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Service", b =>
@@ -1467,11 +1436,14 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("AssetTypes");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
+                {
+                    b.Navigation("Workplaces");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutSession", b =>
                 {
-                    b.Navigation("AssetSwaps");
-
-                    b.Navigation("Items");
+                    b.Navigation("Days");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>
