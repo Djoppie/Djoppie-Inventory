@@ -103,7 +103,7 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace }
               <ListItemText
                 primary={workplace.userName}
                 secondary={
-                  <Box component="span">
+                  <span>
                     {workplace.userEmail && <>{workplace.userEmail} • </>}
                     {workplace.location && <>{workplace.location} • </>}
                     <Chip
@@ -111,8 +111,9 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace }
                       size="small"
                       sx={{ ml: 1 }}
                       color={workplace.status === 'Completed' ? 'success' : 'default'}
+                      component="span"
                     />
-                  </Box>
+                  </span>
                 }
               />
             </ListItem>
@@ -361,35 +362,38 @@ const RolloutPlannerPage = () => {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {days.map((day, index) => (
                 <Accordion key={day.id}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                      <Typography sx={{ fontWeight: 'medium' }}>
-                        Dag {day.dayNumber}: {new Date(day.date).toLocaleDateString('nl-NL')}
-                      </Typography>
-                      {day.name && (
-                        <Typography variant="body2" color="text.secondary">
-                          - {day.name}
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                        <Typography sx={{ fontWeight: 'medium' }}>
+                          Dag {day.dayNumber}: {new Date(day.date).toLocaleDateString('nl-NL')}
                         </Typography>
-                      )}
-                      <Box sx={{ flexGrow: 1 }} />
-                      <Chip
-                        label={`${day.completedWorkplaces}/${day.totalWorkplaces} werkplekken`}
-                        size="small"
-                        color={day.completedWorkplaces === day.totalWorkplaces ? 'success' : 'default'}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBulkPrint(day.id);
-                        }}
-                        disabled={session.status === 'Completed' || session.status === 'Cancelled'}
-                        title="Print QR codes voor nieuwe assets"
-                      >
-                        <PrintIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </AccordionSummary>
+                        {day.name && (
+                          <Typography variant="body2" color="text.secondary">
+                            - {day.name}
+                          </Typography>
+                        )}
+                        <Box sx={{ flexGrow: 1 }} />
+                        <Chip
+                          label={`${day.completedWorkplaces}/${day.totalWorkplaces} werkplekken`}
+                          size="small"
+                          color={day.completedWorkplaces === day.totalWorkplaces ? 'success' : 'default'}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBulkPrint(day.id);
+                      }}
+                      disabled={session.status === 'Completed' || session.status === 'Cancelled'}
+                      title="Print QR codes voor nieuwe assets"
+                      sx={{ mr: 1 }}
+                    >
+                      <PrintIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                   <AccordionDetails>
                     <Divider sx={{ mb: 2 }} />
                     <WorkplaceList
