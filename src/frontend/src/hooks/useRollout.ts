@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import type { Asset } from '../types/asset.types';
 import type {
   RolloutSession,
   CreateRolloutSession,
@@ -20,6 +21,8 @@ import type {
   RolloutSessionQueryParams,
   RolloutDaysQueryParams,
   RolloutWorkplacesQueryParams,
+  BulkCreateWorkplaces,
+  BulkCreateWorkplacesResult,
 } from '../types/rollout';
 import * as rolloutApi from '../api/rollout.api';
 
@@ -33,6 +36,7 @@ export const rolloutKeys = {
   workplaces: (dayId: number) => [...rolloutKeys.all, 'workplaces', dayId] as const,
   workplace: (workplaceId: number) => [...rolloutKeys.all, 'workplace', workplaceId] as const,
   progress: (sessionId: number) => [...rolloutKeys.all, 'progress', sessionId] as const,
+  newAssets: (dayId: number) => [...rolloutKeys.all, 'newAssets', dayId] as const,
 };
 
 // ===== SESSION HOOKS =====
@@ -307,6 +311,37 @@ export const useDeleteRolloutWorkplace = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.dayId) });
     },
+  });
+};
+
+/**
+ * Bulk create workplaces for a day
+ */
+export const useBulkCreateWorkplaces = (): UseMutationResult<
+  BulkCreateWorkplacesResult,
+  Error,
+  { dayId: number; data: BulkCreateWorkplaces }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ dayId, data }) => rolloutApi.bulkCreateWorkplaces(dayId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.dayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.dayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.newAssets(variables.dayId) });
+    },
+  });
+};
+
+/**
+ * Fetch new assets for a day (for QR code printing)
+ */
+export const useNewAssetsForDay = (dayId: number): UseQueryResult<Asset[], Error> => {
+  return useQuery({
+    queryKey: rolloutKeys.newAssets(dayId),
+    queryFn: () => rolloutApi.getNewAssetsForDay(dayId),
+    enabled: !!dayId && dayId > 0,
   });
 };
 

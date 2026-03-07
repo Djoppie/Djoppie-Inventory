@@ -18,6 +18,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Badge,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -25,13 +26,16 @@ import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonIcon from '@mui/icons-material/Person';
+import PrintIcon from '@mui/icons-material/Print';
 import {
   useRolloutSession,
   useCreateRolloutSession,
   useUpdateRolloutSession,
   useRolloutDays,
   useRolloutWorkplaces,
+  useNewAssetsForDay,
 } from '../hooks/useRollout';
+import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import { getStatusColor } from '../api/rollout.api';
 import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
@@ -140,6 +144,8 @@ const RolloutPlannerPage = () => {
   const [workplaceDialogOpen, setWorkplaceDialogOpen] = useState(false);
   const [selectedWorkplace, setSelectedWorkplace] = useState<RolloutWorkplace | undefined>();
   const [activeWorkplaceDayId, setActiveWorkplaceDayId] = useState<number | undefined>();
+  const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState(false);
+  const [bulkPrintDayId, setBulkPrintDayId] = useState<number | undefined>();
 
   // Fetch session data if editing
   const {
@@ -158,6 +164,8 @@ const RolloutPlannerPage = () => {
     isEditMode ? Number(id) : 0,
     undefined
   );
+
+  const { data: bulkPrintAssets } = useNewAssetsForDay(bulkPrintDayId || 0);
 
   // Mutations
   const createMutation = useCreateRolloutSession();
@@ -221,6 +229,16 @@ const RolloutPlannerPage = () => {
     setActiveWorkplaceDayId(undefined);
     setSelectedWorkplace(undefined);
     setWorkplaceDialogOpen(false);
+  };
+
+  const handleBulkPrint = (dayId: number) => {
+    setBulkPrintDayId(dayId);
+    setBulkPrintDialogOpen(true);
+  };
+
+  const handleCloseBulkPrint = () => {
+    setBulkPrintDayId(undefined);
+    setBulkPrintDialogOpen(false);
   };
 
   if (sessionLoading || daysLoading) {
@@ -359,6 +377,17 @@ const RolloutPlannerPage = () => {
                         size="small"
                         color={day.completedWorkplaces === day.totalWorkplaces ? 'success' : 'default'}
                       />
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBulkPrint(day.id);
+                        }}
+                        disabled={session.status === 'Completed' || session.status === 'Cancelled'}
+                        title="Print QR codes voor nieuwe assets"
+                      >
+                        <PrintIcon fontSize="small" />
+                      </IconButton>
                     </Box>
                   </AccordionSummary>
                   <AccordionDetails>
@@ -390,6 +419,11 @@ const RolloutPlannerPage = () => {
         onClose={handleCloseWorkplaceDialog}
         dayId={activeWorkplaceDayId || 0}
         workplace={selectedWorkplace}
+      />
+      <BulkPrintLabelDialog
+        open={bulkPrintDialogOpen}
+        onClose={handleCloseBulkPrint}
+        assets={bulkPrintAssets || []}
       />
     </Container>
   );

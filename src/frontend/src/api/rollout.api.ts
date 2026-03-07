@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from './client';
+import type { Asset } from '../types/asset.types';
 import type {
   RolloutSession,
   CreateRolloutSession,
@@ -20,6 +21,8 @@ import type {
   RolloutSessionQueryParams,
   RolloutDaysQueryParams,
   RolloutWorkplacesQueryParams,
+  BulkCreateWorkplaces,
+  BulkCreateWorkplacesResult,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
@@ -172,6 +175,28 @@ export const completeRolloutWorkplace = async (
  */
 export const deleteRolloutWorkplace = async (workplaceId: number): Promise<void> => {
   await apiClient.delete(`/rollouts/workplaces/${workplaceId}`);
+};
+
+/**
+ * Bulk create workplaces for a day with standard asset plans
+ */
+export const bulkCreateWorkplaces = async (
+  dayId: number,
+  data: BulkCreateWorkplaces
+): Promise<BulkCreateWorkplacesResult> => {
+  const response = await apiClient.post<BulkCreateWorkplacesResult>(
+    `/rollouts/days/${dayId}/workplaces/bulk`,
+    data
+  );
+  return response.data;
+};
+
+/**
+ * Get new assets for a day (for QR code printing)
+ */
+export const getNewAssetsForDay = async (dayId: number): Promise<Asset[]> => {
+  const response = await apiClient.get<Asset[]>(`/rollouts/days/${dayId}/new-assets`);
+  return response.data;
 };
 
 // ===== PROGRESS & REPORTING API CALLS =====

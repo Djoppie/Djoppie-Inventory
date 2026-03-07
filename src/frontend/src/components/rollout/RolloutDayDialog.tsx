@@ -14,9 +14,14 @@ import {
   Chip,
   OutlinedInput,
   SelectChangeEvent,
+  FormControlLabel,
+  Switch,
+  Slider,
+  Typography,
+  Alert,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useCreateRolloutDay, useUpdateRolloutDay } from '../../hooks/useRollout';
+import { useCreateRolloutDay, useUpdateRolloutDay, useBulkCreateWorkplaces } from '../../hooks/useRollout';
 import type { RolloutDay, CreateRolloutDay, UpdateRolloutDay } from '../../types/rollout';
 
 interface RolloutDayDialogProps {
@@ -42,9 +47,13 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
+  const [createBulk, setCreateBulk] = useState(true);
+  const [workplaceCount, setWorkplaceCount] = useState(10);
+  const [monitorCount, setMonitorCount] = useState(2);
 
   const createMutation = useCreateRolloutDay();
   const updateMutation = useUpdateRolloutDay();
+  const bulkCreateMutation = useBulkCreateWorkplaces();
 
   useEffect(() => {
     if (day) {
@@ -55,6 +64,9 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
       setDate('');
       setName('');
       setSelectedServiceIds([]);
+      setCreateBulk(true);
+      setWorkplaceCount(10);
+      setMonitorCount(2);
     }
   }, [day, open]);
 
@@ -80,7 +92,27 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
         dayNumber: dayNumber || 1,
         scheduledServiceIds: selectedServiceIds,
       };
-      await createMutation.mutateAsync({ sessionId, data: createData });
+      const createdDay = await createMutation.mutateAsync({ sessionId, data: createData });
+
+      // Bulk create workplaces if enabled
+      if (createBulk && workplaceCount > 0 && selectedServiceIds.length > 0 && createdDay) {
+        await bulkCreateMutation.mutateAsync({
+          dayId: createdDay.id,
+          data: {
+            count: workplaceCount,
+            serviceId: selectedServiceIds[0], // Use first selected service as primary
+            isLaptopSetup: true,
+            assetPlanConfig: {
+              includeLaptop: true,
+              includeDesktop: false,
+              includeDocking: true,
+              monitorCount,
+              includeKeyboard: true,
+              includeMouse: true,
+            },
+          },
+        });
+      }
     }
 
     handleClose();
@@ -90,6 +122,9 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
     setDate('');
     setName('');
     setSelectedServiceIds([]);
+    setCreateBulk(true);
+    setWorkplaceCount(10);
+    setMonitorCount(2);
     onClose();
   };
 
@@ -143,6 +178,65 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
               ))}
             </Select>
           </FormControl>
+
+          {!isEditMode && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={createBulk}
+                    onChange={(e) => setCreateBulk(e.target.checked)}
+                  />
+                }
+                label="Werkplekken automatisch aanmaken"
+              />
+
+              {createBulk && (
+                <>
+                  {selectedServiceIds.length === 0 && (
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                      Selecteer eerst een of meerdere diensten om werkplekken aan te maken
+                    </Alert>
+                  )}
+
+                  <TextField
+                    type="number"
+                    label="Aantal werkplekken"
+                    value={workplaceCount}
+                    onChange={(e) => setWorkplaceCount(Number(e.target.value))}
+                    inputProps={{ min: 1, max: 50 }}
+                    fullWidth
+                    helperText="Aantal lege werkplekken om aan te maken (1-50)"
+                    disabled={selectedServiceIds.length === 0}
+                  />
+
+                  <Box>
+                    <Typography variant="body2" gutterBottom>
+                      Monitors per werkplek: {monitorCount}
+                    </Typography>
+                    <Slider
+                      value={monitorCount}
+                      min={1}
+                      max={3}
+                      marks={[
+                        { value: 1, label: '1' },
+                        { value: 2, label: '2' },
+                        { value: 3, label: '3' },
+                      ]}
+                      step={1}
+                      valueLabelDisplay="auto"
+                      onChange={(_, value) => setMonitorCount(value as number)}
+                      disabled={selectedServiceIds.length === 0}
+                    />
+                  </Box>
+
+                  <Alert severity="info">
+                    Elke werkplek krijgt: 1x Laptop, 1x Docking Station, {monitorCount}x Monitor, 1x Toetsenbord, 1x Muis
+                  </Alert>
+                </>
+              )}
+            </Box>
+          )}
         </Box>
       </DialogContent>
       <DialogActions>
@@ -152,9 +246,16 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
         <Button
           variant="contained"
           onClick={handleSave}
-          disabled={!isFormValid || createMutation.isPending || updateMutation.isPending}
+          disabled={
+            !isFormValid ||
+            createMutation.isPending ||
+            updateMutation.isPending ||
+            bulkCreateMutation.isPending
+          }
         >
-          {createMutation.isPending || updateMutation.isPending ? 'Opslaan...' : 'Opslaan'}
+          {createMutation.isPending || updateMutation.isPending || bulkCreateMutation.isPending
+            ? 'Opslaan...'
+            : 'Opslaan'}
         </Button>
       </DialogActions>
     </Dialog>

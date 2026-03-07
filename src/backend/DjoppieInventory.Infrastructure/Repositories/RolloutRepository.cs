@@ -1,3 +1,5 @@
+using System.Text.Json;
+using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
@@ -12,10 +14,12 @@ namespace DjoppieInventory.Infrastructure.Repositories;
 public class RolloutRepository : IRolloutRepository
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAssetRepository _assetRepository;
 
-    public RolloutRepository(ApplicationDbContext context)
+    public RolloutRepository(ApplicationDbContext context, IAssetRepository assetRepository)
     {
         _context = context;
+        _assetRepository = assetRepository;
     }
 
     // ===== RolloutSession Operations =====
@@ -186,6 +190,9 @@ public class RolloutRepository : IRolloutRepository
         workplace.CreatedAt = DateTime.UtcNow;
         workplace.UpdatedAt = DateTime.UtcNow;
 
+        // Process asset plans and create assets if needed
+        await ProcessAssetPlansAsync(workplace);
+
         _context.RolloutWorkplaces.Add(workplace);
         await _context.SaveChangesAsync();
 
@@ -198,6 +205,9 @@ public class RolloutRepository : IRolloutRepository
     public async Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace)
     {
         workplace.UpdatedAt = DateTime.UtcNow;
+
+        // Process asset plans and create assets if needed
+        await ProcessAssetPlansAsync(workplace);
 
         _context.RolloutWorkplaces.Update(workplace);
         await _context.SaveChangesAsync();
@@ -311,5 +321,247 @@ public class RolloutRepository : IRolloutRepository
         day.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Processes asset plans and creates assets for plans marked as createNew with serial numbers
+    /// </summary>
+    private async Task ProcessAssetPlansAsync(RolloutWorkplace workplace)
+    {
+        if (string.IsNullOrEmpty(workplace.AssetPlansJson))
+        {
+            return;
+        }
+
+        var plans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+        if (plans == null || plans.Count == 0)
+        {
+            return;
+        }
+
+        var modified = false;
+
+        foreach (var plan in plans)
+        {
+            // Only create assets if:
+            // 1. createNew is true
+            // 2. Asset hasn't been created yet (no ExistingAssetId)
+            // 3. Serial number is provided OR it's a type that doesn't require serial (monitor, keyboard, mouse)
+            var hasSerial = plan.Metadata != null && plan.Metadata.ContainsKey("serialNumber") && !string.IsNullOrEmpty(plan.Metadata["serialNumber"]);
+            var needsSerial = plan.RequiresSerialNumber;
+
+            if (!plan.CreateNew || plan.ExistingAssetId.HasValue)
+            {
+                continue;
+            }
+
+            if (needsSerial && !hasSerial)
+            {
+                continue; // Skip if serial required but not provided
+            }
+
+            // Determine asset type based on equipment type
+            var assetType = await GetAssetTypeByEquipmentTypeAsync(plan.EquipmentType);
+            if (assetType == null)
+            {
+                continue; // Skip if asset type not found
+            }
+
+            // Build AssetName following pattern: assettype_merk_model
+            var assetName = BuildAssetName(plan.EquipmentType, plan.Brand, plan.Model);
+
+            // Create the asset
+            var asset = new Asset
+            {
+                AssetTypeId = assetType.Id,
+                Category = assetType.Category?.Name ?? "Computing",
+                AssetName = assetName,
+                Brand = plan.Brand,
+                Model = plan.Model,
+                SerialNumber = hasSerial ? plan.Metadata!["serialNumber"] : null,
+                Status = AssetStatus.Nieuw, // New assets start with Nieuw status
+                ServiceId = workplace.ServiceId,
+                IsDummy = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            // Generate AssetCode
+            var prefix = $"{assetType.Code}-{DateTime.UtcNow:yy}-{(string.IsNullOrEmpty(plan.Brand) ? "UNK" : plan.Brand.ToUpper().Substring(0, Math.Min(3, plan.Brand.Length)))}";
+            var nextNumber = await _assetRepository.GetNextAssetNumberAsync(prefix, false);
+            asset.AssetCode = $"{prefix}-{nextNumber:D5}";
+
+            // Create the asset
+            var createdAsset = await _assetRepository.CreateAsync(asset);
+
+            // Update the plan with created asset info
+            plan.ExistingAssetId = createdAsset.Id;
+            plan.ExistingAssetCode = createdAsset.AssetCode;
+            plan.ExistingAssetName = createdAsset.AssetName;
+            plan.CreateNew = false; // Mark as no longer needing creation
+
+            modified = true;
+        }
+
+        // Re-serialize if any plans were modified
+        if (modified)
+        {
+            workplace.AssetPlansJson = JsonSerializer.Serialize(plans);
+        }
+    }
+
+    /// <summary>
+    /// Gets the AssetType entity for a given equipment type string
+    /// </summary>
+    private async Task<AssetType?> GetAssetTypeByEquipmentTypeAsync(string equipmentType)
+    {
+        // Map equipment type to asset type code
+        var assetTypeCode = equipmentType.ToLower() switch
+        {
+            "laptop" => "LAP",
+            "desktop" => "DESK",
+            "docking" => "DOCK",
+            "monitor" => "MON",
+            "keyboard" => "KEYB",
+            "mouse" => "MOUSE",
+            _ => null
+        };
+
+        if (string.IsNullOrEmpty(assetTypeCode))
+        {
+            return null;
+        }
+
+        return await _context.AssetTypes
+            .Include(at => at.Category)
+            .FirstOrDefaultAsync(at => at.Code == assetTypeCode && at.IsActive);
+    }
+
+    /// <summary>
+    /// Builds AssetName following pattern: assettype_merk_model (lowercase with underscores)
+    /// </summary>
+    private static string BuildAssetName(string equipmentType, string? brand, string? model)
+    {
+        var parts = new List<string> { equipmentType.ToLower() };
+
+        if (!string.IsNullOrEmpty(brand))
+        {
+            parts.Add(brand.ToLower().Replace(" ", "_"));
+        }
+
+        if (!string.IsNullOrEmpty(model))
+        {
+            parts.Add(model.ToLower().Replace(" ", "_"));
+        }
+
+        return string.Join("_", parts);
+    }
+
+    /// <summary>
+    /// Generates standard asset plans based on configuration
+    /// </summary>
+    private static List<AssetPlanDto> GenerateStandardAssetPlans(StandardAssetPlanConfig config)
+    {
+        var plans = new List<AssetPlanDto>();
+
+        // Laptop
+        if (config.IncludeLaptop)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "laptop",
+                CreateNew = false,
+                RequiresSerialNumber = true,
+                RequiresQRCode = false, // Existing asset (swap)
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Desktop
+        if (config.IncludeDesktop)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "desktop",
+                CreateNew = false,
+                RequiresSerialNumber = true,
+                RequiresQRCode = false, // Existing asset (swap)
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Docking Station
+        if (config.IncludeDocking)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "docking",
+                CreateNew = false,
+                RequiresSerialNumber = true,
+                RequiresQRCode = true, // New asset
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Monitors
+        for (int i = 0; i < config.MonitorCount; i++)
+        {
+            var position = i switch
+            {
+                0 when config.MonitorCount == 1 => "center",
+                0 when config.MonitorCount >= 2 => "left",
+                1 when config.MonitorCount == 2 => "right",
+                1 when config.MonitorCount == 3 => "center",
+                2 => "right",
+                _ => "center"
+            };
+
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "monitor",
+                CreateNew = false,
+                RequiresSerialNumber = false,
+                RequiresQRCode = true, // New asset
+                Status = "pending",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "position", position },
+                    { "hasCamera", "false" }
+                }
+            });
+        }
+
+        // Keyboard
+        if (config.IncludeKeyboard)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "keyboard",
+                CreateNew = false,
+                RequiresSerialNumber = false,
+                RequiresQRCode = true,
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Mouse
+        if (config.IncludeMouse)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "mouse",
+                CreateNew = false,
+                RequiresSerialNumber = false,
+                RequiresQRCode = true,
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        return plans;
     }
 }

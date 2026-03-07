@@ -439,6 +439,7 @@ const calculateEquipmentStats = (days: any[]) => {
 const getEquipmentLabel = (type: EquipmentType): string => {
   const labels: Record<EquipmentType, string> = {
     laptop: 'Laptops',
+    desktop: 'Desktops',
     docking: 'Docking Stations',
     monitor: 'Monitors',
     keyboard: 'Toetsenborden',

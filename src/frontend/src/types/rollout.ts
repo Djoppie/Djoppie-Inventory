@@ -7,7 +7,7 @@
 
 export type RolloutSessionStatus = 'Planning' | 'Ready' | 'InProgress' | 'Completed' | 'Cancelled';
 export type RolloutWorkplaceStatus = 'Pending' | 'InProgress' | 'Completed' | 'Skipped' | 'Failed';
-export type EquipmentType = 'laptop' | 'docking' | 'monitor' | 'keyboard' | 'mouse';
+export type EquipmentType = 'laptop' | 'desktop' | 'docking' | 'monitor' | 'keyboard' | 'mouse';
 export type AssetPlanStatus = 'pending' | 'installed' | 'skipped';
 
 // ===== SESSION TYPES =====
@@ -117,13 +117,13 @@ export interface CreateRolloutWorkplace {
 
 export interface UpdateRolloutWorkplace {
   userName: string;
-  userEmail?: string;
-  location?: string;
-  serviceId?: number;
+  userEmail?: string | null;
+  location?: string | null;
+  serviceId?: number | null;
   isLaptopSetup: boolean;
   assetPlans: AssetPlan[];
   status: RolloutWorkplaceStatus;
-  notes?: string;
+  notes?: string | null;
 }
 
 export interface CompleteWorkplace {
@@ -192,4 +192,28 @@ export interface RolloutDaysQueryParams {
 
 export interface RolloutWorkplacesQueryParams {
   status?: RolloutWorkplaceStatus;
+}
+
+// ===== BULK OPERATION TYPES =====
+
+export interface BulkCreateWorkplaces {
+  count: number;
+  serviceId: number;
+  sectorId?: number;
+  isLaptopSetup: boolean;
+  assetPlanConfig: StandardAssetPlanConfig;
+}
+
+export interface StandardAssetPlanConfig {
+  includeLaptop: boolean;
+  includeDesktop: boolean;
+  includeDocking: boolean;
+  monitorCount: number;
+  includeKeyboard: boolean;
+  includeMouse: boolean;
+}
+
+export interface BulkCreateWorkplacesResult {
+  created: number;
+  workplaces: RolloutWorkplace[];
 }

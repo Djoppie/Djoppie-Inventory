@@ -1,3 +1,4 @@
+using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
@@ -18,11 +19,13 @@ namespace DjoppieInventory.API.Controllers;
 public class RolloutsController : ControllerBase
 {
     private readonly IRolloutRepository _rolloutRepository;
+    private readonly IAssetRepository _assetRepository;
     private readonly ILogger<RolloutsController> _logger;
 
-    public RolloutsController(IRolloutRepository rolloutRepository, ILogger<RolloutsController> logger)
+    public RolloutsController(IRolloutRepository rolloutRepository, IAssetRepository assetRepository, ILogger<RolloutsController> logger)
     {
         _rolloutRepository = rolloutRepository;
+        _assetRepository = assetRepository;
         _logger = logger;
     }
 
@@ -428,6 +431,129 @@ public class RolloutsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Bulk creates workplaces for a day with standard asset plans
+    /// </summary>
+    [HttpPost("days/{dayId}/workplaces/bulk")]
+    [ProducesResponseType(typeof(BulkCreateWorkplacesResultDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BulkCreateWorkplacesResultDto>> BulkCreateWorkplaces(int dayId, [FromBody] BulkCreateWorkplacesDto dto)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(dayId);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {dayId} not found" });
+        }
+
+        // Validate count
+        if (dto.Count < 1 || dto.Count > 50)
+        {
+            return BadRequest(new { message = "Count must be between 1 and 50" });
+        }
+
+        // Generate standard asset plans using the config
+        var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig);
+        var workplaces = new List<RolloutWorkplace>();
+
+        for (int i = 1; i <= dto.Count; i++)
+        {
+            workplaces.Add(new RolloutWorkplace
+            {
+                RolloutDayId = dayId,
+                UserName = $"Werkplek {i}",
+                ServiceId = dto.ServiceId,
+                IsLaptopSetup = dto.IsLaptopSetup,
+                AssetPlansJson = JsonSerializer.Serialize(standardPlans),
+                Status = RolloutWorkplaceStatus.Pending,
+                TotalItems = standardPlans.Count,
+                CompletedItems = 0
+            });
+        }
+
+        var createdWorkplaces = await _rolloutRepository.CreateWorkplacesAsync(workplaces);
+        var workplaceDtos = createdWorkplaces.Select(MapToWorkplaceDto).ToList();
+
+        var result = new BulkCreateWorkplacesResultDto
+        {
+            Created = workplaceDtos.Count,
+            Workplaces = workplaceDtos
+        };
+
+        return CreatedAtAction(nameof(GetDayById), new { dayId }, result);
+    }
+
+    /// <summary>
+    /// Gets new assets for a day (for QR code printing)
+    /// </summary>
+    [HttpGet("days/{dayId}/new-assets")]
+    [ProducesResponseType(typeof(List<AssetDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<AssetDto>>> GetNewAssetsForDay(int dayId)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(dayId);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {dayId} not found" });
+        }
+
+        // Get all workplaces for this day
+        var workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(dayId);
+        var assetIds = new HashSet<int>();
+
+        // Extract asset IDs from asset plans that require QR codes
+        foreach (var workplace in workplaces)
+        {
+            var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
+                ? new List<AssetPlanDto>()
+                : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
+
+            foreach (var plan in assetPlans.Where(p => p.RequiresQRCode && p.ExistingAssetId.HasValue))
+            {
+                assetIds.Add(plan.ExistingAssetId.Value);
+            }
+        }
+
+        if (!assetIds.Any())
+        {
+            return Ok(new List<AssetDto>());
+        }
+
+        // Fetch assets (using filter by IDs)
+        var assets = new List<Asset>();
+        foreach (var assetId in assetIds)
+        {
+            var asset = await _assetRepository.GetByIdAsync(assetId);
+            if (asset != null)
+            {
+                assets.Add(asset);
+            }
+        }
+
+        // Map to DTOs
+        var assetDtos = assets.Select(a => new AssetDto
+        {
+            Id = a.Id,
+            AssetCode = a.AssetCode,
+            AssetName = a.AssetName,
+            AssetTypeId = a.AssetTypeId,
+            AssetType = a.AssetType != null ? new AssetTypeInfo { Id = a.AssetType.Id, Name = a.AssetType.Name } : null,
+            ServiceId = a.ServiceId,
+            Service = a.Service != null ? new ServiceInfo { Id = a.Service.Id, Name = a.Service.Name } : null,
+            SerialNumber = a.SerialNumber,
+            Brand = a.Brand,
+            Model = a.Model,
+            Status = a.Status.ToString(),
+            IsDummy = a.IsDummy,
+            CreatedAt = a.CreatedAt,
+            UpdatedAt = a.UpdatedAt
+        }).ToList();
+
+        return Ok(assetDtos);
+    }
+
     // ===== STATISTICS & REPORTING ENDPOINTS =====
 
     /// <summary>
@@ -475,6 +601,114 @@ public class RolloutsController : ControllerBase
     }
 
     // ===== HELPER MAPPING METHODS =====
+
+    /// <summary>
+    /// Generates standard asset plans based on configuration
+    /// </summary>
+    private static List<AssetPlanDto> GenerateStandardAssetPlans(StandardAssetPlanConfig config)
+    {
+        var plans = new List<AssetPlanDto>();
+
+        // Laptop
+        if (config.IncludeLaptop)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "laptop",
+                CreateNew = false,
+                RequiresSerialNumber = true,
+                RequiresQRCode = false, // Existing asset (swap)
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Desktop
+        if (config.IncludeDesktop)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "desktop",
+                CreateNew = false,
+                RequiresSerialNumber = true,
+                RequiresQRCode = false, // Existing asset (swap)
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Docking Station
+        if (config.IncludeDocking)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "docking",
+                CreateNew = false,
+                RequiresSerialNumber = true,
+                RequiresQRCode = true, // New asset
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Monitors
+        for (int i = 0; i < config.MonitorCount; i++)
+        {
+            var position = i switch
+            {
+                0 when config.MonitorCount == 1 => "center",
+                0 when config.MonitorCount >= 2 => "left",
+                1 when config.MonitorCount == 2 => "right",
+                1 when config.MonitorCount == 3 => "center",
+                2 => "right",
+                _ => "center"
+            };
+
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "monitor",
+                CreateNew = false,
+                RequiresSerialNumber = false,
+                RequiresQRCode = true, // New asset
+                Status = "pending",
+                Metadata = new Dictionary<string, string>
+                {
+                    { "position", position },
+                    { "hasCamera", "false" }
+                }
+            });
+        }
+
+        // Keyboard
+        if (config.IncludeKeyboard)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "keyboard",
+                CreateNew = false,
+                RequiresSerialNumber = false,
+                RequiresQRCode = true,
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        // Mouse
+        if (config.IncludeMouse)
+        {
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = "mouse",
+                CreateNew = false,
+                RequiresSerialNumber = false,
+                RequiresQRCode = true,
+                Status = "pending",
+                Metadata = new Dictionary<string, string>()
+            });
+        }
+
+        return plans;
+    }
 
     private RolloutSessionDto MapToSessionDto(RolloutSession session)
     {
