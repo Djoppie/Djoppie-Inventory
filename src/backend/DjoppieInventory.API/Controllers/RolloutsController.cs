@@ -510,7 +510,7 @@ public class RolloutsController : ControllerBase
                 ? new List<AssetPlanDto>()
                 : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
 
-            foreach (var plan in assetPlans.Where(p => p.RequiresQRCode && p.ExistingAssetId.HasValue))
+            foreach (var plan in assetPlans.Where(p => p.ExistingAssetId.HasValue))
             {
                 assetIds.Add(plan.ExistingAssetId.Value);
             }
