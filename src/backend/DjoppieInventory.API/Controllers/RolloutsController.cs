@@ -386,7 +386,74 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
-    /// Marks a workplace as completed
+    /// Starts a workplace execution (sets status to InProgress)
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/start")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> StartWorkplace(int workplaceId)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        if (workplace.Status != RolloutWorkplaceStatus.Pending)
+        {
+            return BadRequest(new { message = $"Workplace is already {workplace.Status}" });
+        }
+
+        workplace.Status = RolloutWorkplaceStatus.InProgress;
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
+
+        return Ok(workplaceDto);
+    }
+
+    /// <summary>
+    /// Marks a single asset plan item as installed or skipped
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/items/{itemIndex}/status")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemStatus(int workplaceId, int itemIndex, [FromBody] UpdateItemStatusDto dto)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
+            ? new List<AssetPlanDto>()
+            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
+
+        if (itemIndex < 0 || itemIndex >= assetPlans.Count)
+        {
+            return BadRequest(new { message = $"Item index {itemIndex} is out of range (0-{assetPlans.Count - 1})" });
+        }
+
+        assetPlans[itemIndex].Status = dto.Status;
+        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+        workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
+
+        // Auto-set to InProgress if still Pending
+        if (workplace.Status == RolloutWorkplaceStatus.Pending)
+        {
+            workplace.Status = RolloutWorkplaceStatus.InProgress;
+        }
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
+
+        return Ok(workplaceDto);
+    }
+
+    /// <summary>
+    /// Marks a workplace as completed, transitions all linked assets
+    /// New assets: Nieuw -> InGebruik, sets Owner and InstallationDate
+    /// Old assets: -> UitDienst
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/complete")]
     [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
@@ -399,7 +466,52 @@ public class RolloutsController : ControllerBase
             return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
         }
 
+        // Parse asset plans
+        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
+            ? new List<AssetPlanDto>()
+            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
+
+        // Transition linked assets
+        foreach (var plan in assetPlans)
+        {
+            // New/existing asset → InGebruik
+            if (plan.ExistingAssetId.HasValue)
+            {
+                var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                if (asset != null)
+                {
+                    asset.Status = AssetStatus.InGebruik;
+                    asset.InstallationDate = DateTime.UtcNow;
+                    asset.Owner = workplace.UserName;
+                    asset.ServiceId = workplace.ServiceId;
+                    asset.InstallationLocation = workplace.Location;
+                    asset.UpdatedAt = DateTime.UtcNow;
+                    await _assetRepository.UpdateAsync(asset);
+                    _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}", asset.AssetCode, workplace.UserName);
+                }
+            }
+
+            // Old asset → UitDienst
+            if (plan.OldAssetId.HasValue)
+            {
+                var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
+                if (oldAsset != null)
+                {
+                    oldAsset.Status = AssetStatus.UitDienst;
+                    oldAsset.UpdatedAt = DateTime.UtcNow;
+                    await _assetRepository.UpdateAsync(oldAsset);
+                    _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)", oldAsset.AssetCode);
+                }
+            }
+
+            // Mark all items as installed
+            plan.Status = "installed";
+        }
+
+        // Update workplace
+        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
         workplace.Status = RolloutWorkplaceStatus.Completed;
+        workplace.CompletedItems = assetPlans.Count;
         workplace.CompletedAt = DateTime.UtcNow;
         workplace.CompletedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
         workplace.CompletedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";

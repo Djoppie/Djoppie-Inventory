@@ -275,7 +275,46 @@ export const useUpdateRolloutWorkplace = (): UseMutationResult<
 };
 
 /**
- * Complete a workplace
+ * Start a workplace execution
+ */
+export const useStartRolloutWorkplace = (): UseMutationResult<
+  RolloutWorkplace,
+  Error,
+  number
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (workplaceId) => rolloutApi.startRolloutWorkplace(workplaceId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
+    },
+  });
+};
+
+/**
+ * Update a single asset plan item status
+ */
+export const useUpdateItemStatus = (): UseMutationResult<
+  RolloutWorkplace,
+  Error,
+  { workplaceId: number; itemIndex: number; status: string }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ workplaceId, itemIndex, status }) =>
+      rolloutApi.updateItemStatus(workplaceId, itemIndex, status),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
+    },
+  });
+};
+
+/**
+ * Complete a workplace (transitions all asset statuses)
  */
 export const useCompleteRolloutWorkplace = (): UseMutationResult<
   RolloutWorkplace,
@@ -290,7 +329,7 @@ export const useCompleteRolloutWorkplace = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
-      queryClient.invalidateQueries({ queryKey: rolloutKeys.progress(data.id) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
     },
   });
 };
@@ -310,6 +349,8 @@ export const useDeleteRolloutWorkplace = (): UseMutationResult<
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.dayId) });
+      // Also invalidate the days list so accordion header chips (workplace counts) update
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };

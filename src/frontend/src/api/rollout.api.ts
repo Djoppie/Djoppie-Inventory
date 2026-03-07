@@ -160,7 +160,30 @@ export const updateRolloutWorkplace = async (
 };
 
 /**
- * Mark a workplace as completed
+ * Start a workplace execution (sets status to InProgress)
+ */
+export const startRolloutWorkplace = async (workplaceId: number): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}/start`);
+  return response.data;
+};
+
+/**
+ * Update a single asset plan item status (installed/skipped)
+ */
+export const updateItemStatus = async (
+  workplaceId: number,
+  itemIndex: number,
+  status: string
+): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(
+    `/rollouts/workplaces/${workplaceId}/items/${itemIndex}/status`,
+    { status }
+  );
+  return response.data;
+};
+
+/**
+ * Mark a workplace as completed (transitions all asset statuses)
  */
 export const completeRolloutWorkplace = async (
   workplaceId: number,

@@ -11,17 +11,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
-  OutlinedInput,
-  SelectChangeEvent,
   FormControlLabel,
   Switch,
   Slider,
   Typography,
   Alert,
+  ListSubheader,
 } from '@mui/material';
-import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { useCreateRolloutDay, useUpdateRolloutDay, useBulkCreateWorkplaces } from '../../hooks/useRollout';
+import { servicesApi } from '../../api/admin.api';
+import type { Service } from '../../types/admin.types';
 import type { RolloutDay, CreateRolloutDay, UpdateRolloutDay } from '../../types/rollout';
 
 interface RolloutDayDialogProps {
@@ -30,58 +30,61 @@ interface RolloutDayDialogProps {
   sessionId: number;
   day?: RolloutDay;
   dayNumber?: number;
+  defaultDate?: string;
 }
 
-const MOCK_SERVICES = [
-  { id: 1, name: 'IT' },
-  { id: 2, name: 'HR' },
-  { id: 3, name: 'Finance' },
-  { id: 4, name: 'Operations' },
-  { id: 5, name: 'Sales' },
-];
-
-const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutDayDialogProps) => {
-  const { t } = useTranslation();
+const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDate }: RolloutDayDialogProps) => {
   const isEditMode = Boolean(day);
 
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
-  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<number | ''>('');
   const [createBulk, setCreateBulk] = useState(true);
   const [workplaceCount, setWorkplaceCount] = useState(10);
   const [monitorCount, setMonitorCount] = useState(2);
+
+  const { data: services } = useQuery({
+    queryKey: ['admin', 'services'],
+    queryFn: () => servicesApi.getAll(false),
+    enabled: open,
+  });
 
   const createMutation = useCreateRolloutDay();
   const updateMutation = useUpdateRolloutDay();
   const bulkCreateMutation = useBulkCreateWorkplaces();
 
+  // Group services by sector
+  const servicesBySector = (services || []).reduce<Record<string, Service[]>>((acc, service) => {
+    const sectorName = service.sector?.name || 'Overig';
+    if (!acc[sectorName]) acc[sectorName] = [];
+    acc[sectorName].push(service);
+    return acc;
+  }, {});
+
   useEffect(() => {
     if (day) {
       setDate(day.date.split('T')[0]);
       setName(day.name || '');
-      setSelectedServiceIds(day.scheduledServiceIds || []);
+      setSelectedServiceId(day.scheduledServiceIds?.[0] || '');
     } else {
-      setDate('');
+      setDate(defaultDate || '');
       setName('');
-      setSelectedServiceIds([]);
+      setSelectedServiceId('');
       setCreateBulk(true);
       setWorkplaceCount(10);
       setMonitorCount(2);
     }
   }, [day, open]);
 
-  const handleServiceChange = (event: SelectChangeEvent<number[]>) => {
-    const value = event.target.value;
-    setSelectedServiceIds(typeof value === 'string' ? [] : value);
-  };
-
   const handleSave = async () => {
+    const serviceIds = selectedServiceId ? [selectedServiceId] : [];
+
     if (isEditMode && day) {
       const updateData: UpdateRolloutDay = {
         date,
         name: name || undefined,
         dayNumber: day.dayNumber,
-        scheduledServiceIds: selectedServiceIds,
+        scheduledServiceIds: serviceIds,
       };
       await updateMutation.mutateAsync({ dayId: day.id, data: updateData });
     } else {
@@ -90,17 +93,17 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
         date,
         name: name || undefined,
         dayNumber: dayNumber || 1,
-        scheduledServiceIds: selectedServiceIds,
+        scheduledServiceIds: serviceIds,
       };
       const createdDay = await createMutation.mutateAsync({ sessionId, data: createData });
 
       // Bulk create workplaces if enabled
-      if (createBulk && workplaceCount > 0 && selectedServiceIds.length > 0 && createdDay) {
+      if (createBulk && workplaceCount > 0 && selectedServiceId && createdDay) {
         await bulkCreateMutation.mutateAsync({
           dayId: createdDay.id,
           data: {
             count: workplaceCount,
-            serviceId: selectedServiceIds[0], // Use first selected service as primary
+            serviceId: selectedServiceId,
             isLaptopSetup: true,
             assetPlanConfig: {
               includeLaptop: true,
@@ -121,7 +124,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
   const handleClose = () => {
     setDate('');
     setName('');
-    setSelectedServiceIds([]);
+    setSelectedServiceId('');
     setCreateBulk(true);
     setWorkplaceCount(10);
     setMonitorCount(2);
@@ -133,7 +136,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth disableRestoreFocus>
       <DialogTitle>
-        {isEditMode ? 'Dag Bewerken' : 'Nieuwe Dag Toevoegen'}
+        {isEditMode ? 'Planning Bewerken' : 'Nieuwe Planning Toevoegen'}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
@@ -145,7 +148,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
             required
             fullWidth
             InputLabelProps={{ shrink: true }}
-            helperText="Selecteer de datum voor deze rollout dag"
+            helperText="Selecteer de datum voor deze planning"
           />
           <TextField
             label="Naam (optioneel)"
@@ -155,27 +158,54 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
             helperText="Bijv. 'Week 1 - Maandag' of 'IT Afdeling'"
           />
           <FormControl fullWidth>
-            <InputLabel id="services-label">Geplande Diensten</InputLabel>
+            <InputLabel id="service-label">Dienst</InputLabel>
             <Select
-              labelId="services-label"
-              multiple
-              value={selectedServiceIds}
-              onChange={handleServiceChange}
-              input={<OutlinedInput label="Geplande Diensten" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((serviceId) => {
-                    const service = MOCK_SERVICES.find(s => s.id === serviceId);
-                    return service ? <Chip key={serviceId} label={service.name} size="small" /> : null;
-                  })}
-                </Box>
-              )}
+              labelId="service-label"
+              value={selectedServiceId}
+              onChange={(e) => {
+                const id = e.target.value as number | '';
+                setSelectedServiceId(id);
+                if (id) {
+                  const svc = (services || []).find(s => s.id === id);
+                  if (svc) {
+                    const sectorLabel = svc.sector?.name ? ` (${svc.sector.name})` : '';
+                    setName(`${svc.name}${sectorLabel}`);
+                  }
+                }
+              }}
+              label="Dienst"
             >
-              {MOCK_SERVICES.map((service) => (
-                <MenuItem key={service.id} value={service.id}>
-                  {service.name}
-                </MenuItem>
-              ))}
+              <MenuItem value="">
+                <em>Geen dienst</em>
+              </MenuItem>
+              {Object.entries(servicesBySector).map(([sectorName, sectorServices]) => [
+                <ListSubheader
+                  key={sectorName}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#FF7700',
+                    bgcolor: 'rgba(255, 119, 0, 0.06)',
+                    borderBottom: '2px solid',
+                    borderColor: 'rgba(255, 119, 0, 0.15)',
+                    lineHeight: '36px',
+                    mt: 0.5,
+                  }}
+                >
+                  {sectorName}
+                </ListSubheader>,
+                ...sectorServices.map((service) => (
+                  <MenuItem
+                    key={service.id}
+                    value={service.id}
+                    sx={{ pl: 3, py: 1 }}
+                  >
+                    {service.name}
+                  </MenuItem>
+                )),
+              ])}
             </Select>
           </FormControl>
 
@@ -193,9 +223,9 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
 
               {createBulk && (
                 <>
-                  {selectedServiceIds.length === 0 && (
+                  {!selectedServiceId && (
                     <Alert severity="info" sx={{ mb: 1 }}>
-                      Selecteer eerst een of meerdere diensten om werkplekken aan te maken
+                      Selecteer eerst een dienst om werkplekken aan te maken
                     </Alert>
                   )}
 
@@ -207,7 +237,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
                     inputProps={{ min: 1, max: 50 }}
                     fullWidth
                     helperText="Aantal lege werkplekken om aan te maken (1-50)"
-                    disabled={selectedServiceIds.length === 0}
+                    disabled={!selectedServiceId}
                   />
 
                   <Box>
@@ -226,7 +256,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
                       step={1}
                       valueLabelDisplay="auto"
                       onChange={(_, value) => setMonitorCount(value as number)}
-                      disabled={selectedServiceIds.length === 0}
+                      disabled={!selectedServiceId}
                     />
                   </Box>
 
