@@ -971,6 +971,7 @@ public class RolloutsController : ControllerBase
 
     private RolloutSessionDto MapToSessionDto(RolloutSession session)
     {
+        var days = session.Days ?? new List<RolloutDay>();
         return new RolloutSessionDto
         {
             Id = session.Id,
@@ -984,7 +985,10 @@ public class RolloutsController : ControllerBase
             CreatedBy = session.CreatedBy,
             CreatedByEmail = session.CreatedByEmail,
             CreatedAt = session.CreatedAt,
-            UpdatedAt = session.UpdatedAt
+            UpdatedAt = session.UpdatedAt,
+            TotalDays = days.Count,
+            TotalWorkplaces = days.Sum(d => d.TotalWorkplaces),
+            CompletedWorkplaces = days.Sum(d => d.CompletedWorkplaces)
         };
     }
 

@@ -34,6 +34,8 @@ public class RolloutRepository : IRolloutRepository
         }
 
         return await query
+            .Include(s => s.Days)
+                .ThenInclude(d => d.Workplaces)
             .OrderByDescending(s => s.PlannedStartDate)
             .ToListAsync();
     }
