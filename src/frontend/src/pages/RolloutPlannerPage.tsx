@@ -31,6 +31,8 @@ import PrintIcon from '@mui/icons-material/Print';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import {
   useRolloutSession,
   useCreateRolloutSession,
@@ -510,6 +512,27 @@ const RolloutPlannerPage = () => {
     await deleteDayMutation.mutateAsync({ dayId: day.id, sessionId: Number(id) });
   };
 
+  const handleSetStatus = async (newStatus: string) => {
+    if (!session) return;
+    try {
+      await updateMutation.mutateAsync({
+        id: session.id,
+        data: {
+          sessionName: session.sessionName,
+          description: session.description,
+          plannedStartDate: session.plannedStartDate,
+          plannedEndDate: session.plannedEndDate,
+          status: newStatus,
+        },
+      });
+      if (newStatus === 'InProgress') {
+        navigate(`/rollouts/${session.id}/execute`);
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
   const handleBulkPrint = (dayId: number) => {
     setBulkPrintDayId(dayId);
     setBulkPrintDialogOpen(true);
@@ -547,11 +570,43 @@ const RolloutPlannerPage = () => {
           {isEditMode ? 'Rollout Bewerken' : 'Nieuwe Rollout'}
         </Typography>
         {isEditMode && session && (
-          <Chip
-            label={t(`rollout.status.${session.status.toLowerCase()}`)}
-            color={getStatusColor(session.status)}
-            sx={{ ml: 2 }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
+            <Chip
+              label={t(`rollout.status.${session.status.toLowerCase()}`)}
+              color={getStatusColor(session.status)}
+            />
+            {session.status === 'Planning' && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<CheckCircleOutlineIcon />}
+                onClick={() => handleSetStatus('Ready')}
+                disabled={updateMutation.isPending || !days || days.length === 0}
+                sx={{
+                  borderColor: '#16a34a',
+                  color: '#16a34a',
+                  '&:hover': { borderColor: '#15803d', bgcolor: 'rgba(22, 163, 74, 0.08)' },
+                }}
+              >
+                Markeer als Gereed
+              </Button>
+            )}
+            {(session.status === 'Ready' || session.status === 'Planning') && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<PlayArrowIcon />}
+                onClick={() => handleSetStatus('InProgress')}
+                disabled={updateMutation.isPending || !days || days.length === 0}
+                sx={{
+                  bgcolor: '#FF7700',
+                  '&:hover': { bgcolor: '#e66a00' },
+                }}
+              >
+                Uitvoeren
+              </Button>
+            )}
+          </Box>
         )}
       </Box>
 

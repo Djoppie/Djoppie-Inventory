@@ -37,7 +37,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
-import { useRolloutSessions, useDeleteRolloutSession } from '../hooks/useRollout';
+import { useRolloutSessions, useDeleteRolloutSession, useUpdateRolloutSession } from '../hooks/useRollout';
 import { getStatusColor } from '../api/rollout.api';
 import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
@@ -91,6 +91,7 @@ const RolloutListPage = () => {
     statusFilter ? { status: statusFilter } : undefined
   );
   const deleteSessionMutation = useDeleteRolloutSession();
+  const updateMutation = useUpdateRolloutSession();
 
   const handleStatusFilterChange = (status: RolloutSessionStatus | '') => {
     setStatusFilter(status);
@@ -110,7 +111,25 @@ const RolloutListPage = () => {
     handleMenuClose();
   };
 
-  const handleExecute = (sessionId: number) => {
+  const handleExecute = async (sessionId: number) => {
+    const session = sessions?.find(s => s.id === sessionId);
+    // Auto-transition to InProgress if still Planning or Ready
+    if (session && (session.status === 'Planning' || session.status === 'Ready')) {
+      try {
+        await updateMutation.mutateAsync({
+          id: sessionId,
+          data: {
+            sessionName: session.sessionName,
+            description: session.description,
+            plannedStartDate: session.plannedStartDate,
+            plannedEndDate: session.plannedEndDate,
+            status: 'InProgress',
+          },
+        });
+      } catch (error) {
+        console.error('Failed to update session status:', error);
+      }
+    }
     navigate(buildRoute.rolloutExecute(sessionId));
     handleMenuClose();
   };
@@ -397,7 +416,7 @@ const RolloutListPage = () => {
         </MenuItem>
         <MenuItem
           onClick={() => menuAnchor && handleExecute(menuAnchor.sessionId)}
-          disabled={!menuAnchor || sessions?.find(s => s.id === menuAnchor.sessionId)?.status === 'Planning'}
+          disabled={!menuAnchor || ['Completed', 'Cancelled'].includes(sessions?.find(s => s.id === menuAnchor.sessionId)?.status || '')}
         >
           <PlayArrowIcon fontSize="small" sx={{ mr: 1 }} />
           Uitvoeren
