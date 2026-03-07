@@ -58,7 +58,7 @@ export const TemplateSelector = ({
         if (parts.length > 0) return parts.join(' ');
         return option.templateName || 'Onbekend';
       }}
-      value={value}
+      value={value ?? null}
       onChange={(_, newValue) => onChange(newValue)}
       loading={isLoading}
       isOptionEqualToValue={(option, val) => option.id === val.id}

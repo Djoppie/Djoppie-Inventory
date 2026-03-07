@@ -16,11 +16,15 @@ import {
   Slider,
   FormControlLabel,
   Checkbox,
+  Alert,
+  Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
+import LinkIcon from '@mui/icons-material/Link';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
+import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { SerialSearchField } from './SerialSearchField';
 import { TemplateSelector } from './TemplateSelector';
 import type {
@@ -69,8 +73,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   // Monitors state
   const [monitorCount, setMonitorCount] = useState(2);
   const [monitorConfigs, setMonitorConfigs] = useState<MonitorConfig[]>([
-    { position: 'left', hasCamera: false },
-    { position: 'right', hasCamera: false },
+    { position: 'left', hasCamera: false, template: null },
+    { position: 'right', hasCamera: false, template: null },
   ]);
 
   // Peripherals state
@@ -79,6 +83,16 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
   const createMutation = useCreateRolloutWorkplace();
   const updateMutation = useUpdateRolloutWorkplace();
+  const { data: allTemplates } = useAssetTemplates();
+
+  // Helper to find a template by brand and model
+  const findTemplate = (brand?: string, model?: string): AssetTemplate | null => {
+    if (!allTemplates || !brand) return null;
+    return allTemplates.find(t =>
+      t.brand?.toLowerCase() === brand.toLowerCase() &&
+      (!model || t.model?.toLowerCase() === model.toLowerCase())
+    ) || null;
+  };
 
   useEffect(() => {
     if (workplace) {
@@ -94,14 +108,27 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       if (computerPlan) {
         setComputerType(computerPlan.equipmentType as 'laptop' | 'desktop');
         setNewComputerSerial(computerPlan.metadata?.serialNumber || '');
+        if (computerPlan.existingAssetId) {
+          setNewComputerAsset({
+            id: computerPlan.existingAssetId,
+            assetCode: computerPlan.existingAssetCode || '',
+            assetName: computerPlan.existingAssetName || '',
+          } as Asset);
+        }
         if (computerPlan.oldAssetId) {
           setOldComputerSerial(computerPlan.metadata?.oldSerial || '');
+          setOldComputerAsset({
+            id: computerPlan.oldAssetId,
+            assetCode: computerPlan.oldAssetCode || '',
+            assetName: computerPlan.oldAssetName || '',
+          } as Asset);
         }
       }
 
       const dockingPlan = plans.find(p => p.equipmentType === 'docking');
       if (dockingPlan) {
         setDockingSerial(dockingPlan.metadata?.serialNumber || '');
+        setDockingTemplate(findTemplate(dockingPlan.brand, dockingPlan.model));
       }
 
       const monitorPlans = plans.filter(p => p.equipmentType === 'monitor');
@@ -111,12 +138,23 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           position: (p.metadata?.position || 'left') as 'left' | 'center' | 'right',
           hasCamera: p.metadata?.hasCamera === 'true',
           serial: p.metadata?.serialNumber,
+          template: findTemplate(p.brand, p.model),
         })));
+      }
+
+      const keyboardPlan = plans.find(p => p.equipmentType === 'keyboard');
+      if (keyboardPlan) {
+        setKeyboardTemplate(findTemplate(keyboardPlan.brand, keyboardPlan.model));
+      }
+
+      const mousePlan = plans.find(p => p.equipmentType === 'mouse');
+      if (mousePlan) {
+        setMouseTemplate(findTemplate(mousePlan.brand, mousePlan.model));
       }
     } else {
       resetForm();
     }
-  }, [workplace, open]);
+  }, [workplace, open, allTemplates]);
 
   const resetForm = () => {
     setUserName('');
@@ -132,11 +170,39 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setDockingSerial('');
     setMonitorCount(2);
     setMonitorConfigs([
-      { position: 'left', hasCamera: false },
-      { position: 'right', hasCamera: false },
+      { position: 'left', hasCamera: false, template: null },
+      { position: 'right', hasCamera: false, template: null },
     ]);
     setKeyboardTemplate(null);
     setMouseTemplate(null);
+  };
+
+  // Get linked asset info from saved plans
+  const getLinkedAsset = (equipmentType: string, index?: number): AssetPlan | undefined => {
+    const plans = workplace?.assetPlans || [];
+    if (index !== undefined) {
+      const matching = plans.filter(p => p.equipmentType === equipmentType);
+      return matching[index];
+    }
+    return plans.find(p => p.equipmentType === equipmentType);
+  };
+
+  const LinkedAssetChip = ({ equipmentType, index, variant: chipVariant = 'new' }: { equipmentType: string; index?: number; variant?: 'new' | 'old' }) => {
+    const plan = getLinkedAsset(equipmentType, index);
+    if (!plan) return null;
+    const code = chipVariant === 'old' ? plan.oldAssetCode : plan.existingAssetCode;
+    const name = chipVariant === 'old' ? plan.oldAssetName : plan.existingAssetName;
+    if (!code) return null;
+    return (
+      <Chip
+        icon={<LinkIcon />}
+        label={`${chipVariant === 'old' ? 'Oud: ' : ''}${code}${name ? ` — ${name}` : ''}`}
+        size="small"
+        color={chipVariant === 'old' ? 'warning' : 'success'}
+        variant="outlined"
+        sx={{ mt: 1 }}
+      />
+    );
   };
 
   const updateMonitorConfig = (index: number, field: keyof MonitorConfig, value: any) => {
@@ -154,7 +220,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     const positions: Array<'left' | 'center' | 'right'> = count === 1 ? ['center'] : count === 2 ? ['left', 'right'] : ['left', 'center', 'right'];
 
     for (let i = 0; i < count; i++) {
-      newConfigs.push(monitorConfigs[i] || { position: positions[i], hasCamera: false });
+      newConfigs.push(monitorConfigs[i] || { position: positions[i], hasCamera: false, template: null });
     }
     setMonitorConfigs(newConfigs);
   };
@@ -289,7 +355,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const isFormValid = userName.trim() && newComputerSerial.trim();
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth disableRestoreFocus>
       <DialogTitle>
         {isEditMode ? 'Werkplek Bewerken' : 'Nieuwe Werkplek Toevoegen'}
       </DialogTitle>
@@ -368,6 +434,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   onAssetFound={setOldComputerAsset}
                   helperText="Zoek bestaand asset dat wordt vervangen"
                 />
+                <LinkedAssetChip equipmentType={computerType} variant="old" />
 
                 <SerialSearchField
                   label="Nieuwe Computer Serienummer"
@@ -382,6 +449,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   required
                   helperText="Zoek bestaand asset of maak nieuw aan"
                 />
+                <LinkedAssetChip equipmentType={computerType} />
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -409,6 +477,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   fullWidth
                   helperText="Serienummer van het docking station"
                 />
+                <LinkedAssetChip equipmentType="docking" />
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -489,6 +558,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                         }
                         label="Heeft camera"
                       />
+                      <LinkedAssetChip equipmentType="monitor" index={index} />
                     </Box>
                   </Box>
                 ))}
@@ -510,12 +580,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   value={keyboardTemplate}
                   onChange={setKeyboardTemplate}
                 />
+                <LinkedAssetChip equipmentType="keyboard" />
 
                 <TemplateSelector
                   equipmentType="mouse"
                   value={mouseTemplate}
                   onChange={setMouseTemplate}
                 />
+                <LinkedAssetChip equipmentType="mouse" />
               </Box>
             </AccordionDetails>
           </Accordion>

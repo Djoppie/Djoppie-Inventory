@@ -360,6 +360,23 @@ public class RolloutRepository : IRolloutRepository
                 continue; // Skip if serial required but not provided
             }
 
+            // Check if an asset with this serial number already exists
+            if (hasSerial)
+            {
+                var existingAsset = await _context.Assets
+                    .FirstOrDefaultAsync(a => a.SerialNumber == plan.Metadata!["serialNumber"]);
+                if (existingAsset != null)
+                {
+                    // Link to existing asset instead of creating a duplicate
+                    plan.ExistingAssetId = existingAsset.Id;
+                    plan.ExistingAssetCode = existingAsset.AssetCode;
+                    plan.ExistingAssetName = existingAsset.AssetName;
+                    plan.CreateNew = false;
+                    modified = true;
+                    continue;
+                }
+            }
+
             // Determine asset type based on equipment type
             var assetType = await GetAssetTypeByEquipmentTypeAsync(plan.EquipmentType);
             if (assetType == null)

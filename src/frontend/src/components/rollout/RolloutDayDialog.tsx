@@ -131,7 +131,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber }: RolloutD
   const isFormValid = date.trim();
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth disableRestoreFocus>
       <DialogTitle>
         {isEditMode ? 'Dag Bewerken' : 'Nieuwe Dag Toevoegen'}
       </DialogTitle>
