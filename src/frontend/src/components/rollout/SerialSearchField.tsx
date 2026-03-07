@@ -55,7 +55,7 @@ export const SerialSearchField = ({
       if (onAssetFound) {
         onAssetFound(foundAsset);
       }
-    } catch (err) {
+    } catch {
       setAsset(null);
       setError('Asset niet gevonden');
     } finally {

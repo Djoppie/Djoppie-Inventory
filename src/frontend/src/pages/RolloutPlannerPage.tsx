@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -438,20 +438,15 @@ const RolloutPlannerPage = () => {
   const updateMutation = useUpdateRolloutSession();
   const deleteDayMutation = useDeleteRolloutDay();
 
-  // Load session data into form
-  const sessionNameFromServer = session?.sessionName;
-  const descriptionFromServer = session?.description;
-  const startDateFromServer = session?.plannedStartDate;
-  const endDateFromServer = session?.plannedEndDate;
-
-  useEffect(() => {
-    if (sessionNameFromServer != null) {
-      setSessionName(sessionNameFromServer);
-      setDescription(descriptionFromServer || '');
-      setPlannedStartDate(startDateFromServer!.split('T')[0]);
-      setPlannedEndDate(endDateFromServer?.split('T')[0] || '');
-    }
-  }, [sessionNameFromServer, descriptionFromServer, startDateFromServer, endDateFromServer]);
+  // Load session data into form (only once when data first arrives)
+  const [formSyncedId, setFormSyncedId] = useState<number | null>(null);
+  if (session && session.id !== formSyncedId) {
+    setFormSyncedId(session.id);
+    setSessionName(session.sessionName);
+    setDescription(session.description || '');
+    setPlannedStartDate(session.plannedStartDate.split('T')[0]);
+    setPlannedEndDate(session.plannedEndDate?.split('T')[0] || '');
+  }
 
   const handleSave = async () => {
     const sessionData: CreateRolloutSession | UpdateRolloutSession = {

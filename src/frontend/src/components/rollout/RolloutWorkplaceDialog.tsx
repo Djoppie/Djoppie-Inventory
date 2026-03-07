@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
@@ -16,7 +15,6 @@ import {
   Slider,
   FormControlLabel,
   Checkbox,
-  Alert,
   Chip,
   Stack,
   useTheme,
@@ -57,6 +55,32 @@ interface MonitorConfig {
   serial?: string;
 }
 
+const LinkedAssetChip = ({ workplace, equipmentType, index, variant: chipVariant = 'new' }: {
+  workplace?: RolloutWorkplace;
+  equipmentType: string;
+  index?: number;
+  variant?: 'new' | 'old';
+}) => {
+  const plans = workplace?.assetPlans || [];
+  const plan = index !== undefined
+    ? plans.filter(p => p.equipmentType === equipmentType)[index]
+    : plans.find(p => p.equipmentType === equipmentType);
+  if (!plan) return null;
+  const code = chipVariant === 'old' ? plan.oldAssetCode : plan.existingAssetCode;
+  const name = chipVariant === 'old' ? plan.oldAssetName : plan.existingAssetName;
+  if (!code) return null;
+  return (
+    <Chip
+      icon={<LinkIcon />}
+      label={`${chipVariant === 'old' ? 'Oud: ' : ''}${code}${name ? ` — ${name}` : ''}`}
+      size="small"
+      color={chipVariant === 'old' ? 'warning' : 'success'}
+      variant="outlined"
+      sx={{ mt: 1 }}
+    />
+  );
+};
+
 const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWorkplaceDialogProps) => {
   const isEditMode = Boolean(workplace);
 
@@ -92,78 +116,80 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const updateMutation = useUpdateRolloutWorkplace();
   const { data: allTemplates } = useAssetTemplates();
 
-  // Helper to find a template by brand and model
-  const findTemplate = (brand?: string, model?: string): AssetTemplate | null => {
-    if (!allTemplates || !brand) return null;
-    return allTemplates.find(t =>
-      t.brand?.toLowerCase() === brand.toLowerCase() &&
-      (!model || t.model?.toLowerCase() === model.toLowerCase())
-    ) || null;
-  };
+  // Track which workplace/templates we've synced to avoid re-syncing
+  const [syncedKey, setSyncedKey] = useState<string | null>(null);
+  const currentKey = workplace ? `${workplace.id}-${workplace.updatedAt}-${allTemplates?.length ?? 0}` : null;
 
-  useEffect(() => {
-    if (workplace) {
-      setUserName(workplace.userName);
-      setUserEmail(workplace.userEmail || '');
-      setLocation(workplace.location || '');
-      setServiceId(workplace.serviceId);
+  if (open && currentKey && currentKey !== syncedKey) {
+    setSyncedKey(currentKey);
 
-      // Parse asset plans to populate fields
-      const plans = workplace.assetPlans || [];
+    const findTpl = (brand?: string, model?: string): AssetTemplate | null => {
+      if (!allTemplates || !brand) return null;
+      return allTemplates.find(t =>
+        t.brand?.toLowerCase() === brand.toLowerCase() &&
+        (!model || t.model?.toLowerCase() === model.toLowerCase())
+      ) || null;
+    };
 
-      const computerPlan = plans.find(p => p.equipmentType === 'laptop' || p.equipmentType === 'desktop');
-      if (computerPlan) {
-        setComputerType(computerPlan.equipmentType as 'laptop' | 'desktop');
-        setNewComputerSerial(computerPlan.metadata?.serialNumber || '');
-        if (computerPlan.existingAssetId) {
-          setNewComputerAsset({
-            id: computerPlan.existingAssetId,
-            assetCode: computerPlan.existingAssetCode || '',
-            assetName: computerPlan.existingAssetName || '',
-          } as Asset);
-        }
-        if (computerPlan.oldAssetId) {
-          setOldComputerSerial(computerPlan.metadata?.oldSerial || '');
-          setOldComputerAsset({
-            id: computerPlan.oldAssetId,
-            assetCode: computerPlan.oldAssetCode || '',
-            assetName: computerPlan.oldAssetName || '',
-          } as Asset);
-        }
+    setUserName(workplace!.userName);
+    setUserEmail(workplace!.userEmail || '');
+    setLocation(workplace!.location || '');
+    setServiceId(workplace!.serviceId);
+
+    const plans = workplace!.assetPlans || [];
+
+    const computerPlan = plans.find(p => p.equipmentType === 'laptop' || p.equipmentType === 'desktop');
+    if (computerPlan) {
+      setComputerType(computerPlan.equipmentType as 'laptop' | 'desktop');
+      setNewComputerSerial(computerPlan.metadata?.serialNumber || '');
+      if (computerPlan.existingAssetId) {
+        setNewComputerAsset({
+          id: computerPlan.existingAssetId,
+          assetCode: computerPlan.existingAssetCode || '',
+          assetName: computerPlan.existingAssetName || '',
+        } as Asset);
       }
-
-      const dockingPlan = plans.find(p => p.equipmentType === 'docking');
-      if (dockingPlan) {
-        setDockingSerial(dockingPlan.metadata?.serialNumber || '');
-        setDockingTemplate(findTemplate(dockingPlan.brand, dockingPlan.model));
+      if (computerPlan.oldAssetId) {
+        setOldComputerSerial(computerPlan.metadata?.oldSerial || '');
+        setOldComputerAsset({
+          id: computerPlan.oldAssetId,
+          assetCode: computerPlan.oldAssetCode || '',
+          assetName: computerPlan.oldAssetName || '',
+        } as Asset);
       }
-
-      const monitorPlans = plans.filter(p => p.equipmentType === 'monitor');
-      if (monitorPlans.length > 0) {
-        setMonitorCount(monitorPlans.length);
-        setMonitorConfigs(monitorPlans.map(p => ({
-          position: (p.metadata?.position || 'left') as 'left' | 'center' | 'right',
-          hasCamera: p.metadata?.hasCamera === 'true',
-          serial: p.metadata?.serialNumber,
-          template: findTemplate(p.brand, p.model),
-        })));
-      }
-
-      const keyboardPlan = plans.find(p => p.equipmentType === 'keyboard');
-      if (keyboardPlan) {
-        setKeyboardTemplate(findTemplate(keyboardPlan.brand, keyboardPlan.model));
-      }
-
-      const mousePlan = plans.find(p => p.equipmentType === 'mouse');
-      if (mousePlan) {
-        setMouseTemplate(findTemplate(mousePlan.brand, mousePlan.model));
-      }
-    } else {
-      resetForm();
     }
-  }, [workplace, open, allTemplates]);
 
-  const resetForm = () => {
+    const dockingPlan = plans.find(p => p.equipmentType === 'docking');
+    if (dockingPlan) {
+      setDockingSerial(dockingPlan.metadata?.serialNumber || '');
+      setDockingTemplate(findTpl(dockingPlan.brand, dockingPlan.model));
+    }
+
+    const monitorPlans = plans.filter(p => p.equipmentType === 'monitor');
+    if (monitorPlans.length > 0) {
+      setMonitorCount(monitorPlans.length);
+      setMonitorConfigs(monitorPlans.map(p => ({
+        position: (p.metadata?.position || 'left') as 'left' | 'center' | 'right',
+        hasCamera: p.metadata?.hasCamera === 'true',
+        serial: p.metadata?.serialNumber,
+        template: findTpl(p.brand, p.model),
+      })));
+    }
+
+    const keyboardPlan = plans.find(p => p.equipmentType === 'keyboard');
+    if (keyboardPlan) {
+      setKeyboardTemplate(findTpl(keyboardPlan.brand, keyboardPlan.model));
+    }
+
+    const mousePlan = plans.find(p => p.equipmentType === 'mouse');
+    if (mousePlan) {
+      setMouseTemplate(findTpl(mousePlan.brand, mousePlan.model));
+    }
+  }
+
+  // Reset when dialog opens without a workplace (new mode)
+  if (open && !workplace && syncedKey !== 'new') {
+    setSyncedKey('new');
     setUserName('');
     setUserEmail('');
     setLocation('');
@@ -182,37 +208,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     ]);
     setKeyboardTemplate(null);
     setMouseTemplate(null);
-  };
+  }
 
-  // Get linked asset info from saved plans
-  const getLinkedAsset = (equipmentType: string, index?: number): AssetPlan | undefined => {
-    const plans = workplace?.assetPlans || [];
-    if (index !== undefined) {
-      const matching = plans.filter(p => p.equipmentType === equipmentType);
-      return matching[index];
-    }
-    return plans.find(p => p.equipmentType === equipmentType);
-  };
+  // Reset synced key when dialog closes
+  if (!open && syncedKey !== null) {
+    setSyncedKey(null);
+  }
 
-  const LinkedAssetChip = ({ equipmentType, index, variant: chipVariant = 'new' }: { equipmentType: string; index?: number; variant?: 'new' | 'old' }) => {
-    const plan = getLinkedAsset(equipmentType, index);
-    if (!plan) return null;
-    const code = chipVariant === 'old' ? plan.oldAssetCode : plan.existingAssetCode;
-    const name = chipVariant === 'old' ? plan.oldAssetName : plan.existingAssetName;
-    if (!code) return null;
-    return (
-      <Chip
-        icon={<LinkIcon />}
-        label={`${chipVariant === 'old' ? 'Oud: ' : ''}${code}${name ? ` — ${name}` : ''}`}
-        size="small"
-        color={chipVariant === 'old' ? 'warning' : 'success'}
-        variant="outlined"
-        sx={{ mt: 1 }}
-      />
-    );
-  };
-
-  const updateMonitorConfig = (index: number, field: keyof MonitorConfig, value: any) => {
+  const updateMonitorConfig = (index: number, field: keyof MonitorConfig, value: MonitorConfig[keyof MonitorConfig]) => {
     const updated = [...monitorConfigs];
     updated[index] = { ...updated[index], [field]: value };
     setMonitorConfigs(updated);
@@ -355,7 +358,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   };
 
   const handleClose = () => {
-    resetForm();
     onClose();
   };
 
@@ -562,7 +564,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   onAssetFound={setOldComputerAsset}
                   helperText="Zoek bestaand asset dat wordt vervangen"
                 />
-                <LinkedAssetChip equipmentType={computerType} variant="old" />
+                <LinkedAssetChip workplace={workplace} equipmentType={computerType} variant="old" />
 
                 <SerialSearchField
                   label="Nieuwe Computer Serienummer"
@@ -577,7 +579,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   required
                   helperText="Zoek bestaand asset of maak nieuw aan"
                 />
-                <LinkedAssetChip equipmentType={computerType} />
+                <LinkedAssetChip workplace={workplace} equipmentType={computerType} />
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -611,7 +613,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   fullWidth
                   helperText="Serienummer van het docking station"
                 />
-                <LinkedAssetChip equipmentType="docking" />
+                <LinkedAssetChip workplace={workplace} equipmentType="docking" />
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -713,7 +715,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                           <Typography variant="body2">Heeft camera</Typography>
                         }
                       />
-                      <LinkedAssetChip equipmentType="monitor" index={index} />
+                      <LinkedAssetChip workplace={workplace} equipmentType="monitor" index={index} />
                     </Box>
                   </Box>
                 ))}
@@ -741,14 +743,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   value={keyboardTemplate}
                   onChange={setKeyboardTemplate}
                 />
-                <LinkedAssetChip equipmentType="keyboard" />
+                <LinkedAssetChip workplace={workplace} equipmentType="keyboard" />
 
                 <TemplateSelector
                   equipmentType="mouse"
                   value={mouseTemplate}
                   onChange={setMouseTemplate}
                 />
-                <LinkedAssetChip equipmentType="mouse" />
+                <LinkedAssetChip workplace={workplace} equipmentType="mouse" />
               </Box>
             </AccordionDetails>
           </Accordion>
