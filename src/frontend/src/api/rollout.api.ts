@@ -23,6 +23,7 @@ import type {
   RolloutWorkplacesQueryParams,
   BulkCreateWorkplaces,
   BulkCreateWorkplacesResult,
+  UpdateItemDetails,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
@@ -178,6 +179,21 @@ export const updateItemStatus = async (
   const response = await apiClient.post<RolloutWorkplace>(
     `/rollouts/workplaces/${workplaceId}/items/${itemIndex}/status`,
     { status }
+  );
+  return response.data;
+};
+
+/**
+ * Update item details during execution (serial, brand/model, asset linking/creation)
+ */
+export const updateItemDetails = async (
+  workplaceId: number,
+  itemIndex: number,
+  data: UpdateItemDetails
+): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(
+    `/rollouts/workplaces/${workplaceId}/items/${itemIndex}/details`,
+    data
   );
   return response.data;
 };

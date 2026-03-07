@@ -101,6 +101,13 @@ public interface IRolloutRepository
     /// </summary>
     Task<IEnumerable<RolloutWorkplace>> CreateWorkplacesAsync(IEnumerable<RolloutWorkplace> workplaces);
 
+    // ===== Asset Type Lookup =====
+
+    /// <summary>
+    /// Gets an asset type by its code (LAP, DESK, DOCK, MON, KEYB, MOUSE)
+    /// </summary>
+    Task<AssetType?> GetAssetTypeByCodeAsync(string code);
+
     // ===== Statistics & Reporting =====
 
     /// <summary>

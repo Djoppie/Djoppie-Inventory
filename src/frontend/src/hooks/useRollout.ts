@@ -23,6 +23,7 @@ import type {
   RolloutWorkplacesQueryParams,
   BulkCreateWorkplaces,
   BulkCreateWorkplacesResult,
+  UpdateItemDetails,
 } from '../types/rollout';
 import * as rolloutApi from '../api/rollout.api';
 
@@ -309,6 +310,27 @@ export const useUpdateItemStatus = (): UseMutationResult<
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
+    },
+  });
+};
+
+/**
+ * Update item details during execution (serial, brand/model, asset linking)
+ */
+export const useUpdateItemDetails = (): UseMutationResult<
+  RolloutWorkplace,
+  Error,
+  { workplaceId: number; itemIndex: number; data: UpdateItemDetails }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ workplaceId, itemIndex, data }) =>
+      rolloutApi.updateItemDetails(workplaceId, itemIndex, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
     },
   });
 };

@@ -428,6 +428,16 @@ public class RolloutRepository : IRolloutRepository
     }
 
     /// <summary>
+    /// Gets an asset type by its code (public, used by controller)
+    /// </summary>
+    public async Task<AssetType?> GetAssetTypeByCodeAsync(string code)
+    {
+        return await _context.AssetTypes
+            .Include(at => at.Category)
+            .FirstOrDefaultAsync(at => at.Code == code && at.IsActive);
+    }
+
+    /// <summary>
     /// Gets the AssetType entity for a given equipment type string
     /// </summary>
     private async Task<AssetType?> GetAssetTypeByEquipmentTypeAsync(string equipmentType)

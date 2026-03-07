@@ -18,11 +18,18 @@ import {
   Checkbox,
   Alert,
   Chip,
+  Stack,
+  useTheme,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import LinkIcon from '@mui/icons-material/Link';
+import PersonIcon from '@mui/icons-material/Person';
+import ComputerIcon from '@mui/icons-material/Computer';
+import DockIcon from '@mui/icons-material/Dock';
+import MonitorIcon from '@mui/icons-material/Monitor';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { SerialSearchField } from './SerialSearchField';
@@ -354,21 +361,121 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
   const isFormValid = userName.trim() && newComputerSerial.trim();
 
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  const sectionIconSx = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 1.5,
+    bgcolor: isDark ? 'rgba(255, 146, 51, 0.12)' : 'rgba(255, 119, 0, 0.08)',
+    color: 'primary.main',
+    transition: 'all 0.3s ease',
+    '& .MuiSvgIcon-root': { fontSize: '1.1rem' },
+  };
+
+  const accordionSx = {
+    border: '1px solid',
+    borderColor: 'divider',
+    borderRadius: '12px !important',
+    overflow: 'hidden',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&::before': { display: 'none' },
+    '&.Mui-expanded': {
+      borderColor: 'primary.main',
+      boxShadow: isDark
+        ? '0 4px 16px rgba(255, 146, 51, 0.1)'
+        : '0 4px 16px rgba(255, 119, 0, 0.12)',
+    },
+  };
+
+  const monitorCardSx = {
+    border: '1px solid',
+    borderColor: 'divider',
+    borderRadius: 3,
+    p: 2.5,
+    bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
+    transition: 'all 0.25s ease',
+    '&:hover': {
+      borderColor: 'primary.light',
+      bgcolor: isDark ? 'rgba(255, 146, 51, 0.04)' : 'rgba(255, 119, 0, 0.03)',
+    },
+  };
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth disableRestoreFocus>
-      <DialogTitle>
-        {isEditMode ? 'Werkplek Bewerken' : 'Nieuwe Werkplek Toevoegen'}
-      </DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      disableRestoreFocus
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Styled header with gradient accent */}
+      <Box
+        sx={{
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(255, 146, 51, 0.15), rgba(204, 0, 0, 0.08))'
+            : 'linear-gradient(135deg, rgba(255, 119, 0, 0.08), rgba(255, 146, 51, 0.04))',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          px: 3,
+          py: 2.5,
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              background: isDark
+                ? 'linear-gradient(145deg, #FF9233, #FF7700)'
+                : 'linear-gradient(145deg, #FF9233, #FF7700)',
+              color: '#fff',
+              boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+            }}
+          >
+            <ComputerIcon />
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+              {isEditMode ? 'Werkplek Bewerken' : 'Nieuwe Werkplek'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {isEditMode ? 'Pas de werkplekconfiguratie aan' : 'Configureer een nieuwe werkplek'}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+
+      <DialogContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {/* Section 1: User Information */}
-          <Accordion defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                Gebruiker Informatie
-              </Typography>
+          <Accordion defaultExpanded sx={accordionSx}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={sectionIconSx}><PersonIcon /></Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Gebruiker Informatie
+                </Typography>
+              </Stack>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <TextField
                   label="Gebruikersnaam"
@@ -398,16 +505,22 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           </Accordion>
 
           {/* Section 2: Computer (Laptop/Desktop) */}
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                Computer (Laptop/Desktop)
-              </Typography>
+          <Accordion sx={accordionSx}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={sectionIconSx}><ComputerIcon /></Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Computer (Laptop/Desktop)
+                </Typography>
+              </Stack>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box>
-                  <Typography variant="body2" gutterBottom>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
                     Type computer
                   </Typography>
                   <ToggleButtonGroup
@@ -415,6 +528,21 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     exclusive
                     onChange={(_, value) => value && setComputerType(value)}
                     fullWidth
+                    sx={{
+                      '& .MuiToggleButton-root': {
+                        borderRadius: 2,
+                        py: 1.2,
+                        fontWeight: 600,
+                        '&.Mui-selected': {
+                          bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
+                          color: 'primary.main',
+                          borderColor: 'primary.main',
+                          '&:hover': {
+                            bgcolor: isDark ? 'rgba(255, 146, 51, 0.2)' : 'rgba(255, 119, 0, 0.15)',
+                          },
+                        },
+                      },
+                    }}
                   >
                     <ToggleButton value="laptop">
                       <LaptopIcon sx={{ mr: 1 }} />
@@ -455,13 +583,19 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           </Accordion>
 
           {/* Section 3: Docking Station */}
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                Docking Station
-              </Typography>
+          <Accordion sx={accordionSx}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={sectionIconSx}><DockIcon /></Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Docking Station
+                </Typography>
+              </Stack>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <TemplateSelector
                   equipmentType="docking"
@@ -483,16 +617,28 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           </Accordion>
 
           {/* Section 4: Monitors */}
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                Monitors ({monitorCount})
-              </Typography>
+          <Accordion sx={accordionSx}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={sectionIconSx}><MonitorIcon /></Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Monitors
+                </Typography>
+                <Chip
+                  label={monitorCount}
+                  size="small"
+                  color="primary"
+                  sx={{ ml: 0.5, fontWeight: 700, minWidth: 28, height: 24 }}
+                />
+              </Stack>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Box>
-                  <Typography variant="body2" gutterBottom>
+                <Box sx={{ px: 1 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
                     Aantal monitors
                   </Typography>
                   <Slider
@@ -511,21 +657,15 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                 </Box>
 
                 {monitorConfigs.map((config, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      border: 1,
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      p: 2,
-                      backgroundColor: 'background.paper',
-                    }}
-                  >
-                    <Typography variant="subtitle2" gutterBottom>
-                      Monitor {index + 1}
-                    </Typography>
+                  <Box key={index} sx={monitorCardSx}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                      <MonitorIcon sx={{ color: 'primary.main', fontSize: '1.1rem' }} />
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        Monitor {index + 1}
+                      </Typography>
+                    </Stack>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <TemplateSelector
                         equipmentType="monitor"
                         value={config.template}
@@ -533,7 +673,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                       />
 
                       <Box>
-                        <Typography variant="body2" gutterBottom>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
                           Positie
                         </Typography>
                         <ToggleButtonGroup
@@ -542,6 +682,16 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                           onChange={(_, value) => value && updateMonitorConfig(index, 'position', value)}
                           fullWidth
                           size="small"
+                          sx={{
+                            '& .MuiToggleButton-root': {
+                              borderRadius: 1.5,
+                              '&.Mui-selected': {
+                                bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
+                                color: 'primary.main',
+                                borderColor: 'primary.main',
+                              },
+                            },
+                          }}
                         >
                           <ToggleButton value="left">Links</ToggleButton>
                           <ToggleButton value="center">Midden</ToggleButton>
@@ -554,9 +704,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                           <Checkbox
                             checked={config.hasCamera}
                             onChange={(e) => updateMonitorConfig(index, 'hasCamera', e.target.checked)}
+                            sx={{
+                              '&.Mui-checked': { color: 'primary.main' },
+                            }}
                           />
                         }
-                        label="Heeft camera"
+                        label={
+                          <Typography variant="body2">Heeft camera</Typography>
+                        }
                       />
                       <LinkedAssetChip equipmentType="monitor" index={index} />
                     </Box>
@@ -567,13 +722,19 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           </Accordion>
 
           {/* Section 5: Keyboard & Mouse */}
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="subtitle1" fontWeight="medium">
-                Toetsenbord &amp; Muis
-              </Typography>
+          <Accordion sx={accordionSx}>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={sectionIconSx}><KeyboardIcon /></Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Toetsenbord &amp; Muis
+                </Typography>
+              </Stack>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <TemplateSelector
                   equipmentType="keyboard"
@@ -593,12 +754,26 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           </Accordion>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>Annuleren</Button>
+
+      {/* Styled actions with separator */}
+      <DialogActions
+        sx={{
+          px: 3,
+          py: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
+          gap: 1,
+        }}
+      >
+        <Button onClick={handleClose} variant="outlined" sx={{ px: 3 }}>
+          Annuleren
+        </Button>
         <Button
           variant="contained"
           onClick={handleSave}
           disabled={!isFormValid || createMutation.isPending || updateMutation.isPending}
+          sx={{ px: 4 }}
         >
           {createMutation.isPending || updateMutation.isPending ? 'Opslaan...' : 'Opslaan'}
         </Button>

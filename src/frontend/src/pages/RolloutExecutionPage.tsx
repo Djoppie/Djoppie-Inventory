@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import {
@@ -26,6 +26,9 @@ import {
   DialogActions,
   TextField,
   Snackbar,
+  InputAdornment,
+  CircularProgress,
+  Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -38,17 +41,24 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import LaptopIcon from '@mui/icons-material/Laptop';
+import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
+import LinkIcon from '@mui/icons-material/Link';
 import {
   useRolloutSession,
   useRolloutDays,
   useRolloutWorkplaces,
   useStartRolloutWorkplace,
   useUpdateItemStatus,
+  useUpdateItemDetails,
   useCompleteRolloutWorkplace,
 } from '../hooks/useRollout';
+import { getAssetBySerialNumber } from '../api/assets.api';
+import { TemplateSelector } from '../components/rollout/TemplateSelector';
 import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
-import type { RolloutWorkplace, AssetPlan } from '../types/rollout';
+import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../types/rollout';
+import type { Asset, AssetTemplate } from '../types/asset.types';
 
 const EQUIPMENT_LABELS: Record<string, string> = {
   laptop: 'Laptop',
@@ -70,7 +80,7 @@ const EQUIPMENT_ICONS: Record<string, string> = {
 
 /**
  * Rollout Execution Page - Execute rollout for a specific session
- * Mobile-optimized interface for technicians
+ * Mobile-optimized interface for technicians with inline serial entry
  */
 const RolloutExecutionPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -96,6 +106,13 @@ const RolloutExecutionPage = () => {
     selectedDay?.id || 0
   );
 
+  // Compute the effective expanded workplace: auto-expand first active if none selected
+  const effectiveExpanded = useMemo(() => {
+    if (expandedWorkplace !== null) return expandedWorkplace;
+    if (!workplaces || workplaces.length === 0) return null;
+    return workplaces.find(w => w.status !== 'Completed')?.id ?? null;
+  }, [expandedWorkplace, workplaces]);
+
   const handleBack = () => {
     navigate(ROUTES.ROLLOUTS);
   };
@@ -106,7 +123,7 @@ const RolloutExecutionPage = () => {
   };
 
   const handleToggleWorkplace = (workplaceId: number) => {
-    setExpandedWorkplace(expandedWorkplace === workplaceId ? null : workplaceId);
+    setExpandedWorkplace(effectiveExpanded === workplaceId ? null : workplaceId);
   };
 
   const formatDate = (dateString: string) => {
@@ -129,15 +146,7 @@ const RolloutExecutionPage = () => {
   if (!session || !days) {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert
-          severity="error"
-          sx={{
-            border: '1px solid',
-            borderColor: 'error.main',
-            fontWeight: 600,
-            boxShadow: '0 4px 20px rgba(255, 85, 85, 0.3)',
-          }}
-        >
+        <Alert severity="error" sx={{ border: '1px solid', borderColor: 'error.main', fontWeight: 600 }}>
           Sessie niet gevonden
         </Alert>
       </Container>
@@ -172,25 +181,23 @@ const RolloutExecutionPage = () => {
           p: 2,
           mb: 3,
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: overallProgress === 100 ? 'success.main' : 'divider',
           borderRadius: 2,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            borderColor: 'primary.main',
-            boxShadow: (theme) =>
-              theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-                : '0 4px 20px rgba(253, 185, 49, 0.3)',
-          },
+          background: overallProgress === 100
+            ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.02) 100%)'
+            : undefined,
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography variant="body2" fontWeight="medium">
             Totale Voortgang
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {completedWorkplaces} / {totalWorkplaces} werkplekken
-          </Typography>
+          <Chip
+            label={`${completedWorkplaces} / ${totalWorkplaces}`}
+            size="small"
+            color={overallProgress === 100 ? 'success' : 'default'}
+            variant="outlined"
+          />
         </Box>
         <LinearProgress
           variant="determinate"
@@ -205,15 +212,8 @@ const RolloutExecutionPage = () => {
 
       {/* Day Tabs */}
       {days.length === 0 ? (
-        <Alert
-          severity="info"
-          sx={{
-            border: '1px solid',
-            borderColor: 'info.main',
-            fontWeight: 600,
-          }}
-        >
-          Geen dagen gevonden voor deze sessie. Ga naar de planning om dagen toe te voegen.
+        <Alert severity="info" sx={{ border: '1px solid', borderColor: 'info.main', fontWeight: 600 }}>
+          Geen planningen gevonden. Ga naar de planning om planningen toe te voegen.
         </Alert>
       ) : (
         <>
@@ -225,14 +225,6 @@ const RolloutExecutionPage = () => {
               borderColor: 'divider',
               borderRadius: 2,
               overflow: 'hidden',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                borderColor: 'primary.main',
-                boxShadow: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-                    : '0 4px 20px rgba(253, 185, 49, 0.3)',
-              },
             }}
           >
             <Tabs
@@ -241,67 +233,44 @@ const RolloutExecutionPage = () => {
               variant="scrollable"
               scrollButtons="auto"
               sx={{
-                borderBottom: 2,
-                borderColor: 'divider',
                 '& .MuiTab-root': {
                   fontWeight: 600,
                   letterSpacing: '0.05em',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    color: 'primary.main',
-                  },
-                },
-                '& .Mui-selected': {
-                  color: 'primary.main',
+                  minHeight: 64,
                 },
               }}
             >
-              {days.map((day) => (
-                <Tab
-                  key={day.id}
-                  label={
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {day.name || `Dag ${day.dayNumber}`}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDate(day.date)}
-                      </Typography>
-                    </Box>
-                  }
-                  icon={
-                    day.completedWorkplaces === day.totalWorkplaces && day.totalWorkplaces > 0 ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : undefined
-                  }
-                  iconPosition="end"
-                />
-              ))}
+              {days.map((day) => {
+                const dayDone = day.completedWorkplaces === day.totalWorkplaces && day.totalWorkplaces > 0;
+                return (
+                  <Tab
+                    key={day.id}
+                    label={
+                      <Box sx={{ textAlign: 'left' }}>
+                        <Typography variant="body2" fontWeight="medium">
+                          {day.name || `Dag ${day.dayNumber}`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(day.date)} &middot; {day.completedWorkplaces}/{day.totalWorkplaces}
+                        </Typography>
+                      </Box>
+                    }
+                    icon={dayDone ? <CheckCircleIcon color="success" fontSize="small" /> : undefined}
+                    iconPosition="end"
+                  />
+                );
+              })}
             </Tabs>
           </Card>
 
           {/* Workplace List */}
           {selectedDay && (
             <>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {selectedDay.name && `${selectedDay.name} - `}
-                  {selectedDay.completedWorkplaces} van {selectedDay.totalWorkplaces} werkplekken voltooid
-                </Typography>
-              </Box>
-
               {workplacesLoading ? (
                 <Loading />
               ) : !workplaces || workplaces.length === 0 ? (
-                <Alert
-                  severity="info"
-                  sx={{
-                    border: '1px solid',
-                    borderColor: 'info.main',
-                    fontWeight: 600,
-                  }}
-                >
-                  Geen werkplekken gevonden voor deze dag.
+                <Alert severity="info" sx={{ border: '1px solid', borderColor: 'info.main', fontWeight: 600 }}>
+                  Geen werkplekken gevonden voor deze planning.
                 </Alert>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -309,7 +278,7 @@ const RolloutExecutionPage = () => {
                     <WorkplaceCard
                       key={workplace.id}
                       workplace={workplace}
-                      expanded={expandedWorkplace === workplace.id}
+                      expanded={effectiveExpanded === workplace.id}
                       onToggle={() => handleToggleWorkplace(workplace.id)}
                       onSnackbar={showSnackbar}
                     />
@@ -329,15 +298,7 @@ const RolloutExecutionPage = () => {
         <Alert
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
           severity={snackbar.severity}
-          sx={{
-            width: '100%',
-            border: '1px solid',
-            borderColor: snackbar.severity === 'error' ? 'error.main' : 'success.main',
-            fontWeight: 600,
-            boxShadow: snackbar.severity === 'error'
-              ? '0 4px 20px rgba(255, 85, 85, 0.3)'
-              : '0 4px 20px rgba(16, 185, 129, 0.3)',
-          }}
+          sx={{ width: '100%', border: '1px solid', borderColor: snackbar.severity === 'error' ? 'error.main' : 'success.main', fontWeight: 600 }}
         >
           {snackbar.message}
         </Alert>
@@ -346,9 +307,8 @@ const RolloutExecutionPage = () => {
   );
 };
 
-/**
- * Workplace Card Component - Interactive checklist for technicians
- */
+// ===== WORKPLACE CARD =====
+
 interface WorkplaceCardProps {
   workplace: RolloutWorkplace;
   expanded: boolean;
@@ -360,12 +320,12 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   const isComplete = workplace.status === 'Completed';
   const isInProgress = workplace.status === 'InProgress';
   const isPending = workplace.status === 'Pending';
-  const progress = workplace.totalItems > 0
-    ? (workplace.completedItems / workplace.totalItems) * 100
-    : 0;
+  const progress = workplace.totalItems > 0 ? (workplace.completedItems / workplace.totalItems) * 100 : 0;
 
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [completeNotes, setCompleteNotes] = useState('');
+  const [itemDialogOpen, setItemDialogOpen] = useState(false);
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
 
   const startMutation = useStartRolloutWorkplace();
   const itemStatusMutation = useUpdateItemStatus();
@@ -377,19 +337,6 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
       onSnackbar(`Werkplek "${workplace.userName}" gestart`);
     } catch {
       onSnackbar('Fout bij starten werkplek', 'error');
-    }
-  };
-
-  const handleToggleItem = async (index: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'installed' ? 'pending' : 'installed';
-    try {
-      await itemStatusMutation.mutateAsync({
-        workplaceId: workplace.id,
-        itemIndex: index,
-        status: newStatus,
-      });
-    } catch {
-      onSnackbar('Fout bij bijwerken item', 'error');
     }
   };
 
@@ -419,9 +366,22 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     }
   };
 
+  const handleOpenItemDialog = (index: number) => {
+    setSelectedItemIndex(index);
+    setItemDialogOpen(true);
+  };
+
+  const handleItemSaved = () => {
+    setItemDialogOpen(false);
+    setSelectedItemIndex(null);
+  };
+
   const allItemsDone = workplace.assetPlans.every(
     (p) => p.status === 'installed' || p.status === 'skipped'
   );
+
+  const statusColor = isComplete ? 'success' : isInProgress ? 'warning' : 'default';
+  const statusLabel = isComplete ? 'Voltooid' : isInProgress ? 'Bezig' : 'Wachtend';
 
   return (
     <>
@@ -429,47 +389,33 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
         elevation={0}
         sx={{
           border: isComplete ? '2px solid' : '1px solid',
-          borderColor: isComplete ? 'success.main' : isInProgress ? 'primary.main' : 'divider',
+          borderColor: isComplete ? 'success.main' : isInProgress ? 'warning.main' : 'divider',
           borderRadius: 2,
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            borderColor: isComplete ? 'success.main' : 'primary.main',
-            boxShadow: (theme) =>
-              isComplete
-                ? '0 4px 20px rgba(16, 185, 129, 0.25)'
-                : theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-                : '0 4px 20px rgba(253, 185, 49, 0.3)',
-          },
+          transition: 'border-color 0.2s',
         }}
       >
-        <CardContent>
+        <CardContent sx={{ pb: 1 }}>
           {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
             <PersonIcon
               sx={{
                 mr: 1,
-                color: isComplete
-                  ? 'success.main'
-                  : isInProgress
-                  ? 'warning.main'
-                  : workplace.status === 'Failed'
-                  ? 'error.main'
-                  : 'text.secondary',
+                mt: 0.3,
+                color: isComplete ? 'success.main' : isInProgress ? 'warning.main' : 'text.secondary',
               }}
             />
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" sx={{ fontSize: '1.1rem' }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontSize: '1.05rem', lineHeight: 1.3 }}>
                 {workplace.userName}
               </Typography>
               {workplace.userEmail && (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" noWrap>
                   {workplace.userEmail}
                 </Typography>
               )}
               {workplace.location && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                  <LocationOnIcon fontSize="small" sx={{ mr: 0.5, fontSize: '1rem', color: 'text.secondary' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.3 }}>
+                  <LocationOnIcon sx={{ mr: 0.5, fontSize: '0.9rem', color: 'text.secondary' }} />
                   <Typography variant="caption" color="text.secondary">
                     {workplace.location}
                   </Typography>
@@ -477,27 +423,22 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
               )}
             </Box>
             <Chip
-              label={
-                isComplete
-                  ? 'Voltooid'
-                  : isInProgress
-                  ? 'Bezig'
-                  : 'Wachtend'
-              }
+              label={statusLabel}
               size="small"
-              color={isComplete ? 'success' : isInProgress ? 'primary' : 'default'}
+              color={statusColor as 'success' | 'warning' | 'default'}
               icon={isComplete ? <CheckCircleIcon /> : isInProgress ? <LaptopIcon /> : undefined}
+              sx={{ ml: 1, flexShrink: 0 }}
             />
           </Box>
 
-          {/* Progress Bar */}
-          <Box sx={{ mb: 1 }}>
+          {/* Progress */}
+          <Box sx={{ mb: 0.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Voortgang
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" color="text.secondary">
                 {workplace.completedItems} / {workplace.totalItems} items
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {Math.round(progress)}%
               </Typography>
             </Box>
             <LinearProgress
@@ -508,20 +449,34 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
             />
           </Box>
 
-          {/* Interactive Asset Checklist */}
+          {/* Expanded Content - Asset Checklist */}
           <Collapse in={expanded} timeout="auto">
-            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+              {/* Start button for pending workplaces */}
+              {isPending && (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<PlayArrowIcon />}
+                  onClick={handleStart}
+                  disabled={startMutation.isPending}
+                  sx={{ mb: 2 }}
+                >
+                  {startMutation.isPending ? 'Starten...' : 'Start Uitvoering'}
+                </Button>
+              )}
+
+              <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '0.08em' }}>
                 Asset Checklist
               </Typography>
-              <List dense>
+              <List dense disablePadding>
                 {workplace.assetPlans.map((plan, index) => (
                   <AssetChecklistItem
                     key={index}
                     plan={plan}
                     index={index}
                     interactive={isInProgress}
-                    onToggle={() => handleToggleItem(index, plan.status)}
+                    onConfigure={() => handleOpenItemDialog(index)}
                     onSkip={() => handleSkipItem(index)}
                     loading={itemStatusMutation.isPending}
                   />
@@ -544,29 +499,13 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
               )}
 
               {isInProgress && !allItemsDone && (
-                <Alert
-                  severity="info"
-                  sx={{
-                    mt: 2,
-                    border: '1px solid',
-                    borderColor: 'info.main',
-                    fontWeight: 600,
-                  }}
-                >
-                  Markeer alle items als geinstalleerd of overgeslagen om de werkplek te voltooien.
+                <Alert severity="info" sx={{ mt: 2, fontSize: '0.85rem' }}>
+                  Configureer alle items om de werkplek te voltooien.
                 </Alert>
               )}
 
               {isComplete && workplace.completedAt && (
-                <Alert
-                  severity="success"
-                  sx={{
-                    mt: 2,
-                    border: '1px solid',
-                    borderColor: 'success.main',
-                    fontWeight: 600,
-                  }}
-                >
+                <Alert severity="success" sx={{ mt: 2 }}>
                   Voltooid op {new Date(workplace.completedAt).toLocaleString('nl-NL')}
                   {workplace.completedBy && ` door ${workplace.completedBy}`}
                 </Alert>
@@ -575,51 +514,48 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
           </Collapse>
         </CardContent>
 
-        <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
+        <CardActions sx={{ justifyContent: 'center', px: 2, pb: 1.5, pt: 0 }}>
           <Button
             size="small"
             startIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             onClick={onToggle}
+            sx={{ color: 'text.secondary' }}
           >
-            {expanded ? 'Verbergen' : 'Details tonen'}
+            {expanded ? 'Inklappen' : 'Details'}
           </Button>
-          {isPending && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<PlayArrowIcon />}
-              onClick={handleStart}
-              disabled={startMutation.isPending}
-            >
-              {startMutation.isPending ? 'Starten...' : 'Start'}
-            </Button>
-          )}
         </CardActions>
       </Card>
 
+      {/* Item Configuration Dialog */}
+      {selectedItemIndex !== null && (
+        <ItemConfigDialog
+          open={itemDialogOpen}
+          onClose={() => { setItemDialogOpen(false); setSelectedItemIndex(null); }}
+          workplace={workplace}
+          itemIndex={selectedItemIndex}
+          plan={workplace.assetPlans[selectedItemIndex]}
+          onSaved={handleItemSaved}
+          onSnackbar={onSnackbar}
+        />
+      )}
+
       {/* Complete Confirmation Dialog */}
-      <Dialog
-        open={completeDialogOpen}
-        onClose={() => setCompleteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        disableRestoreFocus
-      >
+      <Dialog open={completeDialogOpen} onClose={() => setCompleteDialogOpen(false)} maxWidth="sm" fullWidth disableRestoreFocus>
         <DialogTitle>Werkplek Voltooien</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Weet je zeker dat je werkplek <strong>"{workplace.userName}"</strong> wilt voltooien?
           </Typography>
           <Alert severity="info" sx={{ mb: 2 }}>
-            Dit zal de volgende acties uitvoeren:
-            <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-              <li>Alle nieuwe assets worden <strong>InGebruik</strong> gezet</li>
+            <strong>Dit zal de volgende acties uitvoeren:</strong>
+            <Box component="ul" sx={{ m: '8px 0 0', pl: '20px' }}>
+              <li>Nieuwe assets worden <strong>InGebruik</strong> gezet</li>
               <li>Eigenaar wordt ingesteld op <strong>{workplace.userName}</strong></li>
               <li>Installatiedatum wordt ingesteld op <strong>vandaag</strong></li>
               {workplace.assetPlans.some((p) => p.oldAssetId) && (
                 <li>Oude assets worden <strong>UitDienst</strong> gezet</li>
               )}
-            </ul>
+            </Box>
           </Alert>
           <TextField
             fullWidth
@@ -646,34 +582,29 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   );
 };
 
-/**
- * Asset Checklist Item - Interactive item for marking assets as installed
- */
+// ===== ASSET CHECKLIST ITEM =====
+
 interface AssetChecklistItemProps {
   plan: AssetPlan;
   index: number;
   interactive: boolean;
-  onToggle: () => void;
+  onConfigure: () => void;
   onSkip: () => void;
   loading: boolean;
 }
 
-const AssetChecklistItem = ({ plan, interactive, onToggle, onSkip, loading }: AssetChecklistItemProps) => {
+const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }: AssetChecklistItemProps) => {
   const isInstalled = plan.status === 'installed';
   const isSkipped = plan.status === 'skipped';
   const isDone = isInstalled || isSkipped;
+  const needsSerial = plan.requiresSerialNumber && !plan.metadata?.serialNumber && !isDone;
 
   const label = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
   const icon = EQUIPMENT_ICONS[plan.equipmentType] || '📦';
 
-  // Build description
-  const descParts: string[] = [];
-  if (plan.brand && plan.model) descParts.push(`${plan.brand} ${plan.model}`);
-  if (plan.existingAssetCode) descParts.push(`Asset: ${plan.existingAssetCode}`);
-  if (plan.metadata?.serialNumber) descParts.push(`S/N: ${plan.metadata.serialNumber}`);
-  if (plan.metadata?.position) descParts.push(`Positie: ${plan.metadata.position}`);
-  if (plan.metadata?.hasCamera === 'true') descParts.push('Camera');
-  if (plan.oldAssetCode) descParts.push(`Vervangt: ${plan.oldAssetCode}`);
+  // Build info chips
+  const hasAsset = !!plan.existingAssetCode;
+  const hasSerial = !!plan.metadata?.serialNumber;
 
   return (
     <ListItem
@@ -682,67 +613,385 @@ const AssetChecklistItem = ({ plan, interactive, onToggle, onSkip, loading }: As
           ? 'success.main'
           : isSkipped
           ? 'action.disabledBackground'
+          : needsSerial && interactive
+          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.08)' : 'rgba(255,152,0,0.05)'
           : 'background.paper',
         color: isInstalled ? 'success.contrastText' : undefined,
-        borderRadius: 1,
+        borderRadius: 1.5,
         mb: 0.5,
         border: '1px solid',
-        borderColor: isInstalled ? 'success.main' : isSkipped ? 'action.disabled' : 'divider',
+        borderColor: isInstalled
+          ? 'success.main'
+          : isSkipped
+          ? 'action.disabled'
+          : needsSerial && interactive
+          ? 'warning.main'
+          : 'divider',
         cursor: interactive && !isDone ? 'pointer' : undefined,
         opacity: isSkipped ? 0.6 : 1,
-        '&:hover': interactive && !isDone
-          ? { bgcolor: 'action.hover' }
-          : undefined,
+        px: 1.5,
+        py: 1,
+        '&:hover': interactive && !isDone ? { bgcolor: 'action.hover' } : undefined,
       }}
-      onClick={interactive && !isSkipped ? onToggle : undefined}
+      onClick={interactive && !isDone ? onConfigure : undefined}
     >
-      <ListItemIcon sx={{ minWidth: 36 }}>
+      <ListItemIcon sx={{ minWidth: 32 }}>
         {isInstalled ? (
           <CheckCircleIcon sx={{ color: 'success.contrastText' }} />
         ) : isSkipped ? (
           <SkipNextIcon color="disabled" />
         ) : (
-          <RadioButtonUncheckedIcon color={interactive ? 'primary' : 'disabled'} />
+          <RadioButtonUncheckedIcon color={interactive ? (needsSerial ? 'warning' : 'primary') : 'disabled'} />
         )}
       </ListItemIcon>
       <ListItemText
         primary={
-          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
             <span>{icon}</span>
-            <span style={{ textDecoration: isSkipped ? 'line-through' : undefined }}>{label}</span>
+            <Box component="span" sx={{ textDecoration: isSkipped ? 'line-through' : undefined, fontWeight: 500 }}>{label}</Box>
             {plan.metadata?.position && plan.equipmentType === 'monitor' && (
-              <Chip
-                label={plan.metadata.position}
-                size="small"
-                sx={{ height: 20 }}
-                component="span"
-              />
+              <Chip label={plan.metadata.position} size="small" sx={{ height: 18, fontSize: '0.7rem' }} component="span" />
+            )}
+            {plan.metadata?.hasCamera === 'true' && (
+              <Chip label="📷" size="small" sx={{ height: 18, fontSize: '0.7rem' }} component="span" />
             )}
           </Box>
         }
         secondary={
-          descParts.length > 0 ? (
-            <Box component="span" sx={{ color: isInstalled ? 'success.contrastText' : undefined, opacity: 0.8 }}>
-              {descParts.join(' | ')}
-            </Box>
-          ) : undefined
+          <Box component="span" sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, mt: 0.3 }}>
+            {plan.brand && plan.model && (
+              <Box component="span" sx={{ fontSize: '0.8rem', color: isInstalled ? 'success.contrastText' : 'text.secondary', opacity: 0.9 }}>
+                {plan.brand} {plan.model}
+              </Box>
+            )}
+            {hasAsset && (
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <LinkIcon sx={{ fontSize: '0.85rem', color: isInstalled ? 'success.contrastText' : 'success.main' }} />
+                <Box component="span" sx={{ fontSize: '0.75rem', color: isInstalled ? 'success.contrastText' : 'success.main', fontWeight: 500 }}>
+                  {plan.existingAssetCode}
+                </Box>
+              </Box>
+            )}
+            {hasSerial && !hasAsset && (
+              <Box component="span" sx={{ fontSize: '0.75rem', color: isInstalled ? 'success.contrastText' : 'text.secondary' }}>
+                S/N: {plan.metadata.serialNumber}
+              </Box>
+            )}
+            {plan.oldAssetCode && (
+              <Box component="span" sx={{ fontSize: '0.75rem', color: isInstalled ? 'success.contrastText' : 'warning.main' }}>
+                Vervangt: {plan.oldAssetCode}
+              </Box>
+            )}
+            {needsSerial && interactive && (
+              <Box component="span" sx={{ fontSize: '0.75rem', color: 'warning.main', fontWeight: 500 }}>
+                Serienummer vereist — tik om in te vullen
+              </Box>
+            )}
+          </Box>
         }
       />
       {interactive && !isDone && (
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSkip();
-          }}
-          disabled={loading}
-          title="Overslaan"
-          sx={{ color: isInstalled ? 'success.contrastText' : undefined }}
-        >
-          <SkipNextIcon fontSize="small" />
-        </IconButton>
+        <Box sx={{ display: 'flex', gap: 0.5, ml: 0.5, flexShrink: 0 }}>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onConfigure();
+            }}
+            title="Configureren"
+            color="primary"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkip();
+            }}
+            disabled={loading}
+            title="Overslaan"
+          >
+            <SkipNextIcon fontSize="small" />
+          </IconButton>
+        </Box>
       )}
     </ListItem>
+  );
+};
+
+// ===== ITEM CONFIGURATION DIALOG =====
+
+interface ItemConfigDialogProps {
+  open: boolean;
+  onClose: () => void;
+  workplace: RolloutWorkplace;
+  itemIndex: number;
+  plan: AssetPlan;
+  onSaved: () => void;
+  onSnackbar: (message: string, severity?: 'success' | 'error') => void;
+}
+
+const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, onSnackbar }: ItemConfigDialogProps) => {
+  const [serialNumber, setSerialNumber] = useState(plan.metadata?.serialNumber || '');
+  const [oldSerialNumber, setOldSerialNumber] = useState(plan.metadata?.oldSerial || '');
+  const [selectedTemplate, setSelectedTemplate] = useState<AssetTemplate | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [foundAsset, setFoundAsset] = useState<Asset | null>(null);
+  const [foundOldAsset, setFoundOldAsset] = useState<Asset | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [oldSearchError, setOldSearchError] = useState<string | null>(null);
+
+  const updateDetailsMutation = useUpdateItemDetails();
+
+  const label = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
+  const icon = EQUIPMENT_ICONS[plan.equipmentType] || '📦';
+  const needsSerial = plan.requiresSerialNumber;
+  const isComputerType = plan.equipmentType === 'laptop' || plan.equipmentType === 'desktop';
+  const needsTemplate = ['docking', 'monitor', 'keyboard', 'mouse'].includes(plan.equipmentType);
+
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSerialNumber(plan.metadata?.serialNumber || '');
+      setOldSerialNumber(plan.metadata?.oldSerial || '');
+      setFoundAsset(plan.existingAssetId ? { id: plan.existingAssetId, assetCode: plan.existingAssetCode || '', assetName: plan.existingAssetName || '' } as Asset : null);
+      setFoundOldAsset(plan.oldAssetId ? { id: plan.oldAssetId, assetCode: plan.oldAssetCode || '', assetName: plan.oldAssetName || '' } as Asset : null);
+      setSearchError(null);
+      setOldSearchError(null);
+      setSelectedTemplate(null);
+    }
+  }, [open, plan]);
+
+  const handleSearchSerial = useCallback(async (serial: string, isOld: boolean) => {
+    if (!serial.trim()) return;
+    setSearching(true);
+    if (isOld) setOldSearchError(null);
+    else setSearchError(null);
+
+    try {
+      const asset = await getAssetBySerialNumber(serial);
+      if (isOld) {
+        setFoundOldAsset(asset);
+      } else {
+        setFoundAsset(asset);
+      }
+    } catch {
+      if (isOld) {
+        setOldSearchError('Asset niet gevonden');
+        setFoundOldAsset(null);
+      } else {
+        setSearchError(isComputerType ? 'Asset niet gevonden — wordt nieuw aangemaakt' : 'Asset niet gevonden');
+        setFoundAsset(null);
+      }
+    } finally {
+      setSearching(false);
+    }
+  }, [isComputerType]);
+
+  const handleSave = async () => {
+    try {
+      await updateDetailsMutation.mutateAsync({
+        workplaceId: workplace.id,
+        itemIndex,
+        data: {
+          serialNumber: serialNumber || undefined,
+          oldSerialNumber: oldSerialNumber || undefined,
+          brand: selectedTemplate?.brand || plan.brand || undefined,
+          model: selectedTemplate?.model || plan.model || undefined,
+          markAsInstalled: true,
+        },
+      });
+      onSnackbar(`${label} geconfigureerd en geïnstalleerd`);
+      onSaved();
+    } catch {
+      onSnackbar(`Fout bij opslaan ${label}`, 'error');
+    }
+  };
+
+  const handleSaveWithoutInstall = async () => {
+    try {
+      await updateDetailsMutation.mutateAsync({
+        workplaceId: workplace.id,
+        itemIndex,
+        data: {
+          serialNumber: serialNumber || undefined,
+          oldSerialNumber: oldSerialNumber || undefined,
+          brand: selectedTemplate?.brand || plan.brand || undefined,
+          model: selectedTemplate?.model || plan.model || undefined,
+          markAsInstalled: false,
+        },
+      });
+      onSnackbar(`${label} opgeslagen`);
+      onSaved();
+    } catch {
+      onSnackbar(`Fout bij opslaan ${label}`, 'error');
+    }
+  };
+
+  const canSave = !needsSerial || serialNumber.trim().length > 0;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth disableRestoreFocus>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
+        <Box component="span" sx={{ fontSize: '1.3rem' }}>{icon}</Box>
+        {label} Configureren
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          {/* Computer type: old serial + new serial */}
+          {isComputerType && (
+            <>
+              {/* Old computer serial (being replaced) */}
+              <Box>
+                <TextField
+                  fullWidth
+                  label="Oud serienummer (wordt vervangen)"
+                  value={oldSerialNumber}
+                  onChange={(e) => { setOldSerialNumber(e.target.value); setFoundOldAsset(null); setOldSearchError(null); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(oldSerialNumber, true)}
+                  helperText="Optioneel — serienummer van het oude toestel"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => handleSearchSerial(oldSerialNumber, true)} disabled={!oldSerialNumber || searching} edge="end">
+                          {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                {foundOldAsset && (
+                  <Alert severity="success" sx={{ mt: 1 }} icon={<LinkIcon />}>
+                    <strong>Gevonden:</strong> {foundOldAsset.assetCode} — {foundOldAsset.assetName}
+                  </Alert>
+                )}
+                {oldSearchError && (
+                  <Alert severity="warning" sx={{ mt: 1 }}>{oldSearchError}</Alert>
+                )}
+              </Box>
+
+              <Divider />
+
+              {/* New computer serial */}
+              <Box>
+                <TextField
+                  fullWidth
+                  required
+                  label="Nieuw serienummer"
+                  value={serialNumber}
+                  onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
+                  helperText="Serienummer van het nieuwe toestel"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => handleSearchSerial(serialNumber, false)} disabled={!serialNumber || searching} edge="end">
+                          {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                {foundAsset && (
+                  <Alert severity="success" sx={{ mt: 1 }} icon={<LinkIcon />}>
+                    <strong>Gevonden:</strong> {foundAsset.assetCode} — {foundAsset.assetName}
+                  </Alert>
+                )}
+                {searchError && (
+                  <Alert severity="info" sx={{ mt: 1 }}>{searchError}</Alert>
+                )}
+              </Box>
+            </>
+          )}
+
+          {/* Docking: template + serial */}
+          {plan.equipmentType === 'docking' && (
+            <>
+              <TemplateSelector
+                equipmentType={plan.equipmentType as EquipmentType}
+                value={selectedTemplate}
+                onChange={setSelectedTemplate}
+                label="Docking Station model"
+              />
+              <TextField
+                fullWidth
+                required
+                label="Serienummer"
+                value={serialNumber}
+                onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
+                helperText="Serienummer van het docking station"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => handleSearchSerial(serialNumber, false)} disabled={!serialNumber || searching} edge="end">
+                        {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {foundAsset && (
+                <Alert severity="success" icon={<LinkIcon />}>
+                  <strong>Gevonden:</strong> {foundAsset.assetCode} — {foundAsset.assetName}
+                </Alert>
+              )}
+              {searchError && (
+                <Alert severity="info">{searchError}</Alert>
+              )}
+            </>
+          )}
+
+          {/* Monitor/Keyboard/Mouse: template only (no serial needed) */}
+          {needsTemplate && plan.equipmentType !== 'docking' && (
+            <TemplateSelector
+              equipmentType={plan.equipmentType as EquipmentType}
+              value={selectedTemplate}
+              onChange={setSelectedTemplate}
+              label={`${label} model`}
+            />
+          )}
+
+          {/* Monitor metadata */}
+          {plan.equipmentType === 'monitor' && plan.metadata?.position && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip label={`Positie: ${plan.metadata.position}`} variant="outlined" size="small" />
+              {plan.metadata.hasCamera === 'true' && (
+                <Chip label="📷 Camera" variant="outlined" size="small" color="info" />
+              )}
+            </Box>
+          )}
+
+          {/* Currently linked asset */}
+          {plan.existingAssetCode && (
+            <Alert severity="success" icon={<LinkIcon />}>
+              <strong>Gekoppeld asset:</strong> {plan.existingAssetCode}
+              {plan.existingAssetName && ` — ${plan.existingAssetName}`}
+            </Alert>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button onClick={onClose}>Annuleren</Button>
+        <Button
+          onClick={handleSaveWithoutInstall}
+          disabled={updateDetailsMutation.isPending}
+          variant="outlined"
+        >
+          Opslaan
+        </Button>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={handleSave}
+          disabled={!canSave || updateDetailsMutation.isPending}
+          startIcon={<CheckCircleIcon />}
+        >
+          {updateDetailsMutation.isPending ? 'Opslaan...' : 'Opslaan & Installeren'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

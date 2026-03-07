@@ -217,3 +217,14 @@ export interface BulkCreateWorkplacesResult {
   created: number;
   workplaces: RolloutWorkplace[];
 }
+
+// ===== EXECUTION TYPES =====
+
+export interface UpdateItemDetails {
+  serialNumber?: string;
+  oldSerialNumber?: string;
+  brand?: string;
+  model?: string;
+  userName?: string;
+  markAsInstalled?: boolean;
+}

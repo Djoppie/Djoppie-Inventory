@@ -451,6 +451,153 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
+    /// Updates item details during execution (serial number, brand/model, asset linking)
+    /// Searches for existing asset by serial, or creates a new one, then links it to the plan
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/items/{itemIndex}/details")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemDetails(int workplaceId, int itemIndex, [FromBody] UpdateItemDetailsDto dto)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
+            ? new List<AssetPlanDto>()
+            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
+
+        if (itemIndex < 0 || itemIndex >= assetPlans.Count)
+        {
+            return BadRequest(new { message = $"Item index {itemIndex} is out of range (0-{assetPlans.Count - 1})" });
+        }
+
+        var plan = assetPlans[itemIndex];
+
+        // Update brand/model if provided
+        if (!string.IsNullOrWhiteSpace(dto.Brand))
+            plan.Brand = dto.Brand;
+        if (!string.IsNullOrWhiteSpace(dto.Model))
+            plan.Model = dto.Model;
+
+        // Update user name if provided
+        if (!string.IsNullOrWhiteSpace(dto.UserName))
+            workplace.UserName = dto.UserName;
+
+        // Handle old asset serial number (asset being replaced)
+        if (!string.IsNullOrWhiteSpace(dto.OldSerialNumber))
+        {
+            var oldAsset = await _assetRepository.GetBySerialNumberAsync(dto.OldSerialNumber);
+            if (oldAsset != null)
+            {
+                plan.OldAssetId = oldAsset.Id;
+                plan.OldAssetCode = oldAsset.AssetCode;
+                plan.OldAssetName = oldAsset.AssetName;
+                plan.Metadata ??= new Dictionary<string, string>();
+                plan.Metadata["oldSerial"] = dto.OldSerialNumber;
+            }
+        }
+
+        // Handle new asset serial number (search or create)
+        if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+        {
+            plan.Metadata ??= new Dictionary<string, string>();
+            plan.Metadata["serialNumber"] = dto.SerialNumber;
+
+            // Search for existing asset by serial number
+            var existingAsset = await _assetRepository.GetBySerialNumberAsync(dto.SerialNumber);
+            if (existingAsset != null)
+            {
+                // Link to existing asset
+                plan.ExistingAssetId = existingAsset.Id;
+                plan.ExistingAssetCode = existingAsset.AssetCode;
+                plan.ExistingAssetName = existingAsset.AssetName;
+                plan.CreateNew = false;
+                _logger.LogInformation("Linked existing asset {AssetCode} (serial: {Serial}) to workplace {WorkplaceId} item {ItemIndex}",
+                    existingAsset.AssetCode, dto.SerialNumber, workplaceId, itemIndex);
+            }
+            else
+            {
+                // Create new asset
+                var assetTypeCode = plan.EquipmentType.ToLower() switch
+                {
+                    "laptop" => "LAP",
+                    "desktop" => "DESK",
+                    "docking" => "DOCK",
+                    "monitor" => "MON",
+                    "keyboard" => "KEYB",
+                    "mouse" => "MOUSE",
+                    _ => (string?)null
+                };
+
+                if (assetTypeCode != null)
+                {
+                    var assetType = await _rolloutRepository.GetAssetTypeByCodeAsync(assetTypeCode);
+                    if (assetType != null)
+                    {
+                        var brandStr = !string.IsNullOrEmpty(plan.Brand) ? plan.Brand : "UNK";
+                        var assetNameParts = new List<string> { plan.EquipmentType.ToLower() };
+                        if (!string.IsNullOrEmpty(plan.Brand)) assetNameParts.Add(plan.Brand.ToLower().Replace(" ", "_"));
+                        if (!string.IsNullOrEmpty(plan.Model)) assetNameParts.Add(plan.Model.ToLower().Replace(" ", "_"));
+                        var assetName = string.Join("_", assetNameParts);
+
+                        var brandCode = brandStr.ToUpper().Substring(0, Math.Min(3, brandStr.Length));
+                        var prefix = $"{assetTypeCode}-{DateTime.UtcNow:yy}-{brandCode}";
+                        var nextNumber = await _assetRepository.GetNextAssetNumberAsync(prefix, false);
+
+                        var newAsset = new Asset
+                        {
+                            AssetTypeId = assetType.Id,
+                            Category = assetType.Category?.Name ?? "Computing",
+                            AssetCode = $"{prefix}-{nextNumber:D5}",
+                            AssetName = assetName,
+                            Brand = plan.Brand,
+                            Model = plan.Model,
+                            SerialNumber = dto.SerialNumber,
+                            Status = AssetStatus.Nieuw,
+                            ServiceId = workplace.ServiceId,
+                            IsDummy = false,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+
+                        var createdAsset = await _assetRepository.CreateAsync(newAsset);
+                        plan.ExistingAssetId = createdAsset.Id;
+                        plan.ExistingAssetCode = createdAsset.AssetCode;
+                        plan.ExistingAssetName = createdAsset.AssetName;
+                        plan.CreateNew = false;
+
+                        _logger.LogInformation("Created new asset {AssetCode} (serial: {Serial}) for workplace {WorkplaceId} item {ItemIndex}",
+                            createdAsset.AssetCode, dto.SerialNumber, workplaceId, itemIndex);
+                    }
+                }
+            }
+        }
+
+        // Mark as installed if requested
+        if (dto.MarkAsInstalled)
+        {
+            plan.Status = "installed";
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
+        }
+
+        // Auto-set to InProgress if still Pending
+        if (workplace.Status == RolloutWorkplaceStatus.Pending)
+        {
+            workplace.Status = RolloutWorkplaceStatus.InProgress;
+        }
+
+        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
+
+        return Ok(workplaceDto);
+    }
+
+    /// <summary>
     /// Marks a workplace as completed, transitions all linked assets
     /// New assets: Nieuw -> InGebruik, sets Owner and InstallationDate
     /// Old assets: -> UitDienst
