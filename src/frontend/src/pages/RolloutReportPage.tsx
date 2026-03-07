@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -33,6 +32,7 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useRolloutSession, useRolloutDays, useRolloutProgress } from '../hooks/useRollout';
+import type { RolloutDay } from '../types/rollout';
 import { getStatusColor } from '../api/rollout.api';
 import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
@@ -54,7 +54,7 @@ const RolloutReportPage = () => {
   const { data: days, isLoading: daysLoading } = useRolloutDays(sessionId, {
     includeWorkplaces: true,
   });
-  const { data: progress, isLoading: progressLoading } = useRolloutProgress(sessionId);
+  const { isLoading: progressLoading } = useRolloutProgress(sessionId);
 
   const handleBack = () => {
     navigate(ROUTES.ROLLOUTS);
@@ -406,7 +406,7 @@ const DetailRow = ({ label, value }: DetailRowProps) => (
 /**
  * Calculate equipment statistics from days
  */
-const calculateEquipmentStats = (days: any[]) => {
+const calculateEquipmentStats = (days: RolloutDay[]) => {
   const byType: Record<string, number> = {
     laptop: 0,
     docking: 0,
@@ -419,9 +419,9 @@ const calculateEquipmentStats = (days: any[]) => {
 
   days.forEach((day) => {
     if (day.workplaces) {
-      day.workplaces.forEach((workplace: any) => {
+      day.workplaces.forEach((workplace) => {
         if (workplace.assetPlans) {
-          workplace.assetPlans.forEach((plan: any) => {
+          workplace.assetPlans.forEach((plan) => {
             byType[plan.equipmentType] = (byType[plan.equipmentType] || 0) + 1;
             total++;
           });

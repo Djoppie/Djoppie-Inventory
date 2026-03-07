@@ -18,7 +18,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Badge,
   Tooltip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -440,14 +439,19 @@ const RolloutPlannerPage = () => {
   const deleteDayMutation = useDeleteRolloutDay();
 
   // Load session data into form
+  const sessionNameFromServer = session?.sessionName;
+  const descriptionFromServer = session?.description;
+  const startDateFromServer = session?.plannedStartDate;
+  const endDateFromServer = session?.plannedEndDate;
+
   useEffect(() => {
-    if (session) {
-      setSessionName(session.sessionName);
-      setDescription(session.description || '');
-      setPlannedStartDate(session.plannedStartDate.split('T')[0]);
-      setPlannedEndDate(session.plannedEndDate?.split('T')[0] || '');
+    if (sessionNameFromServer != null) {
+      setSessionName(sessionNameFromServer);
+      setDescription(descriptionFromServer || '');
+      setPlannedStartDate(startDateFromServer!.split('T')[0]);
+      setPlannedEndDate(endDateFromServer?.split('T')[0] || '');
     }
-  }, [session]);
+  }, [sessionNameFromServer, descriptionFromServer, startDateFromServer, endDateFromServer]);
 
   const handleSave = async () => {
     const sessionData: CreateRolloutSession | UpdateRolloutSession = {
@@ -687,7 +691,7 @@ const RolloutPlannerPage = () => {
             </Alert>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {days.map((day, index) => {
+              {days.map((day) => {
                 const daySvcId = day.scheduledServiceIds?.[0] || day.id;
                 const dayColor = getServiceColor(daySvcId);
                 return (

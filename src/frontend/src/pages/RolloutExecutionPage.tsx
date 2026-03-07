@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+
 import {
   Container,
   Typography,
@@ -73,7 +73,6 @@ const EQUIPMENT_ICONS: Record<string, string> = {
  * Mobile-optimized interface for technicians
  */
 const RolloutExecutionPage = () => {
-  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const sessionId = Number(id);
@@ -659,7 +658,7 @@ interface AssetChecklistItemProps {
   loading: boolean;
 }
 
-const AssetChecklistItem = ({ plan, index, interactive, onToggle, onSkip, loading }: AssetChecklistItemProps) => {
+const AssetChecklistItem = ({ plan, interactive, onToggle, onSkip, loading }: AssetChecklistItemProps) => {
   const isInstalled = plan.status === 'installed';
   const isSkipped = plan.status === 'skipped';
   const isDone = isInstalled || isSkipped;
