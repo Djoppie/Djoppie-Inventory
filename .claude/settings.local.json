@@ -65,7 +65,9 @@
       "Bash(powershell -Command \"Invoke-Sqlcmd -ServerInstance ''sql-djoppie-inventory-dev-k5xdqp.database.windows.net'' -Database ''sqldb-djoppie-inventory-dev'' -Username ''sqladmin'' -Password ''Dj0ppenbeek026'' -Query \"\"SELECT TOP 3 MigrationId, ProductVersion FROM __EFMigrationsHistory ORDER BY MigrationId DESC;\"\" -Encrypt\")",
       "Bash(python3:*)",
       "Bash(dotnet test:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(sqlite3:*)",
+      "Bash(dotnet ef database update:*)"
     ]
   }
 }

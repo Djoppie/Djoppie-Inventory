@@ -16,6 +16,10 @@ const BulkCreateAssetPage = lazy(() => import('./pages/BulkCreateAssetPage'));
 const AssetTemplatesPage = lazy(() => import('./pages/AssetTemplatesPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const InstalledSoftwarePage = lazy(() => import('./pages/InstalledSoftwarePage'));
+const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
+const RolloutPlannerPage = lazy(() => import('./pages/RolloutPlannerPage'));
+const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
+const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +49,11 @@ function App() {
                   <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
                   <Route path={ROUTES.ADMIN} element={<AdminPage />} />
+                  <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />
+                  <Route path={ROUTES.ROLLOUTS_NEW} element={<RolloutPlannerPage />} />
+                  <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
+                  <Route path={ROUTES.ROLLOUT_EXECUTE} element={<RolloutExecutionPage />} />
+                  <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
                 </Routes>
               </Suspense>
             </Layout>

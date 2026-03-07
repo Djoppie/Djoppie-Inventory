@@ -29,6 +29,7 @@
     "scan": "Scannen",
     "assets": "Activa",
     "templates": "Sjablonen",
+    "rollouts": "Uitrol",
     "admin": "Beheer"
   },
   "dashboard": {
@@ -533,6 +534,232 @@
       "endDateRequired": "Einddatum is verplicht",
       "endDateAfterStart": "Einddatum moet na startdatum liggen",
       "invalidNumber": "Voer een geldig nummer in"
+    }
+  },
+  "rollout": {
+    "title": "Uitrolsessies",
+    "newSession": "Nieuwe Uitrol",
+    "editSession": "Uitrol Bewerken",
+    "sessionName": "Sessienaam",
+    "description": "Beschrijving",
+    "plannedDate": "Geplande Datum",
+    "createdBy": "Aangemaakt door",
+    "status": {
+      "planning": "Planning",
+      "ready": "Gereed",
+      "inProgress": "Bezig",
+      "completed": "Voltooid",
+      "cancelled": "Geannuleerd"
+    },
+    "itemStatus": {
+      "pending": "In afwachting",
+      "inProgress": "Bezig",
+      "completed": "Voltooid",
+      "failed": "Mislukt",
+      "skipped": "Overgeslagen"
+    },
+    "items": {
+      "title": "Items",
+      "addAsset": "Toestel Toevoegen",
+      "scanAsset": "Scan Toestel",
+      "bulkScan": "Meerdere Scannen",
+      "noItems": "Nog geen items toegevoegd",
+      "targetUser": "Doelgebruiker",
+      "targetLocation": "Locatie",
+      "removeItem": "Verwijderen"
+    },
+    "monitor": {
+      "position": "Monitorpositie",
+      "displayNumber": "Schermnummer",
+      "left": "Links",
+      "center": "Midden",
+      "right": "Rechts",
+      "primary": "Primair",
+      "secondary": "Secundair"
+    },
+    "swap": {
+      "title": "Toestel Verwisselen",
+      "oldDevice": "Oud Toestel",
+      "newDevice": "Nieuw Toestel",
+      "collect": "Ophalen",
+      "deploy": "Installeren",
+      "execute": "Uitvoeren",
+      "selectStatus": "Selecteer status voor oud toestel"
+    },
+    "progress": {
+      "title": "Voortgang",
+      "completed": "Voltooid",
+      "pending": "In Afwachting",
+      "failed": "Mislukt",
+      "total": "Totaal",
+      "swaps": "Verwisselingen"
+    },
+    "actions": {
+      "saveDraft": "Opslaan als Concept",
+      "markReady": "Markeer als Gereed",
+      "startRollout": "Start Uitrol",
+      "printLabels": "Labels Afdrukken",
+      "printChecklist": "Checklist Afdrukken",
+      "complete": "Voltooien",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "exportSummary": "Samenvatting Exporteren"
+    },
+    "execution": {
+      "title": "Uitvoering",
+      "scanOldDevice": "Scan oud toestel",
+      "scanNewDevice": "Scan nieuw toestel",
+      "currentUser": "Huidige Gebruiker",
+      "nextItem": "Volgend Item",
+      "allComplete": "Alle items voltooid!",
+      "markComplete": "Markeer als Voltooid"
+    },
+    "summary": {
+      "title": "Samenvatting",
+      "sessionComplete": "Sessie Voltooid",
+      "swapHistory": "Verwisselingsgeschiedenis",
+      "timeline": "Tijdlijn",
+      "duration": "Duur"
+    },
+    "validation": {
+      "nameRequired": "Sessienaam is verplicht",
+      "dateRequired": "Geplande datum is verplicht",
+      "noItems": "Voeg minimaal één item toe",
+      "assetInRollout": "Dit toestel zit al in een actieve uitrol"
+    },
+    "confirmations": {
+      "deleteSession": "Weet je zeker dat je deze uitrol wilt verwijderen?",
+      "startRollout": "Weet je zeker dat je de uitrol wilt starten?",
+      "completeSession": "Weet je zeker dat je de uitrol wilt afsluiten?"
+    },
+    "groupBy": {
+      "none": "Geen groepering",
+      "user": "Groepeer per Gebruiker",
+      "location": "Groepeer per Locatie",
+      "assetType": "Groepeer per Type"
+    },
+    "list": {
+      "title": "Rollout Sessies",
+      "filterAll": "Alle",
+      "noSessions": "Geen rollout sessies gevonden",
+      "createFirst": "Maak je eerste rollout sessie aan om te beginnen",
+      "errorLoading": "Fout bij laden van rollout sessies",
+      "view": "Bekijken",
+      "plan": "Plannen",
+      "execute": "Uitvoeren",
+      "report": "Rapportage"
+    },
+    "planner": {
+      "title": "Rollout Planning",
+      "backToList": "Terug naar overzicht",
+      "sessionInfo": "Sessie Informatie",
+      "plannedStartDate": "Geplande Startdatum",
+      "plannedEndDate": "Geplande Einddatum",
+      "startedAt": "Gestart op",
+      "completedAt": "Voltooid op",
+      "days": "Dagen",
+      "addDay": "Dag Toevoegen",
+      "noDays": "Nog geen dagen gepland",
+      "addFirstDay": "Voeg je eerste dag toe om te beginnen",
+      "day": "Dag",
+      "workplaces": "Werkplekken",
+      "noWorkplaces": "Nog geen werkplekken gepland",
+      "addWorkplace": "Werkplek Toevoegen",
+      "editDay": "Dag Bewerken",
+      "deleteDay": "Dag Verwijderen",
+      "confirmDeleteDay": "Weet je zeker dat je deze dag wilt verwijderen?",
+      "userName": "Gebruikersnaam",
+      "userEmail": "E-mailadres",
+      "location": "Locatie",
+      "assets": "Assets",
+      "editWorkplace": "Werkplek Bewerken",
+      "deleteWorkplace": "Werkplek Verwijderen",
+      "confirmDeleteWorkplace": "Weet je zeker dat je deze werkplek wilt verwijderen?"
+    },
+    "day": {
+      "new": "Nieuwe Dag Toevoegen",
+      "edit": "Dag Bewerken",
+      "date": "Datum",
+      "name": "Naam (optioneel)",
+      "namePlaceholder": "Bijv. 'Week 1 - Maandag' of 'IT Afdeling'",
+      "dateHelper": "Selecteer de datum voor deze rollout dag",
+      "scheduledServices": "Geplande Diensten",
+      "dayNumber": "Dag"
+    },
+    "workplace": {
+      "new": "Nieuwe Werkplek Toevoegen",
+      "edit": "Werkplek Bewerken",
+      "userInfo": "Gebruikersinformatie",
+      "userNameRequired": "Naam van de gebruiker voor deze werkplek",
+      "emailOptional": "Optioneel",
+      "locationHelper": "Bijv. 'Gebouw A - 2e verdieping - Kamer 205'",
+      "isLaptopSetup": "Laptop setup (anders desktop)",
+      "assetPlanning": "Asset Planning",
+      "assetCount": "{{count}} asset",
+      "assetCount_plural": "{{count}} assets",
+      "addAsset": "Asset Toevoegen",
+      "noAssets": "Geen assets gepland. Klik op \"Asset Toevoegen\" om te beginnen.",
+      "equipmentType": "Apparaattype",
+      "brand": "Merk",
+      "model": "Model",
+      "createNew": "Nieuw asset aanmaken tijdens rollout",
+      "requiresSerialNumber": "Serienummer vereist",
+      "remove": "Verwijderen"
+    },
+    "equipment": {
+      "laptop": "Laptop",
+      "laptops": "Laptops",
+      "docking": "Docking Station",
+      "dockingStations": "Docking Stations",
+      "monitor": "Monitor",
+      "monitors": "Monitors",
+      "keyboard": "Toetsenbord",
+      "keyboards": "Toetsenborden",
+      "mouse": "Muis",
+      "mice": "Muizen"
+    },
+    "executionPage": {
+      "title": "Uitvoering",
+      "overallProgress": "Totale Voortgang",
+      "workplacesCompleted": "{{completed}} / {{total}} werkplekken",
+      "percentComplete": "{{percent}}% voltooid",
+      "noDays": "Geen dagen gevonden voor deze sessie. Ga naar de planning om dagen toe te voegen.",
+      "dayLabel": "Dag {{number}}",
+      "noWorkplaces": "Geen werkplekken gevonden voor deze dag.",
+      "showDetails": "Details tonen",
+      "hideDetails": "Verbergen",
+      "start": "Start",
+      "assetChecklist": "Asset Checklist",
+      "progress": "Voortgang",
+      "items": "{{completed}} / {{total}} items",
+      "serialNumberRequired": "S/N vereist"
+    },
+    "report": {
+      "title": "Rollout Rapportage",
+      "notFound": "Sessie niet gevonden",
+      "errorLoading": "Fout bij laden van rapportage",
+      "totalDays": "Totaal Dagen",
+      "totalWorkplaces": "Werkplekken",
+      "totalAssets": "Totaal Assets",
+      "completion": "Voltooiing",
+      "overallProgress": "Totale Voortgang",
+      "workplacesCompleted": "Werkplekken voltooid",
+      "completedOn": "Rollout voltooid op {{date}}",
+      "duration": "Duur",
+      "dayOverview": "Dag Overzicht",
+      "user": "Gebruiker",
+      "noWorkplacesForDay": "Geen werkplekken voor deze dag",
+      "materialOverview": "Materiaal Overzicht",
+      "sessionDetails": "Sessie Details",
+      "createdBy": "Aangemaakt door",
+      "createdOn": "Aangemaakt op",
+      "startedOn": "Gestart op",
+      "completedOnDetail": "Voltooid op",
+      "day_one": "{{count}} dag",
+      "day_other": "{{count}} dagen",
+      "hour_one": "{{count}} uur",
+      "hour_other": "{{count}} uur",
+      "durationFormat": "{{days}}, {{hours}}"
     }
   }
 }
