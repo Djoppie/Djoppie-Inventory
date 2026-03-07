@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -61,7 +61,12 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
     return acc;
   }, {});
 
-  useEffect(() => {
+  // State-tracking pattern: sync form state from props during render
+  const [syncedKey, setSyncedKey] = useState<string | null>(null);
+  const currentKey = day ? `day-${day.id}-${day.updatedAt}` : (open ? 'new' : null);
+
+  if (open && currentKey && currentKey !== syncedKey) {
+    setSyncedKey(currentKey);
     if (day) {
       setDate(day.date.split('T')[0]);
       setName(day.name || '');
@@ -74,7 +79,11 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
       setWorkplaceCount(10);
       setMonitorCount(2);
     }
-  }, [day, open]);
+  }
+
+  if (!open && syncedKey !== null) {
+    setSyncedKey(null);
+  }
 
   const handleSave = async () => {
     const serviceIds = selectedServiceId ? [selectedServiceId] : [];
