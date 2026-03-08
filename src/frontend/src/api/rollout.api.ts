@@ -111,6 +111,14 @@ export const updateRolloutDay = async (dayId: number, data: UpdateRolloutDay): P
 };
 
 /**
+ * Update the status of a rollout day (Planning → Ready → Completed)
+ */
+export const updateRolloutDayStatus = async (dayId: number, status: string): Promise<RolloutDay> => {
+  const response = await apiClient.patch<RolloutDay>(`/rollouts/days/${dayId}/status`, { status });
+  return response.data;
+};
+
+/**
  * Delete a rollout day (cascade deletes workplaces)
  */
 export const deleteRolloutDay = async (dayId: number): Promise<void> => {

@@ -11,6 +11,7 @@ public class RolloutDayDto
     public string? Name { get; set; }
     public int DayNumber { get; set; }
     public List<int> ScheduledServiceIds { get; set; } = new();
+    public string Status { get; set; } = "Planning";
     public int TotalWorkplaces { get; set; }
     public int CompletedWorkplaces { get; set; }
     public string? Notes { get; set; }

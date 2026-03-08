@@ -189,6 +189,25 @@ export const useUpdateRolloutDay = (): UseMutationResult<
 };
 
 /**
+ * Update a rollout day's status
+ */
+export const useUpdateRolloutDayStatus = (): UseMutationResult<
+  RolloutDay,
+  Error,
+  { dayId: number; sessionId: number; status: string }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ dayId, status }) => rolloutApi.updateRolloutDayStatus(dayId, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.days(variables.sessionId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.session(variables.sessionId) });
+    },
+  });
+};
+
+/**
  * Delete a rollout day
  */
 export const useDeleteRolloutDay = (): UseMutationResult<

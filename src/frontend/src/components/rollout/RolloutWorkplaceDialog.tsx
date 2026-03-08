@@ -66,8 +66,6 @@ interface MonitorConfig {
   position: 'left' | 'center' | 'right';
   hasCamera: boolean;
   serial?: string;
-  linkedAsset?: Asset | null;
-  assetCode?: string;
 }
 
 const LinkedAssetChip = ({ workplace, equipmentType, index, variant: chipVariant = 'new' }: {
@@ -198,6 +196,10 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [mouseAssetCode, setMouseAssetCode] = useState('');
   const [mouseLinkedAsset, setMouseLinkedAsset] = useState<Asset | null>(null);
 
+  // Separate state for monitor asset codes to prevent focus loss during typing
+  const [monitorAssetCodes, setMonitorAssetCodes] = useState<string[]>(['', '']);
+  const [monitorLinkedAssets, setMonitorLinkedAssets] = useState<(Asset | null)[]>([null, null]);
+
   const createMutation = useCreateRolloutWorkplace();
   const updateMutation = useUpdateRolloutWorkplace();
   const { data: allTemplates } = useAssetTemplates();
@@ -298,9 +300,11 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         hasCamera: p.metadata?.hasCamera === 'true',
         serial: p.metadata?.serialNumber,
         template: findTpl(p.brand, p.model),
-        linkedAsset: p.existingAssetId ? { id: p.existingAssetId, assetCode: p.existingAssetCode || '', assetName: p.existingAssetName || '' } as Asset : null,
-        assetCode: p.existingAssetCode || '',
       })));
+      setMonitorAssetCodes(monitorPlans.map(p => p.existingAssetCode || ''));
+      setMonitorLinkedAssets(monitorPlans.map(p =>
+        p.existingAssetId ? { id: p.existingAssetId, assetCode: p.existingAssetCode || '', assetName: p.existingAssetName || '' } as Asset : null
+      ));
     }
 
     const keyboardPlan = plans.find(p => p.equipmentType === 'keyboard');
@@ -345,6 +349,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       { position: 'left', hasCamera: false, template: null },
       { position: 'right', hasCamera: false, template: null },
     ]);
+    setMonitorAssetCodes(['', '']);
+    setMonitorLinkedAssets([null, null]);
     setKeyboardTemplate(null);
     setMouseTemplate(null);
     setIsRetroactive(false);
@@ -379,6 +385,12 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       newConfigs.push(monitorConfigs[i] || { position: positions[i], hasCamera: false, template: null });
     }
     setMonitorConfigs(newConfigs);
+
+    // Adjust asset code arrays
+    const newCodes = Array.from({ length: count }, (_, i) => monitorAssetCodes[i] || '');
+    const newLinked = Array.from({ length: count }, (_, i) => monitorLinkedAssets[i] || null);
+    setMonitorAssetCodes(newCodes);
+    setMonitorLinkedAssets(newLinked);
   };
 
   const buildAssetPlans = (): AssetPlan[] => {
@@ -430,23 +442,24 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
     // Monitor plans
     monitorConfigs.forEach((config, index) => {
+      const linked = monitorLinkedAssets[index];
       plans.push({
         equipmentType: 'monitor',
-        createNew: !config.linkedAsset && !isRetroactive,
+        createNew: !linked && !isRetroactive,
         requiresSerialNumber: false,
-        requiresQRCode: !config.linkedAsset && !isRetroactive,
+        requiresQRCode: !linked && !isRetroactive,
         status: 'pending',
-        brand: config.linkedAsset?.brand || config.template?.brand,
-        model: config.linkedAsset?.model || config.template?.model,
+        brand: linked?.brand || config.template?.brand,
+        model: linked?.model || config.template?.model,
         metadata: {
           position: config.position,
           hasCamera: config.hasCamera.toString(),
           index: index.toString(),
         },
-        ...(config.linkedAsset && {
-          existingAssetId: config.linkedAsset.id,
-          existingAssetCode: config.linkedAsset.assetCode,
-          existingAssetName: config.linkedAsset.assetName,
+        ...(linked && {
+          existingAssetId: linked.id,
+          existingAssetCode: linked.assetCode,
+          existingAssetName: linked.assetName,
         }),
       });
     });
@@ -1042,10 +1055,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                       {isRetroactive ? (
                         <AssetCodeSearchField
                           label={`AssetCode monitor ${index + 1}`}
-                          value={config.assetCode || ''}
-                          onChange={(v) => updateMonitorConfig(index, 'assetCode', v)}
-                          onAssetLinked={(asset) => updateMonitorConfig(index, 'linkedAsset', asset)}
-                          linkedAsset={config.linkedAsset}
+                          value={monitorAssetCodes[index] || ''}
+                          onChange={(v) => {
+                            setMonitorAssetCodes(prev => { const next = [...prev]; next[index] = v; return next; });
+                          }}
+                          onAssetLinked={(asset) => {
+                            setMonitorLinkedAssets(prev => { const next = [...prev]; next[index] = asset; return next; });
+                          }}
+                          linkedAsset={monitorLinkedAssets[index]}
                           helperText="Scan of typ de assetcode van de bestaande monitor"
                         />
                       ) : (

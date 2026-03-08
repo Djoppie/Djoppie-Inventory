@@ -1,6 +1,21 @@
 namespace DjoppieInventory.Core.Entities;
 
 /// <summary>
+/// Represents the status of a rollout day (planning)
+/// </summary>
+public enum RolloutDayStatus
+{
+    /// <summary>Planning - Day is being prepared</summary>
+    Planning = 0,
+
+    /// <summary>Ready - Day is finalized and ready for execution</summary>
+    Ready = 1,
+
+    /// <summary>Completed - All workplaces on this day are done</summary>
+    Completed = 2
+}
+
+/// <summary>
 /// Represents a specific day within a rollout session with scheduled departments and workplaces.
 /// Each day can have multiple services (departments) scheduled and multiple workplaces to configure.
 /// </summary>
@@ -48,6 +63,11 @@ public class RolloutDay
     /// Number of workplaces that have been completed
     /// </summary>
     public int CompletedWorkplaces { get; set; }
+
+    /// <summary>
+    /// Status of this day: Planning, Ready, or Completed
+    /// </summary>
+    public RolloutDayStatus Status { get; set; } = RolloutDayStatus.Planning;
 
     /// <summary>
     /// Optional notes for this day (e.g., "Start at 8:00 AM", "IT team on-site")

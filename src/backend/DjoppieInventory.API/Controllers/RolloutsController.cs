@@ -264,6 +264,36 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
+    /// Updates the status of a rollout day (Planning → Ready → Completed)
+    /// </summary>
+    [HttpPatch("days/{dayId}/status")]
+    [ProducesResponseType(typeof(RolloutDayDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutDayDto>> UpdateDayStatus(int dayId, [FromBody] UpdateDayStatusDto dto)
+    {
+        var day = await _rolloutRepository.GetDayByIdAsync(dayId);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {dayId} not found" });
+        }
+
+        if (!Enum.TryParse<RolloutDayStatus>(dto.Status, true, out var newStatus))
+        {
+            return BadRequest(new { message = $"Invalid status '{dto.Status}'. Valid values: Planning, Ready, Completed" });
+        }
+
+        day.Status = newStatus;
+        day.UpdatedAt = DateTime.UtcNow;
+
+        var updatedDay = await _rolloutRepository.UpdateDayAsync(day);
+        var dayDto = MapToDayDto(updatedDay);
+
+        _logger.LogInformation("Day {DayId} status changed to {Status}", dayId, newStatus);
+        return Ok(dayDto);
+    }
+
+    /// <summary>
     /// Deletes a rollout day (cascade deletes workplaces)
     /// </summary>
     [HttpDelete("days/{dayId}")]
@@ -1052,6 +1082,7 @@ public class RolloutsController : ControllerBase
             Name = day.Name,
             DayNumber = day.DayNumber,
             ScheduledServiceIds = scheduledServiceIds,
+            Status = day.Status.ToString(),
             TotalWorkplaces = day.TotalWorkplaces,
             CompletedWorkplaces = day.CompletedWorkplaces,
             Notes = day.Notes,

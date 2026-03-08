@@ -42,6 +42,7 @@ import {
   useNewAssetsForDay,
   useDeleteRolloutWorkplace,
   useDeleteRolloutDay,
+  useUpdateRolloutDayStatus,
 } from '../hooks/useRollout';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import { getStatusColor } from '../api/rollout.api';
@@ -51,7 +52,7 @@ import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
 import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
 
-const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
 
 // Service color palette — distinct pastel colors for calendar chips
 const SERVICE_COLORS = [
@@ -102,9 +103,11 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
   // Build calendar grid
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
-  // Monday-based: 0=Mon, 6=Sun
-  const startOffset = (firstDayOfMonth.getDay() + 6) % 7;
   const totalDays = lastDayOfMonth.getDate();
+  // Find offset for the first weekday of the month (Mon=0, Tue=1, ..., Fri=4)
+  // If 1st falls on weekend, offset is 0 (first weekday starts at column 0)
+  const firstDayWeekday = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0..Sun=6
+  const startOffset = firstDayWeekday <= 4 ? firstDayWeekday : 0;
 
   // Group plannings by date string
   const planningsByDate = useMemo(() => {
@@ -133,11 +136,15 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
     cells.push({ date: null, dateKey: '', plannings: [] });
   }
   for (let d = 1; d <= totalDays; d++) {
+    const jsDate = new Date(year, month, d);
+    const dayOfWeek = jsDate.getDay();
+    // Skip Saturday (6) and Sunday (0)
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     cells.push({ date: d, dateKey, plannings: planningsByDate[dateKey] || [] });
   }
-  // Pad to complete last week
-  while (cells.length % 7 !== 0) {
+  // Pad to complete last week row
+  while (cells.length % 5 !== 0) {
     cells.push({ date: null, dateKey: '', plannings: [] });
   }
 
@@ -165,15 +172,15 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
       </Box>
 
       {/* Weekday headers */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5, mb: 0.5 }}>
-        {WEEKDAYS.map((wd, idx) => (
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0.5, mb: 0.5 }}>
+        {WEEKDAYS.map((wd) => (
           <Typography
             key={wd}
             variant="caption"
             sx={{
               textAlign: 'center',
               fontWeight: 700,
-              color: idx >= 5 ? 'text.disabled' : 'text.primary',
+              color: 'text.primary',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               fontSize: '0.75rem',
@@ -186,7 +193,7 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
       </Box>
 
       {/* Calendar grid */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0.5 }}>
         {cells.map((cell, i) => {
           const isToday = cell.date !== null &&
             new Date().getFullYear() === year &&
@@ -194,13 +201,12 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
             new Date().getDate() === cell.date;
           const hasPlannings = cell.plannings.length > 0;
           const inPeriod = cell.dateKey ? isInPeriod(cell.dateKey) : false;
-          const isWeekend = i % 7 >= 5;
 
           return (
             <Box
               key={i}
               sx={{
-                minHeight: 72,
+                minHeight: { xs: 48, sm: 64, md: 72 },
                 borderRadius: 1,
                 border: '1px solid',
                 borderColor: isToday
@@ -212,15 +218,15 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
                       : 'divider',
                 bgcolor: cell.date === null
                   ? 'action.hover'
-                  : isWeekend
-                    ? 'rgba(147, 51, 234, 0.07)'
-                    : hasPlannings
-                      ? 'rgba(255, 119, 0, 0.08)'
-                      : inPeriod
-                        ? 'rgba(255, 119, 0, 0.03)'
-                        : 'background.paper',
+                  : hasPlannings
+                    ? 'rgba(255, 119, 0, 0.08)'
+                    : inPeriod
+                      ? 'rgba(255, 119, 0, 0.03)'
+                      : 'background.paper',
                 cursor: cell.date !== null ? 'pointer' : 'default',
                 p: 0.5,
+                overflow: 'hidden',
+                minWidth: 0,
                 opacity: cell.date === null ? 0.4 : 1,
                 ...(isToday && {
                   boxShadow: '0 0 0 2px #FF7700',
@@ -229,9 +235,7 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
                   borderLeft: '3px solid rgba(255, 119, 0, 0.25)',
                 }),
                 '&:hover': cell.date !== null ? {
-                  bgcolor: isWeekend
-                    ? 'rgba(147, 51, 234, 0.12)'
-                    : 'rgba(255, 119, 0, 0.06)',
+                  bgcolor: 'rgba(255, 119, 0, 0.06)',
                 } : {},
               }}
               onClick={() => cell.date !== null && cell.dateKey && onDateClick?.(cell.dateKey)}
@@ -247,12 +251,12 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
                       textAlign: 'right',
                       lineHeight: 1,
                       mb: 0.5,
-                      fontSize: '0.8rem',
+                      fontSize: { xs: '0.7rem', sm: '0.8rem' },
                     }}
                   >
                     {cell.date}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }}>
                     {cell.plannings.map((p) => {
                       const isComplete = p.completedWorkplaces === p.totalWorkplaces && p.totalWorkplaces > 0;
                       const serviceId = p.scheduledServiceIds?.[0] || p.id;
@@ -260,19 +264,20 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
                       return (
                       <Tooltip key={p.id} title={`${p.name || `Planning ${p.dayNumber}`} — ${p.completedWorkplaces}/${p.totalWorkplaces} werkplekken`}>
                         <Box
-                          onClick={() => onDayClick?.(p)}
+                          onClick={(e) => { e.stopPropagation(); onDayClick?.(p); }}
                           sx={{
                             height: 22,
-                            fontSize: '0.7rem',
+                            fontSize: { xs: '0.6rem', sm: '0.7rem' },
                             fontWeight: 700,
                             cursor: 'pointer',
                             borderRadius: '4px',
                             px: 0.75,
-                            display: 'flex',
-                            alignItems: 'center',
+                            display: 'block',
+                            lineHeight: '22px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            minWidth: 0,
                             bgcolor: isComplete ? '#16a34a' : svcColor.bg,
                             color: svcColor.text,
                             '&:hover': {
@@ -462,6 +467,7 @@ const RolloutPlannerPage = () => {
   const createMutation = useCreateRolloutSession();
   const updateMutation = useUpdateRolloutSession();
   const deleteDayMutation = useDeleteRolloutDay();
+  const dayStatusMutation = useUpdateRolloutDayStatus();
 
   // Load session data into form (only once when data first arrives)
   const [formSyncedId, setFormSyncedId] = useState<number | null>(null);
@@ -578,6 +584,14 @@ const RolloutPlannerPage = () => {
     setBulkPrintDayId(undefined);
     setBulkPrintAssetIds(undefined);
     setBulkPrintDialogOpen(false);
+  };
+
+  const handleDayStatus = async (day: RolloutDay, newStatus: string) => {
+    await dayStatusMutation.mutateAsync({
+      dayId: day.id,
+      sessionId: Number(id),
+      status: newStatus,
+    });
   };
 
   if (sessionLoading || daysLoading) {
@@ -797,10 +811,58 @@ const RolloutPlannerPage = () => {
                         <Chip
                           label={`${day.completedWorkplaces}/${day.totalWorkplaces} werkplekken`}
                           size="small"
-                          color={day.completedWorkplaces === day.totalWorkplaces ? 'success' : 'default'}
+                          color={day.completedWorkplaces === day.totalWorkplaces && day.totalWorkplaces > 0 ? 'success' : 'default'}
+                        />
+                        <Chip
+                          label={day.status === 'Ready' ? 'Gereed' : day.status === 'Completed' ? 'Voltooid' : 'Planning'}
+                          size="small"
+                          variant={day.status === 'Planning' ? 'outlined' : 'filled'}
+                          color={day.status === 'Ready' ? 'success' : day.status === 'Completed' ? 'info' : 'default'}
                         />
                       </Box>
                     </AccordionSummary>
+                    {day.status === 'Planning' && day.totalWorkplaces > 0 && (
+                      <Tooltip title="Markeer planning als gereed voor uitvoering">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDayStatus(day, 'Ready');
+                          }}
+                          disabled={dayStatusMutation.isPending}
+                          sx={{
+                            color: 'rgba(22, 163, 74, 0.7)',
+                            '&:hover': {
+                              color: '#16a34a',
+                              bgcolor: 'rgba(22, 163, 74, 0.08)',
+                            },
+                          }}
+                        >
+                          <CheckCircleOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {day.status === 'Ready' && (
+                      <Tooltip title="Terugzetten naar planning">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDayStatus(day, 'Planning');
+                          }}
+                          disabled={dayStatusMutation.isPending}
+                          sx={{
+                            color: 'rgba(234, 179, 8, 0.7)',
+                            '&:hover': {
+                              color: '#eab308',
+                              bgcolor: 'rgba(234, 179, 8, 0.08)',
+                            },
+                          }}
+                        >
+                          <ChevronLeftIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <IconButton
                       size="small"
                       onClick={(e) => {
