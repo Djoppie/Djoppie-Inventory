@@ -49,7 +49,7 @@ import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
-import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace } from '../types/rollout';
+import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
 
 const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
 
@@ -535,7 +535,7 @@ const RolloutPlannerPage = () => {
     await deleteDayMutation.mutateAsync({ dayId: day.id, sessionId: Number(id) });
   };
 
-  const handleSetStatus = async (newStatus: string) => {
+  const handleSetStatus = async (newStatus: RolloutSessionStatus) => {
     if (!session) return;
     try {
       await updateMutation.mutateAsync({
