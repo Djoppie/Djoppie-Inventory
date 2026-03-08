@@ -42,6 +42,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
   const [createBulk, setCreateBulk] = useState(true);
   const [workplaceCount, setWorkplaceCount] = useState(10);
   const [monitorCount, setMonitorCount] = useState(2);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: services } = useQuery({
     queryKey: ['admin', 'services'],
@@ -86,48 +87,54 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
   }
 
   const handleSave = async () => {
-    const serviceIds = selectedServiceId ? [selectedServiceId] : [];
+    setSaveError(null);
+    try {
+      const serviceIds = selectedServiceId ? [selectedServiceId] : [];
 
-    if (isEditMode && day) {
-      const updateData: UpdateRolloutDay = {
-        date,
-        name: name || undefined,
-        dayNumber: day.dayNumber,
-        scheduledServiceIds: serviceIds,
-      };
-      await updateMutation.mutateAsync({ dayId: day.id, data: updateData });
-    } else {
-      const createData: CreateRolloutDay = {
-        rolloutSessionId: sessionId,
-        date,
-        name: name || undefined,
-        dayNumber: dayNumber || 1,
-        scheduledServiceIds: serviceIds,
-      };
-      const createdDay = await createMutation.mutateAsync({ sessionId, data: createData });
+      if (isEditMode && day) {
+        const updateData: UpdateRolloutDay = {
+          date,
+          name: name || undefined,
+          dayNumber: day.dayNumber,
+          scheduledServiceIds: serviceIds,
+        };
+        await updateMutation.mutateAsync({ dayId: day.id, data: updateData });
+      } else {
+        const createData: CreateRolloutDay = {
+          rolloutSessionId: sessionId,
+          date,
+          name: name || undefined,
+          dayNumber: dayNumber || 1,
+          scheduledServiceIds: serviceIds,
+        };
+        const createdDay = await createMutation.mutateAsync({ sessionId, data: createData });
 
-      // Bulk create workplaces if enabled
-      if (createBulk && workplaceCount > 0 && selectedServiceId && createdDay) {
-        await bulkCreateMutation.mutateAsync({
-          dayId: createdDay.id,
-          data: {
-            count: workplaceCount,
-            serviceId: selectedServiceId,
-            isLaptopSetup: true,
-            assetPlanConfig: {
-              includeLaptop: true,
-              includeDesktop: false,
-              includeDocking: true,
-              monitorCount,
-              includeKeyboard: true,
-              includeMouse: true,
+        // Bulk create workplaces if enabled
+        if (createBulk && workplaceCount > 0 && selectedServiceId && createdDay) {
+          await bulkCreateMutation.mutateAsync({
+            dayId: createdDay.id,
+            data: {
+              count: workplaceCount,
+              serviceId: selectedServiceId,
+              isLaptopSetup: true,
+              assetPlanConfig: {
+                includeLaptop: true,
+                includeDesktop: false,
+                includeDocking: true,
+                monitorCount,
+                includeKeyboard: true,
+                includeMouse: true,
+              },
             },
-          },
-        });
+          });
+        }
       }
-    }
 
-    handleClose();
+      handleClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Er is een fout opgetreden bij het opslaan';
+      setSaveError(message);
+    }
   };
 
   const handleClose = () => {
@@ -137,6 +144,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
     setCreateBulk(true);
     setWorkplaceCount(10);
     setMonitorCount(2);
+    setSaveError(null);
     onClose();
   };
 
@@ -148,6 +156,11 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
         {isEditMode ? 'Planning Bewerken' : 'Nieuwe Planning Toevoegen'}
       </DialogTitle>
       <DialogContent>
+        {saveError && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSaveError(null)}>
+            {saveError}
+          </Alert>
+        )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
           <TextField
             label="Datum"

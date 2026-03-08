@@ -20,11 +20,18 @@ import {
   useTheme,
   Autocomplete,
   CircularProgress,
+  Switch,
+  Alert,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import LinkIcon from '@mui/icons-material/Link';
+import SearchIcon from '@mui/icons-material/Search';
+import HistoryIcon from '@mui/icons-material/History';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import DockIcon from '@mui/icons-material/Dock';
@@ -43,6 +50,7 @@ import type {
   UpdateRolloutWorkplace,
   AssetPlan,
 } from '../../types/rollout';
+import { getAssetByCode } from '../../api/assets.api';
 import type { Asset, AssetTemplate } from '../../types/asset.types';
 
 interface RolloutWorkplaceDialogProps {
@@ -58,6 +66,8 @@ interface MonitorConfig {
   position: 'left' | 'center' | 'right';
   hasCamera: boolean;
   serial?: string;
+  linkedAsset?: Asset | null;
+  assetCode?: string;
 }
 
 const LinkedAssetChip = ({ workplace, equipmentType, index, variant: chipVariant = 'new' }: {
@@ -83,6 +93,68 @@ const LinkedAssetChip = ({ workplace, equipmentType, index, variant: chipVariant
       variant="outlined"
       sx={{ mt: 1 }}
     />
+  );
+};
+
+const AssetCodeSearchField = ({ label, value, onChange, onAssetLinked, linkedAsset, helperText }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onAssetLinked: (asset: Asset | null) => void;
+  linkedAsset?: Asset | null;
+  helperText?: string;
+}) => {
+  const [searching, setSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    if (!value.trim()) return;
+    setSearching(true);
+    setError(null);
+    try {
+      const asset = await getAssetByCode(value.trim().toUpperCase());
+      onAssetLinked(asset);
+    } catch {
+      onAssetLinked(null);
+      setError('Asset niet gevonden met deze code');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  return (
+    <Box>
+      <TextField
+        fullWidth
+        label={label}
+        value={value}
+        onChange={(e) => { onChange(e.target.value); onAssetLinked(null); setError(null); }}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
+        helperText={error || helperText}
+        error={!!error}
+        size="small"
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <QrCodeScannerIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
+            </InputAdornment>
+          ),
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton onClick={handleSearch} disabled={!value.trim() || searching} edge="end" size="small">
+                {searching ? <CircularProgress size={18} /> : <SearchIcon />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+      {linkedAsset && (
+        <Alert severity="success" sx={{ mt: 1 }}>
+          <strong>Gekoppeld:</strong> {linkedAsset.assetCode} — {linkedAsset.assetName}
+          {linkedAsset.brand && linkedAsset.model && <span> ({linkedAsset.brand} {linkedAsset.model})</span>}
+        </Alert>
+      )}
+    </Box>
   );
 };
 
@@ -116,6 +188,15 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   // Peripherals state
   const [keyboardTemplate, setKeyboardTemplate] = useState<AssetTemplate | null>(null);
   const [mouseTemplate, setMouseTemplate] = useState<AssetTemplate | null>(null);
+
+  // Retroactive registration state
+  const [isRetroactive, setIsRetroactive] = useState(false);
+  const [dockingAssetCode, setDockingAssetCode] = useState('');
+  const [dockingLinkedAsset, setDockingLinkedAsset] = useState<Asset | null>(null);
+  const [keyboardAssetCode, setKeyboardAssetCode] = useState('');
+  const [keyboardLinkedAsset, setKeyboardLinkedAsset] = useState<Asset | null>(null);
+  const [mouseAssetCode, setMouseAssetCode] = useState('');
+  const [mouseLinkedAsset, setMouseLinkedAsset] = useState<Asset | null>(null);
 
   const createMutation = useCreateRolloutWorkplace();
   const updateMutation = useUpdateRolloutWorkplace();
@@ -153,6 +234,15 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
   if (open && currentKey && currentKey !== syncedKey) {
     setSyncedKey(currentKey);
+
+    // Reset retroactive states (will be populated from plan data below if applicable)
+    setIsRetroactive(false);
+    setDockingAssetCode('');
+    setDockingLinkedAsset(null);
+    setKeyboardAssetCode('');
+    setKeyboardLinkedAsset(null);
+    setMouseAssetCode('');
+    setMouseLinkedAsset(null);
 
     const findTpl = (brand?: string, model?: string): AssetTemplate | null => {
       if (!allTemplates || !brand) return null;
@@ -194,6 +284,10 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     if (dockingPlan) {
       setDockingSerial(dockingPlan.metadata?.serialNumber || '');
       setDockingTemplate(findTpl(dockingPlan.brand, dockingPlan.model));
+      if (dockingPlan.existingAssetId) {
+        setDockingAssetCode(dockingPlan.existingAssetCode || '');
+        setDockingLinkedAsset({ id: dockingPlan.existingAssetId, assetCode: dockingPlan.existingAssetCode || '', assetName: dockingPlan.existingAssetName || '' } as Asset);
+      }
     }
 
     const monitorPlans = plans.filter(p => p.equipmentType === 'monitor');
@@ -204,18 +298,32 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         hasCamera: p.metadata?.hasCamera === 'true',
         serial: p.metadata?.serialNumber,
         template: findTpl(p.brand, p.model),
+        linkedAsset: p.existingAssetId ? { id: p.existingAssetId, assetCode: p.existingAssetCode || '', assetName: p.existingAssetName || '' } as Asset : null,
+        assetCode: p.existingAssetCode || '',
       })));
     }
 
     const keyboardPlan = plans.find(p => p.equipmentType === 'keyboard');
     if (keyboardPlan) {
       setKeyboardTemplate(findTpl(keyboardPlan.brand, keyboardPlan.model));
+      if (keyboardPlan.existingAssetId) {
+        setKeyboardAssetCode(keyboardPlan.existingAssetCode || '');
+        setKeyboardLinkedAsset({ id: keyboardPlan.existingAssetId, assetCode: keyboardPlan.existingAssetCode || '', assetName: keyboardPlan.existingAssetName || '' } as Asset);
+      }
     }
 
     const mousePlan = plans.find(p => p.equipmentType === 'mouse');
     if (mousePlan) {
       setMouseTemplate(findTpl(mousePlan.brand, mousePlan.model));
+      if (mousePlan.existingAssetId) {
+        setMouseAssetCode(mousePlan.existingAssetCode || '');
+        setMouseLinkedAsset({ id: mousePlan.existingAssetId, assetCode: mousePlan.existingAssetCode || '', assetName: mousePlan.existingAssetName || '' } as Asset);
+      }
     }
+
+    // Detect retroactive mode: non-computer plans with linked assets
+    const nonComputerPlans = plans.filter(p => p.equipmentType !== 'laptop' && p.equipmentType !== 'desktop');
+    setIsRetroactive(nonComputerPlans.some(p => p.existingAssetId && !p.createNew));
   }
 
   // Reset when dialog opens without a workplace (new mode)
@@ -239,6 +347,13 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     ]);
     setKeyboardTemplate(null);
     setMouseTemplate(null);
+    setIsRetroactive(false);
+    setDockingAssetCode('');
+    setDockingLinkedAsset(null);
+    setKeyboardAssetCode('');
+    setKeyboardLinkedAsset(null);
+    setMouseAssetCode('');
+    setMouseLinkedAsset(null);
   }
 
   // Reset synced key when dialog closes
@@ -293,18 +408,23 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     });
 
     // Docking plan
-    if (dockingTemplate || dockingSerial) {
+    if (dockingTemplate || dockingSerial || dockingLinkedAsset) {
       plans.push({
         equipmentType: 'docking',
-        createNew: true,
-        requiresSerialNumber: true,
-        requiresQRCode: true,
+        createNew: !dockingLinkedAsset && !isRetroactive,
+        requiresSerialNumber: !isRetroactive,
+        requiresQRCode: !dockingLinkedAsset && !isRetroactive,
         status: 'pending',
-        brand: dockingTemplate?.brand,
-        model: dockingTemplate?.model,
+        brand: dockingLinkedAsset?.brand || dockingTemplate?.brand,
+        model: dockingLinkedAsset?.model || dockingTemplate?.model,
         metadata: {
           serialNumber: dockingSerial,
         },
+        ...(dockingLinkedAsset && {
+          existingAssetId: dockingLinkedAsset.id,
+          existingAssetCode: dockingLinkedAsset.assetCode,
+          existingAssetName: dockingLinkedAsset.assetName,
+        }),
       });
     }
 
@@ -312,45 +432,60 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     monitorConfigs.forEach((config, index) => {
       plans.push({
         equipmentType: 'monitor',
-        createNew: true,
+        createNew: !config.linkedAsset && !isRetroactive,
         requiresSerialNumber: false,
-        requiresQRCode: true,
+        requiresQRCode: !config.linkedAsset && !isRetroactive,
         status: 'pending',
-        brand: config.template?.brand,
-        model: config.template?.model,
+        brand: config.linkedAsset?.brand || config.template?.brand,
+        model: config.linkedAsset?.model || config.template?.model,
         metadata: {
           position: config.position,
           hasCamera: config.hasCamera.toString(),
           index: index.toString(),
         },
+        ...(config.linkedAsset && {
+          existingAssetId: config.linkedAsset.id,
+          existingAssetCode: config.linkedAsset.assetCode,
+          existingAssetName: config.linkedAsset.assetName,
+        }),
       });
     });
 
     // Keyboard plan
-    if (keyboardTemplate) {
+    if (keyboardTemplate || keyboardLinkedAsset) {
       plans.push({
         equipmentType: 'keyboard',
-        createNew: true,
+        createNew: !keyboardLinkedAsset && !isRetroactive,
         requiresSerialNumber: false,
-        requiresQRCode: false,
+        requiresQRCode: !keyboardLinkedAsset && !isRetroactive,
         status: 'pending',
-        brand: keyboardTemplate.brand,
-        model: keyboardTemplate.model,
+        brand: keyboardLinkedAsset?.brand || keyboardTemplate?.brand,
+        model: keyboardLinkedAsset?.model || keyboardTemplate?.model,
         metadata: {},
+        ...(keyboardLinkedAsset && {
+          existingAssetId: keyboardLinkedAsset.id,
+          existingAssetCode: keyboardLinkedAsset.assetCode,
+          existingAssetName: keyboardLinkedAsset.assetName,
+        }),
       });
     }
 
     // Mouse plan
-    if (mouseTemplate) {
+    if (mouseTemplate || mouseLinkedAsset) {
       plans.push({
         equipmentType: 'mouse',
-        createNew: true,
+        createNew: !mouseLinkedAsset && !isRetroactive,
         requiresSerialNumber: false,
-        requiresQRCode: false,
+        requiresQRCode: !mouseLinkedAsset && !isRetroactive,
         status: 'pending',
-        brand: mouseTemplate.brand,
-        model: mouseTemplate.model,
+        brand: mouseLinkedAsset?.brand || mouseTemplate?.brand,
+        model: mouseLinkedAsset?.model || mouseTemplate?.model,
         metadata: {},
+        ...(mouseLinkedAsset && {
+          existingAssetId: mouseLinkedAsset.id,
+          existingAssetCode: mouseLinkedAsset.assetCode,
+          existingAssetName: mouseLinkedAsset.assetName,
+        }),
       });
     }
 
@@ -495,6 +630,39 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
       <DialogContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Retroactive registration toggle */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 2,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: isRetroactive ? 'warning.main' : 'divider',
+              bgcolor: isRetroactive
+                ? (isDark ? 'rgba(255, 152, 0, 0.08)' : 'rgba(255, 152, 0, 0.04)')
+                : 'transparent',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <HistoryIcon sx={{ color: isRetroactive ? 'warning.main' : 'text.secondary', fontSize: '1.3rem' }} />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" fontWeight={600}>
+                Retroactieve registratie
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Link bestaande assets (scan QR-code) — geen nieuwe assets of QR-codes aanmaken
+              </Typography>
+            </Box>
+            <Switch
+              checked={isRetroactive}
+              onChange={(e) => setIsRetroactive(e.target.checked)}
+              color="warning"
+              size="small"
+            />
+          </Box>
+
           {/* Section 1: User Information */}
           <Accordion defaultExpanded sx={accordionSx}>
             <AccordionSummary
@@ -789,20 +957,33 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TemplateSelector
-                  equipmentType="docking"
-                  value={dockingTemplate}
-                  onChange={setDockingTemplate}
-                  required
-                />
-                <TextField
-                  label="Serienummer"
-                  value={dockingSerial}
-                  onChange={(e) => setDockingSerial(e.target.value)}
-                  required
-                  fullWidth
-                  helperText="Serienummer van het docking station"
-                />
+                {isRetroactive ? (
+                  <AssetCodeSearchField
+                    label="AssetCode docking station"
+                    value={dockingAssetCode}
+                    onChange={setDockingAssetCode}
+                    onAssetLinked={setDockingLinkedAsset}
+                    linkedAsset={dockingLinkedAsset}
+                    helperText="Scan of typ de assetcode van het bestaande docking station"
+                  />
+                ) : (
+                  <>
+                    <TemplateSelector
+                      equipmentType="docking"
+                      value={dockingTemplate}
+                      onChange={setDockingTemplate}
+                      required
+                    />
+                    <TextField
+                      label="Serienummer"
+                      value={dockingSerial}
+                      onChange={(e) => setDockingSerial(e.target.value)}
+                      required
+                      fullWidth
+                      helperText="Serienummer van het docking station"
+                    />
+                  </>
+                )}
                 <LinkedAssetChip workplace={workplace} equipmentType="docking" />
               </Box>
             </AccordionDetails>
@@ -858,11 +1039,22 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     </Stack>
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <TemplateSelector
-                        equipmentType="monitor"
-                        value={config.template}
-                        onChange={(template) => updateMonitorConfig(index, 'template', template)}
-                      />
+                      {isRetroactive ? (
+                        <AssetCodeSearchField
+                          label={`AssetCode monitor ${index + 1}`}
+                          value={config.assetCode || ''}
+                          onChange={(v) => updateMonitorConfig(index, 'assetCode', v)}
+                          onAssetLinked={(asset) => updateMonitorConfig(index, 'linkedAsset', asset)}
+                          linkedAsset={config.linkedAsset}
+                          helperText="Scan of typ de assetcode van de bestaande monitor"
+                        />
+                      ) : (
+                        <TemplateSelector
+                          equipmentType="monitor"
+                          value={config.template}
+                          onChange={(template) => updateMonitorConfig(index, 'template', template)}
+                        />
+                      )}
 
                       <Box>
                         <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -928,18 +1120,40 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TemplateSelector
-                  equipmentType="keyboard"
-                  value={keyboardTemplate}
-                  onChange={setKeyboardTemplate}
-                />
+                {isRetroactive ? (
+                  <AssetCodeSearchField
+                    label="AssetCode toetsenbord"
+                    value={keyboardAssetCode}
+                    onChange={setKeyboardAssetCode}
+                    onAssetLinked={setKeyboardLinkedAsset}
+                    linkedAsset={keyboardLinkedAsset}
+                    helperText="Scan of typ de assetcode van het bestaande toetsenbord"
+                  />
+                ) : (
+                  <TemplateSelector
+                    equipmentType="keyboard"
+                    value={keyboardTemplate}
+                    onChange={setKeyboardTemplate}
+                  />
+                )}
                 <LinkedAssetChip workplace={workplace} equipmentType="keyboard" />
 
-                <TemplateSelector
-                  equipmentType="mouse"
-                  value={mouseTemplate}
-                  onChange={setMouseTemplate}
-                />
+                {isRetroactive ? (
+                  <AssetCodeSearchField
+                    label="AssetCode muis"
+                    value={mouseAssetCode}
+                    onChange={setMouseAssetCode}
+                    onAssetLinked={setMouseLinkedAsset}
+                    linkedAsset={mouseLinkedAsset}
+                    helperText="Scan of typ de assetcode van de bestaande muis"
+                  />
+                ) : (
+                  <TemplateSelector
+                    equipmentType="mouse"
+                    value={mouseTemplate}
+                    onChange={setMouseTemplate}
+                  />
+                )}
                 <LinkedAssetChip workplace={workplace} equipmentType="mouse" />
               </Box>
             </AccordionDetails>

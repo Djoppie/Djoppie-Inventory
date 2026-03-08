@@ -96,13 +96,11 @@ const UserAutocomplete = ({
   };
 
   const handleChange = (_event: React.SyntheticEvent, newValue: GraphUser | string | null) => {
-    console.log('[UserAutocomplete] handleChange:', { newValue, type: typeof newValue });
 
     if (typeof newValue === 'string') {
       // User typed a custom value (free text)
       if (newValue.trim() === '') {
         // Empty string means clear
-        console.log('[UserAutocomplete] Clearing (empty string)');
         setSelectedUser(null);
         setInputValue('');
         onChange('', null);
@@ -118,7 +116,6 @@ const UserAutocomplete = ({
       onChange(newValue.displayName, newValue);
     } else {
       // Cleared selection (null)
-      console.log('[UserAutocomplete] Clearing (null value)');
       setSelectedUser(null);
       setInputValue('');
       onChange('', null);

@@ -80,6 +80,18 @@ public class AssetRepository : IAssetRepository
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
+    public async Task<IEnumerable<Asset>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        if (!idList.Any()) return Enumerable.Empty<Asset>();
+
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Where(a => idList.Contains(a.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<Asset?> GetByAssetCodeAsync(string assetCode, CancellationToken cancellationToken = default)
     {
         // Case-insensitive comparison - relies on database collation (SQL Server default: SQL_Latin1_General_CP1_CI_AS)

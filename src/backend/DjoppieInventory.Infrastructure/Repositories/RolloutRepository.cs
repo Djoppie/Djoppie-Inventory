@@ -4,6 +4,7 @@ using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DjoppieInventory.Infrastructure.Repositories;
 
@@ -15,11 +16,13 @@ public class RolloutRepository : IRolloutRepository
 {
     private readonly ApplicationDbContext _context;
     private readonly IAssetRepository _assetRepository;
+    private readonly IAssetCodeGenerator _assetCodeGenerator;
 
-    public RolloutRepository(ApplicationDbContext context, IAssetRepository assetRepository)
+    public RolloutRepository(ApplicationDbContext context, IAssetRepository assetRepository, IAssetCodeGenerator assetCodeGenerator)
     {
         _context = context;
         _assetRepository = assetRepository;
+        _assetCodeGenerator = assetCodeGenerator;
     }
 
     // ===== RolloutSession Operations =====
@@ -386,14 +389,15 @@ public class RolloutRepository : IRolloutRepository
                 continue; // Skip if asset type not found
             }
 
-            // Build AssetName following pattern: assettype_merk_model
-            var assetName = BuildAssetName(plan.EquipmentType, plan.Brand, plan.Model);
+            // Build AssetName: DOCK-serial / MON-serial, or type_brand_model for others
+            var serial = hasSerial ? plan.Metadata!["serialNumber"] : null;
+            var assetName = BuildAssetName(plan.EquipmentType, plan.Brand, plan.Model, serial);
 
             // Create the asset
             var asset = new Asset
             {
                 AssetTypeId = assetType.Id,
-                Category = assetType.Category?.Name ?? "Computing",
+                Category = assetType.Name,
                 AssetName = assetName,
                 Brand = plan.Brand,
                 Model = plan.Model,
@@ -405,10 +409,9 @@ public class RolloutRepository : IRolloutRepository
                 UpdatedAt = DateTime.UtcNow
             };
 
-            // Generate AssetCode
-            var prefix = $"{assetType.Code}-{DateTime.UtcNow:yy}-{(string.IsNullOrEmpty(plan.Brand) ? "UNK" : plan.Brand.ToUpper().Substring(0, Math.Min(3, plan.Brand.Length)))}";
-            var nextNumber = await _assetRepository.GetNextAssetNumberAsync(prefix, false);
-            asset.AssetCode = $"{prefix}-{nextNumber:D5}";
+            // Generate AssetCode using centralized service (4-char brand code, proper numbering)
+            asset.AssetCode = await _assetCodeGenerator.GenerateCodeAsync(
+                assetType.Id, plan.Brand, DateTime.UtcNow.Year, false);
 
             // Create the asset
             var createdAsset = await _assetRepository.CreateAsync(asset);
@@ -467,10 +470,26 @@ public class RolloutRepository : IRolloutRepository
     }
 
     /// <summary>
-    /// Builds AssetName following pattern: assettype_merk_model (lowercase with underscores)
+    /// Builds AssetName based on equipment type.
+    /// DOCK/MON with serial: "DOCK-{serial}" or "MON-{serial}"
+    /// Others or without serial: "type_brand_model" (lowercase with underscores)
     /// </summary>
-    private static string BuildAssetName(string equipmentType, string? brand, string? model)
+    private static string BuildAssetName(string equipmentType, string? brand, string? model, string? serialNumber = null)
     {
+        var typeCode = equipmentType.ToUpper() switch
+        {
+            "DOCKING" => "DOCK",
+            "MONITOR" => "MON",
+            _ => null
+        };
+
+        // DOCK and MON use TYPE-serial format when serial is available
+        if (typeCode != null && !string.IsNullOrEmpty(serialNumber))
+        {
+            return $"{typeCode}-{serialNumber}";
+        }
+
+        // Fallback: type_brand_model
         var parts = new List<string> { equipmentType.ToLower() };
 
         if (!string.IsNullOrEmpty(brand))
@@ -486,111 +505,15 @@ public class RolloutRepository : IRolloutRepository
         return string.Join("_", parts);
     }
 
-    /// <summary>
-    /// Generates standard asset plans based on configuration
-    /// </summary>
-    private static List<AssetPlanDto> GenerateStandardAssetPlans(StandardAssetPlanConfig config)
+    // ===== Transaction Support =====
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        var plans = new List<AssetPlanDto>();
+        return await _context.Database.BeginTransactionAsync(cancellationToken);
+    }
 
-        // Laptop
-        if (config.IncludeLaptop)
-        {
-            plans.Add(new AssetPlanDto
-            {
-                EquipmentType = "laptop",
-                CreateNew = false,
-                RequiresSerialNumber = true,
-                RequiresQRCode = false, // Existing asset (swap)
-                Status = "pending",
-                Metadata = new Dictionary<string, string>()
-            });
-        }
-
-        // Desktop
-        if (config.IncludeDesktop)
-        {
-            plans.Add(new AssetPlanDto
-            {
-                EquipmentType = "desktop",
-                CreateNew = false,
-                RequiresSerialNumber = true,
-                RequiresQRCode = false, // Existing asset (swap)
-                Status = "pending",
-                Metadata = new Dictionary<string, string>()
-            });
-        }
-
-        // Docking Station
-        if (config.IncludeDocking)
-        {
-            plans.Add(new AssetPlanDto
-            {
-                EquipmentType = "docking",
-                CreateNew = false,
-                RequiresSerialNumber = true,
-                RequiresQRCode = true, // New asset
-                Status = "pending",
-                Metadata = new Dictionary<string, string>()
-            });
-        }
-
-        // Monitors
-        for (int i = 0; i < config.MonitorCount; i++)
-        {
-            var position = i switch
-            {
-                0 when config.MonitorCount == 1 => "center",
-                0 when config.MonitorCount >= 2 => "left",
-                1 when config.MonitorCount == 2 => "right",
-                1 when config.MonitorCount == 3 => "center",
-                2 => "right",
-                _ => "center"
-            };
-
-            plans.Add(new AssetPlanDto
-            {
-                EquipmentType = "monitor",
-                CreateNew = false,
-                RequiresSerialNumber = false,
-                RequiresQRCode = true, // New asset
-                Status = "pending",
-                Metadata = new Dictionary<string, string>
-                {
-                    { "position", position },
-                    { "hasCamera", "false" }
-                }
-            });
-        }
-
-        // Keyboard
-        if (config.IncludeKeyboard)
-        {
-            plans.Add(new AssetPlanDto
-            {
-                EquipmentType = "keyboard",
-                CreateNew = false,
-                RequiresSerialNumber = false,
-                RequiresQRCode = true,
-                Status = "pending",
-                Metadata = new Dictionary<string, string>()
-            });
-        }
-
-        // Mouse
-        if (config.IncludeMouse)
-        {
-            plans.Add(new AssetPlanDto
-            {
-                EquipmentType = "mouse",
-                CreateNew = false,
-                RequiresSerialNumber = false,
-                RequiresQRCode = true,
-                Status = "pending",
-                Metadata = new Dictionary<string, string>()
-            });
-        }
-
-        return plans;
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

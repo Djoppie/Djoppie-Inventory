@@ -20,6 +20,11 @@ public interface IAssetRepository
         CancellationToken cancellationToken = default);
     Task<Asset?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Asset?> GetByAssetCodeAsync(string assetCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets multiple assets by their IDs in a single query.
+    /// </summary>
+    Task<IEnumerable<Asset>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default);
     Task<Asset> CreateAsync(Asset asset, CancellationToken cancellationToken = default);
     Task<Asset> UpdateAsync(Asset asset, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);

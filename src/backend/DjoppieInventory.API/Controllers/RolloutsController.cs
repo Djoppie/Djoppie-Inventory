@@ -20,12 +20,14 @@ public class RolloutsController : ControllerBase
 {
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IAssetRepository _assetRepository;
+    private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly ILogger<RolloutsController> _logger;
 
-    public RolloutsController(IRolloutRepository rolloutRepository, IAssetRepository assetRepository, ILogger<RolloutsController> logger)
+    public RolloutsController(IRolloutRepository rolloutRepository, IAssetRepository assetRepository, IAssetCodeGenerator assetCodeGenerator, ILogger<RolloutsController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
+        _assetCodeGenerator = assetCodeGenerator;
         _logger = logger;
     }
 
@@ -155,12 +157,19 @@ public class RolloutsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteSession(int id)
     {
-        var result = await _rolloutRepository.DeleteSessionAsync(id);
-        if (!result)
+        var session = await _rolloutRepository.GetSessionByIdAsync(id);
+        if (session == null)
         {
             return NotFound(new { message = $"Rollout session with ID {id} not found" });
         }
 
+        // Prevent deletion of sessions that are in progress or completed
+        if (session.Status == RolloutSessionStatus.InProgress || session.Status == RolloutSessionStatus.Completed)
+        {
+            return BadRequest(new { message = $"Cannot delete session with status '{session.Status}'. Only Planning, Ready, or Cancelled sessions can be deleted." });
+        }
+
+        await _rolloutRepository.DeleteSessionAsync(id);
         return NoContent();
     }
 
@@ -507,21 +516,7 @@ public class RolloutsController : ControllerBase
             plan.Metadata ??= new Dictionary<string, string>();
             plan.Metadata["serialNumber"] = dto.SerialNumber;
 
-            // If plan already has a linked asset without serial, update it
-            if (plan.ExistingAssetId.HasValue)
-            {
-                var linkedAsset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
-                if (linkedAsset != null && string.IsNullOrEmpty(linkedAsset.SerialNumber))
-                {
-                    linkedAsset.SerialNumber = dto.SerialNumber;
-                    linkedAsset.UpdatedAt = DateTime.UtcNow;
-                    await _assetRepository.UpdateAsync(linkedAsset);
-                    _logger.LogInformation("Updated serial number on existing asset {AssetCode} to {Serial}",
-                        linkedAsset.AssetCode, dto.SerialNumber);
-                }
-            }
-
-            // Search for existing asset by serial number
+            // First check if another asset already has this serial number
             var existingAsset = await _assetRepository.GetBySerialNumberAsync(dto.SerialNumber);
             if (existingAsset != null)
             {
@@ -533,7 +528,20 @@ public class RolloutsController : ControllerBase
                 _logger.LogInformation("Linked existing asset {AssetCode} (serial: {Serial}) to workplace {WorkplaceId} item {ItemIndex}",
                     existingAsset.AssetCode, dto.SerialNumber, workplaceId, itemIndex);
             }
-            else if (!plan.ExistingAssetId.HasValue)
+            else if (plan.ExistingAssetId.HasValue)
+            {
+                // No other asset has this serial — update serial on the already-linked asset
+                var linkedAsset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                if (linkedAsset != null && string.IsNullOrEmpty(linkedAsset.SerialNumber))
+                {
+                    linkedAsset.SerialNumber = dto.SerialNumber;
+                    linkedAsset.UpdatedAt = DateTime.UtcNow;
+                    await _assetRepository.UpdateAsync(linkedAsset);
+                    _logger.LogInformation("Updated serial number on existing asset {AssetCode} to {Serial}",
+                        linkedAsset.AssetCode, dto.SerialNumber);
+                }
+            }
+            else
             {
                 // Create new asset
                 var assetTypeCode = plan.EquipmentType.ToLower() switch
@@ -552,21 +560,31 @@ public class RolloutsController : ControllerBase
                     var assetType = await _rolloutRepository.GetAssetTypeByCodeAsync(assetTypeCode);
                     if (assetType != null)
                     {
-                        var brandStr = !string.IsNullOrEmpty(plan.Brand) ? plan.Brand : "UNK";
-                        var assetNameParts = new List<string> { plan.EquipmentType.ToLower() };
-                        if (!string.IsNullOrEmpty(plan.Brand)) assetNameParts.Add(plan.Brand.ToLower().Replace(" ", "_"));
-                        if (!string.IsNullOrEmpty(plan.Model)) assetNameParts.Add(plan.Model.ToLower().Replace(" ", "_"));
-                        var assetName = string.Join("_", assetNameParts);
+                        // Build AssetName: DOCK-serial / MON-serial, or type_brand_model for others
+                        string assetName;
+                        var typeUpper = plan.EquipmentType.ToUpper();
+                        if ((typeUpper == "DOCKING" || typeUpper == "MONITOR") && !string.IsNullOrEmpty(dto.SerialNumber))
+                        {
+                            var namePrefix = typeUpper == "DOCKING" ? "DOCK" : "MON";
+                            assetName = $"{namePrefix}-{dto.SerialNumber}";
+                        }
+                        else
+                        {
+                            var assetNameParts = new List<string> { plan.EquipmentType.ToLower() };
+                            if (!string.IsNullOrEmpty(plan.Brand)) assetNameParts.Add(plan.Brand.ToLower().Replace(" ", "_"));
+                            if (!string.IsNullOrEmpty(plan.Model)) assetNameParts.Add(plan.Model.ToLower().Replace(" ", "_"));
+                            assetName = string.Join("_", assetNameParts);
+                        }
 
-                        var brandCode = brandStr.ToUpper().Substring(0, Math.Min(3, brandStr.Length));
-                        var prefix = $"{assetTypeCode}-{DateTime.UtcNow:yy}-{brandCode}";
-                        var nextNumber = await _assetRepository.GetNextAssetNumberAsync(prefix, false);
+                        // Use centralized AssetCodeGeneratorService (4-char brand code, proper numbering)
+                        var generatedCode = await _assetCodeGenerator.GenerateCodeAsync(
+                            assetType.Id, plan.Brand, DateTime.UtcNow.Year, false);
 
                         var newAsset = new Asset
                         {
                             AssetTypeId = assetType.Id,
-                            Category = assetType.Category?.Name ?? "Computing",
-                            AssetCode = $"{prefix}-{nextNumber:D5}",
+                            Category = assetType.Name,
+                            AssetCode = generatedCode,
                             AssetName = assetName,
                             Brand = plan.Brand,
                             Model = plan.Model,
@@ -632,59 +650,75 @@ public class RolloutsController : ControllerBase
             ? new List<AssetPlanDto>()
             : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
 
-        // Transition linked assets
-        foreach (var plan in assetPlans)
+        // Wrap all asset transitions and workplace update in a single transaction
+        using var transaction = await _rolloutRepository.BeginTransactionAsync();
+        try
         {
-            // New/existing asset → InGebruik
-            if (plan.ExistingAssetId.HasValue)
+            // Transition linked assets
+            foreach (var plan in assetPlans)
             {
-                var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
-                if (asset != null)
+                // New/existing asset → InGebruik
+                if (plan.ExistingAssetId.HasValue)
                 {
-                    asset.Status = AssetStatus.InGebruik;
-                    asset.InstallationDate = DateTime.UtcNow;
-                    asset.Owner = workplace.UserName;
-                    asset.ServiceId = workplace.ServiceId;
-                    asset.InstallationLocation = workplace.Location;
-                    asset.UpdatedAt = DateTime.UtcNow;
-                    await _assetRepository.UpdateAsync(asset);
-                    _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}", asset.AssetCode, workplace.UserName);
+                    var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                    if (asset != null)
+                    {
+                        asset.Status = AssetStatus.InGebruik;
+                        asset.InstallationDate = DateTime.UtcNow;
+                        asset.Owner = workplace.UserName;
+                        asset.ServiceId = workplace.ServiceId;
+                        asset.InstallationLocation = workplace.Location;
+                        asset.UpdatedAt = DateTime.UtcNow;
+                        await _assetRepository.UpdateAsync(asset);
+                        _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}", asset.AssetCode, workplace.UserName);
+                    }
+                }
+
+                // Old asset → UitDienst
+                if (plan.OldAssetId.HasValue)
+                {
+                    var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
+                    if (oldAsset != null)
+                    {
+                        oldAsset.Status = AssetStatus.UitDienst;
+                        oldAsset.UpdatedAt = DateTime.UtcNow;
+                        await _assetRepository.UpdateAsync(oldAsset);
+                        _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)", oldAsset.AssetCode);
+                    }
+                }
+
+                // Mark pending items as installed (preserve skipped status)
+                if (plan.Status != "skipped")
+                {
+                    plan.Status = "installed";
                 }
             }
 
-            // Old asset → UitDienst
-            if (plan.OldAssetId.HasValue)
+            // Update workplace
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+            workplace.Status = RolloutWorkplaceStatus.Completed;
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
+            workplace.CompletedAt = DateTime.UtcNow;
+            workplace.CompletedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+            workplace.CompletedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
+            if (!string.IsNullOrWhiteSpace(dto.Notes))
             {
-                var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
-                if (oldAsset != null)
-                {
-                    oldAsset.Status = AssetStatus.UitDienst;
-                    oldAsset.UpdatedAt = DateTime.UtcNow;
-                    await _assetRepository.UpdateAsync(oldAsset);
-                    _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)", oldAsset.AssetCode);
-                }
+                workplace.Notes = dto.Notes;
             }
 
-            // Mark all items as installed
-            plan.Status = "installed";
-        }
+            var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
 
-        // Update workplace
-        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
-        workplace.Status = RolloutWorkplaceStatus.Completed;
-        workplace.CompletedItems = assetPlans.Count;
-        workplace.CompletedAt = DateTime.UtcNow;
-        workplace.CompletedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
-        workplace.CompletedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
-        if (!string.IsNullOrWhiteSpace(dto.Notes))
+            await transaction.CommitAsync();
+
+            var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
+            return Ok(workplaceDto);
+        }
+        catch (Exception ex)
         {
-            workplace.Notes = dto.Notes;
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed to complete workplace {WorkplaceId}, transaction rolled back", workplaceId);
+            return StatusCode(500, new { message = "Er is een fout opgetreden bij het voltooien van de werkplek. Alle wijzigingen zijn teruggedraaid." });
         }
-
-        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
-        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
-
-        return Ok(workplaceDto);
     }
 
     /// <summary>
@@ -794,16 +828,8 @@ public class RolloutsController : ControllerBase
             return Ok(new List<AssetDto>());
         }
 
-        // Fetch assets (using filter by IDs)
-        var assets = new List<Asset>();
-        foreach (var assetId in assetIds)
-        {
-            var asset = await _assetRepository.GetByIdAsync(assetId);
-            if (asset != null)
-            {
-                assets.Add(asset);
-            }
-        }
+        // Fetch all assets in a single batch query
+        var assets = (await _assetRepository.GetByIdsAsync(assetIds)).ToList();
 
         // Map to DTOs
         var assetDtos = assets.Select(a => new AssetDto
@@ -910,7 +936,7 @@ public class RolloutsController : ControllerBase
             });
         }
 
-        // Docking Station
+        // Docking Station - CreateNew=false until serial number is entered
         if (config.IncludeDocking)
         {
             plans.Add(new AssetPlanDto
@@ -918,13 +944,13 @@ public class RolloutsController : ControllerBase
                 EquipmentType = "docking",
                 CreateNew = false,
                 RequiresSerialNumber = true,
-                RequiresQRCode = true, // New asset
+                RequiresQRCode = true,
                 Status = "pending",
                 Metadata = new Dictionary<string, string>()
             });
         }
 
-        // Monitors
+        // Monitors - CreateNew=true so assets are created automatically
         for (int i = 0; i < config.MonitorCount; i++)
         {
             var position = i switch
@@ -940,9 +966,9 @@ public class RolloutsController : ControllerBase
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "monitor",
-                CreateNew = false,
+                CreateNew = true,
                 RequiresSerialNumber = false,
-                RequiresQRCode = true, // New asset
+                RequiresQRCode = true,
                 Status = "pending",
                 Metadata = new Dictionary<string, string>
                 {
@@ -952,13 +978,13 @@ public class RolloutsController : ControllerBase
             });
         }
 
-        // Keyboard
+        // Keyboard - CreateNew=true so assets are created automatically
         if (config.IncludeKeyboard)
         {
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "keyboard",
-                CreateNew = false,
+                CreateNew = true,
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
@@ -966,13 +992,13 @@ public class RolloutsController : ControllerBase
             });
         }
 
-        // Mouse
+        // Mouse - CreateNew=true so assets are created automatically
         if (config.IncludeMouse)
         {
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "mouse",
-                CreateNew = false,
+                CreateNew = true,
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
@@ -1002,7 +1028,10 @@ public class RolloutsController : ControllerBase
             UpdatedAt = session.UpdatedAt,
             TotalDays = days.Count,
             TotalWorkplaces = days.Sum(d => d.TotalWorkplaces),
-            CompletedWorkplaces = days.Sum(d => d.CompletedWorkplaces)
+            CompletedWorkplaces = days.Sum(d => d.CompletedWorkplaces),
+            CompletionPercentage = days.Sum(d => d.TotalWorkplaces) > 0
+                ? Math.Round((decimal)days.Sum(d => d.CompletedWorkplaces) / days.Sum(d => d.TotalWorkplaces) * 100, 1)
+                : 0
         };
     }
 
@@ -1011,6 +1040,7 @@ public class RolloutsController : ControllerBase
         var scheduledServiceIds = string.IsNullOrWhiteSpace(day.ScheduledServiceIds)
             ? new List<int>()
             : day.ScheduledServiceIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Where(s => int.TryParse(s, out _))
                 .Select(int.Parse)
                 .ToList();
 

@@ -1,4 +1,5 @@
 using DjoppieInventory.Core.Entities;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DjoppieInventory.Core.Interfaces;
 
@@ -114,6 +115,19 @@ public interface IRolloutRepository
     /// Gets statistics for a session (total/completed workplaces, etc.)
     /// </summary>
     Task<RolloutSessionStats> GetSessionStatsAsync(int sessionId);
+
+    // ===== Transaction Support =====
+
+    /// <summary>
+    /// Begins a database transaction for atomic operations.
+    /// </summary>
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves all pending changes to the database without triggering ProcessAssetPlans.
+    /// Used within transactions where explicit control is needed.
+    /// </summary>
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
