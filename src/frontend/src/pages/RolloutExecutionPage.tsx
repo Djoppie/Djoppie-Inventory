@@ -943,24 +943,59 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
             </>
           )}
 
-          {/* Monitor/Keyboard/Mouse: template only (no serial needed) */}
-          {needsTemplate && plan.equipmentType !== 'docking' && (
+          {/* Monitor: template + optional serial */}
+          {plan.equipmentType === 'monitor' && (
+            <>
+              <TemplateSelector
+                equipmentType={plan.equipmentType as EquipmentType}
+                value={selectedTemplate}
+                onChange={setSelectedTemplate}
+                label={`${label} model`}
+              />
+              <TextField
+                fullWidth
+                label="Serienummer (optioneel)"
+                value={serialNumber}
+                onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
+                helperText="Serienummer van de monitor — optioneel maar aanbevolen"
+                InputProps={{
+                  endAdornment: serialNumber ? (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => handleSearchSerial(serialNumber, false)} disabled={!serialNumber || searching} edge="end">
+                        {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ) : undefined,
+                }}
+              />
+              {foundAsset && (
+                <Alert severity="success" icon={<LinkIcon />}>
+                  <strong>Gevonden:</strong> {foundAsset.assetCode} — {foundAsset.assetName}
+                </Alert>
+              )}
+              {searchError && (
+                <Alert severity="info">{searchError}</Alert>
+              )}
+              {plan.metadata?.position && (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Chip label={`Positie: ${plan.metadata.position}`} variant="outlined" size="small" />
+                  {plan.metadata.hasCamera === 'true' && (
+                    <Chip label="Camera" variant="outlined" size="small" color="info" />
+                  )}
+                </Box>
+              )}
+            </>
+          )}
+
+          {/* Keyboard/Mouse: template only */}
+          {needsTemplate && !['docking', 'monitor'].includes(plan.equipmentType) && (
             <TemplateSelector
               equipmentType={plan.equipmentType as EquipmentType}
               value={selectedTemplate}
               onChange={setSelectedTemplate}
               label={`${label} model`}
             />
-          )}
-
-          {/* Monitor metadata */}
-          {plan.equipmentType === 'monitor' && plan.metadata?.position && (
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip label={`Positie: ${plan.metadata.position}`} variant="outlined" size="small" />
-              {plan.metadata.hasCamera === 'true' && (
-                <Chip label="📷 Camera" variant="outlined" size="small" color="info" />
-              )}
-            </Box>
           )}
 
           {/* Currently linked asset */}

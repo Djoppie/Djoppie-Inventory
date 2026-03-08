@@ -507,6 +507,20 @@ public class RolloutsController : ControllerBase
             plan.Metadata ??= new Dictionary<string, string>();
             plan.Metadata["serialNumber"] = dto.SerialNumber;
 
+            // If plan already has a linked asset without serial, update it
+            if (plan.ExistingAssetId.HasValue)
+            {
+                var linkedAsset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                if (linkedAsset != null && string.IsNullOrEmpty(linkedAsset.SerialNumber))
+                {
+                    linkedAsset.SerialNumber = dto.SerialNumber;
+                    linkedAsset.UpdatedAt = DateTime.UtcNow;
+                    await _assetRepository.UpdateAsync(linkedAsset);
+                    _logger.LogInformation("Updated serial number on existing asset {AssetCode} to {Serial}",
+                        linkedAsset.AssetCode, dto.SerialNumber);
+                }
+            }
+
             // Search for existing asset by serial number
             var existingAsset = await _assetRepository.GetBySerialNumberAsync(dto.SerialNumber);
             if (existingAsset != null)
@@ -519,7 +533,7 @@ public class RolloutsController : ControllerBase
                 _logger.LogInformation("Linked existing asset {AssetCode} (serial: {Serial}) to workplace {WorkplaceId} item {ItemIndex}",
                     existingAsset.AssetCode, dto.SerialNumber, workplaceId, itemIndex);
             }
-            else
+            else if (!plan.ExistingAssetId.HasValue)
             {
                 // Create new asset
                 var assetTypeCode = plan.EquipmentType.ToLower() switch
