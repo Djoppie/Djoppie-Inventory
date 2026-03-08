@@ -189,6 +189,43 @@ public class IntuneController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves managed devices assigned to a specific user by UPN.
+    /// </summary>
+    /// <param name="upn">The user principal name (email)</param>
+    /// <returns>A list of managed devices for the user</returns>
+    /// <response code="200">Returns the list of devices for the user</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    [HttpGet("devices/user/{upn}")]
+    [ProducesResponseType(typeof(IEnumerable<ManagedDevice>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<ManagedDevice>>> GetDevicesByUser(string upn)
+    {
+        try
+        {
+            if (!InputValidator.ValidateSearchTerm(upn, 200, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request to get devices for user: {UPN}", upn);
+            var devices = await _intuneService.GetDevicesByUserAsync(upn);
+            return Ok(devices);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to get devices for user {UPN}", upn);
+            return StatusCode(500, new { error = "Failed to get devices for user", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error getting devices for user {UPN}", upn);
+            return StatusCode(500, new { error = "An unexpected error occurred while getting user devices" });
+        }
+    }
+
+    /// <summary>
     /// Retrieves managed devices filtered by operating system.
     /// </summary>
     /// <param name="os">The operating system (e.g., "Windows", "iOS", "Android")</param>

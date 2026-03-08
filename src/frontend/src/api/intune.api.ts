@@ -45,6 +45,15 @@ export const intuneApi = {
   },
 
   /**
+   * Get devices assigned to a specific user by UPN
+   * @param upn - The user principal name (email)
+   */
+  getDevicesByUser: async (upn: string): Promise<IntuneDevice[]> => {
+    const response = await apiClient.get<IntuneDevice[]>(`/intune/devices/user/${encodeURIComponent(upn)}`);
+    return response.data;
+  },
+
+  /**
    * Get devices by operating system
    * @param os - The operating system (e.g., "Windows", "iOS", "Android")
    */

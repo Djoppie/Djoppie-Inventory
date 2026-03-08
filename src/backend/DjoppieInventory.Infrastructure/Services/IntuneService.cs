@@ -215,6 +215,53 @@ public class IntuneService : IIntuneService
     }
 
     /// <inheritdoc/>
+    public async Task<IEnumerable<ManagedDevice>> GetDevicesByUserAsync(string userPrincipalName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userPrincipalName))
+            {
+                throw new ArgumentException("User principal name cannot be null or empty", nameof(userPrincipalName));
+            }
+
+            _logger.LogInformation("Fetching managed devices for user: {UPN}", userPrincipalName);
+
+            if (!ODataSanitizer.IsValidFilterValue(userPrincipalName))
+            {
+                _logger.LogWarning("Invalid UPN format detected: {UPN}", userPrincipalName);
+                throw new ArgumentException("Invalid UPN format", nameof(userPrincipalName));
+            }
+
+            var devices = await _graphClient.DeviceManagement.ManagedDevices
+                .GetAsync(requestConfiguration =>
+                {
+                    requestConfiguration.QueryParameters.Filter = ODataSanitizer.CreateEqualityFilter("userPrincipalName", userPrincipalName);
+                    requestConfiguration.QueryParameters.Select = new[]
+                    {
+                        "id", "deviceName", "serialNumber", "manufacturer", "model",
+                        "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
+                        "enrolledDateTime", "userPrincipalName", "managementAgent"
+                    };
+                });
+
+            var deviceList = devices?.Value ?? new List<ManagedDevice>();
+            _logger.LogInformation("Found {Count} managed devices for user: {UPN}", deviceList.Count, userPrincipalName);
+
+            return deviceList;
+        }
+        catch (ServiceException ex)
+        {
+            _logger.LogError(ex, "Microsoft Graph API error while fetching devices for user {UPN}. Status: {StatusCode}", userPrincipalName, ex.ResponseStatusCode);
+            throw new InvalidOperationException($"Failed to get devices for user: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while fetching devices for user {UPN}", userPrincipalName);
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
     public async Task<IEnumerable<ManagedDevice>> GetDevicesByOperatingSystemAsync(string operatingSystem)
     {
         try

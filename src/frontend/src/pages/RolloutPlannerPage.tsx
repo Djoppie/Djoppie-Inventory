@@ -306,9 +306,10 @@ interface WorkplaceListProps {
   sessionStatus: string;
   onAddWorkplace: () => void;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
+  onPrintWorkplace: (workplace: RolloutWorkplace) => void;
 }
 
-const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace }: WorkplaceListProps) => {
+const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace }: WorkplaceListProps) => {
   const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
   const deleteMutation = useDeleteRolloutWorkplace();
 
@@ -359,6 +360,20 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace }
                   <IconButton onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
                     <EditIcon />
                   </IconButton>
+                  <IconButton
+                    onClick={() => onPrintWorkplace(workplace)}
+                    disabled={!workplace.assetPlans?.some(p => p.existingAssetId)}
+                    title="Print QR codes"
+                    sx={{
+                      color: 'rgba(59, 130, 246, 0.6)',
+                      '&:hover': {
+                        color: '#3B82F6',
+                        bgcolor: 'rgba(59, 130, 246, 0.08)',
+                      },
+                    }}
+                  >
+                    <PrintIcon />
+                  </IconButton>
                   <IconButton edge="end" onClick={() => handleDelete(workplace)} disabled={!isEditable}>
                     <DeleteIcon />
                   </IconButton>
@@ -375,8 +390,15 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace }
                     <Chip
                       label={`${workplace.completedItems}/${workplace.totalItems} items`}
                       size="small"
-                      sx={{ ml: 1 }}
-                      color={workplace.status === 'Completed' ? 'success' : 'default'}
+                      sx={{
+                        ml: 1,
+                        fontWeight: 600,
+                        ...(workplace.totalItems > 0 && workplace.completedItems === workplace.totalItems
+                          ? { bgcolor: 'success.main', color: '#fff' }
+                          : workplace.completedItems > 0
+                            ? { bgcolor: 'warning.main', color: '#fff' }
+                            : { bgcolor: 'grey.600', color: '#fff' }),
+                      }}
                       component="span"
                     />
                   </span>
@@ -413,6 +435,7 @@ const RolloutPlannerPage = () => {
   const [activeWorkplaceDayId, setActiveWorkplaceDayId] = useState<number | undefined>();
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState(false);
   const [bulkPrintDayId, setBulkPrintDayId] = useState<number | undefined>();
+  const [bulkPrintAssetIds, setBulkPrintAssetIds] = useState<Set<number> | undefined>();
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
 
   // Fetch session data if editing
@@ -535,11 +558,25 @@ const RolloutPlannerPage = () => {
 
   const handleBulkPrint = (dayId: number) => {
     setBulkPrintDayId(dayId);
+    setBulkPrintAssetIds(undefined);
+    setBulkPrintDialogOpen(true);
+  };
+
+  const handlePrintWorkplace = (workplace: RolloutWorkplace, dayId: number) => {
+    const assetIds = new Set(
+      (workplace.assetPlans || [])
+        .filter(p => p.existingAssetId)
+        .map(p => p.existingAssetId!)
+    );
+    if (assetIds.size === 0) return;
+    setBulkPrintDayId(dayId);
+    setBulkPrintAssetIds(assetIds);
     setBulkPrintDialogOpen(true);
   };
 
   const handleCloseBulkPrint = () => {
     setBulkPrintDayId(undefined);
+    setBulkPrintAssetIds(undefined);
     setBulkPrintDialogOpen(false);
   };
 
@@ -827,6 +864,7 @@ const RolloutPlannerPage = () => {
                       sessionStatus={session.status}
                       onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
                       onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
+                      onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
                     />
                   </AccordionDetails>
                 </Accordion>
@@ -855,7 +893,10 @@ const RolloutPlannerPage = () => {
       <BulkPrintLabelDialog
         open={bulkPrintDialogOpen}
         onClose={handleCloseBulkPrint}
-        assets={bulkPrintAssets || []}
+        assets={bulkPrintAssetIds
+          ? (bulkPrintAssets || []).filter(a => bulkPrintAssetIds.has(a.id))
+          : (bulkPrintAssets || [])
+        }
       />
     </Container>
   );

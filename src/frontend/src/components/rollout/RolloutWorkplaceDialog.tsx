@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import {
   Chip,
   Stack,
   useTheme,
+  Autocomplete,
+  CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LaptopIcon from '@mui/icons-material/Laptop';
@@ -32,6 +34,9 @@ import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hook
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { SerialSearchField } from './SerialSearchField';
 import { TemplateSelector } from './TemplateSelector';
+import { graphApi } from '../../api/graph.api';
+import { intuneApi } from '../../api/intune.api';
+import type { GraphUser, IntuneDevice } from '../../types/graph.types';
 import type {
   RolloutWorkplace,
   CreateRolloutWorkplace,
@@ -115,6 +120,32 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const createMutation = useCreateRolloutWorkplace();
   const updateMutation = useUpdateRolloutWorkplace();
   const { data: allTemplates } = useAssetTemplates();
+
+  // User search state for autocomplete
+  const [userOptions, setUserOptions] = useState<GraphUser[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [userDevices, setUserDevices] = useState<IntuneDevice[]>([]);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleUserSearch = useCallback((query: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (query.length < 2) {
+      setUserOptions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setUserSearchLoading(true);
+      try {
+        const users = await graphApi.searchUsers(query, 10);
+        setUserOptions(users);
+      } catch {
+        setUserOptions([]);
+      } finally {
+        setUserSearchLoading(false);
+      }
+    }, 300);
+  }, []);
 
   // Track which workplace/templates we've synced to avoid re-syncing
   const [syncedKey, setSyncedKey] = useState<string | null>(null);
@@ -479,13 +510,77 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label="Gebruikersnaam"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  required
-                  fullWidth
-                  helperText="Naam van de gebruiker voor deze werkplek"
+                <Autocomplete
+                  freeSolo
+                  open={userDropdownOpen}
+                  onOpen={() => {
+                    if (userName.length >= 2) setUserDropdownOpen(true);
+                  }}
+                  onClose={() => setUserDropdownOpen(false)}
+                  options={userOptions}
+                  getOptionLabel={(option) =>
+                    typeof option === 'string' ? option : option.displayName || ''
+                  }
+                  filterOptions={(x) => x}
+                  inputValue={userName}
+                  onInputChange={(_, value, reason) => {
+                    setUserName(value);
+                    if (reason === 'input') {
+                      handleUserSearch(value);
+                      if (value.length >= 2) {
+                        setUserDropdownOpen(true);
+                      } else {
+                        setUserDropdownOpen(false);
+                      }
+                    }
+                  }}
+                  onChange={(_, value) => {
+                    setUserDropdownOpen(false);
+                    if (value && typeof value !== 'string') {
+                      setUserName(value.displayName || '');
+                      const upn = value.mail || value.userPrincipalName || '';
+                      setUserEmail(upn);
+                      if (value.officeLocation) setLocation(value.officeLocation);
+                      // Fetch Intune devices for this user
+                      if (upn) {
+                        intuneApi.getDevicesByUser(upn)
+                          .then(devices => setUserDevices(devices))
+                          .catch(() => setUserDevices([]));
+                      }
+                    }
+                  }}
+                  loading={userSearchLoading}
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.id}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>
+                          {option.displayName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.mail || option.userPrincipalName}
+                          {option.department ? ` — ${option.department}` : ''}
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Gebruikersnaam"
+                      required
+                      fullWidth
+                      helperText="Typ minimaal 2 letters om gebruikers te zoeken"
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {userSearchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
                 />
                 <TextField
                   label="E-mailadres"
@@ -557,29 +652,124 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   </ToggleButtonGroup>
                 </Box>
 
-                <SerialSearchField
-                  label="Oude Computer Serienummer"
-                  value={oldComputerSerial}
-                  onChange={setOldComputerSerial}
-                  onAssetFound={setOldComputerAsset}
-                  helperText="Zoek bestaand asset dat wordt vervangen"
-                />
-                <LinkedAssetChip workplace={workplace} equipmentType={computerType} variant="old" />
-
-                <SerialSearchField
-                  label="Nieuwe Computer Serienummer"
-                  value={newComputerSerial}
-                  onChange={setNewComputerSerial}
-                  onAssetFound={setNewComputerAsset}
-                  onCreate={(serial) => {
-                    // Mark as new asset to be created
-                    setNewComputerSerial(serial);
-                    setNewComputerAsset(null);
+                {/* Oud apparaat subsection */}
+                <Box
+                  sx={{
+                    border: '1px solid',
+                    borderColor: isDark ? 'rgba(255, 146, 51, 0.2)' : 'rgba(255, 119, 0, 0.15)',
+                    borderRadius: 3,
+                    p: 2.5,
+                    bgcolor: isDark ? 'rgba(255, 146, 51, 0.04)' : 'rgba(255, 119, 0, 0.02)',
                   }}
-                  required
-                  helperText="Zoek bestaand asset of maak nieuw aan"
-                />
-                <LinkedAssetChip workplace={workplace} equipmentType={computerType} />
+                >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        bgcolor: 'warning.main',
+                      }}
+                    />
+                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
+                      Huidig Apparaat (oud)
+                    </Typography>
+                  </Stack>
+
+                  {userDevices.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                        Intune-apparaten van deze gebruiker — klik om te selecteren
+                      </Typography>
+                      <Stack direction="row" flexWrap="wrap" gap={1}>
+                        {userDevices.map((device) => {
+                          const isSelected = oldComputerSerial === device.serialNumber;
+                          return (
+                            <Chip
+                              key={device.id || device.serialNumber}
+                              icon={<LaptopIcon sx={{ fontSize: '0.9rem !important' }} />}
+                              label={
+                                <Box component="span">
+                                  <Box component="span" sx={{ fontWeight: 700 }}>{device.serialNumber || '?'}</Box>
+                                  <Box component="span" sx={{ opacity: 0.7 }}> — {device.deviceName || ''}</Box>
+                                </Box>
+                              }
+                              size="small"
+                              onClick={() => setOldComputerSerial(device.serialNumber || '')}
+                              sx={{
+                                cursor: 'pointer',
+                                fontWeight: 500,
+                                borderWidth: isSelected ? 2 : 1,
+                                borderStyle: 'solid',
+                                borderColor: isSelected ? '#FF7700' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'),
+                                bgcolor: isSelected
+                                  ? (isDark ? 'rgba(255, 119, 0, 0.15)' : 'rgba(255, 119, 0, 0.08)')
+                                  : 'transparent',
+                                color: isSelected ? '#FF7700' : 'text.primary',
+                                '&:hover': {
+                                  bgcolor: isDark ? 'rgba(255, 119, 0, 0.12)' : 'rgba(255, 119, 0, 0.06)',
+                                  borderColor: '#FF7700',
+                                },
+                                transition: 'all 0.2s ease',
+                              }}
+                            />
+                          );
+                        })}
+                      </Stack>
+                    </Box>
+                  )}
+
+                  <SerialSearchField
+                    label="Oude Computer Serienummer"
+                    value={oldComputerSerial}
+                    onChange={setOldComputerSerial}
+                    onAssetFound={setOldComputerAsset}
+                    helperText={userDevices.length > 0
+                      ? 'Geselecteerd via Intune of zoek handmatig'
+                      : 'Zoek bestaand asset dat wordt vervangen'
+                    }
+                  />
+                  <LinkedAssetChip workplace={workplace} equipmentType={computerType} variant="old" />
+                </Box>
+
+                {/* Nieuw apparaat subsection */}
+                <Box
+                  sx={{
+                    border: '1px solid',
+                    borderColor: isDark ? 'rgba(76, 175, 80, 0.25)' : 'rgba(76, 175, 80, 0.2)',
+                    borderRadius: 3,
+                    p: 2.5,
+                    bgcolor: isDark ? 'rgba(76, 175, 80, 0.04)' : 'rgba(76, 175, 80, 0.02)',
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        bgcolor: 'success.main',
+                      }}
+                    />
+                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
+                      Nieuw Apparaat
+                    </Typography>
+                  </Stack>
+
+                  <SerialSearchField
+                    label="Nieuwe Computer Serienummer"
+                    value={newComputerSerial}
+                    onChange={setNewComputerSerial}
+                    onAssetFound={setNewComputerAsset}
+                    onCreate={(serial) => {
+                      setNewComputerSerial(serial);
+                      setNewComputerAsset(null);
+                    }}
+                    required
+                    helperText="Zoek bestaand asset of maak nieuw aan"
+                  />
+                  <LinkedAssetChip workplace={workplace} equipmentType={computerType} />
+                </Box>
               </Box>
             </AccordionDetails>
           </Accordion>

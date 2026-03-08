@@ -67,7 +67,17 @@
       "Bash(dotnet test:*)",
       "Bash(taskkill:*)",
       "Bash(sqlite3:*)",
-      "Bash(dotnet ef database update:*)"
+      "Bash(dotnet ef database update:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx eslint src/components/rollout/RolloutWorkplaceDialog.tsx src/components/rollout/SerialSearchField.tsx src/pages/RolloutPlannerPage.tsx --quiet)",
+      "Bash(npx eslint src/components/rollout/RolloutDayDialog.tsx)",
+      "Bash(wmic process where \"name=''DjoppieInventory.API.exe''\" get ProcessId,CommandLine)",
+      "Bash(tasklist)",
+      "Bash(cmd.exe /c \"taskkill /F /PID 34732\")",
+      "Bash(powershell -Command \"Stop-Process -Id 34732 -Force\")",
+      "Bash(npx eslint src/pages/RolloutPlannerPage.tsx src/pages/RolloutListPage.tsx)",
+      "Skill(commit-commands:commit)",
+      "Skill(commit-commands:commit:*)"
     ]
   }
 }

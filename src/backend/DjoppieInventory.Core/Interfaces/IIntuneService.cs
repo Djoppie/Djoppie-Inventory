@@ -37,6 +37,13 @@ public interface IIntuneService
     Task<IEnumerable<ManagedDevice>> SearchDevicesByNameAsync(string deviceName);
 
     /// <summary>
+    /// Retrieves managed devices assigned to a specific user by UPN.
+    /// </summary>
+    /// <param name="userPrincipalName">The user's UPN (email)</param>
+    /// <returns>A collection of managed devices for the user</returns>
+    Task<IEnumerable<ManagedDevice>> GetDevicesByUserAsync(string userPrincipalName);
+
+    /// <summary>
     /// Retrieves managed devices filtered by operating system.
     /// </summary>
     /// <param name="operatingSystem">The operating system (e.g., "Windows", "iOS", "Android")</param>
