@@ -314,9 +314,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         const cleanedValue = typeof value === 'string' && value.trim() === '' ? null : value;
         cleaned[key] = cleanedValue;
 
-        // Debug: Log owner field changes
-        if (key === 'owner') {
-        }
       }
     }
     return cleaned as T;
