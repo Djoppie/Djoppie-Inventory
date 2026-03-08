@@ -419,8 +419,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       }),
     });
 
-    // Docking plan
-    if (dockingTemplate || dockingSerial || dockingLinkedAsset) {
+    // Docking plan (only for laptops, not desktops)
+    if (computerType !== 'desktop' && (dockingTemplate || dockingSerial || dockingLinkedAsset)) {
       plans.push({
         equipmentType: 'docking',
         createNew: !dockingLinkedAsset && !isRetroactive,
@@ -955,8 +955,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             </AccordionDetails>
           </Accordion>
 
-          {/* Section 3: Docking Station */}
-          <Accordion sx={accordionSx}>
+          {/* Section 3: Docking Station (only for laptops) */}
+          {computerType !== 'desktop' && <Accordion sx={accordionSx}>
             <AccordionSummary
               expandIcon={<ExpandMoreIcon />}
               sx={{ '&.Mui-expanded': { minHeight: 48 } }}
@@ -1000,7 +1000,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                 <LinkedAssetChip workplace={workplace} equipmentType="docking" />
               </Box>
             </AccordionDetails>
-          </Accordion>
+          </Accordion>}
 
           {/* Section 4: Monitors */}
           <Accordion sx={accordionSx}>

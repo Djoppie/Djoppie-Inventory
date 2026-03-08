@@ -77,7 +77,8 @@
       "Bash(powershell -Command \"Stop-Process -Id 34732 -Force\")",
       "Bash(npx eslint src/pages/RolloutPlannerPage.tsx src/pages/RolloutListPage.tsx)",
       "Skill(commit-commands:commit)",
-      "Skill(commit-commands:commit:*)"
+      "Skill(commit-commands:commit:*)",
+      "Bash(npx eslint src/)"
     ]
   }
 }
