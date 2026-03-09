@@ -218,6 +218,22 @@ export const completeRolloutWorkplace = async (
 };
 
 /**
+ * Reopen a completed workplace for further editing
+ * @param reverseAssets If true, reverses asset status changes (InGebruik → Nieuw, UitDienst → InGebruik)
+ */
+export const reopenRolloutWorkplace = async (
+  workplaceId: number,
+  reverseAssets: boolean = false
+): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(
+    `/rollouts/workplaces/${workplaceId}/reopen`,
+    null,
+    { params: { reverseAssets } }
+  );
+  return response.data;
+};
+
+/**
  * Delete a workplace
  */
 export const deleteRolloutWorkplace = async (workplaceId: number): Promise<void> => {

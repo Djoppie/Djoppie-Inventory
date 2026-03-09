@@ -772,6 +772,107 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
+    /// Reopens a completed workplace for further editing
+    /// Resets status to InProgress and optionally reverses asset transitions
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/reopen")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> ReopenWorkplace(int workplaceId, [FromQuery] bool reverseAssets = false)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        if (workplace.Status != RolloutWorkplaceStatus.Completed)
+        {
+            return BadRequest(new { message = $"Workplace is not completed (current status: {workplace.Status})" });
+        }
+
+        // Parse asset plans
+        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
+            ? new List<AssetPlanDto>()
+            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
+
+        try
+        {
+            await _rolloutRepository.ExecuteInTransactionAsync(async () =>
+            {
+                // Optionally reverse asset transitions
+                if (reverseAssets)
+                {
+                    foreach (var plan in assetPlans)
+                    {
+                        // Reverse: InGebruik → Nieuw
+                        if (plan.ExistingAssetId.HasValue)
+                        {
+                            var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                            if (asset != null && asset.Status == AssetStatus.InGebruik)
+                            {
+                                asset.Status = AssetStatus.Nieuw;
+                                asset.Owner = null;
+                                asset.InstallationDate = null;
+                                asset.InstallationLocation = null;
+                                asset.UpdatedAt = DateTime.UtcNow;
+                                await _assetRepository.UpdateAsync(asset);
+                                _logger.LogInformation("Asset {AssetCode} reversed to Nieuw", asset.AssetCode);
+                            }
+                        }
+
+                        // Reverse: UitDienst → InGebruik (old asset was decommissioned)
+                        if (plan.OldAssetId.HasValue)
+                        {
+                            var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
+                            if (oldAsset != null && oldAsset.Status == AssetStatus.UitDienst)
+                            {
+                                oldAsset.Status = AssetStatus.InGebruik;
+                                oldAsset.UpdatedAt = DateTime.UtcNow;
+                                await _assetRepository.UpdateAsync(oldAsset);
+                                _logger.LogInformation("Old asset {AssetCode} reversed to InGebruik", oldAsset.AssetCode);
+                            }
+                        }
+
+                        // Reset item status to pending
+                        if (plan.Status == "installed")
+                        {
+                            plan.Status = "pending";
+                        }
+                    }
+                }
+
+                // Update workplace
+                workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+                workplace.Status = RolloutWorkplaceStatus.InProgress;
+                workplace.CompletedAt = null;
+                workplace.CompletedBy = null;
+                workplace.CompletedByEmail = null;
+                workplace.UpdatedAt = DateTime.UtcNow;
+
+                if (reverseAssets)
+                {
+                    workplace.CompletedItems = 0;
+                }
+
+                await _rolloutRepository.SaveChangesAsync();
+                await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+            });
+
+            _logger.LogInformation("Workplace {WorkplaceId} reopened by user (reverseAssets: {ReverseAssets})", workplaceId, reverseAssets);
+
+            var workplaceDto = MapToWorkplaceDto(workplace);
+            return Ok(workplaceDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to reopen workplace {WorkplaceId}", workplaceId);
+            return StatusCode(500, new { message = "Er is een fout opgetreden bij het heropenen van de werkplek." });
+        }
+    }
+
+    /// <summary>
     /// Deletes a workplace
     /// </summary>
     [HttpDelete("workplaces/{workplaceId}")]

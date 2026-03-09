@@ -376,6 +376,28 @@ export const useCompleteRolloutWorkplace = (): UseMutationResult<
 };
 
 /**
+ * Reopen a completed workplace for further editing
+ */
+export const useReopenRolloutWorkplace = (): UseMutationResult<
+  RolloutWorkplace,
+  Error,
+  { workplaceId: number; reverseAssets?: boolean }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ workplaceId, reverseAssets }) =>
+      rolloutApi.reopenRolloutWorkplace(workplaceId, reverseAssets),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
+    },
+  });
+};
+
+/**
  * Delete a workplace
  */
 export const useDeleteRolloutWorkplace = (): UseMutationResult<

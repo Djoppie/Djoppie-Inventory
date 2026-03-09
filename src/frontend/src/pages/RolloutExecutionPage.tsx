@@ -44,6 +44,7 @@ import LaptopIcon from '@mui/icons-material/Laptop';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
+import ReplayIcon from '@mui/icons-material/Replay';
 import {
   useRolloutSession,
   useRolloutDays,
@@ -52,6 +53,7 @@ import {
   useUpdateItemStatus,
   useUpdateItemDetails,
   useCompleteRolloutWorkplace,
+  useReopenRolloutWorkplace,
 } from '../hooks/useRollout';
 import { getAssetBySerialNumber } from '../api/assets.api';
 import { TemplateSelector } from '../components/rollout/TemplateSelector';
@@ -326,10 +328,13 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   const [completeNotes, setCompleteNotes] = useState('');
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [reverseAssets, setReverseAssets] = useState(false);
 
   const startMutation = useStartRolloutWorkplace();
   const itemStatusMutation = useUpdateItemStatus();
   const completeMutation = useCompleteRolloutWorkplace();
+  const reopenMutation = useReopenRolloutWorkplace();
 
   const handleStart = async () => {
     try {
@@ -363,6 +368,20 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
       onSnackbar(`Werkplek "${workplace.userName}" voltooid! Assets zijn bijgewerkt.`);
     } catch {
       onSnackbar('Fout bij voltooien werkplek', 'error');
+    }
+  };
+
+  const handleReopen = async () => {
+    try {
+      await reopenMutation.mutateAsync({
+        workplaceId: workplace.id,
+        reverseAssets,
+      });
+      setReopenDialogOpen(false);
+      setReverseAssets(false);
+      onSnackbar(`Werkplek "${workplace.userName}" heropend voor bewerking.`);
+    } catch {
+      onSnackbar('Fout bij heropenen werkplek', 'error');
     }
   };
 
@@ -505,10 +524,22 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
               )}
 
               {isComplete && workplace.completedAt && (
-                <Alert severity="success" sx={{ mt: 2 }}>
-                  Voltooid op {new Date(workplace.completedAt).toLocaleString('nl-NL')}
-                  {workplace.completedBy && ` door ${workplace.completedBy}`}
-                </Alert>
+                <Box sx={{ mt: 2 }}>
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    Voltooid op {new Date(workplace.completedAt).toLocaleString('nl-NL')}
+                    {workplace.completedBy && ` door ${workplace.completedBy}`}
+                  </Alert>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    fullWidth
+                    startIcon={<ReplayIcon />}
+                    onClick={() => setReopenDialogOpen(true)}
+                    disabled={reopenMutation.isPending}
+                  >
+                    Heropenen voor Bewerking
+                  </Button>
+                </Box>
               )}
             </Box>
           </Collapse>
@@ -575,6 +606,49 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
             disabled={completeMutation.isPending}
           >
             {completeMutation.isPending ? 'Voltooien...' : 'Bevestigen & Voltooien'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reopen Confirmation Dialog */}
+      <Dialog open={reopenDialogOpen} onClose={() => setReopenDialogOpen(false)} maxWidth="sm" fullWidth disableRestoreFocus>
+        <DialogTitle>Werkplek Heropenen</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Weet je zeker dat je werkplek <strong>"{workplace.userName}"</strong> wilt heropenen?
+          </Typography>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            De werkplek wordt teruggezet naar <strong>Bezig</strong> status zodat je wijzigingen kunt aanbrengen.
+          </Alert>
+          <Box sx={{ mb: 2 }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={reverseAssets}
+                onChange={(e) => setReverseAssets(e.target.checked)}
+                style={{ marginRight: 8 }}
+              />
+              <Typography variant="body2">
+                <strong>Asset wijzigingen terugdraaien</strong>
+              </Typography>
+            </label>
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 3.5, display: 'block' }}>
+              Indien aangevinkt worden de asset statussen teruggezet:
+              <br />• InGebruik → Nieuw (eigenaar en locatie worden gewist)
+              <br />• UitDienst → InGebruik (oude assets worden hersteld)
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReopenDialogOpen(false)}>Annuleren</Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleReopen}
+            disabled={reopenMutation.isPending}
+            startIcon={<ReplayIcon />}
+          >
+            {reopenMutation.isPending ? 'Heropenen...' : 'Heropenen'}
           </Button>
         </DialogActions>
       </Dialog>
