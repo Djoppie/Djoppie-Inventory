@@ -3,9 +3,10 @@ import { AssetStatus } from '../../types/asset.types';
 
 interface StatusBadgeProps {
   status: AssetStatus | string;
+  size?: 'small' | 'medium';
 }
 
-const StatusBadge = ({ status }: StatusBadgeProps) => {
+const StatusBadge = ({ status, size = 'small' }: StatusBadgeProps) => {
   // Define color schemes for each status
   const getStatusStyle = () => {
     switch (status) {
@@ -132,7 +133,7 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
   return (
     <Chip
       label={status}
-      size="small"
+      size={size}
       sx={{
         fontWeight: 'bold',
         transition: 'all 0.2s ease',

@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -57,10 +58,46 @@ const isDummyAsset = (assetCode: string): boolean => {
 const DashboardPage = () => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sortBy, setSortBy] = useState<SortOption>('date-newest');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read filters from URL parameters (persisted across navigation)
+  const statusFilter = searchParams.get('status') || '';
+  const categoryFilter = searchParams.get('category') || '';
+  const searchQuery = searchParams.get('search') || '';
+  const sortBy = (searchParams.get('sort') as SortOption) || 'date-newest';
+
+  // Update URL parameters helper
+  const updateFilters = useCallback((updates: Record<string, string | null>) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === '') {
+          newParams.delete(key);
+        } else {
+          newParams.set(key, value);
+        }
+      });
+      return newParams;
+    }, { replace: true }); // Use replace to avoid cluttering browser history
+  }, [setSearchParams]);
+
+  // Filter setters that update URL
+  const setStatusFilter = useCallback((value: string) => {
+    updateFilters({ status: value || null });
+  }, [updateFilters]);
+
+  const setCategoryFilter = useCallback((value: string) => {
+    updateFilters({ category: value || null });
+  }, [updateFilters]);
+
+  const setSearchQuery = useCallback((value: string) => {
+    updateFilters({ search: value || null });
+  }, [updateFilters]);
+
+  const setSortBy = useCallback((value: SortOption) => {
+    updateFilters({ sort: value === 'date-newest' ? null : value }); // Don't store default
+  }, [updateFilters]);
+
   const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
@@ -70,6 +107,25 @@ const DashboardPage = () => {
     const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
     return (savedMode === 'card' || savedMode === 'table') ? savedMode : 'card';
   });
+
+  // Local state for search input (to avoid URL updates on every keystroke)
+  const [searchInputValue, setSearchInputValue] = useState<string>(searchQuery);
+
+  // Sync search input with URL parameter when it changes externally (e.g., browser back)
+  useEffect(() => {
+    setSearchInputValue(searchQuery);
+  }, [searchQuery]);
+
+  // Debounce search query updates to URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInputValue !== searchQuery) {
+        setSearchQuery(searchInputValue);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchInputValue, searchQuery, setSearchQuery]);
 
   // Popover anchors for header icons
   const [leasesAnchor, setLeasesAnchor] = useState<null | HTMLElement>(null);
@@ -777,19 +833,22 @@ const DashboardPage = () => {
               fullWidth
               size="small"
               placeholder="Search assets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInputValue}
+              onChange={(e) => setSearchInputValue(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <SearchIcon fontSize="small" />
                   </InputAdornment>
                 ),
-                endAdornment: searchQuery && (
+                endAdornment: searchInputValue && (
                   <InputAdornment position="end">
                     <IconButton
                       size="small"
-                      onClick={() => setSearchQuery('')}
+                      onClick={() => {
+                        setSearchInputValue('');
+                        setSearchQuery(''); // Immediately clear URL param
+                      }}
                       edge="end"
                     >
                       <ClearIcon fontSize="small" />
@@ -863,15 +922,18 @@ const DashboardPage = () => {
         </Box>
 
         {/* Active Filters Display */}
-        {(searchQuery || categoryFilter) && (
+        {(searchInputValue || categoryFilter) && (
           <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
             <Typography variant="caption" color="text.secondary">
               Active filters:
             </Typography>
-            {searchQuery && (
+            {searchInputValue && (
               <Chip
-                label={`Search: "${searchQuery}"`}
-                onDelete={() => setSearchQuery('')}
+                label={`Search: "${searchInputValue}"`}
+                onDelete={() => {
+                  setSearchInputValue('');
+                  setSearchQuery('');
+                }}
                 size="small"
                 sx={{
                   backgroundColor: (theme) =>

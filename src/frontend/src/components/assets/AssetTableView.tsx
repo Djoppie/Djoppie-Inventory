@@ -20,12 +20,13 @@ import {
   IconButton,
   Tooltip,
   Checkbox,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import AppsIcon from '@mui/icons-material/Apps';
 
 interface AssetTableViewProps {
@@ -36,8 +37,37 @@ interface AssetTableViewProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-type SortField = 'assetCode' | 'assetName' | 'category' | 'owner' | 'status';
+type SortField = 'assetCode' | 'assetName' | 'assetType' | 'brand' | 'model' | 'installationLocation' | 'owner' | 'status';
 type SortOrder = 'asc' | 'desc';
+
+// Responsive display styles for columns
+const columnVisibility = {
+  // Always visible
+  always: {},
+  // Hidden on xs, visible from sm up
+  smUp: { display: { xs: 'none', sm: 'table-cell' } },
+  // Hidden on xs/sm, visible from md up
+  mdUp: { display: { xs: 'none', md: 'table-cell' } },
+  // Hidden on xs/sm/md, visible from lg up
+  lgUp: { display: { xs: 'none', lg: 'table-cell' } },
+};
+
+// Compact professional header cell styles - using SxProps type
+const headerCellSx: import('@mui/material').SxProps = {
+  fontWeight: 600,
+  fontSize: { xs: '0.6875rem', sm: '0.75rem' },
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: (theme) => (theme as { palette: { mode: string } }).palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+  whiteSpace: 'nowrap',
+  py: { xs: 1, sm: 1.25 },
+  px: { xs: 1, sm: 1.5 },
+  borderBottom: '2px solid',
+  borderColor: (theme) => (theme as { palette: { mode: string } }).palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.2)' : 'rgba(0, 0, 0, 0.08)',
+  background: (theme) => (theme as { palette: { mode: string } }).palette.mode === 'dark'
+    ? 'linear-gradient(180deg, rgba(255, 119, 0, 0.04) 0%, rgba(255, 119, 0, 0.02) 100%)'
+    : 'linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%)',
+};
 
 const AssetTableView = ({
   assets,
@@ -47,6 +77,9 @@ const AssetTableView = ({
   onSelectAll,
 }: AssetTableViewProps) => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortField, setSortField] = useState<SortField>('assetCode');
@@ -58,8 +91,16 @@ const AssetTableView = ({
 
   // Sort assets
   const sortedAssets = [...assets].sort((a, b) => {
-    const aValue = a[sortField] ?? '';
-    const bValue = b[sortField] ?? '';
+    let aValue: string;
+    let bValue: string;
+
+    if (sortField === 'assetType') {
+      aValue = a.assetType?.name ?? '';
+      bValue = b.assetType?.name ?? '';
+    } else {
+      aValue = (a[sortField as keyof typeof a] as string) ?? '';
+      bValue = (b[sortField as keyof typeof b] as string) ?? '';
+    }
 
     if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
@@ -109,205 +150,236 @@ const AssetTableView = ({
   }
 
   return (
-    <Stack spacing={3}>
-      {/* Table Container with Neumorphic Styling */}
+    <Stack spacing={{ xs: 2, sm: 2.5 }}>
+      {/* Table Container - Compact Professional Design */}
       <TableContainer
         component={Paper}
         elevation={0}
         sx={{
           border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 3,
-          overflow: 'hidden',
+          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+          borderRadius: { xs: 1, sm: 1.5 },
+          overflow: 'auto',
           background: (theme) =>
             theme.palette.mode === 'dark'
-              ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.03) 0%, transparent 50%)'
+              ? '#1a1a1a'
               : '#ffffff',
           boxShadow: (theme) =>
             theme.palette.mode === 'dark'
-              ? '0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.05)'
-              : '0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.9)',
+              ? '0 2px 8px rgba(0, 0, 0, 0.4)'
+              : '0 1px 4px rgba(0, 0, 0, 0.05)',
+          // Custom scrollbar styling
+          WebkitOverflowScrolling: 'touch',
+          '&::-webkit-scrollbar': {
+            height: 6,
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.4)' : 'rgba(0, 0, 0, 0.2)',
+            borderRadius: 3,
+            '&:hover': {
+              background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.6)' : 'rgba(0, 0, 0, 0.3)',
+            },
+          },
         }}
       >
-        <Table sx={{ minWidth: 800 }}>
+        <Table sx={{ minWidth: { xs: 500, sm: 700, md: 900, lg: 1100 } }}>
           <TableHead>
-            <TableRow
-              sx={{
-                background: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.15) 0%, rgba(204, 0, 0, 0.08) 100%)'
-                    : 'linear-gradient(135deg, rgba(255, 119, 0, 0.12) 0%, rgba(204, 0, 0, 0.06) 100%)',
-                borderBottom: '2px solid',
-                borderColor: 'divider',
-              }}
-            >
+            <TableRow>
               {/* Selection Checkbox Column */}
               {selectable && (
-                <TableCell padding="checkbox" sx={{ width: 50 }}>
+                <TableCell
+                  padding="checkbox"
+                  sx={{
+                    ...headerCellSx,
+                    width: { xs: 42, sm: 48 },
+                    px: { xs: 1, sm: 1.5 },
+                  }}
+                >
                   <Checkbox
                     checked={allSelected}
                     indeterminate={someSelected}
                     onChange={(e) => onSelectAll?.(e.target.checked)}
                     color="primary"
+                    size="small"
+                    sx={{
+                      '&.Mui-checked': {
+                        color: '#FF7700',
+                      },
+                    }}
                   />
                 </TableCell>
               )}
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                  py: 2,
-                }}
-              >
+
+              {/* Asset Code */}
+              <TableCell sx={headerCellSx}>
                 <TableSortLabel
                   active={sortField === 'assetCode'}
                   direction={sortField === 'assetCode' ? sortOrder : 'asc'}
                   onClick={() => handleSort('assetCode')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
+                  IconComponent={UnfoldMoreIcon}
                   sx={{
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
                     '&:hover': {
-                      color: 'primary.main',
+                      color: '#FF7700',
                     },
                     '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
+                      color: '#FF7700',
+                      fontWeight: 700,
+                    },
+                    '& .MuiTableSortLabel-icon': {
+                      fontSize: '1rem',
+                      opacity: 0.5,
                     },
                   }}
                 >
-                  Asset Code
+                  {isMobile ? 'Code' : 'Asset Code'}
                 </TableSortLabel>
               </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                }}
-              >
+
+              {/* Status */}
+              <TableCell sx={headerCellSx}>
                 <TableSortLabel
                   active={sortField === 'status'}
                   direction={sortField === 'status' ? sortOrder : 'asc'}
                   onClick={() => handleSort('status')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
+                  IconComponent={UnfoldMoreIcon}
                   sx={{
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
-                    },
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
                   Status
                 </TableSortLabel>
               </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                }}
-              >
+
+              {/* Asset Type */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.smUp }}>
+                <TableSortLabel
+                  active={sortField === 'assetType'}
+                  direction={sortField === 'assetType' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('assetType')}
+                  IconComponent={UnfoldMoreIcon}
+                  sx={{
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
+                  }}
+                >
+                  Type
+                </TableSortLabel>
+              </TableCell>
+
+              {/* Asset Name */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.smUp }}>
                 <TableSortLabel
                   active={sortField === 'assetName'}
                   direction={sortField === 'assetName' ? sortOrder : 'asc'}
                   onClick={() => handleSort('assetName')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
+                  IconComponent={UnfoldMoreIcon}
                   sx={{
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
-                    },
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Asset Name
+                  Name
                 </TableSortLabel>
               </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                }}
-              >
+
+              {/* Brand */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
                 <TableSortLabel
-                  active={sortField === 'category'}
-                  direction={sortField === 'category' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('category')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
+                  active={sortField === 'brand'}
+                  direction={sortField === 'brand' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('brand')}
+                  IconComponent={UnfoldMoreIcon}
                   sx={{
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
-                    },
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Category
+                  Brand
                 </TableSortLabel>
               </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                }}
-              >
+
+              {/* Model */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
+                <TableSortLabel
+                  active={sortField === 'model'}
+                  direction={sortField === 'model' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('model')}
+                  IconComponent={UnfoldMoreIcon}
+                  sx={{
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
+                  }}
+                >
+                  Model
+                </TableSortLabel>
+              </TableCell>
+
+              {/* Location */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
+                <TableSortLabel
+                  active={sortField === 'installationLocation'}
+                  direction={sortField === 'installationLocation' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('installationLocation')}
+                  IconComponent={UnfoldMoreIcon}
+                  sx={{
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
+                  }}
+                >
+                  Location
+                </TableSortLabel>
+              </TableCell>
+
+              {/* Owner */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
                 <TableSortLabel
                   active={sortField === 'owner'}
                   direction={sortField === 'owner' ? sortOrder : 'asc'}
                   onClick={() => handleSort('owner')}
-                  IconComponent={sortOrder === 'asc' ? ArrowUpwardIcon : ArrowDownwardIcon}
+                  IconComponent={UnfoldMoreIcon}
                   sx={{
-                    '&:hover': {
-                      color: 'primary.main',
-                    },
-                    '&.Mui-active': {
-                      color: 'primary.main',
-                      fontWeight: 800,
-                    },
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
                   Owner
                 </TableSortLabel>
               </TableCell>
-              <TableCell
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                }}
-              >
-                Location
-              </TableCell>
+
+              {/* Actions */}
               <TableCell
                 align="center"
                 sx={{
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'primary.main',
-                  width: 100,
+                  ...headerCellSx,
+                  minWidth: { xs: 80, sm: 100 },
+                  width: { xs: 80, sm: 100 },
                 }}
               >
                 Actions
@@ -323,30 +395,25 @@ const AssetTableView = ({
                 onClick={() => handleRowClick(asset.id)}
                 sx={{
                   cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transition: 'background-color 0.15s ease',
                   borderBottom: '1px solid',
-                  borderColor: 'divider',
+                  borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
                   backgroundColor: isSelected
                     ? (theme) =>
                         theme.palette.mode === 'dark'
-                          ? 'rgba(255, 119, 0, 0.12)'
-                          : 'rgba(255, 119, 0, 0.08)'
-                    : index % 2 === 0
+                          ? 'rgba(255, 119, 0, 0.1)'
+                          : 'rgba(255, 119, 0, 0.06)'
+                    : index % 2 === 1
                       ? (theme) =>
                           theme.palette.mode === 'dark'
-                            ? 'rgba(255, 255, 255, 0.02)'
-                            : 'rgba(0, 0, 0, 0.01)'
+                            ? 'rgba(255, 255, 255, 0.015)'
+                            : 'rgba(0, 0, 0, 0.015)'
                       : 'transparent',
                   '&:hover': {
                     backgroundColor: (theme) =>
                       theme.palette.mode === 'dark'
-                        ? 'rgba(255, 119, 0, 0.08)'
-                        : 'rgba(255, 119, 0, 0.05)',
-                    boxShadow: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'inset 0 0 0 1px rgba(255, 119, 0, 0.2)'
-                        : 'inset 0 0 0 1px rgba(255, 119, 0, 0.15)',
-                    transform: 'scale(1.005)',
+                        ? 'rgba(255, 119, 0, 0.06)'
+                        : 'rgba(255, 119, 0, 0.04)',
                   },
                   '&:last-child td': {
                     borderBottom: 0,
@@ -355,7 +422,13 @@ const AssetTableView = ({
               >
                 {/* Row Selection Checkbox */}
                 {selectable && (
-                  <TableCell padding="checkbox">
+                  <TableCell
+                    padding="checkbox"
+                    sx={{
+                      py: { xs: 0.75, sm: 1 },
+                      px: { xs: 1, sm: 1.5 },
+                    }}
+                  >
                     <Checkbox
                       checked={isSelected}
                       onChange={(e) => {
@@ -364,64 +437,147 @@ const AssetTableView = ({
                       }}
                       onClick={(e) => e.stopPropagation()}
                       color="primary"
+                      size="small"
+                      sx={{
+                        '&.Mui-checked': {
+                          color: '#FF7700',
+                        },
+                      }}
                     />
                   </TableCell>
                 )}
+
+                {/* Asset Code */}
                 <TableCell
                   sx={{
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    color: 'primary.main',
+                    fontFamily: '"SF Mono", "Monaco", "Consolas", monospace',
+                    fontWeight: 600,
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    color: '#FF7700',
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    letterSpacing: '0.01em',
                   }}
                 >
                   {asset.assetCode}
                 </TableCell>
-                <TableCell>
-                  <StatusBadge status={asset.status} />
-                </TableCell>
+
+                {/* Status */}
                 <TableCell
                   sx={{
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
                   }}
                 >
-                  {asset.assetName}
+                  <StatusBadge status={asset.status} size="small" />
                 </TableCell>
+
+                {/* Asset Type */}
                 <TableCell
                   sx={{
-                    fontSize: '0.9rem',
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     color: 'text.secondary',
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.smUp,
                   }}
                 >
-                  {asset.category}
+                  {asset.assetType?.name || '-'}
                 </TableCell>
+
+                {/* Asset Name */}
                 <TableCell
                   sx={{
-                    fontSize: '0.9rem',
+                    fontWeight: 500,
+                    fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                    maxWidth: { sm: 180, md: 220 },
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.smUp,
                   }}
                 >
-                  {asset.owner}
+                  {asset.assetName || '-'}
                 </TableCell>
+
+                {/* Brand */}
                 <TableCell
                   sx={{
-                    fontSize: '0.9rem',
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.mdUp,
                   }}
                 >
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {asset.service?.name || asset.legacyBuilding || '-'}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {asset.legacyDepartment || '-'} {asset.officeLocation && `/ ${asset.officeLocation}`}
-                    </Typography>
-                  </Box>
+                  {asset.brand || '-'}
                 </TableCell>
-                <TableCell align="center">
-                  <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                    {/* Software Icon for Laptops/Desktops */}
+
+                {/* Model */}
+                <TableCell
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    maxWidth: 160,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.mdUp,
+                  }}
+                >
+                  {asset.model || '-'}
+                </TableCell>
+
+                {/* Install Location */}
+                <TableCell
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.lgUp,
+                  }}
+                >
+                  {asset.installationLocation || '-'}
+                </TableCell>
+
+                {/* Owner */}
+                <TableCell
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    maxWidth: 160,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.lgUp,
+                  }}
+                >
+                  {asset.owner || '-'}
+                </TableCell>
+
+                {/* Actions - Always Visible */}
+                <TableCell
+                  align="center"
+                  sx={{
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 0.75, sm: 1.5 },
+                    minWidth: { xs: 70, sm: 90 },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: { xs: 0.25, sm: 0.5 },
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {/* Software Icon - Laptops/Desktops Only */}
                     {(asset.category === 'Laptop' || asset.category === 'Desktop') && (
-                      <Tooltip title="View Installed Software" arrow>
+                      <Tooltip title="View Software" arrow placement="top">
                         <IconButton
                           size="small"
                           onClick={(e) => {
@@ -429,20 +585,28 @@ const AssetTableView = ({
                             navigate(`/assets/${asset.id}/software`);
                           }}
                           sx={{
-                            color: 'info.main',
+                            width: { xs: 28, sm: 32 },
+                            height: { xs: 28, sm: 32 },
+                            padding: 0,
+                            color: (theme) => theme.palette.mode === 'dark' ? '#64B5F6' : '#1976D2',
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.08)' : 'rgba(25, 118, 210, 0.06)',
+                            border: '1px solid',
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.2)' : 'rgba(25, 118, 210, 0.15)',
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                              backgroundColor: 'rgba(33, 150, 243, 0.15)',
-                              transform: 'scale(1.1)',
-                              boxShadow: '0 0 12px rgba(33, 150, 243, 0.4)',
+                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.15)' : 'rgba(25, 118, 210, 0.12)',
+                              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.4)' : 'rgba(25, 118, 210, 0.3)',
+                              transform: isMobile ? 'none' : 'scale(1.05)',
                             },
                           }}
                         >
-                          <AppsIcon fontSize="small" />
+                          <AppsIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
                         </IconButton>
                       </Tooltip>
                     )}
-                    <Tooltip title="View Details" arrow>
+
+                    {/* View Details Icon - Always Present */}
+                    <Tooltip title="View Details" arrow placement="top">
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -450,16 +614,22 @@ const AssetTableView = ({
                           handleRowClick(asset.id);
                         }}
                         sx={{
-                          color: 'primary.main',
+                          width: { xs: 28, sm: 32 },
+                          height: { xs: 28, sm: 32 },
+                          padding: 0,
+                          color: '#FF7700',
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.1)' : 'rgba(255, 119, 0, 0.08)',
+                          border: '1px solid',
+                          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.25)' : 'rgba(255, 119, 0, 0.2)',
                           transition: 'all 0.2s ease',
                           '&:hover': {
-                            backgroundColor: 'rgba(255, 119, 0, 0.15)',
-                            transform: 'scale(1.1)',
-                            boxShadow: '0 0 12px rgba(255, 119, 0, 0.4)',
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.18)' : 'rgba(255, 119, 0, 0.15)',
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.4)' : 'rgba(255, 119, 0, 0.35)',
+                            transform: isMobile ? 'none' : 'scale(1.05)',
                           },
                         }}
                       >
-                        <VisibilityIcon fontSize="small" />
+                        <VisibilityIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -471,49 +641,78 @@ const AssetTableView = ({
         </Table>
       </TableContainer>
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls - Compact Professional */}
       <Box
         sx={{
           display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 2,
-          py: 2,
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: { xs: 1.5, sm: 2 },
+          py: { xs: 1, sm: 1.5 },
+          px: { xs: 0.5, sm: 0 },
         }}
       >
         {/* Rows per page selector */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-            Rows per page:
-          </Typography>
-          <FormControl size="small">
-            <Select
-              value={rowsPerPage}
-              onChange={handleRowsPerPageChange}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 1.5, sm: 2 },
+            justifyContent: { xs: 'space-between', sm: 'flex-start' },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+              variant="body2"
               sx={{
-                minWidth: 80,
-                fontWeight: 600,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'divider',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'primary.main',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'primary.main',
-                  borderWidth: 2,
-                },
+                fontWeight: 500,
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
               }}
             >
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={20}>20</MenuItem>
-              <MenuItem value={50}>50</MenuItem>
-              <MenuItem value={100}>100</MenuItem>
-            </Select>
-          </FormControl>
-          <Typography variant="body2" color="text.secondary">
-            Showing {startIndex + 1}-{Math.min(endIndex, assets.length)} of {assets.length}
+              {isMobile ? 'Rows:' : 'Per page:'}
+            </Typography>
+            <FormControl size="small">
+              <Select
+                value={rowsPerPage}
+                onChange={handleRowsPerPageChange}
+                sx={{
+                  minWidth: { xs: 60, sm: 70 },
+                  fontWeight: 500,
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  height: { xs: 28, sm: 32 },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#FF7700',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#FF7700',
+                    borderWidth: 1.5,
+                  },
+                }}
+              >
+                <MenuItem value={10} sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>10</MenuItem>
+                <MenuItem value={20} sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>20</MenuItem>
+                <MenuItem value={50} sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>50</MenuItem>
+                <MenuItem value={100} sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>100</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+              fontWeight: 500,
+              color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            {isMobile
+              ? `${startIndex + 1}-${Math.min(endIndex, assets.length)} / ${assets.length}`
+              : `${startIndex + 1}-${Math.min(endIndex, assets.length)} of ${assets.length}`
+            }
           </Typography>
         </Box>
 
@@ -524,25 +723,34 @@ const AssetTableView = ({
             page={currentPage}
             onChange={handlePageChange}
             color="primary"
-            size="large"
-            showFirstButton
-            showLastButton
+            size={isMobile ? 'small' : 'medium'}
+            showFirstButton={!isMobile}
+            showLastButton={!isMobile}
+            siblingCount={isMobile ? 0 : 1}
+            boundaryCount={isMobile ? 1 : 1}
             sx={{
+              alignSelf: { xs: 'center', sm: 'auto' },
               '& .MuiPaginationItem-root': {
-                fontWeight: 600,
-                transition: 'all 0.3s ease',
+                fontWeight: 500,
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                minWidth: { xs: 28, sm: 32 },
+                height: { xs: 28, sm: 32 },
+                border: '1px solid',
+                borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                transition: 'all 0.2s ease',
                 '&:hover': {
-                  transform: 'scale(1.1)',
-                  boxShadow: '0 0 12px rgba(255, 119, 0, 0.4)',
+                  borderColor: '#FF7700',
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.08)' : 'rgba(255, 119, 0, 0.05)',
                 },
               },
               '& .Mui-selected': {
-                background: 'linear-gradient(135deg, var(--djoppie-orange-500), var(--djoppie-red-500))',
+                backgroundColor: '#FF7700',
                 color: '#fff',
-                fontWeight: 700,
-                boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+                fontWeight: 600,
+                borderColor: '#FF7700',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, var(--djoppie-orange-600), var(--djoppie-red-600))',
+                  backgroundColor: '#E66A00',
+                  borderColor: '#E66A00',
                 },
               },
             }}
