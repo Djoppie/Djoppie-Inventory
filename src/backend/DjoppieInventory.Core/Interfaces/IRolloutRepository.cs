@@ -134,6 +134,12 @@ public interface IRolloutRepository
     /// Used after completing workplaces to update day statistics.
     /// </summary>
     Task UpdateDayTotalsAsync(int dayId);
+
+    /// <summary>
+    /// Executes the given action within a database transaction, wrapped in the configured
+    /// execution strategy (required for Azure SQL with retry logic).
+    /// </summary>
+    Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

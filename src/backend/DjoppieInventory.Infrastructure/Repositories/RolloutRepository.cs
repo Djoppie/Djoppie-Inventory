@@ -516,4 +516,28 @@ public class RolloutRepository : IRolloutRepository
     {
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Executes the given action within a database transaction, wrapped in the configured
+    /// execution strategy. This is required for Azure SQL with SqlServerRetryingExecutionStrategy.
+    /// </summary>
+    public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken cancellationToken = default)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await action();
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
+    }
 }

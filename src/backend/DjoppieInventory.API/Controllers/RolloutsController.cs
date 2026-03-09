@@ -680,78 +680,80 @@ public class RolloutsController : ControllerBase
             ? new List<AssetPlanDto>()
             : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
 
-        // Wrap all asset transitions and workplace update in a single transaction
-        using var transaction = await _rolloutRepository.BeginTransactionAsync();
+        // Capture user info before entering transaction (HttpContext not available in lambda)
+        var completedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+        var completedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
+
         try
         {
-            // Transition linked assets
-            foreach (var plan in assetPlans)
+            // Use ExecuteInTransactionAsync to properly handle Azure SQL's retry execution strategy
+            await _rolloutRepository.ExecuteInTransactionAsync(async () =>
             {
-                // New/existing asset → InGebruik
-                if (plan.ExistingAssetId.HasValue)
+                // Transition linked assets
+                foreach (var plan in assetPlans)
                 {
-                    var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
-                    if (asset != null)
+                    // New/existing asset → InGebruik
+                    if (plan.ExistingAssetId.HasValue)
                     {
-                        asset.Status = AssetStatus.InGebruik;
-                        asset.InstallationDate = DateTime.UtcNow;
-                        asset.Owner = workplace.UserName;
-                        asset.ServiceId = workplace.ServiceId;
-                        asset.InstallationLocation = workplace.Location;
-                        asset.UpdatedAt = DateTime.UtcNow;
-                        await _assetRepository.UpdateAsync(asset);
-                        _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}", asset.AssetCode, workplace.UserName);
+                        var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                        if (asset != null)
+                        {
+                            asset.Status = AssetStatus.InGebruik;
+                            asset.InstallationDate = DateTime.UtcNow;
+                            asset.Owner = workplace.UserName;
+                            asset.ServiceId = workplace.ServiceId;
+                            asset.InstallationLocation = workplace.Location;
+                            asset.UpdatedAt = DateTime.UtcNow;
+                            await _assetRepository.UpdateAsync(asset);
+                            _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}", asset.AssetCode, workplace.UserName);
+                        }
+                    }
+
+                    // Old asset → UitDienst
+                    if (plan.OldAssetId.HasValue)
+                    {
+                        var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
+                        if (oldAsset != null)
+                        {
+                            oldAsset.Status = AssetStatus.UitDienst;
+                            oldAsset.UpdatedAt = DateTime.UtcNow;
+                            await _assetRepository.UpdateAsync(oldAsset);
+                            _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)", oldAsset.AssetCode);
+                        }
+                    }
+
+                    // Mark pending items as installed (preserve skipped status)
+                    if (plan.Status != "skipped")
+                    {
+                        plan.Status = "installed";
                     }
                 }
 
-                // Old asset → UitDienst
-                if (plan.OldAssetId.HasValue)
+                // Update workplace
+                workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+                workplace.Status = RolloutWorkplaceStatus.Completed;
+                workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
+                workplace.CompletedAt = DateTime.UtcNow;
+                workplace.CompletedBy = completedBy;
+                workplace.CompletedByEmail = completedByEmail;
+                workplace.UpdatedAt = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(dto.Notes))
                 {
-                    var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
-                    if (oldAsset != null)
-                    {
-                        oldAsset.Status = AssetStatus.UitDienst;
-                        oldAsset.UpdatedAt = DateTime.UtcNow;
-                        await _assetRepository.UpdateAsync(oldAsset);
-                        _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)", oldAsset.AssetCode);
-                    }
+                    workplace.Notes = dto.Notes;
                 }
 
-                // Mark pending items as installed (preserve skipped status)
-                if (plan.Status != "skipped")
-                {
-                    plan.Status = "installed";
-                }
-            }
+                // Save all changes directly without triggering ProcessAssetPlansAsync
+                await _rolloutRepository.SaveChangesAsync();
 
-            // Update workplace
-            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
-            workplace.Status = RolloutWorkplaceStatus.Completed;
-            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
-            workplace.CompletedAt = DateTime.UtcNow;
-            workplace.CompletedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
-            workplace.CompletedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
-            workplace.UpdatedAt = DateTime.UtcNow;
-            if (!string.IsNullOrWhiteSpace(dto.Notes))
-            {
-                workplace.Notes = dto.Notes;
-            }
-
-            // Save all changes directly without triggering ProcessAssetPlansAsync
-            // The workplace entity is already tracked, so EF Core will save our changes
-            await _rolloutRepository.SaveChangesAsync();
-
-            // Update day totals to reflect the completed workplace
-            await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
-
-            await transaction.CommitAsync();
+                // Update day totals to reflect the completed workplace
+                await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+            });
 
             var workplaceDto = MapToWorkplaceDto(workplace);
             return Ok(workplaceDto);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
             _logger.LogError(ex, "Failed to complete workplace {WorkplaceId}, transaction rolled back. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}",
                 workplaceId, ex.GetType().Name, ex.Message, ex.InnerException?.Message ?? "None");
 
