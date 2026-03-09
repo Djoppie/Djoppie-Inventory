@@ -817,7 +817,14 @@ const RolloutPlannerPage = () => {
                           label={day.status === 'Ready' ? 'Gereed' : day.status === 'Completed' ? 'Voltooid' : 'Planning'}
                           size="small"
                           variant={day.status === 'Planning' ? 'outlined' : 'filled'}
-                          color={day.status === 'Ready' ? 'success' : day.status === 'Completed' ? 'info' : 'default'}
+                          color={day.status === 'Completed' ? 'info' : 'default'}
+                          sx={day.status === 'Ready' ? {
+                            bgcolor: 'transparent',
+                            border: '1px solid rgba(34, 197, 94, 0.5)',
+                            color: '#22c55e',
+                            fontWeight: 600,
+                            textShadow: '0 0 8px rgba(34, 197, 94, 0.6), 0 0 16px rgba(34, 197, 94, 0.3)',
+                          } : undefined}
                         />
                       </Box>
                     </AccordionSummary>
