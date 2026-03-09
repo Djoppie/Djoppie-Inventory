@@ -752,8 +752,20 @@ public class RolloutsController : ControllerBase
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex, "Failed to complete workplace {WorkplaceId}, transaction rolled back", workplaceId);
-            return StatusCode(500, new { message = "Er is een fout opgetreden bij het voltooien van de werkplek. Alle wijzigingen zijn teruggedraaid." });
+            _logger.LogError(ex, "Failed to complete workplace {WorkplaceId}, transaction rolled back. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}",
+                workplaceId, ex.GetType().Name, ex.Message, ex.InnerException?.Message ?? "None");
+
+            // Include detailed error info in development/staging environments
+            var errorDetails = $"{ex.GetType().Name}: {ex.Message}";
+            if (ex.InnerException != null)
+            {
+                errorDetails += $" -> {ex.InnerException.GetType().Name}: {ex.InnerException.Message}";
+            }
+
+            return StatusCode(500, new {
+                message = "Er is een fout opgetreden bij het voltooien van de werkplek. Alle wijzigingen zijn teruggedraaid.",
+                details = errorDetails
+            });
         }
     }
 
