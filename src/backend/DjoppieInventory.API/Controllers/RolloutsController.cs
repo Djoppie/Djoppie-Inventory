@@ -731,16 +731,22 @@ public class RolloutsController : ControllerBase
             workplace.CompletedAt = DateTime.UtcNow;
             workplace.CompletedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
             workplace.CompletedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
+            workplace.UpdatedAt = DateTime.UtcNow;
             if (!string.IsNullOrWhiteSpace(dto.Notes))
             {
                 workplace.Notes = dto.Notes;
             }
 
-            var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+            // Save all changes directly without triggering ProcessAssetPlansAsync
+            // The workplace entity is already tracked, so EF Core will save our changes
+            await _rolloutRepository.SaveChangesAsync();
+
+            // Update day totals to reflect the completed workplace
+            await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
 
             await transaction.CommitAsync();
 
-            var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
+            var workplaceDto = MapToWorkplaceDto(workplace);
             return Ok(workplaceDto);
         }
         catch (Exception ex)

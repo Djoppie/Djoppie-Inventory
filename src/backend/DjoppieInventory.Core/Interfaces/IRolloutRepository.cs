@@ -128,6 +128,12 @@ public interface IRolloutRepository
     /// Used within transactions where explicit control is needed.
     /// </summary>
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the TotalWorkplaces and CompletedWorkplaces counts for a day.
+    /// Used after completing workplaces to update day statistics.
+    /// </summary>
+    Task UpdateDayTotalsAsync(int dayId);
 }
 
 /// <summary>

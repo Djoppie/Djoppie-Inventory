@@ -309,7 +309,7 @@ public class RolloutRepository : IRolloutRepository
     /// <summary>
     /// Updates the TotalWorkplaces and CompletedWorkplaces counts for a day
     /// </summary>
-    private async Task UpdateDayTotalsAsync(int dayId)
+    public async Task UpdateDayTotalsAsync(int dayId)
     {
         var day = await _context.RolloutDays.FindAsync(dayId);
         if (day == null)
