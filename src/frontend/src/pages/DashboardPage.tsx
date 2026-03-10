@@ -24,6 +24,7 @@ import AssetList from '../components/assets/AssetList';
 import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
+import CategorySwitcher from '../components/common/CategorySwitcher';
 import ExportDialog from '../components/export/ExportDialog';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
@@ -754,6 +755,28 @@ const DashboardPage = () => {
           )}
         </Box>
       </Card>
+
+      {/* Category Switcher - Prominent quick filter */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 2,
+          p: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(18, 18, 18, 0.6)'
+              : 'rgba(255, 255, 255, 0.6)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <CategorySwitcher
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+        />
+      </Paper>
 
       {/* Sticky Toolbar for View/Sort/Filter */}
       <Paper

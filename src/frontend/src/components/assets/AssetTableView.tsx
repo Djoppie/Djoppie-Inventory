@@ -39,7 +39,7 @@ interface AssetTableViewProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-type SortField = 'assetCode' | 'assetName' | 'assetType' | 'brand' | 'model' | 'installationLocation' | 'owner' | 'status';
+type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'brand' | 'model' | 'installationLocation' | 'owner' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 // Responsive display styles for columns
@@ -281,12 +281,12 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Asset Name */}
+              {/* Serial Number */}
               <TableCell sx={{ ...headerCellSx, ...columnVisibility.smUp }}>
                 <TableSortLabel
-                  active={sortField === 'assetName'}
-                  direction={sortField === 'assetName' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('assetName')}
+                  active={sortField === 'serialNumber'}
+                  direction={sortField === 'serialNumber' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('serialNumber')}
                   IconComponent={UnfoldMoreIcon}
                   sx={{
                     fontSize: 'inherit',
@@ -296,7 +296,7 @@ const AssetTableView = ({
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Name
+                  Serial
                 </TableSortLabel>
               </TableCell>
 
@@ -502,7 +502,7 @@ const AssetTableView = ({
                     ...columnVisibility.smUp,
                   }}
                 >
-                  {asset.assetName || '-'}
+                  {asset.serialNumber || '-'}
                 </TableCell>
 
                 {/* Brand */}
