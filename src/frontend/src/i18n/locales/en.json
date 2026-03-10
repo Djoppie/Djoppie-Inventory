@@ -833,5 +833,30 @@
       "sync": "Sync status",
       "clear": "Clear terminal"
     }
+  },
+  "bulkEdit": {
+    "title": "Bulk Edit Assets",
+    "editSelected": "Edit Selected",
+    "selectedCount": "{{count}} assets selected",
+    "instructions": "Check the fields you want to update. Only checked fields will be modified.",
+    "service": "Service / Department",
+    "dates": "Dates",
+    "purchaseDate": "Purchase Date",
+    "installationDate": "Installation Date",
+    "warrantyExpiry": "Warranty Expiry",
+    "brandModel": "Brand & Model",
+    "brand": "Brand",
+    "brandPlaceholder": "Enter brand",
+    "model": "Model",
+    "modelPlaceholder": "Enter model",
+    "statusLocation": "Status & Location",
+    "status": "Status",
+    "installationLocation": "Installation Location",
+    "locationPlaceholder": "e.g., Room 101, Floor 2",
+    "update": "Update Assets",
+    "updating": "Updating...",
+    "successMessage": "Successfully updated {{count}} assets",
+    "partialSuccess": "Updated {{updated}} assets, {{failed}} failed",
+    "errors": "Errors:"
   }
 }

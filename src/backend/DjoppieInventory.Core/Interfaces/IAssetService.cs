@@ -70,4 +70,12 @@ public interface IAssetService
     /// Gets an asset by its serial number
     /// </summary>
     Task<AssetDto?> GetAssetBySerialNumberAsync(string serialNumber);
+
+    /// <summary>
+    /// Bulk updates multiple assets with selected fields
+    /// </summary>
+    /// <param name="bulkUpdateDto">Bulk update parameters</param>
+    /// <param name="performedBy">Display name of the user performing the update (for event tracking)</param>
+    /// <param name="performedByEmail">Email address of the user performing the update (for event tracking)</param>
+    Task<BulkUpdateAssetsResultDto> BulkUpdateAssetsAsync(BulkUpdateAssetsDto bulkUpdateDto, string? performedBy = null, string? performedByEmail = null);
 }

@@ -192,6 +192,27 @@ public class AssetsController : ControllerBase
     }
 
     /// <summary>
+    /// Updates multiple assets in bulk with selected fields.
+    /// </summary>
+    /// <param name="bulkUpdateDto">The bulk update parameters</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPut("bulk")]
+    [EnableRateLimiting("bulk")]
+    [ProducesResponseType(typeof(BulkUpdateAssetsResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkUpdateAssetsResultDto>> BulkUpdateAssets(
+        BulkUpdateAssetsDto bulkUpdateDto,
+        CancellationToken cancellationToken = default)
+    {
+        // Get user information from claims for event tracking
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value;
+
+        var result = await _assetService.BulkUpdateAssetsAsync(bulkUpdateDto, userName, userEmail);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Checks if an asset code already exists.
     /// </summary>
     /// <param name="code">The asset code to check</param>

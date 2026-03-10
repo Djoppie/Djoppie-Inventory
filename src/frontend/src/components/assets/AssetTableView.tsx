@@ -39,7 +39,7 @@ interface AssetTableViewProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'brand' | 'model' | 'installationLocation' | 'owner' | 'status';
+type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'purchaseDate' | 'model' | 'installationLocation' | 'owner' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 // Responsive display styles for columns
@@ -94,12 +94,15 @@ const AssetTableView = ({
 
   // Sort assets
   const sortedAssets = [...assets].sort((a, b) => {
-    let aValue: string;
-    let bValue: string;
+    let aValue: string | number;
+    let bValue: string | number;
 
     if (sortField === 'assetType') {
       aValue = a.assetType?.name ?? '';
       bValue = b.assetType?.name ?? '';
+    } else if (sortField === 'purchaseDate') {
+      aValue = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
+      bValue = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
     } else {
       aValue = (a[sortField as keyof typeof a] as string) ?? '';
       bValue = (b[sortField as keyof typeof b] as string) ?? '';
@@ -281,6 +284,25 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
+              {/* Purchase Date */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
+                <TableSortLabel
+                  active={sortField === 'purchaseDate'}
+                  direction={sortField === 'purchaseDate' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('purchaseDate')}
+                  IconComponent={UnfoldMoreIcon}
+                  sx={{
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: '#FF7700' },
+                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
+                  }}
+                >
+                  Aankoop
+                </TableSortLabel>
+              </TableCell>
+
               {/* Serial Number */}
               <TableCell sx={{ ...headerCellSx, ...columnVisibility.smUp }}>
                 <TableSortLabel
@@ -297,25 +319,6 @@ const AssetTableView = ({
                   }}
                 >
                   Serial
-                </TableSortLabel>
-              </TableCell>
-
-              {/* Brand */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
-                <TableSortLabel
-                  active={sortField === 'brand'}
-                  direction={sortField === 'brand' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('brand')}
-                  IconComponent={UnfoldMoreIcon}
-                  sx={{
-                    fontSize: 'inherit',
-                    fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
-                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
-                  }}
-                >
-                  Brand
                 </TableSortLabel>
               </TableCell>
 
@@ -488,11 +491,57 @@ const AssetTableView = ({
                   {asset.assetType?.name || '-'}
                 </TableCell>
 
-                {/* Asset Name */}
+                {/* Purchase Date */}
                 <TableCell
                   sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.mdUp,
+                  }}
+                >
+                  {asset.purchaseDate ? (() => {
+                    const purchaseDate = new Date(asset.purchaseDate);
+                    const ageInYears = (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+                    const isMonitor = asset.category === 'Monitor';
+                    // Different thresholds for monitors vs other assets
+                    const color = isMonitor
+                      ? (ageInYears < 4
+                          ? '#4CAF50' // green: 0-4 years
+                          : ageInYears < 7
+                            ? '#FFA726' // yellow/orange: 4-7 years
+                            : '#EF5350') // light red: 7+ years
+                      : (ageInYears < 3
+                          ? '#4CAF50' // green: 0-3 years
+                          : ageInYears < 4
+                            ? '#FFA726' // yellow/orange: 3-4 years
+                            : '#EF5350'); // light red: 4+ years
+                    const ageDisplay = ageInYears < 1
+                      ? `${Math.round(ageInYears * 12)} maanden`
+                      : `${ageInYears.toFixed(1)} jaar`;
+                    return (
+                      <Tooltip title={ageDisplay} arrow placement="top">
+                        <Box
+                          component="span"
+                          sx={{
+                            color,
+                            fontWeight: 500,
+                            cursor: 'default',
+                          }}
+                        >
+                          {purchaseDate.toLocaleDateString()}
+                        </Box>
+                      </Tooltip>
+                    );
+                  })() : '-'}
+                </TableCell>
+
+                {/* Serial Number */}
+                <TableCell
+                  sx={{
+                    fontFamily: '"SF Mono", "Monaco", "Consolas", monospace',
                     fontWeight: 500,
-                    fontSize: { xs: '0.8125rem', sm: '0.875rem' },
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     maxWidth: { sm: 180, md: 220 },
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -503,18 +552,6 @@ const AssetTableView = ({
                   }}
                 >
                   {asset.serialNumber || '-'}
-                </TableCell>
-
-                {/* Brand */}
-                <TableCell
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    py: { xs: 0.75, sm: 1 },
-                    px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.mdUp,
-                  }}
-                >
-                  {asset.brand || '-'}
                 </TableCell>
 
                 {/* Model */}

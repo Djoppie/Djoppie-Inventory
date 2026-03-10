@@ -672,6 +672,7 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
   const isSkipped = plan.status === 'skipped';
   const isDone = isInstalled || isSkipped;
   const needsSerial = plan.requiresSerialNumber && !plan.metadata?.serialNumber && !isDone;
+  const needsBrand = plan.equipmentType === 'monitor' && plan.metadata?.brandPending === 'true' && !plan.brand && !isDone;
 
   const label = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
   const icon = EQUIPMENT_ICONS[plan.equipmentType] || '📦';
@@ -687,7 +688,7 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
           ? 'success.main'
           : isSkipped
           ? 'action.disabledBackground'
-          : needsSerial && interactive
+          : (needsSerial || needsBrand) && interactive
           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.08)' : 'rgba(255,152,0,0.05)'
           : 'background.paper',
         color: isInstalled ? 'success.contrastText' : undefined,
@@ -698,7 +699,7 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
           ? 'success.main'
           : isSkipped
           ? 'action.disabled'
-          : needsSerial && interactive
+          : (needsSerial || needsBrand) && interactive
           ? 'warning.main'
           : 'divider',
         cursor: interactive && !isDone ? 'pointer' : undefined,
@@ -715,7 +716,7 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
         ) : isSkipped ? (
           <SkipNextIcon color="disabled" />
         ) : (
-          <RadioButtonUncheckedIcon color={interactive ? (needsSerial ? 'warning' : 'primary') : 'disabled'} />
+          <RadioButtonUncheckedIcon color={interactive ? ((needsSerial || needsBrand) ? 'warning' : 'primary') : 'disabled'} />
         )}
       </ListItemIcon>
       <ListItemText
@@ -759,6 +760,11 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
             {needsSerial && interactive && (
               <Box component="span" sx={{ fontSize: '0.75rem', color: 'warning.main', fontWeight: 500 }}>
                 Serienummer vereist — tik om in te vullen
+              </Box>
+            )}
+            {needsBrand && interactive && (
+              <Box component="span" sx={{ fontSize: '0.75rem', color: 'warning.main', fontWeight: 500 }}>
+                Merk onbekend — selecteer model bij configuratie
               </Box>
             )}
           </Box>
@@ -903,7 +909,11 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
     }
   };
 
-  const canSave = !needsSerial || serialNumber.trim().length > 0;
+  // Check if save is allowed:
+  // 1. Serial is required and must be provided
+  // 2. For monitors with brandPending, a template must be selected
+  const monitorNeedsBrand = plan.equipmentType === 'monitor' && plan.metadata?.brandPending === 'true' && !plan.brand;
+  const canSave = (!needsSerial || serialNumber.trim().length > 0) && (!monitorNeedsBrand || selectedTemplate);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth disableRestoreFocus>
@@ -1020,11 +1030,18 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
           {/* Monitor: template + optional serial */}
           {plan.equipmentType === 'monitor' && (
             <>
+              {/* Warning if brand was not known during planning */}
+              {plan.metadata?.brandPending === 'true' && !selectedTemplate && !plan.brand && (
+                <Alert severity="warning" sx={{ mb: 1 }}>
+                  <strong>Merk onbekend:</strong> Selecteer een model om de monitor te kunnen registreren in de inventory. Zonder merk kan er geen assetcode worden gegenereerd.
+                </Alert>
+              )}
               <TemplateSelector
                 equipmentType={plan.equipmentType as EquipmentType}
                 value={selectedTemplate}
                 onChange={setSelectedTemplate}
                 label={`${label} model`}
+                required={plan.metadata?.brandPending === 'true' && !plan.brand}
               />
               <TextField
                 fullWidth

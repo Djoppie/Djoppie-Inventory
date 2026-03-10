@@ -27,6 +27,7 @@ import ViewToggle, { ViewMode } from '../components/common/ViewToggle';
 import CategorySwitcher from '../components/common/CategorySwitcher';
 import ExportDialog from '../components/export/ExportDialog';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
+import BulkEditDialog from '../components/assets/BulkEditDialog';
 import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
 import { getExpiringLeaseContracts } from '../api/leaseContracts.api';
 import { logger } from '../utils/logger';
@@ -42,6 +43,7 @@ import CommentIcon from '@mui/icons-material/Comment';
 import EventIcon from '@mui/icons-material/Event';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PrintIcon from '@mui/icons-material/Print';
+import EditIcon from '@mui/icons-material/Edit';
 
 const VIEW_MODE_STORAGE_KEY = 'djoppie-dashboard-view-mode';
 
@@ -103,6 +105,7 @@ const DashboardPage = () => {
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState<boolean>(false);
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState<boolean>(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -802,30 +805,57 @@ const DashboardPage = () => {
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             <ViewToggle value={viewMode} onChange={handleViewModeChange} />
 
-            {/* Bulk Print Button - shows when assets are selected */}
+            {/* Bulk Actions - shows when assets are selected */}
             {selectedAssetIds.size > 0 && (
-              <Tooltip title={t('bulkPrintLabel.printSelected')}>
-                <Badge badgeContent={selectedAssetIds.size} color="primary">
-                  <IconButton
-                    onClick={() => setBulkPrintDialogOpen(true)}
-                    sx={{
-                      borderRadius: 2,
-                      background: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.9) 0%, rgba(25, 118, 210, 0.8) 100%)'
-                          : 'linear-gradient(135deg, rgba(33, 150, 243, 1) 0%, rgba(25, 118, 210, 0.9) 100%)',
-                      color: '#fff',
-                      boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
-                      },
-                    }}
-                  >
-                    <PrintIcon />
-                  </IconButton>
-                </Badge>
-              </Tooltip>
+              <>
+                {/* Bulk Edit Button */}
+                <Tooltip title={t('bulkEdit.editSelected', { defaultValue: 'Edit Selected' })}>
+                  <Badge badgeContent={selectedAssetIds.size} color="primary">
+                    <IconButton
+                      onClick={() => setBulkEditDialogOpen(true)}
+                      sx={{
+                        borderRadius: 2,
+                        background: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.9) 0%, rgba(255, 153, 51, 0.8) 100%)'
+                            : 'linear-gradient(135deg, rgba(255, 119, 0, 1) 0%, rgba(255, 153, 51, 0.9) 100%)',
+                        color: '#fff',
+                        boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 6px 16px rgba(255, 119, 0, 0.4)',
+                        },
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Badge>
+                </Tooltip>
+
+                {/* Bulk Print Button */}
+                <Tooltip title={t('bulkPrintLabel.printSelected')}>
+                  <Badge badgeContent={selectedAssetIds.size} color="primary">
+                    <IconButton
+                      onClick={() => setBulkPrintDialogOpen(true)}
+                      sx={{
+                        borderRadius: 2,
+                        background: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.9) 0%, rgba(25, 118, 210, 0.8) 100%)'
+                            : 'linear-gradient(135deg, rgba(33, 150, 243, 1) 0%, rgba(25, 118, 210, 0.9) 100%)',
+                        color: '#fff',
+                        boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
+                        },
+                      }}
+                    >
+                      <PrintIcon />
+                    </IconButton>
+                  </Badge>
+                </Tooltip>
+              </>
             )}
 
             <Tooltip title={t('export.title')}>
@@ -1240,6 +1270,17 @@ const DashboardPage = () => {
         open={bulkPrintDialogOpen}
         onClose={() => setBulkPrintDialogOpen(false)}
         assets={selectedAssets}
+      />
+
+      {/* Bulk Edit Dialog */}
+      <BulkEditDialog
+        open={bulkEditDialogOpen}
+        onClose={() => setBulkEditDialogOpen(false)}
+        selectedAssetIds={Array.from(selectedAssetIds)}
+        onSuccess={() => {
+          setSelectedAssetIds(new Set());
+          refetch();
+        }}
       />
     </Box>
   );

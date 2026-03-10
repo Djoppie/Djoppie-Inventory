@@ -833,5 +833,30 @@
       "sync": "Sync status",
       "clear": "Terminal wissen"
     }
+  },
+  "bulkEdit": {
+    "title": "Bulk Wijzigen Assets",
+    "editSelected": "Geselecteerde Wijzigen",
+    "selectedCount": "{{count}} assets geselecteerd",
+    "instructions": "Vink de velden aan die je wilt bijwerken. Alleen aangevinkte velden worden gewijzigd.",
+    "service": "Dienst / Afdeling",
+    "dates": "Datums",
+    "purchaseDate": "Aankoopdatum",
+    "installationDate": "Installatiedatum",
+    "warrantyExpiry": "Garantie Tot",
+    "brandModel": "Merk & Model",
+    "brand": "Merk",
+    "brandPlaceholder": "Voer merk in",
+    "model": "Model",
+    "modelPlaceholder": "Voer model in",
+    "statusLocation": "Status & Locatie",
+    "status": "Status",
+    "installationLocation": "Installatielocatie",
+    "locationPlaceholder": "bijv. Kamer 101, Verdieping 2",
+    "update": "Assets Bijwerken",
+    "updating": "Bijwerken...",
+    "successMessage": "{{count}} assets succesvol bijgewerkt",
+    "partialSuccess": "{{updated}} assets bijgewerkt, {{failed}} mislukt",
+    "errors": "Fouten:"
   }
 }

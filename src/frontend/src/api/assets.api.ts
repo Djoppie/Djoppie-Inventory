@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto, PagedResult, PaginationParams } from '../types/asset.types';
+import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto, BulkUpdateAssetsDto, BulkUpdateAssetsResultDto, PagedResult, PaginationParams } from '../types/asset.types';
 
 /**
  * Retrieves all assets (unpaginated). Use for client-side filtering/sorting.
@@ -115,5 +115,23 @@ export const serialNumberExists = async (serialNumber: string, excludeAssetId?: 
 
 export const getAssetBySerialNumber = async (serialNumber: string): Promise<Asset> => {
   const response = await apiClient.get<Asset>(`/assets/by-serial/${serialNumber}`);
+  return response.data;
+};
+
+export const bulkUpdateAssets = async (data: BulkUpdateAssetsDto): Promise<BulkUpdateAssetsResultDto> => {
+  // Clean up data: convert empty strings to undefined for optional fields
+  const cleanedData: BulkUpdateAssetsDto = {
+    ...data,
+    purchaseDate: data.updatePurchaseDate && data.purchaseDate ? data.purchaseDate : undefined,
+    warrantyExpiry: data.updateWarrantyExpiry && data.warrantyExpiry ? data.warrantyExpiry : undefined,
+    installationDate: data.updateInstallationDate && data.installationDate ? data.installationDate : undefined,
+    brand: data.updateBrand && data.brand ? data.brand : undefined,
+    model: data.updateModel && data.model ? data.model : undefined,
+    status: data.updateStatus && data.status ? data.status : undefined,
+    installationLocation: data.updateInstallationLocation && data.installationLocation ? data.installationLocation : undefined,
+    serviceId: data.updateServiceId ? data.serviceId : undefined,
+  };
+
+  const response = await apiClient.put<BulkUpdateAssetsResultDto>('/assets/bulk', cleanedData);
   return response.data;
 };

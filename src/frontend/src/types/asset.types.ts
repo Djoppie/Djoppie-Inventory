@@ -180,6 +180,34 @@ export interface BulkCreateAssetResultDto {
   isFullySuccessful: boolean;
 }
 
+export interface BulkUpdateAssetsDto {
+  assetIds: number[];
+  serviceId?: number;
+  updateServiceId: boolean;
+  purchaseDate?: string;
+  updatePurchaseDate: boolean;
+  installationDate?: string;
+  updateInstallationDate: boolean;
+  warrantyExpiry?: string;
+  updateWarrantyExpiry: boolean;
+  brand?: string;
+  updateBrand: boolean;
+  model?: string;
+  updateModel: boolean;
+  status?: string;
+  updateStatus: boolean;
+  installationLocation?: string;
+  updateInstallationLocation: boolean;
+}
+
+export interface BulkUpdateAssetsResultDto {
+  updatedCount: number;
+  totalRequested: number;
+  updatedIds: number[];
+  failedIds: number[];
+  errors: string[];
+}
+
 /**
  * Generic paginated result type matching the backend PagedResultDto<T>
  */

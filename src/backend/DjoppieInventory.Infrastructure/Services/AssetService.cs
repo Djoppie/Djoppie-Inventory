@@ -356,6 +356,122 @@ public class AssetService : IAssetService
         return asset == null ? null : _mapper.Map<AssetDto>(asset);
     }
 
+    public async Task<BulkUpdateAssetsResultDto> BulkUpdateAssetsAsync(BulkUpdateAssetsDto bulkUpdateDto, string? performedBy = null, string? performedByEmail = null)
+    {
+        if (bulkUpdateDto == null)
+            throw new ArgumentNullException(nameof(bulkUpdateDto));
+
+        if (bulkUpdateDto.AssetIds == null || bulkUpdateDto.AssetIds.Count == 0)
+            throw new ArgumentException("At least one asset ID is required", nameof(bulkUpdateDto));
+
+        var result = new BulkUpdateAssetsResultDto
+        {
+            TotalRequested = bulkUpdateDto.AssetIds.Count
+        };
+
+        // Parse status if updating
+        AssetStatus? newStatus = null;
+        if (bulkUpdateDto.UpdateStatus && !string.IsNullOrWhiteSpace(bulkUpdateDto.Status))
+        {
+            if (Enum.TryParse<AssetStatus>(bulkUpdateDto.Status, true, out var status))
+            {
+                newStatus = status;
+            }
+            else
+            {
+                result.Errors.Add($"Invalid status value: {bulkUpdateDto.Status}");
+                return result;
+            }
+        }
+
+        foreach (var assetId in bulkUpdateDto.AssetIds)
+        {
+            try
+            {
+                var asset = await _assetRepository.GetByIdAsync(assetId);
+                if (asset == null)
+                {
+                    result.FailedIds.Add(assetId);
+                    result.Errors.Add($"Asset with ID {assetId} not found");
+                    continue;
+                }
+
+                // Track old values for event logging
+                var oldStatus = asset.Status;
+
+                // Apply updates only for fields marked for update
+                if (bulkUpdateDto.UpdateServiceId)
+                {
+                    asset.ServiceId = bulkUpdateDto.ServiceId;
+                }
+
+                if (bulkUpdateDto.UpdatePurchaseDate)
+                {
+                    asset.PurchaseDate = bulkUpdateDto.PurchaseDate;
+                }
+
+                if (bulkUpdateDto.UpdateInstallationDate)
+                {
+                    asset.InstallationDate = bulkUpdateDto.InstallationDate;
+                }
+
+                if (bulkUpdateDto.UpdateWarrantyExpiry)
+                {
+                    asset.WarrantyExpiry = bulkUpdateDto.WarrantyExpiry;
+                }
+
+                if (bulkUpdateDto.UpdateBrand)
+                {
+                    asset.Brand = bulkUpdateDto.Brand;
+                }
+
+                if (bulkUpdateDto.UpdateModel)
+                {
+                    asset.Model = bulkUpdateDto.Model;
+                }
+
+                if (bulkUpdateDto.UpdateStatus && newStatus.HasValue)
+                {
+                    asset.Status = newStatus.Value;
+                }
+
+                if (bulkUpdateDto.UpdateInstallationLocation)
+                {
+                    asset.InstallationLocation = bulkUpdateDto.InstallationLocation;
+                }
+
+                await _assetRepository.UpdateAsync(asset);
+                result.UpdatedIds.Add(assetId);
+                result.UpdatedCount++;
+
+                // Create status change event if status was changed
+                if (!string.IsNullOrWhiteSpace(performedBy) && bulkUpdateDto.UpdateStatus && oldStatus != asset.Status)
+                {
+                    await _assetEventService.CreateStatusChangedEventAsync(
+                        asset.Id,
+                        oldStatus,
+                        asset.Status,
+                        performedBy,
+                        performedByEmail,
+                        notes: "Bulk update",
+                        cancellationToken: default);
+                }
+            }
+            catch (Exception ex)
+            {
+                result.FailedIds.Add(assetId);
+                result.Errors.Add($"Error updating asset {assetId}: {ex.Message}");
+                _logger.LogError(ex, "Error during bulk update of asset {AssetId}", assetId);
+            }
+        }
+
+        _logger.LogInformation(
+            "Bulk asset update completed: {SuccessCount} successful out of {TotalCount} requested",
+            result.UpdatedCount, result.TotalRequested);
+
+        return result;
+    }
+
     /// <summary>
     /// Generates an alias from asset components: AssetTypeName - Brand - Model.
     /// Empty components are skipped.

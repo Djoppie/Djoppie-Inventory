@@ -6,6 +6,7 @@ import {
   Typography,
   Box,
   Paper,
+  Card,
   TextField,
   Button,
   IconButton,
@@ -734,6 +735,57 @@ const RolloutPlannerPage = () => {
           onDayClick={(day) => handleOpenDayDialog(day)}
           onDateClick={(date) => handleOpenDayDialog(undefined, date)}
         />
+      )}
+
+      {/* Prominent Execution Card - Show when session can be executed */}
+      {isEditMode && session && days && days.length > 0 && (session.status === 'Ready' || session.status === 'Planning') && (
+        <Card
+          elevation={0}
+          sx={{
+            mb: 3,
+            p: 3,
+            border: '2px solid #FF7700',
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(255, 119, 0, 0.02) 100%)',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            gap: 2,
+          }}
+        >
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" fontWeight={700} sx={{ color: '#FF7700', mb: 0.5 }}>
+              Klaar om te starten?
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {(() => {
+                const totalWorkplaces = days.reduce((sum, d) => sum + d.totalWorkplaces, 0);
+                const completedWorkplaces = days.reduce((sum, d) => sum + d.completedWorkplaces, 0);
+                if (completedWorkplaces > 0) {
+                  return `${completedWorkplaces} van ${totalWorkplaces} werkplekken voltooid. Ga door met de uitvoering.`;
+                }
+                return `${totalWorkplaces} werkplek${totalWorkplaces !== 1 ? 'ken' : ''} gepland over ${days.length} dag${days.length !== 1 ? 'en' : ''}. Start de uitvoering wanneer je klaar bent.`;
+              })()}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<PlayArrowIcon />}
+            onClick={() => navigate(`/rollouts/${session.id}/execute`)}
+            sx={{
+              bgcolor: '#FF7700',
+              px: 4,
+              py: 1.5,
+              fontSize: '1rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              '&:hover': { bgcolor: '#e66a00' },
+            }}
+          >
+            Start Uitvoering
+          </Button>
+        </Card>
       )}
 
       {/* Days Management - Only show in edit mode */}

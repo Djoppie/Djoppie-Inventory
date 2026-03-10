@@ -171,6 +171,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [oldComputerAsset, setOldComputerAsset] = useState<Asset | null>(null);
   const [newComputerSerial, setNewComputerSerial] = useState('');
   const [newComputerAsset, setNewComputerAsset] = useState<Asset | null>(null);
+  const [laptopTemplate, setLaptopTemplate] = useState<AssetTemplate | null>(null);
 
   // Docking state
   const [dockingTemplate, setDockingTemplate] = useState<AssetTemplate | null>(null);
@@ -265,6 +266,12 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     if (computerPlan) {
       setComputerType(computerPlan.equipmentType as 'laptop' | 'desktop');
       setNewComputerSerial(computerPlan.metadata?.serialNumber || '');
+      // Restore laptop template if available
+      if (computerPlan.equipmentType === 'laptop' && computerPlan.brand) {
+        setLaptopTemplate(findTpl(computerPlan.brand, computerPlan.model));
+      } else {
+        setLaptopTemplate(null);
+      }
       if (computerPlan.existingAssetId) {
         setNewComputerAsset({
           id: computerPlan.existingAssetId,
@@ -342,6 +349,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setOldComputerAsset(null);
     setNewComputerSerial('');
     setNewComputerAsset(null);
+    setLaptopTemplate(null);
     setDockingTemplate(null);
     setDockingSerial('');
     setMonitorCount(2);
@@ -403,6 +411,11 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       requiresSerialNumber: true,
       requiresQRCode: false, // Existing or found asset
       status: 'pending',
+      // Include laptop template info if selected (for laptops only)
+      ...(computerType === 'laptop' && laptopTemplate && {
+        brand: laptopTemplate.brand,
+        model: laptopTemplate.model,
+      }),
       metadata: {
         serialNumber: newComputerSerial,
         oldSerial: oldComputerSerial,
@@ -443,11 +456,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     // Monitor plans
     monitorConfigs.forEach((config, index) => {
       const linked = monitorLinkedAssets[index];
+      const hasBrand = !!(linked?.brand || config.template?.brand);
+      // Only create new asset if brand is known (no XXXX codes allowed for monitors)
+      const canCreateNew = !linked && !isRetroactive && hasBrand;
       plans.push({
         equipmentType: 'monitor',
-        createNew: !linked && !isRetroactive,
+        createNew: canCreateNew,
         requiresSerialNumber: false,
-        requiresQRCode: !linked && !isRetroactive,
+        requiresQRCode: canCreateNew,
         status: 'pending',
         brand: linked?.brand || config.template?.brand,
         model: linked?.model || config.template?.model,
@@ -455,6 +471,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           position: config.position,
           hasCamera: config.hasCamera.toString(),
           index: index.toString(),
+          brandPending: (!hasBrand && !linked).toString(), // Flag to indicate brand needs to be set at execution
         },
         ...(linked && {
           existingAssetId: linked.id,
@@ -937,6 +954,21 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     </Typography>
                   </Stack>
 
+                  {/* Laptop template selector - only for laptops */}
+                  {computerType === 'laptop' && (
+                    <Box sx={{ mb: 2 }}>
+                      <TemplateSelector
+                        equipmentType="laptop"
+                        value={laptopTemplate}
+                        onChange={setLaptopTemplate}
+                        label="Laptop type (optioneel)"
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        Bijv. PRO 16, PRO MAX — helpt bij het toewijzen van het juiste model
+                      </Typography>
+                    </Box>
+                  )}
+
                   <SerialSearchField
                     label="Nieuwe Computer Serienummer"
                     value={newComputerSerial}
@@ -1066,11 +1098,20 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                           helperText="Scan of typ de assetcode van de bestaande monitor"
                         />
                       ) : (
-                        <TemplateSelector
-                          equipmentType="monitor"
-                          value={config.template}
-                          onChange={(template) => updateMonitorConfig(index, 'template', template)}
-                        />
+                        <>
+                          <TemplateSelector
+                            equipmentType="monitor"
+                            value={config.template}
+                            onChange={(template) => updateMonitorConfig(index, 'template', template)}
+                          />
+                          {!config.template && (
+                            <Alert severity="info" sx={{ py: 0.5 }}>
+                              <Typography variant="caption">
+                                <strong>Let op:</strong> Merk onbekend. Bij uitvoering moet het merk gekend zijn voor registratie in de inventory. De reservatie wordt wel aangemaakt.
+                              </Typography>
+                            </Alert>
+                          )}
+                        </>
                       )}
 
                       <Box>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as assetsApi from '../api/assets.api';
-import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, PaginationParams } from '../types/asset.types';
+import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkUpdateAssetsDto, PaginationParams } from '../types/asset.types';
 import { isValidAssetCode } from '../utils/validation';
 
 /**
@@ -83,6 +83,18 @@ export const useBulkCreateAssets = () => {
     mutationFn: (data: BulkCreateAssetDto) => assetsApi.bulkCreateAssets(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+  });
+};
+
+export const useBulkUpdateAssets = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkUpdateAssetsDto) => assetsApi.bulkUpdateAssets(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['asset'] });
     },
   });
 };
