@@ -342,7 +342,7 @@ const LiveStatusSection = ({ serialNumber, assetId }: LiveStatusSectionProps) =>
                     {t('liveStatus.storage', 'Storage')}
                   </Typography>
                 </Stack>
-                {liveStatus.storageUsagePercent !== undefined ? (
+                {typeof liveStatus.storageUsagePercent === 'number' ? (
                   <>
                     <Typography variant="body1" fontWeight={600}>
                       {liveStatus.storageUsagePercent.toFixed(0)}% {t('liveStatus.used', 'used')}
