@@ -541,4 +541,61 @@ public class IntuneController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred while retrieving device health" });
         }
     }
+
+    /// <summary>
+    /// Retrieves combined live status for a device identified by serial number.
+    /// Includes compliance, health, sync info, and app summary in a single response.
+    /// Optimized for polling/auto-refresh scenarios.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Combined device live status information</returns>
+    /// <response code="200">Returns the device live status (check Found property)</response>
+    /// <response code="400">Invalid serial number format</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /api/intune/devices/serial/{serialNumber}/live-status
+    ///
+    /// This endpoint aggregates device information for live monitoring:
+    /// - Device identity and hardware info
+    /// - Compliance and encryption status
+    /// - Last sync timestamps
+    /// - Health score and recommendations
+    /// - Top 10 detected applications
+    ///
+    /// Always returns 200 with a DeviceLiveStatusDto - check the Found property
+    /// to determine if the device was found in Intune.
+    /// </remarks>
+    [HttpGet("devices/serial/{serialNumber}/live-status")]
+    [ProducesResponseType(typeof(DeviceLiveStatusDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceLiveStatusDto>> GetDeviceLiveStatus(string serialNumber)
+    {
+        try
+        {
+            if (!InputValidator.ValidateSerialNumber(serialNumber, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request for live status of device with serial: {SerialNumber}", serialNumber);
+            var result = await _intuneService.GetDeviceLiveStatusAsync(serialNumber);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve live status for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "Failed to retrieve device live status", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving live status for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "An unexpected error occurred" });
+        }
+    }
 }

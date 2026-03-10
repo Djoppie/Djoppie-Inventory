@@ -86,4 +86,13 @@ public interface IIntuneService
     /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
     /// <exception cref="InvalidOperationException">Thrown when the Graph API call fails</exception>
     Task<DeviceHealthDto?> GetDeviceHealthBySerialAsync(string serialNumber);
+
+    /// <summary>
+    /// Retrieves combined live status for a device including compliance, health, and app summary.
+    /// Optimized for polling scenarios - returns all data in a single call.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Combined live status data, or a result with Found=false if device not found</returns>
+    /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
+    Task<DeviceLiveStatusDto> GetDeviceLiveStatusAsync(string serialNumber);
 }

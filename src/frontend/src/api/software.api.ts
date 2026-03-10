@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import {
   DeviceDetectedAppsResponse,
   DeviceHealth,
+  DeviceLiveStatus,
   InstalledSoftware,
   detectedAppToInstalledSoftware,
 } from '../types/software.types';
@@ -80,6 +81,28 @@ export const softwareApi = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch device health:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get combined live status for a device (optimized for polling)
+   * @param serialNumber - The device serial number
+   * @returns Combined live status including compliance, health, apps summary
+   */
+  getDeviceLiveStatus: async (serialNumber: string): Promise<DeviceLiveStatus | null> => {
+    if (!serialNumber) {
+      console.warn('No serial number provided, cannot fetch live status');
+      return null;
+    }
+
+    try {
+      const response = await apiClient.get<DeviceLiveStatus>(
+        `/intune/devices/serial/${encodeURIComponent(serialNumber)}/live-status`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch device live status:', error);
       return null;
     }
   },

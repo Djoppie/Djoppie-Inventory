@@ -836,4 +836,134 @@ public class IntuneService : IIntuneService
         var score = Math.Max(0, baseScore - totalImpact);
         return score;
     }
+
+    /// <inheritdoc/>
+    public async Task<DeviceLiveStatusDto> GetDeviceLiveStatusAsync(string serialNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(serialNumber))
+            {
+                throw new ArgumentException("Serial number cannot be null or empty", nameof(serialNumber));
+            }
+
+            _logger.LogInformation("Retrieving live status for device with serial: {SerialNumber}", serialNumber);
+
+            // Find device by serial number
+            var device = await GetDeviceBySerialNumberAsync(serialNumber);
+
+            if (device == null || string.IsNullOrWhiteSpace(device.Id))
+            {
+                _logger.LogWarning("Device not found in Intune for serial: {SerialNumber}", serialNumber);
+                return new DeviceLiveStatusDto
+                {
+                    Found = false,
+                    ErrorMessage = $"Device with serial number '{serialNumber}' not found in Intune",
+                    SerialNumber = serialNumber,
+                    RetrievedAt = DateTime.UtcNow
+                };
+            }
+
+            // Fetch health and apps in parallel for better performance
+            var healthTask = GetDeviceHealthBySerialAsync(serialNumber);
+            var appsTask = GetDeviceInstalledAppsAsync(device.Id);
+
+            await Task.WhenAll(healthTask, appsTask);
+
+            var health = healthTask.Result;
+            var apps = appsTask.Result;
+
+            // Calculate storage percentage
+            double? storageUsagePercent = null;
+            if (device.TotalStorageSpaceInBytes.HasValue && device.TotalStorageSpaceInBytes > 0 && device.FreeStorageSpaceInBytes.HasValue)
+            {
+                var usedStorage = device.TotalStorageSpaceInBytes.Value - device.FreeStorageSpaceInBytes.Value;
+                storageUsagePercent = Math.Round((double)usedStorage / device.TotalStorageSpaceInBytes.Value * 100, 1);
+            }
+
+            // Build combined response
+            var liveStatus = new DeviceLiveStatusDto
+            {
+                Found = true,
+                DeviceId = device.Id,
+                DeviceName = device.DeviceName ?? "Unknown",
+                SerialNumber = device.SerialNumber,
+                AzureAdDeviceId = device.AzureADDeviceId,
+
+                // Hardware
+                Manufacturer = device.Manufacturer,
+                Model = device.Model,
+                OperatingSystem = device.OperatingSystem,
+                OsVersion = device.OsVersion,
+
+                // Compliance
+                ComplianceState = device.ComplianceState?.ToString(),
+                IsCompliant = device.ComplianceState == ComplianceState.Compliant,
+                IsEncrypted = device.IsEncrypted ?? false,
+                IsSupervised = device.IsSupervised ?? false,
+
+                // Sync
+                LastSyncDateTime = device.LastSyncDateTime?.DateTime,
+                EnrolledDateTime = device.EnrolledDateTime?.DateTime,
+
+                // User
+                UserPrincipalName = device.UserPrincipalName,
+                UserDisplayName = device.UserDisplayName,
+
+                // Storage
+                TotalStorageBytes = device.TotalStorageSpaceInBytes,
+                FreeStorageBytes = device.FreeStorageSpaceInBytes,
+                StorageUsagePercent = storageUsagePercent,
+
+                // Memory
+                PhysicalMemoryBytes = device.PhysicalMemoryInBytes,
+
+                RetrievedAt = DateTime.UtcNow
+            };
+
+            // Add health data if available
+            if (health != null)
+            {
+                liveStatus.HealthScore = health.HealthScore;
+                liveStatus.HealthStatus = health.HealthStatus;
+                liveStatus.Recommendations = health.Recommendations;
+            }
+
+            // Add apps summary (top 10 by name for display)
+            if (apps?.DetectedApps != null)
+            {
+                liveStatus.TotalDetectedApps = apps.TotalApps;
+                liveStatus.TopApps = apps.DetectedApps
+                    .OrderBy(a => a.DisplayName)
+                    .Take(10)
+                    .Select(a => new DetectedAppSummaryDto
+                    {
+                        DisplayName = a.DisplayName,
+                        Version = a.Version,
+                        Publisher = a.Publisher
+                    })
+                    .ToList();
+            }
+
+            _logger.LogInformation("Live status retrieved for {DeviceName}: Health={HealthScore}, Apps={AppCount}",
+                liveStatus.DeviceName, liveStatus.HealthScore, liveStatus.TotalDetectedApps);
+
+            return liveStatus;
+        }
+        catch (ArgumentException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving live status for device with serial {SerialNumber}", serialNumber);
+            return new DeviceLiveStatusDto
+            {
+                Found = false,
+                ErrorMessage = $"Error retrieving device status: {ex.Message}",
+                SerialNumber = serialNumber,
+                RetrievedAt = DateTime.UtcNow
+            };
+        }
+    }
 }

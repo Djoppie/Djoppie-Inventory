@@ -40,6 +40,7 @@ import PrintLabelDialog from '../components/print/PrintLabelDialog';
 import AssetEventHistory from '../components/assets/AssetEventHistory';
 import LeaseContractCard from '../components/assets/LeaseContractCard';
 import LeaseContractDialog from '../components/assets/LeaseContractDialog';
+import LiveStatusSection from '../components/intune/LiveStatusSection';
 import {
   getActiveLeaseContract,
   createLeaseContract,
@@ -479,6 +480,15 @@ const AssetDetailPage = () => {
               </Box>
             </CardContent>
           </Card>
+
+          {/* Intune Live Status - Only for Laptop/Desktop with serial number */}
+          {(asset.category === 'Laptop' || asset.category === 'Desktop') && asset.serialNumber && (
+            <LiveStatusSection
+              serialNumber={asset.serialNumber}
+              assetId={asset.id}
+              assetCode={asset.assetCode}
+            />
+          )}
 
           {/* Lifecycle Information */}
           <Card elevation={0} sx={scannerCardSx}>

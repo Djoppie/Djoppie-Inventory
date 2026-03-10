@@ -56,6 +56,77 @@ export interface DeviceHealth {
 }
 
 // ============================================
+// Live Status Types (for polling/auto-refresh)
+// ============================================
+
+/**
+ * Lightweight app summary for live status display
+ */
+export interface DetectedAppSummary {
+  displayName: string;
+  version?: string;
+  publisher?: string;
+}
+
+/**
+ * Combined live status response from Intune
+ * Aggregates device info, compliance, apps summary, and health
+ */
+export interface DeviceLiveStatus {
+  // Whether device was found in Intune
+  found: boolean;
+  errorMessage?: string;
+
+  // Device identity
+  deviceId?: string;
+  deviceName: string;
+  serialNumber?: string;
+  azureAdDeviceId?: string;
+
+  // Hardware
+  manufacturer?: string;
+  model?: string;
+  operatingSystem?: string;
+  osVersion?: string;
+
+  // Compliance
+  complianceState?: string;
+  isCompliant: boolean;
+  isEncrypted: boolean;
+  isSupervised: boolean;
+
+  // Sync
+  lastSyncDateTime?: string;
+  enrolledDateTime?: string;
+
+  // User
+  userPrincipalName?: string;
+  userDisplayName?: string;
+
+  // Storage
+  totalStorageBytes?: number;
+  freeStorageBytes?: number;
+  storageUsagePercent?: number;
+
+  // Memory
+  physicalMemoryBytes?: number;
+
+  // Health
+  healthScore: number;
+  healthStatus: 'Healthy' | 'Warning' | 'Critical' | 'Unknown';
+
+  // Apps summary
+  totalDetectedApps: number;
+  topApps: DetectedAppSummary[];
+
+  // Recommendations
+  recommendations: IctRecommendation[];
+
+  // Metadata
+  retrievedAt: string;
+}
+
+// ============================================
 // Software Types
 // ============================================
 
