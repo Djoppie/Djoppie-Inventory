@@ -22,7 +22,8 @@
     "saving": "Saving...",
     "deleting": "Deleting...",
     "or": "or",
-    "rowsPerPage": "Rows per page"
+    "rowsPerPage": "Rows per page",
+    "backToAsset": "Back to Asset"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -789,6 +790,48 @@
       "hour_one": "{{count}} hour",
       "hour_other": "{{count}} hours",
       "durationFormat": "{{days}}, {{hours}}"
+    }
+  },
+  "intune": {
+    "pageTitle": "Device Management",
+    "notCompatible": "Intune management is only available for Laptops and Desktops with a serial number."
+  },
+  "provisioning": {
+    "title": "Provisioning Timeline",
+    "loading": "Loading provisioning timeline...",
+    "noData": "No provisioning data available for this device",
+    "progress": "Progress",
+    "refresh": "Refresh timeline",
+    "totalDuration": "Total Duration",
+    "phases": {
+      "registration": "Autopilot Registration",
+      "enrollment": "Device Enrollment (OOBE)",
+      "deviceSetup": "Device Setup (ESP)",
+      "accountSetup": "Account Setup (ESP)",
+      "complete": "Ready for User"
+    },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "complete": "Complete",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    }
+  },
+  "terminal": {
+    "title": "Device Terminal",
+    "minimize": "Minimize",
+    "placeholder": "Type a command...",
+    "help": "Type 'help' for available commands",
+    "commands": {
+      "help": "Show available commands",
+      "status": "Device status overview",
+      "apps": "List installed applications",
+      "timeline": "Provisioning timeline",
+      "storage": "Storage information",
+      "user": "Assigned user info",
+      "sync": "Sync status",
+      "clear": "Clear terminal"
     }
   }
 }

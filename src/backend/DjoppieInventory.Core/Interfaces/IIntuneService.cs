@@ -95,4 +95,13 @@ public interface IIntuneService
     /// <returns>Combined live status data, or a result with Found=false if device not found</returns>
     /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
     Task<DeviceLiveStatusDto> GetDeviceLiveStatusAsync(string serialNumber);
+
+    /// <summary>
+    /// Retrieves the provisioning timeline for a device from Autopilot registration to user delivery.
+    /// Includes timing data for each provisioning phase.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Provisioning timeline with events, or a result with Found=false if device not found</returns>
+    /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
+    Task<ProvisioningTimelineDto> GetProvisioningTimelineAsync(string serialNumber);
 }

@@ -40,7 +40,7 @@ import PrintLabelDialog from '../components/print/PrintLabelDialog';
 import AssetEventHistory from '../components/assets/AssetEventHistory';
 import LeaseContractCard from '../components/assets/LeaseContractCard';
 import LeaseContractDialog from '../components/assets/LeaseContractDialog';
-import LiveStatusSection from '../components/intune/LiveStatusSection';
+import DevicesIcon from '@mui/icons-material/Devices';
 import {
   getActiveLeaseContract,
   createLeaseContract,
@@ -316,6 +316,27 @@ const AssetDetailPage = () => {
                   </IconButton>
                 </Tooltip>
               )}
+              {/* Show Intune Device Management button for Laptop/Desktop with serial number */}
+              {(asset.category === 'Laptop' || asset.category === 'Desktop') && asset.serialNumber && (
+                <Tooltip title={t('intune.pageTitle', 'Device Management')}>
+                  <IconButton
+                    onClick={() => navigate(buildRoute.assetIntune(asset.id))}
+                    sx={{
+                      ...iconButtonSx,
+                      color: 'success.main',
+                      '&:hover': {
+                        borderColor: 'success.main',
+                        boxShadow: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? '0 4px 16px rgba(76, 175, 80, 0.3)'
+                            : '0 2px 12px rgba(76, 175, 80, 0.2)',
+                      },
+                    }}
+                  >
+                    <DevicesIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title={t('common.edit')}>
                 <IconButton
                   onClick={handleEdit}
@@ -480,14 +501,6 @@ const AssetDetailPage = () => {
               </Box>
             </CardContent>
           </Card>
-
-          {/* Intune Live Status - Only for Laptop/Desktop with serial number */}
-          {(asset.category === 'Laptop' || asset.category === 'Desktop') && asset.serialNumber && (
-            <LiveStatusSection
-              serialNumber={asset.serialNumber}
-              assetId={asset.id}
-            />
-          )}
 
           {/* Lifecycle Information */}
           <Card elevation={0} sx={scannerCardSx}>

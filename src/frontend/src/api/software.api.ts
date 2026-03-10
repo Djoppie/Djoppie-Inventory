@@ -6,6 +6,7 @@ import {
   InstalledSoftware,
   detectedAppToInstalledSoftware,
 } from '../types/software.types';
+import { ProvisioningTimeline } from '../types/provisioning.types';
 
 /**
  * API service for installed software operations
@@ -103,6 +104,28 @@ export const softwareApi = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch device live status:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get provisioning timeline for a device
+   * @param serialNumber - The device serial number
+   * @returns Provisioning timeline with events from Autopilot registration to user delivery
+   */
+  getProvisioningTimeline: async (serialNumber: string): Promise<ProvisioningTimeline | null> => {
+    if (!serialNumber) {
+      console.warn('No serial number provided, cannot fetch provisioning timeline');
+      return null;
+    }
+
+    try {
+      const response = await apiClient.get<ProvisioningTimeline>(
+        `/intune/devices/serial/${encodeURIComponent(serialNumber)}/provisioning-timeline`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch provisioning timeline:', error);
       return null;
     }
   },

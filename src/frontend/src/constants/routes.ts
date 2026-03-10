@@ -31,6 +31,9 @@ export const ROUTES = {
   /** Installed software page (requires :id parameter) */
   ASSET_SOFTWARE: '/assets/:id/software',
 
+  /** Asset Intune management page (requires :id parameter) */
+  ASSET_INTUNE: '/assets/:id/intune',
+
   /** Rollout list page */
   ROLLOUTS: '/rollouts',
 
@@ -71,6 +74,13 @@ export const buildRoute = {
    * @returns The full route path
    */
   assetSoftware: (id: number | string) => `/assets/${id}/software`,
+
+  /**
+   * Builds the Intune management route with the specified asset ID.
+   * @param id - The asset ID
+   * @returns The full route path
+   */
+  assetIntune: (id: number | string) => `/assets/${id}/intune`,
 
   /**
    * Builds the rollout edit route with the specified rollout ID.

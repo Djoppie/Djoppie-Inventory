@@ -16,6 +16,7 @@ const BulkCreateAssetPage = lazy(() => import('./pages/BulkCreateAssetPage'));
 const AssetTemplatesPage = lazy(() => import('./pages/AssetTemplatesPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const InstalledSoftwarePage = lazy(() => import('./pages/InstalledSoftwarePage'));
+const AssetIntunePage = lazy(() => import('./pages/AssetIntunePage'));
 const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
 const RolloutPlannerPage = lazy(() => import('./pages/RolloutPlannerPage'));
 const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
@@ -47,6 +48,7 @@ function App() {
                   <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />
                   <Route path={ROUTES.ASSET_EDIT} element={<EditAssetPage />} />
                   <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
+                  <Route path={ROUTES.ASSET_INTUNE} element={<AssetIntunePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
                   <Route path={ROUTES.ADMIN} element={<AdminPage />} />
                   <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />

@@ -563,18 +563,12 @@ public class IntuneService : IIntuneService
                 RetrievedAt = DateTime.UtcNow
             };
 
-            // Get installed apps for software-based recommendations
-            var installedApps = await GetDeviceInstalledAppsAsync(device.Id);
-
-            // Generate recommendations
-            health.Recommendations = GenerateRecommendations(health, installedApps);
-
-            // Calculate health score based on recommendations
-            health.HealthScore = CalculateHealthScore(health.Recommendations);
+            // Calculate health score based on device status
+            health.HealthScore = CalculateHealthScore(health);
             health.HealthStatus = health.HealthScore >= 80 ? "Healthy" : health.HealthScore >= 50 ? "Warning" : "Critical";
 
-            _logger.LogInformation("Device health retrieved for {DeviceName}: Score={Score}, Status={Status}, Recommendations={RecommendationCount}",
-                health.DeviceName, health.HealthScore, health.HealthStatus, health.Recommendations.Count);
+            _logger.LogInformation("Device health retrieved for {DeviceName}: Score={Score}, Status={Status}",
+                health.DeviceName, health.HealthScore, health.HealthStatus);
 
             return health;
         }
@@ -590,250 +584,36 @@ public class IntuneService : IIntuneService
     }
 
     /// <summary>
-    /// Generate ICT recommendations based on device health and installed software
+    /// Calculate overall health score based on device status
     /// </summary>
-    private List<IctRecommendationDto> GenerateRecommendations(DeviceHealthDto health, DeviceDetectedAppsResponseDto? apps)
+    private int CalculateHealthScore(DeviceHealthDto health)
     {
-        var recommendations = new List<IctRecommendationDto>();
+        var score = 0;
 
-        // 1. Compliance Check
-        if (!health.IsCompliant)
-        {
-            recommendations.Add(new IctRecommendationDto
-            {
-                Id = "compliance-noncompliant",
-                Category = "Compliance",
-                Severity = "Critical",
-                Title = "Apparaat niet compliant",
-                Description = $"Dit apparaat voldoet niet aan de organisatiebeleidsregels. Status: {health.ComplianceState}",
-                RecommendedAction = "Controleer de Intune-portal voor specifieke compliance-problemen en los deze op.",
-                ImpactScore = 30
-            });
-        }
+        // Compliance: +30 points
+        if (health.IsCompliant)
+            score += 30;
 
-        // 2. Encryption Check
-        if (!health.IsEncrypted)
-        {
-            recommendations.Add(new IctRecommendationDto
-            {
-                Id = "security-encryption",
-                Category = "Security",
-                Severity = "Critical",
-                Title = "Schijfversleuteling niet actief",
-                Description = "BitLocker of andere schijfversleuteling is niet ingeschakeld op dit apparaat.",
-                RecommendedAction = "Schakel BitLocker-versleuteling in via Intune-beleid of handmatig via Configuratiescherm.",
-                ImpactScore = 25
-            });
-        }
+        // Encryption: +30 points
+        if (health.IsEncrypted)
+            score += 30;
 
-        // 3. Storage Check
-        if (health.StorageUsagePercent.HasValue)
-        {
-            if (health.StorageUsagePercent >= 90)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "performance-storage-critical",
-                    Category = "Performance",
-                    Severity = "Critical",
-                    Title = "Opslag bijna vol",
-                    Description = $"De schijf is voor {health.StorageUsagePercent:F0}% vol. Dit kan prestatieproblemen veroorzaken.",
-                    RecommendedAction = "Verwijder ongebruikte bestanden, leeg de prullenbak, en overweeg schijfopruiming uit te voeren.",
-                    ImpactScore = 20
-                });
-            }
-            else if (health.StorageUsagePercent >= 80)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "performance-storage-warning",
-                    Category = "Performance",
-                    Severity = "Medium",
-                    Title = "Opslag raakt vol",
-                    Description = $"De schijf is voor {health.StorageUsagePercent:F0}% vol. Plan ruimte vrij te maken.",
-                    RecommendedAction = "Overweeg oude bestanden te archiveren of naar OneDrive te verplaatsen.",
-                    ImpactScore = 10
-                });
-            }
-        }
+        // Storage: +20 points (if not critical)
+        if (!health.StorageUsagePercent.HasValue || health.StorageUsagePercent < 90)
+            score += 20;
+        else if (health.StorageUsagePercent < 95)
+            score += 10;
 
-        // 4. Last Sync Check
+        // Recent sync: +20 points (within 7 days)
         if (health.LastSyncDateTime.HasValue)
         {
             var daysSinceSync = (DateTime.UtcNow - health.LastSyncDateTime.Value).TotalDays;
-            if (daysSinceSync > 14)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "maintenance-sync-overdue",
-                    Category = "Maintenance",
-                    Severity = "High",
-                    Title = "Lange tijd geen sync",
-                    Description = $"Dit apparaat heeft {(int)daysSinceSync} dagen niet gesynchroniseerd met Intune.",
-                    RecommendedAction = "Controleer of het apparaat regelmatig met internet verbonden is en synchroniseer handmatig via Instellingen > Accounts > Toegang tot werk of school.",
-                    ImpactScore = 15
-                });
-            }
-            else if (daysSinceSync > 7)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "maintenance-sync-warning",
-                    Category = "Maintenance",
-                    Severity = "Low",
-                    Title = "Sync aanbevolen",
-                    Description = $"Dit apparaat heeft {(int)daysSinceSync} dagen niet gesynchroniseerd.",
-                    RecommendedAction = "Synchroniseer het apparaat met Intune om de laatste beleidsregels en updates te ontvangen.",
-                    ImpactScore = 5
-                });
-            }
+            if (daysSinceSync <= 7)
+                score += 20;
+            else if (daysSinceSync <= 14)
+                score += 10;
         }
 
-        // 5. OS Version Check (Windows specific)
-        if (health.OperatingSystem?.ToLowerInvariant().Contains("windows") == true && !string.IsNullOrEmpty(health.OsVersion))
-        {
-            // Check for Windows 10 vs 11
-            if (health.OsVersion.StartsWith("10.0.1"))
-            {
-                // Windows 10 builds start with 10.0.1xxxx
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "maintenance-os-upgrade",
-                    Category = "Maintenance",
-                    Severity = "Medium",
-                    Title = "Windows 11 upgrade beschikbaar",
-                    Description = $"Dit apparaat draait nog op Windows 10 (versie {health.OsVersion}). Windows 11 biedt betere beveiliging en prestaties.",
-                    RecommendedAction = "Controleer of de hardware compatibel is met Windows 11 en plan een upgrade.",
-                    ImpactScore = 10
-                });
-            }
-        }
-
-        // 6. Memory Check
-        if (health.PhysicalMemoryBytes.HasValue)
-        {
-            var memoryGB = health.PhysicalMemoryBytes.Value / (1024.0 * 1024.0 * 1024.0);
-            if (memoryGB < 8)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "performance-memory-low",
-                    Category = "Performance",
-                    Severity = "Medium",
-                    Title = "Beperkt werkgeheugen",
-                    Description = $"Dit apparaat heeft slechts {memoryGB:F1} GB RAM. Dit kan prestatieproblemen veroorzaken bij moderne applicaties.",
-                    RecommendedAction = "Overweeg een geheugenupgrade naar minimaal 8 GB of 16 GB voor betere prestaties.",
-                    ImpactScore = 10
-                });
-            }
-        }
-
-        // 7. Software-based recommendations
-        if (apps?.DetectedApps != null && apps.DetectedApps.Count > 0)
-        {
-            var appNames = apps.DetectedApps.Select(a => a.DisplayName?.ToLowerInvariant() ?? "").ToList();
-
-            // Check for security software
-            var hasAntivirus = appNames.Any(a =>
-                a.Contains("defender") ||
-                a.Contains("antivirus") ||
-                a.Contains("norton") ||
-                a.Contains("mcafee") ||
-                a.Contains("kaspersky") ||
-                a.Contains("bitdefender") ||
-                a.Contains("avast") ||
-                a.Contains("avg "));
-
-            if (!hasAntivirus)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "security-antivirus-missing",
-                    Category = "Security",
-                    Severity = "High",
-                    Title = "Geen antivirussoftware gedetecteerd",
-                    Description = "Er is geen antivirussoftware gedetecteerd op dit apparaat.",
-                    RecommendedAction = "Controleer of Windows Defender actief is of installeer een goedgekeurde antivirusoplossing.",
-                    ImpactScore = 20
-                });
-            }
-
-            // Check for outdated browsers
-            var hasOldIE = appNames.Any(a => a.Contains("internet explorer"));
-            if (hasOldIE)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "software-ie-deprecated",
-                    Category = "Software",
-                    Severity = "Medium",
-                    Title = "Internet Explorer gedetecteerd",
-                    Description = "Internet Explorer is verouderd en niet meer ondersteund. Dit vormt een beveiligingsrisico.",
-                    RecommendedAction = "Gebruik Microsoft Edge of een andere moderne browser. Verwijder IE indien mogelijk.",
-                    ImpactScore = 10
-                });
-            }
-
-            // Check for potentially unnecessary software
-            var bloatwarePatterns = new[] { "toolbar", "search bar", "coupon", "adware" };
-            var potentialBloatware = apps.DetectedApps
-                .Where(a => bloatwarePatterns.Any(p => (a.DisplayName?.ToLowerInvariant() ?? "").Contains(p)))
-                .ToList();
-
-            if (potentialBloatware.Count > 0)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "software-bloatware",
-                    Category = "Software",
-                    Severity = "Low",
-                    Title = "Mogelijke ongewenste software",
-                    Description = $"Er zijn {potentialBloatware.Count} applicaties gedetecteerd die mogelijk ongewenst zijn: {string.Join(", ", potentialBloatware.Take(3).Select(a => a.DisplayName))}",
-                    RecommendedAction = "Controleer deze applicaties en verwijder ze indien ze niet nodig zijn.",
-                    ImpactScore = 5
-                });
-            }
-
-            // Check total app count (too many apps can impact performance)
-            if (apps.TotalApps > 150)
-            {
-                recommendations.Add(new IctRecommendationDto
-                {
-                    Id = "software-too-many",
-                    Category = "Performance",
-                    Severity = "Low",
-                    Title = "Veel geïnstalleerde applicaties",
-                    Description = $"Dit apparaat heeft {apps.TotalApps} applicaties geïnstalleerd. Dit kan de opstarttijd en prestaties beïnvloeden.",
-                    RecommendedAction = "Review de geïnstalleerde applicaties en verwijder software die niet meer nodig is.",
-                    ImpactScore = 5
-                });
-            }
-        }
-
-        // Sort by severity and impact
-        var severityOrder = new Dictionary<string, int>
-        {
-            { "Critical", 0 },
-            { "High", 1 },
-            { "Medium", 2 },
-            { "Low", 3 },
-            { "Info", 4 }
-        };
-
-        return recommendations
-            .OrderBy(r => severityOrder.GetValueOrDefault(r.Severity, 5))
-            .ThenByDescending(r => r.ImpactScore)
-            .ToList();
-    }
-
-    /// <summary>
-    /// Calculate overall health score based on recommendations
-    /// </summary>
-    private int CalculateHealthScore(List<IctRecommendationDto> recommendations)
-    {
-        var baseScore = 100;
-        var totalImpact = recommendations.Sum(r => r.ImpactScore);
-        var score = Math.Max(0, baseScore - totalImpact);
         return score;
     }
 
@@ -926,7 +706,6 @@ public class IntuneService : IIntuneService
             {
                 liveStatus.HealthScore = health.HealthScore;
                 liveStatus.HealthStatus = health.HealthStatus;
-                liveStatus.Recommendations = health.Recommendations;
             }
 
             // Add apps summary (top 10 by name for display)
@@ -965,5 +744,350 @@ public class IntuneService : IIntuneService
                 RetrievedAt = DateTime.UtcNow
             };
         }
+    }
+
+    /// <inheritdoc/>
+    public async Task<ProvisioningTimelineDto> GetProvisioningTimelineAsync(string serialNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(serialNumber))
+            {
+                throw new ArgumentException("Serial number cannot be null or empty", nameof(serialNumber));
+            }
+
+            _logger.LogInformation("Retrieving provisioning timeline for device with serial: {SerialNumber}", serialNumber);
+
+            // Validate input to prevent injection attacks
+            if (!ODataSanitizer.IsValidFilterValue(serialNumber))
+            {
+                _logger.LogWarning("Invalid serial number format detected: {SerialNumber}", serialNumber);
+                throw new ArgumentException("Invalid serial number format", nameof(serialNumber));
+            }
+
+            // Find the managed device first to get enrollment data
+            var device = await GetDeviceBySerialNumberAsync(serialNumber);
+
+            // Query Windows Autopilot device identities using beta API
+            var autopilotEndpoint = $"https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=serialNumber eq '{ODataSanitizer.SanitizeForFilter(serialNumber)}'";
+
+            var requestInfo = new Microsoft.Kiota.Abstractions.RequestInformation
+            {
+                HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                URI = new Uri(autopilotEndpoint)
+            };
+
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+
+            using var httpClient = new HttpClient();
+            var autopilotResponse = await httpClient.SendAsync(nativeRequest);
+
+            JsonElement? autopilotDevice = null;
+
+            if (autopilotResponse.IsSuccessStatusCode)
+            {
+                var autopilotContent = await autopilotResponse.Content.ReadAsStringAsync();
+                var autopilotJson = JsonDocument.Parse(autopilotContent).RootElement;
+
+                if (autopilotJson.TryGetProperty("value", out var autopilotArray) &&
+                    autopilotArray.ValueKind == JsonValueKind.Array &&
+                    autopilotArray.GetArrayLength() > 0)
+                {
+                    autopilotDevice = autopilotArray[0];
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Failed to query Autopilot devices. Status: {StatusCode}", autopilotResponse.StatusCode);
+            }
+
+            // If neither device nor autopilot data found, return not found
+            if (device == null && !autopilotDevice.HasValue)
+            {
+                _logger.LogWarning("Device not found in Intune or Autopilot for serial: {SerialNumber}", serialNumber);
+                return new ProvisioningTimelineDto
+                {
+                    Found = false,
+                    ErrorMessage = $"Device with serial number '{serialNumber}' not found in Intune or Autopilot",
+                    SerialNumber = serialNumber,
+                    RetrievedAt = DateTime.UtcNow
+                };
+            }
+
+            // Build the provisioning timeline
+            var timeline = new ProvisioningTimelineDto
+            {
+                Found = true,
+                DeviceId = device?.Id,
+                SerialNumber = serialNumber,
+                RetrievedAt = DateTime.UtcNow
+            };
+
+            var events = new List<ProvisioningEventDto>();
+
+            // Event 1: Autopilot Registration
+            DateTime? autopilotRegisteredAt = null;
+            if (autopilotDevice.HasValue)
+            {
+                if (autopilotDevice.Value.TryGetProperty("deploymentProfileAssignmentDateTime", out var deploymentDateTime) &&
+                    deploymentDateTime.ValueKind != JsonValueKind.Null)
+                {
+                    autopilotRegisteredAt = deploymentDateTime.GetDateTime();
+                }
+                else if (autopilotDevice.Value.TryGetProperty("lastContactedDateTime", out var lastContactDateTime) &&
+                    lastContactDateTime.ValueKind != JsonValueKind.Null)
+                {
+                    autopilotRegisteredAt = lastContactDateTime.GetDateTime();
+                }
+            }
+
+            timeline.AutopilotRegisteredAt = autopilotRegisteredAt;
+            events.Add(new ProvisioningEventDto
+            {
+                Id = "registration",
+                Phase = "Registration",
+                Status = autopilotRegisteredAt.HasValue ? "Complete" : (autopilotDevice.HasValue ? "InProgress" : "Pending"),
+                Title = "Autopilot Registration",
+                Description = autopilotDevice.HasValue ? "Device registered in Windows Autopilot" : "Awaiting Autopilot registration",
+                StartedAt = autopilotRegisteredAt,
+                CompletedAt = autopilotRegisteredAt,
+                DurationFormatted = autopilotRegisteredAt.HasValue ? "< 1 min" : null,
+                Order = 1
+            });
+
+            // Event 2: Enrollment (OOBE)
+            DateTime? enrollmentStartedAt = null;
+            DateTime? enrollmentCompletedAt = null;
+
+            if (device != null)
+            {
+                enrollmentCompletedAt = device.EnrolledDateTime?.DateTime;
+                // Estimate enrollment started slightly before completion
+                if (enrollmentCompletedAt.HasValue && autopilotRegisteredAt.HasValue)
+                {
+                    // If we have autopilot registration, enrollment started after that
+                    enrollmentStartedAt = autopilotRegisteredAt.Value.AddMinutes(1);
+                }
+                else if (enrollmentCompletedAt.HasValue)
+                {
+                    enrollmentStartedAt = enrollmentCompletedAt.Value.AddMinutes(-5); // Estimate
+                }
+            }
+
+            timeline.EnrollmentStartedAt = enrollmentStartedAt;
+
+            var enrollmentDuration = enrollmentStartedAt.HasValue && enrollmentCompletedAt.HasValue
+                ? enrollmentCompletedAt.Value - enrollmentStartedAt.Value
+                : (TimeSpan?)null;
+
+            events.Add(new ProvisioningEventDto
+            {
+                Id = "enrollment",
+                Phase = "Enrollment",
+                Status = enrollmentCompletedAt.HasValue ? "Complete" : (device != null ? "InProgress" : "Pending"),
+                Title = "Device Enrollment (OOBE)",
+                Description = device != null ? $"Enrolled via {device.ManagementAgent}" : "Awaiting MDM enrollment",
+                StartedAt = enrollmentStartedAt,
+                CompletedAt = enrollmentCompletedAt,
+                Duration = enrollmentDuration,
+                DurationFormatted = FormatDuration(enrollmentDuration),
+                Order = 2
+            });
+
+            // Event 3: Device Setup (ESP Phase 1)
+            // Estimate based on enrollment completion
+            DateTime? deviceSetupStartedAt = enrollmentCompletedAt;
+            DateTime? deviceSetupCompletedAt = null;
+
+            if (device != null && enrollmentCompletedAt.HasValue)
+            {
+                // If device is compliant and has synced, device setup is likely complete
+                var hasCompletedDeviceSetup = device.ComplianceState == ComplianceState.Compliant ||
+                                               device.ComplianceState == ComplianceState.ConfigManager ||
+                                               device.LastSyncDateTime?.DateTime > enrollmentCompletedAt.Value.AddMinutes(10);
+
+                if (hasCompletedDeviceSetup && device.LastSyncDateTime.HasValue)
+                {
+                    // Estimate device setup took about half the time between enrollment and first meaningful sync
+                    var timeSinceEnrollment = device.LastSyncDateTime.Value.DateTime - enrollmentCompletedAt.Value;
+                    if (timeSinceEnrollment.TotalMinutes > 5)
+                    {
+                        deviceSetupCompletedAt = enrollmentCompletedAt.Value.AddMinutes(timeSinceEnrollment.TotalMinutes * 0.4);
+                    }
+                }
+            }
+
+            timeline.EspDeviceSetupStartedAt = deviceSetupStartedAt;
+            timeline.EspDeviceSetupCompletedAt = deviceSetupCompletedAt;
+
+            var deviceSetupDuration = deviceSetupStartedAt.HasValue && deviceSetupCompletedAt.HasValue
+                ? deviceSetupCompletedAt.Value - deviceSetupStartedAt.Value
+                : (TimeSpan?)null;
+
+            events.Add(new ProvisioningEventDto
+            {
+                Id = "device-setup",
+                Phase = "DeviceSetup",
+                Status = deviceSetupCompletedAt.HasValue ? "Complete" : (deviceSetupStartedAt.HasValue ? "InProgress" : "Pending"),
+                Title = "Device Setup (ESP)",
+                Description = "Installing policies, certificates, and device configurations",
+                StartedAt = deviceSetupStartedAt,
+                CompletedAt = deviceSetupCompletedAt,
+                Duration = deviceSetupDuration,
+                DurationFormatted = FormatDuration(deviceSetupDuration),
+                Order = 3
+            });
+
+            // Event 4: Account Setup (ESP Phase 2)
+            DateTime? accountSetupStartedAt = deviceSetupCompletedAt;
+            DateTime? accountSetupCompletedAt = null;
+
+            if (device != null && deviceSetupCompletedAt.HasValue && device.LastSyncDateTime.HasValue)
+            {
+                // Account setup completes when user can use the device
+                var hasUser = !string.IsNullOrEmpty(device.UserPrincipalName);
+                if (hasUser)
+                {
+                    // Estimate account setup completed about 60% through the remaining time
+                    var timeSinceDeviceSetup = device.LastSyncDateTime.Value.DateTime - deviceSetupCompletedAt.Value;
+                    if (timeSinceDeviceSetup.TotalMinutes > 2)
+                    {
+                        accountSetupCompletedAt = deviceSetupCompletedAt.Value.AddMinutes(timeSinceDeviceSetup.TotalMinutes * 0.6);
+                    }
+                }
+            }
+
+            timeline.EspAccountSetupStartedAt = accountSetupStartedAt;
+            timeline.EspAccountSetupCompletedAt = accountSetupCompletedAt;
+
+            var accountSetupDuration = accountSetupStartedAt.HasValue && accountSetupCompletedAt.HasValue
+                ? accountSetupCompletedAt.Value - accountSetupStartedAt.Value
+                : (TimeSpan?)null;
+
+            events.Add(new ProvisioningEventDto
+            {
+                Id = "account-setup",
+                Phase = "AccountSetup",
+                Status = accountSetupCompletedAt.HasValue ? "Complete" : (accountSetupStartedAt.HasValue ? "InProgress" : "Pending"),
+                Title = "Account Setup (ESP)",
+                Description = "Installing user applications and configuring user profile",
+                StartedAt = accountSetupStartedAt,
+                CompletedAt = accountSetupCompletedAt,
+                Duration = accountSetupDuration,
+                DurationFormatted = FormatDuration(accountSetupDuration),
+                Order = 4
+            });
+
+            // Event 5: Complete / Ready for User
+            DateTime? provisioningCompletedAt = null;
+            var hasCompletedProvisioning = device != null &&
+                                           !string.IsNullOrEmpty(device.UserPrincipalName) &&
+                                           device.LastSyncDateTime.HasValue &&
+                                           accountSetupCompletedAt.HasValue;
+
+            if (hasCompletedProvisioning && device!.LastSyncDateTime.HasValue)
+            {
+                provisioningCompletedAt = accountSetupCompletedAt!.Value.AddMinutes(
+                    (device.LastSyncDateTime.Value.DateTime - accountSetupCompletedAt.Value).TotalMinutes * 0.3);
+            }
+
+            timeline.ProvisioningCompletedAt = provisioningCompletedAt;
+            timeline.UserSignInAt = provisioningCompletedAt; // Estimate user sign-in at completion
+
+            events.Add(new ProvisioningEventDto
+            {
+                Id = "complete",
+                Phase = "Complete",
+                Status = provisioningCompletedAt.HasValue ? "Complete" : "Pending",
+                Title = "Ready for User",
+                Description = device?.UserDisplayName != null
+                    ? $"Assigned to {device.UserDisplayName}"
+                    : "Awaiting user assignment",
+                StartedAt = provisioningCompletedAt,
+                CompletedAt = provisioningCompletedAt,
+                Order = 5
+            });
+
+            timeline.Events = events;
+
+            // Calculate overall status and progress
+            var completedCount = events.Count(e => e.Status == "Complete");
+            var totalCount = events.Count;
+            var hasFailure = events.Any(e => e.Status == "Failed");
+            var hasInProgress = events.Any(e => e.Status == "InProgress");
+
+            timeline.ProgressPercent = (int)Math.Round((double)completedCount / totalCount * 100);
+
+            if (hasFailure)
+                timeline.OverallStatus = "Failed";
+            else if (completedCount == totalCount)
+                timeline.OverallStatus = "Complete";
+            else if (hasInProgress || completedCount > 0)
+                timeline.OverallStatus = "InProgress";
+            else
+                timeline.OverallStatus = "Pending";
+
+            // Calculate total duration
+            if (autopilotRegisteredAt.HasValue && provisioningCompletedAt.HasValue)
+            {
+                timeline.TotalDuration = provisioningCompletedAt.Value - autopilotRegisteredAt.Value;
+                timeline.TotalDurationFormatted = FormatDuration(timeline.TotalDuration);
+            }
+            else if (autopilotRegisteredAt.HasValue && device?.LastSyncDateTime.HasValue == true)
+            {
+                // Use last sync as end point if provisioning not complete
+                var estimatedDuration = device.LastSyncDateTime.Value.DateTime - autopilotRegisteredAt.Value;
+                if (estimatedDuration.TotalMinutes > 0)
+                {
+                    timeline.TotalDuration = estimatedDuration;
+                    timeline.TotalDurationFormatted = FormatDuration(estimatedDuration) + " (ongoing)";
+                }
+            }
+
+            _logger.LogInformation("Provisioning timeline retrieved for serial {SerialNumber}: Status={Status}, Progress={Progress}%",
+                serialNumber, timeline.OverallStatus, timeline.ProgressPercent);
+
+            return timeline;
+        }
+        catch (ArgumentException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving provisioning timeline for device with serial {SerialNumber}", serialNumber);
+            return new ProvisioningTimelineDto
+            {
+                Found = false,
+                ErrorMessage = $"Error retrieving provisioning timeline: {ex.Message}",
+                SerialNumber = serialNumber,
+                RetrievedAt = DateTime.UtcNow
+            };
+        }
+    }
+
+    /// <summary>
+    /// Format a TimeSpan as a human-readable duration string
+    /// </summary>
+    private static string? FormatDuration(TimeSpan? duration)
+    {
+        if (!duration.HasValue)
+            return null;
+
+        var ts = duration.Value;
+
+        if (ts.TotalSeconds < 60)
+            return $"{(int)ts.TotalSeconds} sec";
+
+        if (ts.TotalMinutes < 60)
+        {
+            var mins = (int)ts.TotalMinutes;
+            var secs = ts.Seconds;
+            return secs > 0 ? $"{mins} min {secs} sec" : $"{mins} min";
+        }
+
+        var hours = (int)ts.TotalHours;
+        var remainingMins = ts.Minutes;
+        return remainingMins > 0 ? $"{hours} hr {remainingMins} min" : $"{hours} hr";
     }
 }

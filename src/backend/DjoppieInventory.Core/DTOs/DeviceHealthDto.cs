@@ -141,53 +141,7 @@ public class DeviceHealthDto
     public string HealthStatus { get; set; } = "Unknown";
 
     /// <summary>
-    /// List of ICT recommendations for this device
-    /// </summary>
-    public List<IctRecommendationDto> Recommendations { get; set; } = new();
-
-    /// <summary>
     /// When this data was retrieved
     /// </summary>
     public DateTime RetrievedAt { get; set; } = DateTime.UtcNow;
-}
-
-/// <summary>
-/// ICT recommendation for device improvement
-/// </summary>
-public class IctRecommendationDto
-{
-    /// <summary>
-    /// Unique identifier for this recommendation type
-    /// </summary>
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Category: Security, Performance, Maintenance, Compliance, Software
-    /// </summary>
-    public string Category { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Severity: Critical, High, Medium, Low, Info
-    /// </summary>
-    public string Severity { get; set; } = "Info";
-
-    /// <summary>
-    /// Short title of the recommendation
-    /// </summary>
-    public string Title { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Detailed description
-    /// </summary>
-    public string Description { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Recommended action to take
-    /// </summary>
-    public string? RecommendedAction { get; set; }
-
-    /// <summary>
-    /// Impact on device health score
-    /// </summary>
-    public int ImpactScore { get; set; }
 }

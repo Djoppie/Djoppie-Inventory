@@ -155,13 +155,6 @@ public class DeviceLiveStatusDto
     /// </summary>
     public List<DetectedAppSummaryDto> TopApps { get; set; } = new();
 
-    // === Recommendations ===
-
-    /// <summary>
-    /// List of ICT recommendations for this device
-    /// </summary>
-    public List<IctRecommendationDto> Recommendations { get; set; } = new();
-
     // === Metadata ===
 
     /// <summary>

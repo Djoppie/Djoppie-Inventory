@@ -36,17 +36,12 @@ import DownloadIcon from '@mui/icons-material/Download';
 import CategoryIcon from '@mui/icons-material/Category';
 import BusinessIcon from '@mui/icons-material/Business';
 import StorageIcon from '@mui/icons-material/Storage';
-import SecurityIcon from '@mui/icons-material/Security';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MemoryIcon from '@mui/icons-material/Memory';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import SyncIcon from '@mui/icons-material/Sync';
 import ComputerIcon from '@mui/icons-material/Computer';
-import SpeedIcon from '@mui/icons-material/Speed';
-import BuildIcon from '@mui/icons-material/Build';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import GppBadIcon from '@mui/icons-material/GppBad';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -58,7 +53,6 @@ import {
   SoftwareFilters,
   SoftwareSortOption,
   DeviceHealth,
-  IctRecommendation,
 } from '../types/software.types';
 import { softwareApi } from '../api/software.api';
 import { logger } from '../utils/logger';
@@ -134,56 +128,6 @@ const formatDate = (dateString?: string): string => {
     return format(new Date(dateString), 'MMM dd, yyyy');
   } catch {
     return dateString;
-  }
-};
-
-// Helper function to get severity icon
-const getSeverityIcon = (severity: IctRecommendation['severity']) => {
-  switch (severity) {
-    case 'Critical':
-      return <ErrorOutlineIcon sx={{ color: '#F44336' }} />;
-    case 'High':
-      return <WarningAmberIcon sx={{ color: '#FF9800' }} />;
-    case 'Medium':
-      return <WarningAmberIcon sx={{ color: '#FFC107' }} />;
-    case 'Low':
-      return <InfoOutlinedIcon sx={{ color: '#2196F3' }} />;
-    default:
-      return <InfoOutlinedIcon sx={{ color: '#9E9E9E' }} />;
-  }
-};
-
-// Helper function to get severity color
-const getSeverityColor = (severity: IctRecommendation['severity']) => {
-  switch (severity) {
-    case 'Critical':
-      return '#F44336';
-    case 'High':
-      return '#FF9800';
-    case 'Medium':
-      return '#FFC107';
-    case 'Low':
-      return '#2196F3';
-    default:
-      return '#9E9E9E';
-  }
-};
-
-// Helper function to get category icon
-const getCategoryIcon = (category: IctRecommendation['category']) => {
-  switch (category) {
-    case 'Security':
-      return <SecurityIcon fontSize="small" />;
-    case 'Performance':
-      return <SpeedIcon fontSize="small" />;
-    case 'Maintenance':
-      return <BuildIcon fontSize="small" />;
-    case 'Compliance':
-      return <VerifiedUserIcon fontSize="small" />;
-    case 'Software':
-      return <AppsIcon fontSize="small" />;
-    default:
-      return <InfoOutlinedIcon fontSize="small" />;
   }
 };
 
@@ -567,17 +511,6 @@ const InstalledSoftwarePage = () => {
                               : '#F44336',
                       }}
                     />
-                    {deviceHealth.recommendations.length > 0 && (
-                      <Chip
-                        label={`${deviceHealth.recommendations.length} aanbevelingen`}
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          bgcolor: 'rgba(33, 150, 243, 0.1)',
-                          color: '#2196F3',
-                        }}
-                      />
-                    )}
                   </Box>
                 </Box>
               </Box>
@@ -722,105 +655,6 @@ const InstalledSoftwarePage = () => {
                     />
                   )}
                 </Box>
-
-                {/* ICT Recommendations */}
-                {deviceHealth.recommendations.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <BuildIcon fontSize="small" sx={{ color: 'primary.main' }} />
-                      ICT Aanbevelingen
-                    </Typography>
-                    <Stack spacing={1.5}>
-                      {deviceHealth.recommendations.map((rec) => (
-                        <Paper
-                          key={rec.id}
-                          elevation={0}
-                          sx={{
-                            p: 2,
-                            border: '1px solid',
-                            borderColor: alpha(getSeverityColor(rec.severity), 0.3),
-                            borderRadius: 2,
-                            borderLeft: `4px solid ${getSeverityColor(rec.severity)}`,
-                            bgcolor: alpha(getSeverityColor(rec.severity), 0.03),
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                            <Box sx={{ pt: 0.5 }}>{getSeverityIcon(rec.severity)}</Box>
-                            <Box sx={{ flex: 1 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                <Typography variant="subtitle2" fontWeight={700}>
-                                  {rec.title}
-                                </Typography>
-                                <Chip
-                                  icon={getCategoryIcon(rec.category)}
-                                  label={rec.category}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    '& .MuiChip-label': { px: 0.5, fontSize: '0.65rem' },
-                                    '& .MuiChip-icon': { fontSize: 12 },
-                                  }}
-                                />
-                                <Chip
-                                  label={rec.severity}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    bgcolor: alpha(getSeverityColor(rec.severity), 0.15),
-                                    color: getSeverityColor(rec.severity),
-                                    fontWeight: 600,
-                                    '& .MuiChip-label': { px: 0.75, fontSize: '0.65rem' },
-                                  }}
-                                />
-                              </Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                {rec.description}
-                              </Typography>
-                              {rec.recommendedAction && (
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: 0.5,
-                                    p: 1,
-                                    bgcolor: (theme) =>
-                                      theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                                    borderRadius: 1,
-                                  }}
-                                >
-                                  <CheckIcon sx={{ fontSize: 16, color: 'primary.main', mt: 0.25 }} />
-                                  <Typography variant="caption" fontWeight={500}>
-                                    {rec.recommendedAction}
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Box>
-                          </Box>
-                        </Paper>
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
-
-                {/* No recommendations message */}
-                {deviceHealth.recommendations.length === 0 && (
-                  <Alert
-                    severity="success"
-                    icon={<VerifiedUserIcon />}
-                    sx={{
-                      border: '1px solid',
-                      borderColor: 'success.main',
-                      '& .MuiAlert-icon': { color: 'success.main' },
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={600}>
-                      Dit apparaat is in goede staat!
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Er zijn geen verbeteringen of actie-items gevonden.
-                    </Typography>
-                  </Alert>
-                )}
               </Box>
             )}
           </CardContent>

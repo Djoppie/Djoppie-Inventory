@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Table,
@@ -28,6 +29,7 @@ import StatusBadge from '../common/StatusBadge';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import AppsIcon from '@mui/icons-material/Apps';
+import DevicesIcon from '@mui/icons-material/Devices';
 
 interface AssetTableViewProps {
   assets: Asset[];
@@ -77,6 +79,7 @@ const AssetTableView = ({
   onSelectAll,
 }: AssetTableViewProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -601,6 +604,36 @@ const AssetTableView = ({
                           }}
                         >
                           <AppsIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+
+                    {/* Intune/Device Management Icon - Laptops/Desktops with Serial Number */}
+                    {(asset.category === 'Laptop' || asset.category === 'Desktop') && asset.serialNumber && (
+                      <Tooltip title={t('intune.pageTitle', 'Device Management')} arrow placement="top">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/assets/${asset.id}/intune`);
+                          }}
+                          sx={{
+                            width: { xs: 28, sm: 32 },
+                            height: { xs: 28, sm: 32 },
+                            padding: 0,
+                            color: (theme) => theme.palette.mode === 'dark' ? '#81C784' : '#388E3C',
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.08)' : 'rgba(56, 142, 60, 0.06)',
+                            border: '1px solid',
+                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.2)' : 'rgba(56, 142, 60, 0.15)',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.15)' : 'rgba(56, 142, 60, 0.12)',
+                              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.4)' : 'rgba(56, 142, 60, 0.3)',
+                              transform: isMobile ? 'none' : 'scale(1.05)',
+                            },
+                          }}
+                        >
+                          <DevicesIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
                         </IconButton>
                       </Tooltip>
                     )}

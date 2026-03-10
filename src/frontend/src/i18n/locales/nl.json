@@ -22,7 +22,8 @@
     "saving": "Opslaan...",
     "deleting": "Verwijderen...",
     "or": "of",
-    "rowsPerPage": "Rijen per pagina"
+    "rowsPerPage": "Rijen per pagina",
+    "backToAsset": "Terug naar Activa"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -789,6 +790,48 @@
       "hour_one": "{{count}} uur",
       "hour_other": "{{count}} uur",
       "durationFormat": "{{days}}, {{hours}}"
+    }
+  },
+  "intune": {
+    "pageTitle": "Apparaatbeheer",
+    "notCompatible": "Intune beheer is alleen beschikbaar voor Laptops en Desktops met een serienummer."
+  },
+  "provisioning": {
+    "title": "Provisioning Tijdlijn",
+    "loading": "Provisioning tijdlijn laden...",
+    "noData": "Geen provisioning data beschikbaar voor dit apparaat",
+    "progress": "Voortgang",
+    "refresh": "Tijdlijn vernieuwen",
+    "totalDuration": "Totale Duur",
+    "phases": {
+      "registration": "Autopilot Registratie",
+      "enrollment": "Apparaat Enrollment (OOBE)",
+      "deviceSetup": "Apparaat Setup (ESP)",
+      "accountSetup": "Account Setup (ESP)",
+      "complete": "Klaar voor Gebruiker"
+    },
+    "status": {
+      "pending": "In Afwachting",
+      "inProgress": "Bezig",
+      "complete": "Voltooid",
+      "failed": "Mislukt",
+      "skipped": "Overgeslagen"
+    }
+  },
+  "terminal": {
+    "title": "Apparaat Terminal",
+    "minimize": "Minimaliseren",
+    "placeholder": "Typ een commando...",
+    "help": "Typ 'help' voor beschikbare commando's",
+    "commands": {
+      "help": "Toon beschikbare commando's",
+      "status": "Apparaat status overzicht",
+      "apps": "Toon geïnstalleerde applicaties",
+      "timeline": "Provisioning tijdlijn",
+      "storage": "Opslag informatie",
+      "user": "Toegewezen gebruiker info",
+      "sync": "Sync status",
+      "clear": "Terminal wissen"
     }
   }
 }

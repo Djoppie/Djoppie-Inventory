@@ -8,19 +8,6 @@
 // ============================================
 
 /**
- * ICT recommendation for device improvement
- */
-export interface IctRecommendation {
-  id: string;
-  category: 'Security' | 'Performance' | 'Maintenance' | 'Compliance' | 'Software';
-  severity: 'Critical' | 'High' | 'Medium' | 'Low' | 'Info';
-  title: string;
-  description: string;
-  recommendedAction?: string;
-  impactScore: number;
-}
-
-/**
  * Device health information from Intune
  */
 export interface DeviceHealth {
@@ -51,7 +38,6 @@ export interface DeviceHealth {
   ethernetMacAddress?: string;
   healthScore: number;
   healthStatus: 'Healthy' | 'Warning' | 'Critical' | 'Unknown';
-  recommendations: IctRecommendation[];
   retrievedAt: string;
 }
 
@@ -118,9 +104,6 @@ export interface DeviceLiveStatus {
   // Apps summary
   totalDetectedApps: number;
   topApps: DetectedAppSummary[];
-
-  // Recommendations
-  recommendations: IctRecommendation[];
 
   // Metadata
   retrievedAt: string;

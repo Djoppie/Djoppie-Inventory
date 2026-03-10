@@ -31,16 +31,8 @@ import MemoryIcon from '@mui/icons-material/Memory';
 import SyncIcon from '@mui/icons-material/Sync';
 import PersonIcon from '@mui/icons-material/Person';
 import AppsIcon from '@mui/icons-material/Apps';
-import SecurityIcon from '@mui/icons-material/Security';
-import SpeedIcon from '@mui/icons-material/Speed';
-import BuildIcon from '@mui/icons-material/Build';
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DevicesIcon from '@mui/icons-material/Devices';
 import { useIntuneLiveStatus } from '../../hooks/useIntuneLiveStatus';
-import { IctRecommendation } from '../../types/software.types';
 import { buildRoute } from '../../constants/routes';
 
 // Scanner-style card wrapper - consistent with AssetDetailPage
@@ -69,40 +61,6 @@ const formatBytes = (bytes?: number): string => {
   return `${mb.toFixed(0)} MB`;
 };
 
-// Helper function to get severity icon
-const getSeverityIcon = (severity: IctRecommendation['severity']) => {
-  switch (severity) {
-    case 'Critical':
-      return <ErrorOutlineIcon sx={{ color: '#F44336', fontSize: 18 }} />;
-    case 'High':
-      return <WarningAmberIcon sx={{ color: '#FF9800', fontSize: 18 }} />;
-    case 'Medium':
-      return <WarningAmberIcon sx={{ color: '#FFC107', fontSize: 18 }} />;
-    case 'Low':
-      return <InfoOutlinedIcon sx={{ color: '#2196F3', fontSize: 18 }} />;
-    default:
-      return <InfoOutlinedIcon sx={{ color: '#9E9E9E', fontSize: 18 }} />;
-  }
-};
-
-// Helper function to get category icon
-const getCategoryIcon = (category: IctRecommendation['category']) => {
-  switch (category) {
-    case 'Security':
-      return <SecurityIcon fontSize="small" />;
-    case 'Performance':
-      return <SpeedIcon fontSize="small" />;
-    case 'Maintenance':
-      return <BuildIcon fontSize="small" />;
-    case 'Compliance':
-      return <VerifiedUserIcon fontSize="small" />;
-    case 'Software':
-      return <AppsIcon fontSize="small" />;
-    default:
-      return <InfoOutlinedIcon fontSize="small" />;
-  }
-};
-
 // Health score color
 const getHealthColor = (status: string): string => {
   switch (status) {
@@ -126,7 +84,6 @@ const LiveStatusSection = ({ serialNumber, assetId }: LiveStatusSectionProps) =>
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
-  const [recommendationsExpanded, setRecommendationsExpanded] = useState(false);
 
   const {
     data: liveStatus,
@@ -477,98 +434,6 @@ const LiveStatusSection = ({ serialNumber, assetId }: LiveStatusSectionProps) =>
                 </Button>
               </Stack>
             </Box>
-
-            {/* Recommendations */}
-            {liveStatus.recommendations && liveStatus.recommendations.length > 0 && (
-              <Box
-                sx={{
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  overflow: 'hidden',
-                  mb: 3,
-                }}
-              >
-                <Box
-                  onClick={() => setRecommendationsExpanded(!recommendationsExpanded)}
-                  sx={{
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <VerifiedUserIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                      <Typography variant="body2" fontWeight={600}>
-                        {t('liveStatus.recommendations', 'ICT Recommendations')}
-                      </Typography>
-                      <Chip
-                        label={liveStatus.recommendations.length}
-                        size="small"
-                        color={
-                          liveStatus.recommendations.some((r) => r.severity === 'Critical')
-                            ? 'error'
-                            : liveStatus.recommendations.some((r) => r.severity === 'High')
-                            ? 'warning'
-                            : 'default'
-                        }
-                      />
-                    </Stack>
-                    {recommendationsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                  </Stack>
-                </Box>
-                <Collapse in={recommendationsExpanded}>
-                  <Divider />
-                  <Box sx={{ p: 2, bgcolor: 'background.default' }}>
-                    <Stack spacing={1.5}>
-                      {liveStatus.recommendations.map((rec, index) => (
-                        <Box
-                          key={rec.id || index}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 1,
-                            bgcolor: 'background.paper',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          }}
-                        >
-                          <Stack direction="row" spacing={1} alignItems="flex-start">
-                            {getSeverityIcon(rec.severity)}
-                            <Box sx={{ flex: 1 }}>
-                              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                                <Typography variant="body2" fontWeight={600}>
-                                  {rec.title}
-                                </Typography>
-                                <Chip
-                                  icon={getCategoryIcon(rec.category)}
-                                  label={rec.category}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ height: 20, '& .MuiChip-label': { px: 0.5, fontSize: '0.7rem' } }}
-                                />
-                              </Stack>
-                              <Typography variant="caption" color="text.secondary">
-                                {rec.description}
-                              </Typography>
-                              {rec.recommendedAction && (
-                                <Typography
-                                  variant="caption"
-                                  sx={{ display: 'block', mt: 0.5, color: 'primary.main' }}
-                                >
-                                  {rec.recommendedAction}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Stack>
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Box>
-                </Collapse>
-              </Box>
-            )}
 
             {/* Controls */}
             <Divider sx={{ my: 2 }} />

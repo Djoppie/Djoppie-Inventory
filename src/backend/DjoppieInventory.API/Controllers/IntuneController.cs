@@ -598,4 +598,62 @@ public class IntuneController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred" });
         }
     }
+
+    /// <summary>
+    /// Retrieves the provisioning timeline for a device from Autopilot registration to user delivery.
+    /// Includes timing data for each provisioning phase.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Provisioning timeline with events and durations</returns>
+    /// <response code="200">Returns the provisioning timeline (check Found property)</response>
+    /// <response code="400">Invalid serial number format</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /api/intune/devices/serial/{serialNumber}/provisioning-timeline
+    ///
+    /// This endpoint retrieves the complete provisioning timeline including:
+    /// - Autopilot registration timestamp
+    /// - Device enrollment (OOBE) duration
+    /// - ESP Device Setup phase duration
+    /// - ESP Account Setup phase duration
+    /// - Total provisioning time
+    ///
+    /// Always returns 200 with a ProvisioningTimelineDto - check the Found property
+    /// to determine if the device was found in Intune/Autopilot.
+    ///
+    /// Note: Requires DeviceManagementServiceConfig.Read.All permission for Autopilot data.
+    /// </remarks>
+    [HttpGet("devices/serial/{serialNumber}/provisioning-timeline")]
+    [ProducesResponseType(typeof(ProvisioningTimelineDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ProvisioningTimelineDto>> GetProvisioningTimeline(string serialNumber)
+    {
+        try
+        {
+            if (!InputValidator.ValidateSerialNumber(serialNumber, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request for provisioning timeline of device with serial: {SerialNumber}", serialNumber);
+            var result = await _intuneService.GetProvisioningTimelineAsync(serialNumber);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve provisioning timeline for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "Failed to retrieve provisioning timeline", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving provisioning timeline for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "An unexpected error occurred" });
+        }
+    }
 }
