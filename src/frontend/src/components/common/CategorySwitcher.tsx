@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Box, alpha, useTheme } from '@mui/material';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
@@ -29,11 +28,8 @@ interface CategorySwitcherProps {
 const CategorySwitcher = ({ value, onChange }: CategorySwitcherProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Initialize as true - animation will play on first render
+  const mounted = true;
 
   return (
     <Box

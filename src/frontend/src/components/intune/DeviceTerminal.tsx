@@ -105,18 +105,28 @@ interface DeviceTerminalProps {
 
 const DeviceTerminal = ({ serialNumber, deviceName }: DeviceTerminalProps) => {
   const { t } = useTranslation();
+  const displayName = deviceName || serialNumber || 'device';
+
+  // Initialize output with welcome message
+  const getInitialOutput = (): CommandOutput[] => [
+    { type: 'ascii', content: getDjoppieAscii() },
+    { type: 'info', content: '' },
+    { type: 'info', content: `Welcome to Djoppie Terminal v1.0` },
+    { type: 'info', content: `Device: ${displayName}` },
+    { type: 'info', content: `Type 'help' for available commands.` },
+    { type: 'info', content: '' },
+  ];
+
   const [expanded, setExpanded] = useState(true);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [currentInput, setCurrentInput] = useState('');
-  const [output, setOutput] = useState<CommandOutput[]>([]);
+  const [output, setOutput] = useState<CommandOutput[]>(getInitialOutput);
   const outputRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: liveStatus } = useIntuneLiveStatus(serialNumber, { enabled: expanded });
   const { data: timeline } = useProvisioningTimeline(serialNumber, { enabled: expanded, pollInterval: 60000 });
-
-  const displayName = deviceName || serialNumber || 'device';
 
   // Auto-scroll to bottom when output changes
   useEffect(() => {
@@ -132,17 +142,6 @@ const DeviceTerminal = ({ serialNumber, deviceName }: DeviceTerminalProps) => {
     }
   }, [expanded]);
 
-  // Welcome message on mount
-  useEffect(() => {
-    setOutput([
-      { type: 'ascii', content: getDjoppieAscii() },
-      { type: 'info', content: '' },
-      { type: 'info', content: `Welcome to Djoppie Terminal v1.0` },
-      { type: 'info', content: `Device: ${displayName}` },
-      { type: 'info', content: `Type 'help' for available commands.` },
-      { type: 'info', content: '' },
-    ]);
-  }, [displayName]);
 
   // Command handlers
   const executeCommand = useCallback(
