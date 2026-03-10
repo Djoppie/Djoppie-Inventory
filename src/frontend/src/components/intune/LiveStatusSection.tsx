@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -120,10 +120,9 @@ const getHealthColor = (status: string): string => {
 interface LiveStatusSectionProps {
   serialNumber: string;
   assetId: number;
-  assetCode: string;
 }
 
-const LiveStatusSection = ({ serialNumber, assetId, assetCode }: LiveStatusSectionProps) => {
+const LiveStatusSection = ({ serialNumber, assetId }: LiveStatusSectionProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
@@ -140,24 +139,24 @@ const LiveStatusSection = ({ serialNumber, assetId, assetCode }: LiveStatusSecti
   } = useIntuneLiveStatus(serialNumber);
 
   // Calculate relative time since last update
-  const lastUpdatedText = useMemo(() => {
+  const getLastUpdatedText = () => {
     if (!liveStatus?.retrievedAt) return '';
     try {
       return formatDistanceToNow(new Date(liveStatus.retrievedAt), { addSuffix: true });
     } catch {
       return '';
     }
-  }, [liveStatus?.retrievedAt]);
+  };
 
   // Format last sync date
-  const lastSyncText = useMemo(() => {
+  const getLastSyncText = () => {
     if (!liveStatus?.lastSyncDateTime) return '-';
     try {
       return format(new Date(liveStatus.lastSyncDateTime), 'dd MMM yyyy HH:mm');
     } catch {
       return liveStatus.lastSyncDateTime;
     }
-  }, [liveStatus?.lastSyncDateTime]);
+  };
 
   // Navigate to software page
   const handleViewSoftware = () => {
@@ -254,7 +253,7 @@ const LiveStatusSection = ({ serialNumber, assetId, assetCode }: LiveStatusSecti
             </Stack>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="caption" color="text.secondary">
-                {t('liveStatus.lastUpdated', 'Updated')} {lastUpdatedText}
+                {t('liveStatus.lastUpdated', 'Updated')} {getLastUpdatedText()}
               </Typography>
               {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </Stack>
@@ -423,7 +422,7 @@ const LiveStatusSection = ({ serialNumber, assetId, assetCode }: LiveStatusSecti
                   </Typography>
                 </Stack>
                 <Typography variant="body1" fontWeight={600}>
-                  {lastSyncText}
+                  {getLastSyncText()}
                 </Typography>
               </Box>
 

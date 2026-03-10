@@ -486,7 +486,6 @@ const AssetDetailPage = () => {
             <LiveStatusSection
               serialNumber={asset.serialNumber}
               assetId={asset.id}
-              assetCode={asset.assetCode}
             />
           )}
 
