@@ -23,10 +23,14 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ErrorIcon from '@mui/icons-material/Error';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AppsIcon from '@mui/icons-material/Apps';
+import DownloadIcon from '@mui/icons-material/Download';
+import DoneIcon from '@mui/icons-material/Done';
 import { useProvisioningTimeline } from '../../hooks/useProvisioningTimeline';
 import {
   ProvisioningEvent,
   ProvisioningStatus,
+  AppInstallationStatus,
 } from '../../types/provisioning.types';
 
 // Scanner-style card wrapper - consistent with other sections
@@ -250,6 +254,17 @@ const ProvisioningTimeline = ({ serialNumber }: ProvisioningTimelineProps) => {
               />
             </Box>
 
+            {/* App Installation Status */}
+            {(timeline.currentlyInstallingApp || timeline.lastInstalledApp || (timeline.totalAppsToInstall && timeline.totalAppsToInstall > 0)) && (
+              <AppInstallationStatusSection
+                currentlyInstalling={timeline.currentlyInstallingApp}
+                lastInstalled={timeline.lastInstalledApp}
+                totalApps={timeline.totalAppsToInstall || 0}
+                installedApps={timeline.appsInstalled || 0}
+                failedApps={timeline.appsFailed || 0}
+              />
+            )}
+
             {/* Timeline */}
             <Box sx={{ position: 'relative', pl: 4 }}>
               {sortedEvents.map((event, index) => (
@@ -273,6 +288,180 @@ const ProvisioningTimeline = ({ serialNumber }: ProvisioningTimelineProps) => {
         </Collapse>
       </CardContent>
     </Card>
+  );
+};
+
+// App Installation Status Section
+interface AppInstallationStatusSectionProps {
+  currentlyInstalling?: AppInstallationStatus;
+  lastInstalled?: AppInstallationStatus;
+  totalApps: number;
+  installedApps: number;
+  failedApps: number;
+}
+
+const AppInstallationStatusSection = ({
+  currentlyInstalling,
+  lastInstalled,
+  totalApps,
+  installedApps,
+  failedApps,
+}: AppInstallationStatusSectionProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <Box
+      sx={{
+        mb: 3,
+        p: 2,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: currentlyInstalling ? 'warning.main' : 'divider',
+        bgcolor: currentlyInstalling ? 'rgba(255, 152, 0, 0.04)' : 'background.paper',
+      }}
+    >
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+        <AppsIcon color="primary" fontSize="small" />
+        <Typography variant="subtitle2" fontWeight={600}>
+          {t('provisioning.appInstallation', 'App Installation')}
+        </Typography>
+        <Box sx={{ flexGrow: 1 }} />
+        <Stack direction="row" spacing={1}>
+          <Chip
+            label={`${installedApps}/${totalApps}`}
+            size="small"
+            color={installedApps === totalApps && totalApps > 0 ? 'success' : 'default'}
+            variant="outlined"
+            sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+          />
+          {failedApps > 0 && (
+            <Chip
+              label={`${failedApps} failed`}
+              size="small"
+              color="error"
+              variant="outlined"
+              sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+            />
+          )}
+        </Stack>
+      </Stack>
+
+      {/* Currently Installing */}
+      {currentlyInstalling && (
+        <Box
+          sx={{
+            p: 1.5,
+            mb: 1.5,
+            borderRadius: 1,
+            bgcolor: 'warning.main',
+            color: 'warning.contrastText',
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <DownloadIcon
+              sx={{
+                fontSize: 20,
+                animation: 'pulse 1.5s ease-in-out infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': { opacity: 1 },
+                  '50%': { opacity: 0.5 },
+                },
+              }}
+            />
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={600} noWrap>
+                {t('provisioning.installing', 'Installing')}: {currentlyInstalling.name}
+              </Typography>
+              {currentlyInstalling.version && (
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                  v{currentlyInstalling.version}
+                </Typography>
+              )}
+            </Box>
+            {currentlyInstalling.progressPercent !== undefined && currentlyInstalling.progressPercent > 0 && (
+              <Chip
+                label={`${currentlyInstalling.progressPercent}%`}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  color: 'inherit',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                }}
+              />
+            )}
+          </Stack>
+          {currentlyInstalling.progressPercent !== undefined && currentlyInstalling.progressPercent > 0 && (
+            <LinearProgress
+              variant="determinate"
+              value={currentlyInstalling.progressPercent}
+              sx={{
+                mt: 1,
+                height: 4,
+                borderRadius: 2,
+                bgcolor: 'rgba(255,255,255,0.2)',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: 'rgba(255,255,255,0.8)',
+                },
+              }}
+            />
+          )}
+        </Box>
+      )}
+
+      {/* Last Installed */}
+      {lastInstalled && (
+        <Box
+          sx={{
+            p: 1.5,
+            borderRadius: 1,
+            bgcolor: 'success.main',
+            color: 'success.contrastText',
+            opacity: currentlyInstalling ? 0.7 : 1,
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <DoneIcon sx={{ fontSize: 20 }} />
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={600} noWrap>
+                {t('provisioning.lastInstalled', 'Last installed')}: {lastInstalled.name}
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                {lastInstalled.version && (
+                  <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                    v{lastInstalled.version}
+                  </Typography>
+                )}
+                {lastInstalled.completedAt && (
+                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                    • {formatDateTime(lastInstalled.completedAt)}
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+            <Chip
+              label={lastInstalled.type}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'inherit',
+                fontWeight: 500,
+                fontSize: '0.65rem',
+              }}
+            />
+          </Stack>
+        </Box>
+      )}
+
+      {/* No activity state */}
+      {!currentlyInstalling && !lastInstalled && totalApps > 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 1 }}>
+          {installedApps === totalApps
+            ? t('provisioning.allAppsInstalled', 'All apps installed')
+            : t('provisioning.waitingForApps', 'Waiting for app installations...')}
+        </Typography>
+      )}
+    </Box>
   );
 };
 

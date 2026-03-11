@@ -1044,6 +1044,43 @@ public class IntuneService : IIntuneService
                 }
             }
 
+            // Fetch app installation states if we have a device ID
+            if (device?.Id != null)
+            {
+                try
+                {
+                    var appStates = await GetDeviceAppInstallationStatesAsync(device.Id, device.UserPrincipalName);
+                    timeline.AppInstallationStates = appStates;
+
+                    // Calculate app statistics
+                    timeline.TotalAppsToInstall = appStates.Count;
+                    timeline.AppsInstalled = appStates.Count(a => a.Status == "Installed");
+                    timeline.AppsFailed = appStates.Count(a => a.Status == "Failed");
+                    timeline.AppsPending = appStates.Count(a => a.Status == "Pending" || a.Status == "Downloading" || a.Status == "Installing");
+
+                    // Find currently installing app
+                    timeline.CurrentlyInstallingApp = appStates
+                        .Where(a => a.Status == "Installing" || a.Status == "Downloading")
+                        .OrderByDescending(a => a.StartedAt)
+                        .FirstOrDefault();
+
+                    // Find last installed app
+                    timeline.LastInstalledApp = appStates
+                        .Where(a => a.Status == "Installed" && a.CompletedAt.HasValue)
+                        .OrderByDescending(a => a.CompletedAt)
+                        .FirstOrDefault();
+
+                    _logger.LogInformation("App installation states retrieved: Total={Total}, Installed={Installed}, Installing={Installing}",
+                        timeline.TotalAppsToInstall, timeline.AppsInstalled,
+                        timeline.CurrentlyInstallingApp?.Name ?? "None");
+                }
+                catch (Exception appEx)
+                {
+                    _logger.LogWarning(appEx, "Failed to retrieve app installation states for device {DeviceId}", device.Id);
+                    // Continue without app states - don't fail the whole timeline
+                }
+            }
+
             _logger.LogInformation("Provisioning timeline retrieved for serial {SerialNumber}: Status={Status}, Progress={Progress}%",
                 serialNumber, timeline.OverallStatus, timeline.ProgressPercent);
 
@@ -1064,6 +1101,337 @@ public class IntuneService : IIntuneService
                 RetrievedAt = DateTime.UtcNow
             };
         }
+    }
+
+    /// <summary>
+    /// Get app installation states for a device
+    /// Uses the mobileAppIntentAndStates endpoint to get current app installation status
+    /// </summary>
+    private async Task<List<AppInstallationStatusDto>> GetDeviceAppInstallationStatesAsync(string deviceId, string? userPrincipalName)
+    {
+        var appStates = new List<AppInstallationStatusDto>();
+
+        try
+        {
+            // Use beta API to get managed app states
+            // First try with user-specific endpoint if we have a UPN
+            string endpoint;
+            if (!string.IsNullOrEmpty(userPrincipalName))
+            {
+                // Get user ID first
+                var user = await _graphClient.Users[userPrincipalName].GetAsync();
+                if (user?.Id != null)
+                {
+                    endpoint = $"https://graph.microsoft.com/beta/deviceManagement/managedDevices/{deviceId}/users/{user.Id}/mobileAppIntentAndStates";
+                }
+                else
+                {
+                    // Fallback to device-only endpoint
+                    endpoint = $"https://graph.microsoft.com/beta/deviceManagement/managedDevices/{deviceId}/windowsProtectionState";
+                }
+            }
+            else
+            {
+                // Use reports endpoint to get app installation status
+                endpoint = $"https://graph.microsoft.com/beta/deviceManagement/managedDevices/{deviceId}?$expand=detectedApps";
+            }
+
+            var requestInfo = new Microsoft.Kiota.Abstractions.RequestInformation
+            {
+                HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                URI = new Uri(endpoint)
+            };
+
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+
+            using var httpClient = new HttpClient();
+            var response = await httpClient.SendAsync(nativeRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var json = JsonDocument.Parse(content).RootElement;
+
+                // Parse mobileAppIntentAndStates response
+                if (json.TryGetProperty("value", out var statesArray) && statesArray.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var state in statesArray.EnumerateArray())
+                    {
+                        if (state.TryGetProperty("mobileAppList", out var appList) && appList.ValueKind == JsonValueKind.Array)
+                        {
+                            int order = 0;
+                            foreach (var app in appList.EnumerateArray())
+                            {
+                                var appState = ParseAppState(app, order++);
+                                if (appState != null)
+                                {
+                                    appStates.Add(appState);
+                                }
+                            }
+                        }
+                    }
+                }
+                // Alternative: parse detectedApps from device expand
+                else if (json.TryGetProperty("detectedApps", out var detectedApps) && detectedApps.ValueKind == JsonValueKind.Array)
+                {
+                    int order = 0;
+                    foreach (var app in detectedApps.EnumerateArray())
+                    {
+                        var appName = app.TryGetProperty("displayName", out var name) ? name.GetString() : null;
+                        var version = app.TryGetProperty("version", out var ver) ? ver.GetString() : null;
+                        var appId = app.TryGetProperty("id", out var id) ? id.GetString() : Guid.NewGuid().ToString();
+
+                        if (!string.IsNullOrEmpty(appName))
+                        {
+                            appStates.Add(new AppInstallationStatusDto
+                            {
+                                Id = appId ?? Guid.NewGuid().ToString(),
+                                Name = appName,
+                                Version = version,
+                                Status = "Installed", // DetectedApps are already installed
+                                Type = "App",
+                                Order = order++
+                            });
+                        }
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Failed to get app states from {Endpoint}: {StatusCode}", endpoint, response.StatusCode);
+            }
+
+            // Also try to get ESP app tracking data if available
+            await EnrichWithEspAppDataAsync(deviceId, appStates);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error retrieving app installation states for device {DeviceId}", deviceId);
+        }
+
+        return appStates;
+    }
+
+    /// <summary>
+    /// Parse app state from Graph API response
+    /// </summary>
+    private AppInstallationStatusDto? ParseAppState(JsonElement app, int order)
+    {
+        try
+        {
+            var appId = app.TryGetProperty("applicationId", out var id) ? id.GetString() : null;
+            var appName = app.TryGetProperty("displayName", out var name) ? name.GetString() : null;
+
+            if (string.IsNullOrEmpty(appName)) return null;
+
+            var installState = app.TryGetProperty("installState", out var state) ? state.GetString() : "unknown";
+            var version = app.TryGetProperty("displayVersion", out var ver) ? ver.GetString() : null;
+            var publisher = app.TryGetProperty("publisher", out var pub) ? pub.GetString() : null;
+
+            // Map Intune install states to our status
+            var status = MapIntuneInstallState(installState ?? "unknown");
+
+            return new AppInstallationStatusDto
+            {
+                Id = appId ?? Guid.NewGuid().ToString(),
+                Name = appName,
+                Version = version,
+                Publisher = publisher,
+                Status = status,
+                Type = DetermineAppType(app),
+                Order = order,
+                Intent = app.TryGetProperty("mobileAppIntent", out var intent) ? intent.GetString() ?? "Required" : "Required"
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Map Intune install state to our simplified status
+    /// </summary>
+    private static string MapIntuneInstallState(string intuneState)
+    {
+        return intuneState.ToLowerInvariant() switch
+        {
+            "installed" => "Installed",
+            "notinstalled" => "Pending",
+            "failed" => "Failed",
+            "installing" => "Installing",
+            "downloadinprogress" or "downloading" => "Downloading",
+            "pendinginstall" => "Pending",
+            "notapplicable" => "NotApplicable",
+            "unknown" => "Pending",
+            _ => "Pending"
+        };
+    }
+
+    /// <summary>
+    /// Determine app type from Graph API response
+    /// </summary>
+    private static string DetermineAppType(JsonElement app)
+    {
+        if (app.TryGetProperty("@odata.type", out var odataType))
+        {
+            var typeStr = odataType.GetString() ?? "";
+            if (typeStr.Contains("win32", StringComparison.OrdinalIgnoreCase)) return "Win32";
+            if (typeStr.Contains("msi", StringComparison.OrdinalIgnoreCase)) return "MSI";
+            if (typeStr.Contains("store", StringComparison.OrdinalIgnoreCase)) return "Store";
+            if (typeStr.Contains("office", StringComparison.OrdinalIgnoreCase)) return "Office";
+            if (typeStr.Contains("web", StringComparison.OrdinalIgnoreCase)) return "WebApp";
+        }
+        return "App";
+    }
+
+    /// <summary>
+    /// Enrich app states with ESP tracking data if available
+    /// </summary>
+    private async Task EnrichWithEspAppDataAsync(string deviceId, List<AppInstallationStatusDto> appStates)
+    {
+        try
+        {
+            // Try to get autopilot events which contain ESP app tracking
+            var endpoint = $"https://graph.microsoft.com/beta/deviceManagement/autopilotEvents?$filter=deviceId eq '{deviceId}'&$orderby=eventDateTime desc&$top=1";
+
+            var requestInfo = new Microsoft.Kiota.Abstractions.RequestInformation
+            {
+                HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                URI = new Uri(endpoint)
+            };
+
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+
+            using var httpClient = new HttpClient();
+            var response = await httpClient.SendAsync(nativeRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var json = JsonDocument.Parse(content).RootElement;
+
+                if (json.TryGetProperty("value", out var eventsArray) &&
+                    eventsArray.ValueKind == JsonValueKind.Array &&
+                    eventsArray.GetArrayLength() > 0)
+                {
+                    var latestEvent = eventsArray[0];
+
+                    // Parse device setup and account setup tracking items
+                    ParseEspTrackingItems(latestEvent, "deviceSetupStatus", appStates, "Device");
+                    ParseEspTrackingItems(latestEvent, "accountSetupStatus", appStates, "User");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not enrich with ESP data for device {DeviceId}", deviceId);
+        }
+    }
+
+    /// <summary>
+    /// Parse ESP tracking items from autopilot event
+    /// </summary>
+    private void ParseEspTrackingItems(JsonElement eventElement, string propertyName, List<AppInstallationStatusDto> appStates, string prefix)
+    {
+        try
+        {
+            if (!eventElement.TryGetProperty(propertyName, out var setupStatus)) return;
+            if (!setupStatus.TryGetProperty("trackingItems", out var trackingItems)) return;
+            if (trackingItems.ValueKind != JsonValueKind.Array) return;
+
+            foreach (var item in trackingItems.EnumerateArray())
+            {
+                var itemName = item.TryGetProperty("displayName", out var name) ? name.GetString() : null;
+                var itemStatus = item.TryGetProperty("status", out var status) ? status.GetString() : null;
+                var itemType = item.TryGetProperty("trackingItemType", out var type) ? type.GetString() : null;
+
+                if (string.IsNullOrEmpty(itemName)) continue;
+
+                // Check if we already have this app in our list
+                var existingApp = appStates.FirstOrDefault(a =>
+                    a.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+
+                if (existingApp != null)
+                {
+                    // Update status from ESP data (more accurate for provisioning)
+                    existingApp.Status = MapEspStatus(itemStatus);
+                    if (item.TryGetProperty("lastUpdatedDateTime", out var lastUpdated) &&
+                        lastUpdated.ValueKind != JsonValueKind.Null)
+                    {
+                        var updateTime = lastUpdated.GetDateTime();
+                        if (existingApp.Status == "Installed")
+                            existingApp.CompletedAt = updateTime;
+                        else if (existingApp.Status == "Installing" || existingApp.Status == "Downloading")
+                            existingApp.StartedAt = updateTime;
+                    }
+                }
+                else
+                {
+                    // Add new app from ESP tracking
+                    DateTime? completedAt = null;
+                    DateTime? startedAt = null;
+
+                    if (item.TryGetProperty("lastUpdatedDateTime", out var lastUpdated) &&
+                        lastUpdated.ValueKind != JsonValueKind.Null)
+                    {
+                        var updateTime = lastUpdated.GetDateTime();
+                        var mappedStatus = MapEspStatus(itemStatus);
+                        if (mappedStatus == "Installed")
+                            completedAt = updateTime;
+                        else
+                            startedAt = updateTime;
+                    }
+
+                    appStates.Add(new AppInstallationStatusDto
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = $"[{prefix}] {itemName}",
+                        Status = MapEspStatus(itemStatus),
+                        Type = MapEspItemType(itemType),
+                        CompletedAt = completedAt,
+                        StartedAt = startedAt,
+                        Order = appStates.Count
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Error parsing ESP tracking items from {PropertyName}", propertyName);
+        }
+    }
+
+    /// <summary>
+    /// Map ESP status to our simplified status
+    /// </summary>
+    private static string MapEspStatus(string? espStatus)
+    {
+        return espStatus?.ToLowerInvariant() switch
+        {
+            "complete" or "success" or "installed" => "Installed",
+            "inprogress" or "installing" => "Installing",
+            "failed" or "error" => "Failed",
+            "notstarted" or "pending" => "Pending",
+            "skipped" or "notapplicable" => "NotApplicable",
+            _ => "Pending"
+        };
+    }
+
+    /// <summary>
+    /// Map ESP item type to our simplified type
+    /// </summary>
+    private static string MapEspItemType(string? espType)
+    {
+        return espType?.ToLowerInvariant() switch
+        {
+            "app" or "application" => "App",
+            "policy" or "configuration" => "Policy",
+            "script" or "powershell" => "Script",
+            "certificate" or "cert" => "Certificate",
+            "networkprofile" or "wifi" or "vpn" => "Network",
+            _ => "App"
+        };
     }
 
     /// <summary>

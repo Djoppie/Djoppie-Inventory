@@ -96,6 +96,43 @@ public class ProvisioningTimelineDto
     /// When this data was retrieved
     /// </summary>
     public DateTime RetrievedAt { get; set; } = DateTime.UtcNow;
+
+    // === App Installation Status ===
+
+    /// <summary>
+    /// App currently being installed (if any)
+    /// </summary>
+    public AppInstallationStatusDto? CurrentlyInstallingApp { get; set; }
+
+    /// <summary>
+    /// Last app/policy that was installed
+    /// </summary>
+    public AppInstallationStatusDto? LastInstalledApp { get; set; }
+
+    /// <summary>
+    /// List of all app installation states
+    /// </summary>
+    public List<AppInstallationStatusDto> AppInstallationStates { get; set; } = new();
+
+    /// <summary>
+    /// Total number of apps to install
+    /// </summary>
+    public int TotalAppsToInstall { get; set; }
+
+    /// <summary>
+    /// Number of apps successfully installed
+    /// </summary>
+    public int AppsInstalled { get; set; }
+
+    /// <summary>
+    /// Number of apps failed to install
+    /// </summary>
+    public int AppsFailed { get; set; }
+
+    /// <summary>
+    /// Number of apps pending installation
+    /// </summary>
+    public int AppsPending { get; set; }
 }
 
 /// <summary>
@@ -160,6 +197,77 @@ public class ProvisioningEventDto
 
     /// <summary>
     /// Order for sorting events
+    /// </summary>
+    public int Order { get; set; }
+}
+
+/// <summary>
+/// App/Policy installation status during provisioning
+/// </summary>
+public class AppInstallationStatusDto
+{
+    /// <summary>
+    /// Unique identifier for the app/policy
+    /// </summary>
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Display name of the app/policy
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Type: App, Policy, Script, Driver, Update
+    /// </summary>
+    public string Type { get; set; } = "App";
+
+    /// <summary>
+    /// Installation status: Pending, Downloading, Installing, Installed, Failed, NotApplicable
+    /// </summary>
+    public string Status { get; set; } = "Pending";
+
+    /// <summary>
+    /// Installation progress percentage (0-100)
+    /// </summary>
+    public int? ProgressPercent { get; set; }
+
+    /// <summary>
+    /// When installation started
+    /// </summary>
+    public DateTime? StartedAt { get; set; }
+
+    /// <summary>
+    /// When installation completed
+    /// </summary>
+    public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// Error code if failed
+    /// </summary>
+    public string? ErrorCode { get; set; }
+
+    /// <summary>
+    /// Error message if failed
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Version of the app being installed
+    /// </summary>
+    public string? Version { get; set; }
+
+    /// <summary>
+    /// Publisher of the app
+    /// </summary>
+    public string? Publisher { get; set; }
+
+    /// <summary>
+    /// Whether this is a required or available app
+    /// </summary>
+    public string Intent { get; set; } = "Required";
+
+    /// <summary>
+    /// Order for sorting (based on installation time)
     /// </summary>
     public int Order { get; set; }
 }

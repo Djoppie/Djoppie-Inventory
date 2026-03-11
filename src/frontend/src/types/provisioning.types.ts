@@ -99,7 +99,66 @@ export interface ProvisioningTimeline {
   provisioningCompletedAt?: string;
   /** When this data was retrieved */
   retrievedAt: string;
+
+  // === App Installation Status ===
+
+  /** App currently being installed (if any) */
+  currentlyInstallingApp?: AppInstallationStatus;
+  /** Last app/policy that was installed */
+  lastInstalledApp?: AppInstallationStatus;
+  /** List of all app installation states */
+  appInstallationStates?: AppInstallationStatus[];
+  /** Total number of apps to install */
+  totalAppsToInstall?: number;
+  /** Number of apps successfully installed */
+  appsInstalled?: number;
+  /** Number of apps failed to install */
+  appsFailed?: number;
+  /** Number of apps pending installation */
+  appsPending?: number;
 }
+
+/**
+ * App/Policy installation status during provisioning
+ */
+export interface AppInstallationStatus {
+  /** Unique identifier for the app/policy */
+  id: string;
+  /** Display name of the app/policy */
+  name: string;
+  /** Type: App, Policy, Script, Driver, Update */
+  type: AppInstallationType;
+  /** Installation status */
+  status: AppInstallationState;
+  /** Installation progress percentage (0-100) */
+  progressPercent?: number;
+  /** When installation started */
+  startedAt?: string;
+  /** When installation completed */
+  completedAt?: string;
+  /** Error code if failed */
+  errorCode?: string;
+  /** Error message if failed */
+  errorMessage?: string;
+  /** Version of the app being installed */
+  version?: string;
+  /** Publisher of the app */
+  publisher?: string;
+  /** Whether this is a required or available app */
+  intent: 'Required' | 'Available';
+  /** Order for sorting */
+  order: number;
+}
+
+/**
+ * App installation type
+ */
+export type AppInstallationType = 'App' | 'Win32' | 'MSI' | 'Store' | 'Office' | 'WebApp' | 'Policy' | 'Script' | 'Certificate' | 'Network';
+
+/**
+ * App installation state
+ */
+export type AppInstallationState = 'Pending' | 'Downloading' | 'Installing' | 'Installed' | 'Failed' | 'NotApplicable';
 
 /**
  * Get icon name for provisioning status
