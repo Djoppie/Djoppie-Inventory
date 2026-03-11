@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -183,12 +184,15 @@ const DeviceManagementPage = () => {
   };
 
   // Get recently contacted devices (last 24 hours)
-  const recentlyContacted = autopilotDevices?.filter(d => {
-    if (!d.lastContactedDateTime) return false;
-    const lastContact = new Date(d.lastContactedDateTime);
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    return lastContact > dayAgo;
-  }).slice(0, 5) || [];
+  // Using useMemo with dataUpdatedAt as dependency to avoid impure Date.now() during render
+  const recentlyContacted = useMemo(() => {
+    const dayAgo = new Date(dataUpdatedAt - 24 * 60 * 60 * 1000);
+    return autopilotDevices?.filter(d => {
+      if (!d.lastContactedDateTime) return false;
+      const lastContact = new Date(d.lastContactedDateTime);
+      return lastContact > dayAgo;
+    }).slice(0, 5) || [];
+  }, [autopilotDevices, dataUpdatedAt]);
 
   const navigationCards = [
     {
