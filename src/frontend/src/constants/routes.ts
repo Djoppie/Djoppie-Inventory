@@ -10,11 +10,14 @@ export const ROUTES = {
   /** QR code scanner page */
   SCAN: '/scan',
 
+  /** Device management hub page */
+  DEVICE_MANAGEMENT: '/devices',
+
   /** Create new asset page */
-  ASSETS_NEW: '/assets/new',
+  ASSETS_NEW: '/devices/new',
 
   /** Bulk create assets page */
-  ASSETS_BULK_NEW: '/assets/bulk-create',
+  ASSETS_BULK_NEW: '/devices/bulk-create',
 
   /** Asset detail page (requires :id parameter) */
   ASSET_DETAIL: '/assets/:id',
@@ -50,10 +53,10 @@ export const ROUTES = {
   ROLLOUT_REPORT: '/rollouts/:id/report',
 
   /** Autopilot devices list page */
-  AUTOPILOT_DEVICES: '/autopilot',
+  AUTOPILOT_DEVICES: '/devices/autopilot',
 
   /** Autopilot device timeline page (requires :serialNumber parameter) */
-  AUTOPILOT_TIMELINE: '/autopilot/timeline/:serialNumber',
+  AUTOPILOT_TIMELINE: '/devices/autopilot/timeline/:serialNumber',
 } as const;
 
 /**
@@ -114,5 +117,5 @@ export const buildRoute = {
    * @param serialNumber - The device serial number
    * @returns The full route path
    */
-  autopilotTimeline: (serialNumber: string) => `/autopilot/timeline/${serialNumber}`,
+  autopilotTimeline: (serialNumber: string) => `/devices/autopilot/timeline/${serialNumber}`,
 } as const;

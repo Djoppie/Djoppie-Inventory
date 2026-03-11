@@ -3,10 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import AddBoxIcon from '@mui/icons-material/AddBox';
+import DevicesIcon from '@mui/icons-material/Devices';
 import CategoryIcon from '@mui/icons-material/Category';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import DevicesIcon from '@mui/icons-material/Devices';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { ROUTES } from '../../constants/routes';
 
@@ -22,12 +21,11 @@ const Navigation = () => {
   // Derive value from current location instead of using state
   const getValue = () => {
     if (location.pathname === ROUTES.DASHBOARD) return 0;
-    if (location.pathname === ROUTES.ASSETS_NEW) return 1;
+    if (location.pathname.startsWith('/devices')) return 1; // Device Management hub and sub-pages
     if (location.pathname === ROUTES.SCAN) return 2;
     if (location.pathname === ROUTES.TEMPLATES) return 3;
     if (location.pathname.startsWith('/rollouts')) return 4;
-    if (location.pathname.startsWith('/autopilot')) return 5;
-    if (location.pathname === ROUTES.ADMIN) return 6;
+    if (location.pathname === ROUTES.ADMIN) return 5;
     return 0;
   };
 
@@ -37,7 +35,7 @@ const Navigation = () => {
         navigate(ROUTES.DASHBOARD);
         break;
       case 1:
-        navigate(ROUTES.ASSETS_NEW);
+        navigate(ROUTES.DEVICE_MANAGEMENT);
         break;
       case 2:
         navigate(ROUTES.SCAN);
@@ -49,9 +47,6 @@ const Navigation = () => {
         navigate(ROUTES.ROLLOUTS);
         break;
       case 5:
-        navigate(ROUTES.AUTOPILOT_DEVICES);
-        break;
-      case 6:
         navigate(ROUTES.ADMIN);
         break;
     }
@@ -70,11 +65,10 @@ const Navigation = () => {
     >
       <BottomNavigation value={getValue()} onChange={handleChange}>
         <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
-        <BottomNavigationAction label={t('navigation.assets')} icon={<AddBoxIcon />} />
+        <BottomNavigationAction label={t('navigation.devices', { defaultValue: 'Devices' })} icon={<DevicesIcon />} />
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.templates')} icon={<CategoryIcon />} />
         <BottomNavigationAction label={t('navigation.rollouts')} icon={<RocketLaunchIcon />} />
-        <BottomNavigationAction label={t('navigation.autopilot', { defaultValue: 'Autopilot' })} icon={<DevicesIcon />} />
         <BottomNavigationAction label={t('navigation.admin')} icon={<AdminPanelSettingsIcon />} />
       </BottomNavigation>
     </Paper>

@@ -23,6 +23,7 @@ const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
 const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
+const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ function App() {
                 <Routes>
                   <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
                   <Route path={ROUTES.SCAN} element={<ScanPage />} />
+                  <Route path={ROUTES.DEVICE_MANAGEMENT} element={<DeviceManagementPage />} />
                   <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />
                   <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
                   <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />
