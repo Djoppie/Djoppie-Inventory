@@ -425,6 +425,34 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
+    /// Sets the status of a workplace (e.g., mark as Ready for execution)
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/status")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> SetWorkplaceStatus(int workplaceId, [FromBody] UpdateDayStatusDto dto)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        if (!Enum.TryParse<RolloutWorkplaceStatus>(dto.Status, true, out var newStatus))
+        {
+            return BadRequest(new { message = $"Invalid status value: {dto.Status}" });
+        }
+
+        workplace.Status = newStatus;
+        workplace.UpdatedAt = DateTime.UtcNow;
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
+
+        return Ok(workplaceDto);
+    }
+
+    /// <summary>
     /// Starts a workplace execution (sets status to InProgress)
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/start")]
@@ -438,7 +466,8 @@ public class RolloutsController : ControllerBase
             return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
         }
 
-        if (workplace.Status != RolloutWorkplaceStatus.Pending)
+        // Allow starting from Pending or Ready status
+        if (workplace.Status != RolloutWorkplaceStatus.Pending && workplace.Status != RolloutWorkplaceStatus.Ready)
         {
             return BadRequest(new { message = $"Workplace is already {workplace.Status}" });
         }

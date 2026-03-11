@@ -28,7 +28,12 @@ public enum RolloutWorkplaceStatus
     /// <summary>
     /// Failed - Workplace configuration encountered issues
     /// </summary>
-    Failed = 4
+    Failed = 4,
+
+    /// <summary>
+    /// Ready - Workplace is fully configured and ready for execution
+    /// </summary>
+    Ready = 5
 }
 
 /// <summary>

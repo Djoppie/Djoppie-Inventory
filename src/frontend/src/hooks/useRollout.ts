@@ -314,6 +314,25 @@ export const useStartRolloutWorkplace = (): UseMutationResult<
 };
 
 /**
+ * Update a workplace's status (e.g., mark as Ready)
+ */
+export const useUpdateWorkplaceStatus = (): UseMutationResult<
+  RolloutWorkplace,
+  Error,
+  { workplaceId: number; dayId: number; status: string }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ workplaceId, status }) => rolloutApi.updateWorkplaceStatus(workplaceId, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.dayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.dayId) });
+    },
+  });
+};
+
+/**
  * Update a single asset plan item status
  */
 export const useUpdateItemStatus = (): UseMutationResult<

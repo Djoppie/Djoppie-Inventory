@@ -44,6 +44,7 @@ import {
   useDeleteRolloutWorkplace,
   useDeleteRolloutDay,
   useUpdateRolloutDayStatus,
+  useUpdateWorkplaceStatus,
 } from '../hooks/useRollout';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import { getStatusColor } from '../api/rollout.api';
@@ -318,10 +319,27 @@ interface WorkplaceListProps {
 const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace }: WorkplaceListProps) => {
   const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
   const deleteMutation = useDeleteRolloutWorkplace();
+  const workplaceStatusMutation = useUpdateWorkplaceStatus();
 
   const handleDelete = async (workplace: RolloutWorkplace) => {
     if (!window.confirm(`Werkplek "${workplace.userName}" verwijderen?`)) return;
     await deleteMutation.mutateAsync({ workplaceId: workplace.id, dayId });
+  };
+
+  const handleSetReady = async (workplace: RolloutWorkplace) => {
+    await workplaceStatusMutation.mutateAsync({
+      workplaceId: workplace.id,
+      dayId,
+      status: 'Ready',
+    });
+  };
+
+  const handleSetPending = async (workplace: RolloutWorkplace) => {
+    await workplaceStatusMutation.mutateAsync({
+      workplaceId: workplace.id,
+      dayId,
+      status: 'Pending',
+    });
   };
 
   if (isLoading) {
@@ -329,6 +347,44 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
   }
 
   const isEditable = sessionStatus !== 'Completed' && sessionStatus !== 'Cancelled';
+
+  const getStatusChip = (status: string) => {
+    switch (status) {
+      case 'Ready':
+        return (
+          <Chip
+            label="Gereed"
+            size="small"
+            sx={{
+              bgcolor: 'transparent',
+              border: '1px solid rgba(34, 197, 94, 0.5)',
+              color: '#22c55e',
+              fontWeight: 600,
+              textShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
+            }}
+            component="span"
+          />
+        );
+      case 'InProgress':
+        return (
+          <Chip label="Bezig" size="small" color="warning" component="span" />
+        );
+      case 'Completed':
+        return (
+          <Chip label="Voltooid" size="small" color="success" component="span" />
+        );
+      case 'Skipped':
+        return (
+          <Chip label="Overgeslagen" size="small" color="default" component="span" />
+        );
+      case 'Failed':
+        return (
+          <Chip label="Mislukt" size="small" color="error" component="span" />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box>
@@ -357,12 +413,47 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
               key={workplace.id}
               sx={{
                 border: '1px solid',
-                borderColor: 'divider',
+                borderColor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.3)' : 'divider',
                 borderRadius: 1,
                 mb: 1,
+                bgcolor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.04)' : 'transparent',
               }}
               secondaryAction={
                 <Box component="span" sx={{ display: 'flex', gap: 0.5 }}>
+                  {workplace.status === 'Pending' && (
+                    <Tooltip title="Markeer als gereed voor uitvoering">
+                      <IconButton
+                        onClick={() => handleSetReady(workplace)}
+                        disabled={workplaceStatusMutation.isPending}
+                        sx={{
+                          color: 'rgba(22, 163, 74, 0.7)',
+                          '&:hover': {
+                            color: '#16a34a',
+                            bgcolor: 'rgba(22, 163, 74, 0.08)',
+                          },
+                        }}
+                      >
+                        <CheckCircleOutlineIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {workplace.status === 'Ready' && (
+                    <Tooltip title="Terugzetten naar pending">
+                      <IconButton
+                        onClick={() => handleSetPending(workplace)}
+                        disabled={workplaceStatusMutation.isPending}
+                        sx={{
+                          color: 'rgba(234, 179, 8, 0.7)',
+                          '&:hover': {
+                            color: '#eab308',
+                            bgcolor: 'rgba(234, 179, 8, 0.08)',
+                          },
+                        }}
+                      >
+                        <ChevronLeftIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   <IconButton onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
                     <EditIcon />
                   </IconButton>
@@ -407,6 +498,7 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                       }}
                       component="span"
                     />
+                    {getStatusChip(workplace.status)}
                   </span>
                 }
               />

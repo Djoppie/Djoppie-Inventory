@@ -238,6 +238,10 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   if (open && currentKey && currentKey !== syncedKey) {
     setSyncedKey(currentKey);
 
+    // Reset user search state
+    setUserDevices([]);
+    setUserOptions([]);
+
     // Reset retroactive states (will be populated from plan data below if applicable)
     setIsRetroactive(false);
     setDockingAssetCode('');
@@ -259,6 +263,13 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setUserEmail(workplace!.userEmail || '');
     setLocation(workplace!.location || '');
     setServiceId(workplace!.serviceId);
+
+    // Fetch Intune devices for this user if email is available
+    if (workplace!.userEmail) {
+      intuneApi.getDevicesByUser(workplace!.userEmail)
+        .then(devices => setUserDevices(devices))
+        .catch(() => setUserDevices([]));
+    }
 
     const plans = workplace!.assetPlans || [];
 
@@ -344,6 +355,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setUserEmail('');
     setLocation('');
     setServiceId(undefined);
+    setUserDevices([]);
+    setUserOptions([]);
     setComputerType('laptop');
     setOldComputerSerial('');
     setOldComputerAsset(null);

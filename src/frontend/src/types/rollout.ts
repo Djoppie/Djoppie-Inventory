@@ -7,7 +7,7 @@
 
 export type RolloutSessionStatus = 'Planning' | 'Ready' | 'InProgress' | 'Completed' | 'Cancelled';
 export type RolloutDayStatus = 'Planning' | 'Ready' | 'Completed';
-export type RolloutWorkplaceStatus = 'Pending' | 'InProgress' | 'Completed' | 'Skipped' | 'Failed';
+export type RolloutWorkplaceStatus = 'Pending' | 'Ready' | 'InProgress' | 'Completed' | 'Skipped' | 'Failed';
 export type EquipmentType = 'laptop' | 'desktop' | 'docking' | 'monitor' | 'keyboard' | 'mouse';
 export type AssetPlanStatus = 'pending' | 'installed' | 'skipped';
 

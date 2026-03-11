@@ -322,6 +322,8 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   const isComplete = workplace.status === 'Completed';
   const isInProgress = workplace.status === 'InProgress';
   const isPending = workplace.status === 'Pending';
+  const isReady = workplace.status === 'Ready';
+  const canStart = isPending || isReady;
   const progress = workplace.totalItems > 0 ? (workplace.completedItems / workplace.totalItems) * 100 : 0;
 
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
@@ -399,18 +401,19 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     (p) => p.status === 'installed' || p.status === 'skipped'
   );
 
-  const statusColor = isComplete ? 'success' : isInProgress ? 'warning' : 'default';
-  const statusLabel = isComplete ? 'Voltooid' : isInProgress ? 'Bezig' : 'Wachtend';
+  const statusColor = isComplete ? 'success' : isInProgress ? 'warning' : isReady ? 'info' : 'default';
+  const statusLabel = isComplete ? 'Voltooid' : isInProgress ? 'Bezig' : isReady ? 'Gereed' : 'Wachtend';
 
   return (
     <>
       <Card
         elevation={0}
         sx={{
-          border: isComplete ? '2px solid' : '1px solid',
-          borderColor: isComplete ? 'success.main' : isInProgress ? 'warning.main' : 'divider',
+          border: isComplete ? '2px solid' : isReady ? '1px solid' : '1px solid',
+          borderColor: isComplete ? 'success.main' : isInProgress ? 'warning.main' : isReady ? 'info.main' : 'divider',
           borderRadius: 2,
           transition: 'border-color 0.2s',
+          ...(isReady && { bgcolor: 'rgba(25, 118, 210, 0.04)' }),
         }}
       >
         <CardContent sx={{ pb: 1 }}>
@@ -420,7 +423,7 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
               sx={{
                 mr: 1,
                 mt: 0.3,
-                color: isComplete ? 'success.main' : isInProgress ? 'warning.main' : 'text.secondary',
+                color: isComplete ? 'success.main' : isInProgress ? 'warning.main' : isReady ? 'info.main' : 'text.secondary',
               }}
             />
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -471,8 +474,8 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
           {/* Expanded Content - Asset Checklist */}
           <Collapse in={expanded} timeout="auto">
             <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-              {/* Start button for pending workplaces */}
-              {isPending && (
+              {/* Start button for pending/ready workplaces */}
+              {canStart && (
                 <Button
                   variant="contained"
                   fullWidth

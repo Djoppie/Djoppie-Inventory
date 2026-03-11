@@ -177,6 +177,14 @@ export const startRolloutWorkplace = async (workplaceId: number): Promise<Rollou
 };
 
 /**
+ * Update workplace status (e.g., mark as Ready)
+ */
+export const updateWorkplaceStatus = async (workplaceId: number, status: string): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}/status`, { status });
+  return response.data;
+};
+
+/**
  * Update a single asset plan item status (installed/skipped)
  */
 export const updateItemStatus = async (
