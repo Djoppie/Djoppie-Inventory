@@ -37,6 +37,8 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import DockIcon from '@mui/icons-material/Dock';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { SerialSearchField } from './SerialSearchField';
@@ -67,6 +69,133 @@ interface MonitorConfig {
   hasCamera: boolean;
   serial?: string;
 }
+
+// Helper to generate asset code preview with Nov/Dec rule
+const generateAssetCodePreview = (template: AssetTemplate | null, equipmentType: string): string => {
+  if (!template?.brand) return '';
+
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const year = now.getFullYear();
+
+  // Apply Nov/Dec rule: if month >= 11, use next year
+  const displayYear = month >= 11 ? year + 1 : year;
+  const yearCode = displayYear.toString().slice(-2);
+
+  const typePrefix = equipmentType === 'monitor' ? 'MON' : equipmentType === 'keyboard' ? 'KEY' : 'MOU';
+  const brand = template.brand.toUpperCase();
+
+  return `${typePrefix}-${yearCode}-${brand}-?????`;
+};
+
+// Visual monitor layout diagram component
+const MonitorLayoutDiagram = ({ configs, selectedIndex }: {
+  configs: MonitorConfig[];
+  selectedIndex: number;
+}) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  const renderMonitor = (config: MonitorConfig, index: number, position: 'left' | 'center' | 'right') => {
+    const isSelected = index === selectedIndex;
+    const monitorExists = configs.length > index;
+
+    if (!monitorExists) {
+      return (
+        <Box
+          key={position}
+          sx={{
+            width: 60,
+            height: 40,
+            borderRadius: 1,
+            border: '2px dashed',
+            borderColor: 'divider',
+            opacity: 0.3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <MonitorIcon sx={{ fontSize: '1rem', color: 'text.disabled' }} />
+        </Box>
+      );
+    }
+
+    return (
+      <Box
+        key={position}
+        sx={{
+          position: 'relative',
+          width: 60,
+          height: 40,
+          borderRadius: 1,
+          border: '2px solid',
+          borderColor: isSelected ? 'primary.main' : (isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'),
+          bgcolor: isSelected ? (isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)') : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.25s ease',
+          boxShadow: isSelected ? (isDark ? '0 0 12px rgba(255, 146, 51, 0.3)' : '0 0 12px rgba(255, 119, 0, 0.2)') : 'none',
+        }}
+      >
+        <MonitorIcon sx={{ fontSize: '1.5rem', color: isSelected ? 'primary.main' : 'text.secondary' }} />
+        {config.hasCamera && (
+          <VideocamIcon
+            sx={{
+              position: 'absolute',
+              top: 2,
+              right: 2,
+              fontSize: '0.8rem',
+              color: 'primary.main',
+              bgcolor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+              borderRadius: '50%',
+              p: 0.25,
+            }}
+          />
+        )}
+      </Box>
+    );
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      {/* Monitors */}
+      <Stack direction="row" spacing={1.5} alignItems="flex-end">
+        {renderMonitor(configs[0], 0, 'left')}
+        {renderMonitor(configs[1], 1, 'center')}
+        {renderMonitor(configs[2], 2, 'right')}
+      </Stack>
+
+      {/* Desk representation */}
+      <Box
+        sx={{
+          width: '100%',
+          height: 4,
+          bgcolor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+          borderRadius: 1,
+          mt: 0.5,
+        }}
+      />
+
+      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+        Bureaublad weergave
+      </Typography>
+    </Box>
+  );
+};
 
 const LinkedAssetChip = ({ workplace, equipmentType, index, variant: chipVariant = 'new' }: {
   workplace?: RolloutWorkplace;
@@ -183,6 +312,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     { position: 'left', hasCamera: false, template: null },
     { position: 'right', hasCamera: false, template: null },
   ]);
+  const [hoveredMonitorIndex, setHoveredMonitorIndex] = useState<number | null>(null);
 
   // Peripherals state
   const [keyboardTemplate, setKeyboardTemplate] = useState<AssetTemplate | null>(null);
@@ -1068,6 +1198,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0.5 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Monitor count slider */}
                 <Box sx={{ px: 1 }}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Aantal monitors
@@ -1087,91 +1218,206 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   />
                 </Box>
 
-                {monitorConfigs.map((config, index) => (
-                  <Box key={index} sx={monitorCardSx}>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                      <MonitorIcon sx={{ color: 'primary.main', fontSize: '1.1rem' }} />
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        Monitor {index + 1}
-                      </Typography>
-                    </Stack>
+                {/* Visual layout diagram */}
+                <MonitorLayoutDiagram
+                  configs={monitorConfigs}
+                  selectedIndex={hoveredMonitorIndex ?? 0}
+                />
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {isRetroactive ? (
-                        <AssetCodeSearchField
-                          label={`AssetCode monitor ${index + 1}`}
-                          value={monitorAssetCodes[index] || ''}
-                          onChange={(v) => {
-                            setMonitorAssetCodes(prev => { const next = [...prev]; next[index] = v; return next; });
-                          }}
-                          onAssetLinked={(asset) => {
-                            setMonitorLinkedAssets(prev => { const next = [...prev]; next[index] = asset; return next; });
-                          }}
-                          linkedAsset={monitorLinkedAssets[index]}
-                          helperText="Scan of typ de assetcode van de bestaande monitor"
-                        />
-                      ) : (
-                        <>
-                          <TemplateSelector
-                            equipmentType="monitor"
-                            value={config.template}
-                            onChange={(template) => updateMonitorConfig(index, 'template', template)}
-                          />
-                          {!config.template && (
-                            <Alert severity="info" sx={{ py: 0.5 }}>
-                              <Typography variant="caption">
-                                <strong>Let op:</strong> Merk onbekend. Bij uitvoering moet het merk gekend zijn voor registratie in de inventory. De reservatie wordt wel aangemaakt.
-                              </Typography>
-                            </Alert>
-                          )}
-                        </>
-                      )}
+                {/* Monitor configuration cards */}
+                {monitorConfigs.map((config, index) => {
+                  const assetCodePreview = generateAssetCodePreview(config.template ?? null, 'monitor');
+                  const positionLabels = { left: 'Links', center: 'Midden', right: 'Rechts' };
 
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          Positie
-                        </Typography>
-                        <ToggleButtonGroup
-                          value={config.position}
-                          exclusive
-                          onChange={(_, value) => value && updateMonitorConfig(index, 'position', value)}
-                          fullWidth
-                          size="small"
+                  return (
+                    <Box
+                      key={index}
+                      sx={{
+                        ...monitorCardSx,
+                        borderColor: hoveredMonitorIndex === index ? 'primary.main' : 'divider',
+                      }}
+                      onMouseEnter={() => setHoveredMonitorIndex(index)}
+                      onMouseLeave={() => setHoveredMonitorIndex(null)}
+                    >
+                      {/* Monitor card header */}
+                      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+                        <Box
                           sx={{
-                            '& .MuiToggleButton-root': {
-                              borderRadius: 1.5,
-                              '&.Mui-selected': {
-                                bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
-                                color: 'primary.main',
-                                borderColor: 'primary.main',
-                              },
-                            },
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 36,
+                            height: 36,
+                            borderRadius: 1.5,
+                            bgcolor: isDark ? 'rgba(255, 146, 51, 0.1)' : 'rgba(255, 119, 0, 0.08)',
+                            color: 'primary.main',
                           }}
                         >
-                          <ToggleButton value="left">Links</ToggleButton>
-                          <ToggleButton value="center">Midden</ToggleButton>
-                          <ToggleButton value="right">Rechts</ToggleButton>
-                        </ToggleButtonGroup>
-                      </Box>
+                          <MonitorIcon sx={{ fontSize: '1.2rem' }} />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            Monitor {index + 1}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Chip
+                              label={positionLabels[config.position]}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
+                                color: 'primary.main',
+                              }}
+                            />
+                            {config.hasCamera && (
+                              <Chip
+                                icon={<VideocamIcon sx={{ fontSize: '0.7rem !important' }} />}
+                                label="Camera"
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                  bgcolor: isDark ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.1)',
+                                  color: 'info.main',
+                                }}
+                              />
+                            )}
+                          </Stack>
+                        </Box>
+                      </Stack>
 
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={config.hasCamera}
-                            onChange={(e) => updateMonitorConfig(index, 'hasCamera', e.target.checked)}
-                            sx={{
-                              '&.Mui-checked': { color: 'primary.main' },
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {isRetroactive ? (
+                          <AssetCodeSearchField
+                            label={`AssetCode monitor ${index + 1}`}
+                            value={monitorAssetCodes[index] || ''}
+                            onChange={(v) => {
+                              setMonitorAssetCodes(prev => { const next = [...prev]; next[index] = v; return next; });
                             }}
+                            onAssetLinked={(asset) => {
+                              setMonitorLinkedAssets(prev => { const next = [...prev]; next[index] = asset; return next; });
+                            }}
+                            linkedAsset={monitorLinkedAssets[index]}
+                            helperText="Scan of typ de assetcode van de bestaande monitor"
                           />
-                        }
-                        label={
-                          <Typography variant="body2">Heeft camera</Typography>
-                        }
-                      />
-                      <LinkedAssetChip workplace={workplace} equipmentType="monitor" index={index} />
+                        ) : (
+                          <>
+                            <TemplateSelector
+                              equipmentType="monitor"
+                              value={config.template}
+                              onChange={(template) => updateMonitorConfig(index, 'template', template)}
+                            />
+
+                            {/* Asset code preview or brand pending warning */}
+                            {config.template ? (
+                              <Box
+                                sx={{
+                                  p: 1.5,
+                                  borderRadius: 2,
+                                  bgcolor: isDark ? 'rgba(76, 175, 80, 0.08)' : 'rgba(76, 175, 80, 0.05)',
+                                  border: '1px solid',
+                                  borderColor: isDark ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)',
+                                }}
+                              >
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <InfoOutlinedIcon sx={{ fontSize: '1rem', color: 'success.main' }} />
+                                  <Box sx={{ flex: 1 }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
+                                      Asset code formaat:
+                                    </Typography>
+                                    <Typography variant="body2" fontWeight={700} sx={{ fontFamily: 'monospace', color: 'success.main' }}>
+                                      {assetCodePreview}
+                                    </Typography>
+                                  </Box>
+                                </Stack>
+                                {config.template.model && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                    {config.template.brand} {config.template.model}
+                                  </Typography>
+                                )}
+                              </Box>
+                            ) : (
+                              <Alert severity="warning" sx={{ py: 0.5 }}>
+                                <Typography variant="caption">
+                                  <strong>Let op:</strong> Merk onbekend — bij uitvoering moet het merk gekend zijn voor registratie.
+                                </Typography>
+                              </Alert>
+                            )}
+                          </>
+                        )}
+
+                        {/* Position selector */}
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Positie op bureau
+                          </Typography>
+                          <ToggleButtonGroup
+                            value={config.position}
+                            exclusive
+                            onChange={(_, value) => value && updateMonitorConfig(index, 'position', value)}
+                            fullWidth
+                            size="small"
+                            sx={{
+                              '& .MuiToggleButton-root': {
+                                borderRadius: 1.5,
+                                fontWeight: 600,
+                                py: 1,
+                                '&.Mui-selected': {
+                                  bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
+                                  color: 'primary.main',
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          >
+                            <ToggleButton value="left">Links</ToggleButton>
+                            <ToggleButton value="center">Midden</ToggleButton>
+                            <ToggleButton value="right">Rechts</ToggleButton>
+                          </ToggleButtonGroup>
+                        </Box>
+
+                        {/* Camera checkbox */}
+                        <Box
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: config.hasCamera ? 'info.main' : 'divider',
+                            bgcolor: config.hasCamera
+                              ? (isDark ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.05)')
+                              : 'transparent',
+                            transition: 'all 0.25s ease',
+                          }}
+                        >
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={config.hasCamera}
+                                onChange={(e) => updateMonitorConfig(index, 'hasCamera', e.target.checked)}
+                                sx={{
+                                  '&.Mui-checked': { color: 'info.main' },
+                                }}
+                              />
+                            }
+                            label={
+                              <Stack direction="row" spacing={1} alignItems="center">
+                                <VideocamIcon sx={{ fontSize: '1rem', color: config.hasCamera ? 'info.main' : 'text.secondary' }} />
+                                <Typography variant="body2" fontWeight={config.hasCamera ? 600 : 400}>
+                                  Heeft ingebouwde camera
+                                </Typography>
+                              </Stack>
+                            }
+                          />
+                        </Box>
+
+                        <LinkedAssetChip workplace={workplace} equipmentType="monitor" index={index} />
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Box>
             </AccordionDetails>
           </Accordion>

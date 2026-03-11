@@ -410,8 +410,9 @@ public class RolloutRepository : IRolloutRepository
             };
 
             // Generate AssetCode using centralized service (4-char brand code, proper numbering)
+            // Year is calculated from current date (Nov/Dec uses next year)
             asset.AssetCode = await _assetCodeGenerator.GenerateCodeAsync(
-                assetType.Id, plan.Brand, DateTime.UtcNow.Year, false);
+                assetType.Id, plan.Brand, DateTime.UtcNow, false);
 
             // Create the asset
             var createdAsset = await _assetRepository.CreateAsync(asset);

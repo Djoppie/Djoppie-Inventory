@@ -172,13 +172,6 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
             InputLabelProps={{ shrink: true }}
             helperText="Selecteer de datum voor deze planning"
           />
-          <TextField
-            label="Naam (optioneel)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            fullWidth
-            helperText="Bijv. 'Week 1 - Maandag' of 'IT Afdeling'"
-          />
           <FormControl fullWidth>
             <InputLabel id="service-label">Dienst</InputLabel>
             <Select
@@ -230,6 +223,13 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
               ])}
             </Select>
           </FormControl>
+          <TextField
+            label="Naam (optioneel)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+            helperText="Bijv. 'Week 1 - Maandag' of 'IT Afdeling'"
+          />
 
           {!isEditMode && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>

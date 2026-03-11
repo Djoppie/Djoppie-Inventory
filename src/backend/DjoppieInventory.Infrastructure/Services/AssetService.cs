@@ -81,10 +81,11 @@ public class AssetService : IAssetService
             throw new ArgumentException("Asset type is required", nameof(createAssetDto));
 
         // Auto-generate asset code: [DUM-]TYPE-YY-MERK-NUMMER
+        // Year is calculated from purchase date (Nov/Dec uses next year)
         var assetCode = await _codeGenerator.GenerateCodeAsync(
             createAssetDto.AssetTypeId,
             createAssetDto.Brand,
-            DateTime.UtcNow.Year,
+            createAssetDto.PurchaseDate,
             createAssetDto.IsDummy);
 
         var asset = _mapper.Map<Asset>(createAssetDto);
@@ -292,10 +293,11 @@ public class AssetService : IAssetService
         // uses AddRangeAsync + SaveChangesAsync which is atomic at the database level.
 
         // Generate all asset codes using the code generator
+        // Year is calculated from purchase date (Nov/Dec uses next year)
         var codes = (await _codeGenerator.GenerateBulkCodesAsync(
             bulkCreateDto.AssetTypeId,
             bulkCreateDto.Brand,
-            DateTime.UtcNow.Year,
+            bulkCreateDto.PurchaseDate,
             bulkCreateDto.IsDummy,
             bulkCreateDto.Quantity)).ToList();
 

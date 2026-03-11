@@ -20,6 +20,14 @@ import {
   ListItem,
   ListItemText,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
+  Checkbox,
+  ListItemIcon,
+  ListSubheader,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -34,6 +42,9 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
+import { useQuery } from '@tanstack/react-query';
 import {
   useRolloutSession,
   useCreateRolloutSession,
@@ -48,6 +59,7 @@ import {
 } from '../hooks/useRollout';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import { getStatusColor } from '../api/rollout.api';
+import { servicesApi } from '../api/admin.api';
 import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
@@ -99,6 +111,26 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
     return new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   });
 
+  // Service filter state
+  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
+  const [filterExpanded, setFilterExpanded] = useState(false);
+
+  // Fetch services for filter
+  const { data: services = [] } = useQuery({
+    queryKey: ['admin', 'services'],
+    queryFn: () => servicesApi.getAll(false),
+  });
+
+  // Group services by sector
+  const servicesBySector = useMemo(() => {
+    return services.reduce<Record<string, typeof services>>((acc, service) => {
+      const sectorName = service.sector?.name || 'Overig';
+      if (!acc[sectorName]) acc[sectorName] = [];
+      acc[sectorName].push(service);
+      return acc;
+    }, {});
+  }, [services]);
+
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
@@ -111,16 +143,27 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
   const firstDayWeekday = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0..Sun=6
   const startOffset = firstDayWeekday <= 4 ? firstDayWeekday : 0;
 
-  // Group plannings by date string
+  // Filter days based on selected services
+  const filteredDays = useMemo(() => {
+    if (selectedServiceIds.length === 0) {
+      return days; // Show all if no filter
+    }
+    // Show day if it has at least one of the selected services
+    return days.filter(day =>
+      day.scheduledServiceIds.some(svcId => selectedServiceIds.includes(svcId))
+    );
+  }, [days, selectedServiceIds]);
+
+  // Group plannings by date string (using filtered days)
   const planningsByDate = useMemo(() => {
     const map: Record<string, RolloutDay[]> = {};
-    for (const day of days) {
+    for (const day of filteredDays) {
       const dateKey = day.date.split('T')[0];
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(day);
     }
     return map;
-  }, [days]);
+  }, [filteredDays]);
 
   // Parse rollout period dates
   const periodStart = plannedStartDate ? new Date(plannedStartDate + 'T00:00:00') : null;
@@ -152,6 +195,18 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
 
   const monthLabel = firstDayOfMonth.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
 
+  // Handle service filter changes
+  const handleServiceFilterChange = (event: { target: { value: unknown } }) => {
+    const value = event.target.value as number[];
+    setSelectedServiceIds(value);
+  };
+
+  const handleClearFilter = () => {
+    setSelectedServiceIds([]);
+  };
+
+  const isFilterActive = selectedServiceIds.length > 0;
+
   return (
     <Paper sx={{ p: 2, mb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -172,6 +227,163 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
         </Box>
         <Box sx={{ width: 40 }} />
       </Box>
+
+      {/* Service Filter - Expandable Panel */}
+      {services.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          {/* Filter Toggle Button */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: isFilterActive || filterExpanded ? 1.5 : 0 }}>
+            <Button
+              size="small"
+              variant={isFilterActive ? 'contained' : 'outlined'}
+              startIcon={<FilterListIcon />}
+              endIcon={filterExpanded ? <ExpandMoreIcon sx={{ transform: 'rotate(180deg)' }} /> : <ExpandMoreIcon />}
+              onClick={() => setFilterExpanded(!filterExpanded)}
+              sx={{
+                borderColor: isFilterActive ? '#FF7700' : 'divider',
+                bgcolor: isFilterActive ? '#FF7700' : 'transparent',
+                color: isFilterActive ? '#fff' : 'text.primary',
+                '&:hover': {
+                  borderColor: '#FF7700',
+                  bgcolor: isFilterActive ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
+                },
+              }}
+            >
+              Filter op Dienst
+              {isFilterActive && ` (${selectedServiceIds.length})`}
+            </Button>
+
+            {isFilterActive && (
+              <Tooltip title="Filter wissen">
+                <IconButton
+                  size="small"
+                  onClick={handleClearFilter}
+                  sx={{
+                    color: '#FF7700',
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 119, 0, 0.08)',
+                    },
+                  }}
+                >
+                  <ClearIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+
+            {isFilterActive && (
+              <Typography variant="caption" color="text.secondary">
+                {filteredDays.length} van {days.length} planningen
+              </Typography>
+            )}
+          </Box>
+
+          {/* Expandable Filter Panel */}
+          <Box
+            sx={{
+              maxHeight: filterExpanded ? 500 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.3s ease-in-out',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(3, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                },
+                gap: 2,
+                p: 2,
+                bgcolor: 'rgba(255, 119, 0, 0.03)',
+                border: '1px solid',
+                borderColor: 'rgba(255, 119, 0, 0.15)',
+                borderRadius: 2,
+              }}
+            >
+              {Object.entries(servicesBySector).map(([sectorName, sectorServices]) => (
+                <Box key={sectorName}>
+                  {/* Sector Header */}
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      fontWeight: 700,
+                      fontSize: '0.7rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: '#FF7700',
+                      mb: 1,
+                      pb: 0.5,
+                      borderBottom: '2px solid rgba(255, 119, 0, 0.2)',
+                    }}
+                  >
+                    {sectorName}
+                  </Typography>
+
+                  {/* Services in this sector */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                    {sectorServices.map((service) => {
+                      const isSelected = selectedServiceIds.includes(service.id);
+                      return (
+                        <Box
+                          key={service.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedServiceIds(prev => prev.filter(id => id !== service.id));
+                            } else {
+                              setSelectedServiceIds(prev => [...prev, service.id]);
+                            }
+                          }}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            py: 0.5,
+                            px: 1,
+                            borderRadius: 1,
+                            cursor: 'pointer',
+                            bgcolor: isSelected ? 'rgba(255, 119, 0, 0.12)' : 'transparent',
+                            border: '1px solid',
+                            borderColor: isSelected ? '#FF7700' : 'transparent',
+                            '&:hover': {
+                              bgcolor: isSelected ? 'rgba(255, 119, 0, 0.18)' : 'rgba(255, 119, 0, 0.06)',
+                            },
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            size="small"
+                            sx={{
+                              p: 0,
+                              color: 'rgba(255, 119, 0, 0.5)',
+                              '&.Mui-checked': {
+                                color: '#FF7700',
+                              },
+                            }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: '0.8rem',
+                              fontWeight: isSelected ? 600 : 400,
+                              color: isSelected ? '#FF7700' : 'text.primary',
+                            }}
+                          >
+                            {service.name}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {/* Weekday headers */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0.5, mb: 0.5 }}>

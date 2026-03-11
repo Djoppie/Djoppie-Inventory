@@ -739,6 +739,8 @@
     "equipment": {
       "laptop": "Laptop",
       "laptops": "Laptops",
+      "desktop": "Desktop",
+      "desktops": "Desktops",
       "docking": "Docking Station",
       "dockingStations": "Docking Stations",
       "monitor": "Monitor",
@@ -747,6 +749,36 @@
       "keyboards": "Keyboards",
       "mouse": "Mouse",
       "mice": "Mice"
+    },
+    "monitorLayout": {
+      "deskSetup": "Desk Setup",
+      "monitorNumber": "Monitor {{number}}",
+      "position": "Position",
+      "camera": "Camera",
+      "hasCamera": "Has camera",
+      "noCamera": "No camera",
+      "selectTemplate": "Select template",
+      "noTemplateWarning": "Select a template to determine brand for asset code"
+    },
+    "assetCodePreview": {
+      "title": "Asset Code Preview",
+      "format": "Format",
+      "brandPending": "Brand will be determined by template",
+      "yearRule": "Year calculated from purchase date (Nov/Dec = next year)"
+    },
+    "serviceFilter": {
+      "title": "Filter by Service",
+      "allServices": "All Services",
+      "selected": "selected",
+      "clearFilter": "Clear filter",
+      "filteredCount": "{{count}} of {{total}} schedules"
+    },
+    "templateSelector": {
+      "searchPlaceholder": "Search template...",
+      "noTemplates": "No templates available for this equipment type",
+      "noResults": "No templates found",
+      "clearSelection": "Clear selection",
+      "selected": "Selected"
     },
     "executionPage": {
       "title": "Execution",

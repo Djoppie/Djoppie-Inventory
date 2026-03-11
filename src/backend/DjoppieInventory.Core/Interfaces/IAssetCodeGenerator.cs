@@ -42,6 +42,11 @@ public class AssetCodeComponents
 ///
 /// MERK = first 4 characters of brand, uppercased.
 ///
+/// Year (YY) calculation from purchase date:
+/// - If purchase month is November (11) or December (12), use next year
+/// - Otherwise, use the purchase date year
+/// - If no purchase date provided, use current date
+///
 /// Numbering rules:
 /// - Normal assets: 00001-89999
 /// - Dummy assets: 90001-99999
@@ -54,14 +59,15 @@ public interface IAssetCodeGenerator
     /// </summary>
     /// <param name="assetTypeId">ID of the asset type (determines TYPE component)</param>
     /// <param name="brand">Brand/manufacturer name (first 4 chars uppercased become MERK component)</param>
-    /// <param name="year">Year for the asset (determines YY component)</param>
+    /// <param name="purchaseDate">Purchase date for year calculation (if null, uses current date).
+    /// If month is November or December, the next year is used.</param>
     /// <param name="isDummy">If true, generates a dummy asset code (starts with "DUM-" and uses numbers 90001+)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Generated asset code (e.g., "LAP-26-DELL-00001")</returns>
     Task<string> GenerateCodeAsync(
         int assetTypeId,
         string? brand,
-        int year,
+        DateTime? purchaseDate,
         bool isDummy,
         CancellationToken cancellationToken = default);
 
@@ -72,10 +78,18 @@ public interface IAssetCodeGenerator
     Task<IEnumerable<string>> GenerateBulkCodesAsync(
         int assetTypeId,
         string? brand,
-        int year,
+        DateTime? purchaseDate,
         bool isDummy,
         int count,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Calculates the year code from a purchase date.
+    /// If purchase month is November or December, returns the next year.
+    /// </summary>
+    /// <param name="purchaseDate">Purchase date (if null, uses current date)</param>
+    /// <returns>Year to use for asset code generation</returns>
+    int CalculateYearFromPurchaseDate(DateTime? purchaseDate);
 
     /// <summary>
     /// Validates whether an asset code follows the correct format.

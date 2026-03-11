@@ -739,6 +739,8 @@
     "equipment": {
       "laptop": "Laptop",
       "laptops": "Laptops",
+      "desktop": "Desktop",
+      "desktops": "Desktops",
       "docking": "Docking Station",
       "dockingStations": "Docking Stations",
       "monitor": "Monitor",
@@ -747,6 +749,36 @@
       "keyboards": "Toetsenborden",
       "mouse": "Muis",
       "mice": "Muizen"
+    },
+    "monitorLayout": {
+      "deskSetup": "Bureauopstelling",
+      "monitorNumber": "Monitor {{number}}",
+      "position": "Positie",
+      "camera": "Camera",
+      "hasCamera": "Heeft camera",
+      "noCamera": "Geen camera",
+      "selectTemplate": "Selecteer sjabloon",
+      "noTemplateWarning": "Selecteer een sjabloon om merk te bepalen voor assetcode"
+    },
+    "assetCodePreview": {
+      "title": "Asset Code Voorbeeld",
+      "format": "Formaat",
+      "brandPending": "Merk wordt bepaald door sjabloon",
+      "yearRule": "Jaar berekend van aankoopdatum (nov/dec = volgend jaar)"
+    },
+    "serviceFilter": {
+      "title": "Filter op Dienst",
+      "allServices": "Alle Diensten",
+      "selected": "geselecteerd",
+      "clearFilter": "Filter wissen",
+      "filteredCount": "{{count}} van {{total}} planningen"
+    },
+    "templateSelector": {
+      "searchPlaceholder": "Zoek sjabloon...",
+      "noTemplates": "Geen sjablonen beschikbaar voor dit apparaattype",
+      "noResults": "Geen sjablonen gevonden",
+      "clearSelection": "Selectie wissen",
+      "selected": "Geselecteerd"
     },
     "executionPage": {
       "title": "Uitvoering",

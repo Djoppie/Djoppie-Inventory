@@ -636,8 +636,9 @@ public class RolloutsController : ControllerBase
                         }
 
                         // Use centralized AssetCodeGeneratorService (4-char brand code, proper numbering)
+                        // Year is calculated from current date (Nov/Dec uses next year)
                         var generatedCode = await _assetCodeGenerator.GenerateCodeAsync(
-                            assetType.Id, plan.Brand, DateTime.UtcNow.Year, false);
+                            assetType.Id, plan.Brand, DateTime.UtcNow, false);
 
                         var newAsset = new Asset
                         {

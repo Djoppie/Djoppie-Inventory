@@ -8,6 +8,11 @@ namespace DjoppieInventory.Infrastructure.Services;
 /// <summary>
 /// Service for generating and validating asset codes following the format: [DUM-]TYPE-YY-MERK-NUMMER
 /// Examples: LAP-26-DELL-00001, DUM-LAP-26-HP-90001
+///
+/// Year (YY) calculation from purchase date:
+/// - If purchase month is November (11) or December (12), use next year
+/// - Otherwise, use the purchase date year
+/// - If no purchase date provided, use current date
 /// </summary>
 public class AssetCodeGeneratorService : IAssetCodeGenerator
 {
@@ -39,10 +44,27 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         return cleaned.Length > 4 ? cleaned[..4] : cleaned.Length > 0 ? cleaned : "XXXX";
     }
 
+    /// <summary>
+    /// Calculates the year code from a purchase date.
+    /// If purchase month is November or December, returns the next year.
+    /// </summary>
+    public int CalculateYearFromPurchaseDate(DateTime? purchaseDate)
+    {
+        var date = purchaseDate ?? DateTime.UtcNow;
+
+        // If purchase is in November (11) or December (12), use next year
+        if (date.Month >= 11)
+        {
+            return date.Year + 1;
+        }
+
+        return date.Year;
+    }
+
     public async Task<string> GenerateCodeAsync(
         int assetTypeId,
         string? brand,
-        int year,
+        DateTime? purchaseDate,
         bool isDummy,
         CancellationToken cancellationToken = default)
     {
@@ -54,7 +76,8 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         // 2. Convert brand to 4-char code
         var brandCode = ToBrandCode(brand);
 
-        // 3. Format year as 2 digits
+        // 3. Calculate year from purchase date (Nov/Dec = next year)
+        var year = CalculateYearFromPurchaseDate(purchaseDate);
         var yearTwoDigit = (year % 100).ToString("D2");
 
         // 4. Build the prefix: [DUM-]TYPE-YY-MERK
@@ -72,7 +95,7 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
     public async Task<IEnumerable<string>> GenerateBulkCodesAsync(
         int assetTypeId,
         string? brand,
-        int year,
+        DateTime? purchaseDate,
         bool isDummy,
         int count,
         CancellationToken cancellationToken = default)
@@ -91,7 +114,8 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         // 2. Convert brand to 4-char code
         var brandCode = ToBrandCode(brand);
 
-        // 3. Format year as 2 digits
+        // 3. Calculate year from purchase date (Nov/Dec = next year)
+        var year = CalculateYearFromPurchaseDate(purchaseDate);
         var yearTwoDigit = (year % 100).ToString("D2");
 
         // 4. Build the prefix: [DUM-]TYPE-YY-MERK
