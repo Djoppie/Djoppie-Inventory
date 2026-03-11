@@ -78,4 +78,11 @@ public interface IAssetService
     /// <param name="performedBy">Display name of the user performing the update (for event tracking)</param>
     /// <param name="performedByEmail">Email address of the user performing the update (for event tracking)</param>
     Task<BulkUpdateAssetsResultDto> BulkUpdateAssetsAsync(BulkUpdateAssetsDto bulkUpdateDto, string? performedBy = null, string? performedByEmail = null);
+
+    /// <summary>
+    /// Bulk deletes multiple assets by their IDs
+    /// </summary>
+    /// <param name="assetIds">List of asset IDs to delete</param>
+    /// <returns>Result containing counts of successful and failed deletions</returns>
+    Task<BulkDeleteAssetsResultDto> BulkDeleteAssetsAsync(IEnumerable<int> assetIds);
 }

@@ -97,3 +97,47 @@ public class BulkUpdateAssetsResultDto
     /// </summary>
     public List<string> Errors { get; set; } = new();
 }
+
+/// <summary>
+/// DTO for bulk deleting multiple assets
+/// </summary>
+public class BulkDeleteAssetsDto
+{
+    /// <summary>
+    /// List of asset IDs to delete
+    /// </summary>
+    [Required]
+    [MinLength(1, ErrorMessage = "At least one asset ID is required")]
+    public List<int> AssetIds { get; set; } = new();
+}
+
+/// <summary>
+/// Result of a bulk delete operation
+/// </summary>
+public class BulkDeleteAssetsResultDto
+{
+    /// <summary>
+    /// Number of assets successfully deleted
+    /// </summary>
+    public int DeletedCount { get; set; }
+
+    /// <summary>
+    /// Total number of assets requested for deletion
+    /// </summary>
+    public int TotalRequested { get; set; }
+
+    /// <summary>
+    /// List of asset IDs that were successfully deleted
+    /// </summary>
+    public List<int> DeletedIds { get; set; } = new();
+
+    /// <summary>
+    /// List of asset IDs that failed to delete (e.g., not found)
+    /// </summary>
+    public List<int> FailedIds { get; set; } = new();
+
+    /// <summary>
+    /// Error messages for failed deletions (if any)
+    /// </summary>
+    public List<string> Errors { get; set; } = new();
+}

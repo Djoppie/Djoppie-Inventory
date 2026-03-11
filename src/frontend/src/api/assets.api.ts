@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto, BulkUpdateAssetsDto, BulkUpdateAssetsResultDto, PagedResult, PaginationParams } from '../types/asset.types';
+import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto, BulkUpdateAssetsDto, BulkUpdateAssetsResultDto, BulkDeleteAssetsDto, BulkDeleteAssetsResultDto, PagedResult, PaginationParams } from '../types/asset.types';
 
 /**
  * Retrieves all assets (unpaginated). Use for client-side filtering/sorting.
@@ -133,5 +133,10 @@ export const bulkUpdateAssets = async (data: BulkUpdateAssetsDto): Promise<BulkU
   };
 
   const response = await apiClient.put<BulkUpdateAssetsResultDto>('/assets/bulk', cleanedData);
+  return response.data;
+};
+
+export const bulkDeleteAssets = async (data: BulkDeleteAssetsDto): Promise<BulkDeleteAssetsResultDto> => {
+  const response = await apiClient.delete<BulkDeleteAssetsResultDto>('/assets/bulk', { data });
   return response.data;
 };

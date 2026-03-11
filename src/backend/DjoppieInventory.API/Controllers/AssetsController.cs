@@ -175,6 +175,26 @@ public class AssetsController : ControllerBase
     }
 
     /// <summary>
+    /// Deletes multiple assets in bulk.
+    /// </summary>
+    /// <param name="bulkDeleteDto">The bulk deletion parameters containing asset IDs</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpDelete("bulk")]
+    [EnableRateLimiting("bulk")]
+    [ProducesResponseType(typeof(BulkDeleteAssetsResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkDeleteAssetsResultDto>> BulkDeleteAssets(
+        [FromBody] BulkDeleteAssetsDto bulkDeleteDto,
+        CancellationToken cancellationToken = default)
+    {
+        if (bulkDeleteDto.AssetIds == null || bulkDeleteDto.AssetIds.Count == 0)
+            return BadRequest("At least one asset ID is required");
+
+        var result = await _assetService.BulkDeleteAssetsAsync(bulkDeleteDto.AssetIds);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Creates multiple assets in bulk with sequential asset codes.
     /// </summary>
     /// <param name="bulkCreateDto">The bulk creation parameters</param>

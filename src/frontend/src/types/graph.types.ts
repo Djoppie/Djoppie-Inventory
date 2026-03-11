@@ -29,3 +29,22 @@ export interface IntuneDevice {
   userPrincipalName?: string;
   managementAgent?: string;
 }
+
+export interface AutopilotDevice {
+  id: string;
+  serialNumber?: string;
+  model?: string;
+  manufacturer?: string;
+  userPrincipalName?: string;
+  displayName?: string;
+  managedDeviceId?: string;
+  deploymentProfileAssignedDateTime?: string;
+  deploymentProfileAssignmentStatus?: string;
+  azureAdDeviceId?: string;
+  azureAdDeviceDisplayName?: string;
+  groupTag?: string;
+  purchaseOrderIdentifier?: string;
+  enrollmentState?: string;
+  lastContactedDateTime?: string;
+  createdDateTime?: string;
+}

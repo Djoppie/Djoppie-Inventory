@@ -208,6 +208,18 @@ export interface BulkUpdateAssetsResultDto {
   errors: string[];
 }
 
+export interface BulkDeleteAssetsDto {
+  assetIds: number[];
+}
+
+export interface BulkDeleteAssetsResultDto {
+  deletedCount: number;
+  totalRequested: number;
+  deletedIds: number[];
+  failedIds: number[];
+  errors: string[];
+}
+
 /**
  * Generic paginated result type matching the backend PagedResultDto<T>
  */

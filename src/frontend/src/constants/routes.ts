@@ -48,6 +48,12 @@ export const ROUTES = {
 
   /** Rollout report page (requires :id parameter) */
   ROLLOUT_REPORT: '/rollouts/:id/report',
+
+  /** Autopilot devices list page */
+  AUTOPILOT_DEVICES: '/autopilot',
+
+  /** Autopilot device timeline page (requires :serialNumber parameter) */
+  AUTOPILOT_TIMELINE: '/autopilot/timeline/:serialNumber',
 } as const;
 
 /**
@@ -102,4 +108,11 @@ export const buildRoute = {
    * @returns The full route path
    */
   rolloutReport: (id: number | string) => `/rollouts/${id}/report`,
+
+  /**
+   * Builds the Autopilot timeline route with the specified serial number.
+   * @param serialNumber - The device serial number
+   * @returns The full route path
+   */
+  autopilotTimeline: (serialNumber: string) => `/autopilot/timeline/${serialNumber}`,
 } as const;

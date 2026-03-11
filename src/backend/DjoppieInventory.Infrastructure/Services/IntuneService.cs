@@ -1458,4 +1458,72 @@ public class IntuneService : IIntuneService
         var remainingMins = ts.Minutes;
         return remainingMins > 0 ? $"{hours} hr {remainingMins} min" : $"{hours} hr";
     }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<AutopilotDeviceDto>> GetAutopilotDevicesAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving all Autopilot devices from Intune");
+
+            // Use Beta API for Autopilot device identities
+            var requestUrl = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities?$top=999";
+
+            var requestInfo = new Microsoft.Kiota.Abstractions.RequestInformation
+            {
+                HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                URI = new Uri(requestUrl)
+            };
+
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+
+            using var httpClient = new HttpClient();
+            var response = await httpClient.SendAsync(nativeRequest);
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+            var jsonDoc = JsonDocument.Parse(content);
+            var devices = new List<AutopilotDeviceDto>();
+
+            if (jsonDoc.RootElement.TryGetProperty("value", out var valueArray))
+            {
+                foreach (var device in valueArray.EnumerateArray())
+                {
+                    devices.Add(new AutopilotDeviceDto
+                    {
+                        Id = device.GetProperty("id").GetString() ?? string.Empty,
+                        SerialNumber = device.TryGetProperty("serialNumber", out var sn) ? sn.GetString() : null,
+                        Model = device.TryGetProperty("model", out var model) ? model.GetString() : null,
+                        Manufacturer = device.TryGetProperty("manufacturer", out var mfr) ? mfr.GetString() : null,
+                        UserPrincipalName = device.TryGetProperty("userPrincipalName", out var upn) ? upn.GetString() : null,
+                        DisplayName = device.TryGetProperty("displayName", out var dn) ? dn.GetString() : null,
+                        ManagedDeviceId = device.TryGetProperty("managedDeviceId", out var mdId) ? mdId.GetString() : null,
+                        DeploymentProfileAssignedDateTime = device.TryGetProperty("deploymentProfileAssignedDateTime", out var dpDate) ? dpDate.GetString() : null,
+                        DeploymentProfileAssignmentStatus = device.TryGetProperty("deploymentProfileAssignmentStatus", out var dpStatus) ? dpStatus.GetString() : null,
+                        AzureAdDeviceId = device.TryGetProperty("azureAdDeviceId", out var aadId) ? aadId.GetString() : null,
+                        AzureAdDeviceDisplayName = device.TryGetProperty("azureActiveDirectoryDeviceId", out var aadDisplayName) ? aadDisplayName.GetString() : null,
+                        GroupTag = device.TryGetProperty("groupTag", out var gt) ? gt.GetString() : null,
+                        PurchaseOrderIdentifier = device.TryGetProperty("purchaseOrderIdentifier", out var poi) ? poi.GetString() : null,
+                        EnrollmentState = device.TryGetProperty("enrollmentState", out var es) ? es.GetString() : null,
+                        LastContactedDateTime = device.TryGetProperty("lastContactedDateTime", out var lcd) && lcd.ValueKind != JsonValueKind.Null
+                            ? lcd.GetDateTime()
+                            : null
+                    });
+                }
+            }
+
+            _logger.LogInformation("Retrieved {Count} Autopilot devices from Intune", devices.Count);
+            return devices;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP error while retrieving Autopilot devices");
+            throw new InvalidOperationException($"Failed to retrieve Autopilot devices from Intune: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while retrieving Autopilot devices from Intune");
+            throw;
+        }
+    }
 }

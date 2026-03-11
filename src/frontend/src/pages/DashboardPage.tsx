@@ -17,6 +17,13 @@ import {
   Popover,
   alpha,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAssets } from '../hooks/useAssets';
@@ -30,6 +37,7 @@ import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import BulkEditDialog from '../components/assets/BulkEditDialog';
 import ExpiringLeasesWidget from '../components/dashboard/ExpiringLeasesWidget';
 import { getExpiringLeaseContracts } from '../api/leaseContracts.api';
+import { bulkDeleteAssets } from '../api/assets.api';
 import { logger } from '../utils/logger';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -44,6 +52,7 @@ import EventIcon from '@mui/icons-material/Event';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PrintIcon from '@mui/icons-material/Print';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const VIEW_MODE_STORAGE_KEY = 'djoppie-dashboard-view-mode';
 
@@ -106,6 +115,9 @@ const DashboardPage = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState<boolean>(false);
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState<boolean>(false);
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState<boolean>(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -320,6 +332,34 @@ const DashboardPage = () => {
     if (!assets) return [];
     return assets.filter((a) => selectedAssetIds.has(a.id));
   }, [assets, selectedAssetIds]);
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    if (selectedAssetIds.size === 0) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const result = await bulkDeleteAssets({ assetIds: Array.from(selectedAssetIds) });
+
+      if (result.errors && result.errors.length > 0) {
+        setDeleteError(`Deleted ${result.deletedCount} of ${result.totalRequested} assets. Errors: ${result.errors.join(', ')}`);
+      }
+
+      // Clear selection and close dialog
+      setSelectedAssetIds(new Set());
+      setBulkDeleteDialogOpen(false);
+
+      // Refetch assets
+      refetch();
+    } catch (err) {
+      logger.error('Error deleting assets:', err);
+      setDeleteError(err instanceof Error ? err.message : 'An error occurred while deleting assets');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) return <Loading message="[LOAD] Loading asset inventory..." />;
 
@@ -855,6 +895,30 @@ const DashboardPage = () => {
                     </IconButton>
                   </Badge>
                 </Tooltip>
+
+                {/* Bulk Delete Button */}
+                <Tooltip title={t('bulkDelete.deleteSelected', { defaultValue: 'Delete Selected' })}>
+                  <Badge badgeContent={selectedAssetIds.size} color="error">
+                    <IconButton
+                      onClick={() => setBulkDeleteDialogOpen(true)}
+                      sx={{
+                        borderRadius: 2,
+                        background: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(211, 47, 47, 0.8) 100%)'
+                            : 'linear-gradient(135deg, rgba(244, 67, 54, 1) 0%, rgba(211, 47, 47, 0.9) 100%)',
+                        color: '#fff',
+                        boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          boxShadow: '0 6px 16px rgba(244, 67, 54, 0.4)',
+                        },
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Badge>
+                </Tooltip>
               </>
             )}
 
@@ -1282,6 +1346,75 @@ const DashboardPage = () => {
           refetch();
         }}
       />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog
+        open={bulkDeleteDialogOpen}
+        onClose={() => !isDeleting && setBulkDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
+          <DeleteIcon />
+          {t('bulkDelete.confirmTitle', { defaultValue: 'Delete Assets' })}
+        </DialogTitle>
+        <DialogContent>
+          {deleteError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {deleteError}
+            </Alert>
+          )}
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t('bulkDelete.warning', {
+              defaultValue: 'This action cannot be undone. All selected assets and their history will be permanently deleted.',
+            })}
+          </Alert>
+          <Typography>
+            {t('bulkDelete.confirmMessage', {
+              count: selectedAssetIds.size,
+              defaultValue: `Are you sure you want to delete ${selectedAssetIds.size} asset(s)?`,
+            })}
+          </Typography>
+          {selectedAssets.length > 0 && selectedAssets.length <= 10 && (
+            <Box sx={{ mt: 2, pl: 2 }}>
+              <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 1 }}>
+                {t('bulkDelete.selectedAssets', { defaultValue: 'Selected assets:' })}
+              </Typography>
+              {selectedAssets.map((asset) => (
+                <Typography key={asset.id} variant="body2" sx={{ color: 'text.secondary' }}>
+                  - {asset.assetCode} ({asset.assetName || 'Unnamed'})
+                </Typography>
+              ))}
+            </Box>
+          )}
+          {selectedAssets.length > 10 && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+              {t('bulkDelete.tooManyToList', {
+                defaultValue: `${selectedAssets.length} assets selected (too many to list)`,
+              })}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setBulkDeleteDialogOpen(false)}
+            disabled={isDeleting}
+          >
+            {t('common.cancel', { defaultValue: 'Cancel' })}
+          </Button>
+          <Button
+            onClick={handleBulkDelete}
+            variant="contained"
+            color="error"
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
+          >
+            {isDeleting
+              ? t('bulkDelete.deleting', { defaultValue: 'Deleting...' })
+              : t('bulkDelete.delete', { defaultValue: 'Delete' })}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -21,6 +21,8 @@ const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
 const RolloutPlannerPage = lazy(() => import('./pages/RolloutPlannerPage'));
 const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
 const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
+const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
+const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +58,8 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
                   <Route path={ROUTES.ROLLOUT_EXECUTE} element={<RolloutExecutionPage />} />
                   <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
+                  <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
+                  <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
                 </Routes>
               </Suspense>
             </Layout>

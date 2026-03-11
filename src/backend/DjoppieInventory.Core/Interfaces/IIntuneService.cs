@@ -104,4 +104,10 @@ public interface IIntuneService
     /// <returns>Provisioning timeline with events, or a result with Found=false if device not found</returns>
     /// <exception cref="ArgumentException">Thrown when serialNumber is null or empty</exception>
     Task<ProvisioningTimelineDto> GetProvisioningTimelineAsync(string serialNumber);
+
+    /// <summary>
+    /// Retrieves all Windows Autopilot device identities from Intune.
+    /// </summary>
+    /// <returns>A collection of Autopilot device identities</returns>
+    Task<IEnumerable<AutopilotDeviceDto>> GetAutopilotDevicesAsync();
 }

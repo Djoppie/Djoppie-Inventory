@@ -1,5 +1,6 @@
 import { apiClient } from './client';
-import { IntuneDevice } from '../types/graph.types';
+import { IntuneDevice, AutopilotDevice } from '../types/graph.types';
+import { ProvisioningTimeline } from '../types/provisioning.types';
 
 /**
  * API service for Microsoft Intune operations
@@ -78,6 +79,23 @@ export const intuneApi = {
    */
   getStatistics: async (): Promise<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }> => {
     const response = await apiClient.get<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }>('/intune/statistics');
+    return response.data;
+  },
+
+  /**
+   * Get all Windows Autopilot devices
+   */
+  getAutopilotDevices: async (): Promise<AutopilotDevice[]> => {
+    const response = await apiClient.get<AutopilotDevice[]>('/intune/autopilot-devices');
+    return response.data;
+  },
+
+  /**
+   * Get provisioning timeline for a device by serial number
+   * @param serialNumber - The device serial number
+   */
+  getProvisioningTimeline: async (serialNumber: string): Promise<ProvisioningTimeline> => {
+    const response = await apiClient.get<ProvisioningTimeline>(`/intune/devices/serial/${serialNumber}/provisioning-timeline`);
     return response.data;
   }
 };

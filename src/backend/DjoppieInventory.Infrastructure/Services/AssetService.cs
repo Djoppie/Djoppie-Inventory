@@ -229,6 +229,46 @@ public class AssetService : IAssetService
         return deleted;
     }
 
+    public async Task<BulkDeleteAssetsResultDto> BulkDeleteAssetsAsync(IEnumerable<int> assetIds)
+    {
+        var idList = assetIds.ToList();
+        var result = new BulkDeleteAssetsResultDto
+        {
+            TotalRequested = idList.Count
+        };
+
+        foreach (var id in idList)
+        {
+            try
+            {
+                var deleted = await _assetRepository.DeleteAsync(id);
+                if (deleted)
+                {
+                    result.DeletedIds.Add(id);
+                    _logger.LogInformation("Bulk delete: Deleted asset with ID {AssetId}", id);
+                }
+                else
+                {
+                    result.FailedIds.Add(id);
+                    result.Errors.Add($"Asset with ID {id} not found");
+                    _logger.LogWarning("Bulk delete: Asset with ID {AssetId} not found", id);
+                }
+            }
+            catch (Exception ex)
+            {
+                result.FailedIds.Add(id);
+                result.Errors.Add($"Failed to delete asset {id}: {ex.Message}");
+                _logger.LogError(ex, "Bulk delete: Error deleting asset with ID {AssetId}", id);
+            }
+        }
+
+        result.DeletedCount = result.DeletedIds.Count;
+        _logger.LogInformation("Bulk delete completed: {DeletedCount}/{TotalRequested} assets deleted",
+            result.DeletedCount, result.TotalRequested);
+
+        return result;
+    }
+
     public async Task<BulkCreateAssetResultDto> BulkCreateAssetsAsync(BulkCreateAssetDto bulkCreateDto)
     {
         if (bulkCreateDto == null)

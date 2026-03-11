@@ -656,4 +656,49 @@ public class IntuneController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred" });
         }
     }
+
+    /// <summary>
+    /// Retrieves all Windows Autopilot device identities from Intune.
+    /// </summary>
+    /// <returns>A list of Autopilot device identities</returns>
+    /// <response code="200">Returns the list of Autopilot devices</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /api/intune/autopilot-devices
+    ///
+    /// This endpoint retrieves all Windows Autopilot device identities including:
+    /// - Serial number
+    /// - Model and manufacturer
+    /// - Assigned user
+    /// - Deployment profile status
+    /// - Enrollment state
+    ///
+    /// Useful for testing provisioning timeline with Autopilot-enrolled devices.
+    /// </remarks>
+    [HttpGet("autopilot-devices")]
+    [ProducesResponseType(typeof(IEnumerable<AutopilotDeviceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<AutopilotDeviceDto>>> GetAutopilotDevices()
+    {
+        try
+        {
+            _logger.LogInformation("API request to retrieve all Autopilot devices");
+            var devices = await _intuneService.GetAutopilotDevicesAsync();
+            return Ok(devices);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve Autopilot devices");
+            return StatusCode(500, new { error = "Failed to retrieve Autopilot devices", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving Autopilot devices");
+            return StatusCode(500, new { error = "An unexpected error occurred while retrieving Autopilot devices" });
+        }
+    }
 }
