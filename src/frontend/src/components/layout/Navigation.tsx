@@ -6,6 +6,7 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import CategoryIcon from '@mui/icons-material/Category';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import DevicesIcon from '@mui/icons-material/Devices';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { ROUTES } from '../../constants/routes';
 
@@ -25,7 +26,8 @@ const Navigation = () => {
     if (location.pathname === ROUTES.SCAN) return 2;
     if (location.pathname === ROUTES.TEMPLATES) return 3;
     if (location.pathname.startsWith('/rollouts')) return 4;
-    if (location.pathname === ROUTES.ADMIN) return 5;
+    if (location.pathname.startsWith('/autopilot')) return 5;
+    if (location.pathname === ROUTES.ADMIN) return 6;
     return 0;
   };
 
@@ -47,6 +49,9 @@ const Navigation = () => {
         navigate(ROUTES.ROLLOUTS);
         break;
       case 5:
+        navigate(ROUTES.AUTOPILOT_DEVICES);
+        break;
+      case 6:
         navigate(ROUTES.ADMIN);
         break;
     }
@@ -69,6 +74,7 @@ const Navigation = () => {
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.templates')} icon={<CategoryIcon />} />
         <BottomNavigationAction label={t('navigation.rollouts')} icon={<RocketLaunchIcon />} />
+        <BottomNavigationAction label={t('navigation.autopilot', { defaultValue: 'Autopilot' })} icon={<DevicesIcon />} />
         <BottomNavigationAction label={t('navigation.admin')} icon={<AdminPanelSettingsIcon />} />
       </BottomNavigation>
     </Paper>
