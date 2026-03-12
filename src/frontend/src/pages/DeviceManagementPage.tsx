@@ -185,7 +185,7 @@ const DeviceManagementPage = () => {
   };
 
   // Get recently contacted devices (last 24 hours)
-  // Using useMemo with dataUpdatedAt as dependency to avoid impure Date.now() during render
+  // Using useMemo with dataUpdatedAt to avoid impure Date.now() during render
   const recentlyContacted = useMemo(() => {
     const dayAgo = new Date(dataUpdatedAt - 24 * 60 * 60 * 1000);
     return autopilotDevices?.filter(d => {
