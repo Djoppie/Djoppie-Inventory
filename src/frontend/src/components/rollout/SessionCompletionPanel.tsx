@@ -179,13 +179,7 @@ const SessionCompletionPanel = ({
                 <Chip
                   label={session.status}
                   size="small"
-                  color={
-                    session.status === 'Completed'
-                      ? 'success'
-                      : session.status === 'InProgress'
-                      ? 'warning'
-                      : 'default'
-                  }
+                  color={session.status === 'InProgress' ? 'warning' : 'default'}
                   sx={{ ml: 'auto' }}
                 />
               </Box>
