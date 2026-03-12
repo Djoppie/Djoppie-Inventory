@@ -134,6 +134,11 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
+          - checkout: self
+            clean: true
+            fetchDepth: 0
+            displayName: 'Checkout source code (clean)'
+
           - task: NodeTool@0
             displayName: 'Install Node.js'
             inputs:
