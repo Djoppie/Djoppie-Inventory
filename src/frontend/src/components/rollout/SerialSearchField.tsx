@@ -9,6 +9,7 @@ import {
   Button,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
 import { getAssetBySerialNumber } from '../../api/assets.api';
 import type { Asset } from '../../types/asset.types';
 
@@ -38,6 +39,7 @@ export const SerialSearchField = ({
   const [searching, setSearching] = useState(false);
   const [asset, setAsset] = useState<Asset | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [willCreateNew, setWillCreateNew] = useState(false);
 
   const handleSearch = async () => {
     if (!value || !value.trim()) {
@@ -48,6 +50,7 @@ export const SerialSearchField = ({
     setSearching(true);
     setError(null);
     setAsset(null);
+    setWillCreateNew(false);
 
     try {
       const foundAsset = await getAssetBySerialNumber(value);
@@ -70,6 +73,14 @@ export const SerialSearchField = ({
     }
   };
 
+  const handleCreateNew = () => {
+    if (onCreate) {
+      onCreate(value);
+      setWillCreateNew(true);
+      setError(null);
+    }
+  };
+
   return (
     <Box>
       <TextField
@@ -80,11 +91,13 @@ export const SerialSearchField = ({
           onChange(e.target.value);
           setAsset(null);
           setError(null);
+          setWillCreateNew(false);
         }}
         onKeyPress={handleKeyPress}
         required={required}
+        size="small"
         helperText={helperText}
-        error={!!error}
+        error={!!error && !onCreate}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -92,8 +105,9 @@ export const SerialSearchField = ({
                 onClick={handleSearch}
                 disabled={!value || searching}
                 edge="end"
+                size="small"
               >
-                {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                {searching ? <CircularProgress size={18} /> : <SearchIcon />}
               </IconButton>
             </InputAdornment>
           ),
@@ -101,7 +115,7 @@ export const SerialSearchField = ({
       />
 
       {asset && (
-        <Alert severity="success" sx={{ mt: 1 }}>
+        <Alert severity="success" sx={{ mt: 1, py: 0.5 }}>
           <strong>Gevonden:</strong> {asset.assetCode} - {asset.assetName}
           {asset.brand && asset.model && (
             <span> ({asset.brand} {asset.model})</span>
@@ -109,15 +123,27 @@ export const SerialSearchField = ({
         </Alert>
       )}
 
-      {error && onCreate && (
+      {willCreateNew && (
+        <Alert
+          severity="success"
+          sx={{ mt: 1, py: 0.5 }}
+          icon={<AddIcon />}
+        >
+          Nieuw asset wordt aangemaakt met serienummer "{value}"
+        </Alert>
+      )}
+
+      {error && onCreate && !willCreateNew && (
         <Alert
           severity="info"
-          sx={{ mt: 1 }}
+          sx={{ mt: 1, py: 0.5 }}
           action={
             <Button
-              color="inherit"
+              color="primary"
               size="small"
-              onClick={() => onCreate(value)}
+              variant="contained"
+              onClick={handleCreateNew}
+              startIcon={<AddIcon />}
             >
               Nieuw Aanmaken
             </Button>
@@ -128,7 +154,7 @@ export const SerialSearchField = ({
       )}
 
       {error && !onCreate && (
-        <Alert severity="error" sx={{ mt: 1 }}>
+        <Alert severity="error" sx={{ mt: 1, py: 0.5 }}>
           {error}
         </Alert>
       )}

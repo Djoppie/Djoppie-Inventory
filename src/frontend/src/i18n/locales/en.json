@@ -822,6 +822,31 @@
       "hour_one": "{{count}} hour",
       "hour_other": "{{count}} hours",
       "durationFormat": "{{days}}, {{hours}}"
+    },
+    "bulkImport": {
+      "title": "Import from Azure AD",
+      "selectDepartment": "Select department",
+      "selectServiceGroup": "Select service (MG group)",
+      "selectGroup": "Select group",
+      "sectors": "Sectors",
+      "services": "Services",
+      "allServices": "All services",
+      "selectSector": "Select",
+      "searchUsers": "Search users...",
+      "forService": "Workplaces will be added to service: {{service}}",
+      "noUsersFound": "No users found",
+      "noUsersInDepartment": "No users in this department",
+      "noUsersInGroup": "No users in this group",
+      "errorLoadingUsers": "Error loading users",
+      "assetConfig": "Asset configuration",
+      "monitorCount": "Number of monitors",
+      "willCreateAll": "All {{count}} users will be imported",
+      "willCreateSelected": "{{count}} selected users will be imported",
+      "import": "Import",
+      "success": "{{count}} workplaces created",
+      "skipped": "{{count}} users skipped (already added)",
+      "skippedUsers": "Skipped users:",
+      "errorCreating": "Error creating workplaces"
     }
   },
   "intune": {

@@ -700,7 +700,15 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     onClose();
   };
 
-  const isFormValid = userName.trim() && newComputerSerial.trim();
+  // Validate that templates are selected when creating new assets (to prevent XXXX codes)
+  const computerNeedsTemplate = !newComputerAsset && computerType === 'laptop' && !laptopTemplate;
+  const dockingNeedsTemplate = computerType !== 'desktop' && !dockingLinkedAsset && !isRetroactive && !dockingTemplate;
+  const monitorsNeedTemplate = !isRetroactive && monitorConfigs.some((config, idx) => !monitorLinkedAssets[idx] && !config.template);
+  const keyboardNeedsTemplate = !keyboardLinkedAsset && !isRetroactive && !keyboardTemplate;
+  const mouseNeedsTemplate = !mouseLinkedAsset && !isRetroactive && !mouseTemplate;
+
+  const hasTemplateErrors = computerNeedsTemplate || dockingNeedsTemplate || monitorsNeedTemplate || keyboardNeedsTemplate || mouseNeedsTemplate;
+  const isFormValid = userName.trim() && newComputerSerial.trim() && !hasTemplateErrors;
 
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -709,40 +717,34 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 32,
-    height: 32,
-    borderRadius: 1.5,
-    bgcolor: isDark ? 'rgba(255, 146, 51, 0.12)' : 'rgba(255, 119, 0, 0.08)',
-    color: 'primary.main',
-    transition: 'all 0.3s ease',
-    '& .MuiSvgIcon-root': { fontSize: '1.1rem' },
+    width: 28,
+    height: 28,
+    borderRadius: 1,
+    bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+    color: 'text.primary',
+    '& .MuiSvgIcon-root': { fontSize: '1rem' },
   };
 
   const accordionSx = {
     border: '1px solid',
     borderColor: 'divider',
-    borderRadius: '12px !important',
+    borderRadius: '8px !important',
     overflow: 'hidden',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     '&::before': { display: 'none' },
     '&.Mui-expanded': {
-      borderColor: 'primary.main',
-      boxShadow: isDark
-        ? '0 4px 16px rgba(255, 146, 51, 0.1)'
-        : '0 4px 16px rgba(255, 119, 0, 0.12)',
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
     },
   };
 
   const monitorCardSx = {
     border: '1px solid',
     borderColor: 'divider',
-    borderRadius: 3,
-    p: 2.5,
+    borderRadius: 2,
+    p: 2,
     bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
-    transition: 'all 0.25s ease',
+    transition: 'all 0.2s ease',
     '&:hover': {
-      borderColor: 'primary.light',
-      bgcolor: isDark ? 'rgba(255, 146, 51, 0.04)' : 'rgba(255, 119, 0, 0.03)',
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
     },
   };
 
@@ -755,21 +757,19 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       disableRestoreFocus
       PaperProps={{
         sx: {
-          borderRadius: 4,
-          overflow: 'hidden',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
         },
       }}
     >
-      {/* Styled header with gradient accent */}
+      {/* Clean header */}
       <Box
         sx={{
-          background: isDark
-            ? 'linear-gradient(135deg, rgba(255, 146, 51, 0.15), rgba(204, 0, 0, 0.08))'
-            : 'linear-gradient(135deg, rgba(255, 119, 0, 0.08), rgba(255, 146, 51, 0.04))',
+          px: 3,
+          py: 2,
           borderBottom: '1px solid',
           borderColor: 'divider',
-          px: 3,
-          py: 2.5,
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1.5}>
@@ -778,20 +778,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              background: isDark
-                ? 'linear-gradient(145deg, #FF9233, #FF7700)'
-                : 'linear-gradient(145deg, #FF9233, #FF7700)',
-              color: '#fff',
-              boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+              width: 36,
+              height: 36,
+              borderRadius: 1.5,
+              bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+              color: 'text.primary',
             }}
           >
-            <ComputerIcon />
+            <ComputerIcon sx={{ fontSize: '1.2rem' }} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+            <Typography variant="h6" fontWeight={600}>
               {isEditMode ? 'Werkplek Bewerken' : 'Nieuwe Werkplek'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -1104,7 +1101,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                         equipmentType="laptop"
                         value={laptopTemplate}
                         onChange={setLaptopTemplate}
-                        label="Laptop type (optioneel)"
+                        label="Laptop type"
+                        error={computerNeedsTemplate}
                       />
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                         Bijv. PRO 16, PRO MAX — helpt bij het toewijzen van het juiste model
@@ -1161,6 +1159,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                       value={dockingTemplate}
                       onChange={setDockingTemplate}
                       required
+                      error={dockingNeedsTemplate}
                     />
                     <TextField
                       label="Serienummer"
@@ -1267,21 +1266,25 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                                 height: 20,
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
-                                bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
-                                color: 'primary.main',
+                                bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                                color: 'text.primary',
+                                border: '1px solid',
+                                borderColor: 'divider',
                               }}
                             />
                             {config.hasCamera && (
                               <Chip
-                                icon={<VideocamIcon sx={{ fontSize: '0.7rem !important' }} />}
+                                icon={<VideocamIcon sx={{ fontSize: '0.7rem !important', color: 'text.secondary' }} />}
                                 label="Camera"
                                 size="small"
                                 sx={{
                                   height: 20,
                                   fontSize: '0.7rem',
                                   fontWeight: 600,
-                                  bgcolor: isDark ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.1)',
-                                  color: 'info.main',
+                                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                                  color: 'text.primary',
+                                  border: '1px solid',
+                                  borderColor: 'divider',
                                 }}
                               />
                             )}
@@ -1309,6 +1312,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                               equipmentType="monitor"
                               value={config.template}
                               onChange={(template) => updateMonitorConfig(index, 'template', template)}
+                              error={!monitorLinkedAssets[index] && !config.template}
                             />
 
                             {/* Asset code preview or brand pending warning */}
@@ -1451,6 +1455,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     equipmentType="keyboard"
                     value={keyboardTemplate}
                     onChange={setKeyboardTemplate}
+                    error={keyboardNeedsTemplate}
                   />
                 )}
                 <LinkedAssetChip workplace={workplace} equipmentType="keyboard" />
@@ -1469,6 +1474,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     equipmentType="mouse"
                     value={mouseTemplate}
                     onChange={setMouseTemplate}
+                    error={mouseNeedsTemplate}
                   />
                 )}
                 <LinkedAssetChip workplace={workplace} equipmentType="mouse" />
@@ -1478,6 +1484,22 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         </Box>
       </DialogContent>
 
+      {/* Template validation warning */}
+      {hasTemplateErrors && (
+        <Alert severity="warning" sx={{ mx: 3, mb: 0 }}>
+          <Typography variant="body2" fontWeight={600} gutterBottom>
+            Selecteer templates om door te gaan:
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2 }}>
+            {computerNeedsTemplate && <li>Laptop template</li>}
+            {dockingNeedsTemplate && <li>Docking station template</li>}
+            {monitorsNeedTemplate && <li>Monitor template(s)</li>}
+            {keyboardNeedsTemplate && <li>Toetsenbord template</li>}
+            {mouseNeedsTemplate && <li>Muis template</li>}
+          </Box>
+        </Alert>
+      )}
+
       {/* Styled actions with separator */}
       <DialogActions
         sx={{
@@ -1485,18 +1507,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           py: 2,
           borderTop: '1px solid',
           borderColor: 'divider',
-          bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
           gap: 1,
         }}
       >
-        <Button onClick={handleClose} variant="outlined" sx={{ px: 3 }}>
+        <Button onClick={handleClose} size="small">
           Annuleren
         </Button>
         <Button
           variant="contained"
           onClick={handleSave}
           disabled={!isFormValid || createMutation.isPending || updateMutation.isPending}
-          sx={{ px: 4 }}
+          size="small"
         >
           {createMutation.isPending || updateMutation.isPending ? 'Opslaan...' : 'Opslaan'}
         </Button>

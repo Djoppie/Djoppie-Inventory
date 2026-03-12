@@ -43,6 +43,20 @@ import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { RolloutSession, RolloutSessionStatus } from '../types/rollout';
 
+/**
+ * Convert status to translation key (handles camelCase properly)
+ */
+const getStatusTranslationKey = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'Planning': 'planning',
+    'Ready': 'ready',
+    'InProgress': 'inProgress',
+    'Completed': 'completed',
+    'Cancelled': 'cancelled',
+  };
+  return statusMap[status] || status.toLowerCase();
+};
+
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
   mb: 3,
@@ -513,7 +527,7 @@ const SessionCardGrid = ({ sessions, onMenuOpen, onEdit, formatDate, t }: Sessio
 
           {/* Status chip */}
           <Chip
-            label={t(`rollout.status.${session.status.toLowerCase()}`)}
+            label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
             color={getStatusColor(session.status)}
             size="small"
             sx={{ mb: 2, fontWeight: 600, letterSpacing: '0.02em' }}
@@ -688,7 +702,7 @@ const SessionTable = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionVi
               </TableCell>
               <TableCell>
                 <Chip
-                  label={t(`rollout.status.${session.status.toLowerCase()}`)}
+                  label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
                   color={getStatusColor(session.status)}
                   size="small"
                   sx={{ fontWeight: 600 }}

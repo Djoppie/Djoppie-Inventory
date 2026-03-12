@@ -14,20 +14,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Chip,
-  Divider,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
   Tooltip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  OutlinedInput,
   Checkbox,
-  ListItemIcon,
-  ListSubheader,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -37,6 +26,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonIcon from '@mui/icons-material/Person';
 import PrintIcon from '@mui/icons-material/Print';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -64,6 +54,10 @@ import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
+import BulkImportFromGraphDialog from '../components/rollout/BulkImportFromGraphDialog';
+import RolloutDayCard from '../components/rollout/RolloutDayCard';
+import PlanningOverview from '../components/rollout/PlanningOverview';
+import EmptyPlanningState from '../components/rollout/EmptyPlanningState';
 import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
 
 const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
@@ -89,6 +83,20 @@ const SERVICE_COLORS = [
  */
 const getServiceColor = (serviceId: number) =>
   SERVICE_COLORS[serviceId % SERVICE_COLORS.length];
+
+/**
+ * Convert status to translation key (handles camelCase properly)
+ */
+const getStatusTranslationKey = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'Planning': 'planning',
+    'Ready': 'ready',
+    'InProgress': 'inProgress',
+    'Completed': 'completed',
+    'Cancelled': 'cancelled',
+  };
+  return statusMap[status] || status.toLowerCase();
+};
 
 /**
  * Planning Calendar Component - Shows plannings on a monthly calendar grid
@@ -194,12 +202,6 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, onDayClick, 
   }
 
   const monthLabel = firstDayOfMonth.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
-
-  // Handle service filter changes
-  const handleServiceFilterChange = (event: { target: { value: unknown } }) => {
-    const value = event.target.value as number[];
-    setSelectedServiceIds(value);
-  };
 
   const handleClearFilter = () => {
     setSelectedServiceIds([]);
@@ -526,9 +528,10 @@ interface WorkplaceListProps {
   onAddWorkplace: () => void;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
+  onImportFromGraph: () => void;
 }
 
-const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace }: WorkplaceListProps) => {
+const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
   const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
   const deleteMutation = useDeleteRolloutWorkplace();
   const workplaceStatusMutation = useUpdateWorkplaceStatus();
@@ -583,7 +586,17 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
         );
       case 'Completed':
         return (
-          <Chip label="Voltooid" size="small" color="success" component="span" />
+          <Chip
+            label="Voltooid"
+            size="small"
+            sx={{
+              bgcolor: 'transparent',
+              border: '1px solid rgba(22, 163, 74, 0.5)',
+              color: '#16a34a',
+              fontWeight: 600,
+            }}
+            component="span"
+          />
         );
       case 'Skipped':
         return (
@@ -600,123 +613,147 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
 
   return (
     <Box>
+      {/* Header with actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="subtitle2">
+        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
           Werkplekken ({workplaces?.length || 0})
         </Typography>
-        <Button
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={onAddWorkplace}
-          disabled={!isEditable}
-        >
-          Werkplek Toevoegen
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<AddIcon />}
+            onClick={onAddWorkplace}
+            disabled={!isEditable}
+            sx={{ color: '#FF7700' }}
+          >
+            Toevoegen
+          </Button>
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<CloudDownloadIcon />}
+            onClick={onImportFromGraph}
+            disabled={!isEditable}
+            sx={{ color: '#FF7700' }}
+          >
+            Azure AD
+          </Button>
+        </Box>
       </Box>
 
       {!workplaces || workplaces.length === 0 ? (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Nog geen werkplekken toegevoegd. Klik op "Werkplek Toevoegen" om te beginnen.
-        </Alert>
+        <Box sx={{
+          py: 3,
+          textAlign: 'center',
+          color: 'text.secondary',
+          border: '1px dashed',
+          borderColor: 'divider',
+          borderRadius: 1,
+        }}>
+          <Typography variant="body2">
+            Nog geen werkplekken. Klik op "Toevoegen" om te beginnen.
+          </Typography>
+        </Box>
       ) : (
-        <List>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {workplaces.map((workplace) => (
-            <ListItem
+            <Box
               key={workplace.id}
               sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                p: 1.5,
                 border: '1px solid',
                 borderColor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.3)' : 'divider',
                 borderRadius: 1,
-                mb: 1,
                 bgcolor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.04)' : 'transparent',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  borderColor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(255, 119, 0, 0.3)',
+                },
               }}
-              secondaryAction={
-                <Box component="span" sx={{ display: 'flex', gap: 0.5 }}>
-                  {workplace.status === 'Pending' && (
-                    <Tooltip title="Markeer als gereed voor uitvoering">
-                      <IconButton
-                        onClick={() => handleSetReady(workplace)}
-                        disabled={workplaceStatusMutation.isPending}
-                        sx={{
-                          color: 'rgba(22, 163, 74, 0.7)',
-                          '&:hover': {
-                            color: '#16a34a',
-                            bgcolor: 'rgba(22, 163, 74, 0.08)',
-                          },
-                        }}
-                      >
-                        <CheckCircleOutlineIcon />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  {workplace.status === 'Ready' && (
-                    <Tooltip title="Terugzetten naar pending">
-                      <IconButton
-                        onClick={() => handleSetPending(workplace)}
-                        disabled={workplaceStatusMutation.isPending}
-                        sx={{
-                          color: 'rgba(234, 179, 8, 0.7)',
-                          '&:hover': {
-                            color: '#eab308',
-                            bgcolor: 'rgba(234, 179, 8, 0.08)',
-                          },
-                        }}
-                      >
-                        <ChevronLeftIcon />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  <IconButton onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
-                    <EditIcon />
+            >
+              {/* User info - flexible width */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                    {workplace.userName}
+                  </Typography>
+                  {getStatusChip(workplace.status)}
+                </Box>
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {workplace.userEmail || workplace.location || '-'}
+                </Typography>
+              </Box>
+
+              {/* Progress indicator - fixed width */}
+              <Chip
+                label={`${workplace.completedItems}/${workplace.totalItems}`}
+                size="small"
+                sx={{
+                  minWidth: 50,
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  ...(workplace.totalItems > 0 && workplace.completedItems === workplace.totalItems
+                    ? { bgcolor: '#16a34a', color: '#fff' }
+                    : workplace.completedItems > 0
+                      ? { bgcolor: '#eab308', color: '#fff' }
+                      : { bgcolor: 'grey.700', color: '#fff' }),
+                }}
+              />
+
+              {/* Action buttons - fixed width */}
+              <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
+                {workplace.status === 'Pending' && (
+                  <Tooltip title="Gereed">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleSetReady(workplace)}
+                      disabled={workplaceStatusMutation.isPending}
+                      sx={{ color: 'rgba(22, 163, 74, 0.7)', '&:hover': { color: '#16a34a' } }}
+                    >
+                      <CheckCircleOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {workplace.status === 'Ready' && (
+                  <Tooltip title="Terug">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleSetPending(workplace)}
+                      disabled={workplaceStatusMutation.isPending}
+                      sx={{ color: 'rgba(234, 179, 8, 0.7)', '&:hover': { color: '#eab308' } }}
+                    >
+                      <ChevronLeftIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Tooltip title="Bewerken">
+                  <IconButton size="small" onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
+                    <EditIcon fontSize="small" />
                   </IconButton>
+                </Tooltip>
+                <Tooltip title="Print">
                   <IconButton
+                    size="small"
                     onClick={() => onPrintWorkplace(workplace)}
                     disabled={!workplace.assetPlans?.some(p => p.existingAssetId)}
-                    title="Print QR codes"
-                    sx={{
-                      color: 'rgba(59, 130, 246, 0.6)',
-                      '&:hover': {
-                        color: '#3B82F6',
-                        bgcolor: 'rgba(59, 130, 246, 0.08)',
-                      },
-                    }}
                   >
-                    <PrintIcon />
+                    <PrintIcon fontSize="small" />
                   </IconButton>
-                  <IconButton edge="end" onClick={() => handleDelete(workplace)} disabled={!isEditable}>
-                    <DeleteIcon />
+                </Tooltip>
+                <Tooltip title="Verwijderen">
+                  <IconButton size="small" onClick={() => handleDelete(workplace)} disabled={!isEditable}>
+                    <DeleteIcon fontSize="small" />
                   </IconButton>
-                </Box>
-              }
-            >
-              <PersonIcon sx={{ mr: 2, color: 'text.secondary' }} />
-              <ListItemText
-                primary={workplace.userName}
-                secondary={
-                  <span>
-                    {workplace.userEmail && <>{workplace.userEmail} • </>}
-                    {workplace.location && <>{workplace.location} • </>}
-                    <Chip
-                      label={`${workplace.completedItems}/${workplace.totalItems} items`}
-                      size="small"
-                      sx={{
-                        ml: 1,
-                        fontWeight: 600,
-                        ...(workplace.totalItems > 0 && workplace.completedItems === workplace.totalItems
-                          ? { bgcolor: 'success.main', color: '#fff' }
-                          : workplace.completedItems > 0
-                            ? { bgcolor: 'warning.main', color: '#fff' }
-                            : { bgcolor: 'grey.600', color: '#fff' }),
-                      }}
-                      component="span"
-                    />
-                    {getStatusChip(workplace.status)}
-                  </span>
-                }
-              />
-            </ListItem>
+                </Tooltip>
+              </Box>
+            </Box>
           ))}
-        </List>
+        </Box>
       )}
     </Box>
   );
@@ -744,6 +781,10 @@ const RolloutPlannerPage = () => {
   const [selectedWorkplace, setSelectedWorkplace] = useState<RolloutWorkplace | undefined>();
   const [activeWorkplaceDayId, setActiveWorkplaceDayId] = useState<number | undefined>();
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState(false);
+  const [importGraphDialogOpen, setImportGraphDialogOpen] = useState(false);
+  const [importGraphDayId, setImportGraphDayId] = useState<number | null>(null);
+  const [importGraphServiceId, setImportGraphServiceId] = useState<number | null>(null);
+  const [importGraphServiceName, setImportGraphServiceName] = useState<string | undefined>(undefined);
   const [bulkPrintDayId, setBulkPrintDayId] = useState<number | undefined>();
   const [bulkPrintAssetIds, setBulkPrintAssetIds] = useState<Set<number> | undefined>();
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
@@ -765,6 +806,12 @@ const RolloutPlannerPage = () => {
     isEditMode ? Number(id) : 0,
     undefined
   );
+
+  // Fetch services for Azure AD import mapping
+  const { data: services = [] } = useQuery({
+    queryKey: ['admin', 'services'],
+    queryFn: () => servicesApi.getAll(false),
+  });
 
   const { data: bulkPrintAssets } = useNewAssetsForDay(bulkPrintDayId || 0);
 
@@ -891,6 +938,20 @@ const RolloutPlannerPage = () => {
     setBulkPrintDialogOpen(false);
   };
 
+  const handleOpenImportGraphDialog = (dayId: number, serviceId: number | undefined, serviceName: string | undefined) => {
+    setImportGraphDayId(dayId);
+    setImportGraphServiceId(serviceId ?? null);
+    setImportGraphServiceName(serviceName);
+    setImportGraphDialogOpen(true);
+  };
+
+  const handleCloseImportGraphDialog = () => {
+    setImportGraphDialogOpen(false);
+    setImportGraphDayId(null);
+    setImportGraphServiceId(null);
+    setImportGraphServiceName(undefined);
+  };
+
   const handleDayStatus = async (day: RolloutDay, newStatus: string) => {
     await dayStatusMutation.mutateAsync({
       dayId: day.id,
@@ -928,8 +989,9 @@ const RolloutPlannerPage = () => {
         {isEditMode && session && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 2 }}>
             <Chip
-              label={t(`rollout.status.${session.status.toLowerCase()}`)}
+              label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
               color={getStatusColor(session.status)}
+              sx={{ color: 'text.primary' }}
             />
             {session.status === 'Planning' && (
               <Button
@@ -1095,6 +1157,11 @@ const RolloutPlannerPage = () => {
       {/* Days Management - Only show in edit mode */}
       {isEditMode && session && (
         <>
+          {/* Planning Overview - Only show if there are days */}
+          {days && days.length > 0 && (
+            <PlanningOverview days={days} />
+          )}
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="h6">
               Planningen ({days?.length || 0})
@@ -1143,156 +1210,41 @@ const RolloutPlannerPage = () => {
           })()}
 
           {!days || days.length === 0 ? (
-            <Alert severity="info">
-              Nog geen planningen toegevoegd. Klik op "Planning Toevoegen" om te beginnen.
-            </Alert>
+            <EmptyPlanningState
+              onAddPlanning={() => handleOpenDayDialog()}
+              disabled={session.status === 'Completed' || session.status === 'Cancelled'}
+            />
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {days.map((day) => {
                 const daySvcId = day.scheduledServiceIds?.[0] || day.id;
                 const dayColor = getServiceColor(daySvcId);
                 return (
-                <Accordion key={day.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ flexGrow: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: dayColor.bg, flexShrink: 0 }} />
-                        <Typography sx={{ fontWeight: 'medium' }}>
-                          {day.name || `Planning ${day.dayNumber}`}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(day.date).toLocaleDateString('nl-NL')}
-                        </Typography>
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Chip
-                          label={`${day.completedWorkplaces}/${day.totalWorkplaces} werkplekken`}
-                          size="small"
-                          color={day.completedWorkplaces === day.totalWorkplaces && day.totalWorkplaces > 0 ? 'success' : 'default'}
-                        />
-                        <Chip
-                          label={day.status === 'Ready' ? 'Gereed' : day.status === 'Completed' ? 'Voltooid' : 'Planning'}
-                          size="small"
-                          variant={day.status === 'Planning' ? 'outlined' : 'filled'}
-                          color={day.status === 'Completed' ? 'info' : 'default'}
-                          sx={day.status === 'Ready' ? {
-                            bgcolor: 'transparent',
-                            border: '1px solid rgba(34, 197, 94, 0.5)',
-                            color: '#22c55e',
-                            fontWeight: 600,
-                            textShadow: '0 0 8px rgba(34, 197, 94, 0.6), 0 0 16px rgba(34, 197, 94, 0.3)',
-                          } : undefined}
-                        />
-                      </Box>
-                    </AccordionSummary>
-                    {day.status === 'Planning' && day.totalWorkplaces > 0 && (
-                      <Tooltip title="Markeer planning als gereed voor uitvoering">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDayStatus(day, 'Ready');
-                          }}
-                          disabled={dayStatusMutation.isPending}
-                          sx={{
-                            color: 'rgba(22, 163, 74, 0.7)',
-                            '&:hover': {
-                              color: '#16a34a',
-                              bgcolor: 'rgba(22, 163, 74, 0.08)',
-                            },
-                          }}
-                        >
-                          <CheckCircleOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {day.status === 'Ready' && (
-                      <Tooltip title="Terugzetten naar planning">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDayStatus(day, 'Planning');
-                          }}
-                          disabled={dayStatusMutation.isPending}
-                          sx={{
-                            color: 'rgba(234, 179, 8, 0.7)',
-                            '&:hover': {
-                              color: '#eab308',
-                              bgcolor: 'rgba(234, 179, 8, 0.08)',
-                            },
-                          }}
-                        >
-                          <ChevronLeftIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDayDialog(day);
-                      }}
-                      disabled={session.status === 'Completed' || session.status === 'Cancelled'}
-                      title="Planning bewerken"
-                      sx={{
-                        color: 'rgba(255, 119, 0, 0.6)',
-                        '&:hover': {
-                          color: '#FF7700',
-                          bgcolor: 'rgba(255, 119, 0, 0.08)',
-                        },
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBulkPrint(day.id);
-                      }}
-                      disabled={session.status === 'Completed' || session.status === 'Cancelled'}
-                      title="Print QR codes voor nieuwe assets"
-                      sx={{
-                        color: 'rgba(59, 130, 246, 0.6)',
-                        '&:hover': {
-                          color: '#3B82F6',
-                          bgcolor: 'rgba(59, 130, 246, 0.08)',
-                        },
-                      }}
-                    >
-                      <PrintIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteDay(day);
-                      }}
-                      disabled={session.status === 'Completed' || session.status === 'Cancelled'}
-                      title="Planning verwijderen"
-                      sx={{
-                        mr: 1,
-                        color: 'rgba(239, 68, 68, 0.6)',
-                        '&:hover': {
-                          color: '#EF4444',
-                          bgcolor: 'rgba(239, 68, 68, 0.08)',
-                        },
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                  <AccordionDetails>
-                    <Divider sx={{ mb: 2 }} />
+                  <RolloutDayCard
+                    key={day.id}
+                    day={day}
+                    serviceColor={dayColor}
+                    isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
+                    isPending={dayStatusMutation.isPending}
+                    onEdit={() => handleOpenDayDialog(day)}
+                    onDelete={() => handleDeleteDay(day)}
+                    onPrint={() => handleBulkPrint(day.id)}
+                    onSetReady={() => handleDayStatus(day, 'Ready')}
+                    onSetPlanning={() => handleDayStatus(day, 'Planning')}
+                  >
                     <WorkplaceList
                       dayId={day.id}
                       sessionStatus={session.status}
                       onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
                       onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
                       onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
+                      onImportFromGraph={() => {
+                        const serviceId = day.scheduledServiceIds?.[0];
+                        const service = serviceId ? services.find(s => s.id === serviceId) : undefined;
+                        handleOpenImportGraphDialog(day.id, serviceId, service?.name);
+                      }}
                     />
-                  </AccordionDetails>
-                </Accordion>
+                  </RolloutDayCard>
                 );
               })}
             </Box>
@@ -1323,6 +1275,15 @@ const RolloutPlannerPage = () => {
           : (bulkPrintAssets || [])
         }
       />
+      {importGraphDayId && (
+        <BulkImportFromGraphDialog
+          open={importGraphDialogOpen}
+          onClose={handleCloseImportGraphDialog}
+          dayId={importGraphDayId}
+          serviceId={importGraphServiceId ?? 0}
+          serviceName={importGraphServiceName}
+        />
+      )}
     </Container>
   );
 };

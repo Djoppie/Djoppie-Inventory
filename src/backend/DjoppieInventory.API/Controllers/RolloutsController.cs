@@ -21,13 +21,23 @@ public class RolloutsController : ControllerBase
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
+    private readonly IGraphUserService _graphUserService;
+    private readonly IServiceRepository _serviceRepository;
     private readonly ILogger<RolloutsController> _logger;
 
-    public RolloutsController(IRolloutRepository rolloutRepository, IAssetRepository assetRepository, IAssetCodeGenerator assetCodeGenerator, ILogger<RolloutsController> logger)
+    public RolloutsController(
+        IRolloutRepository rolloutRepository,
+        IAssetRepository assetRepository,
+        IAssetCodeGenerator assetCodeGenerator,
+        IGraphUserService graphUserService,
+        IServiceRepository serviceRepository,
+        ILogger<RolloutsController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
         _assetCodeGenerator = assetCodeGenerator;
+        _graphUserService = graphUserService;
+        _serviceRepository = serviceRepository;
         _logger = logger;
     }
 
@@ -970,6 +980,366 @@ public class RolloutsController : ControllerBase
         };
 
         return CreatedAtAction(nameof(GetDayById), new { dayId }, result);
+    }
+
+    /// <summary>
+    /// Gets users from Azure AD by department for bulk workplace creation preview
+    /// </summary>
+    /// <param name="department">Department name from Azure AD</param>
+    [HttpGet("graph/users")]
+    [ProducesResponseType(typeof(IEnumerable<GraphUserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GraphUserDto>>> GetGraphUsersByDepartment([FromQuery] string department)
+    {
+        if (string.IsNullOrWhiteSpace(department))
+        {
+            return BadRequest(new { message = "Department is required" });
+        }
+
+        try
+        {
+            var users = await _graphUserService.GetUsersByDepartmentAsync(department);
+            var userDtos = users.Select(u => new GraphUserDto
+            {
+                Id = u.Id ?? string.Empty,
+                DisplayName = u.DisplayName ?? "Unknown",
+                UserPrincipalName = u.UserPrincipalName,
+                Mail = u.Mail,
+                Department = u.Department,
+                OfficeLocation = u.OfficeLocation,
+                JobTitle = u.JobTitle
+            }).ToList();
+
+            return Ok(userDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching users from Graph API for department {Department}", department);
+            return StatusCode(500, new { message = $"Error fetching users: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Gets all unique departments from Azure AD
+    /// </summary>
+    [HttpGet("graph/departments")]
+    [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<string>>> GetGraphDepartments()
+    {
+        try
+        {
+            var departments = await _graphUserService.GetAllDepartmentsAsync();
+            return Ok(departments);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching departments from Graph API");
+            return StatusCode(500, new { message = $"Error fetching departments: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Gets all service distribution groups (MG-*) from Azure AD
+    /// </summary>
+    [HttpGet("graph/service-groups")]
+    [ProducesResponseType(typeof(IEnumerable<GraphGroupDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GraphGroupDto>>> GetServiceGroups()
+    {
+        try
+        {
+            var groups = await _graphUserService.GetServiceGroupsAsync();
+            var groupDtos = groups.Select(g => new GraphGroupDto
+            {
+                Id = g.Id ?? string.Empty,
+                DisplayName = g.DisplayName ?? "Unknown",
+                // Extract service name from "MG-<service>" format
+                ServiceName = g.DisplayName?.StartsWith("MG-") == true
+                    ? g.DisplayName.Substring(3)
+                    : g.DisplayName ?? "Unknown",
+                Description = g.Description,
+                Mail = g.Mail
+            }).ToList();
+
+            return Ok(groupDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching service groups from Graph API");
+            return StatusCode(500, new { message = $"Error fetching service groups: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Gets all sector distribution groups (MG-SECTOR-*) from Azure AD
+    /// </summary>
+    [HttpGet("graph/sector-groups")]
+    [ProducesResponseType(typeof(IEnumerable<GraphGroupDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GraphGroupDto>>> GetSectorGroups()
+    {
+        try
+        {
+            var groups = await _graphUserService.GetSectorGroupsAsync();
+            var groupDtos = groups.Select(g => new GraphGroupDto
+            {
+                Id = g.Id ?? string.Empty,
+                DisplayName = g.DisplayName ?? "Unknown",
+                // Extract sector name from "MG-SECTOR-<sector>" format
+                ServiceName = g.DisplayName?.StartsWith("MG-SECTOR-") == true
+                    ? g.DisplayName.Substring(10)
+                    : g.DisplayName ?? "Unknown",
+                Description = g.Description,
+                Mail = g.Mail
+            }).ToList();
+
+            return Ok(groupDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching sector groups from Graph API");
+            return StatusCode(500, new { message = $"Error fetching sector groups: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Gets service groups (MG-*) that are nested within a sector group (MG-SECTOR-*)
+    /// </summary>
+    /// <param name="sectorId">Sector group Azure AD ID</param>
+    [HttpGet("graph/sectors/{sectorId}/services")]
+    [ProducesResponseType(typeof(IEnumerable<GraphGroupDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GraphGroupDto>>> GetSectorServices(string sectorId)
+    {
+        if (string.IsNullOrWhiteSpace(sectorId))
+        {
+            return BadRequest(new { message = "Sector ID is required" });
+        }
+
+        try
+        {
+            var groups = await _graphUserService.GetSectorServiceGroupsAsync(sectorId);
+            var groupDtos = groups.Select(g => new GraphGroupDto
+            {
+                Id = g.Id ?? string.Empty,
+                DisplayName = g.DisplayName ?? "Unknown",
+                // Extract service name from "MG-<service>" format
+                ServiceName = g.DisplayName?.StartsWith("MG-") == true
+                    ? g.DisplayName.Substring(3)
+                    : g.DisplayName ?? "Unknown",
+                Description = g.Description,
+                Mail = g.Mail
+            }).ToList();
+
+            return Ok(groupDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching services for sector {SectorId} from Graph API", sectorId);
+            return StatusCode(500, new { message = $"Error fetching sector services: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Gets members of a specific group from Azure AD
+    /// </summary>
+    /// <param name="groupId">Azure AD group ID</param>
+    [HttpGet("graph/groups/{groupId}/members")]
+    [ProducesResponseType(typeof(IEnumerable<GraphUserDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<GraphUserDto>>> GetGroupMembers(string groupId)
+    {
+        if (string.IsNullOrWhiteSpace(groupId))
+        {
+            return BadRequest(new { message = "Group ID is required" });
+        }
+
+        try
+        {
+            var users = await _graphUserService.GetGroupMembersAsync(groupId);
+            var userDtos = users.Select(u => new GraphUserDto
+            {
+                Id = u.Id ?? string.Empty,
+                DisplayName = u.DisplayName ?? "Unknown",
+                UserPrincipalName = u.UserPrincipalName,
+                Mail = u.Mail,
+                Department = u.Department,
+                OfficeLocation = u.OfficeLocation,
+                JobTitle = u.JobTitle
+            }).ToList();
+
+            return Ok(userDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching group members from Graph API for group {GroupId}", groupId);
+            return StatusCode(500, new { message = $"Error fetching group members: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Diagnostic endpoint to compare database services with Azure AD groups
+    /// </summary>
+    [HttpGet("graph/service-mapping")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult> GetServiceMapping()
+    {
+        try
+        {
+            // Get all active services from database
+            var dbServices = await _serviceRepository.GetAllAsync();
+
+            // Get all service groups from Azure AD (MG-* groups)
+            var adGroups = await _graphUserService.GetServiceGroupsAsync();
+
+            // Create mapping result
+            var result = new
+            {
+                DatabaseServices = dbServices.Select(s => new { s.Id, s.Code, s.Name }).OrderBy(s => s.Name).ToList(),
+                AzureAdGroups = adGroups.Select(g => new
+                {
+                    g.Id,
+                    g.DisplayName,
+                    ServiceName = g.DisplayName?.StartsWith("MG-") == true ? g.DisplayName.Substring(3) : g.DisplayName
+                }).OrderBy(g => g.ServiceName).ToList(),
+                Matches = (from db in dbServices
+                           let normalizedDbName = db.Name?.ToUpperInvariant().Replace("MG-", "")
+                           let matchingAd = adGroups.FirstOrDefault(g =>
+                               g.DisplayName?.ToUpperInvariant() == $"MG-{normalizedDbName}" ||
+                               g.DisplayName?.ToUpperInvariant().Replace("MG-", "") == normalizedDbName)
+                           select new
+                           {
+                               DatabaseService = db.Name,
+                               AzureAdGroup = matchingAd?.DisplayName,
+                               IsMatched = matchingAd != null
+                           }).OrderBy(m => m.DatabaseService).ToList(),
+                UnmatchedDatabaseServices = (from db in dbServices
+                                             let normalizedDbName = db.Name?.ToUpperInvariant().Replace("MG-", "")
+                                             where !adGroups.Any(g =>
+                                                 g.DisplayName?.ToUpperInvariant() == $"MG-{normalizedDbName}" ||
+                                                 g.DisplayName?.ToUpperInvariant().Replace("MG-", "") == normalizedDbName)
+                                             select db.Name).ToList(),
+                UnmatchedAzureAdGroups = (from ad in adGroups
+                                          let adServiceName = ad.DisplayName?.ToUpperInvariant().Replace("MG-", "")
+                                          where !dbServices.Any(db =>
+                                              db.Name?.ToUpperInvariant() == adServiceName ||
+                                              db.Name?.ToUpperInvariant().Replace("MG-", "") == adServiceName)
+                                          select ad.DisplayName).ToList()
+            };
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error comparing services with Azure AD groups");
+            return StatusCode(500, new { message = $"Error comparing services: {ex.Message}" });
+        }
+    }
+
+    /// <summary>
+    /// Creates workplaces from Azure AD users in a group or department
+    /// </summary>
+    [HttpPost("days/{dayId}/workplaces/from-graph")]
+    [ProducesResponseType(typeof(BulkCreateFromGraphResultDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BulkCreateFromGraphResultDto>> BulkCreateWorkplacesFromGraph(int dayId, [FromBody] BulkCreateFromGraphDto dto)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(dayId);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {dayId} not found" });
+        }
+
+        // Validate that either GroupId or Department is provided
+        if (string.IsNullOrWhiteSpace(dto.GroupId) && string.IsNullOrWhiteSpace(dto.Department))
+        {
+            return BadRequest(new { message = "Either GroupId or Department is required" });
+        }
+
+        try
+        {
+            // Fetch users from Graph API (prefer GroupId over Department)
+            IEnumerable<Microsoft.Graph.Models.User> allUsers;
+            if (!string.IsNullOrWhiteSpace(dto.GroupId))
+            {
+                allUsers = await _graphUserService.GetGroupMembersAsync(dto.GroupId);
+            }
+            else
+            {
+                allUsers = await _graphUserService.GetUsersByDepartmentAsync(dto.Department!);
+            }
+            var userList = allUsers.ToList();
+
+            // Filter to selected users if specified
+            if (dto.SelectedUserIds?.Any() == true)
+            {
+                userList = userList.Where(u => dto.SelectedUserIds.Contains(u.Id)).ToList();
+            }
+
+            if (!userList.Any())
+            {
+                return BadRequest(new { message = "No users found to create workplaces for" });
+            }
+
+            // Get existing workplaces for this day to check for duplicates
+            var existingWorkplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(dayId);
+            var existingEmails = existingWorkplaces
+                .Where(w => !string.IsNullOrWhiteSpace(w.UserEmail))
+                .Select(w => w.UserEmail!.ToLowerInvariant())
+                .ToHashSet();
+
+            // Generate standard asset plans
+            var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig);
+            var workplacesToCreate = new List<RolloutWorkplace>();
+            var skippedUsers = new List<string>();
+
+            foreach (var user in userList)
+            {
+                var email = user.UserPrincipalName ?? user.Mail;
+                if (!string.IsNullOrWhiteSpace(email) && existingEmails.Contains(email.ToLowerInvariant()))
+                {
+                    skippedUsers.Add(user.DisplayName ?? email);
+                    continue;
+                }
+
+                workplacesToCreate.Add(new RolloutWorkplace
+                {
+                    RolloutDayId = dayId,
+                    UserName = user.DisplayName ?? "Unknown",
+                    UserEmail = user.UserPrincipalName ?? user.Mail,
+                    ServiceId = dto.ServiceId,
+                    Location = user.OfficeLocation,
+                    IsLaptopSetup = dto.AssetPlanConfig.IncludeLaptop,
+                    AssetPlansJson = JsonSerializer.Serialize(standardPlans),
+                    Status = RolloutWorkplaceStatus.Pending,
+                    TotalItems = standardPlans.Count,
+                    CompletedItems = 0
+                });
+            }
+
+            if (!workplacesToCreate.Any())
+            {
+                return BadRequest(new { message = "All users already have workplaces assigned", skippedUsers });
+            }
+
+            var createdWorkplaces = await _rolloutRepository.CreateWorkplacesAsync(workplacesToCreate);
+            var workplaceDtos = createdWorkplaces.Select(MapToWorkplaceDto).ToList();
+
+            var result = new BulkCreateFromGraphResultDto
+            {
+                Created = workplaceDtos.Count,
+                Skipped = skippedUsers.Count,
+                Workplaces = workplaceDtos,
+                SkippedUsers = skippedUsers
+            };
+
+            _logger.LogInformation("Created {Created} workplaces from Graph API department {Department}, skipped {Skipped}",
+                result.Created, dto.Department, result.Skipped);
+
+            return CreatedAtAction(nameof(GetDayById), new { dayId }, result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating workplaces from Graph API for department {Department}", dto.Department);
+            return StatusCode(500, new { message = $"Error creating workplaces: {ex.Message}" });
+        }
     }
 
     /// <summary>

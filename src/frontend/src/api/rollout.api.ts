@@ -24,6 +24,10 @@ import type {
   BulkCreateWorkplaces,
   BulkCreateWorkplacesResult,
   UpdateItemDetails,
+  GraphUser,
+  GraphGroup,
+  BulkCreateFromGraph,
+  BulkCreateFromGraphResult,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
@@ -262,6 +266,72 @@ export const bulkCreateWorkplaces = async (
   return response.data;
 };
 
+// ===== GRAPH API CALLS =====
+
+/**
+ * Get all unique departments from Azure AD
+ */
+export const getGraphDepartments = async (): Promise<string[]> => {
+  const response = await apiClient.get<string[]>('/rollouts/graph/departments');
+  return response.data;
+};
+
+/**
+ * Get users from Azure AD by department
+ */
+export const getGraphUsersByDepartment = async (department: string): Promise<GraphUser[]> => {
+  const response = await apiClient.get<GraphUser[]>('/rollouts/graph/users', {
+    params: { department },
+  });
+  return response.data;
+};
+
+/**
+ * Get all service distribution groups (MG-*) from Azure AD
+ */
+export const getGraphServiceGroups = async (): Promise<GraphGroup[]> => {
+  const response = await apiClient.get<GraphGroup[]>('/rollouts/graph/service-groups');
+  return response.data;
+};
+
+/**
+ * Get all sector distribution groups (MG-SECTOR-*) from Azure AD
+ */
+export const getGraphSectorGroups = async (): Promise<GraphGroup[]> => {
+  const response = await apiClient.get<GraphGroup[]>('/rollouts/graph/sector-groups');
+  return response.data;
+};
+
+/**
+ * Get service groups (MG-*) nested within a sector group
+ */
+export const getGraphSectorServices = async (sectorId: string): Promise<GraphGroup[]> => {
+  const response = await apiClient.get<GraphGroup[]>(`/rollouts/graph/sectors/${sectorId}/services`);
+  return response.data;
+};
+
+/**
+ * Get members of a specific Azure AD group
+ */
+export const getGraphGroupMembers = async (groupId: string): Promise<GraphUser[]> => {
+  const response = await apiClient.get<GraphUser[]>(`/rollouts/graph/groups/${groupId}/members`);
+  return response.data;
+};
+
+/**
+ * Bulk create workplaces from Azure AD users
+ */
+export const bulkCreateWorkplacesFromGraph = async (
+  dayId: number,
+  data: BulkCreateFromGraph
+): Promise<BulkCreateFromGraphResult> => {
+  const response = await apiClient.post<BulkCreateFromGraphResult>(
+    `/rollouts/days/${dayId}/workplaces/from-graph`,
+    data
+  );
+  return response.data;
+};
+
 /**
  * Get new assets for a day (for QR code printing)
  */
@@ -277,6 +347,20 @@ export const getNewAssetsForDay = async (dayId: number): Promise<Asset[]> => {
  */
 export const getRolloutProgress = async (sessionId: number): Promise<RolloutProgress> => {
   const response = await apiClient.get<RolloutProgress>(`/rollouts/${sessionId}/progress`);
+  return response.data;
+};
+
+/**
+ * Get service mapping comparison between database and Azure AD
+ */
+export const getServiceMapping = async (): Promise<{
+  databaseServices: { id: number; code: string; name: string }[];
+  azureAdGroups: { id: string; displayName: string; serviceName: string }[];
+  matches: { databaseService: string; azureAdGroup: string | null; isMatched: boolean }[];
+  unmatchedDatabaseServices: string[];
+  unmatchedAzureAdGroups: string[];
+}> => {
+  const response = await apiClient.get('/rollouts/graph/service-mapping');
   return response.data;
 };
 

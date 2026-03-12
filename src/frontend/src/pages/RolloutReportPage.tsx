@@ -39,6 +39,20 @@ import Loading from '../components/common/Loading';
 import type { EquipmentType } from '../types/rollout';
 
 /**
+ * Convert status to translation key (handles camelCase properly)
+ */
+const getStatusTranslationKey = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'Planning': 'planning',
+    'Ready': 'ready',
+    'InProgress': 'inProgress',
+    'Completed': 'completed',
+    'Cancelled': 'cancelled',
+  };
+  return statusMap[status] || status.toLowerCase();
+};
+
+/**
  * Rollout Report Page - Shows comprehensive rollout statistics and progress
  */
 const RolloutReportPage = () => {
@@ -117,7 +131,7 @@ const RolloutReportPage = () => {
           </Typography>
         </Box>
         <Chip
-          label={t(`rollout.status.${session.status.toLowerCase()}`)}
+          label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
           color={getStatusColor(session.status)}
         />
       </Box>

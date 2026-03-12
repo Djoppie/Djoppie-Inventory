@@ -220,6 +220,41 @@ export interface BulkCreateWorkplacesResult {
   workplaces: RolloutWorkplace[];
 }
 
+// ===== GRAPH API TYPES =====
+
+export interface GraphUser {
+  id: string;
+  displayName: string;
+  userPrincipalName?: string;
+  mail?: string;
+  department?: string;
+  officeLocation?: string;
+  jobTitle?: string;
+}
+
+export interface GraphGroup {
+  id: string;
+  displayName: string;
+  serviceName: string;
+  description?: string;
+  mail?: string;
+}
+
+export interface BulkCreateFromGraph {
+  department?: string;
+  groupId?: string;
+  serviceId: number;
+  selectedUserIds?: string[];
+  assetPlanConfig: StandardAssetPlanConfig;
+}
+
+export interface BulkCreateFromGraphResult {
+  created: number;
+  skipped: number;
+  workplaces: RolloutWorkplace[];
+  skippedUsers: string[];
+}
+
 // ===== EXECUTION TYPES =====
 
 export interface UpdateItemDetails {

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
@@ -17,7 +16,10 @@ import {
   Typography,
   Alert,
   ListSubheader,
+  Stack,
+  useTheme,
 } from '@mui/material';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useQuery } from '@tanstack/react-query';
 import { useCreateRolloutDay, useUpdateRolloutDay, useBulkCreateWorkplaces } from '../../hooks/useRollout';
 import { servicesApi } from '../../api/admin.api';
@@ -35,6 +37,8 @@ interface RolloutDayDialogProps {
 
 const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDate }: RolloutDayDialogProps) => {
   const isEditMode = Boolean(day);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
@@ -151,17 +155,62 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
   const isFormValid = date.trim();
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth disableRestoreFocus>
-      <DialogTitle>
-        {isEditMode ? 'Planning Bewerken' : 'Nieuwe Planning Toevoegen'}
-      </DialogTitle>
-      <DialogContent>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      disableRestoreFocus
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+        },
+      }}
+    >
+      {/* Clean header */}
+      <Box
+        sx={{
+          px: 3,
+          py: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              borderRadius: 1.5,
+              bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+              color: 'text.primary',
+            }}
+          >
+            <CalendarTodayIcon sx={{ fontSize: '1.2rem' }} />
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={600}>
+              {isEditMode ? 'Planning Bewerken' : 'Nieuwe Planning'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {isEditMode ? 'Pas de planning aan' : 'Configureer een nieuwe planning'}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+
+      <DialogContent sx={{ p: 3 }}>
         {saveError && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSaveError(null)}>
             {saveError}
           </Alert>
         )}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <TextField
             label="Datum"
             type="date"
@@ -169,10 +218,11 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
             onChange={(e) => setDate(e.target.value)}
             required
             fullWidth
+            size="small"
             InputLabelProps={{ shrink: true }}
             helperText="Selecteer de datum voor deze planning"
           />
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel id="service-label">Dienst</InputLabel>
             <Select
               labelId="service-label"
@@ -197,16 +247,15 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
                 <ListSubheader
                   key={sectorName}
                   sx={{
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    color: '#FF7700',
-                    bgcolor: 'rgba(255, 119, 0, 0.06)',
-                    borderBottom: '2px solid',
-                    borderColor: 'rgba(255, 119, 0, 0.15)',
-                    lineHeight: '36px',
-                    mt: 0.5,
+                    letterSpacing: '0.05em',
+                    color: 'text.secondary',
+                    bgcolor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    lineHeight: '32px',
                   }}
                 >
                   {sectorName}
@@ -228,26 +277,44 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
             value={name}
             onChange={(e) => setName(e.target.value)}
             fullWidth
+            size="small"
             helperText="Bijv. 'Week 1 - Maandag' of 'IT Afdeling'"
           />
 
           {!isEditMode && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                pt: 2,
+                mt: 1,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
               <FormControlLabel
                 control={
                   <Switch
                     checked={createBulk}
                     onChange={(e) => setCreateBulk(e.target.checked)}
+                    size="small"
                   />
                 }
-                label="Werkplekken automatisch aanmaken"
+                label={
+                  <Typography variant="body2">
+                    Werkplekken automatisch aanmaken
+                  </Typography>
+                }
               />
 
               {createBulk && (
                 <>
                   {!selectedServiceId && (
-                    <Alert severity="info" sx={{ mb: 1 }}>
-                      Selecteer eerst een dienst om werkplekken aan te maken
+                    <Alert severity="info" sx={{ py: 0.5 }}>
+                      <Typography variant="body2">
+                        Selecteer eerst een dienst om werkplekken aan te maken
+                      </Typography>
                     </Alert>
                   )}
 
@@ -258,13 +325,14 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
                     onChange={(e) => setWorkplaceCount(Number(e.target.value))}
                     inputProps={{ min: 1, max: 50 }}
                     fullWidth
+                    size="small"
                     helperText="Aantal lege werkplekken om aan te maken (1-50)"
                     disabled={!selectedServiceId}
                   />
 
                   <Box>
-                    <Typography variant="body2" gutterBottom>
-                      Monitors per werkplek: {monitorCount}
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Monitors per werkplek: <strong>{monitorCount}</strong>
                     </Typography>
                     <Slider
                       value={monitorCount}
@@ -279,11 +347,14 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
                       valueLabelDisplay="auto"
                       onChange={(_, value) => setMonitorCount(value as number)}
                       disabled={!selectedServiceId}
+                      sx={{ mt: 1 }}
                     />
                   </Box>
 
-                  <Alert severity="info">
-                    Elke werkplek krijgt: 1x Laptop, 1x Docking Station, {monitorCount}x Monitor, 1x Toetsenbord, 1x Muis
+                  <Alert severity="info" sx={{ py: 0.5 }}>
+                    <Typography variant="body2">
+                      Elke werkplek krijgt: 1x Laptop, 1x Docking Station, {monitorCount}x Monitor, 1x Toetsenbord, 1x Muis
+                    </Typography>
                   </Alert>
                 </>
               )}
@@ -291,13 +362,14 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose}>
+      <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Button onClick={handleClose} size="small">
           Annuleren
         </Button>
         <Button
           variant="contained"
           onClick={handleSave}
+          size="small"
           disabled={
             !isFormValid ||
             createMutation.isPending ||

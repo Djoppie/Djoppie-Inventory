@@ -822,6 +822,31 @@
       "hour_one": "{{count}} uur",
       "hour_other": "{{count}} uur",
       "durationFormat": "{{days}}, {{hours}}"
+    },
+    "bulkImport": {
+      "title": "Importeren vanuit Azure AD",
+      "selectDepartment": "Selecteer afdeling",
+      "selectServiceGroup": "Selecteer dienst (MG-groep)",
+      "selectGroup": "Selecteer groep",
+      "sectors": "Sectoren",
+      "services": "Diensten",
+      "allServices": "Alle diensten",
+      "selectSector": "Selecteer",
+      "searchUsers": "Zoek gebruikers...",
+      "forService": "Werkplekken worden toegevoegd aan dienst: {{service}}",
+      "noUsersFound": "Geen gebruikers gevonden",
+      "noUsersInDepartment": "Geen gebruikers in deze afdeling",
+      "noUsersInGroup": "Geen gebruikers in deze groep",
+      "errorLoadingUsers": "Fout bij laden gebruikers",
+      "assetConfig": "Asset configuratie",
+      "monitorCount": "Aantal monitors",
+      "willCreateAll": "Alle {{count}} gebruikers worden geïmporteerd",
+      "willCreateSelected": "{{count}} geselecteerde gebruikers worden geïmporteerd",
+      "import": "Importeren",
+      "success": "{{count}} werkplekken aangemaakt",
+      "skipped": "{{count}} gebruikers overgeslagen (reeds toegevoegd)",
+      "skippedUsers": "Overgeslagen gebruikers:",
+      "errorCreating": "Fout bij aanmaken werkplekken"
     }
   },
   "intune": {

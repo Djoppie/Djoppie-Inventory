@@ -19,6 +19,7 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import CategoryIcon from '@mui/icons-material/Category';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -224,6 +225,16 @@ const DeviceManagementPage = () => {
       gradientLight: 'linear-gradient(135deg, rgba(255,152,0,0.12) 0%, rgba(255,183,77,0.06) 100%)',
       gradientDark: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(245,124,0,0.1) 100%)',
       route: ROUTES.ASSETS_BULK_NEW,
+    },
+    {
+      title: t('navigation.templates', { defaultValue: 'Asset Templates' }),
+      description: t('deviceManagement.templatesDesc', { defaultValue: 'Manage reusable templates for quick asset creation with predefined properties' }),
+      icon: <CategoryIcon sx={{ fontSize: 28 }} />,
+      color: '#2196F3',
+      shadowColor: 'rgba(33, 150, 243, 0.3)',
+      gradientLight: 'linear-gradient(135deg, rgba(33,150,243,0.12) 0%, rgba(100,181,246,0.06) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(33,150,243,0.2) 0%, rgba(25,118,210,0.1) 100%)',
+      route: ROUTES.TEMPLATES,
     },
   ];
 
@@ -536,7 +547,7 @@ const DeviceManagementPage = () => {
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
-            md: 'repeat(3, 1fr)',
+            sm: 'repeat(2, 1fr)',
           },
           gap: 2,
         }}
