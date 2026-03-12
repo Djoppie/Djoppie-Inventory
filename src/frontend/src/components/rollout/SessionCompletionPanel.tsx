@@ -360,7 +360,7 @@ const SessionCompletionPanel = ({
                 Voltooide Werkplekken ({completedWorkplaces})
               </Typography>
               <List dense disablePadding sx={{ maxHeight: 300, overflow: 'auto' }}>
-                {completedWorkplacesWithContext.map((ctx, index) => (
+                {completedWorkplacesWithContext.map((ctx) => (
                   <ListItem
                     key={`completed-${ctx.workplace.id}`}
                     sx={{
@@ -430,7 +430,7 @@ const SessionCompletionPanel = ({
                 Incomplete Werkplekken ({incompleteWorkplaces})
               </Typography>
               <List dense disablePadding sx={{ maxHeight: 300, overflow: 'auto' }}>
-                {incompleteWorkplacesWithContext.map((ctx, index) => (
+                {incompleteWorkplacesWithContext.map((ctx) => (
                   <ListItem
                     key={`incomplete-${ctx.workplace.id}`}
                     sx={{
