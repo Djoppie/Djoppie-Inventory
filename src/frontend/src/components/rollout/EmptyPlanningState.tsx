@@ -91,8 +91,8 @@ const EmptyPlanningState = ({ onAddPlanning, disabled }: EmptyPlanningStateProps
           mx: 'auto',
         }}
       >
-        Begin met het toevoegen van planningsdagen voor deze rollout sessie.
-        Elke planning kan meerdere werkplekken bevatten.
+        Begin met het toevoegen van planning batches voor deze rollout sessie.
+        Elke planning kan meerdere werkplekken bevatten en kan worden verzet indien nodig.
       </Typography>
 
       {/* Action Button */}

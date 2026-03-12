@@ -198,7 +198,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
               {isEditMode ? 'Planning Bewerken' : 'Nieuwe Planning'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {isEditMode ? 'Pas de planning aan' : 'Configureer een nieuwe planning'}
+              {isEditMode ? 'Pas de planning aan (datum kan worden verzet)' : 'Configureer een nieuwe planning batch'}
             </Typography>
           </Box>
         </Stack>
@@ -212,7 +212,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
         )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <TextField
-            label="Datum"
+            label="Geplande Datum"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -220,7 +220,17 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
             fullWidth
             size="small"
             InputLabelProps={{ shrink: true }}
-            helperText="Selecteer de datum voor deze planning"
+            helperText="Selecteer de datum voor deze planning (kan later worden verzet)"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#FF7700',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#FF7700',
+                },
+              },
+            }}
           />
           <FormControl fullWidth size="small">
             <InputLabel id="service-label">Dienst</InputLabel>
@@ -273,12 +283,12 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
             </Select>
           </FormControl>
           <TextField
-            label="Naam (optioneel)"
+            label="Planning Naam (optioneel)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             fullWidth
             size="small"
-            helperText="Bijv. 'Week 1 - Maandag' of 'IT Afdeling'"
+            helperText="Bijv. 'Batch 1 - Week 12' of 'IT Afdeling Planning'"
           />
 
           {!isEditMode && (

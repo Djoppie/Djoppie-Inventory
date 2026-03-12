@@ -885,10 +885,10 @@ const RolloutPlannerPage = () => {
 
   const handleDeleteDay = async (day: RolloutDay) => {
     const workplaceCount = day.totalWorkplaces;
-    const dayLabel = day.name || `Planning ${day.dayNumber}`;
+    const planningLabel = day.name || `Planning ${day.dayNumber}`;
     const message = workplaceCount > 0
-      ? `"${dayLabel}" verwijderen? Dit verwijdert ook ${workplaceCount} werkplek(ken).`
-      : `"${dayLabel}" verwijderen?`;
+      ? `"${planningLabel}" verwijderen? Dit verwijdert ook ${workplaceCount} werkplek(ken).`
+      : `"${planningLabel}" verwijderen?`;
     if (!window.confirm(message)) return;
     await deleteDayMutation.mutateAsync({ dayId: day.id, sessionId: Number(id) });
   };
@@ -1130,7 +1130,7 @@ const RolloutPlannerPage = () => {
                 if (completedWorkplaces > 0) {
                   return `${completedWorkplaces} van ${totalWorkplaces} werkplekken voltooid. Ga door met de uitvoering.`;
                 }
-                return `${totalWorkplaces} werkplek${totalWorkplaces !== 1 ? 'ken' : ''} gepland over ${days.length} dag${days.length !== 1 ? 'en' : ''}. Start de uitvoering wanneer je klaar bent.`;
+                return `${totalWorkplaces} werkplek${totalWorkplaces !== 1 ? 'ken' : ''} gepland over ${days.length} planning${days.length !== 1 ? 's' : ''}. Start de uitvoering wanneer je klaar bent.`;
               })()}
             </Typography>
           </Box>

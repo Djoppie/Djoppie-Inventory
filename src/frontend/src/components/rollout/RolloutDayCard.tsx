@@ -34,7 +34,8 @@ interface RolloutDayCardProps {
 }
 
 /**
- * Enhanced RolloutDay card with modern design, clear status indicators, and smooth animations
+ * Enhanced Planning Batch card with modern design, clear status indicators, smooth animations,
+ * and rescheduling capability visual cues
  */
 const RolloutDayCard = ({
   day,
@@ -153,7 +154,7 @@ const RolloutDayCard = ({
           }}
         />
 
-        {/* Day Info */}
+        {/* Planning Info */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
             <Typography
@@ -193,17 +194,42 @@ const RolloutDayCard = ({
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            {/* Date */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CalendarTodayIcon sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {new Date(day.date).toLocaleDateString('nl-NL', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </Typography>
-            </Box>
+            {/* Date with Reschedule Visual Hint */}
+            <Tooltip title="Datum kan aangepast worden via bewerken" placement="top">
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(255, 119, 0, 0.08)',
+                  border: '1px solid rgba(255, 119, 0, 0.2)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 119, 0, 0.12)',
+                    borderColor: 'rgba(255, 119, 0, 0.4)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 2px 8px rgba(255, 119, 0, 0.15)',
+                  },
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+              >
+                <CalendarTodayIcon sx={{ fontSize: '0.85rem', color: '#FF7700' }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#FF7700', fontSize: '0.8rem' }}>
+                  {new Date(day.date).toLocaleDateString('nl-NL', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </Typography>
+              </Box>
+            </Tooltip>
 
             {/* Workplace Count */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
