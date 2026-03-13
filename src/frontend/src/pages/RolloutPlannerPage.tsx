@@ -17,6 +17,7 @@ import {
   Alert,
   Tooltip,
   Checkbox,
+  ButtonGroup,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -38,6 +39,9 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import SortIcon from '@mui/icons-material/Sort';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useQuery } from '@tanstack/react-query';
 import {
   useRolloutSession,
@@ -877,6 +881,12 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
 };
 
 /**
+ * Sort configuration types
+ */
+type SortField = 'date' | 'service';
+type SortDirection = 'asc' | 'desc';
+
+/**
  * Rollout Planner Page - Create/edit rollout sessions with days and workplaces
  */
 const RolloutPlannerPage = () => {
@@ -890,6 +900,10 @@ const RolloutPlannerPage = () => {
   const [description, setDescription] = useState('');
   const [plannedStartDate, setPlannedStartDate] = useState('');
   const [plannedEndDate, setPlannedEndDate] = useState('');
+
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   // Dialog state
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
@@ -1104,6 +1118,47 @@ const RolloutPlannerPage = () => {
     });
   };
 
+  // Sorting handlers
+  const handleSortFieldChange = (field: SortField) => {
+    if (field === sortField) {
+      // Toggle direction if clicking the same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Change field and reset to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const toggleSortDirection = () => {
+    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  };
+
+  // Sorted days based on current sort configuration
+  const sortedDays = useMemo(() => {
+    if (!days || days.length === 0) return [];
+
+    const sorted = [...days].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortField === 'date') {
+        // Sort by date
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        comparison = dateA - dateB;
+      } else if (sortField === 'service') {
+        // Sort by service name (derived from planning name or service ID)
+        const nameA = a.name || `Planning ${a.dayNumber}`;
+        const nameB = b.name || `Planning ${b.dayNumber}`;
+        comparison = nameA.localeCompare(nameB, 'nl');
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [days, sortField, sortDirection]);
+
   if (sessionLoading || daysLoading) {
     return <Loading />;
   }
@@ -1312,7 +1367,7 @@ const RolloutPlannerPage = () => {
             <PlanningOverview days={days} />
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">
               Planningen ({days?.length || 0})
             </Typography>
@@ -1325,6 +1380,160 @@ const RolloutPlannerPage = () => {
               Planning Toevoegen
             </Button>
           </Box>
+
+          {/* Sorting Controls - Only show when there are multiple plannings */}
+          {days && days.length > 1 && (
+            <Paper
+              elevation={0}
+              sx={{
+                mb: 2,
+                p: 1.5,
+                border: '1px solid',
+                borderColor: 'rgba(255, 119, 0, 0.15)',
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(255, 119, 0, 0.03) 0%, transparent 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  borderColor: 'rgba(255, 119, 0, 0.3)',
+                  boxShadow: '0 2px 8px rgba(255, 119, 0, 0.08)',
+                },
+              }}
+            >
+              {/* Sort Label */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <SortIcon sx={{ fontSize: 20, color: '#FF7700' }} />
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'text.secondary',
+                    fontSize: '0.85rem',
+                  }}
+                >
+                  Sorteren:
+                </Typography>
+              </Box>
+
+              {/* Sort Field Buttons */}
+              <ButtonGroup
+                size="small"
+                variant="outlined"
+                sx={{
+                  '& .MuiButtonGroup-grouped': {
+                    borderColor: 'rgba(255, 119, 0, 0.3)',
+                    '&:not(:last-of-type)': {
+                      borderRightColor: 'rgba(255, 119, 0, 0.3)',
+                    },
+                  },
+                }}
+              >
+                <Button
+                  onClick={() => handleSortFieldChange('date')}
+                  variant={sortField === 'date' ? 'contained' : 'outlined'}
+                  startIcon={<CalendarTodayIcon sx={{ fontSize: '0.9rem !important' }} />}
+                  sx={{
+                    px: 2,
+                    py: 0.75,
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    bgcolor: sortField === 'date' ? '#FF7700' : 'transparent',
+                    color: sortField === 'date' ? '#fff' : '#FF7700',
+                    borderColor: sortField === 'date' ? '#FF7700' : 'rgba(255, 119, 0, 0.3)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: sortField === 'date' ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
+                      borderColor: '#FF7700',
+                    },
+                    '& .MuiButton-startIcon': {
+                      color: sortField === 'date' ? '#fff' : '#FF7700',
+                    },
+                  }}
+                >
+                  Datum
+                </Button>
+                <Button
+                  onClick={() => handleSortFieldChange('service')}
+                  variant={sortField === 'service' ? 'contained' : 'outlined'}
+                  startIcon={<GroupsIcon sx={{ fontSize: '0.9rem !important' }} />}
+                  sx={{
+                    px: 2,
+                    py: 0.75,
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    bgcolor: sortField === 'service' ? '#FF7700' : 'transparent',
+                    color: sortField === 'service' ? '#fff' : '#FF7700',
+                    borderColor: sortField === 'service' ? '#FF7700' : 'rgba(255, 119, 0, 0.3)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: sortField === 'service' ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
+                      borderColor: '#FF7700',
+                    },
+                    '& .MuiButton-startIcon': {
+                      color: sortField === 'service' ? '#fff' : '#FF7700',
+                    },
+                  }}
+                >
+                  Dienst
+                </Button>
+              </ButtonGroup>
+
+              {/* Sort Direction Toggle */}
+              <Tooltip
+                title={sortDirection === 'asc' ? 'Oplopend (A-Z, 1-9)' : 'Aflopend (Z-A, 9-1)'}
+                placement="top"
+              >
+                <IconButton
+                  size="small"
+                  onClick={toggleSortDirection}
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    bgcolor: 'rgba(255, 119, 0, 0.1)',
+                    border: '2px solid rgba(255, 119, 0, 0.3)',
+                    color: '#FF7700',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      bgcolor: '#FF7700',
+                      color: '#fff',
+                      borderColor: '#FF7700',
+                      transform: 'rotate(180deg) scale(1.1)',
+                      boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
+                    },
+                  }}
+                >
+                  {sortDirection === 'asc' ? (
+                    <ArrowUpwardIcon sx={{ fontSize: 18 }} />
+                  ) : (
+                    <ArrowDownwardIcon sx={{ fontSize: 18 }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              {/* Active Sort Description */}
+              <Typography
+                variant="caption"
+                sx={{
+                  ml: 'auto',
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  fontStyle: 'italic',
+                }}
+              >
+                {sortField === 'date'
+                  ? sortDirection === 'asc'
+                    ? 'Vroegste eerst'
+                    : 'Laatste eerst'
+                  : sortDirection === 'asc'
+                    ? 'A → Z'
+                    : 'Z → A'}
+              </Typography>
+            </Paper>
+          )}
 
           {/* Legend */}
           {days && days.length > 1 && (() => {
@@ -1366,7 +1575,7 @@ const RolloutPlannerPage = () => {
             />
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {days.map((day) => {
+              {sortedDays.map((day) => {
                 const daySvcId = day.scheduledServiceIds?.[0] || day.id;
                 const dayColor = getServiceColor(daySvcId);
                 // Count ready workplaces
