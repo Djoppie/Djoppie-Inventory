@@ -2,23 +2,27 @@
 
 ## Executive Summary
 
-Dit rapport analyseert de 9 project-specifieke agents voor Djoppie Inventory en identificeert verbeterpunten voor optimale prestaties.
+Dit rapport documenteert de optimalisatie van project-specifieke agents voor Djoppie Inventory. Na analyse en consolidatie zijn we gegaan van 9 naar 7 agents met betere afbakening en efficiëntie.
 
 ---
 
-## Overzicht van Agents
+## Huidige Agent Structuur (Na Optimalisatie)
 
 | Agent | Model | Focus | Status |
 |-------|-------|-------|--------|
-| backend-architect | sonnet | ASP.NET Core, Azure, API Design | Goed |
+| backend-architect | sonnet | ASP.NET Core, Azure, API Design, DB Migrations | Geoptimaliseerd |
 | frontend-architect | sonnet | React, TypeScript, Performance | Goed |
-| frontend-specialist | sonnet | UI/UX, MUI, Styling | Overlap |
-| ui-design-expert | sonnet | Visueel Design, Logo's | Overlap |
-| azure-entra-deployment | sonnet | Entra ID, SSO, Auth | Goed |
-| azure-deployment-architect | sonnet | Azure Deployment, CI/CD | Overlap |
-| project-orchestrator | sonnet | Architectuur, Coördinatie | Goed |
-| workflow-coordinator | opus | Feature Planning, API Contracts | Overlap |
-| documentation-writer | sonnet | Technische Documentatie | Goed |
+| frontend-specialist | sonnet | UI/UX, MUI, Styling | Goed |
+| ui-design-expert | sonnet | Visueel Design, Logo's | Goed |
+| **azure-architect** | sonnet | Entra ID, Deployment, CI/CD, Key Vault | **NIEUW (Merged)** |
+| **project-coordinator** | sonnet | Architectuur, Forms/Lists, API Contracts | **NIEUW (Merged)** |
+| documentation-writer | sonnet | Technische Documentatie | Geoptimaliseerd |
+
+### Verwijderde Agents (Gemerged)
+- ~~azure-entra-deployment~~ → Gemerged naar `azure-architect`
+- ~~azure-deployment-architect~~ → Gemerged naar `azure-architect`
+- ~~project-orchestrator~~ → Gemerged naar `project-coordinator`
+- ~~workflow-coordinator~~ → Gemerged naar `project-coordinator`
 
 ---
 
@@ -244,46 +248,46 @@ Dit rapport analyseert de 9 project-specifieke agents voor Djoppie Inventory en 
 
 ---
 
-## Voorgestelde Geconsolideerde Agent Structuur
+## Agent Structuur Evolutie
 
 ```
-HUIDIGE SITUATIE (9 agents):
-├── backend-architect
-├── frontend-architect      ─┬─ OVERLAP
-├── frontend-specialist     ─┤
-├── ui-design-expert       ─┘
-├── azure-entra-deployment ─┬─ OVERLAP
-├── azure-deployment-architect ─┘
-├── project-orchestrator   ─┬─ OVERLAP
-├── workflow-coordinator   ─┘
-└── documentation-writer
+ORIGINEEL (9 agents):                    HUIDIGE SITUATIE (7 agents):
+├── backend-architect                    ├── backend-architect ✅ (enhanced)
+├── frontend-architect      ─┐           ├── frontend-architect
+├── frontend-specialist     ─┤ OVERLAP   ├── frontend-specialist
+├── ui-design-expert       ─┘           ├── ui-design-expert
+├── azure-entra-deployment ─┬─ MERGED   ├── azure-architect ✅ (NEW)
+├── azure-deployment-architect ─┘        │
+├── project-orchestrator   ─┬─ MERGED   ├── project-coordinator ✅ (NEW)
+├── workflow-coordinator   ─┘           │
+└── documentation-writer                 └── documentation-writer ✅ (enhanced)
 
-VOORGESTELDE SITUATIE (6 agents):
-├── backend-architect      (enhanced)
-├── frontend-developer     (merged frontend-architect + frontend-specialist code parts)
-├── ui-ux-designer         (merged frontend-specialist UI + ui-design-expert)
-├── azure-architect        (merged azure-entra + azure-deployment)
-├── project-coordinator    (merged project-orchestrator + workflow-coordinator)
-├── documentation-writer   (enhanced)
-└── test-engineer          (NEW)
+TOEKOMSTIGE MOGELIJKHEID (6 agents):
+├── backend-architect
+├── frontend-developer     (merge frontend-architect + frontend-specialist)
+├── ui-design-expert
+├── azure-architect
+├── project-coordinator
+├── documentation-writer
+└── test-engineer          (NEW - optioneel)
 ```
 
 ---
 
 ## Prioriteiten
 
-### Hoog (Direct implementeren)
-1. Voeg `allowedTools` toe aan alle agents
-2. Downgrade workflow-coordinator naar sonnet
-3. Voeg database migration expertise toe aan backend-architect
+### Hoog (Direct implementeren) - VOLTOOID
+1. ~~Voeg `allowedTools` toe aan alle agents~~ ✅
+2. ~~Downgrade workflow-coordinator naar sonnet~~ ✅ (gemerged naar project-coordinator)
+3. ~~Voeg database migration expertise toe aan backend-architect~~ ✅
 
-### Medium (Deze sprint)
-4. Merge azure agents naar één azure-architect
-5. Merge orchestrator agents
-6. Standaardiseer prompt-structuren
+### Medium (Deze sprint) - VOLTOOID
+4. ~~Merge azure agents naar één azure-architect~~ ✅
+5. ~~Merge orchestrator agents naar project-coordinator~~ ✅
+6. Standaardiseer prompt-structuren (optioneel)
 
 ### Laag (Backlog)
-7. Consolideer frontend agents
+7. Consolideer frontend agents (frontend-architect + frontend-specialist)
 8. Voeg test-engineer agent toe
 9. Link skills aan agents
 
@@ -299,4 +303,41 @@ VOORGESTELDE SITUATIE (6 agents):
 
 ---
 
+## Geïmplementeerde Verbeteringen
+
+### Fase 1: Hoge Prioriteit (Voltooid 2026-03-13)
+
+1. **allowedTools toegevoegd aan alle agents**
+   - backend-architect: Read, Write, Edit, Glob, Grep, Bash
+   - frontend-architect: Read, Write, Edit, Glob, Grep, Bash
+   - ui-design-expert: Read, Write, Edit, Glob, Grep
+   - documentation-writer: Read, Write, Glob
+   - azure-architect: Read, Write, Edit, Glob, Grep, Bash
+   - project-coordinator: Read, Glob, Grep, Task
+
+2. **workflow-coordinator gedowngrade van opus naar sonnet**
+   - Gemerged naar project-coordinator met sonnet model
+   - Kostenbesparing zonder functionaliteitsverlies
+
+3. **Database migration expertise toegevoegd aan backend-architect**
+   - SQLite vs SQL Server syntax verschillen
+   - Migration best practices
+   - Common pitfalls documentatie
+   - Troubleshooting checklist
+
+### Fase 2: Medium Prioriteit (Voltooid 2026-03-13)
+
+4. **azure-architect gecreëerd**
+   - Gemerged: azure-entra-deployment + azure-deployment-architect
+   - Combineert: Entra ID expertise + Deployment methodologie
+   - Eén agent voor alle Azure-gerelateerde taken
+
+5. **project-coordinator gecreëerd**
+   - Gemerged: project-orchestrator + workflow-coordinator
+   - Combineert: Architectural leadership + Forms/Lists mastery + API contract design
+   - Eén agent voor projectcoördinatie en feature planning
+
+---
+
 *Rapport gegenereerd: 2026-03-13*
+*Laatste update: 2026-03-13 (Medium prioriteit verbeteringen geïmplementeerd)*
