@@ -86,7 +86,9 @@
       "Bash(az ad app permission admin-consent:*)",
       "Bash(netstat:*)",
       "Bash(az pipelines run:*)",
-      "Bash(az pipelines runs show:*)"
+      "Bash(az pipelines runs show:*)",
+      "Bash(az rest:*)",
+      "Bash(az devops invoke:*)"
     ]
   }
 }
