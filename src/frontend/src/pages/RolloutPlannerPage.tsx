@@ -17,6 +17,7 @@ import {
   Alert,
   Tooltip,
   Checkbox,
+  Collapse,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -245,12 +246,8 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
   const isFilterActive = selectedServiceIds.length > 0;
 
   return (
-    <Paper sx={{ p: 2, mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CalendarTodayIcon sx={{ color: '#FF7700' }} />
-          <Typography variant="h6">Kalender</Typography>
-        </Box>
+    <Paper sx={{ p: 2, mb: 0 }} elevation={0}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconButton size="small" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}>
             <ChevronLeftIcon />
@@ -262,7 +259,6 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
             <ChevronRightIcon />
           </IconButton>
         </Box>
-        <Box sx={{ width: 40 }} />
       </Box>
 
       {/* Service Filter - Expandable Panel */}
@@ -910,6 +906,7 @@ const RolloutPlannerPage = () => {
   const [bulkPrintDayId, setBulkPrintDayId] = useState<number | undefined>();
   const [bulkPrintAssetIds, setBulkPrintAssetIds] = useState<Set<number> | undefined>();
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
+  const [calendarExpanded, setCalendarExpanded] = useState(true);
 
   // Fetch session data if editing
   const {
@@ -1311,21 +1308,85 @@ const RolloutPlannerPage = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Calendar Overview - Only show in edit mode with days */}
+      {/* Calendar Overview - Collapsible, only show in edit mode with days */}
       {isEditMode && session && days && days.length > 0 && (
-        <PlanningCalendar
-          days={days}
-          plannedStartDate={session?.plannedStartDate?.split('T')[0]}
-          plannedEndDate={session?.plannedEndDate?.split('T')[0]}
-          rescheduledWorkplaces={rescheduledWorkplaces}
-          onDayClick={(day) => handleOpenDayDialog(day)}
-          onDateClick={(date) => handleOpenDayDialog(undefined, date)}
-          onRescheduledClick={(wp) => {
-            // Find the day this workplace belongs to and open the dialog
-            const day = days.find(d => d.id === wp.dayId);
-            if (day) handleOpenDayDialog(day);
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            borderRadius: 3,
+            overflow: 'hidden',
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'var(--dark-bg-elevated)' : 'background.paper',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark' ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
           }}
-        />
+        >
+          {/* Collapsible Header */}
+          <Box
+            onClick={() => setCalendarExpanded(!calendarExpanded)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 3,
+              py: 2,
+              cursor: 'pointer',
+              borderBottom: calendarExpanded ? '1px solid' : 'none',
+              borderColor: 'divider',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CalendarTodayIcon sx={{ color: '#FF7700', fontSize: 24 }} />
+              <Typography variant="h6" fontWeight={700}>
+                Kalender Overzicht
+              </Typography>
+              <Chip
+                label={`${days.length} planning${days.length !== 1 ? 's' : ''}`}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255, 119, 0, 0.1)',
+                  color: '#FF7700',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                }}
+              />
+            </Box>
+            <IconButton
+              size="small"
+              sx={{
+                transform: calendarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease',
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
+
+          {/* Collapsible Content */}
+          <Collapse in={calendarExpanded} timeout="auto">
+            <Box sx={{ p: 0 }}>
+              <PlanningCalendar
+                days={days}
+                plannedStartDate={session?.plannedStartDate?.split('T')[0]}
+                plannedEndDate={session?.plannedEndDate?.split('T')[0]}
+                rescheduledWorkplaces={rescheduledWorkplaces}
+                onDayClick={(day) => handleOpenDayDialog(day)}
+                onDateClick={(date) => handleOpenDayDialog(undefined, date)}
+                onRescheduledClick={(wp) => {
+                  // Find the day this workplace belongs to and open the dialog
+                  const day = days.find(d => d.id === wp.dayId);
+                  if (day) handleOpenDayDialog(day);
+                }}
+              />
+            </Box>
+          </Collapse>
+        </Paper>
       )}
 
       {/* Prominent Execution Card - Show when session can be executed */}

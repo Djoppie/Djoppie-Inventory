@@ -1,27 +1,20 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Typography,
   Box,
   Button,
-  Card,
-  CardContent,
-  CardActions,
   Chip,
-  LinearProgress,
   IconButton,
   Menu,
   MenuItem,
   Alert,
-  ToggleButtonGroup,
-  ToggleButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Tooltip,
   Stack,
+  Paper,
+  Divider,
+  Collapse,
+  LinearProgress,
+  Avatar,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -31,12 +24,20 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EditIcon from '@mui/icons-material/Edit';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ComputerIcon from '@mui/icons-material/Computer';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import BuildIcon from '@mui/icons-material/Build';
 import { useRolloutSessions, useDeleteRolloutSession, useUpdateRolloutSession } from '../hooks/useRollout';
 import { getStatusColor } from '../api/rollout.api';
 import { ROUTES, buildRoute } from '../constants/routes';
@@ -57,55 +58,83 @@ const getStatusTranslationKey = (status: string): string => {
   return statusMap[status] || status.toLowerCase();
 };
 
-// Scanner-style card wrapper - consistent with ScanPage
-const scannerCardSx = {
-  mb: 3,
-  borderRadius: 2,
-  border: '1px solid',
-  borderColor: 'divider',
-  overflow: 'hidden',
+// Neumorphic card styles
+const neuCardSx = {
+  borderRadius: 3,
+  bgcolor: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === 'dark' ? 'var(--dark-bg-elevated)' : 'background.paper',
+  boxShadow: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === 'dark' ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-        : '0 4px 20px rgba(253, 185, 49, 0.3)',
-  },
+  border: 'none',
 };
 
-const sessionCardSx = {
-  elevation: 0,
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 3,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  overflow: 'hidden',
-  '&:hover': {
-    borderColor: 'primary.main',
-    transform: 'translateY(-2px)',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 12px 32px rgba(255, 146, 51, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4)'
-        : '0 8px 24px rgba(255, 119, 0, 0.18), 0 4px 8px rgba(0, 0, 0, 0.06)',
-  },
+const statBoxSx = {
+  p: 2,
+  borderRadius: 2,
+  bgcolor: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === 'dark' ? 'var(--dark-bg-raised)' : 'rgba(0,0,0,0.02)',
+  boxShadow: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === 'dark' ? 'var(--neu-shadow-dark-sm)' : 'var(--neu-shadow-light-sm)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 1.5,
+  minWidth: 140,
 };
 
 /**
- * Rollout List Page - Shows all rollout sessions
+ * Professional Rollout List Page - Table-focused view with activity lists
  */
 const RolloutListPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<RolloutSessionStatus | ''>('');
   const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; sessionId: number } | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [expandedSessions, setExpandedSessions] = useState<Set<number>>(new Set());
 
   const { data: sessions, isLoading, error } = useRolloutSessions(
     statusFilter ? { status: statusFilter } : undefined
   );
   const deleteSessionMutation = useDeleteRolloutSession();
   const updateMutation = useUpdateRolloutSession();
+
+  // Calculate global statistics
+  const globalStats = useMemo(() => {
+    if (!sessions || sessions.length === 0) {
+      return {
+        totalSessions: 0,
+        activeSessions: 0,
+        completedSessions: 0,
+        planningSessions: 0,
+        totalWorkplaces: 0,
+        completedWorkplaces: 0,
+        pendingWorkplaces: 0,
+        avgCompletion: 0,
+      };
+    }
+
+    const totalSessions = sessions.length;
+    const activeSessions = sessions.filter(s => s.status === 'InProgress').length;
+    const completedSessions = sessions.filter(s => s.status === 'Completed').length;
+    const planningSessions = sessions.filter(s => s.status === 'Planning' || s.status === 'Ready').length;
+    const totalWorkplaces = sessions.reduce((acc, s) => acc + s.totalWorkplaces, 0);
+    const completedWorkplaces = sessions.reduce((acc, s) => acc + s.completedWorkplaces, 0);
+    const pendingWorkplaces = totalWorkplaces - completedWorkplaces;
+    const avgCompletion = sessions.length > 0
+      ? Math.round(sessions.reduce((acc, s) => acc + s.completionPercentage, 0) / sessions.length)
+      : 0;
+
+    return {
+      totalSessions,
+      activeSessions,
+      completedSessions,
+      planningSessions,
+      totalWorkplaces,
+      completedWorkplaces,
+      pendingWorkplaces,
+      avgCompletion,
+    };
+  }, [sessions]);
 
   const handleStatusFilterChange = (status: RolloutSessionStatus | '') => {
     setStatusFilter(status);
@@ -160,6 +189,18 @@ const RolloutListPage = () => {
     handleMenuClose();
   };
 
+  const toggleSessionExpansion = (sessionId: number) => {
+    setExpandedSessions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sessionId)) {
+        newSet.delete(sessionId);
+      } else {
+        newSet.add(sessionId);
+      }
+      return newSet;
+    });
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -187,183 +228,280 @@ const RolloutListPage = () => {
     );
   }
 
-  const statusOptions: Array<{ value: RolloutSessionStatus | ''; label: string }> = [
-    { value: '', label: 'Alles' },
-    { value: 'Planning', label: t('rollout.status.planning') },
-    { value: 'Ready', label: t('rollout.status.ready') },
-    { value: 'InProgress', label: t('rollout.status.inProgress') },
-    { value: 'Completed', label: t('rollout.status.completed') },
-    { value: 'Cancelled', label: t('rollout.status.cancelled') },
+  const statusOptions: Array<{ value: RolloutSessionStatus | ''; label: string; color: string }> = [
+    { value: '', label: 'Alles', color: '#6C757D' },
+    { value: 'Planning', label: t('rollout.status.planning'), color: '#FF7700' },
+    { value: 'Ready', label: t('rollout.status.ready'), color: '#3B82F6' },
+    { value: 'InProgress', label: t('rollout.status.inProgress'), color: '#22c55e' },
+    { value: 'Completed', label: t('rollout.status.completed'), color: '#16a34a' },
+    { value: 'Cancelled', label: t('rollout.status.cancelled'), color: '#EF4444' },
   ];
 
   return (
     <Box sx={{ pb: 10 }}>
-      {/* Hero Header Card */}
-      <Card elevation={0} sx={scannerCardSx}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            gap={2}
+      {/* Hero Header with Neumorphic Style */}
+      <Paper
+        elevation={0}
+        sx={{
+          ...neuCardSx,
+          p: 3,
+          mb: 3,
+        }}
+      >
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap"
+          gap={2}
+        >
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 56,
+                height: 56,
+                borderRadius: 3,
+                bgcolor: 'rgba(255, 119, 0, 0.12)',
+                boxShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'var(--neu-shadow-dark-sm)'
+                    : 'var(--neu-shadow-light-sm)',
+              }}
+            >
+              <RocketLaunchIcon
+                sx={{
+                  fontSize: 32,
+                  color: '#FF7700',
+                }}
+              />
+            </Box>
+            <Box>
+              <Typography variant="h4" component="h1" fontWeight={800}>
+                {t('rollout.title')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Beheer en volg uitrolsessies voor werkplekinrichting
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate(ROUTES.ROLLOUTS_NEW)}
+            sx={{
+              px: 3,
+              py: 1.25,
+              fontWeight: 700,
+              bgcolor: '#FF7700',
+              boxShadow: 'var(--neu-shadow-orange)',
+              '&:hover': {
+                bgcolor: '#e66a00',
+                boxShadow: 'var(--neu-shadow-orange-hover)',
+              },
+            }}
           >
-            <Stack direction="row" spacing={2} alignItems="center">
+            {t('rollout.newSession')}
+          </Button>
+        </Stack>
+      </Paper>
+
+      {/* Statistics Dashboard */}
+      <Paper
+        elevation={0}
+        sx={{
+          ...neuCardSx,
+          p: 2.5,
+          mb: 3,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <TrendingUpIcon sx={{ color: '#FF7700', fontSize: 24 }} />
+          <Typography variant="h6" fontWeight={700}>
+            Overzicht
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(2, 1fr)',
+              sm: 'repeat(3, 1fr)',
+              md: 'repeat(4, 1fr)',
+              lg: 'repeat(6, 1fr)',
+            },
+            gap: 2,
+          }}
+        >
+          {/* Total Sessions */}
+          <Box sx={statBoxSx}>
+            <RocketLaunchIcon sx={{ fontSize: 28, color: '#FF7700' }} />
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#FF7700">
+                {globalStats.totalSessions}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Sessies
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Active Sessions */}
+          <Box sx={statBoxSx}>
+            <PlayArrowIcon sx={{ fontSize: 28, color: '#22c55e' }} />
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#22c55e">
+                {globalStats.activeSessions}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Actief
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Completed Sessions */}
+          <Box sx={statBoxSx}>
+            <CheckCircleIcon sx={{ fontSize: 28, color: '#16a34a' }} />
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#16a34a">
+                {globalStats.completedSessions}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Voltooid
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Total Swaps/Workplaces */}
+          <Box sx={statBoxSx}>
+            <SwapHorizIcon sx={{ fontSize: 28, color: '#3B82F6' }} />
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#3B82F6">
+                {globalStats.totalWorkplaces}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Swaps
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Completed Workplaces */}
+          <Box sx={statBoxSx}>
+            <ComputerIcon sx={{ fontSize: 28, color: '#16a34a' }} />
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#16a34a">
+                {globalStats.completedWorkplaces}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Afgewerkt
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Pending Workplaces */}
+          <Box sx={statBoxSx}>
+            <ScheduleIcon sx={{ fontSize: 28, color: '#eab308' }} />
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#eab308">
+                {globalStats.pendingWorkplaces}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Te doen
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Progress Bar */}
+        {globalStats.totalWorkplaces > 0 && (
+          <Box sx={{ mt: 2.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                Totale Voortgang
+              </Typography>
+              <Typography variant="body2" fontWeight={700} color={globalStats.avgCompletion === 100 ? '#16a34a' : '#FF7700'}>
+                {Math.round((globalStats.completedWorkplaces / globalStats.totalWorkplaces) * 100)}%
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                height: 10,
+                borderRadius: 5,
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.08)',
+                boxShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'inset 2px 2px 4px rgba(0,0,0,0.5)'
+                    : 'inset 1px 1px 3px rgba(0,0,0,0.1)',
+                overflow: 'hidden',
+              }}
+            >
               <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 48,
-                  height: 48,
-                  borderRadius: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 146, 51, 0.08)'
-                      : 'rgba(255, 119, 0, 0.08)',
-                  transition: 'all 0.3s ease',
+                  width: `${(globalStats.completedWorkplaces / globalStats.totalWorkplaces) * 100}%`,
+                  height: '100%',
+                  bgcolor: globalStats.completedWorkplaces === globalStats.totalWorkplaces ? '#16a34a' : '#FF7700',
+                  borderRadius: 5,
+                  transition: 'width 0.5s ease',
                 }}
-              >
-                <RocketLaunchIcon
-                  sx={{
-                    fontSize: 28,
-                    color: 'primary.main',
-                    filter: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'drop-shadow(0 0 4px rgba(255, 146, 51, 0.5))'
-                        : 'none',
-                  }}
-                />
-              </Box>
-              <Box>
-                <Typography variant="h4" component="h1" fontWeight={700}>
-                  {t('rollout.title')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Beheer en volg uitrolsessies voor werkplekinrichting
-                </Typography>
-              </Box>
-            </Stack>
+              />
+            </Box>
+          </Box>
+        )}
+      </Paper>
 
-            {/* Stats summary */}
-            <Stack direction="row" spacing={2} alignItems="center">
-              {sessions && sessions.length > 0 && (
-                <Stack direction="row" spacing={3} sx={{ mr: 2 }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography
-                      variant="h5"
-                      fontWeight={700}
-                      color="primary.main"
-                    >
-                      {sessions.length}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Sessies
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography
-                      variant="h5"
-                      fontWeight={700}
-                      color="success.main"
-                    >
-                      {sessions.filter(s => s.status === 'Completed').length}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Voltooid
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography
-                      variant="h5"
-                      fontWeight={700}
-                      sx={{ color: '#FF7700' }}
-                    >
-                      {sessions.reduce((acc, s) => acc + s.totalWorkplaces, 0)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Werkplekken
-                    </Typography>
-                  </Box>
-                </Stack>
-              )}
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate(ROUTES.ROLLOUTS_NEW)}
-                sx={{ px: 3, whiteSpace: 'nowrap' }}
-              >
-                {t('rollout.newSession')}
-              </Button>
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {/* Filters & View Toggle */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+      {/* Filters */}
+      <Paper
+        elevation={0}
+        sx={{
+          ...neuCardSx,
+          p: 2,
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {statusOptions.map((option) => (
             <Chip
               key={option.value || 'all'}
               label={option.label}
               onClick={() => handleStatusFilterChange(option.value)}
-              color={statusFilter === option.value ? 'primary' : 'default'}
-              variant={statusFilter === option.value ? 'filled' : 'outlined'}
               sx={{
                 fontWeight: 600,
                 letterSpacing: '0.02em',
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
                 cursor: 'pointer',
-                ...(statusFilter === option.value && {
-                  background: 'linear-gradient(135deg, #FF7700, #FF9233)',
-                  boxShadow: '0 2px 8px rgba(255, 119, 0, 0.3)',
-                }),
+                bgcolor: statusFilter === option.value ? option.color : 'transparent',
+                color: statusFilter === option.value ? 'white' : 'text.secondary',
+                border: '1px solid',
+                borderColor: statusFilter === option.value ? option.color : 'divider',
+                boxShadow: statusFilter === option.value
+                  ? `0 2px 8px ${option.color}40`
+                  : 'none',
+                '&:hover': {
+                  bgcolor: statusFilter === option.value ? option.color : `${option.color}15`,
+                  borderColor: option.color,
+                },
               }}
             />
           ))}
         </Box>
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(_, value) => value && setViewMode(value)}
-          size="small"
-          sx={{
-            '& .MuiToggleButton-root': {
-              borderRadius: 2,
-              px: 1.5,
-              '&.Mui-selected': {
-                color: 'primary.main',
-                bgcolor: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'rgba(255, 146, 51, 0.12)'
-                    : 'rgba(255, 119, 0, 0.08)',
-              },
-            },
-          }}
-        >
-          <ToggleButton value="cards">
-            <Tooltip title="Kaartweergave">
-              <ViewModuleIcon />
-            </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="table">
-            <Tooltip title="Tabelweergave">
-              <ViewListIcon />
-            </Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
+      </Paper>
 
-      {/* Content */}
+      {/* Professional Table View */}
       {!sessions || sessions.length === 0 ? (
-        <Card
+        <Paper
           elevation={0}
           sx={{
-            ...scannerCardSx,
-            mb: 0,
+            ...neuCardSx,
             p: 6,
             textAlign: 'center',
           }}
@@ -373,49 +511,55 @@ const RolloutListPage = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 64,
-              height: 64,
-              borderRadius: 3,
-              bgcolor: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'rgba(255, 146, 51, 0.08)'
-                  : 'rgba(255, 119, 0, 0.06)',
+              width: 80,
+              height: 80,
+              borderRadius: 4,
+              bgcolor: 'rgba(255, 119, 0, 0.08)',
               mx: 'auto',
-              mb: 2,
+              mb: 3,
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'var(--neu-shadow-dark-sm)'
+                  : 'var(--neu-shadow-light-sm)',
             }}
           >
-            <WorkspacesIcon sx={{ fontSize: 32, color: 'primary.main', opacity: 0.6 }} />
+            <RocketLaunchIcon sx={{ fontSize: 40, color: '#FF7700', opacity: 0.6 }} />
           </Box>
-          <Typography variant="h6" color="text.secondary" fontWeight={600}>
+          <Typography variant="h6" color="text.secondary" fontWeight={700}>
             Geen rollout sessies gevonden
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
-            Maak een nieuwe sessie aan om te beginnen
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+            Maak een nieuwe sessie aan om te beginnen met het plannen van werkplek swaps
           </Typography>
           <Button
-            variant="outlined"
+            variant="contained"
             startIcon={<AddIcon />}
             onClick={() => navigate(ROUTES.ROLLOUTS_NEW)}
+            sx={{
+              bgcolor: '#FF7700',
+              fontWeight: 600,
+              '&:hover': { bgcolor: '#e66a00' },
+            }}
           >
             Eerste Sessie Aanmaken
           </Button>
-        </Card>
-      ) : viewMode === 'cards' ? (
-        <SessionCardGrid
-          sessions={sessions}
-          onMenuOpen={handleMenuOpen}
-          onEdit={handleEdit}
-          formatDate={formatDate}
-          t={t}
-        />
+        </Paper>
       ) : (
-        <SessionTable
-          sessions={sessions}
-          onMenuOpen={handleMenuOpen}
-          onEdit={handleEdit}
-          formatDate={formatDate}
-          t={t}
-        />
+        <Stack spacing={2}>
+          {sessions.map((session) => (
+            <SessionRow
+              key={session.id}
+              session={session}
+              isExpanded={expandedSessions.has(session.id)}
+              onToggleExpand={() => toggleSessionExpansion(session.id)}
+              onMenuOpen={handleMenuOpen}
+              onEdit={handleEdit}
+              onExecute={handleExecute}
+              formatDate={formatDate}
+              t={t}
+            />
+          ))}
+        </Stack>
       )}
 
       {/* Context Menu */}
@@ -423,27 +567,34 @@ const RolloutListPage = () => {
         anchorEl={menuAnchor?.element}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            ...neuCardSx,
+            minWidth: 180,
+          },
+        }}
       >
         <MenuItem onClick={() => menuAnchor && handleEdit(menuAnchor.sessionId)}>
-          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+          <EditIcon fontSize="small" sx={{ mr: 1.5, color: '#FF7700' }} />
           Bewerken
         </MenuItem>
         <MenuItem
           onClick={() => menuAnchor && handleExecute(menuAnchor.sessionId)}
           disabled={!menuAnchor || ['Completed', 'Cancelled'].includes(sessions?.find(s => s.id === menuAnchor.sessionId)?.status || '')}
         >
-          <PlayArrowIcon fontSize="small" sx={{ mr: 1 }} />
+          <PlayArrowIcon fontSize="small" sx={{ mr: 1.5, color: '#22c55e' }} />
           Uitvoeren
         </MenuItem>
         <MenuItem onClick={() => menuAnchor && handleReport(menuAnchor.sessionId)}>
-          <AssessmentIcon fontSize="small" sx={{ mr: 1 }} />
+          <AssessmentIcon fontSize="small" sx={{ mr: 1.5, color: '#3B82F6' }} />
           Rapportage
         </MenuItem>
+        <Divider sx={{ my: 1 }} />
         <MenuItem
           onClick={() => menuAnchor && handleDelete(menuAnchor.sessionId)}
           sx={{ color: 'error.main' }}
         >
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+          <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />
           Verwijderen
         </MenuItem>
       </Menu>
@@ -451,394 +602,503 @@ const RolloutListPage = () => {
   );
 };
 
-// ===== CARD GRID VIEW =====
+// ===== SESSION ROW COMPONENT =====
 
-interface SessionViewProps {
-  sessions: RolloutSession[];
+interface SessionRowProps {
+  session: RolloutSession;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onMenuOpen: (event: React.MouseEvent<HTMLElement>, sessionId: number) => void;
   onEdit: (sessionId: number) => void;
+  onExecute: (sessionId: number) => void;
   formatDate: (dateString: string) => string;
   t: (key: string) => string;
 }
 
-const getStatusGradient = (status: string) => {
-  switch (status) {
-    case 'Completed': return 'linear-gradient(90deg, #10B981, #34D399)';
-    case 'InProgress': return 'linear-gradient(90deg, #FF7700, #FF9233)';
-    case 'Cancelled': return 'linear-gradient(90deg, #EF4444, #F87171)';
-    case 'Ready': return 'linear-gradient(90deg, #3B82F6, #60A5FA)';
-    default: return 'linear-gradient(90deg, #FF7700, #FF9233, #CC0000)';
-  }
-};
-
-const SessionCardGrid = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionViewProps) => {
+const SessionRow = ({
+  session,
+  isExpanded,
+  onToggleExpand,
+  onMenuOpen,
+  onEdit,
+  onExecute,
+  formatDate,
+  t,
+}: SessionRowProps) => {
   const navigate = useNavigate();
-  const isComplete = (session: RolloutSession) => session.status === 'Completed';
+  const isComplete = session.status === 'Completed';
+  const canExecute = !['Completed', 'Cancelled'].includes(session.status);
+
+  const getStatusBadge = () => {
+    if (isComplete) {
+      return (
+        <Chip
+          label="Voltooid"
+          size="small"
+          icon={<CheckCircleIcon />}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(buildRoute.rolloutReport(session.id));
+          }}
+          sx={{
+            fontWeight: 700,
+            bgcolor: '#16a34a',
+            color: 'white',
+            cursor: 'pointer',
+            '& .MuiChip-icon': { color: 'white' },
+            '&:hover': { bgcolor: '#15803d' },
+          }}
+        />
+      );
+    }
+    return (
+      <Chip
+        label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
+        color={getStatusColor(session.status)}
+        size="small"
+        sx={{ fontWeight: 600 }}
+      />
+    );
+  };
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 3 }}>
-      {sessions.map((session) => (
-        <Card
-          key={session.id}
-          elevation={0}
-          sx={{
-            ...sessionCardSx,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
-            ...(isComplete(session) && { bgcolor: 'rgba(22, 163, 74, 0.03)' }),
-          }}
-          onClick={() => onEdit(session.id)}
-        >
-          {/* Done stamp overlay for completed sessions */}
-          {isComplete(session) && (
-            <Box
+    <Paper
+      elevation={0}
+      sx={{
+        ...neuCardSx,
+        overflow: 'hidden',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          boxShadow: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'var(--neu-shadow-dark-float)'
+              : 'var(--neu-shadow-light-lg)',
+        },
+      }}
+    >
+      {/* Main Row */}
+      <Box
+        sx={{
+          p: 2.5,
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr auto',
+            md: '2fr 1fr 1fr 1fr auto',
+          },
+          gap: 2,
+          alignItems: 'center',
+          cursor: 'pointer',
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? isComplete ? 'rgba(22, 163, 74, 0.05)' : 'transparent'
+              : isComplete ? 'rgba(22, 163, 74, 0.03)' : 'transparent',
+        }}
+        onClick={() => onEdit(session.id)}
+      >
+        {/* Session Name & Description */}
+        <Box>
+          <Stack direction="row" spacing={1.5} alignItems="center" mb={0.5}>
+            <Avatar
               sx={{
-                position: 'absolute',
-                top: 16,
-                right: -40,
-                transform: 'rotate(45deg)',
-                bgcolor: '#16a34a',
-                color: 'white',
-                px: 6,
-                py: 0.5,
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                zIndex: 1,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                width: 40,
+                height: 40,
+                bgcolor: 'rgba(255, 119, 0, 0.12)',
+                color: '#FF7700',
+                fontWeight: 700,
+                fontSize: '0.9rem',
               }}
             >
-              Done
-            </Box>
-          )}
-
-          {/* Status gradient accent bar */}
-          <Box sx={{ height: 4, background: getStatusGradient(session.status) }} />
-
-          <CardContent sx={{ flexGrow: 1, p: 2.5, pb: 1 }}>
-            {/* Title + Menu */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-              <Box sx={{ flexGrow: 1, pr: 1 }}>
+              {session.sessionName.substring(0, 2).toUpperCase()}
+            </Avatar>
+            <Box>
+              <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem' }}>
+                {session.sessionName}
+              </Typography>
+              {session.description && (
                 <Typography
-                  variant="h6"
-                  component="h2"
-                  sx={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.3 }}
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 1,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
                 >
-                  {session.sessionName}
+                  {session.description}
                 </Typography>
-                {session.description && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      mt: 0.5,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {session.description}
-                  </Typography>
-                )}
-              </Box>
+              )}
+            </Box>
+          </Stack>
+        </Box>
+
+        {/* Status & Dates */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          {getStatusBadge()}
+          <Stack direction="row" spacing={1} mt={1} alignItems="center">
+            <CalendarTodayIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="caption" color="text.secondary">
+              {formatDate(session.plannedStartDate)}
+              {session.plannedEndDate && ` - ${formatDate(session.plannedEndDate)}`}
+            </Typography>
+          </Stack>
+        </Box>
+
+        {/* Statistics */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Stack spacing={0.5}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <SwapHorizIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
+              <Typography variant="body2" fontWeight={600}>
+                {session.completedWorkplaces} / {session.totalWorkplaces} swaps
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <PersonIcon sx={{ fontSize: 16, color: '#FF7700' }} />
+              <Typography variant="caption" color="text.secondary">
+                {session.createdBy}
+              </Typography>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* Progress Bar */}
+        <Box sx={{ display: { xs: 'none', md: 'block' }, minWidth: 120 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              Voortgang
+            </Typography>
+            <Typography
+              variant="caption"
+              fontWeight={700}
+              color={session.completionPercentage === 100 ? '#16a34a' : '#FF7700'}
+            >
+              {session.completionPercentage}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={session.completionPercentage}
+            sx={{
+              height: 6,
+              borderRadius: 3,
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.08)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: session.completionPercentage === 100 ? '#16a34a' : '#FF7700',
+                borderRadius: 3,
+              },
+            }}
+          />
+        </Box>
+
+        {/* Actions */}
+        <Stack direction="row" spacing={1} alignItems="center">
+          {canExecute && (
+            <Tooltip title="Uitvoeren">
               <IconButton
                 size="small"
-                onClick={(e) => onMenuOpen(e, session.id)}
-                sx={{ mt: -0.5 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExecute(session.id);
+                }}
+                sx={{
+                  bgcolor: 'rgba(34, 197, 94, 0.12)',
+                  color: '#22c55e',
+                  '&:hover': {
+                    bgcolor: 'rgba(34, 197, 94, 0.24)',
+                  },
+                }}
               >
-                <MoreVertIcon />
+                <PlayArrowIcon fontSize="small" />
               </IconButton>
-            </Box>
-
-            {/* Status chip - hide for completed (has Done stamp) */}
-            {!isComplete(session) && (
-              <Chip
-                label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
-                color={getStatusColor(session.status)}
+            </Tooltip>
+          )}
+          {isComplete && (
+            <Tooltip title="Rapportage">
+              <IconButton
                 size="small"
-                sx={{ mb: 2, fontWeight: 600, letterSpacing: '0.02em' }}
-              />
-            )}
-
-            {/* Report button for completed sessions */}
-            {isComplete(session) && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<AssessmentIcon />}
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(buildRoute.rolloutReport(session.id));
                 }}
                 sx={{
-                  mb: 2,
-                  borderColor: '#16a34a',
-                  color: '#16a34a',
-                  fontWeight: 600,
+                  bgcolor: 'rgba(59, 130, 246, 0.12)',
+                  color: '#3B82F6',
                   '&:hover': {
-                    borderColor: '#15803d',
-                    bgcolor: 'rgba(22, 163, 74, 0.08)',
+                    bgcolor: 'rgba(59, 130, 246, 0.24)',
                   },
                 }}
               >
-                Bekijk Rapport
-              </Button>
-            )}
-
-          {/* Info grid */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 1.5,
-              mb: 2,
-              p: 1.5,
-              borderRadius: 2,
-              bgcolor: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'rgba(255, 255, 255, 0.02)'
-                  : 'rgba(0, 0, 0, 0.015)',
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <CalendarTodayIcon sx={{ fontSize: '0.85rem', color: 'primary.main' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Start
-                </Typography>
-                <Typography variant="caption" fontWeight={600}>
-                  {formatDate(session.plannedStartDate)}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <CalendarTodayIcon sx={{ fontSize: '0.85rem', color: 'text.secondary' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Eind
-                </Typography>
-                <Typography variant="caption" fontWeight={600}>
-                  {session.plannedEndDate ? formatDate(session.plannedEndDate) : '—'}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <RocketLaunchIcon sx={{ fontSize: '0.85rem', color: 'primary.main' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Dagen
-                </Typography>
-                <Typography variant="caption" fontWeight={600}>
-                  {session.totalDays}
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <WorkspacesIcon sx={{ fontSize: '0.85rem', color: 'primary.main' }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Werkplekken
-                </Typography>
-                <Typography variant="caption" fontWeight={600}>
-                  {session.completedWorkplaces} / {session.totalWorkplaces}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Progress */}
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                Voortgang
-              </Typography>
-              <Typography variant="caption" fontWeight={700} color={session.completionPercentage === 100 ? 'success.main' : 'primary.main'}>
-                {session.completionPercentage}%
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={session.completionPercentage}
-              color={session.completionPercentage === 100 ? 'success' : 'warning'}
-              sx={{
-                height: 6,
-                borderRadius: 3,
-                bgcolor: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'rgba(255, 119, 0, 0.12)'
-                    : 'rgba(255, 119, 0, 0.08)',
-                '& .MuiLinearProgress-bar': session.completionPercentage < 100 ? {
-                  background: 'linear-gradient(90deg, #FF7700, #FF9233)',
-                } : undefined,
+                <AssessmentIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title={isExpanded ? 'Inklappen' : 'Uitklappen'}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpand();
               }}
-            />
-          </Box>
-        </CardContent>
+            >
+              {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            </IconButton>
+          </Tooltip>
+          <IconButton
+            size="small"
+            onClick={(e) => onMenuOpen(e, session.id)}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        </Stack>
+      </Box>
 
-        <CardActions
+      {/* Expandable Activity Section */}
+      <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+        <Divider />
+        <Box
           sx={{
-            px: 2.5,
-            py: 1.5,
-            borderTop: '1px solid',
-            borderColor: 'divider',
+            p: 2.5,
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <PersonIcon sx={{ fontSize: '0.85rem', color: 'primary.main' }} />
-            <Typography variant="caption" color="text.secondary">
-              {session.createdBy}
-            </Typography>
-          </Box>
-        </CardActions>
-      </Card>
-      ))}
-    </Box>
+          <ActivityList session={session} />
+        </Box>
+      </Collapse>
+    </Paper>
   );
 };
 
-// ===== TABLE VIEW =====
+// ===== ACTIVITY LIST COMPONENT =====
 
-const SessionTable = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionViewProps) => {
-  const navigate = useNavigate();
+interface ActivityListProps {
+  session: RolloutSession;
+}
+
+const ActivityList = ({ session }: ActivityListProps) => {
+  // Extract real activities from session data
+  const activities = useMemo(() => {
+    const items: Array<{
+      type: 'swap' | 'setup' | 'postponed' | 'pending';
+      userName: string;
+      oldDevice?: string;
+      newDevice?: string;
+      device?: string;
+      reason?: string;
+      timestamp: string;
+      status: string;
+    }> = [];
+
+    // Process workplaces from all days
+    session.days?.forEach((day) => {
+      day.workplaces?.forEach((workplace) => {
+        const isPostponed = workplace.scheduledDate && workplace.scheduledDate !== day.date;
+
+        if (isPostponed && workplace.status !== 'Completed') {
+          // Postponed workplace
+          items.push({
+            type: 'postponed',
+            userName: workplace.userName,
+            reason: `Uitgesteld naar ${new Date(workplace.scheduledDate!).toLocaleDateString('nl-NL')}`,
+            timestamp: formatRelativeTime(workplace.updatedAt),
+            status: 'postponed',
+          });
+        } else if (workplace.status === 'Completed') {
+          // Completed workplace - show swap info
+          const laptopPlan = workplace.assetPlans.find((p) => p.equipmentType === 'laptop' || p.equipmentType === 'desktop');
+          if (laptopPlan?.oldAssetCode && laptopPlan?.existingAssetCode) {
+            items.push({
+              type: 'swap',
+              userName: workplace.userName,
+              oldDevice: laptopPlan.oldAssetCode,
+              newDevice: laptopPlan.existingAssetCode,
+              timestamp: formatRelativeTime(workplace.completedAt || workplace.updatedAt),
+              status: 'completed',
+            });
+          } else if (workplace.isLaptopSetup) {
+            // Setup without swap
+            items.push({
+              type: 'setup',
+              userName: workplace.userName,
+              device: laptopPlan?.existingAssetCode || 'Nieuw toestel',
+              timestamp: formatRelativeTime(workplace.completedAt || workplace.updatedAt),
+              status: 'completed',
+            });
+          }
+        } else if (workplace.status === 'Pending' || workplace.status === 'Ready') {
+          // Pending workplace
+          items.push({
+            type: 'pending',
+            userName: workplace.userName,
+            timestamp: new Date(day.date).toLocaleDateString('nl-NL'),
+            status: 'pending',
+          });
+        }
+      });
+    });
+
+    // Sort by most recent first and limit to 5 items
+    return items.slice(0, 5);
+  }, [session]);
+
+  // Helper to format relative time
+  function formatRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} min geleden`;
+    if (diffHours < 24) return `${diffHours} uur geleden`;
+    if (diffDays === 1) return 'Gisteren';
+    if (diffDays < 7) return `${diffDays} dagen geleden`;
+    return date.toLocaleDateString('nl-NL');
+  }
 
   return (
-    <Card
-      elevation={0}
-      sx={{
-        ...scannerCardSx,
-        mb: 0,
-        overflow: 'hidden',
-      }}
-    >
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Naam</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Start</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Eind</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Voortgang</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Dagen</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Door</TableCell>
-              <TableCell sx={{ fontWeight: 700 }} align="right" />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sessions.map((session) => {
-              const isComplete = session.status === 'Completed';
-              return (
-                <TableRow
-                  key={session.id}
-                  hover
-                  sx={{
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s ease',
-                    ...(isComplete && { bgcolor: 'rgba(22, 163, 74, 0.03)' }),
-                  }}
-                  onClick={() => onEdit(session.id)}
-                >
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
-                      {session.sessionName}
-                    </Typography>
-                    {session.description && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 1,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {session.description}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isComplete ? (
-                      <Chip
-                        label="Done"
-                        size="small"
-                        icon={<AssessmentIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(buildRoute.rolloutReport(session.id));
-                        }}
-                        sx={{
-                          fontWeight: 700,
-                          bgcolor: '#16a34a',
-                          color: 'white',
-                          cursor: 'pointer',
-                          '& .MuiChip-icon': { color: 'white' },
-                          '&:hover': { bgcolor: '#15803d' },
-                        }}
-                      />
-                    ) : (
-                      <Chip
-                        label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
-                        color={getStatusColor(session.status)}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{formatDate(session.plannedStartDate)}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {session.plannedEndDate ? formatDate(session.plannedEndDate) : '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell sx={{ minWidth: 160 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={session.completionPercentage}
-                        color={session.completionPercentage === 100 ? 'success' : 'primary'}
-                        sx={{ height: 6, borderRadius: 3, flexGrow: 1 }}
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                        {session.completedWorkplaces}/{session.totalWorkplaces}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {session.totalDays}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {session.createdBy}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
+    <Box>
+      <Typography variant="subtitle2" fontWeight={700} mb={2} color="text.secondary">
+        Recente Activiteit
+      </Typography>
+
+      {activities.length === 0 ? (
+        <Box
+          sx={{
+            p: 3,
+            textAlign: 'center',
+            borderRadius: 2,
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)',
+          }}
+        >
+          <AccessTimeIcon sx={{ fontSize: 32, color: 'text.secondary', opacity: 0.5, mb: 1 }} />
+          <Typography variant="body2" color="text.secondary">
+            Nog geen activiteit geregistreerd
+          </Typography>
+        </Box>
+      ) : (
+        <Stack spacing={1.5}>
+          {activities.map((activity, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'var(--dark-bg-raised)' : 'background.paper',
+                boxShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'var(--neu-shadow-dark-sm)'
+                    : 'var(--neu-shadow-light-sm)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark' ? 'var(--dark-bg-elevated)' : 'rgba(255, 119, 0, 0.03)',
+                },
+              }}
+            >
+              {/* Icon */}
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor:
+                    activity.type === 'swap'
+                      ? 'rgba(59, 130, 246, 0.12)'
+                      : activity.type === 'setup'
+                      ? 'rgba(34, 197, 94, 0.12)'
+                      : activity.type === 'pending'
+                      ? 'rgba(108, 117, 125, 0.12)'
+                      : 'rgba(234, 179, 8, 0.12)',
+                  color:
+                    activity.type === 'swap'
+                      ? '#3B82F6'
+                      : activity.type === 'setup'
+                      ? '#22c55e'
+                      : activity.type === 'pending'
+                      ? '#6C757D'
+                      : '#eab308',
+                }}
+              >
+                {activity.type === 'swap' ? (
+                  <SwapHorizIcon sx={{ fontSize: 18 }} />
+                ) : activity.type === 'setup' ? (
+                  <BuildIcon sx={{ fontSize: 18 }} />
+                ) : activity.type === 'pending' ? (
+                  <ScheduleIcon sx={{ fontSize: 18 }} />
+                ) : (
+                  <EventBusyIcon sx={{ fontSize: 18 }} />
+                )}
+              </Avatar>
+
+              {/* Content */}
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25 }}>
+                  {activity.userName}
+                </Typography>
+                {activity.type === 'swap' ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Chip
+                      label={activity.oldDevice}
                       size="small"
-                      onClick={(e) => onMenuOpen(e, session.id)}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Card>
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        bgcolor: 'rgba(239, 68, 68, 0.12)',
+                        color: '#EF4444',
+                      }}
+                    />
+                    <ArrowForwardIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+                    <Chip
+                      label={activity.newDevice}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        bgcolor: 'rgba(34, 197, 94, 0.12)',
+                        color: '#22c55e',
+                      }}
+                    />
+                  </Stack>
+                ) : activity.type === 'setup' ? (
+                  <Typography variant="caption" color="text.secondary">
+                    Werkpositie opgezet - {activity.device}
+                  </Typography>
+                ) : activity.type === 'pending' ? (
+                  <Typography variant="caption" color="text.secondary">
+                    Gepland voor {activity.timestamp}
+                  </Typography>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    {activity.reason}
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Timestamp (not shown for pending - date is in content) */}
+              {activity.type !== 'pending' && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ whiteSpace: 'nowrap', fontSize: '0.7rem' }}
+                >
+                  {activity.timestamp}
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Stack>
+      )}
+    </Box>
   );
 };
 
