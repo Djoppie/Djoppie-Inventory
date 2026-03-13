@@ -4,6 +4,7 @@ description: "Use this agent when the user needs help with logo design, creating
 model: sonnet
 color: pink
 allowedTools:
+  - Skill(frontend-design:frontend-design)
   - Read
   - Write
   - Edit

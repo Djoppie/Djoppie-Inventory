@@ -2,27 +2,36 @@
 
 ## Executive Summary
 
-Dit rapport documenteert de optimalisatie van project-specifieke agents voor Djoppie Inventory. Na analyse en consolidatie zijn we gegaan van 9 naar 7 agents met betere afbakening en efficiëntie.
+Dit rapport documenteert de volledige optimalisatie van project-specifieke agents voor Djoppie Inventory. Na analyse en consolidatie zijn we gegaan van **9 naar 7 agents** met betere afbakening, skill-integratie, en efficiëntie.
+
+**Belangrijkste verbeteringen:**
+- 3 agent merges (Azure, Orchestrator, Frontend)
+- 1 nieuwe agent toegevoegd (test-engineer)
+- Skills gekoppeld aan alle relevante agents
+- allowedTools geconfigureerd voor alle agents
+- Model-efficiëntie verbeterd (opus → sonnet)
 
 ---
 
-## Huidige Agent Structuur (Na Optimalisatie)
+## Finale Agent Structuur (Volledig Geoptimaliseerd)
 
-| Agent | Model | Focus | Status |
-|-------|-------|-------|--------|
-| backend-architect | sonnet | ASP.NET Core, Azure, API Design, DB Migrations | Geoptimaliseerd |
-| frontend-architect | sonnet | React, TypeScript, Performance | Goed |
-| frontend-specialist | sonnet | UI/UX, MUI, Styling | Goed |
-| ui-design-expert | sonnet | Visueel Design, Logo's | Goed |
-| **azure-architect** | sonnet | Entra ID, Deployment, CI/CD, Key Vault | **NIEUW (Merged)** |
-| **project-coordinator** | sonnet | Architectuur, Forms/Lists, API Contracts | **NIEUW (Merged)** |
-| documentation-writer | sonnet | Technische Documentatie | Geoptimaliseerd |
+| Agent | Model | Focus | Skills | Status |
+|-------|-------|-------|--------|--------|
+| backend-architect | sonnet | ASP.NET Core, API Design, DB Migrations | api-design, architecture-patterns, dotnet-patterns | Geoptimaliseerd |
+| **frontend-developer** | sonnet | React, TypeScript, UI/UX, Performance | frontend-design | **NIEUW (Merged)** |
+| ui-design-expert | sonnet | Visueel Design, Logo's, Styling | frontend-design | Geoptimaliseerd |
+| **azure-architect** | sonnet | Entra ID, Deployment, CI/CD, Key Vault | cloud-architect, deployment-engineer | **NIEUW (Merged)** |
+| **project-coordinator** | sonnet | Architectuur, Forms/Lists, API Contracts | - | **NIEUW (Merged)** |
+| documentation-writer | sonnet | Technische Documentatie | api-documenter, docs-architect | Geoptimaliseerd |
+| **test-engineer** | sonnet | Unit/Integration/E2E Testing, TDD | testing-patterns, tdd-orchestrator | **NIEUW** |
 
-### Verwijderde Agents (Gemerged)
+### Verwijderde Agents (Gemerged/Geconsolideerd)
 - ~~azure-entra-deployment~~ → Gemerged naar `azure-architect`
 - ~~azure-deployment-architect~~ → Gemerged naar `azure-architect`
 - ~~project-orchestrator~~ → Gemerged naar `project-coordinator`
 - ~~workflow-coordinator~~ → Gemerged naar `project-coordinator`
+- ~~frontend-architect~~ → Gemerged naar `frontend-developer`
+- ~~frontend-specialist~~ → Gemerged naar `frontend-developer`
 
 ---
 
@@ -251,45 +260,45 @@ Dit rapport documenteert de optimalisatie van project-specifieke agents voor Djo
 ## Agent Structuur Evolutie
 
 ```
-ORIGINEEL (9 agents):                    HUIDIGE SITUATIE (7 agents):
-├── backend-architect                    ├── backend-architect ✅ (enhanced)
-├── frontend-architect      ─┐           ├── frontend-architect
-├── frontend-specialist     ─┤ OVERLAP   ├── frontend-specialist
-├── ui-design-expert       ─┘           ├── ui-design-expert
-├── azure-entra-deployment ─┬─ MERGED   ├── azure-architect ✅ (NEW)
+ORIGINEEL (9 agents):                    FINALE SITUATIE (7 agents):
+├── backend-architect                    ├── backend-architect ✅ (enhanced + skills)
+├── frontend-architect      ─┬─ MERGED   ├── frontend-developer ✅ (NEW)
+├── frontend-specialist     ─┘           │
+├── ui-design-expert                     ├── ui-design-expert ✅ (+ skills)
+├── azure-entra-deployment ─┬─ MERGED   ├── azure-architect ✅ (NEW + skills)
 ├── azure-deployment-architect ─┘        │
 ├── project-orchestrator   ─┬─ MERGED   ├── project-coordinator ✅ (NEW)
 ├── workflow-coordinator   ─┘           │
-└── documentation-writer                 └── documentation-writer ✅ (enhanced)
+└── documentation-writer                 ├── documentation-writer ✅ (+ skills)
+                                         └── test-engineer ✅ (NEW + skills)
 
-TOEKOMSTIGE MOGELIJKHEID (6 agents):
-├── backend-architect
-├── frontend-developer     (merge frontend-architect + frontend-specialist)
-├── ui-design-expert
-├── azure-architect
-├── project-coordinator
-├── documentation-writer
-└── test-engineer          (NEW - optioneel)
+RESULTAAT:
+✅ 9 → 7 agents (-2)
+✅ 3 merges voltooid
+✅ 1 nieuwe agent (test-engineer)
+✅ Skills gekoppeld aan 6 agents
+✅ allowedTools voor alle 7 agents
+✅ Model-efficiëntie: opus → sonnet
 ```
 
 ---
 
-## Prioriteiten
+## Prioriteiten - ALLE VOLTOOID
 
-### Hoog (Direct implementeren) - VOLTOOID
+### Hoog (Direct implementeren) - VOLTOOID ✅
 1. ~~Voeg `allowedTools` toe aan alle agents~~ ✅
 2. ~~Downgrade workflow-coordinator naar sonnet~~ ✅ (gemerged naar project-coordinator)
 3. ~~Voeg database migration expertise toe aan backend-architect~~ ✅
 
-### Medium (Deze sprint) - VOLTOOID
+### Medium (Deze sprint) - VOLTOOID ✅
 4. ~~Merge azure agents naar één azure-architect~~ ✅
 5. ~~Merge orchestrator agents naar project-coordinator~~ ✅
-6. Standaardiseer prompt-structuren (optioneel)
+6. ~~Standaardiseer prompt-structuren~~ ✅ (via skill-integratie)
 
-### Laag (Backlog)
-7. Consolideer frontend agents (frontend-architect + frontend-specialist)
-8. Voeg test-engineer agent toe
-9. Link skills aan agents
+### Laag (Backlog) - VOLTOOID ✅
+7. ~~Consolideer frontend agents (frontend-architect + frontend-specialist → frontend-developer)~~ ✅
+8. ~~Voeg test-engineer agent toe~~ ✅
+9. ~~Link skills aan agents~~ ✅
 
 ---
 
@@ -308,12 +317,13 @@ TOEKOMSTIGE MOGELIJKHEID (6 agents):
 ### Fase 1: Hoge Prioriteit (Voltooid 2026-03-13)
 
 1. **allowedTools toegevoegd aan alle agents**
-   - backend-architect: Read, Write, Edit, Glob, Grep, Bash
-   - frontend-architect: Read, Write, Edit, Glob, Grep, Bash
-   - ui-design-expert: Read, Write, Edit, Glob, Grep
-   - documentation-writer: Read, Write, Glob
-   - azure-architect: Read, Write, Edit, Glob, Grep, Bash
+   - backend-architect: Read, Write, Edit, Glob, Grep, Bash + Skills
+   - ui-design-expert: Read, Write, Edit, Glob, Grep + Skills
+   - documentation-writer: Read, Write, Glob + Skills
+   - azure-architect: Read, Write, Edit, Glob, Grep, Bash + Skills
    - project-coordinator: Read, Glob, Grep, Task
+   - frontend-developer: Read, Write, Edit, Glob, Grep, Bash + Skills
+   - test-engineer: Read, Write, Edit, Glob, Grep, Bash + Skills
 
 2. **workflow-coordinator gedowngrade van opus naar sonnet**
    - Gemerged naar project-coordinator met sonnet model
@@ -330,14 +340,36 @@ TOEKOMSTIGE MOGELIJKHEID (6 agents):
 4. **azure-architect gecreëerd**
    - Gemerged: azure-entra-deployment + azure-deployment-architect
    - Combineert: Entra ID expertise + Deployment methodologie
-   - Eén agent voor alle Azure-gerelateerde taken
+   - Skills: cloud-architect, deployment-engineer, terraform-specialist
 
 5. **project-coordinator gecreëerd**
    - Gemerged: project-orchestrator + workflow-coordinator
    - Combineert: Architectural leadership + Forms/Lists mastery + API contract design
    - Eén agent voor projectcoördinatie en feature planning
 
+### Fase 3: Lage Prioriteit (Voltooid 2026-03-13)
+
+6. **frontend-developer gecreëerd**
+   - Gemerged: frontend-architect + frontend-specialist
+   - Combineert: React/TypeScript expertise + UI/UX design + Performance optimization
+   - Skills: frontend-design
+
+7. **test-engineer toegevoegd (NIEUW)**
+   - Backend testing: xUnit, Moq, FluentAssertions
+   - Frontend testing: Vitest, React Testing Library
+   - E2E testing: Playwright
+   - TDD/BDD workflow support
+   - Skills: javascript-testing-patterns, e2e-testing-patterns, tdd-orchestrator
+
+8. **Skills gekoppeld aan alle relevante agents**
+   - backend-architect: api-design-principles, architecture-patterns, dotnet-backend-patterns
+   - azure-architect: cloud-architect, deployment-engineer, terraform-specialist
+   - documentation-writer: api-documenter, docs-architect, tutorial-engineer
+   - ui-design-expert: frontend-design
+   - frontend-developer: frontend-design
+   - test-engineer: javascript-testing-patterns, e2e-testing-patterns, tdd-orchestrator
+
 ---
 
 *Rapport gegenereerd: 2026-03-13*
-*Laatste update: 2026-03-13 (Medium prioriteit verbeteringen geïmplementeerd)*
+*Laatste update: 2026-03-13 (ALLE verbeteringen geïmplementeerd - Hoog, Medium, Laag)*

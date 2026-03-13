@@ -4,6 +4,9 @@ description: "Use this agent when the user needs assistance with backend archite
 model: sonnet
 color: purple
 allowedTools:
+  - Skill(backend-development:api-design-principles)
+  - Skill(backend-development:architecture-patterns)
+  - Skill(dotnet-contribution:dotnet-backend-patterns)
   - Read
   - Write
   - Edit

@@ -4,6 +4,9 @@ description: "Use this agent when you need to create installation guides, user m
 model: sonnet
 color: yellow
 allowedTools:
+  - Skill(documentation-generation:api-documenter)
+  - Skill(documentation-generation:docs-architect)
+  - Skill(documentation-generation:tutorial-engineer)
   - Read
   - Write
   - Glob

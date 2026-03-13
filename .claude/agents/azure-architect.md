@@ -4,6 +4,9 @@ description: "Use this agent for all Azure-related work including: deploying app
 model: sonnet
 color: green
 allowedTools:
+  - Skill(cloud-infrastructure:cloud-architect)
+  - Skill(cloud-infrastructure:deployment-engineer)
+  - Skill(cloud-infrastructure:terraform-specialist)
   - Read
   - Write
   - Edit
