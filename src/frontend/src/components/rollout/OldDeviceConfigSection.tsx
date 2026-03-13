@@ -17,15 +17,12 @@ import {
   TextField,
   Typography,
   useTheme,
-  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import LaptopIcon from '@mui/icons-material/Laptop';
-import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import HistoryIcon from '@mui/icons-material/History';
 import type { Asset } from '../../types/asset.types';
 

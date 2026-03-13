@@ -8,7 +8,6 @@
  * Features: Type selection, template assignment, serial numbers, visual summary
  */
 
-import type { SvgIconComponent } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -62,7 +61,6 @@ interface MultiDeviceConfigSectionProps {
 export const MultiDeviceConfigSection = ({
   devices,
   onChange,
-  showLegacyFields = false
 }: MultiDeviceConfigSectionProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';

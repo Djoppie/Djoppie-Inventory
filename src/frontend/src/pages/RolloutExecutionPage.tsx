@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -95,8 +95,8 @@ const RolloutExecutionPage = () => {
   const sessionId = Number(id);
   const initialDayId = searchParams.get('dayId') ? Number(searchParams.get('dayId')) : null;
 
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [initialDaySet, setInitialDaySet] = useState(false);
+  // User-selected day index (null = use URL initial or default to 0)
+  const [userSelectedDayIndex, setUserSelectedDayIndex] = useState<number | null>(null);
   const [expandedWorkplace, setExpandedWorkplace] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -110,16 +110,15 @@ const RolloutExecutionPage = () => {
   });
   const { data: days, isLoading: daysLoading } = useRolloutDays(sessionId);
 
-  // Set initial day from URL parameter
-  useEffect(() => {
-    if (!initialDaySet && days && days.length > 0 && initialDayId) {
+  // Derive selected day index: user selection takes precedence, then URL param, then 0
+  const selectedDayIndex = useMemo(() => {
+    if (userSelectedDayIndex !== null) return userSelectedDayIndex;
+    if (days && days.length > 0 && initialDayId) {
       const dayIndex = days.findIndex(d => d.id === initialDayId);
-      if (dayIndex !== -1) {
-        setSelectedDayIndex(dayIndex);
-      }
-      setInitialDaySet(true);
+      if (dayIndex !== -1) return dayIndex;
     }
-  }, [days, initialDayId, initialDaySet]);
+    return 0;
+  }, [days, initialDayId, userSelectedDayIndex]);
 
   const selectedDay = days?.[selectedDayIndex];
   const { data: workplaces, isLoading: workplacesLoading } = useRolloutWorkplaces(
@@ -145,7 +144,7 @@ const RolloutExecutionPage = () => {
   };
 
   const handleDayChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setSelectedDayIndex(newValue);
+    setUserSelectedDayIndex(newValue);
     setExpandedWorkplace(null);
   };
 

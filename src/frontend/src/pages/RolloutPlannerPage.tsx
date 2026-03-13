@@ -37,7 +37,6 @@ import ClearIcon from '@mui/icons-material/Clear';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
-import EventNoteIcon from '@mui/icons-material/EventNote';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import { useQuery } from '@tanstack/react-query';
 import {

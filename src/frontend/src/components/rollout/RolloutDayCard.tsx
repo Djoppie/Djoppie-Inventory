@@ -68,7 +68,6 @@ const RolloutDayCard = ({
 
   const isComplete = day.status === 'Completed';
   const isReady = day.status === 'Ready';
-  const isPlanning = day.status === 'Planning';
 
   // Status-based styling
   const getStatusStyles = () => {
