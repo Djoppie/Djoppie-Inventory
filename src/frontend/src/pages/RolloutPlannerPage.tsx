@@ -17,7 +17,6 @@ import {
   Alert,
   Tooltip,
   Checkbox,
-  ButtonGroup,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -39,9 +38,6 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import SortIcon from '@mui/icons-material/Sort';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { useQuery } from '@tanstack/react-query';
 import {
   useRolloutSession,
@@ -64,8 +60,10 @@ import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
 import BulkImportFromGraphDialog from '../components/rollout/BulkImportFromGraphDialog';
 import RolloutDayCard from '../components/rollout/RolloutDayCard';
-import PlanningOverview from '../components/rollout/PlanningOverview';
 import EmptyPlanningState from '../components/rollout/EmptyPlanningState';
+import PlanningStatusFilter, { PlanningStatusFilterValue } from '../components/rollout/PlanningStatusFilter';
+import PlanningDateHeader from '../components/rollout/PlanningDateHeader';
+import PlanningStatistics from '../components/rollout/PlanningStatistics';
 import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
 
 const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
@@ -881,12 +879,6 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
 };
 
 /**
- * Sort configuration types
- */
-type SortField = 'date' | 'service';
-type SortDirection = 'asc' | 'desc';
-
-/**
  * Rollout Planner Page - Create/edit rollout sessions with days and workplaces
  */
 const RolloutPlannerPage = () => {
@@ -901,9 +893,8 @@ const RolloutPlannerPage = () => {
   const [plannedStartDate, setPlannedStartDate] = useState('');
   const [plannedEndDate, setPlannedEndDate] = useState('');
 
-  // Sorting state
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  // Status filter state (replaces sorting)
+  const [statusFilter, setStatusFilter] = useState<PlanningStatusFilterValue>('all');
 
   // Dialog state
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
@@ -1118,46 +1109,75 @@ const RolloutPlannerPage = () => {
     });
   };
 
-  // Sorting handlers
-  const handleSortFieldChange = (field: SortField) => {
-    if (field === sortField) {
-      // Toggle direction if clicking the same field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // Change field and reset to ascending
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
+  // Status filter counts
+  const statusCounts = useMemo(() => {
+    if (!days) return { all: 0, Planning: 0, Ready: 0, Completed: 0 };
+    return {
+      all: days.length,
+      Planning: days.filter(d => d.status === 'Planning').length,
+      Ready: days.filter(d => d.status === 'Ready').length,
+      Completed: days.filter(d => d.status === 'Completed').length,
+    };
+  }, [days]);
 
-  const toggleSortDirection = () => {
-    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-  };
-
-  // Sorted days based on current sort configuration
-  const sortedDays = useMemo(() => {
+  // Filtered and sorted days based on status filter, grouped by date
+  const filteredDays = useMemo(() => {
     if (!days || days.length === 0) return [];
 
-    const sorted = [...days].sort((a, b) => {
-      let comparison = 0;
+    // First filter by status
+    let filtered = [...days];
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(d => d.status === statusFilter);
+    }
 
-      if (sortField === 'date') {
-        // Sort by date
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        comparison = dateA - dateB;
-      } else if (sortField === 'service') {
-        // Sort by service name (derived from planning name or service ID)
-        const nameA = a.name || `Planning ${a.dayNumber}`;
-        const nameB = b.name || `Planning ${b.dayNumber}`;
-        comparison = nameA.localeCompare(nameB, 'nl');
-      }
-
-      return sortDirection === 'asc' ? comparison : -comparison;
+    // Sort by date (earliest first)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
     });
 
-    return sorted;
-  }, [days, sortField, sortDirection]);
+    return filtered;
+  }, [days, statusFilter]);
+
+  // Group days by date for date headers
+  const daysGroupedByDate = useMemo(() => {
+    const groups: Map<string, RolloutDay[]> = new Map();
+
+    for (const day of filteredDays) {
+      const dateKey = day.date.split('T')[0];
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, []);
+      }
+      groups.get(dateKey)!.push(day);
+    }
+
+    return groups;
+  }, [filteredDays]);
+
+  // Calculate postponed count per date (workplaces rescheduled TO that date)
+  const postponedByDate = useMemo(() => {
+    const postponed: Map<string, number> = new Map();
+
+    if (!days) return postponed;
+
+    for (const day of days) {
+      if (!day.workplaces) continue;
+      for (const wp of day.workplaces) {
+        if (wp.scheduledDate) {
+          const wpDate = wp.scheduledDate.split('T')[0];
+          const dayDate = day.date.split('T')[0];
+          // Count workplaces rescheduled to a different date
+          if (wpDate !== dayDate) {
+            const current = postponed.get(wpDate) || 0;
+            postponed.set(wpDate, current + 1);
+          }
+        }
+      }
+    }
+
+    return postponed;
+  }, [days]);
 
   if (sessionLoading || daysLoading) {
     return <Loading />;
@@ -1362,260 +1382,184 @@ const RolloutPlannerPage = () => {
       {/* Days Management - Only show in edit mode */}
       {isEditMode && session && (
         <>
-          {/* Planning Overview - Only show if there are days */}
+          {/* Statistics Panel - Shows 5-day progress with postponement tracking */}
           {days && days.length > 0 && (
-            <PlanningOverview days={days} />
+            <PlanningStatistics
+              days={days}
+              targetDays={5}
+              targetWorkstations={64}
+            />
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              Planningen ({days?.length || 0})
+          {/* Header with title and add button */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+              mb: 3,
+              p: 2,
+              borderRadius: 3,
+              bgcolor: theme => theme.palette.mode === 'dark'
+                ? 'var(--dark-bg-elevated)'
+                : 'background.paper',
+              boxShadow: theme => theme.palette.mode === 'dark'
+                ? 'var(--neu-shadow-dark-md)'
+                : 'var(--neu-shadow-light-md)',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Planningen ({filteredDays.length}{statusFilter !== 'all' ? ` van ${days?.length || 0}` : ''})
             </Typography>
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<AddIcon />}
               disabled={session.status === 'Completed' || session.status === 'Cancelled'}
               onClick={() => handleOpenDayDialog()}
+              sx={{
+                bgcolor: '#FF7700',
+                fontWeight: 600,
+                px: 3,
+                '&:hover': { bgcolor: '#e66a00' },
+              }}
             >
               Planning Toevoegen
             </Button>
           </Box>
 
-          {/* Sorting Controls - Only show when there are multiple plannings */}
+          {/* Status Filter - Replaces sorting controls */}
           {days && days.length > 1 && (
-            <Paper
-              elevation={0}
-              sx={{
-                mb: 2,
-                p: 1.5,
-                border: '1px solid',
-                borderColor: 'rgba(255, 119, 0, 0.15)',
-                borderRadius: 2,
-                background: 'linear-gradient(135deg, rgba(255, 119, 0, 0.03) 0%, transparent 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: 'rgba(255, 119, 0, 0.3)',
-                  boxShadow: '0 2px 8px rgba(255, 119, 0, 0.08)',
-                },
-              }}
-            >
-              {/* Sort Label */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SortIcon sx={{ fontSize: 20, color: '#FF7700' }} />
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    color: 'text.secondary',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  Sorteren:
-                </Typography>
-              </Box>
-
-              {/* Sort Field Buttons */}
-              <ButtonGroup
-                size="small"
-                variant="outlined"
-                sx={{
-                  '& .MuiButtonGroup-grouped': {
-                    borderColor: 'rgba(255, 119, 0, 0.3)',
-                    '&:not(:last-of-type)': {
-                      borderRightColor: 'rgba(255, 119, 0, 0.3)',
-                    },
-                  },
-                }}
-              >
-                <Button
-                  onClick={() => handleSortFieldChange('date')}
-                  variant={sortField === 'date' ? 'contained' : 'outlined'}
-                  startIcon={<CalendarTodayIcon sx={{ fontSize: '0.9rem !important' }} />}
-                  sx={{
-                    px: 2,
-                    py: 0.75,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    bgcolor: sortField === 'date' ? '#FF7700' : 'transparent',
-                    color: sortField === 'date' ? '#fff' : '#FF7700',
-                    borderColor: sortField === 'date' ? '#FF7700' : 'rgba(255, 119, 0, 0.3)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      bgcolor: sortField === 'date' ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
-                      borderColor: '#FF7700',
-                    },
-                    '& .MuiButton-startIcon': {
-                      color: sortField === 'date' ? '#fff' : '#FF7700',
-                    },
-                  }}
-                >
-                  Datum
-                </Button>
-                <Button
-                  onClick={() => handleSortFieldChange('service')}
-                  variant={sortField === 'service' ? 'contained' : 'outlined'}
-                  startIcon={<GroupsIcon sx={{ fontSize: '0.9rem !important' }} />}
-                  sx={{
-                    px: 2,
-                    py: 0.75,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    bgcolor: sortField === 'service' ? '#FF7700' : 'transparent',
-                    color: sortField === 'service' ? '#fff' : '#FF7700',
-                    borderColor: sortField === 'service' ? '#FF7700' : 'rgba(255, 119, 0, 0.3)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      bgcolor: sortField === 'service' ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
-                      borderColor: '#FF7700',
-                    },
-                    '& .MuiButton-startIcon': {
-                      color: sortField === 'service' ? '#fff' : '#FF7700',
-                    },
-                  }}
-                >
-                  Dienst
-                </Button>
-              </ButtonGroup>
-
-              {/* Sort Direction Toggle */}
-              <Tooltip
-                title={sortDirection === 'asc' ? 'Oplopend (A-Z, 1-9)' : 'Aflopend (Z-A, 9-1)'}
-                placement="top"
-              >
-                <IconButton
-                  size="small"
-                  onClick={toggleSortDirection}
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    bgcolor: 'rgba(255, 119, 0, 0.1)',
-                    border: '2px solid rgba(255, 119, 0, 0.3)',
-                    color: '#FF7700',
-                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      bgcolor: '#FF7700',
-                      color: '#fff',
-                      borderColor: '#FF7700',
-                      transform: 'rotate(180deg) scale(1.1)',
-                      boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
-                    },
-                  }}
-                >
-                  {sortDirection === 'asc' ? (
-                    <ArrowUpwardIcon sx={{ fontSize: 18 }} />
-                  ) : (
-                    <ArrowDownwardIcon sx={{ fontSize: 18 }} />
-                  )}
-                </IconButton>
-              </Tooltip>
-
-              {/* Active Sort Description */}
-              <Typography
-                variant="caption"
-                sx={{
-                  ml: 'auto',
-                  color: 'text.secondary',
-                  fontSize: '0.75rem',
-                  fontStyle: 'italic',
-                }}
-              >
-                {sortField === 'date'
-                  ? sortDirection === 'asc'
-                    ? 'Vroegste eerst'
-                    : 'Laatste eerst'
-                  : sortDirection === 'asc'
-                    ? 'A → Z'
-                    : 'Z → A'}
-              </Typography>
-            </Paper>
+            <Box sx={{ mb: 3 }}>
+              <PlanningStatusFilter
+                value={statusFilter}
+                onChange={setStatusFilter}
+                counts={statusCounts}
+              />
+            </Box>
           )}
-
-          {/* Legend */}
-          {days && days.length > 1 && (() => {
-            const uniqueServices = new Map<number, string>();
-            for (const day of days) {
-              const svcId = day.scheduledServiceIds?.[0];
-              if (svcId && !uniqueServices.has(svcId)) {
-                uniqueServices.set(svcId, day.name || `Planning ${day.dayNumber}`);
-              }
-            }
-            if (uniqueServices.size <= 1) return null;
-            return (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-                {Array.from(uniqueServices.entries()).map(([svcId, label]) => {
-                  const color = getServiceColor(svcId);
-                  return (
-                    <Box key={svcId} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: color.bg, flexShrink: 0 }} />
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {label}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: '#16a34a', flexShrink: 0 }} />
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Voltooid
-                  </Typography>
-                </Box>
-              </Box>
-            );
-          })()}
 
           {!days || days.length === 0 ? (
             <EmptyPlanningState
               onAddPlanning={() => handleOpenDayDialog()}
               disabled={session.status === 'Completed' || session.status === 'Cancelled'}
             />
+          ) : filteredDays.length === 0 ? (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                borderRadius: 3,
+                bgcolor: theme => theme.palette.mode === 'dark'
+                  ? 'var(--dark-bg-elevated)'
+                  : 'background.paper',
+                boxShadow: theme => theme.palette.mode === 'dark'
+                  ? 'var(--neu-shadow-dark-md)'
+                  : 'var(--neu-shadow-light-md)',
+              }}
+            >
+              <Typography color="text.secondary" sx={{ fontWeight: 500 }}>
+                Geen planningen gevonden met status "{statusFilter === 'Planning' ? 'Gepland' : statusFilter === 'Ready' ? 'In Uitvoering' : 'Voltooid'}"
+              </Typography>
+              <Button
+                variant="text"
+                onClick={() => setStatusFilter('all')}
+                sx={{ mt: 2, color: '#FF7700' }}
+              >
+                Toon alle planningen
+              </Button>
+            </Paper>
           ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {sortedDays.map((day) => {
-                const daySvcId = day.scheduledServiceIds?.[0] || day.id;
-                const dayColor = getServiceColor(daySvcId);
-                // Count ready workplaces
-                const readyCount = day.workplaces?.filter(wp => wp.status === 'Ready').length || 0;
-                // Count rescheduled workplaces (those with scheduledDate different from day date)
-                const dayDateKey = day.date.split('T')[0];
-                const rescheduledCount = day.workplaces?.filter(wp => {
-                  if (!wp.scheduledDate) return false;
-                  const wpDateKey = wp.scheduledDate.split('T')[0];
-                  return wpDateKey !== dayDateKey;
-                }).length || 0;
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Group plannings by date with date headers */}
+              {Array.from(daysGroupedByDate.entries()).map(([dateKey, daysForDate]) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const dateObj = new Date(dateKey);
+                dateObj.setHours(0, 0, 0, 0);
+                const isToday = dateObj.getTime() === today.getTime();
+                const isPast = dateObj.getTime() < today.getTime();
+                const isFuture = dateObj.getTime() > today.getTime();
+
+                // Calculate totals for this date
+                const totalWorkplaces = daysForDate.reduce((sum, d) => sum + d.totalWorkplaces, 0);
+                const completedWorkplaces = daysForDate.reduce((sum, d) => sum + d.completedWorkplaces, 0);
+                const postponedCount = postponedByDate.get(dateKey) || 0;
+
                 return (
-                  <RolloutDayCard
-                    key={day.id}
-                    day={day}
-                    serviceColor={dayColor}
-                    isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
-                    isPending={dayStatusMutation.isPending}
-                    readyCount={readyCount}
-                    rescheduledCount={rescheduledCount}
-                    canExecute={readyCount > 0}
-                    onEdit={() => handleOpenDayDialog(day)}
-                    onDelete={() => handleDeleteDay(day)}
-                    onPrint={() => handleBulkPrint(day.id)}
-                    onExecute={() => navigate(`/rollouts/${session.id}/execute?dayId=${day.id}`)}
-                    onSetPlanning={() => handleDayStatus(day, 'Planning')}
-                  >
-                    <WorkplaceList
-                      dayId={day.id}
-                      sessionStatus={session.status}
-                      onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
-                      onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
-                      onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
-                      onImportFromGraph={() => {
-                        const serviceId = day.scheduledServiceIds?.[0];
-                        const service = serviceId ? services.find(s => s.id === serviceId) : undefined;
-                        handleOpenImportGraphDialog(day.id, serviceId, service?.name);
-                      }}
+                  <Box key={dateKey}>
+                    {/* Date Header */}
+                    <PlanningDateHeader
+                      date={dateKey}
+                      totalWorkplaces={totalWorkplaces}
+                      completedWorkplaces={completedWorkplaces}
+                      postponedCount={postponedCount}
+                      planningCount={daysForDate.length}
+                      isToday={isToday}
+                      isPast={isPast}
+                      isFuture={isFuture}
                     />
-                  </RolloutDayCard>
+
+                    {/* Planning cards for this date */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        pl: { xs: 0, sm: 2 },
+                        borderLeft: { xs: 'none', sm: '2px solid' },
+                        borderLeftColor: { xs: 'transparent', sm: isToday ? '#FF7700' : 'divider' },
+                        ml: { xs: 0, sm: 3 },
+                        mb: 2,
+                      }}
+                    >
+                      {daysForDate.map((day) => {
+                        const daySvcId = day.scheduledServiceIds?.[0] || day.id;
+                        const dayColor = getServiceColor(daySvcId);
+                        // Count ready workplaces
+                        const readyCount = day.workplaces?.filter(wp => wp.status === 'Ready').length || 0;
+                        // Count rescheduled workplaces (those with scheduledDate different from day date)
+                        const dayDateKey = day.date.split('T')[0];
+                        const rescheduledCount = day.workplaces?.filter(wp => {
+                          if (!wp.scheduledDate) return false;
+                          const wpDateKey = wp.scheduledDate.split('T')[0];
+                          return wpDateKey !== dayDateKey;
+                        }).length || 0;
+                        return (
+                          <RolloutDayCard
+                            key={day.id}
+                            day={day}
+                            serviceColor={dayColor}
+                            isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
+                            isPending={dayStatusMutation.isPending}
+                            readyCount={readyCount}
+                            rescheduledCount={rescheduledCount}
+                            canExecute={readyCount > 0}
+                            onEdit={() => handleOpenDayDialog(day)}
+                            onDelete={() => handleDeleteDay(day)}
+                            onPrint={() => handleBulkPrint(day.id)}
+                            onExecute={() => navigate(`/rollouts/${session.id}/execute?dayId=${day.id}`)}
+                            onSetPlanning={() => handleDayStatus(day, 'Planning')}
+                          >
+                            <WorkplaceList
+                              dayId={day.id}
+                              sessionStatus={session.status}
+                              onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
+                              onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
+                              onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
+                              onImportFromGraph={() => {
+                                const serviceId = day.scheduledServiceIds?.[0];
+                                const service = serviceId ? services.find(s => s.id === serviceId) : undefined;
+                                handleOpenImportGraphDialog(day.id, serviceId, service?.name);
+                              }}
+                            />
+                          </RolloutDayCard>
+                        );
+                      })}
+                    </Box>
+                  </Box>
                 );
               })}
             </Box>
