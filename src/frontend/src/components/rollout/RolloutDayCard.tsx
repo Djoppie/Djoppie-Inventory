@@ -15,9 +15,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import PeopleIcon from '@mui/icons-material/People';
+import GroupsIcon from '@mui/icons-material/Groups';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import type { RolloutDay } from '../../types/rollout';
 
 interface RolloutDayCardProps {
@@ -25,10 +27,16 @@ interface RolloutDayCardProps {
   serviceColor: { bg: string; text: string };
   isEditable: boolean;
   isPending: boolean;
+  /** Count of workplaces with status 'Ready' */
+  readyCount?: number;
+  /** Count of workplaces with custom scheduledDate different from day.date */
+  rescheduledCount?: number;
+  /** Whether this planning can be executed (has ready workplaces) */
+  canExecute?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onPrint: () => void;
-  onSetReady: () => void;
+  onExecute?: () => void;
   onSetPlanning: () => void;
   children: React.ReactNode;
 }
@@ -42,10 +50,13 @@ const RolloutDayCard = ({
   serviceColor,
   isEditable,
   isPending,
+  readyCount = 0,
+  rescheduledCount = 0,
+  canExecute = false,
   onEdit,
   onDelete,
   onPrint,
-  onSetReady,
+  onExecute,
   onSetPlanning,
   children,
 }: RolloutDayCardProps) => {
@@ -76,9 +87,9 @@ const RolloutDayCard = ({
         borderColor: '#22c55e',
         bgGradient: 'linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.01) 100%)',
         statusColor: '#22c55e',
-        statusBg: 'transparent',
+        statusBg: 'rgba(34, 197, 94, 0.1)',
         statusLabel: 'Gereed',
-        glow: '0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1)',
+        glow: 'none',
       };
     }
     // Planning
@@ -140,23 +151,11 @@ const RolloutDayCard = ({
         }}
         onClick={() => setExpanded(!expanded)}
       >
-        {/* Service Color Indicator */}
-        <Box
-          sx={{
-            width: 12,
-            height: 12,
-            borderRadius: '50%',
-            bgcolor: serviceColor.bg,
-            flexShrink: 0,
-            boxShadow: `0 0 0 3px ${serviceColor.bg}20`,
-            transition: 'transform 0.2s ease',
-            transform: expanded ? 'scale(1.2)' : 'scale(1)',
-          }}
-        />
-
         {/* Planning Info */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+            {/* Planning Icon */}
+            <EventNoteIcon sx={{ fontSize: 22, color: serviceColor.bg }} />
             <Typography
               variant="h6"
               sx={{
@@ -168,7 +167,7 @@ const RolloutDayCard = ({
               {day.name || `Planning ${day.dayNumber}`}
             </Typography>
 
-            {/* Status Badge with Glow */}
+            {/* Status Badge */}
             <Chip
               label={statusStyles.statusLabel}
               size="small"
@@ -177,24 +176,28 @@ const RolloutDayCard = ({
                 color: statusStyles.statusColor,
                 fontWeight: 700,
                 fontSize: '0.75rem',
-                border: `1px solid ${statusStyles.statusColor}${isReady ? '80' : '40'}`,
-                boxShadow: statusStyles.glow,
-                textShadow: isReady ? `0 0 10px ${statusStyles.statusColor}40` : 'none',
-                animation: isReady ? 'pulse-glow 2s ease-in-out infinite' : 'none',
-                '@keyframes pulse-glow': {
+                border: `1px solid ${statusStyles.statusColor}40`,
+                transition: 'all 0.3s ease',
+                animation: 'subtle-pulse 3s ease-in-out infinite',
+                '@keyframes subtle-pulse': {
                   '0%, 100%': {
-                    boxShadow: '0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1)',
+                    transform: 'scale(1)',
+                    opacity: 1,
                   },
                   '50%': {
-                    boxShadow: '0 0 30px rgba(34, 197, 94, 0.5), 0 0 60px rgba(34, 197, 94, 0.2)',
+                    transform: 'scale(1.02)',
+                    opacity: 0.9,
                   },
+                },
+                '&:hover': {
+                  transform: 'scale(1.05)',
                 },
               }}
             />
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            {/* Date with Reschedule Visual Hint */}
+            {/* Date Chip with Service Color */}
             <Tooltip title="Datum kan aangepast worden via bewerken" placement="top">
               <Box
                 sx={{
@@ -204,15 +207,15 @@ const RolloutDayCard = ({
                   px: 1,
                   py: 0.25,
                   borderRadius: 1,
-                  bgcolor: 'rgba(255, 119, 0, 0.08)',
-                  border: '1px solid rgba(255, 119, 0, 0.2)',
+                  bgcolor: `${serviceColor.bg}15`,
+                  border: `1px solid ${serviceColor.bg}40`,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    bgcolor: 'rgba(255, 119, 0, 0.12)',
-                    borderColor: 'rgba(255, 119, 0, 0.4)',
+                    bgcolor: `${serviceColor.bg}25`,
+                    borderColor: `${serviceColor.bg}60`,
                     transform: 'translateY(-1px)',
-                    boxShadow: '0 2px 8px rgba(255, 119, 0, 0.15)',
+                    boxShadow: `0 2px 8px ${serviceColor.bg}20`,
                   },
                 }}
                 onClick={(e) => {
@@ -220,8 +223,8 @@ const RolloutDayCard = ({
                   onEdit();
                 }}
               >
-                <CalendarTodayIcon sx={{ fontSize: '0.85rem', color: '#FF7700' }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#FF7700', fontSize: '0.8rem' }}>
+                <CalendarTodayIcon sx={{ fontSize: '0.85rem', color: serviceColor.bg }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: serviceColor.text, fontSize: '0.8rem' }}>
                   {new Date(day.date).toLocaleDateString('nl-NL', {
                     weekday: 'short',
                     day: 'numeric',
@@ -233,11 +236,47 @@ const RolloutDayCard = ({
 
             {/* Workplace Count */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <PeopleIcon sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
+              <GroupsIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                 {day.totalWorkplaces} {day.totalWorkplaces === 1 ? 'werkplek' : 'werkplekken'}
               </Typography>
             </Box>
+
+            {/* Ready Workplaces Count */}
+            {readyCount > 0 && (
+              <Chip
+                icon={<CheckCircleOutlineIcon sx={{ fontSize: '0.9rem !important' }} />}
+                label={`${readyCount} gereed`}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: 'rgba(34, 197, 94, 0.1)',
+                  color: '#22c55e',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  '& .MuiChip-icon': { color: '#22c55e' },
+                }}
+              />
+            )}
+
+            {/* Rescheduled Workplaces Count */}
+            {rescheduledCount > 0 && (
+              <Chip
+                icon={<CalendarTodayIcon sx={{ fontSize: '0.8rem !important' }} />}
+                label={`${rescheduledCount} uitgesteld`}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: 'rgba(33, 150, 243, 0.1)',
+                  color: '#1976d2',
+                  border: '1px dashed rgba(33, 150, 243, 0.4)',
+                  '& .MuiChip-icon': { color: '#1976d2' },
+                }}
+              />
+            )}
 
             {/* Progress Indicator */}
             {day.totalWorkplaces > 0 && (
@@ -298,117 +337,151 @@ const RolloutDayCard = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Status Toggle */}
-          {isPlanning && day.totalWorkplaces > 0 && (
-            <Tooltip title="Markeer als gereed voor uitvoering">
-              <IconButton
-                size="small"
-                onClick={onSetReady}
-                disabled={isPending}
-                sx={{
-                  color: 'rgba(22, 163, 74, 0.7)',
-                  '&:hover': {
+          {/* Execute Button - Show when planning can be executed */}
+          {canExecute && onExecute && (
+            <Tooltip title="Start uitvoering">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onExecute}
+                  disabled={isPending}
+                  sx={{
                     color: '#16a34a',
-                    bgcolor: 'rgba(22, 163, 74, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <CheckCircleOutlineIcon fontSize="small" />
-              </IconButton>
+                    bgcolor: 'rgba(22, 163, 74, 0.1)',
+                    border: '1px solid rgba(22, 163, 74, 0.3)',
+                    '&:hover:not(:disabled)': {
+                      color: '#fff',
+                      bgcolor: '#16a34a',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <PlayArrowIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           )}
 
           {isReady && (
             <Tooltip title="Terugzetten naar planning">
-              <IconButton
-                size="small"
-                onClick={onSetPlanning}
-                disabled={isPending}
-                sx={{
-                  color: 'rgba(234, 179, 8, 0.7)',
-                  '&:hover': {
-                    color: '#eab308',
-                    bgcolor: 'rgba(234, 179, 8, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onSetPlanning}
+                  disabled={isPending}
+                  sx={{
+                    color: 'rgba(234, 179, 8, 0.7)',
+                    '&:hover:not(:disabled)': {
+                      color: '#eab308',
+                      bgcolor: 'rgba(234, 179, 8, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           )}
 
           {/* Edit */}
           <Tooltip title="Bewerken">
-            <IconButton
-              size="small"
-              onClick={onEdit}
-              disabled={!isEditable}
-              sx={{
-                color: 'rgba(255, 119, 0, 0.6)',
-                '&:hover': {
-                  color: '#FF7700',
-                  bgcolor: 'rgba(255, 119, 0, 0.08)',
-                  transform: 'scale(1.1)',
-                },
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onEdit}
+                disabled={!isEditable}
+                sx={{
+                  color: 'rgba(255, 119, 0, 0.6)',
+                  '&:hover:not(:disabled)': {
+                    color: '#FF7700',
+                    bgcolor: 'rgba(255, 119, 0, 0.08)',
+                    transform: 'scale(1.1)',
+                  },
+                  '&:disabled': {
+                    opacity: 0.5,
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
 
           {/* Print */}
           <Tooltip title="Print QR codes">
-            <IconButton
-              size="small"
-              onClick={onPrint}
-              disabled={!isEditable}
-              sx={{
-                color: 'rgba(59, 130, 246, 0.6)',
-                '&:hover': {
-                  color: '#3B82F6',
-                  bgcolor: 'rgba(59, 130, 246, 0.08)',
-                  transform: 'scale(1.1)',
-                },
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <PrintIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onPrint}
+                disabled={!isEditable}
+                sx={{
+                  color: 'rgba(59, 130, 246, 0.6)',
+                  '&:hover:not(:disabled)': {
+                    color: '#3B82F6',
+                    bgcolor: 'rgba(59, 130, 246, 0.08)',
+                    transform: 'scale(1.1)',
+                  },
+                  '&:disabled': {
+                    opacity: 0.5,
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <PrintIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
 
           {/* Delete */}
           <Tooltip title="Verwijderen">
-            <IconButton
-              size="small"
-              onClick={onDelete}
-              disabled={!isEditable}
-              sx={{
-                color: 'rgba(239, 68, 68, 0.6)',
-                '&:hover': {
-                  color: '#EF4444',
-                  bgcolor: 'rgba(239, 68, 68, 0.08)',
-                  transform: 'scale(1.1)',
-                },
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+            <span>
+              <IconButton
+                size="small"
+                onClick={onDelete}
+                disabled={!isEditable}
+                sx={{
+                  color: 'rgba(239, 68, 68, 0.6)',
+                  '&:hover:not(:disabled)': {
+                    color: '#EF4444',
+                    bgcolor: 'rgba(239, 68, 68, 0.08)',
+                    transform: 'scale(1.1)',
+                  },
+                  '&:disabled': {
+                    opacity: 0.5,
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
 
           {/* Expand Toggle */}
           <IconButton
             size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
             sx={{
               transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
               transition: 'transform 0.3s ease',
               color: 'text.secondary',
               ml: 0.5,
+              '&:hover': {
+                bgcolor: 'rgba(0, 0, 0, 0.08)',
+              },
             }}
           >
             <ExpandMoreIcon />

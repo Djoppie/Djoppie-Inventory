@@ -383,6 +383,7 @@ public class RolloutsController : ControllerBase
             UserName = dto.UserName,
             UserEmail = dto.UserEmail,
             Location = dto.Location,
+            ScheduledDate = dto.ScheduledDate,
             ServiceId = dto.ServiceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans),
@@ -420,6 +421,7 @@ public class RolloutsController : ControllerBase
         workplace.UserName = dto.UserName;
         workplace.UserEmail = dto.UserEmail;
         workplace.Location = dto.Location;
+        workplace.ScheduledDate = dto.ScheduledDate;
         workplace.ServiceId = dto.ServiceId;
         workplace.IsLaptopSetup = dto.IsLaptopSetup;
         workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
@@ -1633,6 +1635,7 @@ public class RolloutsController : ControllerBase
             UserName = workplace.UserName,
             UserEmail = workplace.UserEmail,
             Location = workplace.Location,
+            ScheduledDate = workplace.ScheduledDate,
             ServiceId = workplace.ServiceId,
             ServiceName = workplace.Service?.Name,
             IsLaptopSetup = workplace.IsLaptopSetup,

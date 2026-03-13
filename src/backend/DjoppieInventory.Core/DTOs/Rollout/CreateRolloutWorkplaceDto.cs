@@ -21,6 +21,11 @@ public class CreateRolloutWorkplaceDto
     [StringLength(200, ErrorMessage = "Location cannot exceed 200 characters")]
     public string? Location { get; set; }
 
+    /// <summary>
+    /// Custom scheduled date for this workplace. When null, uses the date from RolloutDay.
+    /// </summary>
+    public DateTime? ScheduledDate { get; set; }
+
     public int? ServiceId { get; set; }
 
     public bool IsLaptopSetup { get; set; } = true;

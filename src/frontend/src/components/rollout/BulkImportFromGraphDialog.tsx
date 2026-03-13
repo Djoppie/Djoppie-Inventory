@@ -612,9 +612,17 @@ export default function BulkImportFromGraphDialog({
                     sx={{ flexGrow: 1 }}
                   />
                   <Tooltip title={allSelected ? t('common.deselectAll', 'Alles deselecteren') : t('common.selectAll', 'Alles selecteren')}>
-                    <IconButton onClick={handleSelectAll} disabled={filteredUsers.length === 0}>
-                      {allSelected ? <CheckBoxIcon sx={{ color: '#FF7700' }} /> : <CheckBoxOutlineBlankIcon />}
-                    </IconButton>
+                    <span>
+                      <IconButton
+                        onClick={handleSelectAll}
+                        disabled={filteredUsers.length === 0}
+                        sx={{
+                          '&:disabled': { opacity: 0.5 },
+                        }}
+                      >
+                        {allSelected ? <CheckBoxIcon sx={{ color: '#FF7700' }} /> : <CheckBoxOutlineBlankIcon />}
+                      </IconButton>
+                    </span>
                   </Tooltip>
                   <Typography variant="body2" color="text.secondary">
                     {selectedUserIds.size} / {filteredUsers.length}

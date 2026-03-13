@@ -5,6 +5,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Asset Management
 
 ### Core Operations
+
 - Create, read, update, and delete IT assets
 - Auto-generated asset codes (PREFIX-0001 to PREFIX-8999)
 - Template library for quick asset creation
@@ -14,6 +15,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Import/export functionality
 
 ### Asset Tracking
+
 - Six operational states: InGebruik, Stock, Herstelling, Defect, UitDienst, Nieuw
 - Owner assignment with job title and office location
 - Building and service (department) assignment
@@ -24,6 +26,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Additional notes field
 
 ### Status Management
+
 | Status | Dutch | Description |
 |--------|-------|-------------|
 | InGebruik | In gebruik | Asset actively in use |
@@ -36,12 +39,14 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Intune Integration
 
 ### Device Synchronization
+
 - Fetch managed devices from Microsoft Intune
 - Real-time device health monitoring
 - Compliance status tracking
 - Automatic hardware inventory updates
 
 ### Device Information
+
 - Device name, manufacturer, model
 - Operating system and version
 - Serial number matching
@@ -51,6 +56,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Management agent details
 
 ### Live Status Features
+
 - Current compliance state
 - Storage usage percentage
 - Encryption status
@@ -60,6 +66,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Health status: Healthy, Warning, Critical
 
 ### Provisioning Timeline
+
 - Autopilot registration tracking
 - Device enrollment (OOBE) progress
 - ESP (Enrollment Status Page) phases:
@@ -72,18 +79,21 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Rollout Planner
 
 ### Session Management
+
 - Create rollout sessions (e.g., "Q1 2026 Laptop Refresh")
 - Session status tracking: Planning, Ready, InProgress, Completed, Cancelled
 - Planned start and end dates
 - Creator tracking with email
 
 ### Day Planning
+
 - Multiple rollout days per session
 - Day-specific ordering
 - Date assignment for each day
 - Status tracking per day
 
 ### Workplace Execution
+
 - Individual workplace entries
 - Asset and user assignments
 - Status: Pending, InProgress, Completed, Skipped, Failed
@@ -92,6 +102,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Progress tracking per day and session
 
 ### Workflow
+
 1. Create session in Planning mode
 2. Add rollout days to session
 3. Add workplaces to days with assets
@@ -103,6 +114,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Dashboard
 
 ### Filtering System
+
 - Category switcher (All Assets, Computing, Peripherals, Networking, Displays)
 - Status filter (All, InGebruik, Stock, Herstelling, Defect, UitDienst, Nieuw)
 - Owner filter (All, Assigned, Unassigned)
@@ -110,6 +122,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - URL-persisted filters for sharing and bookmarking
 
 ### Table Views
+
 - Compact, professional design
 - Sortable columns
 - Real-time filtering
@@ -119,6 +132,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Export to Excel
 
 ### Asset Details
+
 - Comprehensive asset information display
 - Intune status badge (if Intune-managed)
 - QR code preview and download
@@ -127,10 +141,12 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Multilingual Support
 
 ### Available Languages
+
 - Dutch (Nederlands) - Default
 - English
 
 ### Translation Scope
+
 - Complete UI translation
 - Status labels
 - Form fields and validation messages
@@ -139,6 +155,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Date formatting based on locale
 
 ### Implementation
+
 - i18next integration
 - Browser language detection
 - Persistent language selection
@@ -147,12 +164,14 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Authentication and Authorization
 
 ### Microsoft Entra ID Integration
+
 - Single sign-on (SSO) via Azure AD
 - JWT token-based authentication
 - Role-based access control (RBAC)
 - Admin policy for privileged operations
 
 ### Security Features
+
 - Rate limiting (100 req/min global, 20 req/min Intune APIs)
 - CORS protection
 - Secure API communication (HTTPS)
@@ -162,12 +181,14 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## QR Code System
 
 ### Generation
+
 - SVG format for print quality
 - Asset code encoding
 - Downloadable QR files (AssetCode-QR.svg)
 - Bulk QR generation
 
 ### Scanning
+
 - HTML5 QR scanner integration
 - Camera-based scanning
 - Instant asset lookup on scan
@@ -177,6 +198,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Data Export
 
 ### Excel Export
+
 - Full asset inventory export
 - Filtered data export
 - Column customization
@@ -184,6 +206,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Date formatting
 
 ### Use Cases
+
 - Reporting and analytics
 - Backup and archival
 - External system integration
@@ -192,6 +215,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Performance Features
 
 ### Frontend Optimization
+
 - TanStack Query for server state caching
 - Optimistic updates
 - Automatic background refetching
@@ -199,6 +223,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 - Request deduplication
 
 ### Backend Optimization
+
 - EF Core query optimization
 - Connection pooling
 - Automatic database migration
@@ -208,11 +233,13 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ## Database Support
 
 ### Development
+
 - SQLite for lightweight local development
 - File-based storage (djoppie.db)
 - No external dependencies
 
 ### Production
+
 - Azure SQL Database
 - Connection retry logic (5 retries, 30s max delay)
 - Automatic migration support

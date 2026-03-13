@@ -471,67 +471,125 @@ const getStatusGradient = (status: string) => {
   }
 };
 
-const SessionCardGrid = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionViewProps) => (
-  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 3 }}>
-    {sessions.map((session) => (
-      <Card
-        key={session.id}
-        elevation={0}
-        sx={{
-          ...sessionCardSx,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          cursor: 'pointer',
-        }}
-        onClick={() => onEdit(session.id)}
-      >
-        {/* Status gradient accent bar */}
-        <Box sx={{ height: 4, background: getStatusGradient(session.status) }} />
+const SessionCardGrid = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionViewProps) => {
+  const navigate = useNavigate();
+  const isComplete = (session: RolloutSession) => session.status === 'Completed';
 
-        <CardContent sx={{ flexGrow: 1, p: 2.5, pb: 1 }}>
-          {/* Title + Menu */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-            <Box sx={{ flexGrow: 1, pr: 1 }}>
-              <Typography
-                variant="h6"
-                component="h2"
-                sx={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.3 }}
-              >
-                {session.sessionName}
-              </Typography>
-              {session.description && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    mt: 0.5,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {session.description}
-                </Typography>
-              )}
-            </Box>
-            <IconButton
-              size="small"
-              onClick={(e) => onMenuOpen(e, session.id)}
-              sx={{ mt: -0.5 }}
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 3 }}>
+      {sessions.map((session) => (
+        <Card
+          key={session.id}
+          elevation={0}
+          sx={{
+            ...sessionCardSx,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            cursor: 'pointer',
+            position: 'relative',
+            overflow: 'hidden',
+            ...(isComplete(session) && { bgcolor: 'rgba(22, 163, 74, 0.03)' }),
+          }}
+          onClick={() => onEdit(session.id)}
+        >
+          {/* Done stamp overlay for completed sessions */}
+          {isComplete(session) && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 16,
+                right: -40,
+                transform: 'rotate(45deg)',
+                bgcolor: '#16a34a',
+                color: 'white',
+                px: 6,
+                py: 0.5,
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                zIndex: 1,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              }}
             >
-              <MoreVertIcon />
-            </IconButton>
-          </Box>
+              Done
+            </Box>
+          )}
 
-          {/* Status chip */}
-          <Chip
-            label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
-            color={getStatusColor(session.status)}
-            size="small"
-            sx={{ mb: 2, fontWeight: 600, letterSpacing: '0.02em' }}
-          />
+          {/* Status gradient accent bar */}
+          <Box sx={{ height: 4, background: getStatusGradient(session.status) }} />
+
+          <CardContent sx={{ flexGrow: 1, p: 2.5, pb: 1 }}>
+            {/* Title + Menu */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+              <Box sx={{ flexGrow: 1, pr: 1 }}>
+                <Typography
+                  variant="h6"
+                  component="h2"
+                  sx={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.3 }}
+                >
+                  {session.sessionName}
+                </Typography>
+                {session.description && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mt: 0.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {session.description}
+                  </Typography>
+                )}
+              </Box>
+              <IconButton
+                size="small"
+                onClick={(e) => onMenuOpen(e, session.id)}
+                sx={{ mt: -0.5 }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+            </Box>
+
+            {/* Status chip - hide for completed (has Done stamp) */}
+            {!isComplete(session) && (
+              <Chip
+                label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
+                color={getStatusColor(session.status)}
+                size="small"
+                sx={{ mb: 2, fontWeight: 600, letterSpacing: '0.02em' }}
+              />
+            )}
+
+            {/* Report button for completed sessions */}
+            {isComplete(session) && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<AssessmentIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(buildRoute.rolloutReport(session.id));
+                }}
+                sx={{
+                  mb: 2,
+                  borderColor: '#16a34a',
+                  color: '#16a34a',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#15803d',
+                    bgcolor: 'rgba(22, 163, 74, 0.08)',
+                  },
+                }}
+              >
+                Bekijk Rapport
+              </Button>
+            )}
 
           {/* Info grid */}
           <Box
@@ -641,118 +699,147 @@ const SessionCardGrid = ({ sessions, onMenuOpen, onEdit, formatDate, t }: Sessio
           </Box>
         </CardActions>
       </Card>
-    ))}
-  </Box>
-);
+      ))}
+    </Box>
+  );
+};
 
 // ===== TABLE VIEW =====
 
-const SessionTable = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionViewProps) => (
-  <Card
-    elevation={0}
-    sx={{
-      ...scannerCardSx,
-      mb: 0,
-      overflow: 'hidden',
-    }}
-  >
-    <TableContainer>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 700 }}>Naam</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Start</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Eind</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Voortgang</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Dagen</TableCell>
-            <TableCell sx={{ fontWeight: 700 }}>Door</TableCell>
-            <TableCell sx={{ fontWeight: 700 }} align="right" />
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {sessions.map((session) => (
-            <TableRow
-              key={session.id}
-              hover
-              sx={{
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease',
-              }}
-              onClick={() => onEdit(session.id)}
-            >
-              <TableCell>
-                <Typography variant="body2" fontWeight={600}>
-                  {session.sessionName}
-                </Typography>
-                {session.description && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 1,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {session.description}
-                  </Typography>
-                )}
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
-                  color={getStatusColor(session.status)}
-                  size="small"
-                  sx={{ fontWeight: 600 }}
-                />
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">{formatDate(session.plannedStartDate)}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {session.plannedEndDate ? formatDate(session.plannedEndDate) : '-'}
-                </Typography>
-              </TableCell>
-              <TableCell sx={{ minWidth: 160 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={session.completionPercentage}
-                    color={session.completionPercentage === 100 ? 'success' : 'primary'}
-                    sx={{ height: 6, borderRadius: 3, flexGrow: 1 }}
-                  />
-                  <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                    {session.completedWorkplaces}/{session.totalWorkplaces}
-                  </Typography>
-                </Box>
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {session.totalDays}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2" color="text.secondary">
-                  {session.createdBy}
-                </Typography>
-              </TableCell>
-              <TableCell align="right">
-                <IconButton
-                  size="small"
-                  onClick={(e) => onMenuOpen(e, session.id)}
-                >
-                  <MoreVertIcon />
-                </IconButton>
-              </TableCell>
+const SessionTable = ({ sessions, onMenuOpen, onEdit, formatDate, t }: SessionViewProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        ...scannerCardSx,
+        mb: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700 }}>Naam</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Start</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Eind</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Voortgang</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Dagen</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Door</TableCell>
+              <TableCell sx={{ fontWeight: 700 }} align="right" />
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  </Card>
-);
+          </TableHead>
+          <TableBody>
+            {sessions.map((session) => {
+              const isComplete = session.status === 'Completed';
+              return (
+                <TableRow
+                  key={session.id}
+                  hover
+                  sx={{
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                    ...(isComplete && { bgcolor: 'rgba(22, 163, 74, 0.03)' }),
+                  }}
+                  onClick={() => onEdit(session.id)}
+                >
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600}>
+                      {session.sessionName}
+                    </Typography>
+                    {session.description && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {session.description}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isComplete ? (
+                      <Chip
+                        label="Done"
+                        size="small"
+                        icon={<AssessmentIcon />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(buildRoute.rolloutReport(session.id));
+                        }}
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: '#16a34a',
+                          color: 'white',
+                          cursor: 'pointer',
+                          '& .MuiChip-icon': { color: 'white' },
+                          '&:hover': { bgcolor: '#15803d' },
+                        }}
+                      />
+                    ) : (
+                      <Chip
+                        label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
+                        color={getStatusColor(session.status)}
+                        size="small"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{formatDate(session.plannedStartDate)}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {session.plannedEndDate ? formatDate(session.plannedEndDate) : '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ minWidth: 160 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={session.completionPercentage}
+                        color={session.completionPercentage === 100 ? 'success' : 'primary'}
+                        sx={{ height: 6, borderRadius: 3, flexGrow: 1 }}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                        {session.completedWorkplaces}/{session.totalWorkplaces}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {session.totalDays}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {session.createdBy}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => onMenuOpen(e, session.id)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Card>
+  );
+};
 
 export default RolloutListPage;

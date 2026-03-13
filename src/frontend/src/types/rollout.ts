@@ -91,6 +91,8 @@ export interface RolloutWorkplace {
   userName: string;
   userEmail?: string;
   location?: string;
+  /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
+  scheduledDate?: string;
   serviceId?: number;
   serviceName?: string;
   isLaptopSetup: boolean;
@@ -111,6 +113,8 @@ export interface CreateRolloutWorkplace {
   userName: string;
   userEmail?: string;
   location?: string;
+  /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
+  scheduledDate?: string;
   serviceId?: number;
   isLaptopSetup: boolean;
   assetPlans: AssetPlan[];
@@ -121,6 +125,8 @@ export interface UpdateRolloutWorkplace {
   userName: string;
   userEmail?: string | null;
   location?: string | null;
+  /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
+  scheduledDate?: string | null;
   serviceId?: number | null;
   isLaptopSetup: boolean;
   assetPlans: AssetPlan[];

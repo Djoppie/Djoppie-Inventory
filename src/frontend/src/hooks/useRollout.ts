@@ -132,6 +132,9 @@ export const useRolloutDays = (
     queryKey: [...rolloutKeys.days(sessionId), params],
     queryFn: () => rolloutApi.getRolloutDays(sessionId, params),
     enabled: !!sessionId && sessionId > 0,
+    // Always refetch when component mounts to ensure fresh data (workplaces status)
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 };
 
@@ -290,6 +293,8 @@ export const useUpdateRolloutWorkplace = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(data.id) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
+      // Also invalidate the days list so planning header chips (rescheduledCount) update when scheduledDate changes
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };
@@ -328,6 +333,8 @@ export const useUpdateWorkplaceStatus = (): UseMutationResult<
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.dayId) });
+      // Also invalidate the days list so planning header chips (readyCount, rescheduledCount) update immediately
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };
@@ -390,6 +397,8 @@ export const useCompleteRolloutWorkplace = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
+      // Also invalidate the days list so total progress (completedWorkplaces) updates immediately
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };
@@ -412,6 +421,8 @@ export const useReopenRolloutWorkplace = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
+      // Also invalidate the days list so total progress (completedWorkplaces) updates immediately
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };

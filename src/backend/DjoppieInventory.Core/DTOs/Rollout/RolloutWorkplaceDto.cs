@@ -10,6 +10,10 @@ public class RolloutWorkplaceDto
     public string UserName { get; set; } = string.Empty;
     public string? UserEmail { get; set; }
     public string? Location { get; set; }
+    /// <summary>
+    /// Custom scheduled date for this workplace. When null, uses the date from RolloutDay.
+    /// </summary>
+    public DateTime? ScheduledDate { get; set; }
     public int? ServiceId { get; set; }
     public string? ServiceName { get; set; }
     public bool IsLaptopSetup { get; set; }

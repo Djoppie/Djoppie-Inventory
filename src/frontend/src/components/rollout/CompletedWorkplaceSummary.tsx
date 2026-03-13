@@ -123,10 +123,11 @@ const CompletedWorkplaceSummary = ({
             <Chip
               label="Voltooid"
               size="small"
-              icon={<AssignmentTurnedInIcon sx={{ fontSize: 16 }} />}
+              icon={<AssignmentTurnedInIcon sx={{ fontSize: 16, color: '#16a34a' }} />}
               sx={{
-                bgcolor: 'success.main',
-                color: '#fff',
+                bgcolor: 'rgba(22, 163, 74, 0.1)',
+                border: '1px solid rgba(22, 163, 74, 0.3)',
+                color: '#16a34a',
                 fontWeight: 700,
                 fontSize: '0.7rem',
                 height: 24,

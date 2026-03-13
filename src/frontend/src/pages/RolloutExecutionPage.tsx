@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   Container,
@@ -31,6 +32,7 @@ import {
   Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import PersonIcon from '@mui/icons-material/Person';
@@ -54,10 +56,11 @@ import {
   useUpdateItemDetails,
   useCompleteRolloutWorkplace,
   useReopenRolloutWorkplace,
+  rolloutKeys,
 } from '../hooks/useRollout';
 import { getAssetBySerialNumber } from '../api/assets.api';
 import { TemplateSelector } from '../components/rollout/TemplateSelector';
-import { ROUTES } from '../constants/routes';
+import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../types/rollout';
 import type { Asset, AssetTemplate } from '../types/asset.types';
@@ -87,9 +90,13 @@ const EQUIPMENT_ICONS: Record<string, string> = {
 const RolloutExecutionPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const sessionId = Number(id);
+  const initialDayId = searchParams.get('dayId') ? Number(searchParams.get('dayId')) : null;
 
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [initialDaySet, setInitialDaySet] = useState(false);
   const [expandedWorkplace, setExpandedWorkplace] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -102,6 +109,17 @@ const RolloutExecutionPage = () => {
     includeDays: true,
   });
   const { data: days, isLoading: daysLoading } = useRolloutDays(sessionId);
+
+  // Set initial day from URL parameter
+  useEffect(() => {
+    if (!initialDaySet && days && days.length > 0 && initialDayId) {
+      const dayIndex = days.findIndex(d => d.id === initialDayId);
+      if (dayIndex !== -1) {
+        setSelectedDayIndex(dayIndex);
+      }
+      setInitialDaySet(true);
+    }
+  }, [days, initialDayId, initialDaySet]);
 
   const selectedDay = days?.[selectedDayIndex];
   const { data: workplaces, isLoading: workplacesLoading } = useRolloutWorkplaces(
@@ -117,6 +135,13 @@ const RolloutExecutionPage = () => {
 
   const handleBack = () => {
     navigate(ROUTES.ROLLOUTS);
+  };
+
+  const handleBackToPlanning = async () => {
+    // Force refetch ALL rollout queries to ensure fresh data on the planning page
+    // Using refetchQueries instead of invalidateQueries to force immediate refetch
+    await queryClient.refetchQueries({ queryKey: rolloutKeys.all });
+    navigate(buildRoute.rolloutEdit(sessionId!));
   };
 
   const handleDayChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -174,6 +199,22 @@ const RolloutExecutionPage = () => {
             Uitvoering
           </Typography>
         </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<EditNoteIcon />}
+          onClick={handleBackToPlanning}
+          sx={{
+            borderColor: '#FF7700',
+            color: '#FF7700',
+            '&:hover': {
+              borderColor: '#e66a00',
+              bgcolor: 'rgba(255, 119, 0, 0.08)',
+            },
+          }}
+        >
+          Planning
+        </Button>
       </Box>
 
       {/* Overall Progress */}
@@ -409,13 +450,39 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
       <Card
         elevation={0}
         sx={{
-          border: isComplete ? '2px solid' : isReady ? '1px solid' : '1px solid',
-          borderColor: isComplete ? 'success.main' : isInProgress ? 'warning.main' : isReady ? 'info.main' : 'divider',
+          position: 'relative',
+          border: '1px solid',
+          borderColor: isInProgress ? 'warning.main' : isReady ? 'info.main' : 'divider',
           borderRadius: 2,
           transition: 'border-color 0.2s',
+          overflow: 'hidden',
           ...(isReady && { bgcolor: 'rgba(25, 118, 210, 0.04)' }),
+          ...(isComplete && { bgcolor: 'rgba(22, 163, 74, 0.03)' }),
         }}
       >
+        {/* Done stamp overlay for completed workplaces */}
+        {isComplete && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: -35,
+              transform: 'rotate(45deg)',
+              bgcolor: '#16a34a',
+              color: 'white',
+              px: 5,
+              py: 0.5,
+              fontSize: '0.65rem',
+              fontWeight: 800,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              zIndex: 1,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            }}
+          >
+            Done
+          </Box>
+        )}
         <CardContent sx={{ pb: 1 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
@@ -444,13 +511,16 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
                 </Box>
               )}
             </Box>
-            <Chip
-              label={statusLabel}
-              size="small"
-              color={statusColor as 'success' | 'warning' | 'default'}
-              icon={isComplete ? <CheckCircleIcon /> : isInProgress ? <LaptopIcon /> : undefined}
-              sx={{ ml: 1, flexShrink: 0 }}
-            />
+            {/* Only show status chip for non-completed workplaces (completed ones have Done stamp) */}
+            {!isComplete && (
+              <Chip
+                label={statusLabel}
+                size="small"
+                color={statusColor as 'success' | 'warning' | 'default'}
+                icon={isInProgress ? <LaptopIcon /> : undefined}
+                sx={{ ml: 1, flexShrink: 0 }}
+              />
+            )}
           </Box>
 
           {/* Progress */}

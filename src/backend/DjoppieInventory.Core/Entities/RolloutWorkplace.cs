@@ -69,6 +69,13 @@ public class RolloutWorkplace
     public string? Location { get; set; }
 
     /// <summary>
+    /// Custom scheduled date for this workplace (optional).
+    /// When null, the workplace uses the date from the parent RolloutDay.
+    /// When set, this overrides the RolloutDay date (e.g., rescheduled due to external partner delay).
+    /// </summary>
+    public DateTime? ScheduledDate { get; set; }
+
+    /// <summary>
     /// Foreign key to the Service (department) this user belongs to
     /// </summary>
     public int? ServiceId { get; set; }

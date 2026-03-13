@@ -7,6 +7,7 @@ This document describes how Djoppie Inventory integrates with Microsoft Graph AP
 Djoppie Inventory uses Microsoft Graph API to retrieve device information from Microsoft Intune, enabling real-time hardware inventory and compliance monitoring for managed devices.
 
 **Key Integration Points:**
+
 - Device inventory synchronization
 - Compliance status monitoring
 - Application detection
@@ -115,15 +116,18 @@ services.AddMicrosoftGraph(options =>
 Retrieves all managed devices from Intune.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices
 ```
 
 **OData Parameters:**
+
 - `$top=999` - Retrieve up to 999 devices
 - `$select` - Specific properties to reduce payload size
 
 **Selected Properties:**
+
 - `id`, `deviceName`, `serialNumber`
 - `manufacturer`, `model`
 - `operatingSystem`, `osVersion`
@@ -131,6 +135,7 @@ GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices
 - `userPrincipalName`, `managementAgent`
 
 **Usage:**
+
 ```csharp
 var devices = await _intuneService.GetManagedDevicesAsync();
 ```
@@ -140,14 +145,17 @@ var devices = await _intuneService.GetManagedDevicesAsync();
 Retrieves a specific device by its Intune device ID.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{deviceId}
 ```
 
 **Additional Properties:**
+
 - `totalStorageSpaceInBytes`, `freeStorageSpaceInBytes`
 
 **Usage:**
+
 ```csharp
 var device = await _intuneService.GetDeviceByIdAsync("device-guid");
 ```
@@ -157,16 +165,19 @@ var device = await _intuneService.GetDeviceByIdAsync("device-guid");
 Finds a device by its serial number using OData filtering.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=serialNumber eq 'ABC123'
 ```
 
 **Security:**
+
 - Input sanitization via `ODataSanitizer.IsValidFilterValue()`
 - Prevents OData injection attacks
 - Filter value escaping with `ODataSanitizer.CreateEqualityFilter()`
 
 **Usage:**
+
 ```csharp
 var device = await _intuneService.GetDeviceBySerialNumberAsync("ABC123");
 ```
@@ -176,11 +187,13 @@ var device = await _intuneService.GetDeviceBySerialNumberAsync("ABC123");
 Searches for devices where the name starts with a given string.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=startswith(deviceName, 'DESKTOP')
 ```
 
 **Usage:**
+
 ```csharp
 var devices = await _intuneService.SearchDevicesByNameAsync("DESKTOP");
 ```
@@ -190,11 +203,13 @@ var devices = await _intuneService.SearchDevicesByNameAsync("DESKTOP");
 Retrieves all devices assigned to a specific user.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=userPrincipalName eq 'user@domain.com'
 ```
 
 **Usage:**
+
 ```csharp
 var devices = await _intuneService.GetDevicesByUserAsync("user@domain.com");
 ```
@@ -204,17 +219,20 @@ var devices = await _intuneService.GetDevicesByUserAsync("user@domain.com");
 Filters devices by operating system.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=operatingSystem eq 'Windows'
 ```
 
 **Common OS Values:**
+
 - `Windows`
 - `iOS`
 - `Android`
 - `macOS`
 
 **Usage:**
+
 ```csharp
 var devices = await _intuneService.GetDevicesByOperatingSystemAsync("Windows");
 ```
@@ -224,11 +242,13 @@ var devices = await _intuneService.GetDevicesByOperatingSystemAsync("Windows");
 Checks if a device is compliant with Intune policies.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{deviceId}?$select=id,complianceState
 ```
 
 **Compliance States:**
+
 - `Compliant` - Device meets all policy requirements
 - `Noncompliant` - Device violates one or more policies
 - `ConfigManager` - Managed by Configuration Manager
@@ -236,6 +256,7 @@ GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{deviceId}?
 - `Unknown` - Compliance state not yet determined
 
 **Usage:**
+
 ```csharp
 bool isCompliant = await _intuneService.IsDeviceCompliantAsync("device-guid");
 ```
@@ -245,6 +266,7 @@ bool isCompliant = await _intuneService.IsDeviceCompliantAsync("device-guid");
 Retrieves detected applications on a managed device using the **beta** Graph API.
 
 **Graph API Endpoint:**
+
 ```
 GET https://graph.microsoft.com/beta/deviceManagement/managedDevices/{deviceId}?$expand=detectedApps
 ```
@@ -252,11 +274,13 @@ GET https://graph.microsoft.com/beta/deviceManagement/managedDevices/{deviceId}?
 **Note:** This endpoint uses the beta API because `$expand=detectedApps` is only available in beta.
 
 **Response Properties:**
+
 - `id`, `displayName`, `version`
 - `publisher`, `platform`
 - `sizeInByte`, `deviceCount`
 
 **Usage:**
+
 ```csharp
 var apps = await _intuneService.GetDeviceInstalledAppsAsync("device-guid");
 ```
@@ -268,6 +292,7 @@ var apps = await _intuneService.GetDeviceInstalledAppsAsync("device-guid");
 Convenience method that combines serial number lookup with app detection.
 
 **Usage:**
+
 ```csharp
 var apps = await _intuneService.GetDeviceInstalledAppsBySerialAsync("ABC123");
 ```
@@ -277,22 +302,26 @@ var apps = await _intuneService.GetDeviceInstalledAppsBySerialAsync("ABC123");
 Retrieves comprehensive device health metrics.
 
 **Calculated Metrics:**
+
 - Storage usage percentage
 - Health score (0-100)
 - Health status (Healthy, Warning, Critical)
 
 **Health Score Calculation:**
+
 - Compliance: +30 points
 - Encryption: +30 points
 - Storage <90% full: +20 points
 - Recent sync (≤7 days): +20 points
 
 **Usage:**
+
 ```csharp
 var health = await _intuneService.GetDeviceHealthBySerialAsync("ABC123");
 ```
 
 **Returns:** `DeviceHealthDto` with:
+
 - `HealthScore` (int)
 - `HealthStatus` (string)
 - `IsCompliant` (bool)
@@ -304,6 +333,7 @@ var health = await _intuneService.GetDeviceHealthBySerialAsync("ABC123");
 Provides real-time device status combining multiple Graph API calls.
 
 **Data Retrieved:**
+
 - Device information
 - Compliance state
 - Storage metrics
@@ -311,6 +341,7 @@ Provides real-time device status combining multiple Graph API calls.
 - Top 10 installed applications
 
 **Usage:**
+
 ```csharp
 var status = await _intuneService.GetDeviceLiveStatusAsync("ABC123");
 ```
@@ -322,12 +353,14 @@ var status = await _intuneService.GetDeviceLiveStatusAsync("ABC123");
 Retrieves Windows Autopilot provisioning timeline using the **beta** Graph API.
 
 **Graph API Endpoints:**
+
 ```
 GET https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities?$filter=serialNumber eq 'ABC123'
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=serialNumber eq 'ABC123'
 ```
 
 **Timeline Phases:**
+
 1. **Autopilot Registration** - Device registered in Windows Autopilot
 2. **Device Enrollment (OOBE)** - MDM enrollment during Out-of-Box Experience
 3. **Device Setup (ESP)** - Enrollment Status Page, device-level policies
@@ -335,11 +368,13 @@ GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=ser
 5. **Ready for User** - Provisioning complete, user signed in
 
 **Usage:**
+
 ```csharp
 var timeline = await _intuneService.GetProvisioningTimelineAsync("ABC123");
 ```
 
 **Returns:** `ProvisioningTimelineDto` with:
+
 - `Events` - List of `ProvisioningEventDto` for each phase
 - `OverallStatus` - Pending, InProgress, Complete, Failed
 - `ProgressPercent` - Percentage of phases completed
@@ -439,6 +474,7 @@ var filter = ODataSanitizer.CreateEqualityFilter("serialNumber", serialNumber);
 ```
 
 **Validation Rules:**
+
 - Alphanumeric characters allowed
 - Hyphens, underscores, dots, spaces allowed
 - Maximum length: 255 characters
@@ -459,11 +495,13 @@ Microsoft enforces throttling on Graph API requests:
 Djoppie Inventory implements additional rate limiting:
 
 **Intune Endpoints:**
+
 - 20 requests per minute per IP address
 - 5 queued requests
 - HTTP 429 response when exceeded
 
 **Configuration (Program.cs):**
+
 ```csharp
 options.AddPolicy("intune", httpContext =>
     RateLimitPartition.GetFixedWindowLimiter(
@@ -509,7 +547,7 @@ GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices
 GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{device-id}
 ```
 
-4. Compare results with application behavior
+1. Compare results with application behavior
 
 ### Debugging Authentication
 
@@ -534,6 +572,7 @@ This outputs token acquisition and Graph API request details.
 ### No devices returned
 
 **Check:**
+
 - Devices enrolled in Intune
 - API permissions granted admin consent
 - User account has permission to read Intune data
@@ -542,6 +581,7 @@ This outputs token acquisition and Graph API request details.
 ### 403 Forbidden errors
 
 **Solution:**
+
 1. Verify all required permissions are added to app registration
 2. Ensure admin consent is granted (green checkmark in Azure Portal)
 3. Wait 5-10 minutes after granting consent for changes to propagate
@@ -550,6 +590,7 @@ This outputs token acquisition and Graph API request details.
 ### Token acquisition failures
 
 **Check:**
+
 1. Client secret is configured in user secrets (local) or Key Vault (Azure)
 2. Client secret hasn't expired (Azure Portal > App Registrations > Certificates & secrets)
 3. Tenant ID and Client ID match in configuration
@@ -558,6 +599,7 @@ This outputs token acquisition and Graph API request details.
 ### Slow performance
 
 **Solutions:**
+
 - Reduce `$select` properties to only needed fields
 - Implement frontend caching with TanStack Query
 - Use pagination for large device lists
@@ -585,4 +627,4 @@ Potential improvements to Graph API integration:
 
 ## Contact
 
-For questions about Graph API integration: jo.wijnen@diepenbeek.be
+For questions about Graph API integration: <jo.wijnen@diepenbeek.be>

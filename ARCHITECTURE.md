@@ -235,6 +235,7 @@ DjoppieInventory.API/
 | **Backend API (DEV)** | `eb5bcf06-8032-494f-a363-92b6802c44bf` | Token validation + Microsoft Graph access |
 
 **Required API Permissions** (Backend):
+
 - `DeviceManagementManagedDevices.Read.All` (Application)
 - `Device.Read.All` (Application)
 - `Directory.Read.All` (Application + Delegated)
@@ -454,6 +455,7 @@ public enum AssetStatus
 | **Azure PROD** | Azure SQL | Azure Key Vault: `ConnectionStrings--DefaultConnection` |
 
 **Migration Strategy:**
+
 - Local dev: `EnsureCreated()` on startup
 - Azure: Manual migrations via EF Core CLI or CI/CD
 
@@ -468,11 +470,13 @@ public enum AssetStatus
 **Location**: `DjoppieInventory.Infrastructure/Services/IntuneService.cs`
 
 **Key Operations**:
+
 - `GetManagedDevicesAsync()` - Retrieve all Intune managed devices
 - `GetDeviceBySerialNumberAsync(string serialNumber)` - Find specific device
 - `SearchDevicesByNameAsync(string searchTerm)` - Search devices
 
 **Graph API Endpoints Used**:
+
 - `GET /deviceManagement/managedDevices`
 - `GET /devices`
 - `GET /directoryObjects`
@@ -529,6 +533,7 @@ GET    /api/assets/export/excel - Export assets to Excel
 ### Authentication
 
 All endpoints require authentication via JWT Bearer token except:
+
 - `/api/health` (health check)
 - Swagger UI (development only)
 
@@ -639,6 +644,7 @@ npm run dev
 ### Azure DEV Environment
 
 **Infrastructure** (deployed via Bicep):
+
 - Resource Group: `rg-djoppie-inventory-dev`
 - App Service Plan: F1 Free tier
 - App Service: Backend API (.NET 8)
@@ -651,12 +657,14 @@ npm run dev
 **Deployment Methods**:
 
 1. **Automated** (recommended):
+
    ```powershell
    # From repository root
    .\deploy-dev.ps1
    ```
 
 2. **Manual Backend**:
+
    ```bash
    cd src/backend/DjoppieInventory.API
    dotnet publish -c Release -o ./publish
@@ -664,6 +672,7 @@ npm run dev
    ```
 
 3. **Manual Frontend**:
+
    ```bash
    cd src/frontend
    npm run build
@@ -673,6 +682,7 @@ npm run dev
 ### Environment Variables
 
 **Backend** (`appsettings.{Environment}.json` + Key Vault):
+
 - `ConnectionStrings:DefaultConnection` - Database connection string
 - `AzureAd:TenantId` - Entra ID tenant
 - `AzureAd:ClientId` - Backend API client ID
@@ -681,6 +691,7 @@ npm run dev
 - `ApplicationInsights:ConnectionString` - Telemetry endpoint
 
 **Frontend** (`.env.{environment}`):
+
 - `VITE_API_URL` - Backend API base URL
 - `VITE_ENTRA_CLIENT_ID` - Frontend SPA client ID
 - `VITE_ENTRA_TENANT_ID` - Entra ID tenant
@@ -725,4 +736,4 @@ dotnet ef database update \
 **Document Version**: 1.0
 **Last Updated**: March 11, 2026
 **Author**: Claude Code (Anthropic)
-**Maintainer**: jo.wijnen@diepenbeek.be
+**Maintainer**: <jo.wijnen@diepenbeek.be>

@@ -1,3 +1,13 @@
+/**
+ * Redesigned RolloutWorkplaceDialog - Neumorphic Djoppie Style
+ *
+ * Modern, professional dialog for configuring workplace rollouts
+ * Features: Integrated QR scanning, tab-based navigation, compact design
+ * Design: Neumorphic soft UI with Djoppie orange accent (#FF7700)
+ *
+ * Neumorphic design: Soft shadows, extruded elements, carved inputs
+ */
+
 import { useState, useCallback, useRef } from 'react';
 import {
   Dialog,
@@ -7,14 +17,6 @@ import {
   Button,
   Box,
   Typography,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  ToggleButtonGroup,
-  ToggleButton,
-  Slider,
-  FormControlLabel,
-  Checkbox,
   Chip,
   Stack,
   useTheme,
@@ -24,27 +26,27 @@ import {
   Alert,
   InputAdornment,
   IconButton,
+  Tabs,
+  Tab,
+  Snackbar,
+  Divider,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import LaptopIcon from '@mui/icons-material/Laptop';
-import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
-import LinkIcon from '@mui/icons-material/Link';
-import SearchIcon from '@mui/icons-material/Search';
-import HistoryIcon from '@mui/icons-material/History';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
-import DockIcon from '@mui/icons-material/Dock';
-import MonitorIcon from '@mui/icons-material/Monitor';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import HistoryIcon from '@mui/icons-material/History';
+import LaptopIcon from '@mui/icons-material/Laptop';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
-import { useAssetTemplates } from '../../hooks/useAssetTemplates';
-import { SerialSearchField } from './SerialSearchField';
-import { TemplateSelector } from './TemplateSelector';
+import { MultiDeviceConfigSection, type DeviceConfig } from './MultiDeviceConfigSection';
+import { OldDeviceConfigSection, type OldDeviceConfig } from './OldDeviceConfigSection';
 import { graphApi } from '../../api/graph.api';
 import { intuneApi } from '../../api/intune.api';
+import QRScanner from '../scanner/QRScanner';
 import type { GraphUser, IntuneDevice } from '../../types/graph.types';
 import type {
   RolloutWorkplace,
@@ -52,8 +54,10 @@ import type {
   UpdateRolloutWorkplace,
   AssetPlan,
 } from '../../types/rollout';
-import { getAssetByCode } from '../../api/assets.api';
-import type { Asset, AssetTemplate } from '../../types/asset.types';
+import { getAssetByCode, getAssetBySerialNumber } from '../../api/assets.api';
+import type { Asset } from '../../types/asset.types';
+import { logger } from '../../utils/logger';
+import { normalizeAssetCode, validateAssetCode } from '../../utils/validation';
 
 interface RolloutWorkplaceDialogProps {
   open: boolean;
@@ -62,280 +66,60 @@ interface RolloutWorkplaceDialogProps {
   workplace?: RolloutWorkplace;
 }
 
-interface MonitorConfig {
-  templateId?: number;
-  template?: AssetTemplate | null;
-  position: 'left' | 'center' | 'right';
-  hasCamera: boolean;
-  serial?: string;
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
-// Helper to generate asset code preview with Nov/Dec rule
-const generateAssetCodePreview = (template: AssetTemplate | null, equipmentType: string): string => {
-  if (!template?.brand) return '';
-
-  const now = new Date();
-  const month = now.getMonth() + 1; // 1-12
-  const year = now.getFullYear();
-
-  // Apply Nov/Dec rule: if month >= 11, use next year
-  const displayYear = month >= 11 ? year + 1 : year;
-  const yearCode = displayYear.toString().slice(-2);
-
-  const typePrefix = equipmentType === 'monitor' ? 'MON' : equipmentType === 'keyboard' ? 'KEY' : 'MOU';
-  const brand = template.brand.toUpperCase();
-
-  return `${typePrefix}-${yearCode}-${brand}-?????`;
-};
-
-// Visual monitor layout diagram component
-const MonitorLayoutDiagram = ({ configs, selectedIndex }: {
-  configs: MonitorConfig[];
-  selectedIndex: number;
-}) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
-  const renderMonitor = (config: MonitorConfig, index: number, position: 'left' | 'center' | 'right') => {
-    const isSelected = index === selectedIndex;
-    const monitorExists = configs.length > index;
-
-    if (!monitorExists) {
-      return (
-        <Box
-          key={position}
-          sx={{
-            width: 60,
-            height: 40,
-            borderRadius: 1,
-            border: '2px dashed',
-            borderColor: 'divider',
-            opacity: 0.3,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <MonitorIcon sx={{ fontSize: '1rem', color: 'text.disabled' }} />
-        </Box>
-      );
-    }
-
-    return (
-      <Box
-        key={position}
-        sx={{
-          position: 'relative',
-          width: 60,
-          height: 40,
-          borderRadius: 1,
-          border: '2px solid',
-          borderColor: isSelected ? 'primary.main' : (isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)'),
-          bgcolor: isSelected ? (isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)') : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.25s ease',
-          boxShadow: isSelected ? (isDark ? '0 0 12px rgba(255, 146, 51, 0.3)' : '0 0 12px rgba(255, 119, 0, 0.2)') : 'none',
-        }}
-      >
-        <MonitorIcon sx={{ fontSize: '1.5rem', color: isSelected ? 'primary.main' : 'text.secondary' }} />
-        {config.hasCamera && (
-          <VideocamIcon
-            sx={{
-              position: 'absolute',
-              top: 2,
-              right: 2,
-              fontSize: '0.8rem',
-              color: 'primary.main',
-              bgcolor: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.9)',
-              borderRadius: '50%',
-              p: 0.25,
-            }}
-          />
-        )}
-      </Box>
-    );
-  };
-
+const TabPanel = ({ children, value, index }: TabPanelProps) => {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 1,
-        p: 2,
-        borderRadius: 2,
-        bgcolor: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
-        border: '1px solid',
-        borderColor: 'divider',
-      }}
-    >
-      {/* Monitors */}
-      <Stack direction="row" spacing={1.5} alignItems="flex-end">
-        {renderMonitor(configs[0], 0, 'left')}
-        {renderMonitor(configs[1], 1, 'center')}
-        {renderMonitor(configs[2], 2, 'right')}
-      </Stack>
-
-      {/* Desk representation */}
-      <Box
-        sx={{
-          width: '100%',
-          height: 4,
-          bgcolor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
-          borderRadius: 1,
-          mt: 0.5,
-        }}
-      />
-
-      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-        Bureaublad weergave
-      </Typography>
-    </Box>
+    <div role="tabpanel" hidden={value !== index}>
+      {value === index && <Box>{children}</Box>}
+    </div>
   );
 };
 
-const LinkedAssetChip = ({ workplace, equipmentType, index, variant: chipVariant = 'new' }: {
-  workplace?: RolloutWorkplace;
-  equipmentType: string;
-  index?: number;
-  variant?: 'new' | 'old';
-}) => {
-  const plans = workplace?.assetPlans || [];
-  const plan = index !== undefined
-    ? plans.filter(p => p.equipmentType === equipmentType)[index]
-    : plans.find(p => p.equipmentType === equipmentType);
-  if (!plan) return null;
-  const code = chipVariant === 'old' ? plan.oldAssetCode : plan.existingAssetCode;
-  const name = chipVariant === 'old' ? plan.oldAssetName : plan.existingAssetName;
-  if (!code) return null;
-  return (
-    <Chip
-      icon={<LinkIcon />}
-      label={`${chipVariant === 'old' ? 'Oud: ' : ''}${code}${name ? ` — ${name}` : ''}`}
-      size="small"
-      color={chipVariant === 'old' ? 'warning' : 'success'}
-      variant="outlined"
-      sx={{ mt: 1 }}
-    />
-  );
-};
-
-const AssetCodeSearchField = ({ label, value, onChange, onAssetLinked, linkedAsset, helperText }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  onAssetLinked: (asset: Asset | null) => void;
-  linkedAsset?: Asset | null;
-  helperText?: string;
-}) => {
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSearch = async () => {
-    if (!value.trim()) return;
-    setSearching(true);
-    setError(null);
-    try {
-      const asset = await getAssetByCode(value.trim().toUpperCase());
-      onAssetLinked(asset);
-    } catch {
-      onAssetLinked(null);
-      setError('Asset niet gevonden met deze code');
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  return (
-    <Box>
-      <TextField
-        fullWidth
-        label={label}
-        value={value}
-        onChange={(e) => { onChange(e.target.value); onAssetLinked(null); setError(null); }}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
-        helperText={error || helperText}
-        error={!!error}
-        size="small"
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <QrCodeScannerIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
-            </InputAdornment>
-          ),
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton onClick={handleSearch} disabled={!value.trim() || searching} edge="end" size="small">
-                {searching ? <CircularProgress size={18} /> : <SearchIcon />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
-      />
-      {linkedAsset && (
-        <Alert severity="success" sx={{ mt: 1 }}>
-          <strong>Gekoppeld:</strong> {linkedAsset.assetCode} — {linkedAsset.assetName}
-          {linkedAsset.brand && linkedAsset.model && <span> ({linkedAsset.brand} {linkedAsset.model})</span>}
-        </Alert>
-      )}
-    </Box>
-  );
-};
+// Asset scan mode types - includes index for old device targeting
+type AssetScanMode = 'new-device' | { type: 'old-device'; index: number } | null;
 
 const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWorkplaceDialogProps) => {
   const isEditMode = Boolean(workplace);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   // User info state
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [location, setLocation] = useState('');
   const [serviceId, setServiceId] = useState<number | undefined>();
+  const [scheduledDate, setScheduledDate] = useState<string | undefined>();
 
-  // Computer state
-  const [computerType, setComputerType] = useState<'laptop' | 'desktop'>('laptop');
-  const [oldComputerSerial, setOldComputerSerial] = useState('');
-  const [oldComputerAsset, setOldComputerAsset] = useState<Asset | null>(null);
-  const [newComputerSerial, setNewComputerSerial] = useState('');
-  const [newComputerAsset, setNewComputerAsset] = useState<Asset | null>(null);
-  const [laptopTemplate, setLaptopTemplate] = useState<AssetTemplate | null>(null);
+  // Old devices state (multiple)
+  const [oldDevices, setOldDevices] = useState<OldDeviceConfig[]>([]);
 
-  // Docking state
-  const [dockingTemplate, setDockingTemplate] = useState<AssetTemplate | null>(null);
-  const [dockingSerial, setDockingSerial] = useState('');
+  // Multi-device configuration state
+  const [newDevices, setNewDevices] = useState<DeviceConfig[]>([]);
 
-  // Monitors state
-  const [monitorCount, setMonitorCount] = useState(2);
-  const [monitorConfigs, setMonitorConfigs] = useState<MonitorConfig[]>([
-    { position: 'left', hasCamera: false, template: null },
-    { position: 'right', hasCamera: false, template: null },
-  ]);
-  const [hoveredMonitorIndex, setHoveredMonitorIndex] = useState<number | null>(null);
-
-  // Peripherals state
-  const [keyboardTemplate, setKeyboardTemplate] = useState<AssetTemplate | null>(null);
-  const [mouseTemplate, setMouseTemplate] = useState<AssetTemplate | null>(null);
-
-  // Retroactive registration state
+  // Toggle states
+  const [addingNewDevice, setAddingNewDevice] = useState(true);
+  const [returningOldDevice, setReturningOldDevice] = useState(false);
   const [isRetroactive, setIsRetroactive] = useState(false);
-  const [dockingAssetCode, setDockingAssetCode] = useState('');
-  const [dockingLinkedAsset, setDockingLinkedAsset] = useState<Asset | null>(null);
-  const [keyboardAssetCode, setKeyboardAssetCode] = useState('');
-  const [keyboardLinkedAsset, setKeyboardLinkedAsset] = useState<Asset | null>(null);
-  const [mouseAssetCode, setMouseAssetCode] = useState('');
-  const [mouseLinkedAsset, setMouseLinkedAsset] = useState<Asset | null>(null);
 
-  // Separate state for monitor asset codes to prevent focus loss during typing
-  const [monitorAssetCodes, setMonitorAssetCodes] = useState<string[]>(['', '']);
-  const [monitorLinkedAssets, setMonitorLinkedAssets] = useState<(Asset | null)[]>([null, null]);
+  // QR Scanning state
+  const [scanDialogOpen, setScanDialogOpen] = useState(false);
+  const [scanMode, setScanMode] = useState<AssetScanMode>(null);
+  const [activeTab, setActiveTab] = useState(0); // 0: scan, 1: manual
+  const [manualAssetCode, setManualAssetCode] = useState('');
+  const [isLoadingAsset, setIsLoadingAsset] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanSuccess, setScanSuccess] = useState('');
+  const isProcessingScanRef = useRef(false);
 
   const createMutation = useCreateRolloutWorkplace();
   const updateMutation = useUpdateRolloutWorkplace();
-  const { data: allTemplates } = useAssetTemplates();
 
-  // User search state for autocomplete
+  // User search state
   const [userOptions, setUserOptions] = useState<GraphUser[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
   const [userDevices, setUserDevices] = useState<IntuneDevice[]>([]);
@@ -361,40 +145,22 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     }, 300);
   }, []);
 
-  // Track which workplace/templates we've synced to avoid re-syncing
+  // Sync workplace data when editing
   const [syncedKey, setSyncedKey] = useState<string | null>(null);
-  const currentKey = workplace ? `${workplace.id}-${workplace.updatedAt}-${allTemplates?.length ?? 0}` : null;
+  const currentKey = workplace ? `${workplace.id}-${workplace.updatedAt}` : null;
 
   if (open && currentKey && currentKey !== syncedKey) {
     setSyncedKey(currentKey);
-
-    // Reset user search state
     setUserDevices([]);
     setUserOptions([]);
-
-    // Reset retroactive states (will be populated from plan data below if applicable)
     setIsRetroactive(false);
-    setDockingAssetCode('');
-    setDockingLinkedAsset(null);
-    setKeyboardAssetCode('');
-    setKeyboardLinkedAsset(null);
-    setMouseAssetCode('');
-    setMouseLinkedAsset(null);
-
-    const findTpl = (brand?: string, model?: string): AssetTemplate | null => {
-      if (!allTemplates || !brand) return null;
-      return allTemplates.find(t =>
-        t.brand?.toLowerCase() === brand.toLowerCase() &&
-        (!model || t.model?.toLowerCase() === model.toLowerCase())
-      ) || null;
-    };
 
     setUserName(workplace!.userName);
     setUserEmail(workplace!.userEmail || '');
     setLocation(workplace!.location || '');
     setServiceId(workplace!.serviceId);
+    setScheduledDate(workplace!.scheduledDate || undefined);
 
-    // Fetch Intune devices for this user if email is available
     if (workplace!.userEmail) {
       intuneApi.getDevicesByUser(workplace!.userEmail)
         .then(devices => setUserDevices(devices))
@@ -402,263 +168,270 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     }
 
     const plans = workplace!.assetPlans || [];
+    const oldDevicePlans = plans.filter(p => p.metadata?.isOldDevice === 'true');
 
-    const computerPlan = plans.find(p => p.equipmentType === 'laptop' || p.equipmentType === 'desktop');
-    if (computerPlan) {
-      setComputerType(computerPlan.equipmentType as 'laptop' | 'desktop');
-      setNewComputerSerial(computerPlan.metadata?.serialNumber || '');
-      // Restore laptop template if available
-      if (computerPlan.equipmentType === 'laptop' && computerPlan.brand) {
-        setLaptopTemplate(findTpl(computerPlan.brand, computerPlan.model));
-      } else {
-        setLaptopTemplate(null);
-      }
-      if (computerPlan.existingAssetId) {
-        setNewComputerAsset({
-          id: computerPlan.existingAssetId,
-          assetCode: computerPlan.existingAssetCode || '',
-          assetName: computerPlan.existingAssetName || '',
-        } as Asset);
-      }
-      if (computerPlan.oldAssetId) {
-        setOldComputerSerial(computerPlan.metadata?.oldSerial || '');
-        setOldComputerAsset({
-          id: computerPlan.oldAssetId,
-          assetCode: computerPlan.oldAssetCode || '',
-          assetName: computerPlan.oldAssetName || '',
-        } as Asset);
-      }
-    }
-
-    const dockingPlan = plans.find(p => p.equipmentType === 'docking');
-    if (dockingPlan) {
-      setDockingSerial(dockingPlan.metadata?.serialNumber || '');
-      setDockingTemplate(findTpl(dockingPlan.brand, dockingPlan.model));
-      if (dockingPlan.existingAssetId) {
-        setDockingAssetCode(dockingPlan.existingAssetCode || '');
-        setDockingLinkedAsset({ id: dockingPlan.existingAssetId, assetCode: dockingPlan.existingAssetCode || '', assetName: dockingPlan.existingAssetName || '' } as Asset);
-      }
-    }
-
-    const monitorPlans = plans.filter(p => p.equipmentType === 'monitor');
-    if (monitorPlans.length > 0) {
-      setMonitorCount(monitorPlans.length);
-      setMonitorConfigs(monitorPlans.map(p => ({
-        position: (p.metadata?.position || 'left') as 'left' | 'center' | 'right',
-        hasCamera: p.metadata?.hasCamera === 'true',
-        serial: p.metadata?.serialNumber,
-        template: findTpl(p.brand, p.model),
+    if (oldDevicePlans.length > 0) {
+      setReturningOldDevice(true);
+      setOldDevices(oldDevicePlans.map((p, idx) => ({
+        id: `old-device-edit-${idx}`,
+        serialNumber: p.metadata?.oldSerial || '',
+        linkedAsset: p.oldAssetId ? {
+          id: p.oldAssetId,
+          assetCode: p.oldAssetCode || '',
+          assetName: p.oldAssetName || '',
+        } as Asset : null,
       })));
-      setMonitorAssetCodes(monitorPlans.map(p => p.existingAssetCode || ''));
-      setMonitorLinkedAssets(monitorPlans.map(p =>
-        p.existingAssetId ? { id: p.existingAssetId, assetCode: p.existingAssetCode || '', assetName: p.existingAssetName || '' } as Asset : null
-      ));
+    } else {
+      setReturningOldDevice(false);
+      setOldDevices([]);
     }
 
-    const keyboardPlan = plans.find(p => p.equipmentType === 'keyboard');
-    if (keyboardPlan) {
-      setKeyboardTemplate(findTpl(keyboardPlan.brand, keyboardPlan.model));
-      if (keyboardPlan.existingAssetId) {
-        setKeyboardAssetCode(keyboardPlan.existingAssetCode || '');
-        setKeyboardLinkedAsset({ id: keyboardPlan.existingAssetId, assetCode: keyboardPlan.existingAssetCode || '', assetName: keyboardPlan.existingAssetName || '' } as Asset);
-      }
+    const devicePlans = plans.filter(p => p.metadata?.isOldDevice !== 'true');
+    if (devicePlans.length > 0) {
+      setAddingNewDevice(true);
+      setNewDevices(devicePlans.map((p, idx) => ({
+        id: `device-edit-${idx}`,
+        type: p.equipmentType as DeviceConfig['type'],
+        template: p.brand ? { brand: p.brand, model: p.model } as DeviceConfig['template'] : null,
+        serialNumber: p.metadata?.serialNumber || '',
+        linkedAsset: p.existingAssetId ? {
+          id: p.existingAssetId,
+          assetCode: p.existingAssetCode || '',
+          assetName: p.existingAssetName || '',
+        } as Asset : null,
+      })));
+    } else {
+      setAddingNewDevice(true);
+      setNewDevices([]);
     }
 
-    const mousePlan = plans.find(p => p.equipmentType === 'mouse');
-    if (mousePlan) {
-      setMouseTemplate(findTpl(mousePlan.brand, mousePlan.model));
-      if (mousePlan.existingAssetId) {
-        setMouseAssetCode(mousePlan.existingAssetCode || '');
-        setMouseLinkedAsset({ id: mousePlan.existingAssetId, assetCode: mousePlan.existingAssetCode || '', assetName: mousePlan.existingAssetName || '' } as Asset);
-      }
-    }
-
-    // Detect retroactive mode: non-computer plans with linked assets
-    const nonComputerPlans = plans.filter(p => p.equipmentType !== 'laptop' && p.equipmentType !== 'desktop');
-    setIsRetroactive(nonComputerPlans.some(p => p.existingAssetId && !p.createNew));
+    setIsRetroactive(plans.some(p => p.existingAssetId && !p.createNew));
   }
 
-  // Reset when dialog opens without a workplace (new mode)
+  // Reset when opening new workplace
   if (open && !workplace && syncedKey !== 'new') {
     setSyncedKey('new');
     setUserName('');
     setUserEmail('');
     setLocation('');
     setServiceId(undefined);
+    setScheduledDate(undefined);
     setUserDevices([]);
     setUserOptions([]);
-    setComputerType('laptop');
-    setOldComputerSerial('');
-    setOldComputerAsset(null);
-    setNewComputerSerial('');
-    setNewComputerAsset(null);
-    setLaptopTemplate(null);
-    setDockingTemplate(null);
-    setDockingSerial('');
-    setMonitorCount(2);
-    setMonitorConfigs([
-      { position: 'left', hasCamera: false, template: null },
-      { position: 'right', hasCamera: false, template: null },
-    ]);
-    setMonitorAssetCodes(['', '']);
-    setMonitorLinkedAssets([null, null]);
-    setKeyboardTemplate(null);
-    setMouseTemplate(null);
+    setOldDevices([]);
+    setNewDevices([]);
+    setAddingNewDevice(true);
+    setReturningOldDevice(false);
     setIsRetroactive(false);
-    setDockingAssetCode('');
-    setDockingLinkedAsset(null);
-    setKeyboardAssetCode('');
-    setKeyboardLinkedAsset(null);
-    setMouseAssetCode('');
-    setMouseLinkedAsset(null);
   }
 
-  // Reset synced key when dialog closes
   if (!open && syncedKey !== null) {
     setSyncedKey(null);
   }
 
-  const updateMonitorConfig = (index: number, field: keyof MonitorConfig, value: MonitorConfig[keyof MonitorConfig]) => {
-    const updated = [...monitorConfigs];
-    updated[index] = { ...updated[index], [field]: value };
-    setMonitorConfigs(updated);
+  // Open scan dialog
+  const handleOpenScanDialog = (mode: AssetScanMode) => {
+    setScanMode(mode);
+    setScanDialogOpen(true);
+    setActiveTab(0);
+    setManualAssetCode('');
+    setScanError('');
+    setScanSuccess('');
+    isProcessingScanRef.current = false;
   };
 
-  const handleMonitorCountChange = (_: Event, value: number | number[]) => {
-    const count = value as number;
-    setMonitorCount(count);
+  // Close scan dialog
+  const handleCloseScanDialog = () => {
+    setScanDialogOpen(false);
+    setScanMode(null);
+    setActiveTab(0);
+    setManualAssetCode('');
+    setScanError('');
+    setScanSuccess('');
+  };
 
-    // Adjust configs array
-    const newConfigs: MonitorConfig[] = [];
-    const positions: Array<'left' | 'center' | 'right'> = count === 1 ? ['center'] : count === 2 ? ['left', 'right'] : ['left', 'center', 'right'];
-
-    for (let i = 0; i < count; i++) {
-      newConfigs.push(monitorConfigs[i] || { position: positions[i], hasCamera: false, template: null });
+  // Handle QR scan success
+  const handleScanSuccess = async (assetCode: string) => {
+    if (isProcessingScanRef.current) {
+      logger.warn('[RolloutWorkplaceDialog] Already processing a scan');
+      return;
     }
-    setMonitorConfigs(newConfigs);
 
-    // Adjust asset code arrays
-    const newCodes = Array.from({ length: count }, (_, i) => monitorAssetCodes[i] || '');
-    const newLinked = Array.from({ length: count }, (_, i) => monitorLinkedAssets[i] || null);
-    setMonitorAssetCodes(newCodes);
-    setMonitorLinkedAssets(newLinked);
+    try {
+      isProcessingScanRef.current = true;
+      setIsLoadingAsset(true);
+      setScanError('');
+
+      const normalizedCode = normalizeAssetCode(assetCode);
+      logger.info('[RolloutWorkplaceDialog] Processing scanned asset code:', normalizedCode);
+
+      const validation = validateAssetCode(normalizedCode);
+      if (!validation.isValid) {
+        setScanError(validation.errorMessage || 'Invalid asset code format');
+        return;
+      }
+
+      const asset = await getAssetByCode(normalizedCode);
+
+      if (asset) {
+        // Link the asset based on scan mode
+        if (scanMode === 'new-device') {
+          // Add as new device with linked asset
+          const newDevice: DeviceConfig = {
+            id: `device-${Date.now()}-${Math.random()}`,
+            type: 'laptop', // Default, user can change
+            template: asset.brand && asset.model
+              ? { brand: asset.brand, model: asset.model } as DeviceConfig['template']
+              : null,
+            serialNumber: asset.serialNumber || '',
+            linkedAsset: asset,
+          };
+          setNewDevices([...newDevices, newDevice]);
+          setAddingNewDevice(true);
+          setScanSuccess(`Toegevoegd: ${asset.assetCode} - ${asset.assetName}`);
+        } else if (scanMode && typeof scanMode === 'object' && scanMode.type === 'old-device') {
+          // Update specific old device at index
+          const updatedOldDevices = [...oldDevices];
+          updatedOldDevices[scanMode.index] = {
+            ...updatedOldDevices[scanMode.index],
+            linkedAsset: asset,
+            serialNumber: asset.serialNumber || '',
+          };
+          setOldDevices(updatedOldDevices);
+          setScanSuccess(`Gekoppeld: ${asset.assetCode} - ${asset.assetName}`);
+        }
+
+        // Close dialog after short delay
+        setTimeout(() => {
+          handleCloseScanDialog();
+        }, 1500);
+      } else {
+        setScanError(`Asset "${normalizedCode}" not found in the system`);
+      }
+    } catch (error) {
+      logger.error('[RolloutWorkplaceDialog] Error fetching asset:', error);
+      const err = error as Error & { response?: { status?: number } };
+      if (err?.response?.status === 404) {
+        setScanError(`Asset not found`);
+      } else {
+        setScanError('Error processing scan');
+      }
+    } finally {
+      setIsLoadingAsset(false);
+      setTimeout(() => {
+        isProcessingScanRef.current = false;
+      }, 1000);
+    }
+  };
+
+  // Handle manual asset search
+  const handleManualSearch = async () => {
+    if (!manualAssetCode.trim()) return;
+
+    setIsLoadingAsset(true);
+    setScanError('');
+
+    try {
+      const normalizedCode = normalizeAssetCode(manualAssetCode);
+      const validation = validateAssetCode(normalizedCode);
+
+      if (!validation.isValid) {
+        setScanError(validation.errorMessage || 'Invalid asset code format');
+        return;
+      }
+
+      const asset = await getAssetByCode(normalizedCode);
+
+      if (asset) {
+        await handleScanSuccess(normalizedCode); // Reuse scan success logic
+      } else {
+        setScanError(`Asset "${normalizedCode}" not found`);
+      }
+    } catch {
+      setScanError('Error searching for asset');
+    } finally {
+      setIsLoadingAsset(false);
+    }
+  };
+
+  // Handle old device serial search
+  const handleOldDeviceSerialSearch = async (index: number, serial: string) => {
+    if (!serial.trim()) return;
+
+    try {
+      const asset = await getAssetBySerialNumber(serial);
+      const updatedOldDevices = [...oldDevices];
+      updatedOldDevices[index] = {
+        ...updatedOldDevices[index],
+        linkedAsset: asset,
+      };
+      setOldDevices(updatedOldDevices);
+    } catch {
+      // Keep the serial but clear any linked asset
+      const updatedOldDevices = [...oldDevices];
+      updatedOldDevices[index] = {
+        ...updatedOldDevices[index],
+        linkedAsset: null,
+      };
+      setOldDevices(updatedOldDevices);
+    }
+  };
+
+  // Handle scan request from OldDeviceConfigSection
+  const handleOldDeviceScanRequest = (index: number) => {
+    handleOpenScanDialog({ type: 'old-device', index });
   };
 
   const buildAssetPlans = (): AssetPlan[] => {
     const plans: AssetPlan[] = [];
 
-    // Computer plan
-    plans.push({
-      equipmentType: computerType,
-      createNew: !newComputerAsset, // Create new if not found
-      requiresSerialNumber: true,
-      requiresQRCode: false, // Existing or found asset
-      status: 'pending',
-      // Include laptop template info if selected (for laptops only)
-      ...(computerType === 'laptop' && laptopTemplate && {
-        brand: laptopTemplate.brand,
-        model: laptopTemplate.model,
-      }),
-      metadata: {
-        serialNumber: newComputerSerial,
-        oldSerial: oldComputerSerial,
-      },
-      ...(newComputerAsset && {
-        existingAssetId: newComputerAsset.id,
-        existingAssetCode: newComputerAsset.assetCode,
-        existingAssetName: newComputerAsset.assetName,
-      }),
-      ...(oldComputerAsset && {
-        oldAssetId: oldComputerAsset.id,
-        oldAssetCode: oldComputerAsset.assetCode,
-        oldAssetName: oldComputerAsset.assetName,
-      }),
-    });
-
-    // Docking plan (only for laptops, not desktops)
-    if (computerType !== 'desktop' && (dockingTemplate || dockingSerial || dockingLinkedAsset)) {
-      plans.push({
-        equipmentType: 'docking',
-        createNew: !dockingLinkedAsset && !isRetroactive,
-        requiresSerialNumber: !isRetroactive,
-        requiresQRCode: !dockingLinkedAsset && !isRetroactive,
-        status: 'pending',
-        brand: dockingLinkedAsset?.brand || dockingTemplate?.brand,
-        model: dockingLinkedAsset?.model || dockingTemplate?.model,
-        metadata: {
-          serialNumber: dockingSerial,
-        },
-        ...(dockingLinkedAsset && {
-          existingAssetId: dockingLinkedAsset.id,
-          existingAssetCode: dockingLinkedAsset.assetCode,
-          existingAssetName: dockingLinkedAsset.assetName,
-        }),
+    // Add all old devices being returned
+    if (returningOldDevice && oldDevices.length > 0) {
+      oldDevices.forEach((oldDevice) => {
+        if (oldDevice.serialNumber || oldDevice.linkedAsset) {
+          plans.push({
+            equipmentType: 'laptop',
+            createNew: false,
+            requiresSerialNumber: false,
+            requiresQRCode: false,
+            status: 'pending',
+            metadata: {
+              oldSerial: oldDevice.serialNumber,
+              isOldDevice: 'true',
+            },
+            ...(oldDevice.linkedAsset && {
+              oldAssetId: oldDevice.linkedAsset.id,
+              oldAssetCode: oldDevice.linkedAsset.assetCode,
+              oldAssetName: oldDevice.linkedAsset.assetName,
+            }),
+          });
+        }
       });
     }
 
-    // Monitor plans
-    monitorConfigs.forEach((config, index) => {
-      const linked = monitorLinkedAssets[index];
-      const hasBrand = !!(linked?.brand || config.template?.brand);
-      // Only create new asset if brand is known (no XXXX codes allowed for monitors)
-      const canCreateNew = !linked && !isRetroactive && hasBrand;
-      plans.push({
-        equipmentType: 'monitor',
-        createNew: canCreateNew,
-        requiresSerialNumber: false,
-        requiresQRCode: canCreateNew,
-        status: 'pending',
-        brand: linked?.brand || config.template?.brand,
-        model: linked?.model || config.template?.model,
-        metadata: {
-          position: config.position,
-          hasCamera: config.hasCamera.toString(),
-          index: index.toString(),
-          brandPending: (!hasBrand && !linked).toString(), // Flag to indicate brand needs to be set at execution
-        },
-        ...(linked && {
-          existingAssetId: linked.id,
-          existingAssetCode: linked.assetCode,
-          existingAssetName: linked.assetName,
-        }),
-      });
-    });
-
-    // Keyboard plan
-    if (keyboardTemplate || keyboardLinkedAsset) {
-      plans.push({
-        equipmentType: 'keyboard',
-        createNew: !keyboardLinkedAsset && !isRetroactive,
-        requiresSerialNumber: false,
-        requiresQRCode: !keyboardLinkedAsset && !isRetroactive,
-        status: 'pending',
-        brand: keyboardLinkedAsset?.brand || keyboardTemplate?.brand,
-        model: keyboardLinkedAsset?.model || keyboardTemplate?.model,
-        metadata: {},
-        ...(keyboardLinkedAsset && {
-          existingAssetId: keyboardLinkedAsset.id,
-          existingAssetCode: keyboardLinkedAsset.assetCode,
-          existingAssetName: keyboardLinkedAsset.assetName,
-        }),
-      });
-    }
-
-    // Mouse plan
-    if (mouseTemplate || mouseLinkedAsset) {
-      plans.push({
-        equipmentType: 'mouse',
-        createNew: !mouseLinkedAsset && !isRetroactive,
-        requiresSerialNumber: false,
-        requiresQRCode: !mouseLinkedAsset && !isRetroactive,
-        status: 'pending',
-        brand: mouseLinkedAsset?.brand || mouseTemplate?.brand,
-        model: mouseLinkedAsset?.model || mouseTemplate?.model,
-        metadata: {},
-        ...(mouseLinkedAsset && {
-          existingAssetId: mouseLinkedAsset.id,
-          existingAssetCode: mouseLinkedAsset.assetCode,
-          existingAssetName: mouseLinkedAsset.assetName,
-        }),
+    if (addingNewDevice) {
+      newDevices.forEach((device) => {
+        if (device.template || device.linkedAsset) {
+          const requiresSerial = device.type === 'laptop' || device.type === 'desktop';
+          plans.push({
+            equipmentType: device.type,
+            createNew: !device.linkedAsset && !isRetroactive,
+            requiresSerialNumber: requiresSerial,
+            requiresQRCode: !device.linkedAsset && !isRetroactive,
+            status: 'pending',
+            brand: device.linkedAsset?.brand || device.template?.brand,
+            model: device.linkedAsset?.model || device.template?.model,
+            metadata: {
+              ...(device.serialNumber && { serialNumber: device.serialNumber }),
+              ...device.metadata,
+            },
+            ...(device.linkedAsset && {
+              existingAssetId: device.linkedAsset.id,
+              existingAssetCode: device.linkedAsset.assetCode,
+              existingAssetName: device.linkedAsset.assetName,
+            }),
+          });
+        }
       });
     }
 
@@ -668,13 +441,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const handleSave = async () => {
     const assetPlans = buildAssetPlans();
 
+    // Determine if this is a laptop setup based on configured devices
+    const hasLaptop = newDevices.some(d => d.type === 'laptop');
+
     if (isEditMode && workplace) {
       const updateData: UpdateRolloutWorkplace = {
         userName,
         userEmail: userEmail || null,
         location: location || null,
+        scheduledDate: scheduledDate || null,
         serviceId: serviceId || null,
-        isLaptopSetup: computerType === 'laptop',
+        isLaptopSetup: hasLaptop,
         assetPlans,
         status: workplace.status,
         notes: workplace.notes || null,
@@ -686,8 +463,9 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         userName,
         userEmail: userEmail || undefined,
         location: location || undefined,
+        scheduledDate: scheduledDate || undefined,
         serviceId,
-        isLaptopSetup: computerType === 'laptop',
+        isLaptopSetup: hasLaptop,
         assetPlans,
       };
       await createMutation.mutateAsync({ dayId, data: createData });
@@ -700,196 +478,246 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     onClose();
   };
 
-  // Validate that templates are selected when creating new assets (to prevent XXXX codes)
-  const computerNeedsTemplate = !newComputerAsset && computerType === 'laptop' && !laptopTemplate;
-  const dockingNeedsTemplate = computerType !== 'desktop' && !dockingLinkedAsset && !isRetroactive && !dockingTemplate;
-  const monitorsNeedTemplate = !isRetroactive && monitorConfigs.some((config, idx) => !monitorLinkedAssets[idx] && !config.template);
-  const keyboardNeedsTemplate = !keyboardLinkedAsset && !isRetroactive && !keyboardTemplate;
-  const mouseNeedsTemplate = !mouseLinkedAsset && !isRetroactive && !mouseTemplate;
+  const devicesNeedTemplates = addingNewDevice && newDevices.some(
+    (device) => !device.linkedAsset && !device.template
+  );
 
-  const hasTemplateErrors = computerNeedsTemplate || dockingNeedsTemplate || monitorsNeedTemplate || keyboardNeedsTemplate || mouseNeedsTemplate;
-  const isFormValid = userName.trim() && newComputerSerial.trim() && !hasTemplateErrors;
-
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
-  const sectionIconSx = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 28,
-    height: 28,
-    borderRadius: 1,
-    bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-    color: 'text.primary',
-    '& .MuiSvgIcon-root': { fontSize: '1rem' },
-  };
-
-  const accordionSx = {
-    border: '1px solid',
-    borderColor: 'divider',
-    borderRadius: '8px !important',
-    overflow: 'hidden',
-    '&::before': { display: 'none' },
-    '&.Mui-expanded': {
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
-    },
-  };
-
-  const monitorCardSx = {
-    border: '1px solid',
-    borderColor: 'divider',
-    borderRadius: 2,
-    p: 2,
-    bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
-    },
-  };
+  const hasTemplateErrors = devicesNeedTemplates;
+  const hasOldDeviceConfigured = returningOldDevice && oldDevices.some(d => d.serialNumber || d.linkedAsset);
+  const hasNewDeviceConfigured = addingNewDevice && newDevices.some(d => d.template || d.linkedAsset);
+  const hasDeviceConfigured = hasNewDeviceConfigured || hasOldDeviceConfigured;
+  const isFormValid = userName.trim() && !hasTemplateErrors && hasDeviceConfigured;
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      disableRestoreFocus
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-        },
-      }}
-    >
-      {/* Clean header */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+    <>
+      {/* Main Dialog - Neumorphic Style with Reduced Glow */}
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="md"
+        fullWidth
+        disableRestoreFocus
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            border: 'none',
+            bgcolor: isDark ? 'rgba(30, 35, 40, 0.92)' : 'rgba(232, 238, 243, 0.92)',
+            backdropFilter: 'blur(20px)',
+            // Reduced glow with subtler shadows for professional look
+            boxShadow: isDark
+              ? '0px 8px 32px rgba(0, 0, 0, 0.5), 0px 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0px 8px 32px rgba(150, 155, 160, 0.3), 0px 2px 8px rgba(180, 185, 190, 0.2)',
+            overflow: 'hidden',
+            // 3D depth perception with transform
+            transform: 'perspective(1000px) translateZ(0)',
+            transformStyle: 'preserve-3d',
+          },
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 36,
-              height: 36,
-              borderRadius: 1.5,
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-              color: 'text.primary',
-            }}
-          >
-            <ComputerIcon sx={{ fontSize: '1.2rem' }} />
-          </Box>
-          <Box>
-            <Typography variant="h6" fontWeight={600}>
-              {isEditMode ? 'Werkplek Bewerken' : 'Nieuwe Werkplek'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {isEditMode ? 'Pas de werkplekconfiguratie aan' : 'Configureer een nieuwe werkplek'}
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
-
-      <DialogContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Retroactive registration toggle */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              p: 2,
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: isRetroactive ? 'warning.main' : 'divider',
-              bgcolor: isRetroactive
-                ? (isDark ? 'rgba(255, 152, 0, 0.08)' : 'rgba(255, 152, 0, 0.04)')
-                : 'transparent',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            <HistoryIcon sx={{ color: isRetroactive ? 'warning.main' : 'text.secondary', fontSize: '1.3rem' }} />
+        {/* Header - Neumorphic with 3D Depth (Layer 1 - Front) */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2.5,
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            borderBottom: '1px solid',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+            position: 'relative',
+            zIndex: 3,
+            transform: 'translateZ(20px)',
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2}>
+            {/* Neumorphic Icon Container with 3D depth */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 56,
+                height: 56,
+                borderRadius: 3,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                // 3D layered shadows for depth perception
+                boxShadow: isDark
+                  ? '8px 8px 16px #161a1d, -8px -8px 16px #262c33, inset 0 0 0 1px rgba(255, 119, 0, 0.3)'
+                  : '8px 8px 16px #c5cad0, -8px -8px 16px #ffffff, inset 0 0 0 1px rgba(255, 119, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                transform: 'translateZ(10px)',
+              }}
+            >
+              <ComputerIcon sx={{ fontSize: '1.6rem', color: '#FF7700', filter: 'drop-shadow(0 2px 4px rgba(255, 119, 0, 0.3))' }} />
+            </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" fontWeight={600}>
-                Retroactieve registratie
+              <Typography variant="h5" fontWeight={800} sx={{
+                color: '#FF7700',
+                letterSpacing: '-0.02em',
+                textShadow: isDark ? '0 2px 10px rgba(255, 119, 0, 0.3)' : 'none',
+              }}>
+                {isEditMode ? 'Werkplek Bewerken' : 'Nieuwe Werkplek'}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Link bestaande assets (scan QR-code) — geen nieuwe assets of QR-codes aanmaken
+              <Typography variant="body2" sx={{ mt: 0.5, color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)' }}>
+                {isEditMode ? 'Pas de werkplekconfiguratie aan' : 'Configureer een nieuwe werkplek voor rollout'}
               </Typography>
             </Box>
-            <Switch
-              checked={isRetroactive}
-              onChange={(e) => setIsRetroactive(e.target.checked)}
-              color="warning"
-              size="small"
-            />
+          </Stack>
+        </Box>
+
+        <DialogContent sx={{
+          p: 3,
+          bgcolor: isDark ? '#1e2328' : '#e8eef3',
+          position: 'relative',
+          zIndex: 2,
+          transform: 'translateZ(5px)',
+        }}>
+          {/* Retroactive Mode Toggle - Neumorphic Inset with depth (Layer 2 - Middle) */}
+          <Box
+            sx={{
+              mb: 3,
+              p: 2.5,
+              borderRadius: 3,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: isRetroactive
+                ? (isDark
+                  ? 'inset 5px 5px 10px #161a1d, inset -5px -5px 10px #262c33, 0 0 0 2px rgba(255, 152, 0, 0.4)'
+                  : 'inset 5px 5px 10px #c5cad0, inset -5px -5px 10px #ffffff, 0 0 0 2px rgba(255, 152, 0, 0.3)')
+                : (isDark
+                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
+                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transform: 'translateZ(8px)',
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                  boxShadow: isDark
+                    ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                    : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                }}
+              >
+                <HistoryIcon sx={{
+                  color: isRetroactive ? 'warning.main' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
+                  fontSize: '1.3rem',
+                  transition: 'color 0.3s ease',
+                }} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+                  Retroactieve registratie
+                </Typography>
+                <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
+                  Link bestaande assets via QR-scan — geen nieuwe assets aanmaken
+                </Typography>
+              </Box>
+              <Switch
+                checked={isRetroactive}
+                onChange={(e) => setIsRetroactive(e.target.checked)}
+                color="warning"
+                sx={{
+                  '& .MuiSwitch-track': {
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
+                  },
+                }}
+              />
+            </Stack>
           </Box>
 
-          {/* Section 1: User Information */}
-          <Accordion defaultExpanded sx={accordionSx}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={sectionIconSx}><PersonIcon /></Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Gebruiker Informatie
-                </Typography>
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0.5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Autocomplete
-                  freeSolo
-                  open={userDropdownOpen}
-                  onOpen={() => {
-                    if (userName.length >= 2) setUserDropdownOpen(true);
-                  }}
-                  onClose={() => setUserDropdownOpen(false)}
-                  options={userOptions}
-                  getOptionLabel={(option) =>
-                    typeof option === 'string' ? option : option.displayName || ''
+          {/* User Information Section - Neumorphic Card with 3D depth */}
+          <Box
+            sx={{
+              mb: 3,
+              p: 2.5,
+              borderRadius: 3,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              // Enhanced shadows for 3D depth perception
+              boxShadow: isDark
+                ? '8px 8px 16px #161a1d, -8px -8px 16px #262c33, 0 4px 12px rgba(0, 0, 0, 0.2)'
+                : '8px 8px 16px #c5cad0, -8px -8px 16px #ffffff, 0 4px 12px rgba(150, 155, 160, 0.15)',
+              transform: 'translateZ(12px)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                transform: 'translateZ(15px)',
+                boxShadow: isDark
+                  ? '10px 10px 20px #161a1d, -10px -10px 20px #262c33, 0 6px 16px rgba(0, 0, 0, 0.25)'
+                  : '10px 10px 20px #c5cad0, -10px -10px 20px #ffffff, 0 6px 16px rgba(150, 155, 160, 0.2)',
+              },
+            }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2.5 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                  boxShadow: isDark
+                    ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                    : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
+                }}
+              >
+                <PersonIcon sx={{ color: '#FF7700', fontSize: '1.2rem' }} />
+              </Box>
+              <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+                Gebruiker Informatie
+              </Typography>
+            </Stack>
+
+            <Stack spacing={2.5}>
+              <Autocomplete
+                freeSolo
+                open={userDropdownOpen}
+                onOpen={() => {
+                  if (userName.length >= 2) setUserDropdownOpen(true);
+                }}
+                onClose={() => setUserDropdownOpen(false)}
+                options={userOptions}
+                getOptionLabel={(option) =>
+                  typeof option === 'string' ? option : option.displayName || ''
+                }
+                filterOptions={(x) => x}
+                inputValue={userName}
+                onInputChange={(_, value, reason) => {
+                  setUserName(value);
+                  if (reason === 'input') {
+                    handleUserSearch(value);
+                    if (value.length >= 2) {
+                      setUserDropdownOpen(true);
+                    } else {
+                      setUserDropdownOpen(false);
+                    }
                   }
-                  filterOptions={(x) => x}
-                  inputValue={userName}
-                  onInputChange={(_, value, reason) => {
-                    setUserName(value);
-                    if (reason === 'input') {
-                      handleUserSearch(value);
-                      if (value.length >= 2) {
-                        setUserDropdownOpen(true);
-                      } else {
-                        setUserDropdownOpen(false);
-                      }
+                }}
+                onChange={(_, value) => {
+                  setUserDropdownOpen(false);
+                  if (value && typeof value !== 'string') {
+                    setUserName(value.displayName || '');
+                    const upn = value.mail || value.userPrincipalName || '';
+                    setUserEmail(upn);
+                    if (value.officeLocation) setLocation(value.officeLocation);
+                    if (upn) {
+                      intuneApi.getDevicesByUser(upn)
+                        .then(devices => setUserDevices(devices))
+                        .catch(() => setUserDevices([]));
                     }
-                  }}
-                  onChange={(_, value) => {
-                    setUserDropdownOpen(false);
-                    if (value && typeof value !== 'string') {
-                      setUserName(value.displayName || '');
-                      const upn = value.mail || value.userPrincipalName || '';
-                      setUserEmail(upn);
-                      if (value.officeLocation) setLocation(value.officeLocation);
-                      // Fetch Intune devices for this user
-                      if (upn) {
-                        intuneApi.getDevicesByUser(upn)
-                          .then(devices => setUserDevices(devices))
-                          .catch(() => setUserDevices([]));
-                      }
-                    }
-                  }}
-                  loading={userSearchLoading}
-                  renderOption={(props, option) => (
-                    <li {...props} key={option.id}>
+                  }
+                }}
+                loading={userSearchLoading}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <li {...otherProps} key={key}>
                       <Box>
                         <Typography variant="body2" fontWeight={600}>
                           {option.displayName}
@@ -900,629 +728,838 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                         </Typography>
                       </Box>
                     </li>
-                  )}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Gebruikersnaam"
-                      required
-                      fullWidth
-                      helperText="Typ minimaal 2 letters om gebruikers te zoeken"
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {userSearchLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )}
-                />
-                <TextField
-                  label="E-mailadres"
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  fullWidth
-                  helperText="Optioneel"
-                />
-                <TextField
-                  label="Locatie"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  fullWidth
-                  helperText="Bijv. 'Gebouw A - 2e verdieping - Kamer 205'"
-                />
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-
-          {/* Section 2: Computer (Laptop/Desktop) */}
-          <Accordion sx={accordionSx}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={sectionIconSx}><ComputerIcon /></Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Computer (Laptop/Desktop)
-                </Typography>
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0.5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Type computer
-                  </Typography>
-                  <ToggleButtonGroup
-                    value={computerType}
-                    exclusive
-                    onChange={(_, value) => value && setComputerType(value)}
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Gebruikersnaam"
+                    required
                     fullWidth
+                    helperText="Typ minimaal 2 letters om te zoeken"
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {userSearchLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
                     sx={{
-                      '& .MuiToggleButton-root': {
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: isDark ? '#1e2328' : '#e8eef3',
                         borderRadius: 2,
-                        py: 1.2,
-                        fontWeight: 600,
-                        '&.Mui-selected': {
-                          bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
-                          color: 'primary.main',
-                          borderColor: 'primary.main',
-                          '&:hover': {
-                            bgcolor: isDark ? 'rgba(255, 146, 51, 0.2)' : 'rgba(255, 119, 0, 0.15)',
-                          },
+                        boxShadow: isDark
+                          ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                          : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                        '& fieldset': { border: 'none' },
+                        '&:hover': {
+                          boxShadow: isDark
+                            ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.2)'
+                            : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.15)',
+                        },
+                        '&.Mui-focused': {
+                          boxShadow: isDark
+                            ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.4)'
+                            : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.3)',
                         },
                       },
+                      '& .MuiInputLabel-root': {
+                        color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                        '&.Mui-focused': { color: '#FF7700' },
+                      },
                     }}
-                  >
-                    <ToggleButton value="laptop">
-                      <LaptopIcon sx={{ mr: 1 }} />
-                      Laptop
-                    </ToggleButton>
-                    <ToggleButton value="desktop">
-                      <DesktopWindowsIcon sx={{ mr: 1 }} />
-                      Desktop
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </Box>
-
-                {/* Oud apparaat subsection */}
-                <Box
-                  sx={{
-                    border: '1px solid',
-                    borderColor: isDark ? 'rgba(255, 146, 51, 0.2)' : 'rgba(255, 119, 0, 0.15)',
-                    borderRadius: 3,
-                    p: 2.5,
-                    bgcolor: isDark ? 'rgba(255, 146, 51, 0.04)' : 'rgba(255, 119, 0, 0.02)',
-                  }}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: 'warning.main',
-                      }}
-                    />
-                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-                      Huidig Apparaat (oud)
-                    </Typography>
-                  </Stack>
-
-                  {userDevices.length > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                        Intune-apparaten van deze gebruiker — klik om te selecteren
-                      </Typography>
-                      <Stack direction="row" flexWrap="wrap" gap={1}>
-                        {userDevices.map((device) => {
-                          const isSelected = oldComputerSerial === device.serialNumber;
-                          return (
-                            <Chip
-                              key={device.id || device.serialNumber}
-                              icon={<LaptopIcon sx={{ fontSize: '0.9rem !important' }} />}
-                              label={
-                                <Box component="span">
-                                  <Box component="span" sx={{ fontWeight: 700 }}>{device.serialNumber || '?'}</Box>
-                                  <Box component="span" sx={{ opacity: 0.7 }}> — {device.deviceName || ''}</Box>
-                                </Box>
-                              }
-                              size="small"
-                              onClick={() => setOldComputerSerial(device.serialNumber || '')}
-                              sx={{
-                                cursor: 'pointer',
-                                fontWeight: 500,
-                                borderWidth: isSelected ? 2 : 1,
-                                borderStyle: 'solid',
-                                borderColor: isSelected ? '#FF7700' : (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'),
-                                bgcolor: isSelected
-                                  ? (isDark ? 'rgba(255, 119, 0, 0.15)' : 'rgba(255, 119, 0, 0.08)')
-                                  : 'transparent',
-                                color: isSelected ? '#FF7700' : 'text.primary',
-                                '&:hover': {
-                                  bgcolor: isDark ? 'rgba(255, 119, 0, 0.12)' : 'rgba(255, 119, 0, 0.06)',
-                                  borderColor: '#FF7700',
-                                },
-                                transition: 'all 0.2s ease',
-                              }}
-                            />
-                          );
-                        })}
-                      </Stack>
-                    </Box>
-                  )}
-
-                  <SerialSearchField
-                    label="Oude Computer Serienummer"
-                    value={oldComputerSerial}
-                    onChange={setOldComputerSerial}
-                    onAssetFound={setOldComputerAsset}
-                    helperText={userDevices.length > 0
-                      ? 'Geselecteerd via Intune of zoek handmatig'
-                      : 'Zoek bestaand asset dat wordt vervangen'
-                    }
-                  />
-                  <LinkedAssetChip workplace={workplace} equipmentType={computerType} variant="old" />
-                </Box>
-
-                {/* Nieuw apparaat subsection */}
-                <Box
-                  sx={{
-                    border: '1px solid',
-                    borderColor: isDark ? 'rgba(76, 175, 80, 0.25)' : 'rgba(76, 175, 80, 0.2)',
-                    borderRadius: 3,
-                    p: 2.5,
-                    bgcolor: isDark ? 'rgba(76, 175, 80, 0.04)' : 'rgba(76, 175, 80, 0.02)',
-                  }}
-                >
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        bgcolor: 'success.main',
-                      }}
-                    />
-                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
-                      Nieuw Apparaat
-                    </Typography>
-                  </Stack>
-
-                  {/* Laptop template selector - only for laptops */}
-                  {computerType === 'laptop' && (
-                    <Box sx={{ mb: 2 }}>
-                      <TemplateSelector
-                        equipmentType="laptop"
-                        value={laptopTemplate}
-                        onChange={setLaptopTemplate}
-                        label="Laptop type"
-                        error={computerNeedsTemplate}
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        Bijv. PRO 16, PRO MAX — helpt bij het toewijzen van het juiste model
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <SerialSearchField
-                    label="Nieuwe Computer Serienummer"
-                    value={newComputerSerial}
-                    onChange={setNewComputerSerial}
-                    onAssetFound={setNewComputerAsset}
-                    onCreate={(serial) => {
-                      setNewComputerSerial(serial);
-                      setNewComputerAsset(null);
-                    }}
-                    required
-                    helperText="Zoek bestaand asset of maak nieuw aan"
-                  />
-                  <LinkedAssetChip workplace={workplace} equipmentType={computerType} />
-                </Box>
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-
-          {/* Section 3: Docking Station (only for laptops) */}
-          {computerType !== 'desktop' && <Accordion sx={accordionSx}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={sectionIconSx}><DockIcon /></Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Docking Station
-                </Typography>
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0.5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {isRetroactive ? (
-                  <AssetCodeSearchField
-                    label="AssetCode docking station"
-                    value={dockingAssetCode}
-                    onChange={setDockingAssetCode}
-                    onAssetLinked={setDockingLinkedAsset}
-                    linkedAsset={dockingLinkedAsset}
-                    helperText="Scan of typ de assetcode van het bestaande docking station"
-                  />
-                ) : (
-                  <>
-                    <TemplateSelector
-                      equipmentType="docking"
-                      value={dockingTemplate}
-                      onChange={setDockingTemplate}
-                      required
-                      error={dockingNeedsTemplate}
-                    />
-                    <TextField
-                      label="Serienummer"
-                      value={dockingSerial}
-                      onChange={(e) => setDockingSerial(e.target.value)}
-                      required
-                      fullWidth
-                      helperText="Serienummer van het docking station"
-                    />
-                  </>
-                )}
-                <LinkedAssetChip workplace={workplace} equipmentType="docking" />
-              </Box>
-            </AccordionDetails>
-          </Accordion>}
-
-          {/* Section 4: Monitors */}
-          <Accordion sx={accordionSx}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={sectionIconSx}><MonitorIcon /></Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Monitors
-                </Typography>
-                <Chip
-                  label={monitorCount}
-                  size="small"
-                  color="primary"
-                  sx={{ ml: 0.5, fontWeight: 700, minWidth: 28, height: 24 }}
-                />
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0.5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Monitor count slider */}
-                <Box sx={{ px: 1 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Aantal monitors
-                  </Typography>
-                  <Slider
-                    value={monitorCount}
-                    min={1}
-                    max={3}
-                    marks={[
-                      { value: 1, label: '1' },
-                      { value: 2, label: '2' },
-                      { value: 3, label: '3' },
-                    ]}
-                    step={1}
-                    valueLabelDisplay="auto"
-                    onChange={handleMonitorCountChange}
-                  />
-                </Box>
-
-                {/* Visual layout diagram */}
-                <MonitorLayoutDiagram
-                  configs={monitorConfigs}
-                  selectedIndex={hoveredMonitorIndex ?? 0}
-                />
-
-                {/* Monitor configuration cards */}
-                {monitorConfigs.map((config, index) => {
-                  const assetCodePreview = generateAssetCodePreview(config.template ?? null, 'monitor');
-                  const positionLabels = { left: 'Links', center: 'Midden', right: 'Rechts' };
-
-                  return (
-                    <Box
-                      key={index}
-                      sx={{
-                        ...monitorCardSx,
-                        borderColor: hoveredMonitorIndex === index ? 'primary.main' : 'divider',
-                      }}
-                      onMouseEnter={() => setHoveredMonitorIndex(index)}
-                      onMouseLeave={() => setHoveredMonitorIndex(null)}
-                    >
-                      {/* Monitor card header */}
-                      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 36,
-                            height: 36,
-                            borderRadius: 1.5,
-                            bgcolor: isDark ? 'rgba(255, 146, 51, 0.1)' : 'rgba(255, 119, 0, 0.08)',
-                            color: 'primary.main',
-                          }}
-                        >
-                          <MonitorIcon sx={{ fontSize: '1.2rem' }} />
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={700}>
-                            Monitor {index + 1}
-                          </Typography>
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Chip
-                              label={positionLabels[config.position]}
-                              size="small"
-                              sx={{
-                                height: 20,
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                                color: 'text.primary',
-                                border: '1px solid',
-                                borderColor: 'divider',
-                              }}
-                            />
-                            {config.hasCamera && (
-                              <Chip
-                                icon={<VideocamIcon sx={{ fontSize: '0.7rem !important', color: 'text.secondary' }} />}
-                                label="Camera"
-                                size="small"
-                                sx={{
-                                  height: 20,
-                                  fontSize: '0.7rem',
-                                  fontWeight: 600,
-                                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                                  color: 'text.primary',
-                                  border: '1px solid',
-                                  borderColor: 'divider',
-                                }}
-                              />
-                            )}
-                          </Stack>
-                        </Box>
-                      </Stack>
-
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {isRetroactive ? (
-                          <AssetCodeSearchField
-                            label={`AssetCode monitor ${index + 1}`}
-                            value={monitorAssetCodes[index] || ''}
-                            onChange={(v) => {
-                              setMonitorAssetCodes(prev => { const next = [...prev]; next[index] = v; return next; });
-                            }}
-                            onAssetLinked={(asset) => {
-                              setMonitorLinkedAssets(prev => { const next = [...prev]; next[index] = asset; return next; });
-                            }}
-                            linkedAsset={monitorLinkedAssets[index]}
-                            helperText="Scan of typ de assetcode van de bestaande monitor"
-                          />
-                        ) : (
-                          <>
-                            <TemplateSelector
-                              equipmentType="monitor"
-                              value={config.template}
-                              onChange={(template) => updateMonitorConfig(index, 'template', template)}
-                              error={!monitorLinkedAssets[index] && !config.template}
-                            />
-
-                            {/* Asset code preview or brand pending warning */}
-                            {config.template ? (
-                              <Box
-                                sx={{
-                                  p: 1.5,
-                                  borderRadius: 2,
-                                  bgcolor: isDark ? 'rgba(76, 175, 80, 0.08)' : 'rgba(76, 175, 80, 0.05)',
-                                  border: '1px solid',
-                                  borderColor: isDark ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.2)',
-                                }}
-                              >
-                                <Stack direction="row" spacing={1} alignItems="center">
-                                  <InfoOutlinedIcon sx={{ fontSize: '1rem', color: 'success.main' }} />
-                                  <Box sx={{ flex: 1 }}>
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
-                                      Asset code formaat:
-                                    </Typography>
-                                    <Typography variant="body2" fontWeight={700} sx={{ fontFamily: 'monospace', color: 'success.main' }}>
-                                      {assetCodePreview}
-                                    </Typography>
-                                  </Box>
-                                </Stack>
-                                {config.template.model && (
-                                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                                    {config.template.brand} {config.template.model}
-                                  </Typography>
-                                )}
-                              </Box>
-                            ) : (
-                              <Alert severity="warning" sx={{ py: 0.5 }}>
-                                <Typography variant="caption">
-                                  <strong>Let op:</strong> Merk onbekend — bij uitvoering moet het merk gekend zijn voor registratie.
-                                </Typography>
-                              </Alert>
-                            )}
-                          </>
-                        )}
-
-                        {/* Position selector */}
-                        <Box>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Positie op bureau
-                          </Typography>
-                          <ToggleButtonGroup
-                            value={config.position}
-                            exclusive
-                            onChange={(_, value) => value && updateMonitorConfig(index, 'position', value)}
-                            fullWidth
-                            size="small"
-                            sx={{
-                              '& .MuiToggleButton-root': {
-                                borderRadius: 1.5,
-                                fontWeight: 600,
-                                py: 1,
-                                '&.Mui-selected': {
-                                  bgcolor: isDark ? 'rgba(255, 146, 51, 0.15)' : 'rgba(255, 119, 0, 0.1)',
-                                  color: 'primary.main',
-                                  borderColor: 'primary.main',
-                                },
-                              },
-                            }}
-                          >
-                            <ToggleButton value="left">Links</ToggleButton>
-                            <ToggleButton value="center">Midden</ToggleButton>
-                            <ToggleButton value="right">Rechts</ToggleButton>
-                          </ToggleButtonGroup>
-                        </Box>
-
-                        {/* Camera checkbox */}
-                        <Box
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 2,
-                            border: '1px solid',
-                            borderColor: config.hasCamera ? 'info.main' : 'divider',
-                            bgcolor: config.hasCamera
-                              ? (isDark ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.05)')
-                              : 'transparent',
-                            transition: 'all 0.25s ease',
-                          }}
-                        >
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={config.hasCamera}
-                                onChange={(e) => updateMonitorConfig(index, 'hasCamera', e.target.checked)}
-                                sx={{
-                                  '&.Mui-checked': { color: 'info.main' },
-                                }}
-                              />
-                            }
-                            label={
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <VideocamIcon sx={{ fontSize: '1rem', color: config.hasCamera ? 'info.main' : 'text.secondary' }} />
-                                <Typography variant="body2" fontWeight={config.hasCamera ? 600 : 400}>
-                                  Heeft ingebouwde camera
-                                </Typography>
-                              </Stack>
-                            }
-                          />
-                        </Box>
-
-                        <LinkedAssetChip workplace={workplace} equipmentType="monitor" index={index} />
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-
-          {/* Section 5: Keyboard & Mouse */}
-          <Accordion sx={accordionSx}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              sx={{ '&.Mui-expanded': { minHeight: 48 } }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={sectionIconSx}><KeyboardIcon /></Box>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Toetsenbord &amp; Muis
-                </Typography>
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0.5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {isRetroactive ? (
-                  <AssetCodeSearchField
-                    label="AssetCode toetsenbord"
-                    value={keyboardAssetCode}
-                    onChange={setKeyboardAssetCode}
-                    onAssetLinked={setKeyboardLinkedAsset}
-                    linkedAsset={keyboardLinkedAsset}
-                    helperText="Scan of typ de assetcode van het bestaande toetsenbord"
-                  />
-                ) : (
-                  <TemplateSelector
-                    equipmentType="keyboard"
-                    value={keyboardTemplate}
-                    onChange={setKeyboardTemplate}
-                    error={keyboardNeedsTemplate}
                   />
                 )}
-                <LinkedAssetChip workplace={workplace} equipmentType="keyboard" />
+              />
 
-                {isRetroactive ? (
-                  <AssetCodeSearchField
-                    label="AssetCode muis"
-                    value={mouseAssetCode}
-                    onChange={setMouseAssetCode}
-                    onAssetLinked={setMouseLinkedAsset}
-                    linkedAsset={mouseLinkedAsset}
-                    helperText="Scan of typ de assetcode van de bestaande muis"
-                  />
-                ) : (
-                  <TemplateSelector
-                    equipmentType="mouse"
-                    value={mouseTemplate}
-                    onChange={setMouseTemplate}
-                    error={mouseNeedsTemplate}
-                  />
-                )}
-                <LinkedAssetChip workplace={workplace} equipmentType="mouse" />
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        </Box>
-      </DialogContent>
+              <TextField
+                label="E-mailadres"
+                type="email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                fullWidth
+                size="small"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    borderRadius: 2,
+                    boxShadow: isDark
+                      ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                      : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                    '& fieldset': { border: 'none' },
+                    '&:hover, &.Mui-focused': {
+                      boxShadow: isDark
+                        ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.3)'
+                        : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.2)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                    '&.Mui-focused': { color: '#FF7700' },
+                  },
+                }}
+              />
 
-      {/* Template validation warning */}
-      {hasTemplateErrors && (
-        <Alert severity="warning" sx={{ mx: 3, mb: 0 }}>
-          <Typography variant="body2" fontWeight={600} gutterBottom>
-            Selecteer templates om door te gaan:
-          </Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2 }}>
-            {computerNeedsTemplate && <li>Laptop template</li>}
-            {dockingNeedsTemplate && <li>Docking station template</li>}
-            {monitorsNeedTemplate && <li>Monitor template(s)</li>}
-            {keyboardNeedsTemplate && <li>Toetsenbord template</li>}
-            {mouseNeedsTemplate && <li>Muis template</li>}
+              <TextField
+                label="Locatie"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                fullWidth
+                size="small"
+                placeholder="Gebouw A - 2e verdieping - Kamer 205"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    borderRadius: 2,
+                    boxShadow: isDark
+                      ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                      : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                    '& fieldset': { border: 'none' },
+                    '&:hover, &.Mui-focused': {
+                      boxShadow: isDark
+                        ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.3)'
+                        : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.2)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                    '&.Mui-focused': { color: '#FF7700' },
+                  },
+                }}
+              />
+
+              <TextField
+                type="date"
+                label="Geplande datum"
+                value={scheduledDate ? scheduledDate.split('T')[0] : ''}
+                onChange={(e) => setScheduledDate(e.target.value || undefined)}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarTodayIcon sx={{ fontSize: '1rem', color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)' }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    borderRadius: 2,
+                    boxShadow: isDark
+                      ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                      : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                    '& fieldset': { border: 'none' },
+                    '&:hover, &.Mui-focused': {
+                      boxShadow: isDark
+                        ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.3)'
+                        : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.2)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                    '&.Mui-focused': { color: '#FF7700' },
+                  },
+                }}
+              />
+            </Stack>
           </Box>
-        </Alert>
-      )}
 
-      {/* Styled actions with separator */}
-      <DialogActions
-        sx={{
-          px: 3,
-          py: 2,
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          gap: 1,
+          {/* Intune Devices Display - Neumorphic Inset with depth */}
+          {userDevices.length > 0 && (
+            <Box
+              sx={{
+                mb: 3,
+                p: 2,
+                borderRadius: 3,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 5px 5px 10px #161a1d, inset -5px -5px 10px #262c33'
+                  : 'inset 5px 5px 10px #c5cad0, inset -5px -5px 10px #ffffff',
+                transform: 'translateZ(6px)',
+              }}
+            >
+              <Typography
+                variant="caption"
+                fontWeight={700}
+                sx={{
+                  mb: 1.5,
+                  display: 'block',
+                  color: '#2196F3',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                HUIDIGE APPARATEN (INTUNE)
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                {userDevices.map((device) => (
+                  <Chip
+                    key={device.id || device.serialNumber}
+                    icon={<LaptopIcon sx={{ fontSize: '0.9rem !important' }} />}
+                    label={`${device.deviceName || '?'} — ${device.serialNumber || ''}`}
+                    size="small"
+                    sx={{
+                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                      color: '#2196F3',
+                      fontWeight: 600,
+                      border: 'none',
+                      boxShadow: isDark
+                        ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                        : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
+                      '& .MuiChip-icon': { color: '#2196F3' },
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          )}
+
+          {/* Neumorphic Divider */}
+          <Box
+            sx={{
+              my: 3,
+              height: 2,
+              borderRadius: 1,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: isDark
+                ? 'inset 1px 1px 2px #161a1d, inset -1px -1px 2px #262c33'
+                : 'inset 1px 1px 2px #c5cad0, inset -1px -1px 2px #ffffff',
+            }}
+          />
+
+          {/* Device Configuration Section */}
+          <Typography
+            variant="overline"
+            sx={{
+              display: 'block',
+              mb: 2.5,
+              fontWeight: 700,
+              color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
+              letterSpacing: '0.1em',
+            }}
+          >
+            Apparaat Configuratie
+          </Typography>
+
+          {/* Old Device Section - Neumorphic */}
+          <Box
+            sx={{
+              mb: 2.5,
+              p: 2.5,
+              borderRadius: 3,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: returningOldDevice
+                ? (isDark
+                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(255, 152, 0, 0.4)'
+                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(255, 152, 0, 0.3)')
+                : (isDark
+                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
+                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: returningOldDevice ? 2 : 0 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    boxShadow: returningOldDevice
+                      ? (isDark
+                        ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                        : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff')
+                      : (isDark
+                        ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                        : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff'),
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <HistoryIcon sx={{
+                    color: returningOldDevice ? 'warning.main' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
+                    fontSize: '1.3rem',
+                    transition: 'color 0.3s ease',
+                  }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+                    Oude toestellen inleveren
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
+                    Registreer apparaten die worden vervangen
+                  </Typography>
+                </Box>
+                {oldDevices.length > 0 && (
+                  <Chip
+                    label={`${oldDevices.length} ${oldDevices.length === 1 ? 'toestel' : 'toestellen'}`}
+                    size="small"
+                    sx={{
+                      height: 24,
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                      color: 'warning.main',
+                      border: 'none',
+                      boxShadow: isDark
+                        ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                        : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
+                    }}
+                  />
+                )}
+              </Stack>
+              <Switch
+                checked={returningOldDevice}
+                onChange={(e) => setReturningOldDevice(e.target.checked)}
+                color="warning"
+                sx={{
+                  '& .MuiSwitch-track': {
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
+                  },
+                }}
+              />
+            </Stack>
+
+            {returningOldDevice && (
+              <Box sx={{ mt: 2, pt: 2 }}>
+                <OldDeviceConfigSection
+                  devices={oldDevices}
+                  onChange={setOldDevices}
+                  onScanRequest={handleOldDeviceScanRequest}
+                  onSerialSearch={handleOldDeviceSerialSearch}
+                />
+              </Box>
+            )}
+          </Box>
+
+          {/* New Device Section - Neumorphic */}
+          <Box
+            sx={{
+              mb: 2.5,
+              p: 2.5,
+              borderRadius: 3,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: addingNewDevice
+                ? (isDark
+                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(76, 175, 80, 0.4)'
+                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(76, 175, 80, 0.3)')
+                : (isDark
+                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
+                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: addingNewDevice ? 2 : 0 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    boxShadow: addingNewDevice
+                      ? (isDark
+                        ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                        : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff')
+                      : (isDark
+                        ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                        : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff'),
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <ComputerIcon sx={{
+                    color: addingNewDevice ? 'success.main' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
+                    fontSize: '1.3rem',
+                    transition: 'color 0.3s ease',
+                  }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+                    Nieuw apparaat toevoegen
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
+                    Configureer nieuwe apparaten voor deze werkplek
+                  </Typography>
+                </Box>
+              </Stack>
+              <Switch
+                checked={addingNewDevice}
+                onChange={(e) => setAddingNewDevice(e.target.checked)}
+                color="success"
+                sx={{
+                  '& .MuiSwitch-track': {
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
+                  },
+                }}
+              />
+            </Stack>
+
+            {addingNewDevice && (
+              <Box sx={{ mt: 2, pt: 2 }}>
+                {/* QR Scan Button - Djoppie Neumorphic Style */}
+                <Button
+                  fullWidth
+                  startIcon={<QrCodeScannerIcon />}
+                  onClick={() => handleOpenScanDialog('new-device')}
+                  sx={{
+                    mb: 2,
+                    py: 1.5,
+                    borderRadius: 2.5,
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    color: '#FF7700',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    border: 'none',
+                    // Djoppie neumorphic raised style
+                    boxShadow: isDark
+                      ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33, inset 0 0 0 1px rgba(255, 119, 0, 0.2)'
+                      : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff, inset 0 0 0 1px rgba(255, 119, 0, 0.15)',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                      transform: 'translateY(-2px)',
+                      boxShadow: isDark
+                        ? '7px 7px 14px #161a1d, -7px -7px 14px #262c33, 0 4px 12px rgba(255, 119, 0, 0.3), inset 0 0 0 2px rgba(255, 119, 0, 0.4)'
+                        : '7px 7px 14px #c5cad0, -7px -7px 14px #ffffff, 0 4px 12px rgba(255, 119, 0, 0.2), inset 0 0 0 2px rgba(255, 119, 0, 0.3)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0)',
+                      boxShadow: isDark
+                        ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.5)'
+                        : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.4)',
+                    },
+                  }}
+                >
+                  Scan QR-code nieuw toestel
+                </Button>
+
+                {/* Multi-device configuration */}
+                <MultiDeviceConfigSection
+                  devices={newDevices}
+                  onChange={setNewDevices}
+                />
+              </Box>
+            )}
+          </Box>
+
+          {/* Validation Warnings - Neumorphic */}
+          {hasTemplateErrors && (
+            <Alert
+              severity="warning"
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                  : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                border: 'none',
+              }}
+            >
+              Selecteer een template voor alle toegevoegde apparaten
+            </Alert>
+          )}
+          {!hasDeviceConfigured && userName.trim() && (
+            <Alert
+              severity="info"
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                  : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                border: 'none',
+              }}
+            >
+              Voeg minimaal één apparaat toe of selecteer een oud toestel
+            </Alert>
+          )}
+        </DialogContent>
+
+        {/* Actions - Neumorphic */}
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            borderTop: '1px solid',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+            gap: 2,
+          }}
+        >
+          <Button
+            onClick={handleClose}
+            sx={{
+              fontWeight: 600,
+              px: 3,
+              py: 1,
+              borderRadius: 2,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+              boxShadow: isDark
+                ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33'
+                : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                  : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+              },
+            }}
+          >
+            Annuleren
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!isFormValid || createMutation.isPending || updateMutation.isPending}
+            sx={{
+              fontWeight: 700,
+              px: 4,
+              py: 1,
+              borderRadius: 2,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              color: '#FF7700',
+              boxShadow: isDark
+                ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.3)'
+                : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.2)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.5)'
+                  : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.4)',
+              },
+              '&.Mui-disabled': {
+                color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.26)',
+                boxShadow: isDark
+                  ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                  : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+              },
+            }}
+          >
+            {createMutation.isPending || updateMutation.isPending ? 'Opslaan...' : 'Opslaan'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* QR Scan Dialog - Neumorphic */}
+      <Dialog
+        open={scanDialogOpen}
+        onClose={handleCloseScanDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            border: 'none',
+            bgcolor: isDark ? 'rgba(30, 35, 40, 0.85)' : 'rgba(232, 238, 243, 0.85)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: isDark
+              ? '20px 20px 60px #161a1d, -20px -20px 60px #262c33'
+              : '20px 20px 60px #c5cad0, -20px -20px 60px #ffffff',
+            overflow: 'hidden',
+          },
         }}
       >
-        <Button onClick={handleClose} size="small">
-          Annuleren
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          disabled={!isFormValid || createMutation.isPending || updateMutation.isPending}
-          size="small"
+        {/* Scan Dialog Header - Neumorphic */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2,
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            borderBottom: '1px solid',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          {createMutation.isPending || updateMutation.isPending ? 'Opslaan...' : 'Opslaan'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 44,
+                height: 44,
+                borderRadius: 2.5,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, inset 0 0 0 1px rgba(255, 119, 0, 0.3)'
+                  : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, inset 0 0 0 1px rgba(255, 119, 0, 0.2)',
+              }}
+            >
+              <QrCodeScannerIcon sx={{ color: '#FF7700', fontSize: '1.4rem', filter: 'drop-shadow(0 2px 4px rgba(255, 119, 0, 0.3))' }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#FF7700', textShadow: isDark ? '0 2px 8px rgba(255, 119, 0, 0.3)' : 'none' }}>
+                Scan Asset QR-code
+              </Typography>
+              <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
+                {scanMode === 'new-device' ? 'Link nieuw toestel' : 'Link oud toestel in te leveren'}
+              </Typography>
+            </Box>
+          </Stack>
+          <IconButton
+            onClick={handleCloseScanDialog}
+            size="small"
+            sx={{
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: isDark
+                ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
+              '&:hover': {
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                  : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+              },
+            }}
+          >
+            <CloseIcon sx={{ color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)' }} />
+          </IconButton>
+        </Box>
+
+        {/* Tabs - Neumorphic */}
+        <Box sx={{ px: 2, py: 1.5, bgcolor: isDark ? '#1e2328' : '#e8eef3' }}>
+          <Box
+            sx={{
+              borderRadius: 2,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: isDark
+                ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+              p: 0.5,
+            }}
+          >
+            <Tabs
+              value={activeTab}
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              variant="fullWidth"
+              sx={{
+                minHeight: 44,
+                '& .MuiTabs-indicator': {
+                  display: 'none',
+                },
+                '& .MuiTab-root': {
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  minHeight: 44,
+                  borderRadius: 1.5,
+                  color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                  transition: 'all 0.3s ease',
+                },
+                '& .Mui-selected': {
+                  color: '#FF7700',
+                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                  boxShadow: isDark
+                    ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                    : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
+                },
+              }}
+            >
+              <Tab icon={<QrCodeScannerIcon />} label="QR Scanner" iconPosition="start" />
+              <Tab icon={<KeyboardIcon />} label="Manual Entry" iconPosition="start" />
+            </Tabs>
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ p: 3, bgcolor: isDark ? '#1e2328' : '#e8eef3' }}>
+          {/* QR Scanner Tab */}
+          <TabPanel value={activeTab} index={0}>
+            <Box
+              sx={{
+                borderRadius: 3,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33'
+                  : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff',
+                p: 2,
+              }}
+            >
+              <QRScanner
+                onScanSuccess={handleScanSuccess}
+                onScanError={(error) => setScanError(error)}
+              />
+            </Box>
+          </TabPanel>
+
+          {/* Manual Entry Tab */}
+          <TabPanel value={activeTab} index={1}>
+            <Box sx={{ pt: 2 }}>
+              <TextField
+                fullWidth
+                label="Asset Code"
+                value={manualAssetCode}
+                onChange={(e) => {
+                  setManualAssetCode(e.target.value);
+                  setScanError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleManualSearch();
+                  }
+                }}
+                placeholder="bijv. LAPTOP001"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={handleManualSearch}
+                        disabled={!manualAssetCode.trim() || isLoadingAsset}
+                        sx={{
+                          bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                          boxShadow: isDark
+                            ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                            : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
+                          '&:hover': {
+                            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                            boxShadow: isDark
+                              ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                              : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+                          },
+                        }}
+                      >
+                        {isLoadingAsset ? <CircularProgress size={20} /> : <SearchIcon sx={{ color: '#FF7700' }} />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    borderRadius: 2,
+                    boxShadow: isDark
+                      ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                      : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                    '& fieldset': { border: 'none' },
+                    '&:hover, &.Mui-focused': {
+                      boxShadow: isDark
+                        ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.3)'
+                        : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.2)',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                    '&.Mui-focused': { color: '#FF7700' },
+                  },
+                }}
+              />
+              <Button
+                fullWidth
+                onClick={handleManualSearch}
+                disabled={!manualAssetCode.trim() || isLoadingAsset}
+                sx={{
+                  mt: 2,
+                  py: 1.5,
+                  borderRadius: 2,
+                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                  color: '#FF7700',
+                  fontWeight: 700,
+                  boxShadow: isDark
+                    ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.3)'
+                    : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.2)',
+                  '&:hover': {
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    boxShadow: isDark
+                      ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.5)'
+                      : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.4)',
+                  },
+                  '&.Mui-disabled': {
+                    color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.26)',
+                    boxShadow: isDark
+                      ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                      : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+                  },
+                }}
+              >
+                {isLoadingAsset ? 'Zoeken...' : 'Zoek Asset'}
+              </Button>
+            </Box>
+          </TabPanel>
+
+          {isLoadingAsset && (
+            <Alert
+              severity="info"
+              sx={{
+                mt: 2,
+                borderRadius: 2,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                  : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                border: 'none',
+              }}
+            >
+              Searching for asset...
+            </Alert>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Scan Error Snackbar - Neumorphic */}
+      <Snackbar
+        open={!!scanError}
+        autoHideDuration={4000}
+        onClose={() => setScanError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="error"
+          onClose={() => setScanError('')}
+          sx={{
+            fontWeight: 600,
+            borderRadius: 2,
+            bgcolor: isDark ? '#2a1f1f' : '#fef2f2',
+            boxShadow: isDark
+              ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33'
+              : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff',
+            border: 'none',
+          }}
+        >
+          {scanError}
+        </Alert>
+      </Snackbar>
+
+      {/* Scan Success Snackbar - Neumorphic */}
+      <Snackbar
+        open={!!scanSuccess}
+        autoHideDuration={2000}
+        onClose={() => setScanSuccess('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          onClose={() => setScanSuccess('')}
+          sx={{
+            fontWeight: 600,
+            borderRadius: 2,
+            bgcolor: isDark ? '#1f2a1f' : '#f0fdf4',
+            boxShadow: isDark
+              ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33'
+              : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff',
+            border: 'none',
+          }}
+        >
+          {scanSuccess}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
