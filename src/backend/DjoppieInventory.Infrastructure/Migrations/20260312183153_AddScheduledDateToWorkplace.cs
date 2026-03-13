@@ -14,7 +14,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
             migrationBuilder.AddColumn<DateTime>(
                 name: "ScheduledDate",
                 table: "RolloutWorkplaces",
-                type: "TEXT",
                 nullable: true);
         }
 
