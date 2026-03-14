@@ -37,11 +37,13 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import HistoryIcon from '@mui/icons-material/History';
 import LaptopIcon from '@mui/icons-material/Laptop';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
 import { MultiDeviceConfigSection, type DeviceConfig } from './MultiDeviceConfigSection';
 import { OldDeviceConfigSection, type OldDeviceConfig } from './OldDeviceConfigSection';
+import { UpdateWorkplaceAssetsSection, type UpdateAssetConfig } from './UpdateWorkplaceAssetsSection';
 import { graphApi } from '../../api/graph.api';
 import { intuneApi } from '../../api/intune.api';
 import QRScanner from '../scanner/QRScanner';
@@ -52,10 +54,16 @@ import type {
   UpdateRolloutWorkplace,
   AssetPlan,
 } from '../../types/rollout';
-import { getAssetByCode, getAssetBySerialNumber } from '../../api/assets.api';
+import { getAssetByCode, getAssetBySerialNumber, getAssetsByOwner } from '../../api/assets.api';
 import type { Asset } from '../../types/asset.types';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import AddIcon from '@mui/icons-material/Add';
 import { logger } from '../../utils/logger';
 import { normalizeAssetCode, validateAssetCode } from '../../utils/validation';
+import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 
 interface RolloutWorkplaceDialogProps {
   open: boolean;
@@ -79,7 +87,7 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
 };
 
 // Asset scan mode types - includes index for old device targeting
-type AssetScanMode = 'new-device' | { type: 'old-device'; index: number } | null;
+type AssetScanMode = 'new-device' | 'update-asset' | { type: 'old-device'; index: number } | null;
 
 const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWorkplaceDialogProps) => {
   const isEditMode = Boolean(workplace);
@@ -93,13 +101,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [serviceId, setServiceId] = useState<number | undefined>();
   const [scheduledDate, setScheduledDate] = useState<string | undefined>();
 
-  // Old devices state (multiple)
+  // Old devices state (multiple) - Regio 2: Swap/Inleveren
   const [oldDevices, setOldDevices] = useState<OldDeviceConfig[]>([]);
 
-  // Multi-device configuration state
+  // Update assets state - Regio 1: Existing assets from inventory (status: Nieuw)
+  const [updateAssets, setUpdateAssets] = useState<UpdateAssetConfig[]>([]);
+
+  // Multi-device configuration state - Regio 3: New assets to create
   const [newDevices, setNewDevices] = useState<DeviceConfig[]>([]);
 
   // Toggle states
+  const [linkingExistingAssets, setLinkingExistingAssets] = useState(false);
   const [addingNewDevice, setAddingNewDevice] = useState(true);
   const [returningOldDevice, setReturningOldDevice] = useState(false);
   const [isRetroactive, setIsRetroactive] = useState(false);
@@ -123,6 +135,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [userDevices, setUserDevices] = useState<IntuneDevice[]>([]);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Owner assets from Djoppie DB
+  const [ownerAssets, setOwnerAssets] = useState<Asset[]>([]);
+  const [ownerAssetsLoading, setOwnerAssetsLoading] = useState(false);
+
+  // Device menu state (for clicking Intune/Owner assets)
+  const [deviceMenuAnchor, setDeviceMenuAnchor] = useState<null | HTMLElement>(null);
+  const [selectedDevice, setSelectedDevice] = useState<{ type: 'intune' | 'owner'; data: IntuneDevice | Asset } | null>(null);
 
   const handleUserSearch = useCallback((query: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -151,6 +171,9 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setSyncedKey(currentKey);
     setUserDevices([]);
     setUserOptions([]);
+    setOwnerAssets([]);
+    setUpdateAssets([]);
+    setLinkingExistingAssets(false);
     setIsRetroactive(false);
 
     setUserName(workplace!.userName);
@@ -160,9 +183,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setScheduledDate(workplace!.scheduledDate || undefined);
 
     if (workplace!.userEmail) {
+      // Fetch Intune devices
       intuneApi.getDevicesByUser(workplace!.userEmail)
         .then(devices => setUserDevices(devices))
         .catch(() => setUserDevices([]));
+
+      // Fetch owner assets from Djoppie DB
+      setOwnerAssetsLoading(true);
+      getAssetsByOwner(workplace!.userEmail)
+        .then(assets => setOwnerAssets(assets))
+        .catch(() => setOwnerAssets([]))
+        .finally(() => setOwnerAssetsLoading(false));
     }
 
     const plans = workplace!.assetPlans || [];
@@ -216,8 +247,11 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setScheduledDate(undefined);
     setUserDevices([]);
     setUserOptions([]);
+    setOwnerAssets([]);
     setOldDevices([]);
+    setUpdateAssets([]);
     setNewDevices([]);
+    setLinkingExistingAssets(false);
     setAddingNewDevice(true);
     setReturningOldDevice(false);
     setIsRetroactive(false);
@@ -273,8 +307,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
       if (asset) {
         // Link the asset based on scan mode
-        if (scanMode === 'new-device') {
-          // Add as new device with linked asset
+        if (scanMode === 'update-asset') {
+          // Add as existing asset from inventory (Regio 1)
+          const updateConfig: UpdateAssetConfig = {
+            id: `update-asset-${Date.now()}-${Math.random()}`,
+            linkedAsset: asset,
+          };
+          setUpdateAssets([...updateAssets, updateConfig]);
+          setLinkingExistingAssets(true);
+          setScanSuccess(`Bestaand asset gekoppeld: ${asset.assetCode}`);
+        } else if (scanMode === 'new-device') {
+          // Add as new device with linked asset (Regio 3)
           const newDevice: DeviceConfig = {
             id: `device-${Date.now()}-${Math.random()}`,
             type: 'laptop', // Default, user can change
@@ -318,7 +361,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       setIsLoadingAsset(false);
       setTimeout(() => {
         isProcessingScanRef.current = false;
-      }, 1000);
+      }, ROLLOUT_TIMING.SCAN_SUCCESS_CLEAR_DELAY_MS);
     }
   };
 
@@ -380,10 +423,121 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     handleOpenScanDialog({ type: 'old-device', index });
   };
 
+  // Handle click on Intune device or owner asset
+  const handleDeviceClick = (event: React.MouseEvent<HTMLElement>, type: 'intune' | 'owner', data: IntuneDevice | Asset) => {
+    setDeviceMenuAnchor(event.currentTarget);
+    setSelectedDevice({ type, data });
+  };
+
+  const handleDeviceMenuClose = () => {
+    setDeviceMenuAnchor(null);
+    setSelectedDevice(null);
+  };
+
+  // Add device as new device
+  const handleAddAsNewDevice = async () => {
+    if (!selectedDevice) return;
+
+    let asset: Asset | null = null;
+
+    if (selectedDevice.type === 'owner') {
+      // Direct asset from Djoppie DB
+      asset = selectedDevice.data as Asset;
+    } else {
+      // Intune device - try to find matching asset by serial number
+      const intuneDevice = selectedDevice.data as IntuneDevice;
+      if (intuneDevice.serialNumber) {
+        try {
+          asset = await getAssetBySerialNumber(intuneDevice.serialNumber);
+        } catch {
+          // No matching asset found, create placeholder
+        }
+      }
+    }
+
+    const newDevice: DeviceConfig = {
+      id: `device-${Date.now()}-${Math.random()}`,
+      type: 'laptop',
+      template: asset?.brand && asset?.model
+        ? { brand: asset.brand, model: asset.model } as DeviceConfig['template']
+        : null,
+      serialNumber: selectedDevice.type === 'intune'
+        ? (selectedDevice.data as IntuneDevice).serialNumber || ''
+        : (selectedDevice.data as Asset).serialNumber || '',
+      linkedAsset: asset,
+    };
+
+    setNewDevices([...newDevices, newDevice]);
+    setAddingNewDevice(true);
+    setScanSuccess(asset
+      ? `Toegevoegd als nieuw: ${asset.assetCode}`
+      : `Toegevoegd als nieuw apparaat`);
+    handleDeviceMenuClose();
+  };
+
+  // Add device as old device (to be returned)
+  const handleAddAsOldDevice = async () => {
+    if (!selectedDevice) return;
+
+    let asset: Asset | null = null;
+
+    if (selectedDevice.type === 'owner') {
+      // Direct asset from Djoppie DB
+      asset = selectedDevice.data as Asset;
+    } else {
+      // Intune device - try to find matching asset by serial number
+      const intuneDevice = selectedDevice.data as IntuneDevice;
+      if (intuneDevice.serialNumber) {
+        try {
+          asset = await getAssetBySerialNumber(intuneDevice.serialNumber);
+        } catch {
+          // No matching asset found
+        }
+      }
+    }
+
+    const oldDevice: OldDeviceConfig = {
+      id: `old-device-${Date.now()}-${Math.random()}`,
+      serialNumber: selectedDevice.type === 'intune'
+        ? (selectedDevice.data as IntuneDevice).serialNumber || ''
+        : (selectedDevice.data as Asset).serialNumber || '',
+      linkedAsset: asset,
+    };
+
+    setOldDevices([...oldDevices, oldDevice]);
+    setReturningOldDevice(true);
+    setScanSuccess(asset
+      ? `Toegevoegd als in te leveren: ${asset.assetCode}`
+      : `Toegevoegd als in te leveren apparaat`);
+    handleDeviceMenuClose();
+  };
+
   const buildAssetPlans = (): AssetPlan[] => {
     const plans: AssetPlan[] = [];
 
-    // Add all old devices being returned
+    // Regio 1: Add existing assets from inventory (status: Nieuw)
+    if (linkingExistingAssets && updateAssets.length > 0) {
+      updateAssets.forEach((updateAsset) => {
+        plans.push({
+          equipmentType: 'laptop', // Default, could be derived from asset category
+          createNew: false,
+          requiresSerialNumber: false,
+          requiresQRCode: false,
+          status: 'pending',
+          brand: updateAsset.linkedAsset.brand,
+          model: updateAsset.linkedAsset.model,
+          metadata: {
+            isUpdateAsset: 'true', // Mark as existing asset from inventory
+            ...(updateAsset.linkedAsset.serialNumber && { serialNumber: updateAsset.linkedAsset.serialNumber }),
+          },
+          existingAssetId: updateAsset.linkedAsset.id,
+          existingAssetCode: updateAsset.linkedAsset.assetCode,
+          existingAssetName: updateAsset.linkedAsset.assetName,
+        });
+      });
+    }
+
+    // Regio 2: Add all old devices being returned (swap/inleveren)
     if (returningOldDevice && oldDevices.length > 0) {
       oldDevices.forEach((oldDevice) => {
         if (oldDevice.serialNumber || oldDevice.linkedAsset) {
@@ -396,6 +550,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             metadata: {
               oldSerial: oldDevice.serialNumber,
               isOldDevice: 'true',
+              returnStatus: oldDevice.returnStatus || 'UitDienst', // Store the return status
             },
             ...(oldDevice.linkedAsset && {
               oldAssetId: oldDevice.linkedAsset.id,
@@ -407,6 +562,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       });
     }
 
+    // Regio 3: Add new devices (to be created or linked)
     if (addingNewDevice) {
       newDevices.forEach((device) => {
         if (device.template || device.linkedAsset) {
@@ -482,8 +638,9 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
   const hasTemplateErrors = devicesNeedTemplates;
   const hasOldDeviceConfigured = returningOldDevice && oldDevices.some(d => d.serialNumber || d.linkedAsset);
+  const hasUpdateAssetConfigured = linkingExistingAssets && updateAssets.length > 0;
   const hasNewDeviceConfigured = addingNewDevice && newDevices.some(d => d.template || d.linkedAsset);
-  const hasDeviceConfigured = hasNewDeviceConfigured || hasOldDeviceConfigured;
+  const hasDeviceConfigured = hasNewDeviceConfigured || hasOldDeviceConfigured || hasUpdateAssetConfigured;
   const isFormValid = userName.trim() && !hasTemplateErrors && hasDeviceConfigured;
 
   return (
@@ -705,9 +862,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     setUserEmail(upn);
                     if (value.officeLocation) setLocation(value.officeLocation);
                     if (upn) {
+                      // Fetch Intune devices
                       intuneApi.getDevicesByUser(upn)
                         .then(devices => setUserDevices(devices))
                         .catch(() => setUserDevices([]));
+
+                      // Fetch owner assets from Djoppie DB
+                      setOwnerAssetsLoading(true);
+                      getAssetsByOwner(upn)
+                        .then(assets => setOwnerAssets(assets))
+                        .catch(() => setOwnerAssets([]))
+                        .finally(() => setOwnerAssetsLoading(false));
                     }
                   }
                 }}
@@ -866,7 +1031,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             </Stack>
           </Box>
 
-          {/* Intune Devices Display - Neumorphic Inset with depth */}
+          {/* Intune Devices Display - Neumorphic Inset with depth, CLICKABLE */}
           {userDevices.length > 0 && (
             <Box
               sx={{
@@ -891,7 +1056,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   letterSpacing: '0.05em',
                 }}
               >
-                HUIDIGE APPARATEN (INTUNE)
+                HUIDIGE APPARATEN (INTUNE) — Klik om toe te voegen
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1}>
                 {userDevices.map((device) => (
@@ -900,19 +1065,108 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                     icon={<LaptopIcon sx={{ fontSize: '0.9rem !important' }} />}
                     label={`${device.deviceName || '?'} — ${device.serialNumber || ''}`}
                     size="small"
+                    onClick={(e) => handleDeviceClick(e, 'intune', device)}
                     sx={{
                       bgcolor: isDark ? '#1e2328' : '#e8eef3',
                       color: '#2196F3',
                       fontWeight: 600,
                       border: 'none',
+                      cursor: 'pointer',
                       boxShadow: isDark
                         ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
                         : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
+                      transition: 'all 0.2s ease',
                       '& .MuiChip-icon': { color: '#2196F3' },
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: isDark
+                          ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 0 2px rgba(33, 150, 243, 0.4)'
+                          : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 0 2px rgba(33, 150, 243, 0.3)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(0)',
+                        boxShadow: isDark
+                          ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                          : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+                      },
                     }}
                   />
                 ))}
               </Stack>
+            </Box>
+          )}
+
+          {/* Owner Assets from Djoppie DB - CLICKABLE */}
+          {(ownerAssets.length > 0 || ownerAssetsLoading) && (
+            <Box
+              sx={{
+                mb: 3,
+                p: 2,
+                borderRadius: 3,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 5px 5px 10px #161a1d, inset -5px -5px 10px #262c33'
+                  : 'inset 5px 5px 10px #c5cad0, inset -5px -5px 10px #ffffff',
+                transform: 'translateZ(6px)',
+              }}
+            >
+              <Typography
+                variant="caption"
+                fontWeight={700}
+                sx={{
+                  mb: 1.5,
+                  display: 'block',
+                  color: '#FF7700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                ASSETS IN DJOPPIE DB — Klik om toe te voegen
+              </Typography>
+              {ownerAssetsLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={16} sx={{ color: '#FF7700' }} />
+                  <Typography variant="caption" color="text.secondary">
+                    Assets laden...
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {ownerAssets.map((asset) => (
+                    <Chip
+                      key={asset.id}
+                      icon={<ComputerIcon sx={{ fontSize: '0.9rem !important' }} />}
+                      label={`${asset.assetCode} — ${asset.assetName || asset.alias || ''}`}
+                      size="small"
+                      onClick={(e) => handleDeviceClick(e, 'owner', asset)}
+                      sx={{
+                        bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                        color: '#FF7700',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: isDark
+                          ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                          : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
+                        transition: 'all 0.2s ease',
+                        '& .MuiChip-icon': { color: '#FF7700' },
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: isDark
+                            ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.4)'
+                            : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.3)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: isDark
+                            ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                            : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
             </Box>
           )}
 
@@ -943,7 +1197,107 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             Apparaat Configuratie
           </Typography>
 
-          {/* Old Device Section - Neumorphic */}
+          {/* REGIO 1: Update Workplace Assets - Existing assets from inventory (status: Nieuw) */}
+          <Box
+            sx={{
+              mb: 2.5,
+              p: 2.5,
+              borderRadius: 3,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: linkingExistingAssets
+                ? (isDark
+                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(33, 150, 243, 0.4)'
+                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(33, 150, 243, 0.3)')
+                : (isDark
+                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
+                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: linkingExistingAssets ? 2 : 0 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    boxShadow: linkingExistingAssets
+                      ? (isDark
+                        ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                        : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff')
+                      : (isDark
+                        ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                        : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff'),
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <InventoryIcon sx={{
+                    color: linkingExistingAssets ? '#2196F3' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
+                    fontSize: '1.3rem',
+                    transition: 'color 0.3s ease',
+                  }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+                    Update werkplek assets
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
+                    Koppel bestaande assets uit inventaris (status: Nieuw)
+                  </Typography>
+                </Box>
+                {updateAssets.length > 0 && (
+                  <Chip
+                    label={`${updateAssets.length} ${updateAssets.length === 1 ? 'asset' : 'assets'}`}
+                    size="small"
+                    sx={{
+                      height: 24,
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                      color: '#2196F3',
+                      border: 'none',
+                      boxShadow: isDark
+                        ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                        : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
+                    }}
+                  />
+                )}
+              </Stack>
+              <Switch
+                checked={linkingExistingAssets}
+                onChange={(e) => setLinkingExistingAssets(e.target.checked)}
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#2196F3',
+                    '&:hover': { bgcolor: 'rgba(33, 150, 243, 0.08)' },
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    bgcolor: '#2196F3',
+                  },
+                  '& .MuiSwitch-track': {
+                    borderRadius: 2,
+                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
+                  },
+                }}
+              />
+            </Stack>
+
+            {linkingExistingAssets && (
+              <Box sx={{ mt: 2, pt: 2 }}>
+                <UpdateWorkplaceAssetsSection
+                  devices={updateAssets}
+                  onChange={setUpdateAssets}
+                  onScanRequest={() => handleOpenScanDialog('update-asset')}
+                />
+              </Box>
+            )}
+          </Box>
+
+          {/* REGIO 2: Old Device Section - Neumorphic (Swap/Inleveren) */}
           <Box
             sx={{
               mb: 2.5,
@@ -989,10 +1343,10 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                 </Box>
                 <Box>
                   <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-                    Oude toestellen inleveren
+                    Toestellen inleveren
                   </Typography>
                   <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                    Registreer apparaten die worden vervangen
+                    Registreer apparaten die worden ingeleverd
                   </Typography>
                 </Box>
                 {oldDevices.length > 0 && (
@@ -1038,7 +1392,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             )}
           </Box>
 
-          {/* New Device Section - Neumorphic */}
+          {/* REGIO 3: New Device Section - Neumorphic (New assets to create) */}
           <Box
             sx={{
               mb: 2.5,
@@ -1308,7 +1662,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                 Scan Asset QR-code
               </Typography>
               <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                {scanMode === 'new-device' ? 'Link nieuw toestel' : 'Link oud toestel in te leveren'}
+                {scanMode === 'update-asset' ? 'Koppel bestaand asset uit inventaris' : scanMode === 'new-device' ? 'Link nieuw toestel' : 'Link oud toestel in te leveren'}
               </Typography>
             </Box>
           </Stack>
@@ -1537,7 +1891,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       {/* Scan Success Snackbar - Neumorphic */}
       <Snackbar
         open={!!scanSuccess}
-        autoHideDuration={2000}
+        autoHideDuration={ROLLOUT_TIMING.SNACKBAR_AUTO_HIDE_MS}
         onClose={() => setScanSuccess('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
@@ -1557,6 +1911,82 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           {scanSuccess}
         </Alert>
       </Snackbar>
+
+      {/* Device Selection Menu - Neumorphic */}
+      <Menu
+        anchorEl={deviceMenuAnchor}
+        open={Boolean(deviceMenuAnchor)}
+        onClose={handleDeviceMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            boxShadow: isDark
+              ? '8px 8px 16px #161a1d, -8px -8px 16px #262c33'
+              : '8px 8px 16px #c5cad0, -8px -8px 16px #ffffff',
+            border: 'none',
+            minWidth: 220,
+            mt: 1,
+          },
+        }}
+      >
+        <MenuItem
+          onClick={handleAddAsNewDevice}
+          sx={{
+            py: 1.5,
+            px: 2,
+            borderRadius: 1.5,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              bgcolor: isDark ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.1)',
+              boxShadow: isDark
+                ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+            },
+          }}
+        >
+          <ListItemIcon>
+            <AddIcon sx={{ color: '#4CAF50' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Toevoegen als nieuw apparaat"
+            secondary="Wordt toegekend aan deze werkplek"
+            primaryTypographyProps={{ fontWeight: 600, color: '#4CAF50', fontSize: '0.9rem' }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: 'text.secondary' }}
+          />
+        </MenuItem>
+        <MenuItem
+          onClick={handleAddAsOldDevice}
+          sx={{
+            py: 1.5,
+            px: 2,
+            borderRadius: 1.5,
+            mx: 1,
+            my: 0.5,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              bgcolor: isDark ? 'rgba(255, 152, 0, 0.15)' : 'rgba(255, 152, 0, 0.1)',
+              boxShadow: isDark
+                ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
+            },
+          }}
+        >
+          <ListItemIcon>
+            <HistoryIcon sx={{ color: '#FF9800' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Toevoegen als oud apparaat"
+            secondary="Wordt ingeleverd / vervangen"
+            primaryTypographyProps={{ fontWeight: 600, color: '#FF9800', fontSize: '0.9rem' }}
+            secondaryTypographyProps={{ fontSize: '0.75rem', color: 'text.secondary' }}
+          />
+        </MenuItem>
+      </Menu>
     </>
   );
 };

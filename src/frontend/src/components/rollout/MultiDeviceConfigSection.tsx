@@ -22,6 +22,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FiberNewIcon from '@mui/icons-material/FiberNew';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import MonitorIcon from '@mui/icons-material/Monitor';
@@ -276,11 +278,44 @@ export const MultiDeviceConfigSection = ({
                   <DeviceIcon sx={{ fontSize: '1.1rem' }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" fontWeight={700} sx={{ color: deviceType?.color }}>
-                    {deviceType?.label}
-                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: deviceType?.color }}>
+                      {deviceType?.label}
+                    </Typography>
+                    {device.linkedAsset ? (
+                      <Chip
+                        icon={<CheckCircleIcon sx={{ fontSize: '0.75rem !important' }} />}
+                        label="Bestaand"
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          bgcolor: 'rgba(76, 175, 80, 0.15)',
+                          color: '#4CAF50',
+                          border: 'none',
+                          '& .MuiChip-icon': { color: '#4CAF50' },
+                        }}
+                      />
+                    ) : (
+                      <Chip
+                        icon={<FiberNewIcon sx={{ fontSize: '0.75rem !important' }} />}
+                        label="Nieuw"
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          bgcolor: 'rgba(255, 152, 0, 0.15)',
+                          color: '#FF9800',
+                          border: 'none',
+                          '& .MuiChip-icon': { color: '#FF9800' },
+                        }}
+                      />
+                    )}
+                  </Stack>
                   <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                    Apparaat {index + 1}
+                    {device.linkedAsset ? device.linkedAsset.assetCode : `Apparaat ${index + 1}`}
                   </Typography>
                 </Box>
                 <IconButton

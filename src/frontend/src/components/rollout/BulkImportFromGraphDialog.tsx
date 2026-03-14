@@ -53,6 +53,7 @@ import {
 } from '../../api/rollout.api';
 import { rolloutKeys } from '../../hooks/useRollout';
 import type { StandardAssetPlanConfig, BulkCreateFromGraphResult, GraphGroup } from '../../types/rollout';
+import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 
 interface BulkImportFromGraphDialogProps {
   open: boolean;
@@ -99,7 +100,7 @@ function SectorServices({
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['graph', 'sector-services', sectorId],
     queryFn: () => getGraphSectorServices(sectorId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: ROLLOUT_TIMING.GRAPH_CACHE_STALE_TIME_MS,
   });
 
   if (isLoading) {
@@ -183,7 +184,7 @@ export default function BulkImportFromGraphDialog({
     queryKey: ['graph', 'sector-groups'],
     queryFn: getGraphSectorGroups,
     enabled: open,
-    staleTime: 5 * 60 * 1000,
+    staleTime: ROLLOUT_TIMING.GRAPH_CACHE_STALE_TIME_MS,
   });
 
   // Track if we've already auto-selected for this dialog session
@@ -201,7 +202,7 @@ export default function BulkImportFromGraphDialog({
     queryKey: ['graph', 'service-groups'],
     queryFn: getGraphServiceGroups,
     enabled: open,
-    staleTime: 5 * 60 * 1000,
+    staleTime: ROLLOUT_TIMING.GRAPH_CACHE_STALE_TIME_MS,
   });
 
   // Auto-select matching group when data is loaded
@@ -222,22 +223,17 @@ export default function BulkImportFromGraphDialog({
       .replace(/^MG-/i, '')
       .trim();
 
-    console.log('Looking for match:', normalizedName, 'from service:', serviceName);
-
     const matchingGroup = allServiceGroups.find((group) => {
       const groupServiceName = group.serviceName?.toUpperCase() || '';
       return groupServiceName === normalizedName;
     });
 
     if (matchingGroup) {
-      console.log('Auto-selecting group:', matchingGroup.displayName, 'for service:', serviceName);
       // Use queueMicrotask to avoid lint warning about setState in effect
       queueMicrotask(() => {
         setSelectedGroup(matchingGroup);
         setShowFilter(false);
       });
-    } else {
-      console.log('No matching group found for service:', serviceName, '(normalized:', normalizedName, ') Available groups:', allServiceGroups.map(g => g.serviceName));
     }
   }, [open, serviceName, allServiceGroups]);
 
@@ -274,6 +270,8 @@ export default function BulkImportFromGraphDialog({
       setResult(data);
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(dayId) });
+      // Also invalidate the days list so workplace counts update immediately
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 

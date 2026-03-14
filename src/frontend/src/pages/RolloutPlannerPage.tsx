@@ -18,6 +18,7 @@ import {
   Tooltip,
   Checkbox,
   Collapse,
+  InputAdornment,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -35,6 +36,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -56,6 +58,7 @@ import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
 import { getStatusColor } from '../api/rollout.api';
 import { servicesApi } from '../api/admin.api';
 import { ROUTES } from '../constants/routes';
+import { WORKPLACE_STATUS_SORT_ORDER } from '../constants/rollout.constants';
 import Loading from '../components/common/Loading';
 import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
@@ -142,6 +145,7 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
   // Service filter state
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [filterExpanded, setFilterExpanded] = useState(false);
+  const [serviceSearchQuery, setServiceSearchQuery] = useState('');
 
   // Fetch services for filter
   const { data: services = [] } = useQuery({
@@ -158,6 +162,30 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
       return acc;
     }, {});
   }, [services]);
+
+  // Filter services by search query
+  const filteredServicesBySector = useMemo(() => {
+    if (!serviceSearchQuery.trim()) return servicesBySector;
+
+    const query = serviceSearchQuery.toLowerCase();
+    const filtered: Record<string, typeof services> = {};
+
+    for (const [sectorName, sectorServices] of Object.entries(servicesBySector)) {
+      // Check if sector name matches
+      const sectorMatches = sectorName.toLowerCase().includes(query);
+      // Filter services that match the query
+      const matchingServices = sectorServices.filter(service =>
+        service.name.toLowerCase().includes(query) ||
+        sectorMatches
+      );
+
+      if (matchingServices.length > 0) {
+        filtered[sectorName] = matchingServices;
+      }
+    }
+
+    return filtered;
+  }, [servicesBySector, serviceSearchQuery]);
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -313,11 +341,51 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
           {/* Expandable Filter Panel */}
           <Box
             sx={{
-              maxHeight: filterExpanded ? 500 : 0,
+              maxHeight: filterExpanded ? 600 : 0,
               overflow: 'hidden',
               transition: 'max-height 0.3s ease-in-out',
             }}
           >
+            {/* Search Input */}
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Zoek dienst of sector..."
+              value={serviceSearchQuery}
+              onChange={(e) => setServiceSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#FF7700', fontSize: '1.2rem' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: serviceSearchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setServiceSearchQuery('')}
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      <ClearIcon sx={{ fontSize: '1rem' }} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: 'background.paper',
+                  '&:hover fieldset': {
+                    borderColor: '#FF7700',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#FF7700',
+                  },
+                },
+              }}
+            />
+
             <Box
               sx={{
                 display: 'grid',
@@ -333,9 +401,19 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
                 border: '1px solid',
                 borderColor: 'rgba(255, 119, 0, 0.15)',
                 borderRadius: 2,
+                maxHeight: 400,
+                overflowY: 'auto',
               }}
             >
-              {Object.entries(servicesBySector).map(([sectorName, sectorServices]) => (
+              {Object.keys(filteredServicesBySector).length === 0 && serviceSearchQuery && (
+                <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Geen diensten gevonden voor "{serviceSearchQuery}"
+                  </Typography>
+                </Box>
+              )}
+
+              {Object.entries(filteredServicesBySector).map(([sectorName, sectorServices]) => (
                 <Box key={sectorName}>
                   {/* Sector Header */}
                   <Typography
@@ -603,6 +681,7 @@ const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledW
  */
 interface WorkplaceListProps {
   dayId: number;
+  sessionId: number;
   sessionStatus: string;
   onAddWorkplace: () => void;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
@@ -610,7 +689,8 @@ interface WorkplaceListProps {
   onImportFromGraph: () => void;
 }
 
-const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
+const WorkplaceList = ({ dayId, sessionId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
+  const navigate = useNavigate();
   const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
   const deleteMutation = useDeleteRolloutWorkplace();
   const workplaceStatusMutation = useUpdateWorkplaceStatus();
@@ -635,6 +715,19 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
       status: 'Pending',
     });
   };
+
+  // Sort workplaces: InProgress first, then Ready, then Pending, then Completed
+  // NOTE: useMemo must be called before any early returns to satisfy Rules of Hooks
+  const sortedWorkplaces = useMemo(() => {
+    if (!workplaces) return [];
+    return [...workplaces].sort((a, b) => {
+      const orderA = WORKPLACE_STATUS_SORT_ORDER[a.status] ?? 99;
+      const orderB = WORKPLACE_STATUS_SORT_ORDER[b.status] ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+      // Secondary sort by name
+      return a.userName.localeCompare(b.userName);
+    });
+  }, [workplaces]);
 
   if (isLoading) {
     return <Typography variant="body2" color="text.secondary">Laden...</Typography>;
@@ -739,7 +832,7 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {workplaces.map((workplace) => (
+          {sortedWorkplaces.map((workplace) => (
             <Box
               key={workplace.id}
               sx={{
@@ -843,6 +936,24 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                       sx={{ color: 'rgba(234, 179, 8, 0.7)', '&:hover': { color: '#eab308' } }}
                     >
                       <ChevronLeftIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {workplace.status === 'InProgress' && (
+                  <Tooltip title="Ga naar uitvoering">
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/rollouts/${sessionId}/execute?workplaceId=${workplace.id}`)}
+                      sx={{
+                        color: '#FF7700',
+                        bgcolor: 'rgba(255, 119, 0, 0.1)',
+                        '&:hover': {
+                          bgcolor: 'rgba(255, 119, 0, 0.2)',
+                          color: '#FF7700',
+                        },
+                      }}
+                    >
+                      <PlayArrowIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -1606,6 +1717,7 @@ const RolloutPlannerPage = () => {
                           >
                             <WorkplaceList
                               dayId={day.id}
+                              sessionId={session.id}
                               sessionStatus={session.status}
                               onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
                               onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}

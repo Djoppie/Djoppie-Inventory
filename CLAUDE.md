@@ -60,21 +60,38 @@ The system uses the following status values (defined in `DjoppieInventory.Core/E
 src/backend/
 ├── DjoppieInventory.API/           # API Layer
 │   ├── Controllers/                # API endpoints
-│   │   ├── AssetsController.cs     # Asset CRUD operations
+│   │   ├── AssetsController.cs     # Asset CRUD + sorting/filtering
+│   │   ├── RolloutsController.cs   # Rollout session/day/workplace management (70KB)
+│   │   ├── IntuneController.cs     # Intune device sync & lookup
+│   │   ├── GraphController.cs      # Azure AD users/groups for bulk import
+│   │   ├── ServicesController.cs   # Organization services (Dienst ICT, etc.)
+│   │   ├── SectorsController.cs    # Organization sectors
+│   │   ├── BuildingsController.cs  # Building/location management
+│   │   ├── CategoriesController.cs # Asset categories
+│   │   ├── AssetTypesController.cs # Asset types (laptop, monitor, etc.)
 │   │   ├── AssetTemplatesController.cs
-│   │   ├── IntuneController.cs     # Intune device data
+│   │   ├── AssetEventsController.cs # Asset history/audit events
+│   │   ├── LeaseContractsController.cs
+│   │   ├── CsvImportController.cs  # Bulk CSV import
 │   │   ├── QRCodeController.cs     # QR code generation
 │   │   └── UserController.cs       # User profile
 │   ├── Program.cs                  # Application entry point & DI configuration
-│   ├── appsettings.json           # Base configuration
-│   ├── appsettings.Development.json    # Local dev config
-│   ├── appsettings.AzureDev.json      # Azure DEV config
-│   └── appsettings.Production.json    # Azure PROD config
+│   └── appsettings.*.json          # Environment-specific configuration
 │
 ├── DjoppieInventory.Core/          # Domain Layer
 │   ├── Entities/                   # Domain models
 │   │   ├── Asset.cs               # Asset entity with AssetStatus enum
-│   │   └── AssetTemplate.cs
+│   │   ├── RolloutSession.cs      # Rollout planning session
+│   │   ├── RolloutDay.cs          # Single rollout day
+│   │   ├── RolloutWorkplace.cs    # Workplace with AssetPlansJson
+│   │   ├── Service.cs             # Organization service unit
+│   │   ├── Sector.cs              # Organization sector
+│   │   ├── Building.cs            # Physical location
+│   │   ├── Category.cs            # Asset category
+│   │   ├── AssetType.cs           # Asset type classification
+│   │   ├── AssetTemplate.cs       # Quick-create templates
+│   │   ├── AssetEvent.cs          # Audit trail events
+│   │   └── LeaseContract.cs       # Lease management
 │   ├── DTOs/                      # Data transfer objects
 │   └── Interfaces/                # Repository & service contracts
 │
@@ -91,13 +108,21 @@ src/backend/
 ```
 src/frontend/
 ├── src/
+│   ├── api/           # API client layer (Axios + React Query integration)
+│   │   ├── client.ts          # Base Axios instance
+│   │   ├── authInterceptor.ts # MSAL token injection
+│   │   ├── assets.api.ts      # Asset CRUD operations
+│   │   ├── rollout.api.ts     # Rollout workflow API
+│   │   ├── intune.api.ts      # Intune device lookup
+│   │   └── graph.api.ts       # Azure AD users/groups
 │   ├── components/    # Reusable UI components
+│   │   └── rollout/   # Rollout-specific components (dialogs, sections)
 │   ├── pages/         # Page-level components
-│   ├── services/      # API service layer (Axios)
-│   ├── hooks/         # Custom React hooks
+│   ├── hooks/         # Custom React hooks (useRollout.ts, useAssets.ts)
+│   ├── types/         # TypeScript type definitions
 │   ├── config/        # MSAL and app configuration
 │   ├── utils/         # Helper functions
-│   ├── types/         # TypeScript type definitions
+│   ├── constants/     # App constants (rollout.constants.ts)
 │   └── i18n/          # Translation files (nl/en)
 ├── .env.development   # Local dev environment variables
 ├── .env.production    # Azure production environment variables
@@ -407,6 +432,53 @@ The pipeline includes:
 - `ENTRA_CLIENT_ID_PROD`
 - Database connection strings (via Key Vault)
 
+## Rollout Workflow Feature
+
+The rollout feature manages IT device deployments to workplaces. It's a major subsystem with its own architecture.
+
+### Workflow Phases
+
+1. **Planning** (RolloutPlannerPage): Create sessions → Add days → Configure workplaces
+2. **Configuration** (RolloutWorkplaceDialog): Three asset regions per workplace:
+   - **Update Assets**: Assign existing assets (status=Nieuw) to workplace
+   - **Old Devices**: Register devices being returned (InGebruik→UitDienst)
+   - **New Devices**: Create new assets from templates (Nieuw→InGebruik)
+3. **Execution** (RolloutExecutionPage): Scan serials, track progress, complete workplaces
+4. **Reporting** (RolloutReportPage): View statistics and export data
+
+### Asset Status Transitions (Atomic)
+
+```
+Completion Transaction:
+  New Assets:   Nieuw → InGebruik (+ Owner, InstallationDate)
+  Old Assets:   InGebruik → UitDienst/Defect
+  Workplace:    InProgress → Completed
+```
+
+### Key Files
+
+- **Hook**: `src/frontend/src/hooks/useRollout.ts` - React Query mutations/queries
+- **API**: `src/frontend/src/api/rollout.api.ts` - Axios client
+- **Controller**: `src/backend/.../Controllers/RolloutsController.cs` (70KB)
+- **Entities**: `RolloutSession.cs`, `RolloutDay.cs`, `RolloutWorkplace.cs`
+- **Documentation**: `docs/ROLLOUT-ARCHITECTURE.md`, `docs/ROLLOUT-WORKFLOW-GUIDE.md`
+
+### AssetPlansJson Structure
+
+Workplaces store asset plans as JSON in `RolloutWorkplace.AssetPlansJson`:
+
+```json
+[
+  {
+    "equipmentType": "laptop",
+    "createNew": false,
+    "existingAssetId": 1042,
+    "status": "installed",
+    "metadata": { "serialNumber": "ABC123" }
+  }
+]
+```
+
 ## Key Implementation Notes
 
 ### Database Context Switching (Program.cs:34-54)
@@ -530,4 +602,6 @@ az ad app permission admin-consent --id <backend-client-id>
 - **PRODUCTION-READINESS-ASSESSMENT.md** - Production readiness report
 - **SECURITY-REMEDIATION-CHECKLIST.md** - Security hardening guide
 - **docs/BACKEND-CONFIGURATION-GUIDE.md** - Backend configuration reference
+- **docs/ROLLOUT-ARCHITECTURE.md** - Rollout workflow technical architecture
+- **docs/ROLLOUT-WORKFLOW-GUIDE.md** - Rollout user guide (Dutch)
 - **.azuredevops/README.md** - Azure DevOps pipeline setup

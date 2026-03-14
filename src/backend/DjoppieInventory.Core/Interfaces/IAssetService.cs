@@ -85,4 +85,12 @@ public interface IAssetService
     /// <param name="assetIds">List of asset IDs to delete</param>
     /// <returns>Result containing counts of successful and failed deletions</returns>
     Task<BulkDeleteAssetsResultDto> BulkDeleteAssetsAsync(IEnumerable<int> assetIds);
+
+    /// <summary>
+    /// Gets all assets owned by a specific user (by email address).
+    /// </summary>
+    /// <param name="ownerEmail">The owner's email address</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of assets owned by the user</returns>
+    Task<IEnumerable<AssetDto>> GetAssetsByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default);
 }

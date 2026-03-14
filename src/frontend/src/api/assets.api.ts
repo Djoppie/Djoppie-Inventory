@@ -140,3 +140,13 @@ export const bulkDeleteAssets = async (data: BulkDeleteAssetsDto): Promise<BulkD
   const response = await apiClient.delete<BulkDeleteAssetsResultDto>('/assets/bulk', { data });
   return response.data;
 };
+
+/**
+ * Retrieves all assets owned by a specific user (by email address).
+ * @param email The owner's email address
+ * @returns List of assets owned by the user
+ */
+export const getAssetsByOwner = async (email: string): Promise<Asset[]> => {
+  const response = await apiClient.get<Asset[]>(`/assets/by-owner/${encodeURIComponent(email)}`);
+  return response.data;
+};

@@ -273,6 +273,8 @@ export const useCreateRolloutWorkplace = (): UseMutationResult<
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
+      // Also invalidate the days list so accordion header chips (workplace counts) update
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };
@@ -464,6 +466,8 @@ export const useBulkCreateWorkplaces = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.newAssets(variables.dayId) });
+      // Also invalidate the days list so accordion header chips (workplace counts) update
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 };
