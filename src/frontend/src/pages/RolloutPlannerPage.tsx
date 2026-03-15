@@ -41,6 +41,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import { useQuery } from '@tanstack/react-query';
 import {
   useRolloutSession,
@@ -68,6 +69,7 @@ import EmptyPlanningState from '../components/rollout/EmptyPlanningState';
 import PlanningStatusFilter, { PlanningStatusFilterValue } from '../components/rollout/PlanningStatusFilter';
 import PlanningDateHeader from '../components/rollout/PlanningDateHeader';
 import PlanningStatistics from '../components/rollout/PlanningStatistics';
+import RescheduleWorkplaceDialog from '../components/rollout/RescheduleWorkplaceDialog';
 import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
 
 const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
@@ -683,12 +685,14 @@ interface WorkplaceListProps {
   dayId: number;
   sessionId: number;
   sessionStatus: string;
+  dayDate: string;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
   onImportFromGraph: () => void;
+  onRescheduleWorkplace: (workplace: RolloutWorkplace, originalDate: string) => void;
 }
 
-const WorkplaceList = ({ dayId, sessionId, sessionStatus, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
+const WorkplaceList = ({ dayId, sessionId, sessionStatus, dayDate, onEditWorkplace, onPrintWorkplace, onImportFromGraph, onRescheduleWorkplace }: WorkplaceListProps) => {
   const navigate = useNavigate();
   const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
   const deleteMutation = useDeleteRolloutWorkplace();
@@ -902,6 +906,26 @@ const WorkplaceList = ({ dayId, sessionId, sessionStatus, onEditWorkplace, onPri
 
               {/* Action buttons - fixed width */}
               <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
+                {/* Show reschedule button if workplace has custom scheduled date */}
+                {workplace.scheduledDate && workplace.scheduledDate.split('T')[0] !== dayDate.split('T')[0] && (
+                  <Tooltip title="Herplannen">
+                    <IconButton
+                      size="small"
+                      onClick={() => onRescheduleWorkplace(workplace, dayDate)}
+                      disabled={!isEditable}
+                      sx={{
+                        color: '#2196F3',
+                        bgcolor: 'rgba(33, 150, 243, 0.1)',
+                        '&:hover': {
+                          bgcolor: 'rgba(33, 150, 243, 0.2)',
+                          color: '#2196F3',
+                        },
+                      }}
+                    >
+                      <EventRepeatIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 {workplace.status === 'Pending' && (
                   <Tooltip title="Gereed">
                     <IconButton
@@ -1005,6 +1029,9 @@ const RolloutPlannerPage = () => {
   const [bulkPrintAssetIds, setBulkPrintAssetIds] = useState<Set<number> | undefined>();
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
   const [calendarExpanded, setCalendarExpanded] = useState(true);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [rescheduleWorkplace, setRescheduleWorkplace] = useState<RolloutWorkplace | null>(null);
+  const [rescheduleOriginalDate, setRescheduleOriginalDate] = useState<string>('');
 
   // Fetch session data if editing
   const {
@@ -1202,6 +1229,18 @@ const RolloutPlannerPage = () => {
       sessionId: Number(id),
       status: newStatus,
     });
+  };
+
+  const handleOpenRescheduleDialog = (workplace: RolloutWorkplace, originalDayDate: string) => {
+    setRescheduleWorkplace(workplace);
+    setRescheduleOriginalDate(originalDayDate);
+    setRescheduleDialogOpen(true);
+  };
+
+  const handleCloseRescheduleDialog = () => {
+    setRescheduleDialogOpen(false);
+    setRescheduleWorkplace(null);
+    setRescheduleOriginalDate('');
   };
 
   // Status filter counts
@@ -1477,9 +1516,14 @@ const RolloutPlannerPage = () => {
                 onDayClick={(day) => handleOpenDayDialog(day)}
                 onDateClick={(date) => handleOpenDayDialog(undefined, date)}
                 onRescheduledClick={(wp) => {
-                  // Find the day this workplace belongs to and open the dialog
+                  // Find the workplace and day to open reschedule dialog
                   const day = days.find(d => d.id === wp.dayId);
-                  if (day) handleOpenDayDialog(day);
+                  if (day && day.workplaces) {
+                    const workplace = day.workplaces.find(w => w.id === wp.workplaceId);
+                    if (workplace) {
+                      handleOpenRescheduleDialog(workplace, day.date);
+                    }
+                  }
                 }}
               />
             </Box>
@@ -1706,6 +1750,7 @@ const RolloutPlannerPage = () => {
                               dayId={day.id}
                               sessionId={session.id}
                               sessionStatus={session.status}
+                              dayDate={day.date}
                               onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
                               onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
                               onImportFromGraph={() => {
@@ -1713,6 +1758,7 @@ const RolloutPlannerPage = () => {
                                 const service = serviceId ? services.find(s => s.id === serviceId) : undefined;
                                 handleOpenImportGraphDialog(day.id, serviceId, service?.name);
                               }}
+                              onRescheduleWorkplace={handleOpenRescheduleDialog}
                             />
                           </RolloutDayCard>
                         );
@@ -1758,6 +1804,12 @@ const RolloutPlannerPage = () => {
           serviceName={importGraphServiceName}
         />
       )}
+      <RescheduleWorkplaceDialog
+        open={rescheduleDialogOpen}
+        onClose={handleCloseRescheduleDialog}
+        workplace={rescheduleWorkplace}
+        originalDate={rescheduleOriginalDate}
+      />
     </Container>
   );
 };
