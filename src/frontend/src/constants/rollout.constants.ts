@@ -66,7 +66,7 @@ export const WORKPLACE_STATUS_SORT_ORDER: Record<string, number> = {
   [WORKPLACE_STATUS.COMPLETED]: 3,
 };
 
-// Equipment types
+// Equipment types (available for rollout)
 export const EQUIPMENT_TYPE = {
   LAPTOP: 'laptop',
   DESKTOP: 'desktop',

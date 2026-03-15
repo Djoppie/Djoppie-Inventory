@@ -11,7 +11,9 @@
 import {
   Box,
   Button,
+  Checkbox,
   Chip,
+  FormControlLabel,
   IconButton,
   InputAdornment,
   Stack,
@@ -31,6 +33,7 @@ import DockIcon from '@mui/icons-material/Dock';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import MouseIcon from '@mui/icons-material/Mouse';
 import ComputerIcon from '@mui/icons-material/Computer';
+import VideocamIcon from '@mui/icons-material/Videocam';
 import { TemplateSelector } from './TemplateSelector';
 import type { Asset, AssetTemplate } from '../../types/asset.types';
 
@@ -192,12 +195,15 @@ export const MultiDeviceConfigSection = ({
                   key={device.id}
                   icon={<DeviceIcon sx={{ fontSize: '0.85rem !important' }} />}
                   label={
-                    <Box component="span">
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Box component="span" sx={{ fontWeight: 700 }}>{deviceType?.label}</Box>
                       {device.template && (
-                        <Box component="span" sx={{ opacity: 0.7, ml: 0.5 }}>
+                        <Box component="span" sx={{ opacity: 0.7 }}>
                           — {device.template.brand}
                         </Box>
+                      )}
+                      {device.type === 'monitor' && device.metadata?.hasCamera === 'true' && (
+                        <VideocamIcon sx={{ fontSize: '0.75rem', ml: 0.5, color: '#2196F3' }} />
                       )}
                     </Box>
                   }
@@ -424,6 +430,52 @@ export const MultiDeviceConfigSection = ({
                   },
                 }}
               />
+
+              {/* Monitor camera option - Only for monitors */}
+              {device.type === 'monitor' && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={device.metadata?.hasCamera === 'true'}
+                      onChange={(e) => updateDevice(index, {
+                        metadata: { ...device.metadata, hasCamera: e.target.checked ? 'true' : 'false' }
+                      })}
+                      icon={<VideocamIcon sx={{ color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)' }} />}
+                      checkedIcon={<VideocamIcon sx={{ color: '#2196F3' }} />}
+                      sx={{
+                        '&:hover': { bgcolor: 'transparent' },
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 500,
+                        color: device.metadata?.hasCamera === 'true'
+                          ? '#2196F3'
+                          : (isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'),
+                      }}
+                    >
+                      Ingebouwde camera
+                    </Typography>
+                  }
+                  sx={{
+                    mt: 1.5,
+                    ml: 0,
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: neuBg,
+                    boxShadow: device.metadata?.hasCamera === 'true'
+                      ? `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}, 0 0 0 2px rgba(33, 150, 243, 0.3)`
+                      : `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}`,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
+                    },
+                  }}
+                />
+              )}
             </Box>
           );
         })}
