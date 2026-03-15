@@ -7,7 +7,7 @@
  * Design: Neumorphic soft UI with Djoppie orange accent (#FF7700)
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -76,15 +76,15 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [deviceMenuAnchor, setDeviceMenuAnchor] = useState<HTMLElement | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<{ type: 'intune' | 'owner'; data: IntuneDevice | Asset } | null>(null);
 
-  // Sync state tracking
-  const [syncedKey, setSyncedKey] = useState<string | null>(null);
+  // Sync tracking ref (not state to avoid cascading renders)
+  const syncedKeyRef = useRef<string | null>(null);
 
   // Sync workplace data when editing
   const currentKey = workplace ? `${workplace.id}-${workplace.updatedAt}` : null;
 
   useEffect(() => {
-    if (open && currentKey && currentKey !== syncedKey) {
-      setSyncedKey(currentKey);
+    if (open && currentKey && currentKey !== syncedKeyRef.current) {
+      syncedKeyRef.current = currentKey;
       userSearch.clearDevices();
       form.syncFromWorkplace(workplace!);
 
@@ -92,23 +92,23 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         userSearch.fetchUserDevices(workplace!.userEmail);
       }
     }
-  }, [open, currentKey, syncedKey, workplace, form, userSearch]);
+  }, [open, currentKey, workplace, form, userSearch]);
 
   // Reset when opening new workplace
   useEffect(() => {
-    if (open && !workplace && syncedKey !== 'new') {
-      setSyncedKey('new');
+    if (open && !workplace && syncedKeyRef.current !== 'new') {
+      syncedKeyRef.current = 'new';
       form.resetForm();
       userSearch.clearDevices();
     }
-  }, [open, workplace, syncedKey, form, userSearch]);
+  }, [open, workplace, form, userSearch]);
 
   // Reset sync key when dialog closes
   useEffect(() => {
-    if (!open && syncedKey !== null) {
-      setSyncedKey(null);
+    if (!open && syncedKeyRef.current !== null) {
+      syncedKeyRef.current = null;
     }
-  }, [open, syncedKey]);
+  }, [open]);
 
   // Handle user selection from autocomplete
   const handleUserSelect = useCallback((user: { displayName?: string; mail?: string; userPrincipalName?: string; officeLocation?: string }) => {
