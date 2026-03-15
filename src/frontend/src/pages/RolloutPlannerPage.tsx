@@ -262,21 +262,21 @@ const WorkplaceList = ({
                 p: 1.5,
                 border: '1px solid',
                 borderColor: isGhost
-                  ? 'rgba(156, 163, 175, 0.3)'
+                  ? 'rgba(239, 68, 68, 0.3)'  // Red border for failed/rescheduled
                   : workplace.status === 'Ready'
                     ? 'rgba(34, 197, 94, 0.3)'
                     : 'divider',
                 borderRadius: 1,
                 bgcolor: isGhost
-                  ? 'rgba(156, 163, 175, 0.05)'
+                  ? 'rgba(239, 68, 68, 0.04)'  // Light red background
                   : workplace.status === 'Ready'
                     ? 'rgba(34, 197, 94, 0.04)'
                     : 'transparent',
-                opacity: isGhost ? 0.6 : 1,
+                opacity: isGhost ? 0.7 : 1,
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   borderColor: isGhost
-                    ? 'rgba(156, 163, 175, 0.5)'
+                    ? 'rgba(239, 68, 68, 0.5)'
                     : workplace.status === 'Ready'
                       ? 'rgba(34, 197, 94, 0.5)'
                       : 'rgba(255, 119, 0, 0.3)',
@@ -294,25 +294,41 @@ const WorkplaceList = ({
                   ) : (
                     <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                   )}
-                  <Typography variant="body2" sx={{ fontWeight: 600, textDecoration: isGhost ? 'line-through' : 'none' }} noWrap>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                     {workplace.userName}
                   </Typography>
                   {!isGhost && getStatusChip(workplace.status)}
-                  {/* Ghost entry indicator - postponed to another date */}
+                  {/* Ghost entry - show as "Uitgesteld" (failed to complete on time) */}
+                  {isGhost && (
+                    <Chip
+                      label="Uitgesteld"
+                      size="small"
+                      sx={{
+                        height: 22,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        bgcolor: 'rgba(239, 68, 68, 0.12)',
+                        color: '#dc2626',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                      }}
+                      component="span"
+                    />
+                  )}
+                  {/* Show new date for rescheduled workplaces */}
                   {isGhost && workplace.scheduledDate && (
-                    <Tooltip title={`Uitgesteld naar ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                    <Tooltip title={`Verplaatst naar ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
                       <Chip
                         icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
                         label={`→ ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
                         size="small"
                         sx={{
-                          height: 22,
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          bgcolor: 'rgba(156, 163, 175, 0.15)',
-                          color: '#6b7280',
-                          border: '1px solid rgba(156, 163, 175, 0.3)',
-                          '& .MuiChip-icon': { color: '#6b7280' },
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 500,
+                          bgcolor: 'rgba(100, 100, 100, 0.08)',
+                          color: 'text.secondary',
+                          border: '1px solid rgba(100, 100, 100, 0.15)',
+                          '& .MuiChip-icon': { color: 'text.secondary' },
                         }}
                         component="span"
                       />
@@ -534,6 +550,7 @@ const RolloutPlannerPage = () => {
               scheduledDate: wp.scheduledDate,
               dayId: day.id,
               dayName: day.name || `Planning ${day.dayNumber}`,
+              status: wp.status,
             });
           }
         }
@@ -755,6 +772,53 @@ const RolloutPlannerPage = () => {
     return groups;
   }, [filteredDays]);
 
+  // Collect rescheduled workplaces grouped by their target scheduledDate
+  // These are workplaces that need to be shown on a different date than their day's date
+  // (Computed early so we can use it to build allDateKeys)
+  const rescheduledByTargetDateEarly = useMemo(() => {
+    const result: Map<string, Array<{ workplace: RolloutWorkplace; sourceDay: RolloutDay }>> = new Map();
+
+    if (!days) return result;
+
+    for (const day of days) {
+      if (!day.workplaces) continue;
+      for (const wp of day.workplaces) {
+        if (wp.scheduledDate) {
+          const wpDate = wp.scheduledDate.split('T')[0];
+          const dayDate = day.date.split('T')[0];
+          // Workplace is rescheduled to a different date
+          if (wpDate !== dayDate) {
+            if (!result.has(wpDate)) {
+              result.set(wpDate, []);
+            }
+            result.get(wpDate)!.push({ workplace: wp, sourceDay: day });
+          }
+        }
+      }
+    }
+
+    return result;
+  }, [days]);
+
+  // All date keys that should be shown - includes both days with RolloutDays AND
+  // dates that only have rescheduled workplaces targeting them
+  const allDateKeys = useMemo(() => {
+    const dateSet = new Set<string>();
+
+    // Add dates from actual RolloutDays
+    for (const dateKey of daysGroupedByDate.keys()) {
+      dateSet.add(dateKey);
+    }
+
+    // Add dates that have rescheduled workplaces targeting them
+    for (const dateKey of rescheduledByTargetDateEarly.keys()) {
+      dateSet.add(dateKey);
+    }
+
+    // Sort dates chronologically
+    return Array.from(dateSet).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  }, [daysGroupedByDate, rescheduledByTargetDateEarly]);
+
   // Calculate postponed count per date (workplaces rescheduled TO that date)
   const postponedByDate = useMemo(() => {
     const postponed: Map<string, number> = new Map();
@@ -779,32 +843,8 @@ const RolloutPlannerPage = () => {
     return postponed;
   }, [days]);
 
-  // Collect rescheduled workplaces grouped by their target scheduledDate
-  // These are workplaces that need to be shown on a different date than their day's date
-  const rescheduledByTargetDate = useMemo(() => {
-    const result: Map<string, Array<{ workplace: RolloutWorkplace; sourceDay: RolloutDay }>> = new Map();
-
-    if (!days) return result;
-
-    for (const day of days) {
-      if (!day.workplaces) continue;
-      for (const wp of day.workplaces) {
-        if (wp.scheduledDate) {
-          const wpDate = wp.scheduledDate.split('T')[0];
-          const dayDate = day.date.split('T')[0];
-          // Workplace is rescheduled to a different date
-          if (wpDate !== dayDate) {
-            if (!result.has(wpDate)) {
-              result.set(wpDate, []);
-            }
-            result.get(wpDate)!.push({ workplace: wp, sourceDay: day });
-          }
-        }
-      }
-    }
-
-    return result;
-  }, [days]);
+  // Use the early-computed rescheduled workplaces map for the rest of the component
+  const rescheduledByTargetDate = rescheduledByTargetDateEarly;
 
   if (sessionLoading || daysLoading) {
     return <Loading />;
@@ -1170,7 +1210,8 @@ const RolloutPlannerPage = () => {
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               {/* Group plannings by date with date headers */}
-              {Array.from(daysGroupedByDate.entries()).map(([dateKey, daysForDate]) => {
+              {allDateKeys.map((dateKey) => {
+                const daysForDate = daysGroupedByDate.get(dateKey) || [];
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const dateObj = new Date(dateKey);
@@ -1179,20 +1220,23 @@ const RolloutPlannerPage = () => {
                 const isPast = dateObj.getTime() < today.getTime();
                 const isFuture = dateObj.getTime() > today.getTime();
 
-                // Calculate totals for this date
+                // Calculate totals for this date (from actual RolloutDays)
                 const totalWorkplaces = daysForDate.reduce((sum, d) => sum + d.totalWorkplaces, 0);
                 const completedWorkplaces = daysForDate.reduce((sum, d) => sum + d.completedWorkplaces, 0);
                 const postponedCount = postponedByDate.get(dateKey) || 0;
+                // Count rescheduled workplaces targeting this date
+                const rescheduledForDate = rescheduledByTargetDate.get(dateKey) || [];
+                const rescheduledWorkplacesCount = rescheduledForDate.length;
 
                 return (
                   <Box key={dateKey}>
                     {/* Date Header */}
                     <PlanningDateHeader
                       date={dateKey}
-                      totalWorkplaces={totalWorkplaces}
-                      completedWorkplaces={completedWorkplaces}
+                      totalWorkplaces={totalWorkplaces + rescheduledWorkplacesCount}
+                      completedWorkplaces={completedWorkplaces + rescheduledForDate.filter(r => r.workplace.status === 'Completed').length}
                       postponedCount={postponedCount}
-                      planningCount={daysForDate.length}
+                      planningCount={daysForDate.length + (rescheduledWorkplacesCount > 0 ? 1 : 0)}
                       isToday={isToday}
                       isPast={isPast}
                       isFuture={isFuture}
@@ -1257,10 +1301,10 @@ const RolloutPlannerPage = () => {
                         );
                       })}
 
-                      {/* Rescheduled workplaces - show as virtual planning cards grouped by original planning */}
+                      {/* Rescheduled workplaces - show as normal planning cards (work happens here) */}
                       {(() => {
                         // Group rescheduled workplaces by their source day (planning)
-                        const rescheduledForDate = rescheduledByTargetDate.get(dateKey) || [];
+                        // (rescheduledForDate was already computed above)
                         const groupedByPlanning = new Map<number, { day: RolloutDay; workplaces: RolloutWorkplace[] }>();
 
                         for (const { workplace, sourceDay } of rescheduledForDate) {
@@ -1273,6 +1317,11 @@ const RolloutPlannerPage = () => {
                         return Array.from(groupedByPlanning.values()).map(({ day: sourceDay, workplaces: rescheduledWorkplaces }) => {
                           const daySvcId = sourceDay.scheduledServiceIds?.[0] || sourceDay.id;
                           const dayColor = getServiceColor(daySvcId);
+                          // Calculate status based on rescheduled workplaces completion
+                          const allCompleted = rescheduledWorkplaces.length > 0 &&
+                            rescheduledWorkplaces.every(wp => wp.status === 'Completed');
+                          const allReady = rescheduledWorkplaces.length > 0 &&
+                            rescheduledWorkplaces.every(wp => wp.status === 'Ready' || wp.status === 'Completed');
 
                           return (
                             <RolloutDayCard
@@ -1283,6 +1332,8 @@ const RolloutPlannerPage = () => {
                                 totalWorkplaces: rescheduledWorkplaces.length,
                                 completedWorkplaces: rescheduledWorkplaces.filter(wp => wp.status === 'Completed').length,
                                 workplaces: rescheduledWorkplaces,
+                                // Set status based on workplaces for proper styling
+                                status: allCompleted ? 'Completed' : (allReady ? 'Ready' : 'Planning'),
                               }}
                               serviceColor={dayColor}
                               isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
@@ -1290,11 +1341,10 @@ const RolloutPlannerPage = () => {
                               readyCount={rescheduledWorkplaces.filter(wp => wp.status === 'Ready').length}
                               rescheduledCount={0}
                               canExecute={rescheduledWorkplaces.filter(wp => wp.status === 'Ready').length > 0}
-                              isRescheduledCard={true}
-                              originalDate={sourceDay.date}
+                              isRescheduledCard={false}
                               onEdit={() => handleOpenDayDialog(sourceDay)}
                               onDelete={() => {}}
-                              onPrint={() => {}}
+                              onPrint={() => handleBulkPrint(sourceDay.id)}
                               onExecute={() => navigate(`/rollouts/${session.id}/execute?dayId=${sourceDay.id}`)}
                               onSetPlanning={() => {}}
                             >
@@ -1304,8 +1354,7 @@ const RolloutPlannerPage = () => {
                                 sessionStatus={session.status}
                                 dayDate={dateKey}
                                 workplaces={rescheduledWorkplaces}
-                                showRescheduledIndicator={true}
-                                originalDayDate={sourceDay.date}
+                                showRescheduledIndicator={false}
                                 onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(sourceDay.id, workplace)}
                                 onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, sourceDay.id)}
                                 onImportFromGraph={() => {}}

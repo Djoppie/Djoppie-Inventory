@@ -114,19 +114,18 @@ const RolloutDayCard = ({
       elevation={0}
       sx={{
         position: 'relative',
-        border: isRescheduledCard ? '2px dashed' : '1px solid',
-        borderColor: isRescheduledCard ? 'primary.main' : 'divider',
+        // Rescheduled cards now use status-based styling as they are the primary location
+        border: '1px solid',
+        borderColor: 'divider',
         borderRadius: 2,
         overflow: 'hidden',
-        background: isRescheduledCard
-          ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.04) 0%, rgba(33, 150, 243, 0.01) 100%)'
-          : statusStyles.bgGradient,
+        background: statusStyles.bgGradient,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          borderColor: isRescheduledCard ? 'primary.dark' : statusStyles.borderColor,
+          borderColor: statusStyles.borderColor,
         },
-        // Left border accent
+        // Left border accent - use status color for all cards
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -134,7 +133,7 @@ const RolloutDayCard = ({
           top: 0,
           bottom: 0,
           width: 4,
-          bgcolor: isRescheduledCard ? 'primary.main' : statusStyles.borderColor,
+          bgcolor: statusStyles.borderColor,
           transition: 'width 0.3s ease',
         },
         '&:hover::before': {
@@ -185,36 +184,34 @@ const RolloutDayCard = ({
               {day.name || `Planning ${day.dayNumber}`}
             </Typography>
 
-            {/* Status Badge */}
-            {!isRescheduledCard && (
-              <Chip
-                label={statusStyles.statusLabel}
-                size="small"
-                sx={{
-                  height: 24,
-                  bgcolor: statusStyles.statusBg,
-                  color: statusStyles.statusColor,
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  border: `1px solid ${statusStyles.statusColor}40`,
-                }}
-              />
-            )}
+            {/* Status Badge - shown for all cards including rescheduled */}
+            <Chip
+              label={statusStyles.statusLabel}
+              size="small"
+              sx={{
+                height: 24,
+                bgcolor: statusStyles.statusBg,
+                color: statusStyles.statusColor,
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                border: `1px solid ${statusStyles.statusColor}40`,
+              }}
+            />
 
-            {/* Rescheduled Badge */}
+            {/* Rescheduled indicator - subtle badge showing original date */}
             {isRescheduledCard && originalDate && (
               <Chip
-                icon={<CalendarTodayIcon sx={{ fontSize: '12px !important' }} />}
-                label={`Herplanning van ${new Date(originalDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
+                icon={<CalendarTodayIcon sx={{ fontSize: '10px !important' }} />}
+                label={`← ${new Date(originalDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
                 size="small"
                 sx={{
-                  height: 24,
-                  bgcolor: 'rgba(33, 150, 243, 0.1)',
-                  color: '#1976d2',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  border: '1px solid rgba(33, 150, 243, 0.3)',
-                  '& .MuiChip-icon': { color: '#1976d2' },
+                  height: 20,
+                  bgcolor: 'rgba(100, 100, 100, 0.08)',
+                  color: 'text.secondary',
+                  fontWeight: 500,
+                  fontSize: '0.65rem',
+                  border: '1px solid rgba(100, 100, 100, 0.15)',
+                  '& .MuiChip-icon': { color: 'text.secondary' },
                 }}
               />
             )}

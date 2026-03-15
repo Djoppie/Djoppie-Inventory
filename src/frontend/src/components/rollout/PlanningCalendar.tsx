@@ -23,7 +23,6 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useQuery } from '@tanstack/react-query';
 import { servicesApi } from '../../api/admin.api';
 import type { RolloutDay } from '../../types/rollout';
@@ -40,6 +39,8 @@ export interface RescheduledWorkplace {
   scheduledDate: string;
   dayId: number;
   dayName?: string;
+  /** Workplace status for completion tracking */
+  status?: string;
 }
 
 interface PlanningCalendarProps {
@@ -647,7 +648,7 @@ const PlanningCalendar = ({
                         </Tooltip>
                       );
                     })}
-                    {/* Rescheduled workplaces - grouped by planning, shown with distinct styling */}
+                    {/* Rescheduled workplaces - shown as normal planning (work happens here) */}
                     {(() => {
                       // Group rescheduled by dayId
                       const byDay = cell.rescheduled.reduce<
@@ -660,10 +661,15 @@ const PlanningCalendar = ({
                       return Object.entries(byDay).map(([dayId, wps]) => {
                         const names = wps.map((w) => w.userName).join(', ');
                         const dayName = wps[0]?.dayName || 'Planning';
+                        // Check completion status for styling
+                        const allCompleted = wps.length > 0 && wps.every(w => w.status === 'Completed');
+                        const completedCount = wps.filter(w => w.status === 'Completed').length;
+                        // Use service color if available, otherwise default orange
+                        const color = getServiceColor(Number(dayId) % 15);
                         return (
                           <Tooltip
                             key={`rescheduled-day-${dayId}`}
-                            title={`Uitgesteld van ${dayName}: ${names}`}
+                            title={`${dayName}: ${names} (${completedCount}/${wps.length} voltooid)`}
                           >
                             <Box
                               onClick={(e) => {
@@ -684,15 +690,16 @@ const PlanningCalendar = ({
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
                                 minWidth: 0,
-                                bgcolor: 'rgba(33, 150, 243, 0.15)',
-                                color: '#1976d2',
-                                border: '1px dashed rgba(33, 150, 243, 0.5)',
+                                // Use green when completed, service color otherwise (like normal planning)
+                                bgcolor: allCompleted ? '#16a34a' : color.bg,
+                                color: '#ffffff',
+                                border: 'none',
                                 '&:hover': {
-                                  bgcolor: 'rgba(33, 150, 243, 0.25)',
+                                  opacity: 0.85,
+                                  filter: 'brightness(0.9)',
                                 },
                               }}
                             >
-                              <CalendarTodayIcon sx={{ fontSize: '0.65rem' }} />
                               <Box
                                 component="span"
                                 sx={{
