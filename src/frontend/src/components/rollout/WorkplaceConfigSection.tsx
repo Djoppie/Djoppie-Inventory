@@ -47,7 +47,7 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import MouseIcon from '@mui/icons-material/Mouse';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import type { Asset, AssetTemplate } from '../../types/asset.types';
-import type { EquipmentType } from '../../types/rollout';
+import type { EquipmentType, AssetPlanStatus } from '../../types/rollout';
 import { getAssets } from '../../api/assets.api';
 import { EQUIPMENT_LABELS } from '../../constants/rollout.constants';
 import { TemplateSelector } from './TemplateSelector';
@@ -70,7 +70,7 @@ export interface AssetConfigItem {
   // Metadata
   metadata?: Record<string, string>;
   // Preserve original status for completed items
-  originalStatus?: string;
+  originalStatus?: AssetPlanStatus;
 }
 
 interface WorkplaceConfigSectionProps {

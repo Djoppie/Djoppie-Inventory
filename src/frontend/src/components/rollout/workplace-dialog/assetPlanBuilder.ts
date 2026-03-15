@@ -5,7 +5,7 @@
  * for API submission.
  */
 
-import type { AssetPlan, AssetPlanStatus } from '../../../types/rollout';
+import type { AssetPlan } from '../../../types/rollout';
 import type { OldDeviceConfig } from '../OldDeviceConfigSection';
 import type { AssetConfigItem } from '../WorkplaceConfigSection';
 
@@ -62,7 +62,7 @@ export function buildAssetPlans({
         requiresSerialNumber: false,
         requiresQRCode: false,
         // Preserve original status for completed items, otherwise use 'pending'
-        status: (item.originalStatus as AssetPlanStatus) || 'pending',
+        status: item.originalStatus || 'pending',
         brand: item.linkedAsset.brand,
         model: item.linkedAsset.model,
         metadata: {
@@ -85,7 +85,7 @@ export function buildAssetPlans({
           requiresSerialNumber: requiresSerial,
           requiresQRCode: true,
           // Preserve original status for completed items, otherwise use 'pending'
-          status: (item.originalStatus as AssetPlanStatus) || 'pending',
+          status: item.originalStatus || 'pending',
           brand,
           model,
           metadata: {
