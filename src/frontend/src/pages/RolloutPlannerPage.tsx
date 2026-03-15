@@ -683,13 +683,12 @@ interface WorkplaceListProps {
   dayId: number;
   sessionId: number;
   sessionStatus: string;
-  onAddWorkplace: () => void;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
   onImportFromGraph: () => void;
 }
 
-const WorkplaceList = ({ dayId, sessionId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
+const WorkplaceList = ({ dayId, sessionId, sessionStatus, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
   const navigate = useNavigate();
   const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
   const deleteMutation = useDeleteRolloutWorkplace();
@@ -793,28 +792,16 @@ const WorkplaceList = ({ dayId, sessionId, sessionStatus, onAddWorkplace, onEdit
             Werkplekken ({workplaces?.length || 0})
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            size="small"
-            variant="text"
-            startIcon={<AddIcon />}
-            onClick={onAddWorkplace}
-            disabled={!isEditable}
-            sx={{ color: '#FF7700' }}
-          >
-            Toevoegen
-          </Button>
-          <Button
-            size="small"
-            variant="text"
-            startIcon={<CloudDownloadIcon />}
-            onClick={onImportFromGraph}
-            disabled={!isEditable}
-            sx={{ color: '#FF7700' }}
-          >
-            Azure AD
-          </Button>
-        </Box>
+        <Button
+          size="small"
+          variant="text"
+          startIcon={<CloudDownloadIcon />}
+          onClick={onImportFromGraph}
+          disabled={!isEditable}
+          sx={{ color: '#FF7700' }}
+        >
+          Importeren
+        </Button>
       </Box>
 
       {!workplaces || workplaces.length === 0 ? (
@@ -827,7 +814,7 @@ const WorkplaceList = ({ dayId, sessionId, sessionStatus, onAddWorkplace, onEdit
           borderRadius: 1,
         }}>
           <Typography variant="body2">
-            Nog geen werkplekken. Klik op "Toevoegen" om te beginnen.
+            Nog geen werkplekken. Klik op "Importeren" om gebruikers uit Azure AD te importeren.
           </Typography>
         </Box>
       ) : (
@@ -1719,7 +1706,6 @@ const RolloutPlannerPage = () => {
                               dayId={day.id}
                               sessionId={session.id}
                               sessionStatus={session.status}
-                              onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
                               onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
                               onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
                               onImportFromGraph={() => {
