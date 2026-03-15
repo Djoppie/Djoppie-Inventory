@@ -114,7 +114,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
   // Toggle states
   const [returningOldDevice, setReturningOldDevice] = useState(false);
-  const [isRetroactive, setIsRetroactive] = useState(false);
 
   // QR Scanning state
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
@@ -172,7 +171,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setUserDevices([]);
     setUserOptions([]);
     setOwnerAssets([]);
-    setIsRetroactive(false);
 
     setUserName(workplace!.userName);
     setUserEmail(workplace!.userEmail || '');
@@ -230,8 +228,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       serialNumber: p.metadata?.serialNumber || '',
       metadata: p.metadata,
     })));
-
-    setIsRetroactive(plans.some(p => p.existingAssetId && !p.createNew));
   }
 
   // Reset when opening new workplace
@@ -248,7 +244,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setOldDevices([]);
     setConfigItems([]);
     setReturningOldDevice(false);
-    setIsRetroactive(false);
   }
 
   if (!open && syncedKey !== null) {
@@ -550,9 +545,9 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         if (brand || model || item.serialNumber) {
           plans.push({
             equipmentType: item.equipmentType,
-            createNew: !isRetroactive,
+            createNew: true,
             requiresSerialNumber: requiresSerial,
-            requiresQRCode: !isRetroactive,
+            requiresQRCode: true,
             status: 'pending',
             brand,
             model,
@@ -704,67 +699,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           zIndex: 2,
           transform: 'translateZ(5px)',
         }}>
-          {/* Retroactive Mode Toggle - Neumorphic Inset with depth (Layer 2 - Middle) */}
-          <Box
-            sx={{
-              mb: 3,
-              p: 2.5,
-              borderRadius: 3,
-              bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              boxShadow: isRetroactive
-                ? (isDark
-                  ? 'inset 5px 5px 10px #161a1d, inset -5px -5px 10px #262c33, 0 0 0 2px rgba(255, 152, 0, 0.4)'
-                  : 'inset 5px 5px 10px #c5cad0, inset -5px -5px 10px #ffffff, 0 0 0 2px rgba(255, 152, 0, 0.3)')
-                : (isDark
-                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
-                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              transform: 'translateZ(8px)',
-            }}
-          >
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                  boxShadow: isDark
-                    ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
-                    : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
-                }}
-              >
-                <HistoryIcon sx={{
-                  color: isRetroactive ? 'warning.main' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
-                  fontSize: '1.3rem',
-                  transition: 'color 0.3s ease',
-                }} />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-                  Retroactieve registratie
-                </Typography>
-                <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                  Link bestaande assets via QR-scan — geen nieuwe assets aanmaken
-                </Typography>
-              </Box>
-              <Switch
-                checked={isRetroactive}
-                onChange={(e) => setIsRetroactive(e.target.checked)}
-                color="warning"
-                sx={{
-                  '& .MuiSwitch-track': {
-                    borderRadius: 2,
-                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
-                  },
-                }}
-              />
-            </Stack>
-          </Box>
-
           {/* User Information Section - Neumorphic Card with 3D depth */}
           <Box
             sx={{
@@ -1169,7 +1103,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               items={configItems}
               onChange={setConfigItems}
               onScanRequest={(itemId) => handleOpenScanDialog({ type: 'config-item', itemId })}
-              isRetroactive={isRetroactive}
             />
           </Box>
 

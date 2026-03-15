@@ -76,7 +76,6 @@ interface WorkplaceConfigSectionProps {
   items: AssetConfigItem[];
   onChange: (items: AssetConfigItem[]) => void;
   onScanRequest: (itemId: string) => void;
-  isRetroactive?: boolean;
 }
 
 // Equipment type icons
@@ -407,7 +406,6 @@ export const WorkplaceConfigSection = ({
   items,
   onChange,
   onScanRequest,
-  isRetroactive = false,
 }: WorkplaceConfigSectionProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -447,11 +445,11 @@ export const WorkplaceConfigSection = ({
     const newItem: AssetConfigItem = {
       id: `config-${Date.now()}-${Math.random()}`,
       equipmentType,
-      mode: isRetroactive ? 'link' : 'create',
+      mode: 'create',
     };
     onChange([...items, newItem]);
     setShowAddMenu(false);
-  }, [items, onChange, isRetroactive]);
+  }, [items, onChange]);
 
   // Count configured items
   const configuredCount = items.filter(item =>
