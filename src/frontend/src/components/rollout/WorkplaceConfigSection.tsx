@@ -87,6 +87,16 @@ const EQUIPMENT_ICONS: Record<EquipmentType, React.ReactElement> = {
   mouse: <MouseIcon />,
 };
 
+// Equipment type mapping to asset type/category names for filtering
+const EQUIPMENT_TYPE_MAPPING: Record<EquipmentType, string[]> = {
+  laptop: ['Laptop', 'laptop', 'LT'],
+  desktop: ['Desktop', 'desktop', 'PC', 'DT'],
+  docking: ['Docking Station', 'Docking', 'docking', 'DS'],
+  monitor: ['Monitor', 'monitor', 'Screen', 'Beeldscherm', 'MO'],
+  keyboard: ['Keyboard', 'keyboard', 'Toetsenbord', 'KB'],
+  mouse: ['Mouse', 'mouse', 'Muis', 'MS'],
+};
+
 // Status badge component
 const StatusBadge = ({
   configured,
@@ -161,6 +171,18 @@ const AssetConfigItemCard = ({
   const neuBg = isDark ? '#1e2328' : '#e8eef3';
   const neuShadowDark = isDark ? '#161a1d' : '#c5cad0';
   const neuShadowLight = isDark ? '#262c33' : '#ffffff';
+
+  // Filter assets by equipment type
+  const filteredByTypeAssets = useMemo(() => {
+    const typeNames = EQUIPMENT_TYPE_MAPPING[item.equipmentType] || [];
+    return availableAssets.filter(asset => {
+      const assetTypeName = asset.assetType?.name || asset.assetType?.code || asset.category || '';
+      return typeNames.some(name =>
+        assetTypeName.toLowerCase().includes(name.toLowerCase()) ||
+        name.toLowerCase().includes(assetTypeName.toLowerCase())
+      );
+    });
+  }, [availableAssets, item.equipmentType]);
 
   const isConfigured = item.mode === 'link'
     ? !!item.linkedAsset
@@ -333,9 +355,10 @@ const AssetConfigItemCard = ({
                 Scan QR-code
               </Button>
               <Autocomplete
-                options={availableAssets}
+                options={filteredByTypeAssets}
                 getOptionLabel={(option) => `${option.assetCode} — ${option.assetName || ''}`}
                 loading={isLoadingAssets}
+                noOptionsText={`Geen ${EQUIPMENT_LABELS[item.equipmentType] || item.equipmentType} beschikbaar`}
                 onChange={(_, asset) => {
                   if (asset) onUpdate({ linkedAsset: asset });
                 }}
