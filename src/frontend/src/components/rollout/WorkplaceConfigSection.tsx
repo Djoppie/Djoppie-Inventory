@@ -69,6 +69,8 @@ export interface AssetConfigItem {
   serialNumber?: string;
   // Metadata
   metadata?: Record<string, string>;
+  // Preserve original status for completed items
+  originalStatus?: string;
 }
 
 interface WorkplaceConfigSectionProps {

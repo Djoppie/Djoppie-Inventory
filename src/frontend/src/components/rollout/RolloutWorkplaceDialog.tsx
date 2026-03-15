@@ -104,6 +104,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [location, setLocation] = useState('');
   const [serviceId, setServiceId] = useState<number | undefined>();
   const [scheduledDate, setScheduledDate] = useState<string | undefined>();
+  // Workplace status (for editing completed workplaces)
+  const [workplaceStatus, setWorkplaceStatus] = useState<string>('Planning');
 
   // Old devices state (multiple) - Regio 2: Swap/Inleveren
   const [oldDevices, setOldDevices] = useState<OldDeviceConfig[]>([]);
@@ -176,6 +178,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setLocation(workplace!.location || '');
     setServiceId(workplace!.serviceId);
     setScheduledDate(workplace!.scheduledDate || undefined);
+    setWorkplaceStatus(workplace!.status);
 
     if (workplace!.userEmail) {
       // Fetch Intune devices
@@ -226,6 +229,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       model: p.model,
       serialNumber: p.metadata?.serialNumber || '',
       metadata: p.metadata,
+      // Preserve original status for completed items
+      originalStatus: p.status,
     })));
   }
 
@@ -237,6 +242,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setLocation('');
     setServiceId(undefined);
     setScheduledDate(undefined);
+    setWorkplaceStatus('Planning');
     setUserDevices([]);
     setUserOptions([]);
     setOwnerAssets([]);
@@ -525,7 +531,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           createNew: false,
           requiresSerialNumber: false,
           requiresQRCode: false,
-          status: 'pending',
+          // Preserve original status for completed items, otherwise use 'pending'
+          status: item.originalStatus || 'pending',
           brand: item.linkedAsset.brand,
           model: item.linkedAsset.model,
           metadata: {
@@ -547,7 +554,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             createNew: true,
             requiresSerialNumber: requiresSerial,
             requiresQRCode: true,
-            status: 'pending',
+            // Preserve original status for completed items, otherwise use 'pending'
+            status: item.originalStatus || 'pending',
             brand,
             model,
             metadata: {
@@ -577,7 +585,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         serviceId: serviceId || null,
         isLaptopSetup: hasLaptop,
         assetPlans,
-        status: workplace.status,
+        status: workplaceStatus,
         notes: workplace.notes || null,
       };
       await updateMutation.mutateAsync({ workplaceId: workplace.id, data: updateData });
@@ -698,6 +706,53 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           zIndex: 2,
           transform: 'translateZ(5px)',
         }}>
+          {/* Status Change Section - Only for completed/ready workplaces */}
+          {isEditMode && workplace && (workplace.status === 'Completed' || workplace.status === 'Ready') && (
+            <Alert
+              severity={workplaceStatus === 'Completed' ? 'success' : workplaceStatus === 'Ready' ? 'info' : 'warning'}
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                '& .MuiAlert-message': { width: '100%' },
+              }}
+              action={
+                <Stack direction="row" spacing={1}>
+                  <Chip
+                    label="Planning"
+                    size="small"
+                    variant={workplaceStatus === 'Planning' ? 'filled' : 'outlined'}
+                    color="warning"
+                    onClick={() => setWorkplaceStatus('Planning')}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                  <Chip
+                    label="Gereed"
+                    size="small"
+                    variant={workplaceStatus === 'Ready' ? 'filled' : 'outlined'}
+                    color="info"
+                    onClick={() => setWorkplaceStatus('Ready')}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                  <Chip
+                    label="Voltooid"
+                    size="small"
+                    variant={workplaceStatus === 'Completed' ? 'filled' : 'outlined'}
+                    color="success"
+                    onClick={() => setWorkplaceStatus('Completed')}
+                    sx={{ cursor: 'pointer' }}
+                  />
+                </Stack>
+              }
+            >
+              <Typography variant="body2" fontWeight={600}>
+                Status: {workplaceStatus === 'Completed' ? 'Voltooid' : workplaceStatus === 'Ready' ? 'Gereed' : 'Planning'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Klik op een status om deze te wijzigen
+              </Typography>
+            </Alert>
+          )}
+
           {/* User Information Section - Neumorphic Card with 3D depth */}
           <Box
             sx={{
