@@ -350,7 +350,7 @@ const PlanningStatistics: React.FC<PlanningStatisticsProps> = ({
               }}
             >
               <WarningAmberIcon sx={{ fontSize: 18 }} />
-              Uitgestelde werkplekken (voor rapportering vertraging externe firma)
+              Uitgestelde werkplekken
             </Typography>
             <Box
               sx={{
