@@ -58,6 +58,8 @@ import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 import { TemplateSelector } from './TemplateSelector';
 import DockIcon from '@mui/icons-material/Dock';
 import MonitorIcon from '@mui/icons-material/Monitor';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
+import MouseIcon from '@mui/icons-material/Mouse';
 
 interface BulkImportFromGraphDialogProps {
   open: boolean;
@@ -178,6 +180,8 @@ export default function BulkImportFromGraphDialog({
   const [desktopTemplate, setDesktopTemplate] = useState<AssetTemplate | null>(null);
   const [dockingTemplate, setDockingTemplate] = useState<AssetTemplate | null>(null);
   const [monitorTemplate, setMonitorTemplate] = useState<AssetTemplate | null>(null);
+  const [keyboardTemplate, setKeyboardTemplate] = useState<AssetTemplate | null>(null);
+  const [mouseTemplate, setMouseTemplate] = useState<AssetTemplate | null>(null);
 
   // Asset plan config
   const assetPlanConfig: StandardAssetPlanConfig = useMemo(() => ({
@@ -192,7 +196,9 @@ export default function BulkImportFromGraphDialog({
     desktopTemplateId: desktopTemplate?.id,
     dockingTemplateId: dockingTemplate?.id,
     monitorTemplateId: monitorTemplate?.id,
-  }), [isLaptopSetup, monitorCount, laptopTemplate, desktopTemplate, dockingTemplate, monitorTemplate]);
+    keyboardTemplateId: keyboardTemplate?.id,
+    mouseTemplateId: mouseTemplate?.id,
+  }), [isLaptopSetup, monitorCount, laptopTemplate, desktopTemplate, dockingTemplate, monitorTemplate, keyboardTemplate, mouseTemplate]);
 
   // Fetch sector groups (MG-SECTOR-*)
   const { data: sectorGroups = [], isLoading: loadingSectors } = useQuery({
@@ -320,6 +326,8 @@ export default function BulkImportFromGraphDialog({
     setDesktopTemplate(null);
     setDockingTemplate(null);
     setMonitorTemplate(null);
+    setKeyboardTemplate(null);
+    setMouseTemplate(null);
     onClose();
   };
 
@@ -819,6 +827,22 @@ export default function BulkImportFromGraphDialog({
                     value={monitorTemplate}
                     onChange={setMonitorTemplate}
                     label="Monitor sjabloon"
+                  />
+
+                  {/* Keyboard template */}
+                  <TemplateSelector
+                    equipmentType="keyboard"
+                    value={keyboardTemplate}
+                    onChange={setKeyboardTemplate}
+                    label="Toetsenbord sjabloon"
+                  />
+
+                  {/* Mouse template */}
+                  <TemplateSelector
+                    equipmentType="mouse"
+                    value={mouseTemplate}
+                    onChange={setMouseTemplate}
+                    label="Muis sjabloon"
                   />
                 </Box>
 
