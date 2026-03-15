@@ -24,6 +24,8 @@ import type {
   BulkCreateWorkplaces,
   BulkCreateWorkplacesResult,
   UpdateItemDetails,
+  MoveWorkplace,
+  MoveWorkplaceResult,
 } from '../types/rollout';
 import * as rolloutApi from '../api/rollout.api';
 
@@ -424,6 +426,36 @@ export const useReopenRolloutWorkplace = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(data.rolloutDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
       // Also invalidate the days list so total progress (completedWorkplaces) updates immediately
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
+    },
+  });
+};
+
+/**
+ * Move a workplace to a different date (creates new day if needed)
+ * The workplace will be removed from its current day and placed on a new day with the same name
+ */
+export const useMoveRolloutWorkplace = (): UseMutationResult<
+  MoveWorkplaceResult,
+  Error,
+  { workplaceId: number; sourceDayId: number; data: MoveWorkplace }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ workplaceId, data }) =>
+      rolloutApi.moveRolloutWorkplace(workplaceId, data),
+    onSuccess: (result, variables) => {
+      // Invalidate source day queries (workplace removed)
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.sourceDayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.sourceDayId) });
+      // Invalidate target day queries (workplace added)
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(result.targetDayId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(result.targetDayId) });
+      // Invalidate workplace query
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(result.workplace.id) });
+      // Invalidate sessions and days list (counts changed)
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });

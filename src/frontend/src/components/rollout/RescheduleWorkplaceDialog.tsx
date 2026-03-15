@@ -29,13 +29,15 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useUpdateRolloutWorkplace } from '../../hooks/useRollout';
-import type { RolloutWorkplace } from '../../types/rollout';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { useMoveRolloutWorkplace } from '../../hooks/useRollout';
+import type { RolloutWorkplace, MoveWorkplaceResult } from '../../types/rollout';
 
 interface RescheduleWorkplaceDialogProps {
   open: boolean;
   onClose: () => void;
   workplace: RolloutWorkplace | null;
+  dayId: number; // The ID of the RolloutDay this workplace belongs to
   originalDate: string; // The date of the RolloutDay this workplace belongs to
 }
 
@@ -43,16 +45,18 @@ const RescheduleWorkplaceDialog = ({
   open,
   onClose,
   workplace,
+  dayId,
   originalDate,
 }: RescheduleWorkplaceDialogProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const updateMutation = useUpdateRolloutWorkplace();
+  const moveMutation = useMoveRolloutWorkplace();
 
   // Initialize state with current values
   const initialScheduledDate = workplace?.scheduledDate || originalDate;
   const [newScheduledDate, setNewScheduledDate] = useState(() => initialScheduledDate.split('T')[0]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [moveResult, setMoveResult] = useState<MoveWorkplaceResult | null>(null);
 
   if (!workplace) return null;
 
@@ -79,24 +83,20 @@ const RescheduleWorkplaceDialog = ({
     }
 
     try {
-      await updateMutation.mutateAsync({
+      const result = await moveMutation.mutateAsync({
         workplaceId: workplace.id,
+        sourceDayId: dayId,
         data: {
-          ...workplace,
-          scheduledDate: newScheduledDate === originalDate.split('T')[0] ? null : newScheduledDate,
-          // Keep all other fields
-          userEmail: workplace.userEmail || null,
-          location: workplace.location || null,
-          serviceId: workplace.serviceId || null,
-          notes: workplace.notes || null,
+          targetDate: newScheduledDate,
         },
       });
+      setMoveResult(result);
       setShowConfirmation(true);
       setTimeout(() => {
         onClose();
-      }, 1500);
+      }, 2000);
     } catch (error) {
-      console.error('Failed to reschedule workplace:', error);
+      console.error('Failed to move workplace:', error);
     }
   };
 
@@ -105,7 +105,7 @@ const RescheduleWorkplaceDialog = ({
   };
 
   const handleClose = () => {
-    if (!updateMutation.isPending) {
+    if (!moveMutation.isPending) {
       onClose();
     }
   };
@@ -186,7 +186,7 @@ const RescheduleWorkplaceDialog = ({
           </Box>
           <IconButton
             onClick={handleClose}
-            disabled={updateMutation.isPending}
+            disabled={moveMutation.isPending}
             size="small"
             sx={{
               bgcolor: isDark ? '#1e2328' : '#e8eef3',
@@ -243,11 +243,32 @@ const RescheduleWorkplaceDialog = ({
               <CheckCircleIcon sx={{ fontSize: '3rem', color: '#4CAF50' }} />
             </Box>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1, color: '#4CAF50' }}>
-              Werkplek Hergepland
+              Werkplek Verplaatst
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              De datum is succesvol bijgewerkt
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Werkplek is verplaatst naar een nieuwe planning
             </Typography>
+            {moveResult && (
+              <Stack spacing={1} alignItems="center">
+                <Chip
+                  icon={<OpenInNewIcon />}
+                  label={moveResult.targetDayName}
+                  sx={{
+                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                    color: '#2196F3',
+                    fontWeight: 600,
+                    boxShadow: isDark
+                      ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                      : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
+                  }}
+                />
+                {moveResult.dayCreated && (
+                  <Typography variant="caption" sx={{ color: '#FF7700', fontWeight: 600 }}>
+                    Nieuwe planning aangemaakt
+                  </Typography>
+                )}
+              </Stack>
+            )}
           </Box>
         ) : (
           <Stack spacing={3}>
@@ -538,7 +559,7 @@ const RescheduleWorkplaceDialog = ({
         >
           <Button
             onClick={handleClose}
-            disabled={updateMutation.isPending}
+            disabled={moveMutation.isPending}
             sx={{
               fontWeight: 600,
               px: 3,
@@ -561,7 +582,7 @@ const RescheduleWorkplaceDialog = ({
           </Button>
           <Button
             onClick={handleReschedule}
-            disabled={!isDateChanged || updateMutation.isPending}
+            disabled={!isDateChanged || moveMutation.isPending}
             sx={{
               fontWeight: 700,
               px: 4,
@@ -586,7 +607,7 @@ const RescheduleWorkplaceDialog = ({
               },
             }}
           >
-            {updateMutation.isPending ? 'Herplannen...' : 'Herplannen'}
+            {moveMutation.isPending ? 'Verplaatsen...' : 'Verplaatsen'}
           </Button>
         </DialogActions>
       )}

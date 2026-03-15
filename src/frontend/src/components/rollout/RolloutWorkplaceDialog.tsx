@@ -52,6 +52,8 @@ import type {
   CreateRolloutWorkplace,
   UpdateRolloutWorkplace,
   AssetPlan,
+  AssetPlanStatus,
+  RolloutWorkplaceStatus,
 } from '../../types/rollout';
 import { getAssetByCode, getAssetBySerialNumber, getAssetsByOwner } from '../../api/assets.api';
 import type { Asset } from '../../types/asset.types';
@@ -105,7 +107,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const [serviceId, setServiceId] = useState<number | undefined>();
   const [scheduledDate, setScheduledDate] = useState<string | undefined>();
   // Workplace status (for editing completed workplaces)
-  const [workplaceStatus, setWorkplaceStatus] = useState<string>('Planning');
+  const [workplaceStatus, setWorkplaceStatus] = useState<RolloutWorkplaceStatus>('Pending');
 
   // Old devices state (multiple) - Regio 2: Swap/Inleveren
   const [oldDevices, setOldDevices] = useState<OldDeviceConfig[]>([]);
@@ -242,7 +244,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setLocation('');
     setServiceId(undefined);
     setScheduledDate(undefined);
-    setWorkplaceStatus('Planning');
+    setWorkplaceStatus('Pending');
     setUserDevices([]);
     setUserOptions([]);
     setOwnerAssets([]);
@@ -532,7 +534,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           requiresSerialNumber: false,
           requiresQRCode: false,
           // Preserve original status for completed items, otherwise use 'pending'
-          status: item.originalStatus || 'pending',
+          status: (item.originalStatus as AssetPlanStatus) || 'pending',
           brand: item.linkedAsset.brand,
           model: item.linkedAsset.model,
           metadata: {
@@ -555,7 +557,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             requiresSerialNumber: requiresSerial,
             requiresQRCode: true,
             // Preserve original status for completed items, otherwise use 'pending'
-            status: item.originalStatus || 'pending',
+            status: (item.originalStatus as AssetPlanStatus) || 'pending',
             brand,
             model,
             metadata: {
@@ -718,11 +720,11 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               action={
                 <Stack direction="row" spacing={1}>
                   <Chip
-                    label="Planning"
+                    label="In Afwachting"
                     size="small"
-                    variant={workplaceStatus === 'Planning' ? 'filled' : 'outlined'}
+                    variant={workplaceStatus === 'Pending' ? 'filled' : 'outlined'}
                     color="warning"
-                    onClick={() => setWorkplaceStatus('Planning')}
+                    onClick={() => setWorkplaceStatus('Pending')}
                     sx={{ cursor: 'pointer' }}
                   />
                   <Chip
@@ -745,7 +747,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               }
             >
               <Typography variant="body2" fontWeight={600}>
-                Status: {workplaceStatus === 'Completed' ? 'Voltooid' : workplaceStatus === 'Ready' ? 'Gereed' : 'Planning'}
+                Status: {workplaceStatus === 'Completed' ? 'Voltooid' : workplaceStatus === 'Ready' ? 'Gereed' : 'In Afwachting'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Klik op een status om deze te wijzigen

@@ -468,6 +468,89 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
+    /// Moves a workplace to a different date (creates new day if needed)
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/move")]
+    [ProducesResponseType(typeof(MoveWorkplaceResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<MoveWorkplaceResultDto>> MoveWorkplace(int workplaceId, [FromBody] MoveWorkplaceDto dto)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        // Get the current day to get session info and day name
+        var currentDay = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId);
+        if (currentDay == null)
+        {
+            return NotFound(new { message = $"Current rollout day not found" });
+        }
+
+        // Check if moving to the same date
+        if (currentDay.Date.Date == dto.TargetDate.Date)
+        {
+            return BadRequest(new { message = "Workplace is already on this date" });
+        }
+
+        // Find existing day on target date with same session, or create new one
+        var session = await _rolloutRepository.GetSessionByIdAsync(currentDay.RolloutSessionId);
+        if (session == null)
+        {
+            return NotFound(new { message = "Rollout session not found" });
+        }
+
+        // Look for existing day on target date
+        var existingDays = await _rolloutRepository.GetDaysBySessionIdAsync(currentDay.RolloutSessionId);
+        var targetDay = existingDays.FirstOrDefault(d => d.Date.Date == dto.TargetDate.Date);
+
+        bool dayCreated = false;
+        if (targetDay == null)
+        {
+            // Create new day with same name as source day
+            var maxDayNumber = existingDays.Any() ? existingDays.Max(d => d.DayNumber) : 0;
+            targetDay = new RolloutDay
+            {
+                RolloutSessionId = currentDay.RolloutSessionId,
+                Date = dto.TargetDate.Date,
+                Name = currentDay.Name, // Same planning name
+                DayNumber = maxDayNumber + 1,
+                ScheduledServiceIds = currentDay.ScheduledServiceIds,
+                Status = RolloutDayStatus.Planning,
+                TotalWorkplaces = 0,
+                CompletedWorkplaces = 0,
+            };
+            targetDay = await _rolloutRepository.CreateDayAsync(targetDay);
+            dayCreated = true;
+        }
+
+        // Move workplace to target day
+        workplace.RolloutDayId = targetDay.Id;
+        workplace.ScheduledDate = null; // Clear scheduled date since it's now on the target day
+        workplace.UpdatedAt = DateTime.UtcNow;
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+
+        // Update workplace counts on both days
+        currentDay.TotalWorkplaces = Math.Max(0, currentDay.TotalWorkplaces - 1);
+        await _rolloutRepository.UpdateDayAsync(currentDay);
+
+        targetDay.TotalWorkplaces += 1;
+        await _rolloutRepository.UpdateDayAsync(targetDay);
+
+        return Ok(new MoveWorkplaceResultDto
+        {
+            Workplace = MapToWorkplaceDto(updatedWorkplace),
+            SourceDayId = currentDay.Id,
+            TargetDayId = targetDay.Id,
+            TargetDate = targetDay.Date,
+            DayCreated = dayCreated,
+            TargetDayName = targetDay.Name,
+        });
+    }
+
+    /// <summary>
     /// Starts a workplace execution (sets status to InProgress)
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/start")]

@@ -28,6 +28,8 @@ import type {
   GraphGroup,
   BulkCreateFromGraph,
   BulkCreateFromGraphResult,
+  MoveWorkplace,
+  MoveWorkplaceResult,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
@@ -241,6 +243,21 @@ export const reopenRolloutWorkplace = async (
     `/rollouts/workplaces/${workplaceId}/reopen`,
     null,
     { params: { reverseAssets } }
+  );
+  return response.data;
+};
+
+/**
+ * Move a workplace to a different date (creates new day if needed)
+ * The workplace will be removed from its current day and placed on a new day with the same name
+ */
+export const moveRolloutWorkplace = async (
+  workplaceId: number,
+  data: MoveWorkplace
+): Promise<MoveWorkplaceResult> => {
+  const response = await apiClient.post<MoveWorkplaceResult>(
+    `/rollouts/workplaces/${workplaceId}/move`,
+    data
   );
   return response.data;
 };

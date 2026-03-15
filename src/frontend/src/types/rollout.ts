@@ -278,3 +278,18 @@ export interface UpdateItemDetails {
   userName?: string;
   markAsInstalled?: boolean;
 }
+
+// ===== MOVE WORKPLACE TYPES =====
+
+export interface MoveWorkplace {
+  targetDate: string;
+}
+
+export interface MoveWorkplaceResult {
+  workplace: RolloutWorkplace;
+  sourceDayId: number;
+  targetDayId: number;
+  targetDate: string;
+  dayCreated: boolean;
+  targetDayName: string;
+}

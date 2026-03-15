@@ -689,7 +689,7 @@ interface WorkplaceListProps {
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
   onImportFromGraph: () => void;
-  onRescheduleWorkplace: (workplace: RolloutWorkplace, originalDate: string) => void;
+  onRescheduleWorkplace: (workplace: RolloutWorkplace, dayId: number, originalDate: string) => void;
 }
 
 const WorkplaceList = ({ dayId, sessionId, sessionStatus, dayDate, onEditWorkplace, onPrintWorkplace, onImportFromGraph, onRescheduleWorkplace }: WorkplaceListProps) => {
@@ -911,7 +911,7 @@ const WorkplaceList = ({ dayId, sessionId, sessionStatus, dayDate, onEditWorkpla
                   <Tooltip title="Herplannen">
                     <IconButton
                       size="small"
-                      onClick={() => onRescheduleWorkplace(workplace, dayDate)}
+                      onClick={() => onRescheduleWorkplace(workplace, dayId, dayDate)}
                       disabled={!isEditable}
                       sx={{
                         color: '#2196F3',
@@ -1031,6 +1031,7 @@ const RolloutPlannerPage = () => {
   const [calendarExpanded, setCalendarExpanded] = useState(true);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [rescheduleWorkplace, setRescheduleWorkplace] = useState<RolloutWorkplace | null>(null);
+  const [rescheduleDayId, setRescheduleDayId] = useState<number>(0);
   const [rescheduleOriginalDate, setRescheduleOriginalDate] = useState<string>('');
 
   // Fetch session data if editing
@@ -1231,8 +1232,9 @@ const RolloutPlannerPage = () => {
     });
   };
 
-  const handleOpenRescheduleDialog = (workplace: RolloutWorkplace, originalDayDate: string) => {
+  const handleOpenRescheduleDialog = (workplace: RolloutWorkplace, dayId: number, originalDayDate: string) => {
     setRescheduleWorkplace(workplace);
+    setRescheduleDayId(dayId);
     setRescheduleOriginalDate(originalDayDate);
     setRescheduleDialogOpen(true);
   };
@@ -1240,6 +1242,7 @@ const RolloutPlannerPage = () => {
   const handleCloseRescheduleDialog = () => {
     setRescheduleDialogOpen(false);
     setRescheduleWorkplace(null);
+    setRescheduleDayId(0);
     setRescheduleOriginalDate('');
   };
 
@@ -1521,7 +1524,7 @@ const RolloutPlannerPage = () => {
                   if (day && day.workplaces) {
                     const workplace = day.workplaces.find(w => w.id === wp.workplaceId);
                     if (workplace) {
-                      handleOpenRescheduleDialog(workplace, day.date);
+                      handleOpenRescheduleDialog(workplace, day.id, day.date);
                     }
                   }
                 }}
@@ -1808,6 +1811,7 @@ const RolloutPlannerPage = () => {
         open={rescheduleDialogOpen}
         onClose={handleCloseRescheduleDialog}
         workplace={rescheduleWorkplace}
+        dayId={rescheduleDayId}
         originalDate={rescheduleOriginalDate}
       />
     </Container>
