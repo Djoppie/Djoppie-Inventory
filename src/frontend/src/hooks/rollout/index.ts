@@ -1,32 +1,36 @@
 /**
- * React Query hooks for Rollout workflow
+ * Rollout Hooks - Index
  *
- * This file re-exports all rollout hooks from the modularized structure.
- * For new code, prefer importing directly from './rollout' for clarity.
+ * Re-exports all rollout-related React Query hooks for convenient importing.
  *
- * @deprecated Import from './rollout' directly for new code
+ * Usage:
+ *   import { useRolloutSessions, useCreateRolloutWorkplace } from '../hooks/rollout';
  */
 
-export {
-  // Query Keys
-  rolloutKeys,
+// Query Keys
+export { rolloutKeys } from './keys';
 
-  // Session Hooks
+// Session Hooks
+export {
   useRolloutSessions,
   useRolloutSession,
   useCreateRolloutSession,
   useUpdateRolloutSession,
   useDeleteRolloutSession,
+} from './useRolloutSessions';
 
-  // Day Hooks
+// Day Hooks
+export {
   useRolloutDays,
   useRolloutDay,
   useCreateRolloutDay,
   useUpdateRolloutDay,
   useUpdateRolloutDayStatus,
   useDeleteRolloutDay,
+} from './useRolloutDays';
 
-  // Workplace Hooks
+// Workplace Hooks
+export {
   useRolloutWorkplaces,
   useRolloutWorkplace,
   useCreateRolloutWorkplace,
@@ -41,7 +45,7 @@ export {
   useDeleteRolloutWorkplace,
   useBulkCreateWorkplaces,
   useNewAssetsForDay,
+} from './useRolloutWorkplaces';
 
-  // Progress Hooks
-  useRolloutProgress,
-} from './rollout';
+// Progress Hooks
+export { useRolloutProgress } from './useRolloutProgress';

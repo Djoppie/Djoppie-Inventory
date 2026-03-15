@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntuneService, IntuneService>();
         services.AddScoped<IGraphUserService, GraphUserService>();
         services.AddScoped<IAssetCodeGenerator, AssetCodeGeneratorService>();
+        services.AddScoped<IRolloutWorkplaceService, RolloutWorkplaceService>();
 
         // Configure AutoMapper
         services.AddAutoMapper(typeof(Program).Assembly);
