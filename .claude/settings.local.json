@@ -88,7 +88,22 @@
       "Bash(az pipelines run:*)",
       "Bash(az pipelines runs show:*)",
       "Bash(az rest:*)",
-      "Bash(az devops invoke:*)"
+      "Bash(az devops invoke:*)",
+      "Bash(az staticwebapp:*)",
+      "Bash(start https://blue-cliff-031d65b03.1.azurestaticapps.net)",
+      "Bash(az webapp log:*)",
+      "Bash(az webapp list:*)",
+      "Bash(unzip:*)",
+      "Bash(az sql server list:*)",
+      "Bash(az sql db list:*)",
+      "Bash(az sql db execute:*)",
+      "Bash(az sql db show:*)",
+      "Bash(az account get-access-token:*)",
+      "Bash(powershell.exe -Command \"$token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv; $conn = New-Object System.Data.SqlClient.SqlConnection; $conn.ConnectionString = ''Server=sql-djoppie-inventory-dev-k5xdqp.database.windows.net;Database=sqldb-djoppie-inventory-dev;''; $conn.AccessToken = $token; $conn.Open\\(\\); $cmd = $conn.CreateCommand\\(\\); $cmd.CommandText = ''SELECT name FROM sys.columns WHERE object_id = OBJECT_ID\\(''''RolloutWorkplaces''''\\)''; $reader = $cmd.ExecuteReader\\(\\); while\\($reader.Read\\(\\)\\) { Write-Host $reader[0] }; $conn.Close\\(\\)\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:/Djoppie/Djoppie-Inventory/fix-azure-sql.ps1\")",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:/Djoppie/Djoppie-Inventory/check-azure-sql.ps1\")",
+      "Bash(npx eslint:*)",
+      "Bash(start http://localhost:5173)"
     ]
   }
 }

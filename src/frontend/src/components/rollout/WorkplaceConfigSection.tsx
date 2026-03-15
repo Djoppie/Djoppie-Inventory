@@ -18,7 +18,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   Stack,
   Typography,
   useTheme,

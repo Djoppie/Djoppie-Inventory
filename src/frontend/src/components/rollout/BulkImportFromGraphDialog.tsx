@@ -56,10 +56,6 @@ import type { StandardAssetPlanConfig, BulkCreateFromGraphResult, GraphGroup } f
 import type { AssetTemplate } from '../../types/asset.types';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 import { TemplateSelector } from './TemplateSelector';
-import DockIcon from '@mui/icons-material/Dock';
-import MonitorIcon from '@mui/icons-material/Monitor';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
-import MouseIcon from '@mui/icons-material/Mouse';
 
 interface BulkImportFromGraphDialogProps {
   open: boolean;
