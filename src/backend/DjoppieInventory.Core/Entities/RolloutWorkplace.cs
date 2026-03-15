@@ -136,6 +136,17 @@ public class RolloutWorkplace
     public string? Notes { get; set; }
 
     /// <summary>
+    /// If this workplace was moved to another day, this points to the new workplace.
+    /// The original workplace remains as a "ghost" entry for tracking purposes.
+    /// </summary>
+    public int? MovedToWorkplaceId { get; set; }
+
+    /// <summary>
+    /// If this workplace was created by moving from another day, this points to the original workplace.
+    /// </summary>
+    public int? MovedFromWorkplaceId { get; set; }
+
+    /// <summary>
     /// Timestamp when the workplace was created
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

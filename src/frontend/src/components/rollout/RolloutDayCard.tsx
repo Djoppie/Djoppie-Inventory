@@ -32,6 +32,10 @@ interface RolloutDayCardProps {
   rescheduledCount?: number;
   /** Whether this planning can be executed (has ready workplaces) */
   canExecute?: boolean;
+  /** Whether this is a virtual card showing rescheduled workplaces */
+  isRescheduledCard?: boolean;
+  /** Original date of the planning (for rescheduled cards) */
+  originalDate?: string;
   onEdit: () => void;
   onDelete: () => void;
   onPrint: () => void;
@@ -52,6 +56,8 @@ const RolloutDayCard = ({
   readyCount = 0,
   rescheduledCount = 0,
   canExecute = false,
+  isRescheduledCard = false,
+  originalDate,
   onEdit,
   onDelete,
   onPrint,
@@ -59,7 +65,7 @@ const RolloutDayCard = ({
   onSetPlanning,
   children,
 }: RolloutDayCardProps) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(isRescheduledCard); // Auto-expand rescheduled cards
 
   const completionPercentage = day.totalWorkplaces > 0
     ? (day.completedWorkplaces / day.totalWorkplaces) * 100
@@ -108,15 +114,17 @@ const RolloutDayCard = ({
       elevation={0}
       sx={{
         position: 'relative',
-        border: '1px solid',
-        borderColor: 'divider',
+        border: isRescheduledCard ? '2px dashed' : '1px solid',
+        borderColor: isRescheduledCard ? 'primary.main' : 'divider',
         borderRadius: 2,
         overflow: 'hidden',
-        background: statusStyles.bgGradient,
+        background: isRescheduledCard
+          ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.04) 0%, rgba(33, 150, 243, 0.01) 100%)'
+          : statusStyles.bgGradient,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          borderColor: statusStyles.borderColor,
+          borderColor: isRescheduledCard ? 'primary.dark' : statusStyles.borderColor,
         },
         // Left border accent
         '&::before': {
@@ -126,7 +134,7 @@ const RolloutDayCard = ({
           top: 0,
           bottom: 0,
           width: 4,
-          bgcolor: statusStyles.borderColor,
+          bgcolor: isRescheduledCard ? 'primary.main' : statusStyles.borderColor,
           transition: 'width 0.3s ease',
         },
         '&:hover::before': {
@@ -178,18 +186,38 @@ const RolloutDayCard = ({
             </Typography>
 
             {/* Status Badge */}
-            <Chip
-              label={statusStyles.statusLabel}
-              size="small"
-              sx={{
-                height: 24,
-                bgcolor: statusStyles.statusBg,
-                color: statusStyles.statusColor,
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                border: `1px solid ${statusStyles.statusColor}40`,
-              }}
-            />
+            {!isRescheduledCard && (
+              <Chip
+                label={statusStyles.statusLabel}
+                size="small"
+                sx={{
+                  height: 24,
+                  bgcolor: statusStyles.statusBg,
+                  color: statusStyles.statusColor,
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  border: `1px solid ${statusStyles.statusColor}40`,
+                }}
+              />
+            )}
+
+            {/* Rescheduled Badge */}
+            {isRescheduledCard && originalDate && (
+              <Chip
+                icon={<CalendarTodayIcon sx={{ fontSize: '12px !important' }} />}
+                label={`Herplanning van ${new Date(originalDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
+                size="small"
+                sx={{
+                  height: 24,
+                  bgcolor: 'rgba(33, 150, 243, 0.1)',
+                  color: '#1976d2',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  border: '1px solid rgba(33, 150, 243, 0.3)',
+                  '& .MuiChip-icon': { color: '#1976d2' },
+                }}
+              />
+            )}
           </Box>
 
           {/* Stats Row - Compact horizontal layout */}
@@ -352,80 +380,86 @@ const RolloutDayCard = ({
             </Tooltip>
           )}
 
-          {/* Edit */}
-          <Tooltip title="Bewerken">
-            <span>
-              <IconButton
-                size="small"
-                onClick={onEdit}
-                disabled={!isEditable}
-                sx={{
-                  color: 'rgba(255, 119, 0, 0.6)',
-                  '&:hover:not(:disabled)': {
-                    color: '#FF7700',
-                    bgcolor: 'rgba(255, 119, 0, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  '&:disabled': {
-                    opacity: 0.5,
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Edit - Hide for rescheduled cards */}
+          {!isRescheduledCard && (
+            <Tooltip title="Bewerken">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onEdit}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(255, 119, 0, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#FF7700',
+                      bgcolor: 'rgba(255, 119, 0, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
-          {/* Print */}
-          <Tooltip title="Print QR codes">
-            <span>
-              <IconButton
-                size="small"
-                onClick={onPrint}
-                disabled={!isEditable}
-                sx={{
-                  color: 'rgba(59, 130, 246, 0.6)',
-                  '&:hover:not(:disabled)': {
-                    color: '#3B82F6',
-                    bgcolor: 'rgba(59, 130, 246, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  '&:disabled': {
-                    opacity: 0.5,
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <PrintIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Print - Hide for rescheduled cards */}
+          {!isRescheduledCard && (
+            <Tooltip title="Print QR codes">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onPrint}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(59, 130, 246, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#3B82F6',
+                      bgcolor: 'rgba(59, 130, 246, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <PrintIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
-          {/* Delete */}
-          <Tooltip title="Verwijderen">
-            <span>
-              <IconButton
-                size="small"
-                onClick={onDelete}
-                disabled={!isEditable}
-                sx={{
-                  color: 'rgba(239, 68, 68, 0.6)',
-                  '&:hover:not(:disabled)': {
-                    color: '#EF4444',
-                    bgcolor: 'rgba(239, 68, 68, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  '&:disabled': {
-                    opacity: 0.5,
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Delete - Hide for rescheduled cards */}
+          {!isRescheduledCard && (
+            <Tooltip title="Verwijderen">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onDelete}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(239, 68, 68, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#EF4444',
+                      bgcolor: 'rgba(239, 68, 68, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
           {/* Expand Toggle */}
           <IconButton

@@ -17,9 +17,14 @@ public class MoveWorkplaceDto
 public class MoveWorkplaceResultDto
 {
     /// <summary>
-    /// The moved workplace
+    /// The new workplace on the target day
     /// </summary>
     public RolloutWorkplaceDto Workplace { get; set; } = null!;
+
+    /// <summary>
+    /// The original workplace that remains as a ghost entry on the source day
+    /// </summary>
+    public RolloutWorkplaceDto GhostWorkplace { get; set; } = null!;
 
     /// <summary>
     /// ID of the source day (where workplace was moved from)

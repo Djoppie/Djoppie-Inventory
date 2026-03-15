@@ -104,6 +104,14 @@ export interface RolloutWorkplace {
   completedBy?: string;
   completedByEmail?: string;
   notes?: string;
+  /** If this workplace was moved to another day, this points to the new workplace ID (ghost entry) */
+  movedToWorkplaceId?: number;
+  /** If this workplace was moved from another day, this points to the original workplace ID */
+  movedFromWorkplaceId?: number;
+  /** The date this workplace was moved to (for ghost entry display) */
+  movedToDate?: string;
+  /** The date this workplace was moved from (for moved indicator display) */
+  movedFromDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -286,7 +294,10 @@ export interface MoveWorkplace {
 }
 
 export interface MoveWorkplaceResult {
+  /** The new workplace on the target day */
   workplace: RolloutWorkplace;
+  /** The original workplace that remains as a ghost entry on the source day */
+  ghostWorkplace: RolloutWorkplace;
   sourceDayId: number;
   targetDayId: number;
   targetDate: string;

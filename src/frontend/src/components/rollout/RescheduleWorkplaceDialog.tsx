@@ -31,7 +31,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useMoveRolloutWorkplace } from '../../hooks/useRollout';
-import type { RolloutWorkplace, MoveWorkplaceResult } from '../../types/rollout';
+import type { RolloutWorkplace } from '../../types/rollout';
 
 interface RescheduleWorkplaceDialogProps {
   open: boolean;
@@ -56,7 +56,7 @@ const RescheduleWorkplaceDialog = ({
   const initialScheduledDate = workplace?.scheduledDate || originalDate;
   const [newScheduledDate, setNewScheduledDate] = useState(() => initialScheduledDate.split('T')[0]);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [moveResult, setMoveResult] = useState<MoveWorkplaceResult | null>(null);
+  const [movedToDate, setMovedToDate] = useState<string | null>(null);
 
   if (!workplace) return null;
 
@@ -83,14 +83,14 @@ const RescheduleWorkplaceDialog = ({
     }
 
     try {
-      const result = await moveMutation.mutateAsync({
+      await moveMutation.mutateAsync({
         workplaceId: workplace.id,
         sourceDayId: dayId,
         data: {
           targetDate: newScheduledDate,
         },
       });
-      setMoveResult(result);
+      setMovedToDate(newScheduledDate);
       setShowConfirmation(true);
       setTimeout(() => {
         onClose();
@@ -243,31 +243,24 @@ const RescheduleWorkplaceDialog = ({
               <CheckCircleIcon sx={{ fontSize: '3rem', color: '#4CAF50' }} />
             </Box>
             <Typography variant="h6" fontWeight={700} sx={{ mb: 1, color: '#4CAF50' }}>
-              Werkplek Verplaatst
+              Werkplek Uitgesteld
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Werkplek is verplaatst naar een nieuwe planning
+              Werkplek blijft in dezelfde planning, maar wordt uitgevoerd op een andere datum
             </Typography>
-            {moveResult && (
-              <Stack spacing={1} alignItems="center">
-                <Chip
-                  icon={<OpenInNewIcon />}
-                  label={moveResult.targetDayName}
-                  sx={{
-                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                    color: '#2196F3',
-                    fontWeight: 600,
-                    boxShadow: isDark
-                      ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
-                      : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
-                  }}
-                />
-                {moveResult.dayCreated && (
-                  <Typography variant="caption" sx={{ color: '#FF7700', fontWeight: 600 }}>
-                    Nieuwe planning aangemaakt
-                  </Typography>
-                )}
-              </Stack>
+            {movedToDate && (
+              <Chip
+                icon={<CalendarTodayIcon />}
+                label={formatDate(movedToDate)}
+                sx={{
+                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                  color: '#2196F3',
+                  fontWeight: 600,
+                  boxShadow: isDark
+                    ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                    : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
+                }}
+              />
             )}
           </Box>
         ) : (

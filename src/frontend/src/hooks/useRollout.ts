@@ -432,11 +432,11 @@ export const useReopenRolloutWorkplace = (): UseMutationResult<
 };
 
 /**
- * Move a workplace to a different date (creates new day if needed)
- * The workplace will be removed from its current day and placed on a new day with the same name
+ * Move a workplace to a different date by updating its scheduledDate.
+ * The workplace stays in its original planning but will be executed on the new date.
  */
 export const useMoveRolloutWorkplace = (): UseMutationResult<
-  MoveWorkplaceResult,
+  RolloutWorkplace,
   Error,
   { workplaceId: number; sourceDayId: number; data: MoveWorkplace }
 > => {
@@ -445,16 +445,13 @@ export const useMoveRolloutWorkplace = (): UseMutationResult<
   return useMutation({
     mutationFn: ({ workplaceId, data }) =>
       rolloutApi.moveRolloutWorkplace(workplaceId, data),
-    onSuccess: (result, variables) => {
-      // Invalidate source day queries (workplace removed)
+    onSuccess: (updatedWorkplace, variables) => {
+      // Invalidate the day queries since workplace now has a different scheduled date
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(variables.sourceDayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(variables.sourceDayId) });
-      // Invalidate target day queries (workplace added)
-      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(result.targetDayId) });
-      queryClient.invalidateQueries({ queryKey: rolloutKeys.day(result.targetDayId) });
       // Invalidate workplace query
-      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(result.workplace.id) });
-      // Invalidate sessions and days list (counts changed)
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.workplace(updatedWorkplace.id) });
+      // Invalidate sessions and days list (for calendar display)
       queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },

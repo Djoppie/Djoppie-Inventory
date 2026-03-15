@@ -25,6 +25,24 @@ public class RolloutWorkplaceDto
     public string? CompletedBy { get; set; }
     public string? CompletedByEmail { get; set; }
     public string? Notes { get; set; }
+    /// <summary>
+    /// If this workplace was moved to another day, this points to the new workplace ID.
+    /// When set, this workplace should be displayed as a "ghost" entry.
+    /// </summary>
+    public int? MovedToWorkplaceId { get; set; }
+    /// <summary>
+    /// If this workplace was moved from another day, this points to the original workplace ID.
+    /// When set, this workplace should show an indicator that it was moved.
+    /// </summary>
+    public int? MovedFromWorkplaceId { get; set; }
+    /// <summary>
+    /// The date this workplace was moved to (for display in ghost entry)
+    /// </summary>
+    public DateTime? MovedToDate { get; set; }
+    /// <summary>
+    /// The date this workplace was moved from (for display in moved indicator)
+    /// </summary>
+    public DateTime? MovedFromDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

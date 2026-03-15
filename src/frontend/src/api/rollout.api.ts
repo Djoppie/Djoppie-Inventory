@@ -248,14 +248,15 @@ export const reopenRolloutWorkplace = async (
 };
 
 /**
- * Move a workplace to a different date (creates new day if needed)
- * The workplace will be removed from its current day and placed on a new day with the same name
+ * Move a workplace to a different date by updating its scheduledDate.
+ * The workplace stays in its original planning but will be executed on the new date.
+ * Returns the updated workplace.
  */
 export const moveRolloutWorkplace = async (
   workplaceId: number,
   data: MoveWorkplace
-): Promise<MoveWorkplaceResult> => {
-  const response = await apiClient.post<MoveWorkplaceResult>(
+): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(
     `/rollouts/workplaces/${workplaceId}/move`,
     data
   );

@@ -343,7 +343,7 @@ public class RolloutsController : ControllerBase
             workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(dayId);
         }
 
-        var workplaceDtos = workplaces.Select(MapToWorkplaceDto).ToList();
+        var workplaceDtos = workplaces.Select(w => MapToWorkplaceDto(w)).ToList();
         return Ok(workplaceDtos);
     }
 
@@ -468,13 +468,15 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
-    /// Moves a workplace to a different date (creates new day if needed)
+    /// Moves a workplace to a different date by updating its scheduledDate.
+    /// The workplace stays in its original planning (day) but will be executed on the new date.
+    /// On the original day, it shows as a "ghost" entry (has scheduledDate different from day date).
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/move")]
-    [ProducesResponseType(typeof(MoveWorkplaceResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<MoveWorkplaceResultDto>> MoveWorkplace(int workplaceId, [FromBody] MoveWorkplaceDto dto)
+    public async Task<ActionResult<RolloutWorkplaceDto>> MoveWorkplace(int workplaceId, [FromBody] MoveWorkplaceDto dto)
     {
         var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
         if (workplace == null)
@@ -482,72 +484,33 @@ public class RolloutsController : ControllerBase
             return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
         }
 
-        // Get the current day to get session info and day name
+        // Get the current day to check date
         var currentDay = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId);
         if (currentDay == null)
         {
             return NotFound(new { message = $"Current rollout day not found" });
         }
 
-        // Check if moving to the same date
+        // Check if moving to the same date as the day
         if (currentDay.Date.Date == dto.TargetDate.Date)
         {
+            // If already has a scheduledDate, clear it to "unmove"
+            if (workplace.ScheduledDate != null)
+            {
+                workplace.ScheduledDate = null;
+                workplace.UpdatedAt = DateTime.UtcNow;
+                await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+                return Ok(MapToWorkplaceDto(workplace));
+            }
             return BadRequest(new { message = "Workplace is already on this date" });
         }
 
-        // Find existing day on target date with same session, or create new one
-        var session = await _rolloutRepository.GetSessionByIdAsync(currentDay.RolloutSessionId);
-        if (session == null)
-        {
-            return NotFound(new { message = "Rollout session not found" });
-        }
-
-        // Look for existing day on target date
-        var existingDays = await _rolloutRepository.GetDaysBySessionIdAsync(currentDay.RolloutSessionId);
-        var targetDay = existingDays.FirstOrDefault(d => d.Date.Date == dto.TargetDate.Date);
-
-        bool dayCreated = false;
-        if (targetDay == null)
-        {
-            // Create new day with same name as source day
-            var maxDayNumber = existingDays.Any() ? existingDays.Max(d => d.DayNumber) : 0;
-            targetDay = new RolloutDay
-            {
-                RolloutSessionId = currentDay.RolloutSessionId,
-                Date = dto.TargetDate.Date,
-                Name = currentDay.Name, // Same planning name
-                DayNumber = maxDayNumber + 1,
-                ScheduledServiceIds = currentDay.ScheduledServiceIds,
-                Status = RolloutDayStatus.Planning,
-                TotalWorkplaces = 0,
-                CompletedWorkplaces = 0,
-            };
-            targetDay = await _rolloutRepository.CreateDayAsync(targetDay);
-            dayCreated = true;
-        }
-
-        // Move workplace to target day
-        workplace.RolloutDayId = targetDay.Id;
-        workplace.ScheduledDate = null; // Clear scheduled date since it's now on the target day
+        // Simply update the scheduledDate - workplace stays in its original planning
+        workplace.ScheduledDate = dto.TargetDate.Date;
         workplace.UpdatedAt = DateTime.UtcNow;
-        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+        await _rolloutRepository.UpdateWorkplaceAsync(workplace);
 
-        // Update workplace counts on both days
-        currentDay.TotalWorkplaces = Math.Max(0, currentDay.TotalWorkplaces - 1);
-        await _rolloutRepository.UpdateDayAsync(currentDay);
-
-        targetDay.TotalWorkplaces += 1;
-        await _rolloutRepository.UpdateDayAsync(targetDay);
-
-        return Ok(new MoveWorkplaceResultDto
-        {
-            Workplace = MapToWorkplaceDto(updatedWorkplace),
-            SourceDayId = currentDay.Id,
-            TargetDayId = targetDay.Id,
-            TargetDate = targetDay.Date,
-            DayCreated = dayCreated,
-            TargetDayName = targetDay.Name,
-        });
+        return Ok(MapToWorkplaceDto(workplace));
     }
 
     /// <summary>
@@ -1062,7 +1025,7 @@ public class RolloutsController : ControllerBase
         }
 
         var createdWorkplaces = await _rolloutRepository.CreateWorkplacesAsync(workplaces);
-        var workplaceDtos = createdWorkplaces.Select(MapToWorkplaceDto).ToList();
+        var workplaceDtos = createdWorkplaces.Select(w => MapToWorkplaceDto(w)).ToList();
 
         var result = new BulkCreateWorkplacesResultDto
         {
@@ -1414,7 +1377,7 @@ public class RolloutsController : ControllerBase
             }
 
             var createdWorkplaces = await _rolloutRepository.CreateWorkplacesAsync(workplacesToCreate);
-            var workplaceDtos = createdWorkplaces.Select(MapToWorkplaceDto).ToList();
+            var workplaceDtos = createdWorkplaces.Select(w => MapToWorkplaceDto(w)).ToList();
 
             var result = new BulkCreateFromGraphResultDto
             {
@@ -1772,13 +1735,13 @@ public class RolloutsController : ControllerBase
         // Map workplaces if included
         if (day.Workplaces != null && day.Workplaces.Any())
         {
-            dto.Workplaces = day.Workplaces.Select(MapToWorkplaceDto).ToList();
+            dto.Workplaces = day.Workplaces.Select(w => MapToWorkplaceDto(w)).ToList();
         }
 
         return dto;
     }
 
-    private RolloutWorkplaceDto MapToWorkplaceDto(RolloutWorkplace workplace)
+    private RolloutWorkplaceDto MapToWorkplaceDto(RolloutWorkplace workplace, DateTime? movedToDate = null, DateTime? movedFromDate = null)
     {
         var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
             ? new List<AssetPlanDto>()
@@ -1803,6 +1766,10 @@ public class RolloutsController : ControllerBase
             CompletedBy = workplace.CompletedBy,
             CompletedByEmail = workplace.CompletedByEmail,
             Notes = workplace.Notes,
+            MovedToWorkplaceId = workplace.MovedToWorkplaceId,
+            MovedFromWorkplaceId = workplace.MovedFromWorkplaceId,
+            MovedToDate = movedToDate,
+            MovedFromDate = movedFromDate,
             CreatedAt = workplace.CreatedAt,
             UpdatedAt = workplace.UpdatedAt
         };
