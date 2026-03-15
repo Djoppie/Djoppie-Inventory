@@ -32,10 +32,9 @@ import AddIcon from '@mui/icons-material/Add';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
 import { OldDeviceConfigSection, type OldDeviceConfig } from './OldDeviceConfigSection';
 import { WorkplaceConfigSection, type AssetConfigItem } from './WorkplaceConfigSection';
-import type { RolloutWorkplace, RolloutWorkplaceStatus, CreateRolloutWorkplace, UpdateRolloutWorkplace } from '../../types/rollout';
+import type { RolloutWorkplace, CreateRolloutWorkplace, UpdateRolloutWorkplace } from '../../types/rollout';
 import type { Asset } from '../../types/asset.types';
 import type { IntuneDevice } from '../../types/graph.types';
-import { getAssetBySerialNumber } from '../../api/assets.api';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 
 // Import extracted components and hooks

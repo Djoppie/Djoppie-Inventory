@@ -29,7 +29,6 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useMoveRolloutWorkplace } from '../../hooks/useRollout';
 import type { RolloutWorkplace } from '../../types/rollout';
 

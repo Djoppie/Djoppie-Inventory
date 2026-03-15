@@ -64,7 +64,8 @@ import PlanningStatusFilter, { PlanningStatusFilterValue } from '../components/r
 import PlanningDateHeader from '../components/rollout/PlanningDateHeader';
 import PlanningStatistics from '../components/rollout/PlanningStatistics';
 import RescheduleWorkplaceDialog from '../components/rollout/RescheduleWorkplaceDialog';
-import PlanningCalendar, { type RescheduledWorkplace, getServiceColor } from '../components/rollout/PlanningCalendar';
+import PlanningCalendar, { type RescheduledWorkplace } from '../components/rollout/PlanningCalendar';
+import { getServiceColor } from '../components/rollout/serviceColors';
 import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
 
 /**

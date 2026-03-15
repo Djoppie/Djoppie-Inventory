@@ -27,30 +27,9 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useQuery } from '@tanstack/react-query';
 import { servicesApi } from '../../api/admin.api';
 import type { RolloutDay } from '../../types/rollout';
+import { getServiceColor } from './serviceColors';
 
 const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
-
-// Service color palette - distinct pastel colors for calendar chips
-const SERVICE_COLORS = [
-  { bg: '#1d4ed8', text: '#ffffff' }, // blue
-  { bg: '#9333ea', text: '#ffffff' }, // purple
-  { bg: '#0891b2', text: '#ffffff' }, // cyan
-  { bg: '#c2410c', text: '#ffffff' }, // orange-red
-  { bg: '#4f46e5', text: '#ffffff' }, // indigo
-  { bg: '#0d9488', text: '#ffffff' }, // teal
-  { bg: '#b91c1c', text: '#ffffff' }, // red
-  { bg: '#7c3aed', text: '#ffffff' }, // violet
-  { bg: '#0369a1', text: '#ffffff' }, // sky
-  { bg: '#a16207', text: '#ffffff' }, // amber
-  { bg: '#15803d', text: '#ffffff' }, // green
-  { bg: '#be185d', text: '#ffffff' }, // pink
-];
-
-/**
- * Get a consistent color for a service based on its ID
- */
-export const getServiceColor = (serviceId: number) =>
-  SERVICE_COLORS[serviceId % SERVICE_COLORS.length];
 
 /**
  * Rescheduled workplace info for calendar display

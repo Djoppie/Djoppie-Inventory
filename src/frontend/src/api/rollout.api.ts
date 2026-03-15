@@ -29,7 +29,6 @@ import type {
   BulkCreateFromGraph,
   BulkCreateFromGraphResult,
   MoveWorkplace,
-  MoveWorkplaceResult,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
