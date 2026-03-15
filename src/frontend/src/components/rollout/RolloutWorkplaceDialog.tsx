@@ -41,9 +41,9 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
-import { MultiDeviceConfigSection, type DeviceConfig } from './MultiDeviceConfigSection';
 import { OldDeviceConfigSection, type OldDeviceConfig } from './OldDeviceConfigSection';
-import { UpdateWorkplaceAssetsSection, type UpdateAssetConfig } from './UpdateWorkplaceAssetsSection';
+import { WorkplaceConfigSection, type AssetConfigItem } from './WorkplaceConfigSection';
+import type { EquipmentType } from '../../types/rollout';
 import { graphApi } from '../../api/graph.api';
 import { intuneApi } from '../../api/intune.api';
 import QRScanner from '../scanner/QRScanner';
@@ -86,8 +86,13 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
   );
 };
 
-// Asset scan mode types - includes index for old device targeting
-type AssetScanMode = 'new-device' | 'update-asset' | { type: 'old-device'; index: number } | null;
+// Asset scan mode types - includes index for old device targeting and itemId for config items
+type AssetScanMode =
+  | 'new-device'
+  | 'update-asset'
+  | { type: 'old-device'; index: number }
+  | { type: 'config-item'; itemId: string }
+  | null;
 
 const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWorkplaceDialogProps) => {
   const isEditMode = Boolean(workplace);
@@ -104,15 +109,10 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   // Old devices state (multiple) - Regio 2: Swap/Inleveren
   const [oldDevices, setOldDevices] = useState<OldDeviceConfig[]>([]);
 
-  // Update assets state - Regio 1: Existing assets from inventory (status: Nieuw)
-  const [updateAssets, setUpdateAssets] = useState<UpdateAssetConfig[]>([]);
-
-  // Multi-device configuration state - Regio 3: New assets to create
-  const [newDevices, setNewDevices] = useState<DeviceConfig[]>([]);
+  // Unified workplace configuration - combines "Nieuw apparaat" and "Update assets"
+  const [configItems, setConfigItems] = useState<AssetConfigItem[]>([]);
 
   // Toggle states
-  const [linkingExistingAssets, setLinkingExistingAssets] = useState(false);
-  const [addingNewDevice, setAddingNewDevice] = useState(true);
   const [returningOldDevice, setReturningOldDevice] = useState(false);
   const [isRetroactive, setIsRetroactive] = useState(false);
 
@@ -172,8 +172,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setUserDevices([]);
     setUserOptions([]);
     setOwnerAssets([]);
-    setUpdateAssets([]);
-    setLinkingExistingAssets(false);
     setIsRetroactive(false);
 
     setUserName(workplace!.userName);
@@ -215,24 +213,23 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       setOldDevices([]);
     }
 
+    // Load device plans into unified configItems
     const devicePlans = plans.filter(p => p.metadata?.isOldDevice !== 'true');
-    if (devicePlans.length > 0) {
-      setAddingNewDevice(true);
-      setNewDevices(devicePlans.map((p, idx) => ({
-        id: `device-edit-${idx}`,
-        type: p.equipmentType as DeviceConfig['type'],
-        template: p.brand ? { brand: p.brand, model: p.model } as DeviceConfig['template'] : null,
-        serialNumber: p.metadata?.serialNumber || '',
-        linkedAsset: p.existingAssetId ? {
-          id: p.existingAssetId,
-          assetCode: p.existingAssetCode || '',
-          assetName: p.existingAssetName || '',
-        } as Asset : null,
-      })));
-    } else {
-      setAddingNewDevice(true);
-      setNewDevices([]);
-    }
+    setConfigItems(devicePlans.map((p, idx) => ({
+      id: `config-edit-${idx}`,
+      equipmentType: p.equipmentType as EquipmentType,
+      mode: p.existingAssetId ? 'link' : 'create',
+      linkedAsset: p.existingAssetId ? {
+        id: p.existingAssetId,
+        assetCode: p.existingAssetCode || '',
+        assetName: p.existingAssetName || '',
+      } as Asset : null,
+      template: p.brand ? { brand: p.brand, model: p.model } as AssetConfigItem['template'] : null,
+      brand: p.brand,
+      model: p.model,
+      serialNumber: p.metadata?.serialNumber || '',
+      metadata: p.metadata,
+    })));
 
     setIsRetroactive(plans.some(p => p.existingAssetId && !p.createNew));
   }
@@ -249,10 +246,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     setUserOptions([]);
     setOwnerAssets([]);
     setOldDevices([]);
-    setUpdateAssets([]);
-    setNewDevices([]);
-    setLinkingExistingAssets(false);
-    setAddingNewDevice(true);
+    setConfigItems([]);
     setReturningOldDevice(false);
     setIsRetroactive(false);
   }
@@ -307,29 +301,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
 
       if (asset) {
         // Link the asset based on scan mode
-        if (scanMode === 'update-asset') {
-          // Add as existing asset from inventory (Regio 1)
-          const updateConfig: UpdateAssetConfig = {
-            id: `update-asset-${Date.now()}-${Math.random()}`,
-            linkedAsset: asset,
-          };
-          setUpdateAssets([...updateAssets, updateConfig]);
-          setLinkingExistingAssets(true);
-          setScanSuccess(`Bestaand asset gekoppeld: ${asset.assetCode}`);
-        } else if (scanMode === 'new-device') {
-          // Add as new device with linked asset (Regio 3)
-          const newDevice: DeviceConfig = {
-            id: `device-${Date.now()}-${Math.random()}`,
-            type: 'laptop', // Default, user can change
-            template: asset.brand && asset.model
-              ? { brand: asset.brand, model: asset.model } as DeviceConfig['template']
-              : null,
-            serialNumber: asset.serialNumber || '',
-            linkedAsset: asset,
-          };
-          setNewDevices([...newDevices, newDevice]);
-          setAddingNewDevice(true);
-          setScanSuccess(`Toegevoegd: ${asset.assetCode} - ${asset.assetName}`);
+        if (scanMode && typeof scanMode === 'object' && scanMode.type === 'config-item') {
+          // Update specific config item with the linked asset
+          setConfigItems(configItems.map(item =>
+            item.id === scanMode.itemId
+              ? { ...item, mode: 'link' as const, linkedAsset: asset }
+              : item
+          ));
+          setScanSuccess(`Asset gekoppeld: ${asset.assetCode}`);
         } else if (scanMode && typeof scanMode === 'object' && scanMode.type === 'old-device') {
           // Update specific old device at index
           const updatedOldDevices = [...oldDevices];
@@ -455,20 +434,21 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       }
     }
 
-    const newDevice: DeviceConfig = {
-      id: `device-${Date.now()}-${Math.random()}`,
-      type: 'laptop',
-      template: asset?.brand && asset?.model
-        ? { brand: asset.brand, model: asset.model } as DeviceConfig['template']
-        : null,
-      serialNumber: selectedDevice.type === 'intune'
-        ? (selectedDevice.data as IntuneDevice).serialNumber || ''
-        : (selectedDevice.data as Asset).serialNumber || '',
+    const serialNumber = selectedDevice.type === 'intune'
+      ? (selectedDevice.data as IntuneDevice).serialNumber || ''
+      : (selectedDevice.data as Asset).serialNumber || '';
+
+    const newConfigItem: AssetConfigItem = {
+      id: `config-${Date.now()}-${Math.random()}`,
+      equipmentType: 'laptop',
+      mode: asset ? 'link' : 'create',
       linkedAsset: asset,
+      brand: asset?.brand,
+      model: asset?.model,
+      serialNumber,
     };
 
-    setNewDevices([...newDevices, newDevice]);
-    setAddingNewDevice(true);
+    setConfigItems([...configItems, newConfigItem]);
     setScanSuccess(asset
       ? `Toegevoegd als nieuw: ${asset.assetCode}`
       : `Toegevoegd als nieuw apparaat`);
@@ -515,29 +495,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   const buildAssetPlans = (): AssetPlan[] => {
     const plans: AssetPlan[] = [];
 
-    // Regio 1: Add existing assets from inventory (status: Nieuw)
-    if (linkingExistingAssets && updateAssets.length > 0) {
-      updateAssets.forEach((updateAsset) => {
-        plans.push({
-          equipmentType: 'laptop', // Default, could be derived from asset category
-          createNew: false,
-          requiresSerialNumber: false,
-          requiresQRCode: false,
-          status: 'pending',
-          brand: updateAsset.linkedAsset.brand,
-          model: updateAsset.linkedAsset.model,
-          metadata: {
-            isUpdateAsset: 'true', // Mark as existing asset from inventory
-            ...(updateAsset.linkedAsset.serialNumber && { serialNumber: updateAsset.linkedAsset.serialNumber }),
-          },
-          existingAssetId: updateAsset.linkedAsset.id,
-          existingAssetCode: updateAsset.linkedAsset.assetCode,
-          existingAssetName: updateAsset.linkedAsset.assetName,
-        });
-      });
-    }
-
-    // Regio 2: Add all old devices being returned (swap/inleveren)
+    // Add old devices being returned (swap/inleveren)
     if (returningOldDevice && oldDevices.length > 0) {
       oldDevices.forEach((oldDevice) => {
         if (oldDevice.serialNumber || oldDevice.linkedAsset) {
@@ -550,7 +508,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             metadata: {
               oldSerial: oldDevice.serialNumber,
               isOldDevice: 'true',
-              returnStatus: oldDevice.returnStatus || 'UitDienst', // Store the return status
+              returnStatus: oldDevice.returnStatus || 'UitDienst',
             },
             ...(oldDevice.linkedAsset && {
               oldAssetId: oldDevice.linkedAsset.id,
@@ -562,32 +520,50 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       });
     }
 
-    // Regio 3: Add new devices (to be created or linked)
-    if (addingNewDevice) {
-      newDevices.forEach((device) => {
-        if (device.template || device.linkedAsset) {
-          const requiresSerial = device.type === 'laptop' || device.type === 'desktop';
+    // Add all configured items from unified WorkplaceConfigSection
+    configItems.forEach((item) => {
+      const requiresSerial = item.equipmentType === 'laptop' || item.equipmentType === 'desktop';
+
+      if (item.mode === 'link' && item.linkedAsset) {
+        // Linking existing asset from inventory
+        plans.push({
+          equipmentType: item.equipmentType,
+          createNew: false,
+          requiresSerialNumber: false,
+          requiresQRCode: false,
+          status: 'pending',
+          brand: item.linkedAsset.brand,
+          model: item.linkedAsset.model,
+          metadata: {
+            ...(item.linkedAsset.serialNumber && { serialNumber: item.linkedAsset.serialNumber }),
+            ...item.metadata,
+          },
+          existingAssetId: item.linkedAsset.id,
+          existingAssetCode: item.linkedAsset.assetCode,
+          existingAssetName: item.linkedAsset.assetName,
+        });
+      } else if (item.mode === 'create') {
+        // Creating new asset or configured for creation
+        const brand = item.template?.brand || item.brand;
+        const model = item.template?.model || item.model;
+
+        if (brand || model || item.serialNumber) {
           plans.push({
-            equipmentType: device.type,
-            createNew: !device.linkedAsset && !isRetroactive,
+            equipmentType: item.equipmentType,
+            createNew: !isRetroactive,
             requiresSerialNumber: requiresSerial,
-            requiresQRCode: !device.linkedAsset && !isRetroactive,
+            requiresQRCode: !isRetroactive,
             status: 'pending',
-            brand: device.linkedAsset?.brand || device.template?.brand,
-            model: device.linkedAsset?.model || device.template?.model,
+            brand,
+            model,
             metadata: {
-              ...(device.serialNumber && { serialNumber: device.serialNumber }),
-              ...device.metadata,
+              ...(item.serialNumber && { serialNumber: item.serialNumber }),
+              ...item.metadata,
             },
-            ...(device.linkedAsset && {
-              existingAssetId: device.linkedAsset.id,
-              existingAssetCode: device.linkedAsset.assetCode,
-              existingAssetName: device.linkedAsset.assetName,
-            }),
           });
         }
-      });
-    }
+      }
+    });
 
     return plans;
   };
@@ -596,7 +572,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     const assetPlans = buildAssetPlans();
 
     // Determine if this is a laptop setup based on configured devices
-    const hasLaptop = newDevices.some(d => d.type === 'laptop');
+    const hasLaptop = configItems.some(item => item.equipmentType === 'laptop');
 
     if (isEditMode && workplace) {
       const updateData: UpdateRolloutWorkplace = {
@@ -632,16 +608,19 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     onClose();
   };
 
-  const devicesNeedTemplates = addingNewDevice && newDevices.some(
-    (device) => !device.linkedAsset && !device.template
+  // Check if any item needs a template but doesn't have one
+  const devicesNeedTemplates = configItems.some(
+    (item) => item.mode === 'create' && !item.linkedAsset && !item.template && !item.brand
   );
 
   const hasTemplateErrors = devicesNeedTemplates;
   const hasOldDeviceConfigured = returningOldDevice && oldDevices.some(d => d.serialNumber || d.linkedAsset);
-  const hasUpdateAssetConfigured = linkingExistingAssets && updateAssets.length > 0;
-  const hasNewDeviceConfigured = addingNewDevice && newDevices.some(d => d.template || d.linkedAsset);
-  const hasDeviceConfigured = hasNewDeviceConfigured || hasOldDeviceConfigured || hasUpdateAssetConfigured;
-  const isFormValid = userName.trim() && !hasTemplateErrors && hasDeviceConfigured;
+  const hasConfigItemConfigured = configItems.some(item =>
+    (item.mode === 'link' && item.linkedAsset) ||
+    (item.mode === 'create' && (item.template || item.brand || item.serialNumber))
+  );
+  const hasDeviceConfigured = hasConfigItemConfigured || hasOldDeviceConfigured;
+  const isFormValid = userName.trim() && !hasTemplateErrors;
 
   return (
     <>
@@ -1184,120 +1163,17 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           />
 
           {/* Device Configuration Section */}
-          <Typography
-            variant="overline"
-            sx={{
-              display: 'block',
-              mb: 2.5,
-              fontWeight: 700,
-              color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
-              letterSpacing: '0.1em',
-            }}
-          >
-            Apparaat Configuratie
-          </Typography>
-
-          {/* REGIO 1: Update Workplace Assets - Existing assets from inventory (status: Nieuw) */}
-          <Box
-            sx={{
-              mb: 2.5,
-              p: 2.5,
-              borderRadius: 3,
-              bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              boxShadow: linkingExistingAssets
-                ? (isDark
-                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(33, 150, 243, 0.4)'
-                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(33, 150, 243, 0.3)')
-                : (isDark
-                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
-                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          >
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: linkingExistingAssets ? 2 : 0 }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                    boxShadow: linkingExistingAssets
-                      ? (isDark
-                        ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
-                        : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff')
-                      : (isDark
-                        ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
-                        : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff'),
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <InventoryIcon sx={{
-                    color: linkingExistingAssets ? '#2196F3' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
-                    fontSize: '1.3rem',
-                    transition: 'color 0.3s ease',
-                  }} />
-                </Box>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-                    Update werkplek assets
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                    Koppel bestaande assets uit inventaris (status: Nieuw)
-                  </Typography>
-                </Box>
-                {updateAssets.length > 0 && (
-                  <Chip
-                    label={`${updateAssets.length} ${updateAssets.length === 1 ? 'asset' : 'assets'}`}
-                    size="small"
-                    sx={{
-                      height: 24,
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                      color: '#2196F3',
-                      border: 'none',
-                      boxShadow: isDark
-                        ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
-                        : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
-                    }}
-                  />
-                )}
-              </Stack>
-              <Switch
-                checked={linkingExistingAssets}
-                onChange={(e) => setLinkingExistingAssets(e.target.checked)}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#2196F3',
-                    '&:hover': { bgcolor: 'rgba(33, 150, 243, 0.08)' },
-                  },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    bgcolor: '#2196F3',
-                  },
-                  '& .MuiSwitch-track': {
-                    borderRadius: 2,
-                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
-                  },
-                }}
-              />
-            </Stack>
-
-            {linkingExistingAssets && (
-              <Box sx={{ mt: 2, pt: 2 }}>
-                <UpdateWorkplaceAssetsSection
-                  devices={updateAssets}
-                  onChange={setUpdateAssets}
-                  onScanRequest={() => handleOpenScanDialog('update-asset')}
-                />
-              </Box>
-            )}
+          {/* Unified Workplace Configuration Section */}
+          <Box sx={{ mb: 2.5 }}>
+            <WorkplaceConfigSection
+              items={configItems}
+              onChange={setConfigItems}
+              onScanRequest={(itemId) => handleOpenScanDialog({ type: 'config-item', itemId })}
+              isRetroactive={isRetroactive}
+            />
           </Box>
 
-          {/* REGIO 2: Old Device Section - Neumorphic (Swap/Inleveren) */}
+          {/* Old Device Section - Neumorphic (Swap/Inleveren) */}
           <Box
             sx={{
               mb: 2.5,
@@ -1387,120 +1263,6 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   onChange={setOldDevices}
                   onScanRequest={handleOldDeviceScanRequest}
                   onSerialSearch={handleOldDeviceSerialSearch}
-                />
-              </Box>
-            )}
-          </Box>
-
-          {/* REGIO 3: New Device Section - Neumorphic (New assets to create) */}
-          <Box
-            sx={{
-              mb: 2.5,
-              p: 2.5,
-              borderRadius: 3,
-              bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              boxShadow: addingNewDevice
-                ? (isDark
-                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(76, 175, 80, 0.4)'
-                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(76, 175, 80, 0.3)')
-                : (isDark
-                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
-                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          >
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: addingNewDevice ? 2 : 0 }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                    boxShadow: addingNewDevice
-                      ? (isDark
-                        ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
-                        : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff')
-                      : (isDark
-                        ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
-                        : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff'),
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <ComputerIcon sx={{
-                    color: addingNewDevice ? 'success.main' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
-                    fontSize: '1.3rem',
-                    transition: 'color 0.3s ease',
-                  }} />
-                </Box>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-                    Nieuw apparaat toevoegen
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                    Configureer nieuwe apparaten voor deze werkplek
-                  </Typography>
-                </Box>
-              </Stack>
-              <Switch
-                checked={addingNewDevice}
-                onChange={(e) => setAddingNewDevice(e.target.checked)}
-                color="success"
-                sx={{
-                  '& .MuiSwitch-track': {
-                    borderRadius: 2,
-                    bgcolor: isDark ? '#161a1d' : '#d0d5db',
-                  },
-                }}
-              />
-            </Stack>
-
-            {addingNewDevice && (
-              <Box sx={{ mt: 2, pt: 2 }}>
-                {/* QR Scan Button - Djoppie Neumorphic Style */}
-                <Button
-                  fullWidth
-                  startIcon={<QrCodeScannerIcon />}
-                  onClick={() => handleOpenScanDialog('new-device')}
-                  sx={{
-                    mb: 2,
-                    py: 1.5,
-                    borderRadius: 2.5,
-                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                    color: '#FF7700',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    border: 'none',
-                    // Djoppie neumorphic raised style
-                    boxShadow: isDark
-                      ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33, inset 0 0 0 1px rgba(255, 119, 0, 0.2)'
-                      : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff, inset 0 0 0 1px rgba(255, 119, 0, 0.15)',
-                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                      transform: 'translateY(-2px)',
-                      boxShadow: isDark
-                        ? '7px 7px 14px #161a1d, -7px -7px 14px #262c33, 0 4px 12px rgba(255, 119, 0, 0.3), inset 0 0 0 2px rgba(255, 119, 0, 0.4)'
-                        : '7px 7px 14px #c5cad0, -7px -7px 14px #ffffff, 0 4px 12px rgba(255, 119, 0, 0.2), inset 0 0 0 2px rgba(255, 119, 0, 0.3)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0)',
-                      boxShadow: isDark
-                        ? 'inset 4px 4px 8px #161a1d, inset -4px -4px 8px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.5)'
-                        : 'inset 4px 4px 8px #c5cad0, inset -4px -4px 8px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.4)',
-                    },
-                  }}
-                >
-                  Scan QR-code nieuw toestel
-                </Button>
-
-                {/* Multi-device configuration */}
-                <MultiDeviceConfigSection
-                  devices={newDevices}
-                  onChange={setNewDevices}
                 />
               </Box>
             )}

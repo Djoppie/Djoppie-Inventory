@@ -20,6 +20,7 @@ public class RolloutsController : ControllerBase
 {
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IAssetRepository _assetRepository;
+    private readonly IAssetTemplateRepository _assetTemplateRepository;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly IGraphUserService _graphUserService;
     private readonly IServiceRepository _serviceRepository;
@@ -28,6 +29,7 @@ public class RolloutsController : ControllerBase
     public RolloutsController(
         IRolloutRepository rolloutRepository,
         IAssetRepository assetRepository,
+        IAssetTemplateRepository assetTemplateRepository,
         IAssetCodeGenerator assetCodeGenerator,
         IGraphUserService graphUserService,
         IServiceRepository serviceRepository,
@@ -35,6 +37,7 @@ public class RolloutsController : ControllerBase
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
+        _assetTemplateRepository = assetTemplateRepository;
         _assetCodeGenerator = assetCodeGenerator;
         _graphUserService = graphUserService;
         _serviceRepository = serviceRepository;
@@ -953,8 +956,11 @@ public class RolloutsController : ControllerBase
             return BadRequest(new { message = "Count must be between 1 and 50" });
         }
 
-        // Generate standard asset plans using the config
-        var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig);
+        // Load templates if any are specified
+        var templates = await LoadTemplatesForConfigAsync(dto.AssetPlanConfig);
+
+        // Generate standard asset plans using the config and templates
+        var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig, templates);
         var workplaces = new List<RolloutWorkplace>();
 
         for (int i = 1; i <= dto.Count; i++)
@@ -1287,8 +1293,11 @@ public class RolloutsController : ControllerBase
                 .Select(w => w.UserEmail!.ToLowerInvariant())
                 .ToHashSet();
 
+            // Load templates if any are specified
+            var templates = await LoadTemplatesForConfigAsync(dto.AssetPlanConfig);
+
             // Generate standard asset plans
-            var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig);
+            var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig, templates);
             var workplacesToCreate = new List<RolloutWorkplace>();
             var skippedUsers = new List<string>();
 
@@ -1455,15 +1464,62 @@ public class RolloutsController : ControllerBase
     // ===== HELPER MAPPING METHODS =====
 
     /// <summary>
+    /// Loads templates specified in the asset plan config
+    /// </summary>
+    /// <param name="config">Asset plan configuration with optional template IDs</param>
+    /// <returns>Dictionary of templates keyed by their ID</returns>
+    private async Task<Dictionary<int, AssetTemplate>> LoadTemplatesForConfigAsync(StandardAssetPlanConfig config)
+    {
+        var templateIds = new List<int?>
+        {
+            config.LaptopTemplateId,
+            config.DesktopTemplateId,
+            config.DockingTemplateId,
+            config.MonitorTemplateId,
+            config.KeyboardTemplateId,
+            config.MouseTemplateId
+        };
+
+        var validIds = templateIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+
+        if (!validIds.Any())
+        {
+            return new Dictionary<int, AssetTemplate>();
+        }
+
+        var templates = new Dictionary<int, AssetTemplate>();
+        foreach (var id in validIds)
+        {
+            var template = await _assetTemplateRepository.GetByIdAsync(id);
+            if (template != null)
+            {
+                templates[id] = template;
+            }
+        }
+
+        return templates;
+    }
+
+    /// <summary>
     /// Generates standard asset plans based on configuration
     /// </summary>
-    private static List<AssetPlanDto> GenerateStandardAssetPlans(StandardAssetPlanConfig config)
+    /// <param name="config">Asset plan configuration with optional template IDs</param>
+    /// <param name="templates">Pre-loaded templates dictionary (key: templateId, value: template)</param>
+    private static List<AssetPlanDto> GenerateStandardAssetPlans(
+        StandardAssetPlanConfig config,
+        Dictionary<int, AssetTemplate>? templates = null)
     {
         var plans = new List<AssetPlanDto>();
+        templates ??= new Dictionary<int, AssetTemplate>();
+
+        // Helper to get template data
+        AssetTemplate? GetTemplate(int? templateId) =>
+            templateId.HasValue && templates.TryGetValue(templateId.Value, out var t) ? t : null;
 
         // Laptop
         if (config.IncludeLaptop)
         {
+            var template = GetTemplate(config.LaptopTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "laptop",
@@ -1471,6 +1527,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = true,
                 RequiresQRCode = false, // Existing asset (swap)
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1478,6 +1536,7 @@ public class RolloutsController : ControllerBase
         // Desktop
         if (config.IncludeDesktop)
         {
+            var template = GetTemplate(config.DesktopTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "desktop",
@@ -1485,6 +1544,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = true,
                 RequiresQRCode = false, // Existing asset (swap)
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1492,6 +1553,7 @@ public class RolloutsController : ControllerBase
         // Docking Station - CreateNew=false until serial number is entered
         if (config.IncludeDocking)
         {
+            var template = GetTemplate(config.DockingTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "docking",
@@ -1499,11 +1561,14 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = true,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
 
         // Monitors - CreateNew=true so assets are created automatically
+        var monitorTemplate = GetTemplate(config.MonitorTemplateId);
         for (int i = 0; i < config.MonitorCount; i++)
         {
             var position = i switch
@@ -1523,6 +1588,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = monitorTemplate?.Brand,
+                Model = monitorTemplate?.Model,
                 Metadata = new Dictionary<string, string>
                 {
                     { "position", position },
@@ -1534,6 +1601,7 @@ public class RolloutsController : ControllerBase
         // Keyboard - CreateNew=true so assets are created automatically
         if (config.IncludeKeyboard)
         {
+            var template = GetTemplate(config.KeyboardTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "keyboard",
@@ -1541,6 +1609,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1548,6 +1618,7 @@ public class RolloutsController : ControllerBase
         // Mouse - CreateNew=true so assets are created automatically
         if (config.IncludeMouse)
         {
+            var template = GetTemplate(config.MouseTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "mouse",
@@ -1555,6 +1626,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }

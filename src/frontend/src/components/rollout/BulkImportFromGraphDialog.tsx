@@ -53,7 +53,11 @@ import {
 } from '../../api/rollout.api';
 import { rolloutKeys } from '../../hooks/useRollout';
 import type { StandardAssetPlanConfig, BulkCreateFromGraphResult, GraphGroup } from '../../types/rollout';
+import type { AssetTemplate } from '../../types/asset.types';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
+import { TemplateSelector } from './TemplateSelector';
+import DockIcon from '@mui/icons-material/Dock';
+import MonitorIcon from '@mui/icons-material/Monitor';
 
 interface BulkImportFromGraphDialogProps {
   open: boolean;
@@ -169,6 +173,12 @@ export default function BulkImportFromGraphDialog({
   const [expandedSectors, setExpandedSectors] = useState<Set<string>>(new Set());
   const [showFilter, setShowFilter] = useState(true);
 
+  // Template state
+  const [laptopTemplate, setLaptopTemplate] = useState<AssetTemplate | null>(null);
+  const [desktopTemplate, setDesktopTemplate] = useState<AssetTemplate | null>(null);
+  const [dockingTemplate, setDockingTemplate] = useState<AssetTemplate | null>(null);
+  const [monitorTemplate, setMonitorTemplate] = useState<AssetTemplate | null>(null);
+
   // Asset plan config
   const assetPlanConfig: StandardAssetPlanConfig = useMemo(() => ({
     includeLaptop: isLaptopSetup,
@@ -177,7 +187,12 @@ export default function BulkImportFromGraphDialog({
     monitorCount,
     includeKeyboard: true,
     includeMouse: true,
-  }), [isLaptopSetup, monitorCount]);
+    // Include template IDs if selected
+    laptopTemplateId: laptopTemplate?.id,
+    desktopTemplateId: desktopTemplate?.id,
+    dockingTemplateId: dockingTemplate?.id,
+    monitorTemplateId: monitorTemplate?.id,
+  }), [isLaptopSetup, monitorCount, laptopTemplate, desktopTemplate, dockingTemplate, monitorTemplate]);
 
   // Fetch sector groups (MG-SECTOR-*)
   const { data: sectorGroups = [], isLoading: loadingSectors } = useQuery({
@@ -300,6 +315,11 @@ export default function BulkImportFromGraphDialog({
     setSearchQuery('');
     setResult(null);
     setExpandedSectors(new Set());
+    // Reset templates
+    setLaptopTemplate(null);
+    setDesktopTemplate(null);
+    setDockingTemplate(null);
+    setMonitorTemplate(null);
     onClose();
   };
 
@@ -738,7 +758,15 @@ export default function BulkImportFromGraphDialog({
                     control={
                       <Switch
                         checked={isLaptopSetup}
-                        onChange={(e) => setIsLaptopSetup(e.target.checked)}
+                        onChange={(e) => {
+                          setIsLaptopSetup(e.target.checked);
+                          // Clear the other template when switching
+                          if (e.target.checked) {
+                            setDesktopTemplate(null);
+                          } else {
+                            setLaptopTemplate(null);
+                          }
+                        }}
                         sx={{
                           '& .Mui-checked': { color: '#FF7700' },
                           '& .Mui-checked + .MuiSwitch-track': { backgroundColor: '#FF7700' },
@@ -751,6 +779,46 @@ export default function BulkImportFromGraphDialog({
                         {isLaptopSetup ? t('rollout.equipment.laptop', 'Laptop') : t('rollout.equipment.desktop', 'Desktop')}
                       </Box>
                     }
+                  />
+                </Box>
+
+                {/* Template selectors */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                  <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                    Sjablonen (optioneel)
+                  </Typography>
+
+                  {/* Laptop or Desktop template */}
+                  {isLaptopSetup ? (
+                    <TemplateSelector
+                      equipmentType="laptop"
+                      value={laptopTemplate}
+                      onChange={setLaptopTemplate}
+                      label="Laptop sjabloon"
+                    />
+                  ) : (
+                    <TemplateSelector
+                      equipmentType="desktop"
+                      value={desktopTemplate}
+                      onChange={setDesktopTemplate}
+                      label="Desktop sjabloon"
+                    />
+                  )}
+
+                  {/* Docking template */}
+                  <TemplateSelector
+                    equipmentType="docking"
+                    value={dockingTemplate}
+                    onChange={setDockingTemplate}
+                    label="Docking sjabloon"
+                  />
+
+                  {/* Monitor template */}
+                  <TemplateSelector
+                    equipmentType="monitor"
+                    value={monitorTemplate}
+                    onChange={setMonitorTemplate}
+                    label="Monitor sjabloon"
                   />
                 </Box>
 

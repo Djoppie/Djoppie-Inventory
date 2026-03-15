@@ -65,6 +65,38 @@ public class StandardAssetPlanConfig
     /// Include mouse in asset plan
     /// </summary>
     public bool IncludeMouse { get; set; } = true;
+
+    // Optional template IDs for each equipment type
+
+    /// <summary>
+    /// Template ID for laptop
+    /// </summary>
+    public int? LaptopTemplateId { get; set; }
+
+    /// <summary>
+    /// Template ID for desktop
+    /// </summary>
+    public int? DesktopTemplateId { get; set; }
+
+    /// <summary>
+    /// Template ID for docking station
+    /// </summary>
+    public int? DockingTemplateId { get; set; }
+
+    /// <summary>
+    /// Template ID for monitor
+    /// </summary>
+    public int? MonitorTemplateId { get; set; }
+
+    /// <summary>
+    /// Template ID for keyboard
+    /// </summary>
+    public int? KeyboardTemplateId { get; set; }
+
+    /// <summary>
+    /// Template ID for mouse
+    /// </summary>
+    public int? MouseTemplateId { get; set; }
 }
 
 /// <summary>

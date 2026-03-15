@@ -219,6 +219,13 @@ export interface StandardAssetPlanConfig {
   monitorCount: number;
   includeKeyboard: boolean;
   includeMouse: boolean;
+  // Optional template IDs for each equipment type
+  laptopTemplateId?: number;
+  desktopTemplateId?: number;
+  dockingTemplateId?: number;
+  monitorTemplateId?: number;
+  keyboardTemplateId?: number;
+  mouseTemplateId?: number;
 }
 
 export interface BulkCreateWorkplacesResult {
