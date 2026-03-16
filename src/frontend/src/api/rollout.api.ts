@@ -29,6 +29,7 @@ import type {
   BulkCreateFromGraph,
   BulkCreateFromGraphResult,
   MoveWorkplace,
+  RolloutAssetStatusReport,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
@@ -378,6 +379,26 @@ export const getServiceMapping = async (): Promise<{
   unmatchedAzureAdGroups: string[];
 }> => {
   const response = await apiClient.get('/rollouts/graph/service-mapping');
+  return response.data;
+};
+
+/**
+ * Get asset status change report for a rollout session.
+ * Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
+ */
+export const getRolloutAssetReport = async (sessionId: number): Promise<RolloutAssetStatusReport> => {
+  const response = await apiClient.get<RolloutAssetStatusReport>(`/rollouts/${sessionId}/asset-report`);
+  return response.data;
+};
+
+/**
+ * Export asset status change report as CSV file.
+ * Returns a Blob that can be downloaded.
+ */
+export const exportRolloutAssetReport = async (sessionId: number): Promise<Blob> => {
+  const response = await apiClient.get(`/rollouts/${sessionId}/asset-report/export`, {
+    responseType: 'blob',
+  });
   return response.data;
 };
 

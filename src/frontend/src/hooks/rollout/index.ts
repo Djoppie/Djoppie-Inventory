@@ -49,3 +49,6 @@ export {
 
 // Progress Hooks
 export { useRolloutProgress } from './useRolloutProgress';
+
+// Asset Report Hooks
+export { useRolloutAssetReport, useExportAssetReport } from './useRolloutAssetReport';

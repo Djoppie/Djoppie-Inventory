@@ -15,4 +15,5 @@ export const rolloutKeys = {
   workplace: (workplaceId: number) => [...rolloutKeys.all, 'workplace', workplaceId] as const,
   progress: (sessionId: number) => [...rolloutKeys.all, 'progress', sessionId] as const,
   newAssets: (dayId: number) => [...rolloutKeys.all, 'newAssets', dayId] as const,
+  assetReport: (sessionId: number) => [...rolloutKeys.all, 'assetReport', sessionId] as const,
 };

@@ -15,17 +15,20 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
+    private readonly IAssetEventService _assetEventService;
     private readonly ILogger<RolloutWorkplaceService> _logger;
 
     public RolloutWorkplaceService(
         IRolloutRepository rolloutRepository,
         IAssetRepository assetRepository,
         IAssetCodeGenerator assetCodeGenerator,
+        IAssetEventService assetEventService,
         ILogger<RolloutWorkplaceService> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
         _assetCodeGenerator = assetCodeGenerator;
+        _assetEventService = assetEventService;
         _logger = logger;
     }
 
@@ -48,7 +51,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         {
             await _rolloutRepository.ExecuteInTransactionAsync(async () =>
             {
-                await TransitionAssetsForCompletion(workplace, assetPlans);
+                await TransitionAssetsForCompletion(workplace, assetPlans, completedBy, completedByEmail);
                 UpdateWorkplaceAsCompleted(workplace, assetPlans, notes, completedBy, completedByEmail);
                 await _rolloutRepository.SaveChangesAsync();
                 await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
@@ -279,7 +282,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
 
     private async Task TransitionAssetsForCompletion(
         RolloutWorkplace workplace,
-        List<AssetPlanDto> assetPlans)
+        List<AssetPlanDto> assetPlans,
+        string completedBy,
+        string completedByEmail)
     {
         foreach (var plan in assetPlans)
         {
@@ -289,6 +294,8 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
                 if (asset != null)
                 {
+                    var oldStatus = asset.Status;
+
                     asset.Status = AssetStatus.InGebruik;
                     asset.InstallationDate = DateTime.UtcNow;
                     asset.Owner = workplace.UserName;
@@ -296,6 +303,15 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                     asset.InstallationLocation = workplace.Location;
                     asset.UpdatedAt = DateTime.UtcNow;
                     await _assetRepository.UpdateAsync(asset);
+
+                    // Create audit event for status change
+                    await _assetEventService.CreateStatusChangedEventAsync(
+                        asset.Id,
+                        oldStatus,
+                        AssetStatus.InGebruik,
+                        completedBy,
+                        completedByEmail,
+                        $"Rollout werkplek: {workplace.UserName}");
 
                     _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}",
                         asset.AssetCode, workplace.UserName);
@@ -308,9 +324,20 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
                 if (oldAsset != null)
                 {
+                    var oldStatus = oldAsset.Status;
+
                     oldAsset.Status = AssetStatus.UitDienst;
                     oldAsset.UpdatedAt = DateTime.UtcNow;
                     await _assetRepository.UpdateAsync(oldAsset);
+
+                    // Create audit event for decommissioning
+                    await _assetEventService.CreateStatusChangedEventAsync(
+                        oldAsset.Id,
+                        oldStatus,
+                        AssetStatus.UitDienst,
+                        completedBy,
+                        completedByEmail,
+                        $"Rollout werkplek: {workplace.UserName} (vervangen)");
 
                     _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)",
                         oldAsset.AssetCode);

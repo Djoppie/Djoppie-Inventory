@@ -1148,6 +1148,254 @@ public class RolloutsController : ControllerBase
         return Ok(progressDto);
     }
 
+    /// <summary>
+    /// Gets comprehensive asset status change report for a rollout session.
+    /// Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
+    /// </summary>
+    [HttpGet("{sessionId}/asset-report")]
+    [ProducesResponseType(typeof(RolloutAssetStatusReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutAssetStatusReportDto>> GetAssetStatusReport(int sessionId)
+    {
+        var session = await _rolloutRepository.GetSessionByIdAsync(sessionId, includeDays: true, includeWorkplaces: true);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {sessionId} not found" });
+        }
+
+        var report = await BuildAssetStatusReportAsync(session);
+        return Ok(report);
+    }
+
+    /// <summary>
+    /// Exports asset status changes as CSV file.
+    /// </summary>
+    [HttpGet("{sessionId}/asset-report/export")]
+    [Produces("text/csv")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ExportAssetStatusReport(int sessionId)
+    {
+        var session = await _rolloutRepository.GetSessionByIdAsync(sessionId, includeDays: true, includeWorkplaces: true);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {sessionId} not found" });
+        }
+
+        var report = await BuildAssetStatusReportAsync(session);
+        var csv = GenerateCsvContent(report);
+        var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(
+            System.Text.Encoding.UTF8.GetBytes(csv)).ToArray();
+
+        var fileName = $"rollout-asset-wijzigingen-{sessionId}-{DateTime.Now:yyyyMMdd}.csv";
+        return File(bytes, "text/csv; charset=utf-8", fileName);
+    }
+
+    /// <summary>
+    /// Builds the asset status report from session data
+    /// </summary>
+    private async Task<RolloutAssetStatusReportDto> BuildAssetStatusReportAsync(RolloutSession session)
+    {
+        var report = new RolloutAssetStatusReportDto
+        {
+            SessionId = session.Id,
+            SessionName = session.SessionName,
+            GeneratedAt = DateTime.UtcNow
+        };
+
+        var assetChanges = new List<RolloutAssetChangeDto>();
+        var daySummaries = new List<RolloutDayAssetSummaryDto>();
+
+        // Get service names for lookup
+        var services = await _serviceRepository.GetAllAsync();
+        var serviceNames = services.ToDictionary(s => s.Id, s => s.Name);
+
+        foreach (var day in session.Days ?? new List<RolloutDay>())
+        {
+            var daySummary = new RolloutDayAssetSummaryDto
+            {
+                DayId = day.Id,
+                DayNumber = day.DayNumber,
+                Date = day.Date,
+                DayName = day.Name
+            };
+
+            var completedWorkplaces = day.Workplaces?.Where(w => w.Status == RolloutWorkplaceStatus.Completed).ToList()
+                ?? new List<RolloutWorkplace>();
+
+            daySummary.WorkplacesCompleted = completedWorkplaces.Count;
+
+            foreach (var workplace in completedWorkplaces)
+            {
+                var workplaceSummary = new RolloutWorkplaceAssetSummaryDto
+                {
+                    WorkplaceId = workplace.Id,
+                    UserName = workplace.UserName,
+                    Location = workplace.Location,
+                    CompletedBy = workplace.CompletedBy ?? "",
+                    CompletedAt = workplace.CompletedAt
+                };
+
+                var plans = ParseAssetPlansForReport(workplace.AssetPlansJson);
+                var serviceName = workplace.ServiceId.HasValue && serviceNames.ContainsKey(workplace.ServiceId.Value)
+                    ? serviceNames[workplace.ServiceId.Value]
+                    : null;
+
+                foreach (var plan in plans)
+                {
+                    // New/existing asset -> InGebruik
+                    if (plan.ExistingAssetId.HasValue && plan.Status == "installed")
+                    {
+                        var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                        if (asset != null)
+                        {
+                            assetChanges.Add(new RolloutAssetChangeDto
+                            {
+                                AssetId = asset.Id,
+                                AssetCode = asset.AssetCode,
+                                AssetName = asset.AssetName,
+                                EquipmentType = plan.EquipmentType,
+                                SerialNumber = asset.SerialNumber,
+                                Brand = asset.Brand,
+                                Model = asset.Model,
+                                OldStatus = "Nieuw",
+                                NewStatus = "InGebruik",
+                                ChangeType = "InGebruik",
+                                WorkplaceId = workplace.Id,
+                                UserName = workplace.UserName,
+                                UserEmail = workplace.UserEmail,
+                                Location = workplace.Location,
+                                ServiceName = serviceName,
+                                DayId = day.Id,
+                                DayNumber = day.DayNumber,
+                                Date = day.Date,
+                                CompletedBy = workplace.CompletedBy ?? "",
+                                CompletedByEmail = workplace.CompletedByEmail,
+                                CompletedAt = workplace.CompletedAt ?? DateTime.UtcNow
+                            });
+
+                            workplaceSummary.AssetsDeployed++;
+                            daySummary.AssetsDeployed++;
+                        }
+                    }
+
+                    // Old asset -> UitDienst
+                    if (plan.OldAssetId.HasValue)
+                    {
+                        var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
+                        if (oldAsset != null)
+                        {
+                            assetChanges.Add(new RolloutAssetChangeDto
+                            {
+                                AssetId = oldAsset.Id,
+                                AssetCode = oldAsset.AssetCode,
+                                AssetName = oldAsset.AssetName,
+                                EquipmentType = plan.EquipmentType,
+                                SerialNumber = oldAsset.SerialNumber,
+                                Brand = oldAsset.Brand,
+                                Model = oldAsset.Model,
+                                OldStatus = "InGebruik",
+                                NewStatus = "UitDienst",
+                                ChangeType = "UitDienst",
+                                WorkplaceId = workplace.Id,
+                                UserName = workplace.UserName,
+                                UserEmail = workplace.UserEmail,
+                                Location = workplace.Location,
+                                ServiceName = serviceName,
+                                DayId = day.Id,
+                                DayNumber = day.DayNumber,
+                                Date = day.Date,
+                                CompletedBy = workplace.CompletedBy ?? "",
+                                CompletedByEmail = workplace.CompletedByEmail,
+                                CompletedAt = workplace.CompletedAt ?? DateTime.UtcNow
+                            });
+
+                            workplaceSummary.AssetsDecommissioned++;
+                            daySummary.AssetsDecommissioned++;
+                        }
+                    }
+                }
+
+                daySummary.WorkplaceSummaries.Add(workplaceSummary);
+            }
+
+            if (daySummary.WorkplacesCompleted > 0)
+            {
+                daySummaries.Add(daySummary);
+            }
+        }
+
+        report.AssetChanges = assetChanges;
+        report.DaySummaries = daySummaries;
+        report.TotalAssetsDeployed = assetChanges.Count(c => c.ChangeType == "InGebruik");
+        report.TotalAssetsDecommissioned = assetChanges.Count(c => c.ChangeType == "UitDienst");
+        report.TotalWorkplacesCompleted = daySummaries.Sum(d => d.WorkplacesCompleted);
+
+        return report;
+    }
+
+    /// <summary>
+    /// Parse asset plans JSON for reporting
+    /// </summary>
+    private static List<AssetPlanDto> ParseAssetPlansForReport(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<AssetPlanDto>();
+        }
+
+        return JsonSerializer.Deserialize<List<AssetPlanDto>>(json) ?? new List<AssetPlanDto>();
+    }
+
+    /// <summary>
+    /// Generates CSV content from the report
+    /// </summary>
+    private static string GenerateCsvContent(RolloutAssetStatusReportDto report)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        // Header row (Dutch labels)
+        sb.AppendLine("AssetCode;AssetNaam;Type;Serienummer;Merk;Model;VorigeStatus;NieuweStatus;Wijziging;Gebruiker;Email;Locatie;Dienst;DagNr;Datum;UitgevoerdDoor;UitgevoerdOp");
+
+        foreach (var change in report.AssetChanges)
+        {
+            sb.AppendLine(string.Join(";",
+                EscapeCsv(change.AssetCode),
+                EscapeCsv(change.AssetName),
+                EscapeCsv(change.EquipmentType),
+                EscapeCsv(change.SerialNumber),
+                EscapeCsv(change.Brand),
+                EscapeCsv(change.Model),
+                EscapeCsv(change.OldStatus),
+                EscapeCsv(change.NewStatus),
+                EscapeCsv(change.ChangeType),
+                EscapeCsv(change.UserName),
+                EscapeCsv(change.UserEmail),
+                EscapeCsv(change.Location),
+                EscapeCsv(change.ServiceName),
+                change.DayNumber.ToString(),
+                change.Date.ToString("yyyy-MM-dd"),
+                EscapeCsv(change.CompletedBy),
+                change.CompletedAt.ToString("yyyy-MM-dd HH:mm")
+            ));
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Escapes a CSV field value
+    /// </summary>
+    private static string EscapeCsv(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+        {
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        }
+        return value;
+    }
+
     // ===== HELPER MAPPING METHODS =====
 
     /// <summary>

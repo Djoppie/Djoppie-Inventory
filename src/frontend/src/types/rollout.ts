@@ -304,3 +304,73 @@ export interface MoveWorkplaceResult {
   dayCreated: boolean;
   targetDayName: string;
 }
+
+// ===== ASSET STATUS REPORT TYPES =====
+
+/**
+ * Report showing all asset status changes for a rollout session
+ */
+export interface RolloutAssetStatusReport {
+  sessionId: number;
+  sessionName: string;
+  generatedAt: string;
+  totalAssetsDeployed: number;
+  totalAssetsDecommissioned: number;
+  totalWorkplacesCompleted: number;
+  assetChanges: RolloutAssetChange[];
+  daySummaries: RolloutDayAssetSummary[];
+}
+
+/**
+ * Individual asset status change record
+ */
+export interface RolloutAssetChange {
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  equipmentType: string;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  oldStatus: string;
+  newStatus: string;
+  changeType: 'InGebruik' | 'UitDienst';
+  workplaceId: number;
+  userName: string;
+  userEmail?: string;
+  location?: string;
+  serviceName?: string;
+  dayId: number;
+  dayNumber: number;
+  date: string;
+  completedBy: string;
+  completedByEmail?: string;
+  completedAt: string;
+}
+
+/**
+ * Per-day asset summary for overview section
+ */
+export interface RolloutDayAssetSummary {
+  dayId: number;
+  dayNumber: number;
+  date: string;
+  dayName?: string;
+  assetsDeployed: number;
+  assetsDecommissioned: number;
+  workplacesCompleted: number;
+  workplaceSummaries: RolloutWorkplaceAssetSummary[];
+}
+
+/**
+ * Per-workplace asset summary
+ */
+export interface RolloutWorkplaceAssetSummary {
+  workplaceId: number;
+  userName: string;
+  location?: string;
+  assetsDeployed: number;
+  assetsDecommissioned: number;
+  completedBy: string;
+  completedAt?: string;
+}
