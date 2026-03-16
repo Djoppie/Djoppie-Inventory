@@ -965,7 +965,7 @@ public class RolloutsController : ControllerBase
             // Filter to selected users if specified
             if (dto.SelectedUserIds?.Any() == true)
             {
-                userList = userList.Where(u => dto.SelectedUserIds.Contains(u.Id)).ToList();
+                userList = userList.Where(u => u.Id != null && dto.SelectedUserIds.Contains(u.Id)).ToList();
             }
 
             if (!userList.Any())
@@ -1068,7 +1068,7 @@ public class RolloutsController : ControllerBase
 
             foreach (var plan in assetPlans.Where(p => p.ExistingAssetId.HasValue))
             {
-                assetIds.Add(plan.ExistingAssetId.Value);
+                assetIds.Add(plan.ExistingAssetId!.Value);
             }
         }
 

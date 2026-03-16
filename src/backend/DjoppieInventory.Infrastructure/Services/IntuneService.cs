@@ -372,7 +372,8 @@ public class IntuneService : IIntuneService
             };
 
             // Get the native HTTP request with authentication
-            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo)
+                ?? throw new InvalidOperationException("Failed to create native HTTP request");
 
             // Use HttpClient to make the request
             using var httpClient = new HttpClient();
@@ -777,7 +778,8 @@ public class IntuneService : IIntuneService
                 URI = new Uri(autopilotEndpoint)
             };
 
-            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo)
+                ?? throw new InvalidOperationException("Failed to create native HTTP request");
 
             using var httpClient = new HttpClient();
             var autopilotResponse = await httpClient.SendAsync(nativeRequest);
@@ -1142,7 +1144,8 @@ public class IntuneService : IIntuneService
                 URI = new Uri(endpoint)
             };
 
-            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo)
+                ?? throw new InvalidOperationException("Failed to create native HTTP request");
 
             using var httpClient = new HttpClient();
             var response = await httpClient.SendAsync(nativeRequest);
@@ -1301,7 +1304,8 @@ public class IntuneService : IIntuneService
                 URI = new Uri(endpoint)
             };
 
-            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo)
+                ?? throw new InvalidOperationException("Failed to create native HTTP request");
 
             using var httpClient = new HttpClient();
             var response = await httpClient.SendAsync(nativeRequest);
@@ -1475,7 +1479,8 @@ public class IntuneService : IIntuneService
                 URI = new Uri(requestUrl)
             };
 
-            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo)
+                ?? throw new InvalidOperationException("Failed to create native HTTP request");
 
             using var httpClient = new HttpClient();
             var response = await httpClient.SendAsync(nativeRequest);

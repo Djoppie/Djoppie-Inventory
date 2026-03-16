@@ -547,7 +547,7 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
         {
             AssetCode = assetCode,
             AssetName = template.AssetName ?? $"{template.TemplateName} - {assignment.RolloutWorkplace.UserName}",
-            Category = template.Category,
+            Category = template.Category ?? string.Empty,
             AssetTypeId = assignment.AssetTypeId,
             Brand = template.Brand,
             Model = template.Model,

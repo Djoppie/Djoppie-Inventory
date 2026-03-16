@@ -542,7 +542,7 @@ public class CsvImportService : ICsvImportService
                 }
 
                 // Use AssetType.Name as Category
-                var category = assetType.Name;
+                var category = assetType!.Name;
 
                 // Auto-generate Alias if not provided: AssetTypeName - Brand - Model
                 var alias = csvRow.Alias;

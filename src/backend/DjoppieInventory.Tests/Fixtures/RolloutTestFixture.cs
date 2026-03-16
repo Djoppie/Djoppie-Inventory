@@ -39,10 +39,10 @@ public static class RolloutTestFixture
             var day = new RolloutDay
             {
                 RolloutSessionId = session.Id,
-                DayDate = DateTime.Today.AddDays(d),
+                Date = DateTime.Today.AddDays(d),
                 DayNumber = d + 1,
-                Status = RolloutDayStatus.Planned,
-                PlannedWorkplaces = workplacesPerDay,
+                Status = RolloutDayStatus.Planning,
+                TotalWorkplaces = workplacesPerDay,
                 CompletedWorkplaces = 0,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -60,7 +60,7 @@ public static class RolloutTestFixture
                     UserEmail = $"user{d + 1}.{w + 1}@example.com",
                     ServiceId = 1,
                     Location = $"Office {d + 1}{w + 1}",
-                    Status = WorkplaceStatus.Planned,
+                    Status = RolloutWorkplaceStatus.Pending,
                     TotalItems = 0,
                     CompletedItems = 0,
                     CreatedAt = DateTime.UtcNow,
@@ -112,7 +112,6 @@ public static class RolloutTestFixture
                 AssetTypeId = assetTypeId,
                 Brand = "Dell",
                 Model = "Latitude 5420",
-                Description = "Standard Dell laptop for office work",
                 IsActive = true
             },
             new()
@@ -123,7 +122,6 @@ public static class RolloutTestFixture
                 AssetTypeId = assetTypeId,
                 Brand = "HP",
                 Model = "EliteBook 840",
-                Description = "Standard HP laptop for office work",
                 IsActive = true
             }
         };

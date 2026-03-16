@@ -42,8 +42,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetMovementService, AssetMovementService>();
         services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
 
-        // Configure AutoMapper
-        services.AddAutoMapper(typeof(Program).Assembly);
+        // Configure AutoMapper (v13+ API)
+        services.AddAutoMapper(cfg => cfg.AddMaps(typeof(Program).Assembly));
 
         // Add FluentValidation
         services.AddFluentValidationAutoValidation();
