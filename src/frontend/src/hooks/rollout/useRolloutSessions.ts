@@ -91,3 +91,41 @@ export const useDeleteRolloutSession = (): UseMutationResult<void, Error, number
     },
   });
 };
+
+/**
+ * Start a rollout session (Planning → InProgress)
+ */
+export const useStartRolloutSession = (): UseMutationResult<
+  RolloutSession,
+  Error,
+  number
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: rolloutApi.startRolloutSession,
+    onSuccess: (_, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.session(sessionId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
+    },
+  });
+};
+
+/**
+ * Complete a rollout session (InProgress → Completed)
+ */
+export const useCompleteRolloutSession = (): UseMutationResult<
+  RolloutSession,
+  Error,
+  number
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: rolloutApi.completeRolloutSession,
+    onSuccess: (_, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.session(sessionId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
+    },
+  });
+};

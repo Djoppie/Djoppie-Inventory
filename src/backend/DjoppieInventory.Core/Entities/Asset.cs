@@ -129,6 +129,26 @@ public class Asset
     /// </summary>
     public string? InstallationLocation { get; set; }
 
+    // ===== Rollout Integration =====
+
+    /// <summary>
+    /// Foreign key to the current workplace assignment (optional).
+    /// Set when the asset is actively assigned to a rollout workplace.
+    /// </summary>
+    public int? CurrentWorkplaceAssignmentId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the last rollout session that affected this asset (optional).
+    /// Provides quick lookup of the most recent rollout for this asset.
+    /// </summary>
+    public int? LastRolloutSessionId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the building/location for this asset (optional).
+    /// Provides structured location data instead of legacy free-text field.
+    /// </summary>
+    public int? BuildingId { get; set; }
+
     // ===== Navigation Properties =====
 
     /// <summary>
@@ -150,6 +170,26 @@ public class Asset
     /// Lease contracts associated with this asset
     /// </summary>
     public ICollection<LeaseContract> LeaseContracts { get; set; } = new List<LeaseContract>();
+
+    /// <summary>
+    /// The current workplace assignment for this asset (optional)
+    /// </summary>
+    public WorkplaceAssetAssignment? CurrentWorkplaceAssignment { get; set; }
+
+    /// <summary>
+    /// The last rollout session that affected this asset (optional)
+    /// </summary>
+    public RolloutSession? LastRolloutSession { get; set; }
+
+    /// <summary>
+    /// The building/location for this asset (optional)
+    /// </summary>
+    public Building? Building { get; set; }
+
+    /// <summary>
+    /// Asset movements recorded for this asset
+    /// </summary>
+    public ICollection<RolloutAssetMovement> AssetMovements { get; set; } = new List<RolloutAssetMovement>();
 }
 
 /// <summary>

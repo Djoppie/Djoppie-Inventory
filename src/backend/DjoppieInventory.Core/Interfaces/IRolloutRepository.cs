@@ -14,86 +14,86 @@ public interface IRolloutRepository
     /// <summary>
     /// Gets all rollout sessions with optional status filtering
     /// </summary>
-    Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(RolloutSessionStatus? status = null);
+    Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(RolloutSessionStatus? status = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a rollout session by ID, optionally including related days and workplaces
     /// </summary>
-    Task<RolloutSession?> GetSessionByIdAsync(int id, bool includeDays = false, bool includeWorkplaces = false);
+    Task<RolloutSession?> GetSessionByIdAsync(int id, bool includeDays = false, bool includeWorkplaces = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new rollout session
     /// </summary>
-    Task<RolloutSession> CreateSessionAsync(RolloutSession session);
+    Task<RolloutSession> CreateSessionAsync(RolloutSession session, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates an existing rollout session
     /// </summary>
-    Task<RolloutSession> UpdateSessionAsync(RolloutSession session);
+    Task<RolloutSession> UpdateSessionAsync(RolloutSession session, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a rollout session (cascade deletes days and workplaces)
     /// </summary>
-    Task<bool> DeleteSessionAsync(int id);
+    Task<bool> DeleteSessionAsync(int id, CancellationToken cancellationToken = default);
 
     // ===== RolloutDay Operations =====
 
     /// <summary>
     /// Gets all days for a specific session
     /// </summary>
-    Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false);
+    Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a specific day by ID
     /// </summary>
-    Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false);
+    Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new rollout day
     /// </summary>
-    Task<RolloutDay> CreateDayAsync(RolloutDay day);
+    Task<RolloutDay> CreateDayAsync(RolloutDay day, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates an existing rollout day
     /// </summary>
-    Task<RolloutDay> UpdateDayAsync(RolloutDay day);
+    Task<RolloutDay> UpdateDayAsync(RolloutDay day, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a rollout day (cascade deletes workplaces)
     /// </summary>
-    Task<bool> DeleteDayAsync(int id);
+    Task<bool> DeleteDayAsync(int id, CancellationToken cancellationToken = default);
 
     // ===== RolloutWorkplace Operations =====
 
     /// <summary>
     /// Gets all workplaces for a specific day
     /// </summary>
-    Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByDayIdAsync(int dayId);
+    Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByDayIdAsync(int dayId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets workplaces by status for a specific day
     /// </summary>
-    Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByStatusAsync(int dayId, RolloutWorkplaceStatus status);
+    Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByStatusAsync(int dayId, RolloutWorkplaceStatus status, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a specific workplace by ID
     /// </summary>
-    Task<RolloutWorkplace?> GetWorkplaceByIdAsync(int id);
+    Task<RolloutWorkplace?> GetWorkplaceByIdAsync(int id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new workplace
     /// </summary>
-    Task<RolloutWorkplace> CreateWorkplaceAsync(RolloutWorkplace workplace);
+    Task<RolloutWorkplace> CreateWorkplaceAsync(RolloutWorkplace workplace, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates an existing workplace
     /// </summary>
-    Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace);
+    Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a workplace
     /// </summary>
-    Task<bool> DeleteWorkplaceAsync(int id);
+    Task<bool> DeleteWorkplaceAsync(int id, CancellationToken cancellationToken = default);
 
     // ===== Batch Operations =====
 

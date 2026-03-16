@@ -17,6 +17,8 @@ export {
   useCreateRolloutSession,
   useUpdateRolloutSession,
   useDeleteRolloutSession,
+  useStartRolloutSession,
+  useCompleteRolloutSession,
 } from './useRolloutSessions';
 
 // Day Hooks
@@ -52,3 +54,28 @@ export { useRolloutProgress } from './useRolloutProgress';
 
 // Asset Report Hooks
 export { useRolloutAssetReport, useExportAssetReport } from './useRolloutAssetReport';
+
+// Reports Hooks
+export {
+  useSessionProgressStats,
+  useDaysProgress,
+  useDayProgressStats,
+  useSessionMovements,
+  useDayMovements,
+  useExportSessionMovements,
+  useExportSessionReport,
+  formatReportDate,
+  formatReportDateTime,
+  getMovementTypeLabel,
+  getEquipmentTypeLabel,
+  getMovementStatusColor,
+} from './useRolloutReports';
+
+// Asset Assignments Hooks
+export {
+  useWorkplaceAssignments,
+  useCreateAssignment,
+  useUpdateAssignment,
+  useDeleteAssignment,
+  useAssignmentStats,
+} from './useAssetAssignments';

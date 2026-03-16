@@ -11,15 +11,47 @@ public class RolloutAssetStatusReportDto
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 
     // Summary statistics
-    public int TotalAssetsDeployed { get; set; }        // Nieuw -> InGebruik
-    public int TotalAssetsDecommissioned { get; set; }  // -> UitDienst
+    public int TotalDeployments { get; set; }           // Nieuw -> InGebruik
+    public int TotalDecommissions { get; set; }         // -> UitDienst
+    public int TotalTransfers { get; set; }             // Transfers
+    public int TotalAssetsDeployed { get; set; }        // Alias for backwards compatibility
+    public int TotalAssetsDecommissioned { get; set; }  // Alias for backwards compatibility
     public int TotalWorkplacesCompleted { get; set; }
+
+    // Breakdown by asset type
+    public List<AssetTypeStatusSummaryDto> ByAssetType { get; set; } = new();
+
+    // Breakdown by service
+    public List<ServiceStatusSummaryDto> ByService { get; set; } = new();
 
     // Detailed records
     public List<RolloutAssetChangeDto> AssetChanges { get; set; } = new();
 
     // Group by day for overview
     public List<RolloutDayAssetSummaryDto> DaySummaries { get; set; } = new();
+}
+
+/// <summary>
+/// Asset status summary by asset type
+/// </summary>
+public class AssetTypeStatusSummaryDto
+{
+    public string AssetTypeName { get; set; } = string.Empty;
+    public int Deployed { get; set; }
+    public int Decommissioned { get; set; }
+    public int Total { get; set; }
+}
+
+/// <summary>
+/// Asset status summary by service
+/// </summary>
+public class ServiceStatusSummaryDto
+{
+    public int ServiceId { get; set; }
+    public string ServiceName { get; set; } = string.Empty;
+    public int Deployed { get; set; }
+    public int Decommissioned { get; set; }
+    public int Total { get; set; }
 }
 
 /// <summary>

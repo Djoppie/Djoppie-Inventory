@@ -402,6 +402,24 @@ export const exportRolloutAssetReport = async (sessionId: number): Promise<Blob>
   return response.data;
 };
 
+// ===== SESSION LIFECYCLE API CALLS =====
+
+/**
+ * Start a rollout session (Planning → InProgress)
+ */
+export const startRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
+  const response = await apiClient.post<RolloutSession>(`/rollouts/${sessionId}/start`);
+  return response.data;
+};
+
+/**
+ * Complete a rollout session (InProgress → Completed)
+ */
+export const completeRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
+  const response = await apiClient.post<RolloutSession>(`/rollouts/${sessionId}/complete`);
+  return response.data;
+};
+
 // ===== HELPER FUNCTIONS =====
 
 /**

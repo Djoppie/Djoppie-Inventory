@@ -37,6 +37,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetCodeGenerator, AssetCodeGeneratorService>();
         services.AddScoped<IRolloutWorkplaceService, RolloutWorkplaceService>();
 
+        // Rollout Feature Redesign Services
+        services.AddScoped<IOrganizationSyncService, OrganizationSyncService>();
+        services.AddScoped<IAssetMovementService, AssetMovementService>();
+        services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
+
         // Configure AutoMapper
         services.AddAutoMapper(typeof(Program).Assembly);
 

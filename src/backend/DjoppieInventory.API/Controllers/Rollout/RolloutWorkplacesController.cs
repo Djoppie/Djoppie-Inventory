@@ -1,0 +1,555 @@
+using DjoppieInventory.Core.DTOs;
+using DjoppieInventory.Core.DTOs.Rollout;
+using DjoppieInventory.Core.Entities;
+using DjoppieInventory.Core.Entities.Enums;
+using DjoppieInventory.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace DjoppieInventory.API.Controllers.Rollout;
+
+/// <summary>
+/// API controller for managing rollout workplaces and their asset assignments.
+/// Handles workplace CRUD, execution workflow, and asset assignment operations.
+/// </summary>
+[ApiController]
+[Route("api/rollout/workplaces")]
+[Authorize]
+public class RolloutWorkplacesController : ControllerBase
+{
+    private readonly IRolloutRepository _rolloutRepository;
+    private readonly IWorkplaceAssetAssignmentService _assignmentService;
+    private readonly IAssetMovementService _movementService;
+    private readonly IRolloutWorkplaceService _workplaceService;
+    private readonly ILogger<RolloutWorkplacesController> _logger;
+
+    public RolloutWorkplacesController(
+        IRolloutRepository rolloutRepository,
+        IWorkplaceAssetAssignmentService assignmentService,
+        IAssetMovementService movementService,
+        IRolloutWorkplaceService workplaceService,
+        ILogger<RolloutWorkplacesController> logger)
+    {
+        _rolloutRepository = rolloutRepository;
+        _assignmentService = assignmentService;
+        _movementService = movementService;
+        _workplaceService = workplaceService;
+        _logger = logger;
+    }
+
+    // ===== WORKPLACE CRUD =====
+
+    /// <summary>
+    /// Gets all workplaces for a specific day.
+    /// </summary>
+    /// <param name="dayId">Day ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("by-day/{dayId}")]
+    [ProducesResponseType(typeof(IEnumerable<RolloutWorkplaceDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<RolloutWorkplaceDto>>> GetByDayId(
+        int dayId,
+        CancellationToken cancellationToken = default)
+    {
+        var workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(dayId, cancellationToken);
+        var dtos = workplaces.Select(MapToDto).ToList();
+
+        return Ok(dtos);
+    }
+
+    /// <summary>
+    /// Gets a specific workplace by ID.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="includeAssignments">Include asset assignments</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> GetById(
+        int id,
+        [FromQuery] bool includeAssignments = true,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        var dto = MapToDto(workplace);
+
+        // Include asset assignments if requested
+        if (includeAssignments)
+        {
+            var assignments = await _assignmentService.GetByWorkplaceIdAsync(id, cancellationToken);
+            dto.AssetAssignments = assignments.ToList();
+        }
+
+        return Ok(dto);
+    }
+
+    /// <summary>
+    /// Creates a new workplace for a day.
+    /// </summary>
+    /// <param name="dayId">Day ID</param>
+    /// <param name="dto">Workplace creation data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("for-day/{dayId}")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Create(
+        int dayId,
+        [FromBody] CreateRolloutWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(dayId, false, cancellationToken);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {dayId} not found" });
+        }
+
+        var workplace = new RolloutWorkplace
+        {
+            RolloutDayId = dayId,
+            UserName = dto.UserName,
+            UserEmail = dto.UserEmail,
+            Location = dto.Location,
+            ScheduledDate = dto.ScheduledDate,
+            ServiceId = dto.ServiceId,
+            IsLaptopSetup = dto.IsLaptopSetup,
+            Status = RolloutWorkplaceStatus.Pending,
+            Notes = dto.Notes
+        };
+
+        var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace, cancellationToken);
+
+        // Update day totals
+        day.TotalWorkplaces++;
+        day.UpdatedAt = DateTime.UtcNow;
+        await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
+
+        _logger.LogInformation("Created workplace {WorkplaceId} for day {DayId}: {UserName}",
+            createdWorkplace.Id, dayId, createdWorkplace.UserName);
+
+        return CreatedAtAction(nameof(GetById), new { id = createdWorkplace.Id }, MapToDto(createdWorkplace));
+    }
+
+    /// <summary>
+    /// Updates an existing workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="dto">Updated workplace data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Update(
+        int id,
+        [FromBody] UpdateRolloutWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        workplace.UserName = dto.UserName ?? workplace.UserName;
+        workplace.UserEmail = dto.UserEmail;
+        workplace.Location = dto.Location;
+        workplace.ScheduledDate = dto.ScheduledDate;
+        workplace.ServiceId = dto.ServiceId;
+        workplace.IsLaptopSetup = dto.IsLaptopSetup;
+        workplace.Notes = dto.Notes;
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Updated workplace {WorkplaceId}", id);
+
+        return Ok(MapToDto(updatedWorkplace));
+    }
+
+    /// <summary>
+    /// Deletes a workplace and its asset assignments.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Delete(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        // Prevent deletion if workplace is completed
+        if (workplace.Status == RolloutWorkplaceStatus.Completed)
+        {
+            return BadRequest(new { message = "Cannot delete a completed workplace." });
+        }
+
+        // Delete assignments first
+        await _assignmentService.DeleteByWorkplaceIdAsync(id, cancellationToken);
+
+        // Update day totals
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, false, cancellationToken);
+        if (day != null)
+        {
+            day.TotalWorkplaces--;
+            if (workplace.Status == RolloutWorkplaceStatus.Completed)
+            {
+                day.CompletedWorkplaces--;
+            }
+            day.UpdatedAt = DateTime.UtcNow;
+            await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
+        }
+
+        await _rolloutRepository.DeleteWorkplaceAsync(id, cancellationToken);
+
+        _logger.LogInformation("Deleted workplace {WorkplaceId}", id);
+
+        return NoContent();
+    }
+
+    // ===== EXECUTION WORKFLOW =====
+
+    /// <summary>
+    /// Starts the execution of a workplace (changes status to InProgress).
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/start")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Start(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        if (workplace.Status != RolloutWorkplaceStatus.Pending &&
+            workplace.Status != RolloutWorkplaceStatus.Ready)
+        {
+            return BadRequest(new { message = $"Cannot start workplace with status '{workplace.Status}'." });
+        }
+
+        workplace.Status = RolloutWorkplaceStatus.InProgress;
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Started workplace execution {WorkplaceId}", id);
+
+        return Ok(MapToDto(updatedWorkplace));
+    }
+
+    /// <summary>
+    /// Completes a workplace and processes all asset assignments.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="dto">Completion data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/complete")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Complete(
+        int id,
+        [FromBody] CompleteWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        if (workplace.Status != RolloutWorkplaceStatus.InProgress)
+        {
+            return BadRequest(new { message = $"Cannot complete workplace with status '{workplace.Status}'. Workplace must be in InProgress status." });
+        }
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+        var performedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
+
+        // Complete all pending assignments
+        var completedCount = await _assignmentService.CompleteWorkplaceAssignmentsAsync(
+            id, performedBy, performedByEmail, cancellationToken);
+
+        // Update workplace status
+        workplace.Status = RolloutWorkplaceStatus.Completed;
+        workplace.CompletedAt = DateTime.UtcNow;
+        workplace.CompletedBy = performedBy;
+        workplace.CompletedByEmail = performedByEmail;
+        workplace.Notes = string.IsNullOrEmpty(workplace.Notes)
+            ? dto.Notes
+            : $"{workplace.Notes}\n{dto.Notes}";
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        // Update day completed count
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, false, cancellationToken);
+        if (day != null)
+        {
+            day.CompletedWorkplaces++;
+            day.UpdatedAt = DateTime.UtcNow;
+            await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
+        }
+
+        _logger.LogInformation("Completed workplace {WorkplaceId} with {CompletedCount} assignments by {PerformedBy}",
+            id, completedCount, performedBy);
+
+        return Ok(MapToDto(updatedWorkplace));
+    }
+
+    /// <summary>
+    /// Skips a workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="dto">Skip reason data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/skip")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Skip(
+        int id,
+        [FromBody] SkipWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        workplace.Status = RolloutWorkplaceStatus.Skipped;
+        workplace.Notes = string.IsNullOrEmpty(workplace.Notes)
+            ? $"Skipped by {performedBy}: {dto.Reason}"
+            : $"{workplace.Notes}\nSkipped by {performedBy}: {dto.Reason}";
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Skipped workplace {WorkplaceId}: {Reason}", id, dto.Reason);
+
+        return Ok(MapToDto(updatedWorkplace));
+    }
+
+    /// <summary>
+    /// Marks a workplace as failed.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="dto">Failure reason data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/fail")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Fail(
+        int id,
+        [FromBody] FailWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        workplace.Status = RolloutWorkplaceStatus.Failed;
+        workplace.Notes = string.IsNullOrEmpty(workplace.Notes)
+            ? $"Failed by {performedBy}: {dto.Reason}"
+            : $"{workplace.Notes}\nFailed by {performedBy}: {dto.Reason}";
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Failed workplace {WorkplaceId}: {Reason}", id, dto.Reason);
+
+        return Ok(MapToDto(updatedWorkplace));
+    }
+
+    /// <summary>
+    /// Moves a workplace to a different day.
+    /// </summary>
+    /// <param name="id">Workplace ID to move</param>
+    /// <param name="dto">Move destination data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/move")]
+    [ProducesResponseType(typeof(MoveWorkplaceResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<MoveWorkplaceResultDto>> Move(
+        int id,
+        [FromBody] MoveWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _workplaceService.MoveWorkplaceAsync(id, dto.TargetDate);
+        if (!result.Success || result.Workplace == null)
+        {
+            return BadRequest(new { message = result.ErrorMessage ?? "Failed to move workplace" });
+        }
+
+        _logger.LogInformation("Moved workplace {WorkplaceId} to date {TargetDate}", id, dto.TargetDate);
+
+        var moveResult = new MoveWorkplaceResultDto
+        {
+            Workplace = MapToDto(result.Workplace)
+        };
+        return Ok(moveResult);
+    }
+
+    // ===== ASSET ASSIGNMENTS =====
+
+    /// <summary>
+    /// Gets all asset assignments for a workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/assignments")]
+    [ProducesResponseType(typeof(IEnumerable<WorkplaceAssetAssignmentDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<WorkplaceAssetAssignmentDto>>> GetAssignments(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var assignments = await _assignmentService.GetByWorkplaceIdAsync(id, cancellationToken);
+        return Ok(assignments);
+    }
+
+    /// <summary>
+    /// Creates a new asset assignment for a workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="request">Assignment creation data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/assignments")]
+    [ProducesResponseType(typeof(WorkplaceAssetAssignmentDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WorkplaceAssetAssignmentDto>> CreateAssignment(
+        int id,
+        [FromBody] CreateWorkplaceAssetAssignmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        request.RolloutWorkplaceId = id;
+
+        var assignment = await _assignmentService.CreateAsync(request, cancellationToken);
+
+        return CreatedAtAction(nameof(GetAssignments), new { id }, assignment);
+    }
+
+    /// <summary>
+    /// Bulk creates asset assignments for a workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="requests">List of assignment creation data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/assignments/bulk")]
+    [ProducesResponseType(typeof(IEnumerable<WorkplaceAssetAssignmentDto>), StatusCodes.Status201Created)]
+    public async Task<ActionResult<IEnumerable<WorkplaceAssetAssignmentDto>>> BulkCreateAssignments(
+        int id,
+        [FromBody] IEnumerable<CreateWorkplaceAssetAssignmentRequest> requests,
+        CancellationToken cancellationToken = default)
+    {
+        var assignments = await _assignmentService.BulkCreateAsync(id, requests, cancellationToken);
+        return CreatedAtAction(nameof(GetAssignments), new { id }, assignments);
+    }
+
+    /// <summary>
+    /// Gets assignment summary for a workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/assignments/summary")]
+    [ProducesResponseType(typeof(WorkplaceAssignmentSummaryDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<WorkplaceAssignmentSummaryDto>> GetAssignmentSummary(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var summary = await _assignmentService.GetSummaryAsync(id, cancellationToken);
+        return Ok(summary);
+    }
+
+    /// <summary>
+    /// Gets asset movements for a workplace.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/movements")]
+    [ProducesResponseType(typeof(IEnumerable<AssetMovementDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<AssetMovementDto>>> GetMovements(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var movements = await _movementService.GetMovementsByWorkplaceAsync(id, cancellationToken);
+        return Ok(movements);
+    }
+
+    #region Private Mapping Methods
+
+    private static RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)
+    {
+        return new RolloutWorkplaceDto
+        {
+            Id = workplace.Id,
+            RolloutDayId = workplace.RolloutDayId,
+            UserName = workplace.UserName,
+            UserEmail = workplace.UserEmail,
+            UserEntraId = workplace.UserEntraId,
+            Location = workplace.Location,
+            ServiceId = workplace.ServiceId,
+            ServiceName = workplace.Service?.Name,
+            BuildingId = workplace.BuildingId,
+            BuildingName = workplace.Building?.Name,
+            ScheduledDate = workplace.ScheduledDate,
+            IsLaptopSetup = workplace.IsLaptopSetup,
+            Status = workplace.Status.ToString(),
+            TotalItems = workplace.TotalItems,
+            CompletedItems = workplace.CompletedItems,
+            CompletedAt = workplace.CompletedAt,
+            CompletedBy = workplace.CompletedBy,
+            CompletedByEmail = workplace.CompletedByEmail,
+            Notes = workplace.Notes,
+            MovedToWorkplaceId = workplace.MovedToWorkplaceId,
+            MovedFromWorkplaceId = workplace.MovedFromWorkplaceId,
+            CreatedAt = workplace.CreatedAt,
+            UpdatedAt = workplace.UpdatedAt
+        };
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// DTO for skipping a workplace
+/// </summary>
+public class SkipWorkplaceDto
+{
+    public string Reason { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// DTO for marking a workplace as failed
+/// </summary>
+public class FailWorkplaceDto
+{
+    public string Reason { get; set; } = string.Empty;
+}
