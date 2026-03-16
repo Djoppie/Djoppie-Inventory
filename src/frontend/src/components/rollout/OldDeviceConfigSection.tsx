@@ -3,10 +3,12 @@
  *
  * Manages multiple old devices being returned during a rollout
  * Supports QR scanning and serial number entry for each device
+ * Auto-checks serial numbers in Djoppie DB with debounce
  *
  * Design: Neumorphic soft UI with warning orange accent for old devices
  */
 
+import { useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -17,6 +19,10 @@ import {
   TextField,
   Typography,
   useTheme,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -24,13 +30,20 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HistoryIcon from '@mui/icons-material/History';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import type { Asset } from '../../types/asset.types';
+import { ROLLOUT_TIMING, ROLLOUT_UI } from '../../constants/rollout.constants';
+
+// Status options for returned devices
+export type ReturnDeviceStatus = 'Defect' | 'UitDienst';
 
 // Old device configuration interface
 export interface OldDeviceConfig {
   id: string;
   serialNumber: string;
   linkedAsset: Asset | null;
+  returnStatus?: ReturnDeviceStatus;
 }
 
 interface OldDeviceConfigSectionProps {
@@ -59,6 +72,7 @@ export const OldDeviceConfigSection = ({
       id: `old-device-${Date.now()}-${Math.random()}`,
       serialNumber: '',
       linkedAsset: null,
+      returnStatus: 'UitDienst', // Default to swap/retirement
     };
     onChange([...devices, newDevice]);
   };
@@ -72,6 +86,41 @@ export const OldDeviceConfigSection = ({
     updated[index] = { ...updated[index], ...updates };
     onChange(updated);
   };
+
+  // Track which serial numbers are being auto-checked (debounce)
+  const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const lastSearched = useRef<Record<string, string>>({});
+
+  // Auto-check serial numbers with debounce
+  useEffect(() => {
+    const timers = debounceTimers.current;
+
+    devices.forEach((device, index) => {
+      const serial = device.serialNumber.trim();
+
+      // Only auto-check if:
+      // - Serial number is at least MIN_SERIAL_LENGTH_FOR_SEARCH characters
+      // - Device is not already linked to an asset
+      // - Serial hasn't been searched yet (or changed)
+      if (serial.length >= ROLLOUT_UI.MIN_SERIAL_LENGTH_FOR_SEARCH && !device.linkedAsset && serial !== lastSearched.current[device.id]) {
+        // Clear existing timer for this device
+        if (timers[device.id]) {
+          clearTimeout(timers[device.id]);
+        }
+
+        // Set new debounce timer
+        timers[device.id] = setTimeout(() => {
+          lastSearched.current[device.id] = serial;
+          onSerialSearch(index, serial);
+        }, ROLLOUT_TIMING.SERIAL_SEARCH_DEBOUNCE_MS);
+      }
+    });
+
+    // Cleanup timers on unmount
+    return () => {
+      Object.values(timers).forEach(timer => clearTimeout(timer));
+    };
+  }, [devices, onSerialSearch]);
 
   return (
     <Box
@@ -117,7 +166,7 @@ export const OldDeviceConfigSection = ({
               color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
             }}
           >
-            Oud Apparaat
+            In te leveren apparaat
           </Typography>
         </Stack>
 
@@ -250,7 +299,7 @@ export const OldDeviceConfigSection = ({
               </Box>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#FF9800' }}>
-                  Oud apparaat {index + 1}
+                  Apparaat {index + 1}
                 </Typography>
                 {device.linkedAsset && (
                   <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
@@ -283,7 +332,6 @@ export const OldDeviceConfigSection = ({
             {/* QR Scan Button - Djoppie Neumorphic */}
             <Button
               fullWidth
-              variant="contained"
               size="small"
               startIcon={<QrCodeScannerIcon />}
               onClick={() => onScanRequest(index)}
@@ -386,6 +434,52 @@ export const OldDeviceConfigSection = ({
                 </Typography>
               </Box>
             )}
+
+            {/* Status selection - Defect or UitDienst */}
+            <FormControl fullWidth size="small" sx={{ mt: 2 }}>
+              <InputLabel
+                id={`status-label-${device.id}`}
+                sx={{
+                  color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
+                  '&.Mui-focused': { color: '#FF7700' },
+                }}
+              >
+                Status na inleveren
+              </InputLabel>
+              <Select
+                labelId={`status-label-${device.id}`}
+                value={device.returnStatus || 'UitDienst'}
+                label="Status na inleveren"
+                onChange={(e) => updateDevice(index, { returnStatus: e.target.value as ReturnDeviceStatus })}
+                sx={{
+                  bgcolor: neuBg,
+                  borderRadius: 2,
+                  boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
+                  '& fieldset': { border: 'none' },
+                  '&:hover, &.Mui-focused': {
+                    boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, 0 0 0 2px rgba(255, 119, 0, 0.2)`,
+                  },
+                  '& .MuiSelect-select': {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  },
+                }}
+              >
+                <MenuItem value="Defect">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <ReportProblemIcon sx={{ fontSize: '1rem', color: '#f44336' }} />
+                    <span>Defect (voor reparatie)</span>
+                  </Stack>
+                </MenuItem>
+                <MenuItem value="UitDienst">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <SwapHorizIcon sx={{ fontSize: '1rem', color: '#9e9e9e' }} />
+                    <span>Uit Dienst (swap)</span>
+                  </Stack>
+                </MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         ))}
       </Stack>
@@ -418,7 +512,7 @@ export const OldDeviceConfigSection = ({
           },
         }}
       >
-        Oud Apparaat Toevoegen
+        Apparaat Toevoegen
       </Button>
     </Box>
   );

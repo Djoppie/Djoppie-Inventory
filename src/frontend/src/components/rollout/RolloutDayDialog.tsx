@@ -10,18 +10,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Switch,
-  Slider,
   Typography,
   Alert,
   ListSubheader,
   Stack,
   useTheme,
 } from '@mui/material';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useQuery } from '@tanstack/react-query';
-import { useCreateRolloutDay, useUpdateRolloutDay, useBulkCreateWorkplaces } from '../../hooks/useRollout';
+import { useCreateRolloutDay, useUpdateRolloutDay } from '../../hooks/useRollout';
 import { servicesApi } from '../../api/admin.api';
 import type { Service } from '../../types/admin.types';
 import type { RolloutDay, CreateRolloutDay, UpdateRolloutDay } from '../../types/rollout';
@@ -43,9 +41,6 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState<number | ''>('');
-  const [createBulk, setCreateBulk] = useState(true);
-  const [workplaceCount, setWorkplaceCount] = useState(10);
-  const [monitorCount, setMonitorCount] = useState(2);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: services } = useQuery({
@@ -56,7 +51,6 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
 
   const createMutation = useCreateRolloutDay();
   const updateMutation = useUpdateRolloutDay();
-  const bulkCreateMutation = useBulkCreateWorkplaces();
 
   // Group services by sector
   const servicesBySector = (services || []).reduce<Record<string, Service[]>>((acc, service) => {
@@ -80,9 +74,6 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
       setDate(defaultDate || '');
       setName('');
       setSelectedServiceId('');
-      setCreateBulk(true);
-      setWorkplaceCount(10);
-      setMonitorCount(2);
     }
   }
 
@@ -111,27 +102,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
           dayNumber: dayNumber || 1,
           scheduledServiceIds: serviceIds,
         };
-        const createdDay = await createMutation.mutateAsync({ sessionId, data: createData });
-
-        // Bulk create workplaces if enabled
-        if (createBulk && workplaceCount > 0 && selectedServiceId && createdDay) {
-          await bulkCreateMutation.mutateAsync({
-            dayId: createdDay.id,
-            data: {
-              count: workplaceCount,
-              serviceId: selectedServiceId,
-              isLaptopSetup: true,
-              assetPlanConfig: {
-                includeLaptop: true,
-                includeDesktop: false,
-                includeDocking: true,
-                monitorCount,
-                includeKeyboard: true,
-                includeMouse: true,
-              },
-            },
-          });
-        }
+        await createMutation.mutateAsync({ sessionId, data: createData });
       }
 
       handleClose();
@@ -145,9 +116,6 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
     setDate('');
     setName('');
     setSelectedServiceId('');
-    setCreateBulk(true);
-    setWorkplaceCount(10);
-    setMonitorCount(2);
     setSaveError(null);
     onClose();
   };
@@ -292,83 +260,20 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
           />
 
           {!isEditMode && (
-            <Box
+            <Alert
+              severity="info"
+              icon={<CloudDownloadIcon />}
               sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                pt: 2,
-                mt: 1,
-                borderTop: '1px solid',
-                borderColor: 'divider',
+                mt: 2,
+                '& .MuiAlert-icon': {
+                  color: '#FF7700',
+                },
               }}
             >
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={createBulk}
-                    onChange={(e) => setCreateBulk(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    Werkplekken automatisch aanmaken
-                  </Typography>
-                }
-              />
-
-              {createBulk && (
-                <>
-                  {!selectedServiceId && (
-                    <Alert severity="info" sx={{ py: 0.5 }}>
-                      <Typography variant="body2">
-                        Selecteer eerst een dienst om werkplekken aan te maken
-                      </Typography>
-                    </Alert>
-                  )}
-
-                  <TextField
-                    type="number"
-                    label="Aantal werkplekken"
-                    value={workplaceCount}
-                    onChange={(e) => setWorkplaceCount(Number(e.target.value))}
-                    inputProps={{ min: 1, max: 50 }}
-                    fullWidth
-                    size="small"
-                    helperText="Aantal lege werkplekken om aan te maken (1-50)"
-                    disabled={!selectedServiceId}
-                  />
-
-                  <Box>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Monitors per werkplek: <strong>{monitorCount}</strong>
-                    </Typography>
-                    <Slider
-                      value={monitorCount}
-                      min={1}
-                      max={3}
-                      marks={[
-                        { value: 1, label: '1' },
-                        { value: 2, label: '2' },
-                        { value: 3, label: '3' },
-                      ]}
-                      step={1}
-                      valueLabelDisplay="auto"
-                      onChange={(_, value) => setMonitorCount(value as number)}
-                      disabled={!selectedServiceId}
-                      sx={{ mt: 1 }}
-                    />
-                  </Box>
-
-                  <Alert severity="info" sx={{ py: 0.5 }}>
-                    <Typography variant="body2">
-                      Elke werkplek krijgt: 1x Laptop, 1x Docking Station, {monitorCount}x Monitor, 1x Toetsenbord, 1x Muis
-                    </Typography>
-                  </Alert>
-                </>
-              )}
-            </Box>
+              <Typography variant="body2">
+                Na het aanmaken kun je werkplekken importeren uit <strong>Azure AD</strong> of handmatig toevoegen.
+              </Typography>
+            </Alert>
           )}
         </Box>
       </DialogContent>
@@ -383,11 +288,10 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
           disabled={
             !isFormValid ||
             createMutation.isPending ||
-            updateMutation.isPending ||
-            bulkCreateMutation.isPending
+            updateMutation.isPending
           }
         >
-          {createMutation.isPending || updateMutation.isPending || bulkCreateMutation.isPending
+          {createMutation.isPending || updateMutation.isPending
             ? 'Opslaan...'
             : 'Opslaan'}
         </Button>

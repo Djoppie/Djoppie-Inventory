@@ -28,6 +28,8 @@ import type {
   GraphGroup,
   BulkCreateFromGraph,
   BulkCreateFromGraphResult,
+  MoveWorkplace,
+  RolloutAssetStatusReport,
 } from '../types/rollout';
 
 // ===== SESSION API CALLS =====
@@ -246,6 +248,22 @@ export const reopenRolloutWorkplace = async (
 };
 
 /**
+ * Move a workplace to a different date by updating its scheduledDate.
+ * The workplace stays in its original planning but will be executed on the new date.
+ * Returns the updated workplace.
+ */
+export const moveRolloutWorkplace = async (
+  workplaceId: number,
+  data: MoveWorkplace
+): Promise<RolloutWorkplace> => {
+  const response = await apiClient.post<RolloutWorkplace>(
+    `/rollouts/workplaces/${workplaceId}/move`,
+    data
+  );
+  return response.data;
+};
+
+/**
  * Delete a workplace
  */
 export const deleteRolloutWorkplace = async (workplaceId: number): Promise<void> => {
@@ -361,6 +379,44 @@ export const getServiceMapping = async (): Promise<{
   unmatchedAzureAdGroups: string[];
 }> => {
   const response = await apiClient.get('/rollouts/graph/service-mapping');
+  return response.data;
+};
+
+/**
+ * Get asset status change report for a rollout session.
+ * Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
+ */
+export const getRolloutAssetReport = async (sessionId: number): Promise<RolloutAssetStatusReport> => {
+  const response = await apiClient.get<RolloutAssetStatusReport>(`/rollouts/${sessionId}/asset-report`);
+  return response.data;
+};
+
+/**
+ * Export asset status change report as CSV file.
+ * Returns a Blob that can be downloaded.
+ */
+export const exportRolloutAssetReport = async (sessionId: number): Promise<Blob> => {
+  const response = await apiClient.get(`/rollouts/${sessionId}/asset-report/export`, {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== SESSION LIFECYCLE API CALLS =====
+
+/**
+ * Start a rollout session (Planning → InProgress)
+ */
+export const startRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
+  const response = await apiClient.post<RolloutSession>(`/rollouts/${sessionId}/start`);
+  return response.data;
+};
+
+/**
+ * Complete a rollout session (InProgress → Completed)
+ */
+export const completeRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
+  const response = await apiClient.post<RolloutSession>(`/rollouts/${sessionId}/complete`);
   return response.data;
 };
 

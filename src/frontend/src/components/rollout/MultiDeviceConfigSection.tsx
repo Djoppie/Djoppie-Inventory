@@ -11,7 +11,9 @@
 import {
   Box,
   Button,
+  Checkbox,
   Chip,
+  FormControlLabel,
   IconButton,
   InputAdornment,
   Stack,
@@ -22,6 +24,8 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FiberNewIcon from '@mui/icons-material/FiberNew';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import MonitorIcon from '@mui/icons-material/Monitor';
@@ -29,6 +33,7 @@ import DockIcon from '@mui/icons-material/Dock';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import MouseIcon from '@mui/icons-material/Mouse';
 import ComputerIcon from '@mui/icons-material/Computer';
+import VideocamIcon from '@mui/icons-material/Videocam';
 import { TemplateSelector } from './TemplateSelector';
 import type { Asset, AssetTemplate } from '../../types/asset.types';
 
@@ -190,12 +195,15 @@ export const MultiDeviceConfigSection = ({
                   key={device.id}
                   icon={<DeviceIcon sx={{ fontSize: '0.85rem !important' }} />}
                   label={
-                    <Box component="span">
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Box component="span" sx={{ fontWeight: 700 }}>{deviceType?.label}</Box>
                       {device.template && (
-                        <Box component="span" sx={{ opacity: 0.7, ml: 0.5 }}>
+                        <Box component="span" sx={{ opacity: 0.7 }}>
                           — {device.template.brand}
                         </Box>
+                      )}
+                      {device.type === 'monitor' && device.metadata?.hasCamera === 'true' && (
+                        <VideocamIcon sx={{ fontSize: '0.75rem', ml: 0.5, color: '#2196F3' }} />
                       )}
                     </Box>
                   }
@@ -276,11 +284,44 @@ export const MultiDeviceConfigSection = ({
                   <DeviceIcon sx={{ fontSize: '1.1rem' }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" fontWeight={700} sx={{ color: deviceType?.color }}>
-                    {deviceType?.label}
-                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: deviceType?.color }}>
+                      {deviceType?.label}
+                    </Typography>
+                    {device.linkedAsset ? (
+                      <Chip
+                        icon={<CheckCircleIcon sx={{ fontSize: '0.75rem !important' }} />}
+                        label="Bestaand"
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          bgcolor: 'rgba(76, 175, 80, 0.15)',
+                          color: '#4CAF50',
+                          border: 'none',
+                          '& .MuiChip-icon': { color: '#4CAF50' },
+                        }}
+                      />
+                    ) : (
+                      <Chip
+                        icon={<FiberNewIcon sx={{ fontSize: '0.75rem !important' }} />}
+                        label="Nieuw"
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          bgcolor: 'rgba(255, 152, 0, 0.15)',
+                          color: '#FF9800',
+                          border: 'none',
+                          '& .MuiChip-icon': { color: '#FF9800' },
+                        }}
+                      />
+                    )}
+                  </Stack>
                   <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                    Apparaat {index + 1}
+                    {device.linkedAsset ? device.linkedAsset.assetCode : `Apparaat ${index + 1}`}
                   </Typography>
                 </Box>
                 <IconButton
@@ -389,6 +430,52 @@ export const MultiDeviceConfigSection = ({
                   },
                 }}
               />
+
+              {/* Monitor camera option - Only for monitors */}
+              {device.type === 'monitor' && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={device.metadata?.hasCamera === 'true'}
+                      onChange={(e) => updateDevice(index, {
+                        metadata: { ...device.metadata, hasCamera: e.target.checked ? 'true' : 'false' }
+                      })}
+                      icon={<VideocamIcon sx={{ color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)' }} />}
+                      checkedIcon={<VideocamIcon sx={{ color: '#2196F3' }} />}
+                      sx={{
+                        '&:hover': { bgcolor: 'transparent' },
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 500,
+                        color: device.metadata?.hasCamera === 'true'
+                          ? '#2196F3'
+                          : (isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'),
+                      }}
+                    >
+                      Ingebouwde camera
+                    </Typography>
+                  }
+                  sx={{
+                    mt: 1.5,
+                    ml: 0,
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: neuBg,
+                    boxShadow: device.metadata?.hasCamera === 'true'
+                      ? `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}, 0 0 0 2px rgba(33, 150, 243, 0.3)`
+                      : `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}`,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
+                    },
+                  }}
+                />
+              )}
             </Box>
           );
         })}

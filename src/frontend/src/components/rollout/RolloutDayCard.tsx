@@ -19,7 +19,6 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
-import EventNoteIcon from '@mui/icons-material/EventNote';
 import type { RolloutDay } from '../../types/rollout';
 
 interface RolloutDayCardProps {
@@ -33,6 +32,10 @@ interface RolloutDayCardProps {
   rescheduledCount?: number;
   /** Whether this planning can be executed (has ready workplaces) */
   canExecute?: boolean;
+  /** Whether this is a virtual card showing rescheduled workplaces */
+  isRescheduledCard?: boolean;
+  /** Original date of the planning (for rescheduled cards) */
+  originalDate?: string;
   onEdit: () => void;
   onDelete: () => void;
   onPrint: () => void;
@@ -53,6 +56,8 @@ const RolloutDayCard = ({
   readyCount = 0,
   rescheduledCount = 0,
   canExecute = false,
+  isRescheduledCard = false,
+  originalDate,
   onEdit,
   onDelete,
   onPrint,
@@ -60,7 +65,7 @@ const RolloutDayCard = ({
   onSetPlanning,
   children,
 }: RolloutDayCardProps) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(isRescheduledCard); // Auto-expand rescheduled cards
 
   const completionPercentage = day.totalWorkplaces > 0
     ? (day.completedWorkplaces / day.totalWorkplaces) * 100
@@ -109,6 +114,7 @@ const RolloutDayCard = ({
       elevation={0}
       sx={{
         position: 'relative',
+        // Rescheduled cards now use status-based styling as they are the primary location
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 2,
@@ -119,7 +125,7 @@ const RolloutDayCard = ({
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           borderColor: statusStyles.borderColor,
         },
-        // Left border accent
+        // Left border accent - use status color for all cards
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -135,7 +141,7 @@ const RolloutDayCard = ({
         },
       }}
     >
-      {/* Card Header */}
+      {/* Card Header - Compact version without redundant date */}
       <Box
         sx={{
           p: 2,
@@ -152,151 +158,93 @@ const RolloutDayCard = ({
       >
         {/* Planning Info */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-            {/* Planning Icon */}
-            <EventNoteIcon sx={{ fontSize: 22, color: serviceColor.bg }} />
+          {/* Title Row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+            {/* Service Color Indicator */}
+            <Box
+              sx={{
+                width: 4,
+                height: 24,
+                borderRadius: 2,
+                bgcolor: serviceColor.bg,
+                flexShrink: 0,
+              }}
+            />
+
+            {/* Planning Name */}
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 700,
-                fontSize: '1.1rem',
+                fontSize: '1rem',
                 color: 'text.primary',
+                lineHeight: 1.2,
               }}
             >
               {day.name || `Planning ${day.dayNumber}`}
             </Typography>
 
-            {/* Status Badge */}
+            {/* Status Badge - shown for all cards including rescheduled */}
             <Chip
               label={statusStyles.statusLabel}
               size="small"
               sx={{
+                height: 24,
                 bgcolor: statusStyles.statusBg,
                 color: statusStyles.statusColor,
-                fontWeight: 700,
-                fontSize: '0.75rem',
+                fontWeight: 600,
+                fontSize: '0.7rem',
                 border: `1px solid ${statusStyles.statusColor}40`,
-                transition: 'all 0.3s ease',
-                animation: 'subtle-pulse 3s ease-in-out infinite',
-                '@keyframes subtle-pulse': {
-                  '0%, 100%': {
-                    transform: 'scale(1)',
-                    opacity: 1,
-                  },
-                  '50%': {
-                    transform: 'scale(1.02)',
-                    opacity: 0.9,
-                  },
-                },
-                '&:hover': {
-                  transform: 'scale(1.05)',
-                },
               }}
             />
+
+            {/* Rescheduled indicator - subtle badge showing original date */}
+            {isRescheduledCard && originalDate && (
+              <Chip
+                icon={<CalendarTodayIcon sx={{ fontSize: '10px !important' }} />}
+                label={`← ${new Date(originalDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
+                size="small"
+                sx={{
+                  height: 20,
+                  bgcolor: 'rgba(100, 100, 100, 0.08)',
+                  color: 'text.secondary',
+                  fontWeight: 500,
+                  fontSize: '0.65rem',
+                  border: '1px solid rgba(100, 100, 100, 0.15)',
+                  '& .MuiChip-icon': { color: 'text.secondary' },
+                }}
+              />
+            )}
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-            {/* Date Chip with Service Color */}
-            <Tooltip title="Datum kan aangepast worden via bewerken" placement="top">
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 1,
-                  bgcolor: `${serviceColor.bg}15`,
-                  border: `1px solid ${serviceColor.bg}40`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: `${serviceColor.bg}25`,
-                    borderColor: `${serviceColor.bg}60`,
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 2px 8px ${serviceColor.bg}20`,
-                  },
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-              >
-                <CalendarTodayIcon sx={{ fontSize: '0.85rem', color: serviceColor.bg }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: serviceColor.text, fontSize: '0.8rem' }}>
-                  {new Date(day.date).toLocaleDateString('nl-NL', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </Typography>
-              </Box>
-            </Tooltip>
-
+          {/* Stats Row - Compact horizontal layout */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             {/* Workplace Count */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <GroupsIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {day.totalWorkplaces} {day.totalWorkplaces === 1 ? 'werkplek' : 'werkplekken'}
+              <GroupsIcon sx={{ fontSize: '0.95rem', color: 'text.secondary' }} />
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
+                {day.totalWorkplaces}
               </Typography>
             </Box>
 
-            {/* Ready Workplaces Count */}
-            {readyCount > 0 && (
-              <Chip
-                icon={<CheckCircleOutlineIcon sx={{ fontSize: '0.9rem !important' }} />}
-                label={`${readyCount} gereed`}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: 'rgba(34, 197, 94, 0.1)',
-                  color: '#22c55e',
-                  border: '1px solid rgba(34, 197, 94, 0.3)',
-                  '& .MuiChip-icon': { color: '#22c55e' },
-                }}
-              />
-            )}
-
-            {/* Rescheduled Workplaces Count */}
-            {rescheduledCount > 0 && (
-              <Chip
-                icon={<CalendarTodayIcon sx={{ fontSize: '0.8rem !important' }} />}
-                label={`${rescheduledCount} uitgesteld`}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: 'rgba(33, 150, 243, 0.1)',
-                  color: '#1976d2',
-                  border: '1px dashed rgba(33, 150, 243, 0.4)',
-                  '& .MuiChip-icon': { color: '#1976d2' },
-                }}
-              />
-            )}
-
-            {/* Progress Indicator */}
+            {/* Progress Indicator - Compact */}
             {day.totalWorkplaces > 0 && (
               <Box
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
-                  px: 1.5,
-                  py: 0.5,
-                  borderRadius: 2,
-                  bgcolor: completionPercentage === 100 ? 'rgba(22, 163, 74, 0.12)' : 'rgba(0, 0, 0, 0.04)',
-                  border: '1px solid',
-                  borderColor: completionPercentage === 100 ? 'rgba(22, 163, 74, 0.3)' : 'transparent',
+                  gap: 0.75,
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: completionPercentage === 100 ? 'rgba(22, 163, 74, 0.1)' : 'rgba(0, 0, 0, 0.03)',
                 }}
               >
                 <Typography
                   variant="caption"
                   sx={{
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
                     color: completionPercentage === 100 ? '#16a34a' : 'text.secondary',
                   }}
                 >
@@ -304,10 +252,10 @@ const RolloutDayCard = ({
                 </Typography>
                 <Box
                   sx={{
-                    width: 60,
-                    height: 6,
+                    width: 40,
+                    height: 5,
                     bgcolor: 'rgba(0, 0, 0, 0.08)',
-                    borderRadius: 3,
+                    borderRadius: 2.5,
                     overflow: 'hidden',
                   }}
                 >
@@ -317,11 +265,49 @@ const RolloutDayCard = ({
                       height: '100%',
                       bgcolor: completionPercentage === 100 ? '#16a34a' : '#FF7700',
                       transition: 'width 0.5s ease',
-                      borderRadius: 3,
+                      borderRadius: 2.5,
                     }}
                   />
                 </Box>
               </Box>
+            )}
+
+            {/* Ready Workplaces Count */}
+            {readyCount > 0 && (
+              <Chip
+                icon={<CheckCircleOutlineIcon sx={{ fontSize: '0.85rem !important' }} />}
+                label={`${readyCount} gereed`}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  bgcolor: 'rgba(34, 197, 94, 0.1)',
+                  color: '#22c55e',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  '& .MuiChip-icon': { color: '#22c55e' },
+                  '& .MuiChip-label': { px: 0.75 },
+                }}
+              />
+            )}
+
+            {/* Rescheduled Workplaces Count */}
+            {rescheduledCount > 0 && (
+              <Chip
+                icon={<CalendarTodayIcon sx={{ fontSize: '0.75rem !important' }} />}
+                label={`${rescheduledCount} uitgesteld`}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  bgcolor: 'rgba(33, 150, 243, 0.08)',
+                  color: '#1976d2',
+                  border: '1px dashed rgba(33, 150, 243, 0.3)',
+                  '& .MuiChip-icon': { color: '#1976d2' },
+                  '& .MuiChip-label': { px: 0.75 },
+                }}
+              />
             )}
           </Box>
         </Box>
@@ -391,80 +377,86 @@ const RolloutDayCard = ({
             </Tooltip>
           )}
 
-          {/* Edit */}
-          <Tooltip title="Bewerken">
-            <span>
-              <IconButton
-                size="small"
-                onClick={onEdit}
-                disabled={!isEditable}
-                sx={{
-                  color: 'rgba(255, 119, 0, 0.6)',
-                  '&:hover:not(:disabled)': {
-                    color: '#FF7700',
-                    bgcolor: 'rgba(255, 119, 0, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  '&:disabled': {
-                    opacity: 0.5,
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Edit - Hide for rescheduled cards */}
+          {!isRescheduledCard && (
+            <Tooltip title="Bewerken">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onEdit}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(255, 119, 0, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#FF7700',
+                      bgcolor: 'rgba(255, 119, 0, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
-          {/* Print */}
-          <Tooltip title="Print QR codes">
-            <span>
-              <IconButton
-                size="small"
-                onClick={onPrint}
-                disabled={!isEditable}
-                sx={{
-                  color: 'rgba(59, 130, 246, 0.6)',
-                  '&:hover:not(:disabled)': {
-                    color: '#3B82F6',
-                    bgcolor: 'rgba(59, 130, 246, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  '&:disabled': {
-                    opacity: 0.5,
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <PrintIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Print - Hide for rescheduled cards */}
+          {!isRescheduledCard && (
+            <Tooltip title="Print QR codes">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onPrint}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(59, 130, 246, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#3B82F6',
+                      bgcolor: 'rgba(59, 130, 246, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <PrintIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
-          {/* Delete */}
-          <Tooltip title="Verwijderen">
-            <span>
-              <IconButton
-                size="small"
-                onClick={onDelete}
-                disabled={!isEditable}
-                sx={{
-                  color: 'rgba(239, 68, 68, 0.6)',
-                  '&:hover:not(:disabled)': {
-                    color: '#EF4444',
-                    bgcolor: 'rgba(239, 68, 68, 0.08)',
-                    transform: 'scale(1.1)',
-                  },
-                  '&:disabled': {
-                    opacity: 0.5,
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Delete - Hide for rescheduled cards */}
+          {!isRescheduledCard && (
+            <Tooltip title="Verwijderen">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onDelete}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(239, 68, 68, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#EF4444',
+                      bgcolor: 'rgba(239, 68, 68, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
           {/* Expand Toggle */}
           <IconButton

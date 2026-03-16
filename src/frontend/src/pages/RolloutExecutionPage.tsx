@@ -746,8 +746,13 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
   const needsSerial = plan.requiresSerialNumber && !plan.metadata?.serialNumber && !isDone;
   const needsBrand = plan.equipmentType === 'monitor' && plan.metadata?.brandPending === 'true' && !plan.brand && !isDone;
 
-  const label = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
-  const icon = EQUIPMENT_ICONS[plan.equipmentType] || '📦';
+  // Check if this is an old device being returned
+  const isOldDevice = plan.metadata?.isOldDevice === 'true';
+  const returnStatus = plan.metadata?.returnStatus as string | undefined;
+
+  const baseLabel = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
+  const label = isOldDevice ? `${baseLabel} (inleveren)` : baseLabel;
+  const icon = isOldDevice ? '📤' : (EQUIPMENT_ICONS[plan.equipmentType] || '📦');
 
   // Build info chips
   const hasAsset = !!plan.existingAssetCode;
@@ -760,6 +765,8 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
           ? 'success.main'
           : isSkipped
           ? 'action.disabledBackground'
+          : isOldDevice
+          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.12)' : 'rgba(255,152,0,0.08)'
           : (needsSerial || needsBrand) && interactive
           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.08)' : 'rgba(255,152,0,0.05)'
           : 'background.paper',
@@ -771,6 +778,8 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
           ? 'success.main'
           : isSkipped
           ? 'action.disabled'
+          : isOldDevice
+          ? 'warning.main'
           : (needsSerial || needsBrand) && interactive
           ? 'warning.main'
           : 'divider',
@@ -796,6 +805,20 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
             <span>{icon}</span>
             <Box component="span" sx={{ textDecoration: isSkipped ? 'line-through' : undefined, fontWeight: 500 }}>{label}</Box>
+            {isOldDevice && returnStatus && (
+              <Chip
+                label={returnStatus === 'Defect' ? '🔧 Defect' : '🔄 Uit Dienst'}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  bgcolor: returnStatus === 'Defect' ? 'error.main' : 'grey.500',
+                  color: 'white',
+                }}
+                component="span"
+              />
+            )}
             {plan.metadata?.position && plan.equipmentType === 'monitor' && (
               <Chip label={plan.metadata.position} size="small" sx={{ height: 18, fontSize: '0.7rem' }} component="span" />
             )}
@@ -824,12 +847,25 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
                 S/N: {plan.metadata.serialNumber}
               </Box>
             )}
-            {plan.oldAssetCode && (
+            {plan.oldAssetCode && !isOldDevice && (
               <Box component="span" sx={{ fontSize: '0.75rem', color: isInstalled ? 'success.contrastText' : 'warning.main' }}>
                 Vervangt: {plan.oldAssetCode}
               </Box>
             )}
-            {needsSerial && interactive && (
+            {isOldDevice && plan.oldAssetCode && (
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <LinkIcon sx={{ fontSize: '0.85rem', color: isInstalled ? 'success.contrastText' : 'warning.main' }} />
+                <Box component="span" sx={{ fontSize: '0.75rem', color: isInstalled ? 'success.contrastText' : 'warning.main', fontWeight: 500 }}>
+                  {plan.oldAssetCode} {plan.oldAssetName ? `— ${plan.oldAssetName}` : ''}
+                </Box>
+              </Box>
+            )}
+            {isOldDevice && !plan.oldAssetCode && !isDone && interactive && (
+              <Box component="span" sx={{ fontSize: '0.75rem', color: 'warning.main', fontWeight: 500 }}>
+                Serienummer invullen om asset te koppelen
+              </Box>
+            )}
+            {needsSerial && interactive && !isOldDevice && (
               <Box component="span" sx={{ fontSize: '0.75rem', color: 'warning.main', fontWeight: 500 }}>
                 Serienummer vereist — tik om in te vullen
               </Box>

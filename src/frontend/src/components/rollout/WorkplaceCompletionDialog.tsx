@@ -24,6 +24,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import type { RolloutWorkplace } from '../../types/rollout';
+import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 
 interface WorkplaceCompletionDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ const WorkplaceCompletionDialog = ({
     setTimeout(() => {
       setShowCelebration(false);
       setNotes('');
-    }, 2000);
+    }, ROLLOUT_TIMING.COMPLETION_DIALOG_CLOSE_DELAY_MS);
   };
 
   // Extract swap information

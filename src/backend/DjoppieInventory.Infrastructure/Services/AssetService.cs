@@ -514,6 +514,15 @@ public class AssetService : IAssetService
         return result;
     }
 
+    public async Task<IEnumerable<AssetDto>> GetAssetsByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(ownerEmail))
+            return Enumerable.Empty<AssetDto>();
+
+        var assets = await _assetRepository.GetByOwnerAsync(ownerEmail, cancellationToken);
+        return _mapper.Map<IEnumerable<AssetDto>>(assets);
+    }
+
     /// <summary>
     /// Generates an alias from asset components: AssetTypeName - Brand - Model.
     /// Empty components are skipped.

@@ -104,6 +104,14 @@ export interface RolloutWorkplace {
   completedBy?: string;
   completedByEmail?: string;
   notes?: string;
+  /** If this workplace was moved to another day, this points to the new workplace ID (ghost entry) */
+  movedToWorkplaceId?: number;
+  /** If this workplace was moved from another day, this points to the original workplace ID */
+  movedFromWorkplaceId?: number;
+  /** The date this workplace was moved to (for ghost entry display) */
+  movedToDate?: string;
+  /** The date this workplace was moved from (for moved indicator display) */
+  movedFromDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -219,6 +227,13 @@ export interface StandardAssetPlanConfig {
   monitorCount: number;
   includeKeyboard: boolean;
   includeMouse: boolean;
+  // Optional template IDs for each equipment type
+  laptopTemplateId?: number;
+  desktopTemplateId?: number;
+  dockingTemplateId?: number;
+  monitorTemplateId?: number;
+  keyboardTemplateId?: number;
+  mouseTemplateId?: number;
 }
 
 export interface BulkCreateWorkplacesResult {
@@ -270,4 +285,183 @@ export interface UpdateItemDetails {
   model?: string;
   userName?: string;
   markAsInstalled?: boolean;
+}
+
+// ===== MOVE WORKPLACE TYPES =====
+
+export interface MoveWorkplace {
+  targetDate: string;
+}
+
+export interface MoveWorkplaceResult {
+  /** The new workplace on the target day */
+  workplace: RolloutWorkplace;
+  /** The original workplace that remains as a ghost entry on the source day */
+  ghostWorkplace: RolloutWorkplace;
+  sourceDayId: number;
+  targetDayId: number;
+  targetDate: string;
+  dayCreated: boolean;
+  targetDayName: string;
+}
+
+// ===== ASSET STATUS REPORT TYPES =====
+
+/**
+ * Report showing all asset status changes for a rollout session
+ */
+export interface RolloutAssetStatusReport {
+  sessionId: number;
+  sessionName: string;
+  generatedAt: string;
+  totalAssetsDeployed: number;
+  totalAssetsDecommissioned: number;
+  totalWorkplacesCompleted: number;
+  assetChanges: RolloutAssetChange[];
+  daySummaries: RolloutDayAssetSummary[];
+}
+
+/**
+ * Individual asset status change record
+ */
+export interface RolloutAssetChange {
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  equipmentType: string;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  oldStatus: string;
+  newStatus: string;
+  changeType: 'InGebruik' | 'UitDienst';
+  workplaceId: number;
+  userName: string;
+  userEmail?: string;
+  location?: string;
+  serviceName?: string;
+  dayId: number;
+  dayNumber: number;
+  date: string;
+  completedBy: string;
+  completedByEmail?: string;
+  completedAt: string;
+}
+
+/**
+ * Per-day asset summary for overview section
+ */
+export interface RolloutDayAssetSummary {
+  dayId: number;
+  dayNumber: number;
+  date: string;
+  dayName?: string;
+  assetsDeployed: number;
+  assetsDecommissioned: number;
+  workplacesCompleted: number;
+  workplaceSummaries: RolloutWorkplaceAssetSummary[];
+}
+
+/**
+ * Per-workplace asset summary
+ */
+export interface RolloutWorkplaceAssetSummary {
+  workplaceId: number;
+  userName: string;
+  location?: string;
+  assetsDeployed: number;
+  assetsDecommissioned: number;
+  completedBy: string;
+  completedAt?: string;
+}
+
+// ===== ASSIGNMENT TYPES =====
+
+/**
+ * Asset assignment for a workplace
+ */
+export interface AssetAssignment {
+  id: number;
+  workplaceId: number;
+  assetId?: number;
+  assetCode?: string;
+  assetName?: string;
+  equipmentType: EquipmentType;
+  assignmentType: 'new' | 'existing' | 'return';
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  templateId?: number;
+  templateName?: string;
+  status: 'pending' | 'assigned' | 'installed' | 'returned' | 'skipped';
+  assignedAt?: string;
+  assignedBy?: string;
+  installedAt?: string;
+  installedBy?: string;
+  notes?: string;
+}
+
+/**
+ * Create a new asset assignment
+ */
+export interface CreateAssetAssignment {
+  workplaceId: number;
+  equipmentType: EquipmentType;
+  assignmentType: 'new' | 'existing' | 'return';
+  assetId?: number;
+  templateId?: number;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  notes?: string;
+}
+
+/**
+ * Update an existing asset assignment
+ */
+export interface UpdateAssetAssignment {
+  assetId?: number;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  status?: 'pending' | 'assigned' | 'installed' | 'returned' | 'skipped';
+  notes?: string;
+}
+
+/**
+ * Workplace assignments summary
+ */
+export interface WorkplaceAssignmentsSummary {
+  workplaceId: number;
+  userName: string;
+  totalAssignments: number;
+  pendingAssignments: number;
+  completedAssignments: number;
+  assignments: AssetAssignment[];
+}
+
+// ===== VIEW PREFERENCE TYPES =====
+
+/**
+ * Planning view mode preference
+ */
+export type PlanningViewMode = 'calendar' | 'list';
+
+/**
+ * Planning list view filter options
+ */
+export interface PlanningListFilters {
+  status?: RolloutDayStatus | 'all';
+  serviceId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  searchQuery?: string;
+}
+
+/**
+ * Planning list sort configuration
+ */
+export interface PlanningListSort {
+  field: 'date' | 'name' | 'workplaces' | 'status' | 'completion';
+  direction: 'asc' | 'desc';
 }

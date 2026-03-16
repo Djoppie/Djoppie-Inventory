@@ -37,6 +37,7 @@ import { getStatusColor } from '../api/rollout.api';
 import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { EquipmentType } from '../types/rollout';
+import AssetStatusReportSection from '../components/rollout/AssetStatusReportSection';
 
 /**
  * Convert status to translation key (handles camelCase properly)
@@ -331,6 +332,9 @@ const RolloutReportPage = () => {
           ))}
         </Box>
       </Paper>
+
+      {/* Asset Status Changes Section */}
+      <AssetStatusReportSection sessionId={sessionId} sessionName={session.sessionName} />
 
       {/* Session Details */}
       <Paper sx={{ p: 3 }}>

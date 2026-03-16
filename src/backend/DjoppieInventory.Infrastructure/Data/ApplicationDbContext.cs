@@ -1,4 +1,5 @@
 using DjoppieInventory.Core.Entities;
+using DjoppieInventory.Core.Entities.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace DjoppieInventory.Infrastructure.Data;
@@ -24,6 +25,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<RolloutSession> RolloutSessions { get; set; }
     public DbSet<RolloutDay> RolloutDays { get; set; }
     public DbSet<RolloutWorkplace> RolloutWorkplaces { get; set; }
+
+    // Rollout feature redesign - new entities
+    public DbSet<WorkplaceAssetAssignment> WorkplaceAssetAssignments { get; set; }
+    public DbSet<RolloutAssetMovement> RolloutAssetMovements { get; set; }
+    public DbSet<RolloutDayService> RolloutDayServices { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,6 +65,24 @@ public class ApplicationDbContext : DbContext
                 .WithMany(s => s.Assets)
                 .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull); // If service deleted, set FK to null
+
+            // Rollout integration - Building FK
+            entity.HasOne(e => e.Building)
+                .WithMany()
+                .HasForeignKey(e => e.BuildingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Rollout integration - Current workplace assignment FK
+            entity.HasOne(e => e.CurrentWorkplaceAssignment)
+                .WithMany()
+                .HasForeignKey(e => e.CurrentWorkplaceAssignmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Rollout integration - Last rollout session FK
+            entity.HasOne(e => e.LastRolloutSession)
+                .WithMany()
+                .HasForeignKey(e => e.LastRolloutSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // AssetTemplate configuration
@@ -132,6 +156,15 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Code).IsUnique();
             entity.Property(e => e.Code).IsRequired().HasMaxLength(10);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+
+            // Entra ID integration
+            entity.Property(e => e.EntraGroupId).HasMaxLength(50);
+            entity.Property(e => e.EntraMailNickname).HasMaxLength(100);
+            entity.Property(e => e.EntraSyncError).HasMaxLength(2000);
+            entity.Property(e => e.EntraSyncStatus).HasConversion<int>();
+            entity.Property(e => e.ManagerEntraId).HasMaxLength(50);
+            entity.Property(e => e.ManagerDisplayName).HasMaxLength(200);
+            entity.Property(e => e.ManagerEmail).HasMaxLength(200);
         });
 
         // Service configuration
@@ -143,11 +176,26 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
 
+            // Entra ID integration
+            entity.Property(e => e.EntraGroupId).HasMaxLength(50);
+            entity.Property(e => e.EntraMailNickname).HasMaxLength(100);
+            entity.Property(e => e.EntraSyncError).HasMaxLength(2000);
+            entity.Property(e => e.EntraSyncStatus).HasConversion<int>();
+            entity.Property(e => e.ManagerEntraId).HasMaxLength(50);
+            entity.Property(e => e.ManagerDisplayName).HasMaxLength(200);
+            entity.Property(e => e.ManagerEmail).HasMaxLength(200);
+
             // Foreign key to Sector (optional)
             entity.HasOne(e => e.Sector)
                 .WithMany(s => s.Services)
                 .HasForeignKey(e => e.SectorId)
                 .OnDelete(DeleteBehavior.SetNull); // If sector deleted, set FK to null
+
+            // Foreign key to Building (optional)
+            entity.HasOne(e => e.Building)
+                .WithMany()
+                .HasForeignKey(e => e.BuildingId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // AssetEvent configuration
@@ -228,8 +276,10 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.RolloutDayId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.ServiceId);
+            entity.HasIndex(e => e.BuildingId);
             entity.Property(e => e.UserName).IsRequired().HasMaxLength(200);
             entity.Property(e => e.UserEmail).HasMaxLength(200);
+            entity.Property(e => e.UserEntraId).HasMaxLength(50);
             entity.Property(e => e.Location).HasMaxLength(200);
             entity.Property(e => e.AssetPlansJson).IsRequired();
             entity.Property(e => e.CompletedBy).HasMaxLength(200);
@@ -248,6 +298,141 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to Building (set null - if building deleted, set FK to null)
+            entity.HasOne(e => e.Building)
+                .WithMany()
+                .HasForeignKey(e => e.BuildingId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // WorkplaceAssetAssignment configuration
+        modelBuilder.Entity<WorkplaceAssetAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RolloutWorkplaceId);
+            entity.HasIndex(e => e.AssetTypeId);
+            entity.HasIndex(e => e.NewAssetId);
+            entity.HasIndex(e => e.OldAssetId);
+            entity.HasIndex(e => e.Status);
+
+            entity.Property(e => e.AssignmentCategory).HasConversion<int>();
+            entity.Property(e => e.SourceType).HasConversion<int>();
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.SerialNumberCaptured).HasMaxLength(100);
+            entity.Property(e => e.InstalledBy).HasMaxLength(200);
+            entity.Property(e => e.InstalledByEmail).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            // Foreign key to RolloutWorkplace (cascade delete)
+            entity.HasOne(e => e.RolloutWorkplace)
+                .WithMany(w => w.AssetAssignments)
+                .HasForeignKey(e => e.RolloutWorkplaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Foreign key to AssetType (restrict delete)
+            entity.HasOne(e => e.AssetType)
+                .WithMany()
+                .HasForeignKey(e => e.AssetTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Foreign key to NewAsset (set null)
+            entity.HasOne(e => e.NewAsset)
+                .WithMany()
+                .HasForeignKey(e => e.NewAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to OldAsset (set null)
+            entity.HasOne(e => e.OldAsset)
+                .WithMany()
+                .HasForeignKey(e => e.OldAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to AssetTemplate (set null)
+            entity.HasOne(e => e.AssetTemplate)
+                .WithMany()
+                .HasForeignKey(e => e.AssetTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // RolloutAssetMovement configuration
+        modelBuilder.Entity<RolloutAssetMovement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RolloutSessionId);
+            entity.HasIndex(e => e.RolloutWorkplaceId);
+            entity.HasIndex(e => e.AssetId);
+            entity.HasIndex(e => e.MovementType);
+            entity.HasIndex(e => e.PerformedAt);
+
+            entity.Property(e => e.MovementType).HasConversion<int>();
+            entity.Property(e => e.PreviousStatus).HasConversion<int?>();
+            entity.Property(e => e.NewStatus).HasConversion<int>();
+            entity.Property(e => e.PreviousOwner).HasMaxLength(200);
+            entity.Property(e => e.NewOwner).HasMaxLength(200);
+            entity.Property(e => e.PreviousLocation).HasMaxLength(200);
+            entity.Property(e => e.NewLocation).HasMaxLength(200);
+            entity.Property(e => e.SerialNumber).HasMaxLength(100);
+            entity.Property(e => e.PerformedBy).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.PerformedByEmail).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            // Foreign key to RolloutSession (cascade delete)
+            entity.HasOne(e => e.RolloutSession)
+                .WithMany(s => s.AssetMovements)
+                .HasForeignKey(e => e.RolloutSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Foreign key to RolloutWorkplace (set null - preserve audit trail even if workplace deleted)
+            entity.HasOne(e => e.RolloutWorkplace)
+                .WithMany(w => w.AssetMovements)
+                .HasForeignKey(e => e.RolloutWorkplaceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to WorkplaceAssetAssignment (set null)
+            entity.HasOne(e => e.WorkplaceAssetAssignment)
+                .WithMany()
+                .HasForeignKey(e => e.WorkplaceAssetAssignmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to Asset (restrict - don't allow deleting asset with movement history)
+            entity.HasOne(e => e.Asset)
+                .WithMany(a => a.AssetMovements)
+                .HasForeignKey(e => e.AssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Foreign key to PreviousService (set null)
+            entity.HasOne(e => e.PreviousService)
+                .WithMany()
+                .HasForeignKey(e => e.PreviousServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to NewService (set null)
+            entity.HasOne(e => e.NewService)
+                .WithMany()
+                .HasForeignKey(e => e.NewServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // RolloutDayService configuration (junction table)
+        modelBuilder.Entity<RolloutDayService>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.RolloutDayId, e.ServiceId }).IsUnique(); // Prevent duplicate entries
+            entity.HasIndex(e => e.RolloutDayId);
+            entity.HasIndex(e => e.ServiceId);
+
+            // Foreign key to RolloutDay (cascade delete)
+            entity.HasOne(e => e.RolloutDay)
+                .WithMany(d => d.ScheduledServices)
+                .HasForeignKey(e => e.RolloutDayId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Foreign key to Service (cascade delete - if service is deleted, remove from schedules)
+            entity.HasOne(e => e.Service)
+                .WithMany(s => s.ScheduledRolloutDays)
+                .HasForeignKey(e => e.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===== SEED DATA =====

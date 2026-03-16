@@ -13,7 +13,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
             migrationBuilder.AddColumn<int>(
                 name: "Status",
                 table: "RolloutDays",
-                type: "INTEGER",
                 nullable: false,
                 defaultValue: 0);
         }

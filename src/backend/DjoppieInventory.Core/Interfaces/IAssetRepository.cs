@@ -69,4 +69,12 @@ public interface IAssetRepository
     /// Begins a database transaction for atomic operations.
     /// </summary>
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all assets owned by a specific user (by email address).
+    /// </summary>
+    /// <param name="ownerEmail">The owner's email address</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of assets owned by the user</returns>
+    Task<IEnumerable<Asset>> GetByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default);
 }

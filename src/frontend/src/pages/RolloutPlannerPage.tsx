@@ -16,7 +16,7 @@ import {
   Chip,
   Alert,
   Tooltip,
-  Checkbox,
+  Collapse,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
@@ -28,17 +28,14 @@ import PersonIcon from '@mui/icons-material/Person';
 import PrintIcon from '@mui/icons-material/Print';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ClearIcon from '@mui/icons-material/Clear';
 import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import { useQuery } from '@tanstack/react-query';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import {
   useRolloutSession,
   useCreateRolloutSession,
@@ -52,41 +49,24 @@ import {
   useUpdateWorkplaceStatus,
 } from '../hooks/useRollout';
 import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
+import { useQuery } from '@tanstack/react-query';
 import { getStatusColor } from '../api/rollout.api';
 import { servicesApi } from '../api/admin.api';
 import { ROUTES } from '../constants/routes';
+import { WORKPLACE_STATUS_SORT_ORDER } from '../constants/rollout.constants';
 import Loading from '../components/common/Loading';
 import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
 import BulkImportFromGraphDialog from '../components/rollout/BulkImportFromGraphDialog';
 import RolloutDayCard from '../components/rollout/RolloutDayCard';
-import PlanningOverview from '../components/rollout/PlanningOverview';
 import EmptyPlanningState from '../components/rollout/EmptyPlanningState';
+import PlanningStatusFilter, { PlanningStatusFilterValue } from '../components/rollout/PlanningStatusFilter';
+import PlanningDateHeader from '../components/rollout/PlanningDateHeader';
+import PlanningStatistics from '../components/rollout/PlanningStatistics';
+import RescheduleWorkplaceDialog from '../components/rollout/RescheduleWorkplaceDialog';
+import PlanningCalendar, { type RescheduledWorkplace } from '../components/rollout/PlanningCalendar';
+import { getServiceColor } from '../components/rollout/serviceColors';
 import type { CreateRolloutSession, UpdateRolloutSession, RolloutDay, RolloutWorkplace, RolloutSessionStatus } from '../types/rollout';
-
-const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
-
-// Service color palette — distinct pastel colors for calendar chips
-const SERVICE_COLORS = [
-  { bg: '#1d4ed8', text: '#ffffff' }, // blue
-  { bg: '#9333ea', text: '#ffffff' }, // purple
-  { bg: '#0891b2', text: '#ffffff' }, // cyan
-  { bg: '#c2410c', text: '#ffffff' }, // orange-red
-  { bg: '#4f46e5', text: '#ffffff' }, // indigo
-  { bg: '#0d9488', text: '#ffffff' }, // teal
-  { bg: '#b91c1c', text: '#ffffff' }, // red
-  { bg: '#7c3aed', text: '#ffffff' }, // violet
-  { bg: '#0369a1', text: '#ffffff' }, // sky
-  { bg: '#a16207', text: '#ffffff' }, // amber
-  { bg: '#15803d', text: '#ffffff' }, // green
-  { bg: '#be185d', text: '#ffffff' }, // pink
-];
-
-/**
- * Get a consistent color for a service based on its ID
- */
-const getServiceColor = (serviceId: number) =>
-  SERVICE_COLORS[serviceId % SERVICE_COLORS.length];
 
 /**
  * Convert status to translation key (handles camelCase properly)
@@ -103,517 +83,42 @@ const getStatusTranslationKey = (status: string): string => {
 };
 
 /**
- * Rescheduled workplace info for calendar display
- */
-interface RescheduledWorkplace {
-  workplaceId: number;
-  userName: string;
-  scheduledDate: string;
-  dayId: number;
-  dayName?: string;
-}
-
-/**
- * Planning Calendar Component - Shows plannings on a monthly calendar grid
- */
-interface PlanningCalendarProps {
-  days: RolloutDay[];
-  plannedStartDate?: string;
-  plannedEndDate?: string;
-  rescheduledWorkplaces?: RescheduledWorkplace[];
-  onDayClick?: (day: RolloutDay) => void;
-  onDateClick?: (date: string) => void;
-  onRescheduledClick?: (workplace: RescheduledWorkplace) => void;
-}
-
-const PlanningCalendar = ({ days, plannedStartDate, plannedEndDate, rescheduledWorkplaces = [], onDayClick, onDateClick, onRescheduledClick }: PlanningCalendarProps) => {
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    // Start on the month of the first planning, or today
-    if (days.length > 0) {
-      const first = new Date(days[0].date);
-      return new Date(first.getFullYear(), first.getMonth(), 1);
-    }
-    return new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  });
-
-  // Service filter state
-  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
-  const [filterExpanded, setFilterExpanded] = useState(false);
-
-  // Fetch services for filter
-  const { data: services = [] } = useQuery({
-    queryKey: ['admin', 'services'],
-    queryFn: () => servicesApi.getAll(false),
-  });
-
-  // Group services by sector
-  const servicesBySector = useMemo(() => {
-    return services.reduce<Record<string, typeof services>>((acc, service) => {
-      const sectorName = service.sector?.name || 'Overig';
-      if (!acc[sectorName]) acc[sectorName] = [];
-      acc[sectorName].push(service);
-      return acc;
-    }, {});
-  }, [services]);
-
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-
-  // Build calendar grid
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = new Date(year, month + 1, 0);
-  const totalDays = lastDayOfMonth.getDate();
-  // Find offset for the first weekday of the month (Mon=0, Tue=1, ..., Fri=4)
-  // If 1st falls on weekend, offset is 0 (first weekday starts at column 0)
-  const firstDayWeekday = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0..Sun=6
-  const startOffset = firstDayWeekday <= 4 ? firstDayWeekday : 0;
-
-  // Filter days based on selected services
-  const filteredDays = useMemo(() => {
-    if (selectedServiceIds.length === 0) {
-      return days; // Show all if no filter
-    }
-    // Show day if it has at least one of the selected services
-    return days.filter(day =>
-      day.scheduledServiceIds.some(svcId => selectedServiceIds.includes(svcId))
-    );
-  }, [days, selectedServiceIds]);
-
-  // Group plannings by date string (using filtered days)
-  const planningsByDate = useMemo(() => {
-    const map: Record<string, RolloutDay[]> = {};
-    for (const day of filteredDays) {
-      const dateKey = day.date.split('T')[0];
-      if (!map[dateKey]) map[dateKey] = [];
-      map[dateKey].push(day);
-    }
-    return map;
-  }, [filteredDays]);
-
-  // Group rescheduled workplaces by their new scheduled date
-  const rescheduledByDate = useMemo(() => {
-    const map: Record<string, RescheduledWorkplace[]> = {};
-    for (const wp of rescheduledWorkplaces) {
-      const dateKey = wp.scheduledDate.split('T')[0];
-      if (!map[dateKey]) map[dateKey] = [];
-      map[dateKey].push(wp);
-    }
-    return map;
-  }, [rescheduledWorkplaces]);
-
-  // Parse rollout period dates
-  const periodStart = plannedStartDate ? new Date(plannedStartDate + 'T00:00:00') : null;
-  const periodEnd = plannedEndDate ? new Date(plannedEndDate + 'T00:00:00') : null;
-
-  const isInPeriod = (dateKey: string) => {
-    if (!periodStart) return false;
-    const d = new Date(dateKey + 'T00:00:00');
-    const end = periodEnd || periodStart;
-    return d >= periodStart && d <= end;
-  };
-
-  const cells: { date: number | null; dateKey: string; plannings: RolloutDay[]; rescheduled: RescheduledWorkplace[] }[] = [];
-  for (let i = 0; i < startOffset; i++) {
-    cells.push({ date: null, dateKey: '', plannings: [], rescheduled: [] });
-  }
-  for (let d = 1; d <= totalDays; d++) {
-    const jsDate = new Date(year, month, d);
-    const dayOfWeek = jsDate.getDay();
-    // Skip Saturday (6) and Sunday (0)
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    cells.push({
-      date: d,
-      dateKey,
-      plannings: planningsByDate[dateKey] || [],
-      rescheduled: rescheduledByDate[dateKey] || []
-    });
-  }
-  // Pad to complete last week row
-  while (cells.length % 5 !== 0) {
-    cells.push({ date: null, dateKey: '', plannings: [], rescheduled: [] });
-  }
-
-  const monthLabel = firstDayOfMonth.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
-
-  const handleClearFilter = () => {
-    setSelectedServiceIds([]);
-  };
-
-  const isFilterActive = selectedServiceIds.length > 0;
-
-  return (
-    <Paper sx={{ p: 2, mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CalendarTodayIcon sx={{ color: '#FF7700' }} />
-          <Typography variant="h6">Kalender</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}>
-            <ChevronLeftIcon />
-          </IconButton>
-          <Typography variant="subtitle1" sx={{ minWidth: 160, textAlign: 'center', fontWeight: 600, textTransform: 'capitalize', color: 'text.primary' }}>
-            {monthLabel}
-          </Typography>
-          <IconButton size="small" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}>
-            <ChevronRightIcon />
-          </IconButton>
-        </Box>
-        <Box sx={{ width: 40 }} />
-      </Box>
-
-      {/* Service Filter - Expandable Panel */}
-      {services.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          {/* Filter Toggle Button */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: isFilterActive || filterExpanded ? 1.5 : 0 }}>
-            <Button
-              size="small"
-              variant={isFilterActive ? 'contained' : 'outlined'}
-              startIcon={<FilterListIcon />}
-              endIcon={filterExpanded ? <ExpandMoreIcon sx={{ transform: 'rotate(180deg)' }} /> : <ExpandMoreIcon />}
-              onClick={() => setFilterExpanded(!filterExpanded)}
-              sx={{
-                borderColor: isFilterActive ? '#FF7700' : 'divider',
-                bgcolor: isFilterActive ? '#FF7700' : 'transparent',
-                color: isFilterActive ? '#fff' : 'text.primary',
-                '&:hover': {
-                  borderColor: '#FF7700',
-                  bgcolor: isFilterActive ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
-                },
-              }}
-            >
-              Filter op Dienst
-              {isFilterActive && ` (${selectedServiceIds.length})`}
-            </Button>
-
-            {isFilterActive && (
-              <Tooltip title="Filter wissen">
-                <IconButton
-                  size="small"
-                  onClick={handleClearFilter}
-                  sx={{
-                    color: '#FF7700',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 119, 0, 0.08)',
-                    },
-                  }}
-                >
-                  <ClearIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {isFilterActive && (
-              <Typography variant="caption" color="text.secondary">
-                {filteredDays.length} van {days.length} planningen
-              </Typography>
-            )}
-          </Box>
-
-          {/* Expandable Filter Panel */}
-          <Box
-            sx={{
-              maxHeight: filterExpanded ? 500 : 0,
-              overflow: 'hidden',
-              transition: 'max-height 0.3s ease-in-out',
-            }}
-          >
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  md: 'repeat(3, 1fr)',
-                  lg: 'repeat(4, 1fr)',
-                },
-                gap: 2,
-                p: 2,
-                bgcolor: 'rgba(255, 119, 0, 0.03)',
-                border: '1px solid',
-                borderColor: 'rgba(255, 119, 0, 0.15)',
-                borderRadius: 2,
-              }}
-            >
-              {Object.entries(servicesBySector).map(([sectorName, sectorServices]) => (
-                <Box key={sectorName}>
-                  {/* Sector Header */}
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: 'block',
-                      fontWeight: 700,
-                      fontSize: '0.7rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      color: '#FF7700',
-                      mb: 1,
-                      pb: 0.5,
-                      borderBottom: '2px solid rgba(255, 119, 0, 0.2)',
-                    }}
-                  >
-                    {sectorName}
-                  </Typography>
-
-                  {/* Services in this sector */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                    {sectorServices.map((service) => {
-                      const isSelected = selectedServiceIds.includes(service.id);
-                      return (
-                        <Box
-                          key={service.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedServiceIds(prev => prev.filter(id => id !== service.id));
-                            } else {
-                              setSelectedServiceIds(prev => [...prev, service.id]);
-                            }
-                          }}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            py: 0.5,
-                            px: 1,
-                            borderRadius: 1,
-                            cursor: 'pointer',
-                            bgcolor: isSelected ? 'rgba(255, 119, 0, 0.12)' : 'transparent',
-                            border: '1px solid',
-                            borderColor: isSelected ? '#FF7700' : 'transparent',
-                            '&:hover': {
-                              bgcolor: isSelected ? 'rgba(255, 119, 0, 0.18)' : 'rgba(255, 119, 0, 0.06)',
-                            },
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <Checkbox
-                            checked={isSelected}
-                            size="small"
-                            sx={{
-                              p: 0,
-                              color: 'rgba(255, 119, 0, 0.5)',
-                              '&.Mui-checked': {
-                                color: '#FF7700',
-                              },
-                            }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: '0.8rem',
-                              fontWeight: isSelected ? 600 : 400,
-                              color: isSelected ? '#FF7700' : 'text.primary',
-                            }}
-                          >
-                            {service.name}
-                          </Typography>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        </Box>
-      )}
-
-      {/* Weekday headers */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0.5, mb: 0.5 }}>
-        {WEEKDAYS.map((wd) => (
-          <Typography
-            key={wd}
-            variant="caption"
-            sx={{
-              textAlign: 'center',
-              fontWeight: 700,
-              color: 'text.primary',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              fontSize: '0.75rem',
-              py: 0.5,
-            }}
-          >
-            {wd}
-          </Typography>
-        ))}
-      </Box>
-
-      {/* Calendar grid */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 0.5 }}>
-        {cells.map((cell, i) => {
-          const isToday = cell.date !== null &&
-            new Date().getFullYear() === year &&
-            new Date().getMonth() === month &&
-            new Date().getDate() === cell.date;
-          const hasPlannings = cell.plannings.length > 0;
-          const hasRescheduled = cell.rescheduled.length > 0;
-          const hasContent = hasPlannings || hasRescheduled;
-          const inPeriod = cell.dateKey ? isInPeriod(cell.dateKey) : false;
-
-          return (
-            <Box
-              key={i}
-              sx={{
-                minHeight: { xs: 48, sm: 64, md: 72 },
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: isToday
-                  ? '#FF7700'
-                  : hasContent
-                    ? 'rgba(255, 119, 0, 0.3)'
-                    : inPeriod
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'divider',
-                bgcolor: cell.date === null
-                  ? 'action.hover'
-                  : hasContent
-                    ? 'rgba(255, 119, 0, 0.08)'
-                    : inPeriod
-                      ? 'rgba(255, 119, 0, 0.03)'
-                      : 'background.paper',
-                cursor: cell.date !== null ? 'pointer' : 'default',
-                p: 0.5,
-                overflow: 'hidden',
-                minWidth: 0,
-                opacity: cell.date === null ? 0.4 : 1,
-                ...(isToday && {
-                  boxShadow: '0 0 0 2px #FF7700',
-                }),
-                ...(inPeriod && !hasContent && {
-                  borderLeft: '3px solid rgba(255, 119, 0, 0.25)',
-                }),
-                '&:hover': cell.date !== null ? {
-                  bgcolor: 'rgba(255, 119, 0, 0.06)',
-                } : {},
-              }}
-              onClick={() => cell.date !== null && cell.dateKey && onDateClick?.(cell.dateKey)}
-            >
-              {cell.date !== null && (
-                <>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: isToday ? 700 : 500,
-                      color: isToday ? '#FF7700' : 'text.primary',
-                      display: 'block',
-                      textAlign: 'right',
-                      lineHeight: 1,
-                      mb: 0.5,
-                      fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                    }}
-                  >
-                    {cell.date}
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }}>
-                    {cell.plannings.map((p) => {
-                      const isComplete = p.completedWorkplaces === p.totalWorkplaces && p.totalWorkplaces > 0;
-                      const serviceId = p.scheduledServiceIds?.[0] || p.id;
-                      const svcColor = getServiceColor(serviceId);
-                      return (
-                      <Tooltip key={p.id} title={`${p.name || `Planning ${p.dayNumber}`} — ${p.completedWorkplaces}/${p.totalWorkplaces} werkplekken`}>
-                        <Box
-                          onClick={(e) => { e.stopPropagation(); onDayClick?.(p); }}
-                          sx={{
-                            height: 22,
-                            fontSize: { xs: '0.6rem', sm: '0.7rem' },
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            px: 0.75,
-                            display: 'block',
-                            lineHeight: '22px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            minWidth: 0,
-                            bgcolor: isComplete ? '#16a34a' : svcColor.bg,
-                            color: svcColor.text,
-                            '&:hover': {
-                              opacity: 0.85,
-                              filter: 'brightness(0.9)',
-                            },
-                          }}
-                        >
-                          {p.name || `P${p.dayNumber}`}
-                        </Box>
-                      </Tooltip>
-                      );
-                    })}
-                    {/* Rescheduled workplaces - grouped by planning, shown with distinct styling */}
-                    {(() => {
-                      // Group rescheduled by dayId
-                      const byDay = cell.rescheduled.reduce<Record<number, RescheduledWorkplace[]>>((acc, wp) => {
-                        if (!acc[wp.dayId]) acc[wp.dayId] = [];
-                        acc[wp.dayId].push(wp);
-                        return acc;
-                      }, {});
-                      return Object.entries(byDay).map(([dayId, wps]) => {
-                        const names = wps.map(w => w.userName).join(', ');
-                        const dayName = wps[0]?.dayName || 'Planning';
-                        return (
-                          <Tooltip key={`rescheduled-day-${dayId}`} title={`Uitgesteld van ${dayName}: ${names}`}>
-                            <Box
-                              onClick={(e) => { e.stopPropagation(); onRescheduledClick?.(wps[0]); }}
-                              sx={{
-                                height: 20,
-                                fontSize: { xs: '0.55rem', sm: '0.65rem' },
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                borderRadius: '4px',
-                                px: 0.5,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                minWidth: 0,
-                                bgcolor: 'rgba(33, 150, 243, 0.15)',
-                                color: '#1976d2',
-                                border: '1px dashed rgba(33, 150, 243, 0.5)',
-                                '&:hover': {
-                                  bgcolor: 'rgba(33, 150, 243, 0.25)',
-                                },
-                              }}
-                            >
-                              <CalendarTodayIcon sx={{ fontSize: '0.65rem' }} />
-                              <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {dayName} ({wps.length})
-                              </Box>
-                            </Box>
-                          </Tooltip>
-                        );
-                      });
-                    })()}
-                  </Box>
-                </>
-              )}
-            </Box>
-          );
-        })}
-      </Box>
-
-    </Paper>
-  );
-};
-
-/**
  * Workplace List Component - Shows workplaces for a specific day
  */
 interface WorkplaceListProps {
   dayId: number;
+  sessionId: number;
   sessionStatus: string;
-  onAddWorkplace: () => void;
+  dayDate: string;
+  /** Optional: pre-loaded workplaces (for rescheduled cards) */
+  workplaces?: RolloutWorkplace[];
+  /** Show "herplanning" indicator on workplaces */
+  showRescheduledIndicator?: boolean;
+  /** Original day date (for rescheduled indicator) */
+  originalDayDate?: string;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
   onImportFromGraph: () => void;
+  onRescheduleWorkplace: (workplace: RolloutWorkplace, dayId: number, originalDate: string) => void;
 }
 
-const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, onPrintWorkplace, onImportFromGraph }: WorkplaceListProps) => {
-  const { data: workplaces, isLoading } = useRolloutWorkplaces(dayId);
+const WorkplaceList = ({
+  dayId,
+  sessionId,
+  sessionStatus,
+  dayDate,
+  workplaces: providedWorkplaces,
+  showRescheduledIndicator,
+  originalDayDate,
+  onEditWorkplace,
+  onPrintWorkplace,
+  onImportFromGraph,
+  onRescheduleWorkplace,
+}: WorkplaceListProps) => {
+  const navigate = useNavigate();
+  const { data: fetchedWorkplaces, isLoading } = useRolloutWorkplaces(dayId);
+  // Use provided workplaces if available, otherwise fetch
+  const workplaces = providedWorkplaces || fetchedWorkplaces;
   const deleteMutation = useDeleteRolloutWorkplace();
   const workplaceStatusMutation = useUpdateWorkplaceStatus();
 
@@ -637,6 +142,19 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
       status: 'Pending',
     });
   };
+
+  // Sort workplaces: InProgress first, then Ready, then Pending, then Completed
+  // NOTE: useMemo must be called before any early returns to satisfy Rules of Hooks
+  const sortedWorkplaces = useMemo(() => {
+    if (!workplaces) return [];
+    return [...workplaces].sort((a, b) => {
+      const orderA = WORKPLACE_STATUS_SORT_ORDER[a.status] ?? 99;
+      const orderB = WORKPLACE_STATUS_SORT_ORDER[b.status] ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+      // Secondary sort by name
+      return a.userName.localeCompare(b.userName);
+    });
+  }, [workplaces]);
 
   if (isLoading) {
     return <Typography variant="body2" color="text.secondary">Laden...</Typography>;
@@ -702,28 +220,16 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
             Werkplekken ({workplaces?.length || 0})
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            size="small"
-            variant="text"
-            startIcon={<AddIcon />}
-            onClick={onAddWorkplace}
-            disabled={!isEditable}
-            sx={{ color: '#FF7700' }}
-          >
-            Toevoegen
-          </Button>
-          <Button
-            size="small"
-            variant="text"
-            startIcon={<CloudDownloadIcon />}
-            onClick={onImportFromGraph}
-            disabled={!isEditable}
-            sx={{ color: '#FF7700' }}
-          >
-            Azure AD
-          </Button>
-        </Box>
+        <Button
+          size="small"
+          variant="text"
+          startIcon={<CloudDownloadIcon />}
+          onClick={onImportFromGraph}
+          disabled={!isEditable}
+          sx={{ color: '#FF7700' }}
+        >
+          Importeren
+        </Button>
       </Box>
 
       {!workplaces || workplaces.length === 0 ? (
@@ -736,12 +242,17 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
           borderRadius: 1,
         }}>
           <Typography variant="body2">
-            Nog geen werkplekken. Klik op "Toevoegen" om te beginnen.
+            Nog geen werkplekken. Klik op "Importeren" om gebruikers uit Azure AD te importeren.
           </Typography>
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {workplaces.map((workplace) => (
+          {sortedWorkplaces.map((workplace) => {
+            // Ghost = workplace has scheduledDate different from day's date (postponed)
+            const isGhost = workplace.scheduledDate &&
+              workplace.scheduledDate.split('T')[0] !== dayDate.split('T')[0];
+
+            return (
             <Box
               key={workplace.id}
               sx={{
@@ -750,12 +261,25 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                 gap: 2,
                 p: 1.5,
                 border: '1px solid',
-                borderColor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.3)' : 'divider',
+                borderColor: isGhost
+                  ? 'rgba(239, 68, 68, 0.3)'  // Red border for failed/rescheduled
+                  : workplace.status === 'Ready'
+                    ? 'rgba(34, 197, 94, 0.3)'
+                    : 'divider',
                 borderRadius: 1,
-                bgcolor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.04)' : 'transparent',
+                bgcolor: isGhost
+                  ? 'rgba(239, 68, 68, 0.04)'  // Light red background
+                  : workplace.status === 'Ready'
+                    ? 'rgba(34, 197, 94, 0.04)'
+                    : 'transparent',
+                opacity: isGhost ? 0.7 : 1,
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: workplace.status === 'Ready' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(255, 119, 0, 0.3)',
+                  borderColor: isGhost
+                    ? 'rgba(239, 68, 68, 0.5)'
+                    : workplace.status === 'Ready'
+                      ? 'rgba(34, 197, 94, 0.5)'
+                      : 'rgba(255, 119, 0, 0.3)',
                 },
               }}
             >
@@ -773,13 +297,49 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                   <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                     {workplace.userName}
                   </Typography>
-                  {getStatusChip(workplace.status)}
-                  {/* Custom scheduled date indicator */}
-                  {workplace.scheduledDate && (
-                    <Tooltip title={`Aangepaste datum: ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })}`}>
+                  {!isGhost && getStatusChip(workplace.status)}
+                  {/* Ghost entry - show as "Uitgesteld" (failed to complete on time) */}
+                  {isGhost && (
+                    <Chip
+                      label="Uitgesteld"
+                      size="small"
+                      sx={{
+                        height: 22,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        bgcolor: 'rgba(239, 68, 68, 0.12)',
+                        color: '#dc2626',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                      }}
+                      component="span"
+                    />
+                  )}
+                  {/* Show new date for rescheduled workplaces */}
+                  {isGhost && workplace.scheduledDate && (
+                    <Tooltip title={`Verplaatst naar ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
                       <Chip
-                        icon={<CalendarTodayIcon sx={{ fontSize: '12px !important' }} />}
-                        label={new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                        icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
+                        label={`→ ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 500,
+                          bgcolor: 'rgba(100, 100, 100, 0.08)',
+                          color: 'text.secondary',
+                          border: '1px solid rgba(100, 100, 100, 0.15)',
+                          '& .MuiChip-icon': { color: 'text.secondary' },
+                        }}
+                        component="span"
+                      />
+                    </Tooltip>
+                  )}
+                  {/* Rescheduled indicator - shown on target date */}
+                  {showRescheduledIndicator && originalDayDate && (
+                    <Tooltip title={`Herplanning van ${new Date(originalDayDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                      <Chip
+                        icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
+                        label={`← ${new Date(originalDayDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
                         size="small"
                         sx={{
                           height: 22,
@@ -822,8 +382,27 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                 />
               </Tooltip>
 
-              {/* Action buttons - fixed width */}
+              {/* Action buttons - fixed width, hidden for ghost entries */}
+              {!isGhost && (
               <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
+                {/* Reschedule button - always visible for editable workplaces */}
+                <Tooltip title="Herplannen">
+                  <IconButton
+                    size="small"
+                    onClick={() => onRescheduleWorkplace(workplace, dayId, dayDate)}
+                    disabled={!isEditable}
+                    sx={{
+                      color: '#2196F3',
+                      bgcolor: 'rgba(33, 150, 243, 0.1)',
+                      '&:hover': {
+                        bgcolor: 'rgba(33, 150, 243, 0.2)',
+                        color: '#2196F3',
+                      },
+                    }}
+                  >
+                    <EventRepeatIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
                 {workplace.status === 'Pending' && (
                   <Tooltip title="Gereed">
                     <IconButton
@@ -848,6 +427,24 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                     </IconButton>
                   </Tooltip>
                 )}
+                {workplace.status === 'InProgress' && (
+                  <Tooltip title="Ga naar uitvoering">
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/rollouts/${sessionId}/execute?workplaceId=${workplace.id}`)}
+                      sx={{
+                        color: '#FF7700',
+                        bgcolor: 'rgba(255, 119, 0, 0.1)',
+                        '&:hover': {
+                          bgcolor: 'rgba(255, 119, 0, 0.2)',
+                          color: '#FF7700',
+                        },
+                      }}
+                    >
+                      <PlayArrowIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 <Tooltip title="Bewerken">
                   <IconButton size="small" onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
                     <EditIcon fontSize="small" />
@@ -868,8 +465,10 @@ const WorkplaceList = ({ dayId, sessionStatus, onAddWorkplace, onEditWorkplace, 
                   </IconButton>
                 </Tooltip>
               </Box>
+              )}
             </Box>
-          ))}
+            );
+          })}
         </Box>
       )}
     </Box>
@@ -891,6 +490,9 @@ const RolloutPlannerPage = () => {
   const [plannedStartDate, setPlannedStartDate] = useState('');
   const [plannedEndDate, setPlannedEndDate] = useState('');
 
+  // Status filter state (replaces sorting)
+  const [statusFilter, setStatusFilter] = useState<PlanningStatusFilterValue>('all');
+
   // Dialog state
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<RolloutDay | undefined>();
@@ -905,6 +507,11 @@ const RolloutPlannerPage = () => {
   const [bulkPrintDayId, setBulkPrintDayId] = useState<number | undefined>();
   const [bulkPrintAssetIds, setBulkPrintAssetIds] = useState<Set<number> | undefined>();
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
+  const [calendarExpanded, setCalendarExpanded] = useState(true);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [rescheduleWorkplace, setRescheduleWorkplace] = useState<RolloutWorkplace | null>(null);
+  const [rescheduleDayId, setRescheduleDayId] = useState<number>(0);
+  const [rescheduleOriginalDate, setRescheduleOriginalDate] = useState<string>('');
 
   // Fetch session data if editing
   const {
@@ -943,6 +550,7 @@ const RolloutPlannerPage = () => {
               scheduledDate: wp.scheduledDate,
               dayId: day.id,
               dayName: day.name || `Planning ${day.dayNumber}`,
+              status: wp.status,
             });
           }
         }
@@ -1104,6 +712,140 @@ const RolloutPlannerPage = () => {
     });
   };
 
+  const handleOpenRescheduleDialog = (workplace: RolloutWorkplace, dayId: number, originalDayDate: string) => {
+    setRescheduleWorkplace(workplace);
+    setRescheduleDayId(dayId);
+    setRescheduleOriginalDate(originalDayDate);
+    setRescheduleDialogOpen(true);
+  };
+
+  const handleCloseRescheduleDialog = () => {
+    setRescheduleDialogOpen(false);
+    setRescheduleWorkplace(null);
+    setRescheduleDayId(0);
+    setRescheduleOriginalDate('');
+  };
+
+  // Status filter counts
+  const statusCounts = useMemo(() => {
+    if (!days) return { all: 0, Planning: 0, Ready: 0, Completed: 0 };
+    return {
+      all: days.length,
+      Planning: days.filter(d => d.status === 'Planning').length,
+      Ready: days.filter(d => d.status === 'Ready').length,
+      Completed: days.filter(d => d.status === 'Completed').length,
+    };
+  }, [days]);
+
+  // Filtered and sorted days based on status filter, grouped by date
+  const filteredDays = useMemo(() => {
+    if (!days || days.length === 0) return [];
+
+    // First filter by status
+    let filtered = [...days];
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(d => d.status === statusFilter);
+    }
+
+    // Sort by date (earliest first)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
+    });
+
+    return filtered;
+  }, [days, statusFilter]);
+
+  // Group days by date for date headers
+  const daysGroupedByDate = useMemo(() => {
+    const groups: Map<string, RolloutDay[]> = new Map();
+
+    for (const day of filteredDays) {
+      const dateKey = day.date.split('T')[0];
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, []);
+      }
+      groups.get(dateKey)!.push(day);
+    }
+
+    return groups;
+  }, [filteredDays]);
+
+  // Collect rescheduled workplaces grouped by their target scheduledDate
+  // These are workplaces that need to be shown on a different date than their day's date
+  // (Computed early so we can use it to build allDateKeys)
+  const rescheduledByTargetDateEarly = useMemo(() => {
+    const result: Map<string, Array<{ workplace: RolloutWorkplace; sourceDay: RolloutDay }>> = new Map();
+
+    if (!days) return result;
+
+    for (const day of days) {
+      if (!day.workplaces) continue;
+      for (const wp of day.workplaces) {
+        if (wp.scheduledDate) {
+          const wpDate = wp.scheduledDate.split('T')[0];
+          const dayDate = day.date.split('T')[0];
+          // Workplace is rescheduled to a different date
+          if (wpDate !== dayDate) {
+            if (!result.has(wpDate)) {
+              result.set(wpDate, []);
+            }
+            result.get(wpDate)!.push({ workplace: wp, sourceDay: day });
+          }
+        }
+      }
+    }
+
+    return result;
+  }, [days]);
+
+  // All date keys that should be shown - includes both days with RolloutDays AND
+  // dates that only have rescheduled workplaces targeting them
+  const allDateKeys = useMemo(() => {
+    const dateSet = new Set<string>();
+
+    // Add dates from actual RolloutDays
+    for (const dateKey of daysGroupedByDate.keys()) {
+      dateSet.add(dateKey);
+    }
+
+    // Add dates that have rescheduled workplaces targeting them
+    for (const dateKey of rescheduledByTargetDateEarly.keys()) {
+      dateSet.add(dateKey);
+    }
+
+    // Sort dates chronologically
+    return Array.from(dateSet).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  }, [daysGroupedByDate, rescheduledByTargetDateEarly]);
+
+  // Calculate postponed count per date (workplaces rescheduled TO that date)
+  const postponedByDate = useMemo(() => {
+    const postponed: Map<string, number> = new Map();
+
+    if (!days) return postponed;
+
+    for (const day of days) {
+      if (!day.workplaces) continue;
+      for (const wp of day.workplaces) {
+        if (wp.scheduledDate) {
+          const wpDate = wp.scheduledDate.split('T')[0];
+          const dayDate = day.date.split('T')[0];
+          // Count workplaces rescheduled to a different date
+          if (wpDate !== dayDate) {
+            const current = postponed.get(wpDate) || 0;
+            postponed.set(wpDate, current + 1);
+          }
+        }
+      }
+    }
+
+    return postponed;
+  }, [days]);
+
+  // Use the early-computed rescheduled workplaces map for the rest of the component
+  const rescheduledByTargetDate = rescheduledByTargetDateEarly;
+
   if (sessionLoading || daysLoading) {
     return <Loading />;
   }
@@ -1236,21 +978,90 @@ const RolloutPlannerPage = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Calendar Overview - Only show in edit mode with days */}
+      {/* Calendar Overview - Collapsible, only show in edit mode with days */}
       {isEditMode && session && days && days.length > 0 && (
-        <PlanningCalendar
-          days={days}
-          plannedStartDate={session?.plannedStartDate?.split('T')[0]}
-          plannedEndDate={session?.plannedEndDate?.split('T')[0]}
-          rescheduledWorkplaces={rescheduledWorkplaces}
-          onDayClick={(day) => handleOpenDayDialog(day)}
-          onDateClick={(date) => handleOpenDayDialog(undefined, date)}
-          onRescheduledClick={(wp) => {
-            // Find the day this workplace belongs to and open the dialog
-            const day = days.find(d => d.id === wp.dayId);
-            if (day) handleOpenDayDialog(day);
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            borderRadius: 3,
+            overflow: 'hidden',
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'var(--dark-bg-elevated)' : 'background.paper',
+            boxShadow: (theme) =>
+              theme.palette.mode === 'dark' ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
           }}
-        />
+        >
+          {/* Collapsible Header */}
+          <Box
+            onClick={() => setCalendarExpanded(!calendarExpanded)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 3,
+              py: 2,
+              cursor: 'pointer',
+              borderBottom: calendarExpanded ? '1px solid' : 'none',
+              borderColor: 'divider',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <CalendarTodayIcon sx={{ color: '#FF7700', fontSize: 24 }} />
+              <Typography variant="h6" fontWeight={700}>
+                Kalender Overzicht
+              </Typography>
+              <Chip
+                label={`${days.length} planning${days.length !== 1 ? 's' : ''}`}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255, 119, 0, 0.1)',
+                  color: '#FF7700',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                }}
+              />
+            </Box>
+            <IconButton
+              size="small"
+              sx={{
+                transform: calendarExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease',
+              }}
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </Box>
+
+          {/* Collapsible Content */}
+          <Collapse in={calendarExpanded} timeout="auto">
+            <Box sx={{ p: 0 }}>
+              <PlanningCalendar
+                days={days}
+                plannedStartDate={session?.plannedStartDate?.split('T')[0]}
+                plannedEndDate={session?.plannedEndDate?.split('T')[0]}
+                rescheduledWorkplaces={rescheduledWorkplaces}
+                onDayClick={(day) => handleOpenDayDialog(day)}
+                onDateClick={(date) => handleOpenDayDialog(undefined, date)}
+                onRescheduledClick={(wp) => {
+                  // Find the workplace and day to open reschedule dialog
+                  const day = days.find(d => d.id === wp.dayId);
+                  if (day && day.workplaces) {
+                    const workplace = day.workplaces.find(w => w.id === wp.workplaceId);
+                    if (workplace) {
+                      handleOpenRescheduleDialog(workplace, day.id, day.date);
+                    }
+                  }
+                }}
+              />
+            </Box>
+          </Collapse>
+        </Paper>
       )}
 
       {/* Prominent Execution Card - Show when session can be executed */}
@@ -1307,106 +1118,254 @@ const RolloutPlannerPage = () => {
       {/* Days Management - Only show in edit mode */}
       {isEditMode && session && (
         <>
-          {/* Planning Overview - Only show if there are days */}
+          {/* Statistics Panel - Shows 5-day progress with postponement tracking */}
           {days && days.length > 0 && (
-            <PlanningOverview days={days} />
+            <PlanningStatistics
+              days={days}
+              targetDays={5}
+              targetWorkstations={64}
+            />
           )}
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h6">
-              Planningen ({days?.length || 0})
+          {/* Header with title and add button */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+              mb: 3,
+              p: 2,
+              borderRadius: 3,
+              bgcolor: theme => theme.palette.mode === 'dark'
+                ? 'var(--dark-bg-elevated)'
+                : 'background.paper',
+              boxShadow: theme => theme.palette.mode === 'dark'
+                ? 'var(--neu-shadow-dark-md)'
+                : 'var(--neu-shadow-light-md)',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Planningen ({filteredDays.length}{statusFilter !== 'all' ? ` van ${days?.length || 0}` : ''})
             </Typography>
             <Button
-              variant="outlined"
+              variant="contained"
               startIcon={<AddIcon />}
               disabled={session.status === 'Completed' || session.status === 'Cancelled'}
               onClick={() => handleOpenDayDialog()}
+              sx={{
+                bgcolor: '#FF7700',
+                fontWeight: 600,
+                px: 3,
+                '&:hover': { bgcolor: '#e66a00' },
+              }}
             >
               Planning Toevoegen
             </Button>
           </Box>
 
-          {/* Legend */}
-          {days && days.length > 1 && (() => {
-            const uniqueServices = new Map<number, string>();
-            for (const day of days) {
-              const svcId = day.scheduledServiceIds?.[0];
-              if (svcId && !uniqueServices.has(svcId)) {
-                uniqueServices.set(svcId, day.name || `Planning ${day.dayNumber}`);
-              }
-            }
-            if (uniqueServices.size <= 1) return null;
-            return (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-                {Array.from(uniqueServices.entries()).map(([svcId, label]) => {
-                  const color = getServiceColor(svcId);
-                  return (
-                    <Box key={svcId} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: color.bg, flexShrink: 0 }} />
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        {label}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '2px', bgcolor: '#16a34a', flexShrink: 0 }} />
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Voltooid
-                  </Typography>
-                </Box>
-              </Box>
-            );
-          })()}
+          {/* Status Filter - Replaces sorting controls */}
+          {days && days.length > 1 && (
+            <Box sx={{ mb: 3 }}>
+              <PlanningStatusFilter
+                value={statusFilter}
+                onChange={setStatusFilter}
+                counts={statusCounts}
+              />
+            </Box>
+          )}
 
           {!days || days.length === 0 ? (
             <EmptyPlanningState
               onAddPlanning={() => handleOpenDayDialog()}
               disabled={session.status === 'Completed' || session.status === 'Cancelled'}
             />
+          ) : filteredDays.length === 0 ? (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                textAlign: 'center',
+                borderRadius: 3,
+                bgcolor: theme => theme.palette.mode === 'dark'
+                  ? 'var(--dark-bg-elevated)'
+                  : 'background.paper',
+                boxShadow: theme => theme.palette.mode === 'dark'
+                  ? 'var(--neu-shadow-dark-md)'
+                  : 'var(--neu-shadow-light-md)',
+              }}
+            >
+              <Typography color="text.secondary" sx={{ fontWeight: 500 }}>
+                Geen planningen gevonden met status "{statusFilter === 'Planning' ? 'Gepland' : statusFilter === 'Ready' ? 'In Uitvoering' : 'Voltooid'}"
+              </Typography>
+              <Button
+                variant="text"
+                onClick={() => setStatusFilter('all')}
+                sx={{ mt: 2, color: '#FF7700' }}
+              >
+                Toon alle planningen
+              </Button>
+            </Paper>
           ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {days.map((day) => {
-                const daySvcId = day.scheduledServiceIds?.[0] || day.id;
-                const dayColor = getServiceColor(daySvcId);
-                // Count ready workplaces
-                const readyCount = day.workplaces?.filter(wp => wp.status === 'Ready').length || 0;
-                // Count rescheduled workplaces (those with scheduledDate different from day date)
-                const dayDateKey = day.date.split('T')[0];
-                const rescheduledCount = day.workplaces?.filter(wp => {
-                  if (!wp.scheduledDate) return false;
-                  const wpDateKey = wp.scheduledDate.split('T')[0];
-                  return wpDateKey !== dayDateKey;
-                }).length || 0;
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Group plannings by date with date headers */}
+              {allDateKeys.map((dateKey) => {
+                const daysForDate = daysGroupedByDate.get(dateKey) || [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const dateObj = new Date(dateKey);
+                dateObj.setHours(0, 0, 0, 0);
+                const isToday = dateObj.getTime() === today.getTime();
+                const isPast = dateObj.getTime() < today.getTime();
+                const isFuture = dateObj.getTime() > today.getTime();
+
+                // Calculate totals for this date (from actual RolloutDays)
+                const totalWorkplaces = daysForDate.reduce((sum, d) => sum + d.totalWorkplaces, 0);
+                const completedWorkplaces = daysForDate.reduce((sum, d) => sum + d.completedWorkplaces, 0);
+                const postponedCount = postponedByDate.get(dateKey) || 0;
+                // Count rescheduled workplaces targeting this date
+                const rescheduledForDate = rescheduledByTargetDate.get(dateKey) || [];
+                const rescheduledWorkplacesCount = rescheduledForDate.length;
+
                 return (
-                  <RolloutDayCard
-                    key={day.id}
-                    day={day}
-                    serviceColor={dayColor}
-                    isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
-                    isPending={dayStatusMutation.isPending}
-                    readyCount={readyCount}
-                    rescheduledCount={rescheduledCount}
-                    canExecute={readyCount > 0}
-                    onEdit={() => handleOpenDayDialog(day)}
-                    onDelete={() => handleDeleteDay(day)}
-                    onPrint={() => handleBulkPrint(day.id)}
-                    onExecute={() => navigate(`/rollouts/${session.id}/execute?dayId=${day.id}`)}
-                    onSetPlanning={() => handleDayStatus(day, 'Planning')}
-                  >
-                    <WorkplaceList
-                      dayId={day.id}
-                      sessionStatus={session.status}
-                      onAddWorkplace={() => handleOpenWorkplaceDialog(day.id)}
-                      onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
-                      onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
-                      onImportFromGraph={() => {
-                        const serviceId = day.scheduledServiceIds?.[0];
-                        const service = serviceId ? services.find(s => s.id === serviceId) : undefined;
-                        handleOpenImportGraphDialog(day.id, serviceId, service?.name);
-                      }}
+                  <Box key={dateKey}>
+                    {/* Date Header */}
+                    <PlanningDateHeader
+                      date={dateKey}
+                      totalWorkplaces={totalWorkplaces + rescheduledWorkplacesCount}
+                      completedWorkplaces={completedWorkplaces + rescheduledForDate.filter(r => r.workplace.status === 'Completed').length}
+                      postponedCount={postponedCount}
+                      planningCount={daysForDate.length + (rescheduledWorkplacesCount > 0 ? 1 : 0)}
+                      isToday={isToday}
+                      isPast={isPast}
+                      isFuture={isFuture}
                     />
-                  </RolloutDayCard>
+
+                    {/* Planning cards for this date */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        pl: { xs: 0, sm: 2 },
+                        borderLeft: { xs: 'none', sm: '2px solid' },
+                        borderLeftColor: { xs: 'transparent', sm: isToday ? '#FF7700' : 'divider' },
+                        ml: { xs: 0, sm: 3 },
+                        mb: 2,
+                      }}
+                    >
+                      {daysForDate.map((day) => {
+                        const daySvcId = day.scheduledServiceIds?.[0] || day.id;
+                        const dayColor = getServiceColor(daySvcId);
+                        // Count ready workplaces
+                        const readyCount = day.workplaces?.filter(wp => wp.status === 'Ready').length || 0;
+                        // Count rescheduled workplaces (those with scheduledDate different from day date)
+                        const dayDateKey = day.date.split('T')[0];
+                        const rescheduledCount = day.workplaces?.filter(wp => {
+                          if (!wp.scheduledDate) return false;
+                          const wpDateKey = wp.scheduledDate.split('T')[0];
+                          return wpDateKey !== dayDateKey;
+                        }).length || 0;
+                        return (
+                          <RolloutDayCard
+                            key={day.id}
+                            day={day}
+                            serviceColor={dayColor}
+                            isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
+                            isPending={dayStatusMutation.isPending}
+                            readyCount={readyCount}
+                            rescheduledCount={rescheduledCount}
+                            canExecute={readyCount > 0}
+                            onEdit={() => handleOpenDayDialog(day)}
+                            onDelete={() => handleDeleteDay(day)}
+                            onPrint={() => handleBulkPrint(day.id)}
+                            onExecute={() => navigate(`/rollouts/${session.id}/execute?dayId=${day.id}`)}
+                            onSetPlanning={() => handleDayStatus(day, 'Planning')}
+                          >
+                            <WorkplaceList
+                              dayId={day.id}
+                              sessionId={session.id}
+                              sessionStatus={session.status}
+                              dayDate={day.date}
+                              onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(day.id, workplace)}
+                              onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, day.id)}
+                              onImportFromGraph={() => {
+                                const serviceId = day.scheduledServiceIds?.[0];
+                                const service = serviceId ? services.find(s => s.id === serviceId) : undefined;
+                                handleOpenImportGraphDialog(day.id, serviceId, service?.name);
+                              }}
+                              onRescheduleWorkplace={handleOpenRescheduleDialog}
+                            />
+                          </RolloutDayCard>
+                        );
+                      })}
+
+                      {/* Rescheduled workplaces - show as normal planning cards (work happens here) */}
+                      {(() => {
+                        // Group rescheduled workplaces by their source day (planning)
+                        // (rescheduledForDate was already computed above)
+                        const groupedByPlanning = new Map<number, { day: RolloutDay; workplaces: RolloutWorkplace[] }>();
+
+                        for (const { workplace, sourceDay } of rescheduledForDate) {
+                          if (!groupedByPlanning.has(sourceDay.id)) {
+                            groupedByPlanning.set(sourceDay.id, { day: sourceDay, workplaces: [] });
+                          }
+                          groupedByPlanning.get(sourceDay.id)!.workplaces.push(workplace);
+                        }
+
+                        return Array.from(groupedByPlanning.values()).map(({ day: sourceDay, workplaces: rescheduledWorkplaces }) => {
+                          const daySvcId = sourceDay.scheduledServiceIds?.[0] || sourceDay.id;
+                          const dayColor = getServiceColor(daySvcId);
+                          // Calculate status based on rescheduled workplaces completion
+                          const allCompleted = rescheduledWorkplaces.length > 0 &&
+                            rescheduledWorkplaces.every(wp => wp.status === 'Completed');
+                          const allReady = rescheduledWorkplaces.length > 0 &&
+                            rescheduledWorkplaces.every(wp => wp.status === 'Ready' || wp.status === 'Completed');
+
+                          return (
+                            <RolloutDayCard
+                              key={`rescheduled-${sourceDay.id}-${dateKey}`}
+                              day={{
+                                ...sourceDay,
+                                // Override for display - show only rescheduled workplaces count
+                                totalWorkplaces: rescheduledWorkplaces.length,
+                                completedWorkplaces: rescheduledWorkplaces.filter(wp => wp.status === 'Completed').length,
+                                workplaces: rescheduledWorkplaces,
+                                // Set status based on workplaces for proper styling
+                                status: allCompleted ? 'Completed' : (allReady ? 'Ready' : 'Planning'),
+                              }}
+                              serviceColor={dayColor}
+                              isEditable={session.status !== 'Completed' && session.status !== 'Cancelled'}
+                              isPending={dayStatusMutation.isPending}
+                              readyCount={rescheduledWorkplaces.filter(wp => wp.status === 'Ready').length}
+                              rescheduledCount={0}
+                              canExecute={rescheduledWorkplaces.filter(wp => wp.status === 'Ready').length > 0}
+                              isRescheduledCard={false}
+                              onEdit={() => handleOpenDayDialog(sourceDay)}
+                              onDelete={() => {}}
+                              onPrint={() => handleBulkPrint(sourceDay.id)}
+                              onExecute={() => navigate(`/rollouts/${session.id}/execute?dayId=${sourceDay.id}`)}
+                              onSetPlanning={() => {}}
+                            >
+                              <WorkplaceList
+                                dayId={sourceDay.id}
+                                sessionId={session.id}
+                                sessionStatus={session.status}
+                                dayDate={dateKey}
+                                workplaces={rescheduledWorkplaces}
+                                showRescheduledIndicator={false}
+                                onEditWorkplace={(workplace) => handleOpenWorkplaceDialog(sourceDay.id, workplace)}
+                                onPrintWorkplace={(workplace) => handlePrintWorkplace(workplace, sourceDay.id)}
+                                onImportFromGraph={() => {}}
+                                onRescheduleWorkplace={handleOpenRescheduleDialog}
+                              />
+                            </RolloutDayCard>
+                          );
+                        });
+                      })()}
+                    </Box>
+                  </Box>
                 );
               })}
             </Box>
@@ -1446,6 +1405,13 @@ const RolloutPlannerPage = () => {
           serviceName={importGraphServiceName}
         />
       )}
+      <RescheduleWorkplaceDialog
+        open={rescheduleDialogOpen}
+        onClose={handleCloseRescheduleDialog}
+        workplace={rescheduleWorkplace}
+        dayId={rescheduleDayId}
+        originalDate={rescheduleOriginalDate}
+      />
     </Container>
   );
 };

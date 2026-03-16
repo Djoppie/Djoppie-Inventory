@@ -294,4 +294,26 @@ public class AssetsController : ControllerBase
 
         return Ok(asset);
     }
+
+    /// <summary>
+    /// Retrieves all assets owned by a specific user (by email address).
+    /// </summary>
+    /// <param name="email">The owner's email address</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("by-owner/{email}")]
+    [ProducesResponseType(typeof(IEnumerable<AssetDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IEnumerable<AssetDto>>> GetAssetsByOwner(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest("Email address is required");
+
+        // Decode URL-encoded email (e.g., %40 -> @)
+        var decodedEmail = Uri.UnescapeDataString(email);
+
+        var assets = await _assetService.GetAssetsByOwnerAsync(decodedEmail, cancellationToken);
+        return Ok(assets);
+    }
 }

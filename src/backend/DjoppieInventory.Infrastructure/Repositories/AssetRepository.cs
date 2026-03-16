@@ -252,4 +252,18 @@ public class AssetRepository : IAssetRepository
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<Asset>> GetByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(ownerEmail))
+            return Enumerable.Empty<Asset>();
+
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Where(a => a.Owner != null && a.Owner.ToLower() == ownerEmail.ToLower())
+            .OrderBy(a => a.AssetCode)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -20,24 +20,27 @@ public class RolloutsController : ControllerBase
 {
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IAssetRepository _assetRepository;
-    private readonly IAssetCodeGenerator _assetCodeGenerator;
+    private readonly IAssetTemplateRepository _assetTemplateRepository;
     private readonly IGraphUserService _graphUserService;
     private readonly IServiceRepository _serviceRepository;
+    private readonly IRolloutWorkplaceService _workplaceService;
     private readonly ILogger<RolloutsController> _logger;
 
     public RolloutsController(
         IRolloutRepository rolloutRepository,
         IAssetRepository assetRepository,
-        IAssetCodeGenerator assetCodeGenerator,
+        IAssetTemplateRepository assetTemplateRepository,
         IGraphUserService graphUserService,
         IServiceRepository serviceRepository,
+        IRolloutWorkplaceService workplaceService,
         ILogger<RolloutsController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
-        _assetCodeGenerator = assetCodeGenerator;
+        _assetTemplateRepository = assetTemplateRepository;
         _graphUserService = graphUserService;
         _serviceRepository = serviceRepository;
+        _workplaceService = workplaceService;
         _logger = logger;
     }
 
@@ -340,7 +343,7 @@ public class RolloutsController : ControllerBase
             workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(dayId);
         }
 
-        var workplaceDtos = workplaces.Select(MapToWorkplaceDto).ToList();
+        var workplaceDtos = workplaces.Select(w => MapToWorkplaceDto(w)).ToList();
         return Ok(workplaceDtos);
     }
 
@@ -465,30 +468,47 @@ public class RolloutsController : ControllerBase
     }
 
     /// <summary>
+    /// Moves a workplace to a different date by updating its scheduledDate.
+    /// The workplace stays in its original planning (day) but will be executed on the new date.
+    /// On the original day, it shows as a "ghost" entry (has scheduledDate different from day date).
+    /// </summary>
+    [HttpPost("workplaces/{workplaceId}/move")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> MoveWorkplace(int workplaceId, [FromBody] MoveWorkplaceDto dto)
+    {
+        var result = await _workplaceService.MoveWorkplaceAsync(workplaceId, dto.TargetDate);
+
+        return result.Match(
+            workplace => Ok(MapToWorkplaceDto(workplace)),
+            error => error.StatusCode switch
+            {
+                404 => NotFound(new { message = error.ErrorMessage }),
+                400 => BadRequest(new { message = error.ErrorMessage }),
+                _ => StatusCode(error.StatusCode, new { message = error.ErrorMessage })
+            });
+    }
+
+    /// <summary>
     /// Starts a workplace execution (sets status to InProgress)
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/start")]
     [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RolloutWorkplaceDto>> StartWorkplace(int workplaceId)
     {
-        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
-        if (workplace == null)
-        {
-            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
-        }
+        var result = await _workplaceService.StartWorkplaceAsync(workplaceId);
 
-        // Allow starting from Pending or Ready status
-        if (workplace.Status != RolloutWorkplaceStatus.Pending && workplace.Status != RolloutWorkplaceStatus.Ready)
-        {
-            return BadRequest(new { message = $"Workplace is already {workplace.Status}" });
-        }
-
-        workplace.Status = RolloutWorkplaceStatus.InProgress;
-        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
-        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
-
-        return Ok(workplaceDto);
+        return result.Match(
+            workplace => Ok(MapToWorkplaceDto(workplace)),
+            error => error.StatusCode switch
+            {
+                404 => NotFound(new { message = error.ErrorMessage }),
+                400 => BadRequest(new { message = error.ErrorMessage }),
+                _ => StatusCode(error.StatusCode, new { message = error.ErrorMessage })
+            });
     }
 
     /// <summary>
@@ -496,38 +516,20 @@ public class RolloutsController : ControllerBase
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/items/{itemIndex}/status")]
     [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemStatus(int workplaceId, int itemIndex, [FromBody] UpdateItemStatusDto dto)
     {
-        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
-        if (workplace == null)
-        {
-            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
-        }
+        var result = await _workplaceService.UpdateItemStatusAsync(workplaceId, itemIndex, dto.Status);
 
-        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
-            ? new List<AssetPlanDto>()
-            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
-
-        if (itemIndex < 0 || itemIndex >= assetPlans.Count)
-        {
-            return BadRequest(new { message = $"Item index {itemIndex} is out of range (0-{assetPlans.Count - 1})" });
-        }
-
-        assetPlans[itemIndex].Status = dto.Status;
-        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
-        workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
-
-        // Auto-set to InProgress if still Pending
-        if (workplace.Status == RolloutWorkplaceStatus.Pending)
-        {
-            workplace.Status = RolloutWorkplaceStatus.InProgress;
-        }
-
-        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
-        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
-
-        return Ok(workplaceDto);
+        return result.Match(
+            workplace => Ok(MapToWorkplaceDto(workplace)),
+            error => error.StatusCode switch
+            {
+                404 => NotFound(new { message = error.ErrorMessage }),
+                400 => BadRequest(new { message = error.ErrorMessage }),
+                _ => StatusCode(error.StatusCode, new { message = error.ErrorMessage })
+            });
     }
 
     /// <summary>
@@ -536,169 +538,20 @@ public class RolloutsController : ControllerBase
     /// </summary>
     [HttpPost("workplaces/{workplaceId}/items/{itemIndex}/details")]
     [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemDetails(int workplaceId, int itemIndex, [FromBody] UpdateItemDetailsDto dto)
     {
-        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
-        if (workplace == null)
-        {
-            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
-        }
+        var result = await _workplaceService.UpdateItemDetailsAsync(workplaceId, itemIndex, dto);
 
-        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
-            ? new List<AssetPlanDto>()
-            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
-
-        if (itemIndex < 0 || itemIndex >= assetPlans.Count)
-        {
-            return BadRequest(new { message = $"Item index {itemIndex} is out of range (0-{assetPlans.Count - 1})" });
-        }
-
-        var plan = assetPlans[itemIndex];
-
-        // Update brand/model if provided
-        if (!string.IsNullOrWhiteSpace(dto.Brand))
-            plan.Brand = dto.Brand;
-        if (!string.IsNullOrWhiteSpace(dto.Model))
-            plan.Model = dto.Model;
-
-        // Update user name if provided
-        if (!string.IsNullOrWhiteSpace(dto.UserName))
-            workplace.UserName = dto.UserName;
-
-        // Handle old asset serial number (asset being replaced)
-        if (!string.IsNullOrWhiteSpace(dto.OldSerialNumber))
-        {
-            var oldAsset = await _assetRepository.GetBySerialNumberAsync(dto.OldSerialNumber);
-            if (oldAsset != null)
+        return result.Match(
+            workplace => Ok(MapToWorkplaceDto(workplace)),
+            error => error.StatusCode switch
             {
-                plan.OldAssetId = oldAsset.Id;
-                plan.OldAssetCode = oldAsset.AssetCode;
-                plan.OldAssetName = oldAsset.AssetName;
-                plan.Metadata ??= new Dictionary<string, string>();
-                plan.Metadata["oldSerial"] = dto.OldSerialNumber;
-            }
-        }
-
-        // Handle new asset serial number (search or create)
-        if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
-        {
-            plan.Metadata ??= new Dictionary<string, string>();
-            plan.Metadata["serialNumber"] = dto.SerialNumber;
-
-            // First check if another asset already has this serial number
-            var existingAsset = await _assetRepository.GetBySerialNumberAsync(dto.SerialNumber);
-            if (existingAsset != null)
-            {
-                // Link to existing asset
-                plan.ExistingAssetId = existingAsset.Id;
-                plan.ExistingAssetCode = existingAsset.AssetCode;
-                plan.ExistingAssetName = existingAsset.AssetName;
-                plan.CreateNew = false;
-                _logger.LogInformation("Linked existing asset {AssetCode} (serial: {Serial}) to workplace {WorkplaceId} item {ItemIndex}",
-                    existingAsset.AssetCode, dto.SerialNumber, workplaceId, itemIndex);
-            }
-            else if (plan.ExistingAssetId.HasValue)
-            {
-                // No other asset has this serial — update serial on the already-linked asset
-                var linkedAsset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
-                if (linkedAsset != null && string.IsNullOrEmpty(linkedAsset.SerialNumber))
-                {
-                    linkedAsset.SerialNumber = dto.SerialNumber;
-                    linkedAsset.UpdatedAt = DateTime.UtcNow;
-                    await _assetRepository.UpdateAsync(linkedAsset);
-                    _logger.LogInformation("Updated serial number on existing asset {AssetCode} to {Serial}",
-                        linkedAsset.AssetCode, dto.SerialNumber);
-                }
-            }
-            else
-            {
-                // Create new asset
-                var assetTypeCode = plan.EquipmentType.ToLower() switch
-                {
-                    "laptop" => "LAP",
-                    "desktop" => "DESK",
-                    "docking" => "DOCK",
-                    "monitor" => "MON",
-                    "keyboard" => "KEYB",
-                    "mouse" => "MOUSE",
-                    _ => (string?)null
-                };
-
-                if (assetTypeCode != null)
-                {
-                    var assetType = await _rolloutRepository.GetAssetTypeByCodeAsync(assetTypeCode);
-                    if (assetType != null)
-                    {
-                        // Build AssetName: DOCK-serial / MON-serial, or type_brand_model for others
-                        string assetName;
-                        var typeUpper = plan.EquipmentType.ToUpper();
-                        if ((typeUpper == "DOCKING" || typeUpper == "MONITOR") && !string.IsNullOrEmpty(dto.SerialNumber))
-                        {
-                            var namePrefix = typeUpper == "DOCKING" ? "DOCK" : "MON";
-                            assetName = $"{namePrefix}-{dto.SerialNumber}";
-                        }
-                        else
-                        {
-                            var assetNameParts = new List<string> { plan.EquipmentType.ToLower() };
-                            if (!string.IsNullOrEmpty(plan.Brand)) assetNameParts.Add(plan.Brand.ToLower().Replace(" ", "_"));
-                            if (!string.IsNullOrEmpty(plan.Model)) assetNameParts.Add(plan.Model.ToLower().Replace(" ", "_"));
-                            assetName = string.Join("_", assetNameParts);
-                        }
-
-                        // Use centralized AssetCodeGeneratorService (4-char brand code, proper numbering)
-                        // Year is calculated from current date (Nov/Dec uses next year)
-                        var generatedCode = await _assetCodeGenerator.GenerateCodeAsync(
-                            assetType.Id, plan.Brand, DateTime.UtcNow, false);
-
-                        var newAsset = new Asset
-                        {
-                            AssetTypeId = assetType.Id,
-                            Category = assetType.Name,
-                            AssetCode = generatedCode,
-                            AssetName = assetName,
-                            Brand = plan.Brand,
-                            Model = plan.Model,
-                            SerialNumber = dto.SerialNumber,
-                            Status = AssetStatus.Nieuw,
-                            ServiceId = workplace.ServiceId,
-                            IsDummy = false,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-
-                        var createdAsset = await _assetRepository.CreateAsync(newAsset);
-                        plan.ExistingAssetId = createdAsset.Id;
-                        plan.ExistingAssetCode = createdAsset.AssetCode;
-                        plan.ExistingAssetName = createdAsset.AssetName;
-                        plan.CreateNew = false;
-
-                        _logger.LogInformation("Created new asset {AssetCode} (serial: {Serial}) for workplace {WorkplaceId} item {ItemIndex}",
-                            createdAsset.AssetCode, dto.SerialNumber, workplaceId, itemIndex);
-                    }
-                }
-            }
-        }
-
-        // Mark as installed if requested
-        if (dto.MarkAsInstalled)
-        {
-            plan.Status = "installed";
-            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
-        }
-
-        // Auto-set to InProgress if still Pending
-        if (workplace.Status == RolloutWorkplaceStatus.Pending)
-        {
-            workplace.Status = RolloutWorkplaceStatus.InProgress;
-        }
-
-        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
-        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
-        var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
-
-        return Ok(workplaceDto);
+                404 => NotFound(new { message = error.ErrorMessage }),
+                400 => BadRequest(new { message = error.ErrorMessage }),
+                _ => StatusCode(error.StatusCode, new { message = error.ErrorMessage })
+            });
     }
 
     /// <summary>
@@ -711,106 +564,22 @@ public class RolloutsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RolloutWorkplaceDto>> CompleteWorkplace(int workplaceId, [FromBody] CompleteWorkplaceDto dto)
     {
-        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
-        if (workplace == null)
-        {
-            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
-        }
-
-        // Parse asset plans
-        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
-            ? new List<AssetPlanDto>()
-            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
-
-        // Capture user info before entering transaction (HttpContext not available in lambda)
         var completedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
         var completedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
 
-        try
-        {
-            // Use ExecuteInTransactionAsync to properly handle Azure SQL's retry execution strategy
-            await _rolloutRepository.ExecuteInTransactionAsync(async () =>
+        var result = await _workplaceService.CompleteWorkplaceAsync(
+            workplaceId,
+            dto.Notes,
+            completedBy,
+            completedByEmail);
+
+        return result.Match(
+            workplace => Ok(MapToWorkplaceDto(workplace)),
+            error => error.StatusCode switch
             {
-                // Transition linked assets
-                foreach (var plan in assetPlans)
-                {
-                    // New/existing asset → InGebruik
-                    if (plan.ExistingAssetId.HasValue)
-                    {
-                        var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
-                        if (asset != null)
-                        {
-                            asset.Status = AssetStatus.InGebruik;
-                            asset.InstallationDate = DateTime.UtcNow;
-                            asset.Owner = workplace.UserName;
-                            asset.ServiceId = workplace.ServiceId;
-                            asset.InstallationLocation = workplace.Location;
-                            asset.UpdatedAt = DateTime.UtcNow;
-                            await _assetRepository.UpdateAsync(asset);
-                            _logger.LogInformation("Asset {AssetCode} transitioned to InGebruik for {User}", asset.AssetCode, workplace.UserName);
-                        }
-                    }
-
-                    // Old asset → UitDienst
-                    if (plan.OldAssetId.HasValue)
-                    {
-                        var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
-                        if (oldAsset != null)
-                        {
-                            oldAsset.Status = AssetStatus.UitDienst;
-                            oldAsset.UpdatedAt = DateTime.UtcNow;
-                            await _assetRepository.UpdateAsync(oldAsset);
-                            _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)", oldAsset.AssetCode);
-                        }
-                    }
-
-                    // Mark pending items as installed (preserve skipped status)
-                    if (plan.Status != "skipped")
-                    {
-                        plan.Status = "installed";
-                    }
-                }
-
-                // Update workplace
-                workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
-                workplace.Status = RolloutWorkplaceStatus.Completed;
-                workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
-                workplace.CompletedAt = DateTime.UtcNow;
-                workplace.CompletedBy = completedBy;
-                workplace.CompletedByEmail = completedByEmail;
-                workplace.UpdatedAt = DateTime.UtcNow;
-                if (!string.IsNullOrWhiteSpace(dto.Notes))
-                {
-                    workplace.Notes = dto.Notes;
-                }
-
-                // Save all changes directly without triggering ProcessAssetPlansAsync
-                await _rolloutRepository.SaveChangesAsync();
-
-                // Update day totals to reflect the completed workplace
-                await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+                404 => NotFound(new { message = error.ErrorMessage }),
+                _ => StatusCode(error.StatusCode, new { message = error.ErrorMessage })
             });
-
-            var workplaceDto = MapToWorkplaceDto(workplace);
-            return Ok(workplaceDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to complete workplace {WorkplaceId}, transaction rolled back. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}",
-                workplaceId, ex.GetType().Name, ex.Message, ex.InnerException?.Message ?? "None");
-
-            // Include detailed error info in development/staging environments
-            var errorDetails = $"{ex.GetType().Name}: {ex.Message}";
-            if (ex.InnerException != null)
-            {
-                errorDetails += $" -> {ex.InnerException.GetType().Name}: {ex.InnerException.Message}";
-            }
-
-            return StatusCode(500, new {
-                message = "Er is een fout opgetreden bij het voltooien van de werkplek. Alle wijzigingen zijn teruggedraaid.",
-                details = errorDetails
-            });
-        }
     }
 
     /// <summary>
@@ -823,95 +592,16 @@ public class RolloutsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RolloutWorkplaceDto>> ReopenWorkplace(int workplaceId, [FromQuery] bool reverseAssets = false)
     {
-        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(workplaceId);
-        if (workplace == null)
-        {
-            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
-        }
+        var result = await _workplaceService.ReopenWorkplaceAsync(workplaceId, reverseAssets);
 
-        if (workplace.Status != RolloutWorkplaceStatus.Completed)
-        {
-            return BadRequest(new { message = $"Workplace is not completed (current status: {workplace.Status})" });
-        }
-
-        // Parse asset plans
-        var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
-            ? new List<AssetPlanDto>()
-            : JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new List<AssetPlanDto>();
-
-        try
-        {
-            await _rolloutRepository.ExecuteInTransactionAsync(async () =>
+        return result.Match(
+            workplace => Ok(MapToWorkplaceDto(workplace)),
+            error => error.StatusCode switch
             {
-                // Optionally reverse asset transitions
-                if (reverseAssets)
-                {
-                    foreach (var plan in assetPlans)
-                    {
-                        // Reverse: InGebruik → Nieuw
-                        if (plan.ExistingAssetId.HasValue)
-                        {
-                            var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
-                            if (asset != null && asset.Status == AssetStatus.InGebruik)
-                            {
-                                asset.Status = AssetStatus.Nieuw;
-                                asset.Owner = null;
-                                asset.InstallationDate = null;
-                                asset.InstallationLocation = null;
-                                asset.UpdatedAt = DateTime.UtcNow;
-                                await _assetRepository.UpdateAsync(asset);
-                                _logger.LogInformation("Asset {AssetCode} reversed to Nieuw", asset.AssetCode);
-                            }
-                        }
-
-                        // Reverse: UitDienst → InGebruik (old asset was decommissioned)
-                        if (plan.OldAssetId.HasValue)
-                        {
-                            var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
-                            if (oldAsset != null && oldAsset.Status == AssetStatus.UitDienst)
-                            {
-                                oldAsset.Status = AssetStatus.InGebruik;
-                                oldAsset.UpdatedAt = DateTime.UtcNow;
-                                await _assetRepository.UpdateAsync(oldAsset);
-                                _logger.LogInformation("Old asset {AssetCode} reversed to InGebruik", oldAsset.AssetCode);
-                            }
-                        }
-
-                        // Reset item status to pending
-                        if (plan.Status == "installed")
-                        {
-                            plan.Status = "pending";
-                        }
-                    }
-                }
-
-                // Update workplace
-                workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
-                workplace.Status = RolloutWorkplaceStatus.InProgress;
-                workplace.CompletedAt = null;
-                workplace.CompletedBy = null;
-                workplace.CompletedByEmail = null;
-                workplace.UpdatedAt = DateTime.UtcNow;
-
-                if (reverseAssets)
-                {
-                    workplace.CompletedItems = 0;
-                }
-
-                await _rolloutRepository.SaveChangesAsync();
-                await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+                404 => NotFound(new { message = error.ErrorMessage }),
+                400 => BadRequest(new { message = error.ErrorMessage }),
+                _ => StatusCode(error.StatusCode, new { message = error.ErrorMessage })
             });
-
-            _logger.LogInformation("Workplace {WorkplaceId} reopened by user (reverseAssets: {ReverseAssets})", workplaceId, reverseAssets);
-
-            var workplaceDto = MapToWorkplaceDto(workplace);
-            return Ok(workplaceDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to reopen workplace {WorkplaceId}", workplaceId);
-            return StatusCode(500, new { message = "Er is een fout opgetreden bij het heropenen van de werkplek." });
-        }
     }
 
     /// <summary>
@@ -953,8 +643,11 @@ public class RolloutsController : ControllerBase
             return BadRequest(new { message = "Count must be between 1 and 50" });
         }
 
-        // Generate standard asset plans using the config
-        var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig);
+        // Load templates if any are specified
+        var templates = await LoadTemplatesForConfigAsync(dto.AssetPlanConfig);
+
+        // Generate standard asset plans using the config and templates
+        var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig, templates);
         var workplaces = new List<RolloutWorkplace>();
 
         for (int i = 1; i <= dto.Count; i++)
@@ -973,7 +666,7 @@ public class RolloutsController : ControllerBase
         }
 
         var createdWorkplaces = await _rolloutRepository.CreateWorkplacesAsync(workplaces);
-        var workplaceDtos = createdWorkplaces.Select(MapToWorkplaceDto).ToList();
+        var workplaceDtos = createdWorkplaces.Select(w => MapToWorkplaceDto(w)).ToList();
 
         var result = new BulkCreateWorkplacesResultDto
         {
@@ -1287,8 +980,11 @@ public class RolloutsController : ControllerBase
                 .Select(w => w.UserEmail!.ToLowerInvariant())
                 .ToHashSet();
 
+            // Load templates if any are specified
+            var templates = await LoadTemplatesForConfigAsync(dto.AssetPlanConfig);
+
             // Generate standard asset plans
-            var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig);
+            var standardPlans = GenerateStandardAssetPlans(dto.AssetPlanConfig, templates);
             var workplacesToCreate = new List<RolloutWorkplace>();
             var skippedUsers = new List<string>();
 
@@ -1322,7 +1018,7 @@ public class RolloutsController : ControllerBase
             }
 
             var createdWorkplaces = await _rolloutRepository.CreateWorkplacesAsync(workplacesToCreate);
-            var workplaceDtos = createdWorkplaces.Select(MapToWorkplaceDto).ToList();
+            var workplaceDtos = createdWorkplaces.Select(w => MapToWorkplaceDto(w)).ToList();
 
             var result = new BulkCreateFromGraphResultDto
             {
@@ -1437,7 +1133,7 @@ public class RolloutsController : ControllerBase
             InProgressWorkplaces = stats.InProgressWorkplaces,
             SkippedWorkplaces = stats.SkippedWorkplaces,
             FailedWorkplaces = stats.FailedWorkplaces,
-            CompletionPercentage = stats.CompletionPercentage,
+            WorkplaceProgressPercent = (int)stats.CompletionPercentage,
             DayProgress = days.Select(d => new DayProgressDto
             {
                 DayId = d.Id,
@@ -1445,25 +1141,320 @@ public class RolloutsController : ControllerBase
                 Name = d.Name,
                 TotalWorkplaces = d.TotalWorkplaces,
                 CompletedWorkplaces = d.CompletedWorkplaces,
-                CompletionPercentage = d.TotalWorkplaces > 0 ? Math.Round((decimal)d.CompletedWorkplaces / d.TotalWorkplaces * 100, 2) : 0
+                ProgressPercent = d.TotalWorkplaces > 0 ? (int)Math.Round((decimal)d.CompletedWorkplaces / d.TotalWorkplaces * 100) : 0
             }).ToList()
         };
 
         return Ok(progressDto);
     }
 
+    /// <summary>
+    /// Gets comprehensive asset status change report for a rollout session.
+    /// Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
+    /// </summary>
+    [HttpGet("{sessionId}/asset-report")]
+    [ProducesResponseType(typeof(RolloutAssetStatusReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutAssetStatusReportDto>> GetAssetStatusReport(int sessionId)
+    {
+        var session = await _rolloutRepository.GetSessionByIdAsync(sessionId, includeDays: true, includeWorkplaces: true);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {sessionId} not found" });
+        }
+
+        var report = await BuildAssetStatusReportAsync(session);
+        return Ok(report);
+    }
+
+    /// <summary>
+    /// Exports asset status changes as CSV file.
+    /// </summary>
+    [HttpGet("{sessionId}/asset-report/export")]
+    [Produces("text/csv")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ExportAssetStatusReport(int sessionId)
+    {
+        var session = await _rolloutRepository.GetSessionByIdAsync(sessionId, includeDays: true, includeWorkplaces: true);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {sessionId} not found" });
+        }
+
+        var report = await BuildAssetStatusReportAsync(session);
+        var csv = GenerateCsvContent(report);
+        var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(
+            System.Text.Encoding.UTF8.GetBytes(csv)).ToArray();
+
+        var fileName = $"rollout-asset-wijzigingen-{sessionId}-{DateTime.Now:yyyyMMdd}.csv";
+        return File(bytes, "text/csv; charset=utf-8", fileName);
+    }
+
+    /// <summary>
+    /// Builds the asset status report from session data
+    /// </summary>
+    private async Task<RolloutAssetStatusReportDto> BuildAssetStatusReportAsync(RolloutSession session)
+    {
+        var report = new RolloutAssetStatusReportDto
+        {
+            SessionId = session.Id,
+            SessionName = session.SessionName,
+            GeneratedAt = DateTime.UtcNow
+        };
+
+        var assetChanges = new List<RolloutAssetChangeDto>();
+        var daySummaries = new List<RolloutDayAssetSummaryDto>();
+
+        // Get service names for lookup
+        var services = await _serviceRepository.GetAllAsync();
+        var serviceNames = services.ToDictionary(s => s.Id, s => s.Name);
+
+        foreach (var day in session.Days ?? new List<RolloutDay>())
+        {
+            var daySummary = new RolloutDayAssetSummaryDto
+            {
+                DayId = day.Id,
+                DayNumber = day.DayNumber,
+                Date = day.Date,
+                DayName = day.Name
+            };
+
+            var completedWorkplaces = day.Workplaces?.Where(w => w.Status == RolloutWorkplaceStatus.Completed).ToList()
+                ?? new List<RolloutWorkplace>();
+
+            daySummary.WorkplacesCompleted = completedWorkplaces.Count;
+
+            foreach (var workplace in completedWorkplaces)
+            {
+                var workplaceSummary = new RolloutWorkplaceAssetSummaryDto
+                {
+                    WorkplaceId = workplace.Id,
+                    UserName = workplace.UserName,
+                    Location = workplace.Location,
+                    CompletedBy = workplace.CompletedBy ?? "",
+                    CompletedAt = workplace.CompletedAt
+                };
+
+                var plans = ParseAssetPlansForReport(workplace.AssetPlansJson);
+                var serviceName = workplace.ServiceId.HasValue && serviceNames.ContainsKey(workplace.ServiceId.Value)
+                    ? serviceNames[workplace.ServiceId.Value]
+                    : null;
+
+                foreach (var plan in plans)
+                {
+                    // New/existing asset -> InGebruik
+                    if (plan.ExistingAssetId.HasValue && plan.Status == "installed")
+                    {
+                        var asset = await _assetRepository.GetByIdAsync(plan.ExistingAssetId.Value);
+                        if (asset != null)
+                        {
+                            assetChanges.Add(new RolloutAssetChangeDto
+                            {
+                                AssetId = asset.Id,
+                                AssetCode = asset.AssetCode,
+                                AssetName = asset.AssetName,
+                                EquipmentType = plan.EquipmentType,
+                                SerialNumber = asset.SerialNumber,
+                                Brand = asset.Brand,
+                                Model = asset.Model,
+                                OldStatus = "Nieuw",
+                                NewStatus = "InGebruik",
+                                ChangeType = "InGebruik",
+                                WorkplaceId = workplace.Id,
+                                UserName = workplace.UserName,
+                                UserEmail = workplace.UserEmail,
+                                Location = workplace.Location,
+                                ServiceName = serviceName,
+                                DayId = day.Id,
+                                DayNumber = day.DayNumber,
+                                Date = day.Date,
+                                CompletedBy = workplace.CompletedBy ?? "",
+                                CompletedByEmail = workplace.CompletedByEmail,
+                                CompletedAt = workplace.CompletedAt ?? DateTime.UtcNow
+                            });
+
+                            workplaceSummary.AssetsDeployed++;
+                            daySummary.AssetsDeployed++;
+                        }
+                    }
+
+                    // Old asset -> UitDienst
+                    if (plan.OldAssetId.HasValue)
+                    {
+                        var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
+                        if (oldAsset != null)
+                        {
+                            assetChanges.Add(new RolloutAssetChangeDto
+                            {
+                                AssetId = oldAsset.Id,
+                                AssetCode = oldAsset.AssetCode,
+                                AssetName = oldAsset.AssetName,
+                                EquipmentType = plan.EquipmentType,
+                                SerialNumber = oldAsset.SerialNumber,
+                                Brand = oldAsset.Brand,
+                                Model = oldAsset.Model,
+                                OldStatus = "InGebruik",
+                                NewStatus = "UitDienst",
+                                ChangeType = "UitDienst",
+                                WorkplaceId = workplace.Id,
+                                UserName = workplace.UserName,
+                                UserEmail = workplace.UserEmail,
+                                Location = workplace.Location,
+                                ServiceName = serviceName,
+                                DayId = day.Id,
+                                DayNumber = day.DayNumber,
+                                Date = day.Date,
+                                CompletedBy = workplace.CompletedBy ?? "",
+                                CompletedByEmail = workplace.CompletedByEmail,
+                                CompletedAt = workplace.CompletedAt ?? DateTime.UtcNow
+                            });
+
+                            workplaceSummary.AssetsDecommissioned++;
+                            daySummary.AssetsDecommissioned++;
+                        }
+                    }
+                }
+
+                daySummary.WorkplaceSummaries.Add(workplaceSummary);
+            }
+
+            if (daySummary.WorkplacesCompleted > 0)
+            {
+                daySummaries.Add(daySummary);
+            }
+        }
+
+        report.AssetChanges = assetChanges;
+        report.DaySummaries = daySummaries;
+        report.TotalAssetsDeployed = assetChanges.Count(c => c.ChangeType == "InGebruik");
+        report.TotalAssetsDecommissioned = assetChanges.Count(c => c.ChangeType == "UitDienst");
+        report.TotalWorkplacesCompleted = daySummaries.Sum(d => d.WorkplacesCompleted);
+
+        return report;
+    }
+
+    /// <summary>
+    /// Parse asset plans JSON for reporting
+    /// </summary>
+    private static List<AssetPlanDto> ParseAssetPlansForReport(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<AssetPlanDto>();
+        }
+
+        return JsonSerializer.Deserialize<List<AssetPlanDto>>(json) ?? new List<AssetPlanDto>();
+    }
+
+    /// <summary>
+    /// Generates CSV content from the report
+    /// </summary>
+    private static string GenerateCsvContent(RolloutAssetStatusReportDto report)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        // Header row (Dutch labels)
+        sb.AppendLine("AssetCode;AssetNaam;Type;Serienummer;Merk;Model;VorigeStatus;NieuweStatus;Wijziging;Gebruiker;Email;Locatie;Dienst;DagNr;Datum;UitgevoerdDoor;UitgevoerdOp");
+
+        foreach (var change in report.AssetChanges)
+        {
+            sb.AppendLine(string.Join(";",
+                EscapeCsv(change.AssetCode),
+                EscapeCsv(change.AssetName),
+                EscapeCsv(change.EquipmentType),
+                EscapeCsv(change.SerialNumber),
+                EscapeCsv(change.Brand),
+                EscapeCsv(change.Model),
+                EscapeCsv(change.OldStatus),
+                EscapeCsv(change.NewStatus),
+                EscapeCsv(change.ChangeType),
+                EscapeCsv(change.UserName),
+                EscapeCsv(change.UserEmail),
+                EscapeCsv(change.Location),
+                EscapeCsv(change.ServiceName),
+                change.DayNumber.ToString(),
+                change.Date.ToString("yyyy-MM-dd"),
+                EscapeCsv(change.CompletedBy),
+                change.CompletedAt.ToString("yyyy-MM-dd HH:mm")
+            ));
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Escapes a CSV field value
+    /// </summary>
+    private static string EscapeCsv(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Contains(';') || value.Contains('"') || value.Contains('\n'))
+        {
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        }
+        return value;
+    }
+
     // ===== HELPER MAPPING METHODS =====
+
+    /// <summary>
+    /// Loads templates specified in the asset plan config
+    /// </summary>
+    /// <param name="config">Asset plan configuration with optional template IDs</param>
+    /// <returns>Dictionary of templates keyed by their ID</returns>
+    private async Task<Dictionary<int, AssetTemplate>> LoadTemplatesForConfigAsync(StandardAssetPlanConfig config)
+    {
+        var templateIds = new List<int?>
+        {
+            config.LaptopTemplateId,
+            config.DesktopTemplateId,
+            config.DockingTemplateId,
+            config.MonitorTemplateId,
+            config.KeyboardTemplateId,
+            config.MouseTemplateId
+        };
+
+        var validIds = templateIds.Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+
+        if (!validIds.Any())
+        {
+            return new Dictionary<int, AssetTemplate>();
+        }
+
+        var templates = new Dictionary<int, AssetTemplate>();
+        foreach (var id in validIds)
+        {
+            var template = await _assetTemplateRepository.GetByIdAsync(id);
+            if (template != null)
+            {
+                templates[id] = template;
+            }
+        }
+
+        return templates;
+    }
 
     /// <summary>
     /// Generates standard asset plans based on configuration
     /// </summary>
-    private static List<AssetPlanDto> GenerateStandardAssetPlans(StandardAssetPlanConfig config)
+    /// <param name="config">Asset plan configuration with optional template IDs</param>
+    /// <param name="templates">Pre-loaded templates dictionary (key: templateId, value: template)</param>
+    private static List<AssetPlanDto> GenerateStandardAssetPlans(
+        StandardAssetPlanConfig config,
+        Dictionary<int, AssetTemplate>? templates = null)
     {
         var plans = new List<AssetPlanDto>();
+        templates ??= new Dictionary<int, AssetTemplate>();
+
+        // Helper to get template data
+        AssetTemplate? GetTemplate(int? templateId) =>
+            templateId.HasValue && templates.TryGetValue(templateId.Value, out var t) ? t : null;
 
         // Laptop
         if (config.IncludeLaptop)
         {
+            var template = GetTemplate(config.LaptopTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "laptop",
@@ -1471,6 +1462,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = true,
                 RequiresQRCode = false, // Existing asset (swap)
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1478,6 +1471,7 @@ public class RolloutsController : ControllerBase
         // Desktop
         if (config.IncludeDesktop)
         {
+            var template = GetTemplate(config.DesktopTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "desktop",
@@ -1485,6 +1479,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = true,
                 RequiresQRCode = false, // Existing asset (swap)
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1492,6 +1488,7 @@ public class RolloutsController : ControllerBase
         // Docking Station - CreateNew=false until serial number is entered
         if (config.IncludeDocking)
         {
+            var template = GetTemplate(config.DockingTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "docking",
@@ -1499,11 +1496,14 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = true,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
 
         // Monitors - CreateNew=true so assets are created automatically
+        var monitorTemplate = GetTemplate(config.MonitorTemplateId);
         for (int i = 0; i < config.MonitorCount; i++)
         {
             var position = i switch
@@ -1523,6 +1523,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = monitorTemplate?.Brand,
+                Model = monitorTemplate?.Model,
                 Metadata = new Dictionary<string, string>
                 {
                     { "position", position },
@@ -1534,6 +1536,7 @@ public class RolloutsController : ControllerBase
         // Keyboard - CreateNew=true so assets are created automatically
         if (config.IncludeKeyboard)
         {
+            var template = GetTemplate(config.KeyboardTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "keyboard",
@@ -1541,6 +1544,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1548,6 +1553,7 @@ public class RolloutsController : ControllerBase
         // Mouse - CreateNew=true so assets are created automatically
         if (config.IncludeMouse)
         {
+            var template = GetTemplate(config.MouseTemplateId);
             plans.Add(new AssetPlanDto
             {
                 EquipmentType = "mouse",
@@ -1555,6 +1561,8 @@ public class RolloutsController : ControllerBase
                 RequiresSerialNumber = false,
                 RequiresQRCode = true,
                 Status = "pending",
+                Brand = template?.Brand,
+                Model = template?.Model,
                 Metadata = new Dictionary<string, string>()
             });
         }
@@ -1616,13 +1624,13 @@ public class RolloutsController : ControllerBase
         // Map workplaces if included
         if (day.Workplaces != null && day.Workplaces.Any())
         {
-            dto.Workplaces = day.Workplaces.Select(MapToWorkplaceDto).ToList();
+            dto.Workplaces = day.Workplaces.Select(w => MapToWorkplaceDto(w)).ToList();
         }
 
         return dto;
     }
 
-    private RolloutWorkplaceDto MapToWorkplaceDto(RolloutWorkplace workplace)
+    private RolloutWorkplaceDto MapToWorkplaceDto(RolloutWorkplace workplace, DateTime? movedToDate = null, DateTime? movedFromDate = null)
     {
         var assetPlans = string.IsNullOrWhiteSpace(workplace.AssetPlansJson)
             ? new List<AssetPlanDto>()
@@ -1647,6 +1655,10 @@ public class RolloutsController : ControllerBase
             CompletedBy = workplace.CompletedBy,
             CompletedByEmail = workplace.CompletedByEmail,
             Notes = workplace.Notes,
+            MovedToWorkplaceId = workplace.MovedToWorkplaceId,
+            MovedFromWorkplaceId = workplace.MovedFromWorkplaceId,
+            MovedToDate = movedToDate,
+            MovedFromDate = movedFromDate,
             CreatedAt = workplace.CreatedAt,
             UpdatedAt = workplace.UpdatedAt
         };

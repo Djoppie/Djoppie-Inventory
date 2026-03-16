@@ -44,6 +44,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -51,6 +54,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("CurrentWorkplaceAssignmentId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("InstallationDate")
                         .HasColumnType("TEXT");
@@ -64,6 +70,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.Property<string>("JobTitle")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("LastRolloutSessionId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("LegacyBuilding")
                         .HasMaxLength(100)
@@ -110,6 +119,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("AssetTypeId");
+
+                    b.HasIndex("BuildingId");
+
+                    b.HasIndex("CurrentWorkplaceAssignmentId");
+
+                    b.HasIndex("LastRolloutSessionId");
 
                     b.HasIndex("SerialNumber")
                         .IsUnique()
@@ -797,6 +812,100 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.ToTable("LeaseContracts");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutAssetMovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NewLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NewOwner")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("NewServiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("PerformedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PerformedByEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreviousLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreviousOwner")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("PreviousServiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PreviousStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RolloutSessionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("RolloutWorkplaceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("WorkplaceAssetAssignmentId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("MovementType");
+
+                    b.HasIndex("NewServiceId");
+
+                    b.HasIndex("PerformedAt");
+
+                    b.HasIndex("PreviousServiceId");
+
+                    b.HasIndex("RolloutSessionId");
+
+                    b.HasIndex("RolloutWorkplaceId");
+
+                    b.HasIndex("WorkplaceAssetAssignmentId");
+
+                    b.ToTable("RolloutAssetMovements");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
                 {
                     b.Property<int>("Id")
@@ -846,6 +955,36 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("RolloutSessionId");
 
                     b.ToTable("RolloutDays");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDayService", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RolloutDayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RolloutDayId");
+
+                    b.HasIndex("ServiceId");
+
+                    b.HasIndex("RolloutDayId", "ServiceId")
+                        .IsUnique();
+
+                    b.ToTable("RolloutDayServices");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutSession", b =>
@@ -913,6 +1052,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
@@ -936,6 +1078,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<string>("Location")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("MovedFromWorkplaceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MovedToWorkplaceId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
@@ -963,12 +1111,18 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("UserEntraId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BuildingId");
 
                     b.HasIndex("RolloutDayId");
 
@@ -993,8 +1147,41 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EntraGroupId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EntraLastSyncAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntraMailNickname")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EntraSyncEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntraSyncError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntraSyncStatus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("ManagerDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManagerEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManagerEntraId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1020,6 +1207,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 1,
                             Code = "ORG",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
                             Name = "Organisatie",
                             SortOrder = 1
@@ -1029,6 +1218,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 2,
                             Code = "FIN",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
                             Name = "Financiën",
                             SortOrder = 2
@@ -1038,6 +1229,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 3,
                             Code = "RUI",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
                             Name = "Ruimte",
                             SortOrder = 3
@@ -1047,6 +1240,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 4,
                             Code = "MENS",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
                             Name = "Mens",
                             SortOrder = 4
@@ -1056,6 +1251,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 5,
                             Code = "ZORG",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
                             Name = "Zorg",
                             SortOrder = 5
@@ -1068,6 +1265,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("BuildingId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1076,7 +1276,43 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EntraGroupId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EntraLastSyncAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntraMailNickname")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EntraSyncEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntraSyncError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntraSyncStatus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ManagerDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManagerEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ManagerEntraId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MemberCount")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -1095,6 +1331,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BuildingId");
+
                     b.HasIndex("Code")
                         .IsUnique();
 
@@ -1108,7 +1346,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 1,
                             Code = "BSEC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Bestuurssecretariaat",
                             SectorId = 1,
                             SortOrder = 1
@@ -1118,7 +1359,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 2,
                             Code = "COM",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst Communicatie",
                             SectorId = 1,
                             SortOrder = 2
@@ -1128,7 +1372,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 3,
                             Code = "IT",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst IT",
                             SectorId = 1,
                             SortOrder = 3
@@ -1138,7 +1385,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 4,
                             Code = "ORGB",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst Organisatiebeheersing",
                             SectorId = 1,
                             SortOrder = 4
@@ -1148,7 +1398,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 5,
                             Code = "HR",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst HR",
                             SectorId = 1,
                             SortOrder = 5
@@ -1158,7 +1411,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 6,
                             Code = "PREV",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst Preventie - GIS & Noodplanning",
                             SectorId = 1,
                             SortOrder = 6
@@ -1168,7 +1424,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 7,
                             Code = "AANK",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst Aankopen",
                             SectorId = 2,
                             SortOrder = 7
@@ -1178,7 +1437,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 8,
                             Code = "FINZ",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Dienst Financiën",
                             SectorId = 2,
                             SortOrder = 8
@@ -1188,7 +1450,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 9,
                             Code = "RO",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Ruimtelijke Ontwikkeling",
                             SectorId = 3,
                             SortOrder = 9
@@ -1198,7 +1463,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 10,
                             Code = "INFRA",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Infrastructuurprojecten",
                             SectorId = 3,
                             SortOrder = 10
@@ -1208,7 +1476,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 11,
                             Code = "FAC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Facilitaire Ondersteuning",
                             SectorId = 3,
                             SortOrder = 11
@@ -1218,7 +1489,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 12,
                             Code = "OD",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Openbaar Domein",
                             SectorId = 3,
                             SortOrder = 12
@@ -1228,7 +1502,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 13,
                             Code = "BB",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Beleven & Bewegen",
                             SectorId = 4,
                             SortOrder = 13
@@ -1238,7 +1515,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 14,
                             Code = "BURG",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Burgerzaken",
                             SectorId = 4,
                             SortOrder = 14
@@ -1248,7 +1528,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 15,
                             Code = "GO",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Gezin & Onderwijs",
                             SectorId = 4,
                             SortOrder = 15
@@ -1258,7 +1541,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 16,
                             Code = "GBS",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Gemeentelijke Basisschool",
                             SectorId = 4,
                             SortOrder = 16
@@ -1268,7 +1554,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 17,
                             Code = "SOC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Sociale Dienst",
                             SectorId = 4,
                             SortOrder = 17
@@ -1278,7 +1567,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 18,
                             Code = "THUIS",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Thuiszorg",
                             SectorId = 5,
                             SortOrder = 18
@@ -1288,7 +1580,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 19,
                             Code = "ASWO",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Assistentiewoningen",
                             SectorId = 5,
                             SortOrder = 19
@@ -1298,7 +1593,10 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 20,
                             Code = "CDV",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Centrum Dagverzorging",
                             SectorId = 5,
                             SortOrder = 20
@@ -1308,11 +1606,98 @@ namespace DjoppieInventory.Infrastructure.Migrations
                             Id = 21,
                             Code = "WZC",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EntraSyncEnabled = false,
+                            EntraSyncStatus = 0,
                             IsActive = true,
+                            MemberCount = 0,
                             Name = "Woonzorgcentrum",
                             SectorId = 5,
                             SortOrder = 21
                         });
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.WorkplaceAssetAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("AssetTemplateId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AssetTypeId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AssignmentCategory")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("InstalledAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InstalledBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InstalledByEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("NewAssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("OldAssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("QRCodeRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RolloutWorkplaceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SerialNumberCaptured")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SerialNumberRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetTemplateId");
+
+                    b.HasIndex("AssetTypeId");
+
+                    b.HasIndex("NewAssetId");
+
+                    b.HasIndex("OldAssetId");
+
+                    b.HasIndex("RolloutWorkplaceId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("WorkplaceAssetAssignments");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Asset", b =>
@@ -1322,12 +1707,33 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("AssetTypeId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.WorkplaceAssetAssignment", "CurrentWorkplaceAssignment")
+                        .WithMany()
+                        .HasForeignKey("CurrentWorkplaceAssignmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "LastRolloutSession")
+                        .WithMany()
+                        .HasForeignKey("LastRolloutSessionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
                         .WithMany("Assets")
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AssetType");
+
+                    b.Navigation("Building");
+
+                    b.Navigation("CurrentWorkplaceAssignment");
+
+                    b.Navigation("LastRolloutSession");
 
                     b.Navigation("Service");
                 });
@@ -1381,6 +1787,53 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Asset");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutAssetMovement", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Asset")
+                        .WithMany("AssetMovements")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "NewService")
+                        .WithMany()
+                        .HasForeignKey("NewServiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "PreviousService")
+                        .WithMany()
+                        .HasForeignKey("PreviousServiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "RolloutSession")
+                        .WithMany("AssetMovements")
+                        .HasForeignKey("RolloutSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.RolloutWorkplace", "RolloutWorkplace")
+                        .WithMany("AssetMovements")
+                        .HasForeignKey("RolloutWorkplaceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.WorkplaceAssetAssignment", "WorkplaceAssetAssignment")
+                        .WithMany()
+                        .HasForeignKey("WorkplaceAssetAssignmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("NewService");
+
+                    b.Navigation("PreviousService");
+
+                    b.Navigation("RolloutSession");
+
+                    b.Navigation("RolloutWorkplace");
+
+                    b.Navigation("WorkplaceAssetAssignment");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
                 {
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "RolloutSession")
@@ -1392,8 +1845,32 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("RolloutSession");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDayService", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.RolloutDay", "RolloutDay")
+                        .WithMany("ScheduledServices")
+                        .HasForeignKey("RolloutDayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
+                        .WithMany("ScheduledRolloutDays")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RolloutDay");
+
+                    b.Navigation("Service");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutWorkplace", b =>
                 {
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutDay", "RolloutDay")
                         .WithMany("Workplaces")
                         .HasForeignKey("RolloutDayId")
@@ -1405,6 +1882,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.Navigation("Building");
+
                     b.Navigation("RolloutDay");
 
                     b.Navigation("Service");
@@ -1412,16 +1891,65 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Service", b =>
                 {
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.Sector", "Sector")
                         .WithMany("Services")
                         .HasForeignKey("SectorId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.Navigation("Building");
+
                     b.Navigation("Sector");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.WorkplaceAssetAssignment", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.AssetTemplate", "AssetTemplate")
+                        .WithMany()
+                        .HasForeignKey("AssetTemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.AssetType", "AssetType")
+                        .WithMany()
+                        .HasForeignKey("AssetTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "NewAsset")
+                        .WithMany()
+                        .HasForeignKey("NewAssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "OldAsset")
+                        .WithMany()
+                        .HasForeignKey("OldAssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.RolloutWorkplace", "RolloutWorkplace")
+                        .WithMany("AssetAssignments")
+                        .HasForeignKey("RolloutWorkplaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssetTemplate");
+
+                    b.Navigation("AssetType");
+
+                    b.Navigation("NewAsset");
+
+                    b.Navigation("OldAsset");
+
+                    b.Navigation("RolloutWorkplace");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Asset", b =>
                 {
+                    b.Navigation("AssetMovements");
+
                     b.Navigation("Events");
 
                     b.Navigation("LeaseContracts");
@@ -1441,12 +1969,23 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
                 {
+                    b.Navigation("ScheduledServices");
+
                     b.Navigation("Workplaces");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutSession", b =>
                 {
+                    b.Navigation("AssetMovements");
+
                     b.Navigation("Days");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutWorkplace", b =>
+                {
+                    b.Navigation("AssetAssignments");
+
+                    b.Navigation("AssetMovements");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>
@@ -1457,6 +1996,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Service", b =>
                 {
                     b.Navigation("Assets");
+
+                    b.Navigation("ScheduledRolloutDays");
                 });
 #pragma warning restore 612, 618
         }

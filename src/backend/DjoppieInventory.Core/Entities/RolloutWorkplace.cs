@@ -81,6 +81,18 @@ public class RolloutWorkplace
     public int? ServiceId { get; set; }
 
     /// <summary>
+    /// Microsoft Entra ID (GUID) of the user (optional).
+    /// Used to link the workplace to an Entra user for additional data retrieval.
+    /// </summary>
+    public string? UserEntraId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the building/location for this workplace (optional).
+    /// Provides a structured location reference instead of free-text Location field.
+    /// </summary>
+    public int? BuildingId { get; set; }
+
+    /// <summary>
     /// Indicates if this is a laptop setup (true) or desktop setup (false)
     /// Affects which peripherals are included (wireless vs wired keyboard, etc.)
     /// </summary>
@@ -136,6 +148,17 @@ public class RolloutWorkplace
     public string? Notes { get; set; }
 
     /// <summary>
+    /// If this workplace was moved to another day, this points to the new workplace.
+    /// The original workplace remains as a "ghost" entry for tracking purposes.
+    /// </summary>
+    public int? MovedToWorkplaceId { get; set; }
+
+    /// <summary>
+    /// If this workplace was created by moving from another day, this points to the original workplace.
+    /// </summary>
+    public int? MovedFromWorkplaceId { get; set; }
+
+    /// <summary>
     /// Timestamp when the workplace was created
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -156,4 +179,20 @@ public class RolloutWorkplace
     /// The service (department) this user belongs to (optional)
     /// </summary>
     public Service? Service { get; set; }
+
+    /// <summary>
+    /// The building/location for this workplace (optional)
+    /// </summary>
+    public Building? Building { get; set; }
+
+    /// <summary>
+    /// Collection of asset assignments planned for this workplace.
+    /// Replaces the JSON-based AssetPlansJson with proper relational data.
+    /// </summary>
+    public ICollection<WorkplaceAssetAssignment> AssetAssignments { get; set; } = new List<WorkplaceAssetAssignment>();
+
+    /// <summary>
+    /// Asset movements recorded for this workplace during execution
+    /// </summary>
+    public ICollection<RolloutAssetMovement> AssetMovements { get; set; } = new List<RolloutAssetMovement>();
 }

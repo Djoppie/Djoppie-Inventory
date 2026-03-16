@@ -53,6 +53,9 @@ import {
 } from '../../api/rollout.api';
 import { rolloutKeys } from '../../hooks/useRollout';
 import type { StandardAssetPlanConfig, BulkCreateFromGraphResult, GraphGroup } from '../../types/rollout';
+import type { AssetTemplate } from '../../types/asset.types';
+import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
+import { TemplateSelector } from './TemplateSelector';
 
 interface BulkImportFromGraphDialogProps {
   open: boolean;
@@ -99,7 +102,7 @@ function SectorServices({
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['graph', 'sector-services', sectorId],
     queryFn: () => getGraphSectorServices(sectorId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: ROLLOUT_TIMING.GRAPH_CACHE_STALE_TIME_MS,
   });
 
   if (isLoading) {
@@ -168,6 +171,14 @@ export default function BulkImportFromGraphDialog({
   const [expandedSectors, setExpandedSectors] = useState<Set<string>>(new Set());
   const [showFilter, setShowFilter] = useState(true);
 
+  // Template state
+  const [laptopTemplate, setLaptopTemplate] = useState<AssetTemplate | null>(null);
+  const [desktopTemplate, setDesktopTemplate] = useState<AssetTemplate | null>(null);
+  const [dockingTemplate, setDockingTemplate] = useState<AssetTemplate | null>(null);
+  const [monitorTemplate, setMonitorTemplate] = useState<AssetTemplate | null>(null);
+  const [keyboardTemplate, setKeyboardTemplate] = useState<AssetTemplate | null>(null);
+  const [mouseTemplate, setMouseTemplate] = useState<AssetTemplate | null>(null);
+
   // Asset plan config
   const assetPlanConfig: StandardAssetPlanConfig = useMemo(() => ({
     includeLaptop: isLaptopSetup,
@@ -176,14 +187,21 @@ export default function BulkImportFromGraphDialog({
     monitorCount,
     includeKeyboard: true,
     includeMouse: true,
-  }), [isLaptopSetup, monitorCount]);
+    // Include template IDs if selected
+    laptopTemplateId: laptopTemplate?.id,
+    desktopTemplateId: desktopTemplate?.id,
+    dockingTemplateId: dockingTemplate?.id,
+    monitorTemplateId: monitorTemplate?.id,
+    keyboardTemplateId: keyboardTemplate?.id,
+    mouseTemplateId: mouseTemplate?.id,
+  }), [isLaptopSetup, monitorCount, laptopTemplate, desktopTemplate, dockingTemplate, monitorTemplate, keyboardTemplate, mouseTemplate]);
 
   // Fetch sector groups (MG-SECTOR-*)
   const { data: sectorGroups = [], isLoading: loadingSectors } = useQuery({
     queryKey: ['graph', 'sector-groups'],
     queryFn: getGraphSectorGroups,
     enabled: open,
-    staleTime: 5 * 60 * 1000,
+    staleTime: ROLLOUT_TIMING.GRAPH_CACHE_STALE_TIME_MS,
   });
 
   // Track if we've already auto-selected for this dialog session
@@ -201,7 +219,7 @@ export default function BulkImportFromGraphDialog({
     queryKey: ['graph', 'service-groups'],
     queryFn: getGraphServiceGroups,
     enabled: open,
-    staleTime: 5 * 60 * 1000,
+    staleTime: ROLLOUT_TIMING.GRAPH_CACHE_STALE_TIME_MS,
   });
 
   // Auto-select matching group when data is loaded
@@ -222,22 +240,17 @@ export default function BulkImportFromGraphDialog({
       .replace(/^MG-/i, '')
       .trim();
 
-    console.log('Looking for match:', normalizedName, 'from service:', serviceName);
-
     const matchingGroup = allServiceGroups.find((group) => {
       const groupServiceName = group.serviceName?.toUpperCase() || '';
       return groupServiceName === normalizedName;
     });
 
     if (matchingGroup) {
-      console.log('Auto-selecting group:', matchingGroup.displayName, 'for service:', serviceName);
       // Use queueMicrotask to avoid lint warning about setState in effect
       queueMicrotask(() => {
         setSelectedGroup(matchingGroup);
         setShowFilter(false);
       });
-    } else {
-      console.log('No matching group found for service:', serviceName, '(normalized:', normalizedName, ') Available groups:', allServiceGroups.map(g => g.serviceName));
     }
   }, [open, serviceName, allServiceGroups]);
 
@@ -274,6 +287,8 @@ export default function BulkImportFromGraphDialog({
       setResult(data);
       queryClient.invalidateQueries({ queryKey: rolloutKeys.day(dayId) });
       queryClient.invalidateQueries({ queryKey: rolloutKeys.workplaces(dayId) });
+      // Also invalidate the days list so workplace counts update immediately
+      queryClient.invalidateQueries({ queryKey: [...rolloutKeys.all, 'days'] });
     },
   });
 
@@ -302,6 +317,13 @@ export default function BulkImportFromGraphDialog({
     setSearchQuery('');
     setResult(null);
     setExpandedSectors(new Set());
+    // Reset templates
+    setLaptopTemplate(null);
+    setDesktopTemplate(null);
+    setDockingTemplate(null);
+    setMonitorTemplate(null);
+    setKeyboardTemplate(null);
+    setMouseTemplate(null);
     onClose();
   };
 
@@ -740,7 +762,15 @@ export default function BulkImportFromGraphDialog({
                     control={
                       <Switch
                         checked={isLaptopSetup}
-                        onChange={(e) => setIsLaptopSetup(e.target.checked)}
+                        onChange={(e) => {
+                          setIsLaptopSetup(e.target.checked);
+                          // Clear the other template when switching
+                          if (e.target.checked) {
+                            setDesktopTemplate(null);
+                          } else {
+                            setLaptopTemplate(null);
+                          }
+                        }}
                         sx={{
                           '& .Mui-checked': { color: '#FF7700' },
                           '& .Mui-checked + .MuiSwitch-track': { backgroundColor: '#FF7700' },
@@ -753,6 +783,62 @@ export default function BulkImportFromGraphDialog({
                         {isLaptopSetup ? t('rollout.equipment.laptop', 'Laptop') : t('rollout.equipment.desktop', 'Desktop')}
                       </Box>
                     }
+                  />
+                </Box>
+
+                {/* Template selectors */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                  <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                    Sjablonen (optioneel)
+                  </Typography>
+
+                  {/* Laptop or Desktop template */}
+                  {isLaptopSetup ? (
+                    <TemplateSelector
+                      equipmentType="laptop"
+                      value={laptopTemplate}
+                      onChange={setLaptopTemplate}
+                      label="Laptop sjabloon"
+                    />
+                  ) : (
+                    <TemplateSelector
+                      equipmentType="desktop"
+                      value={desktopTemplate}
+                      onChange={setDesktopTemplate}
+                      label="Desktop sjabloon"
+                    />
+                  )}
+
+                  {/* Docking template */}
+                  <TemplateSelector
+                    equipmentType="docking"
+                    value={dockingTemplate}
+                    onChange={setDockingTemplate}
+                    label="Docking sjabloon"
+                  />
+
+                  {/* Monitor template */}
+                  <TemplateSelector
+                    equipmentType="monitor"
+                    value={monitorTemplate}
+                    onChange={setMonitorTemplate}
+                    label="Monitor sjabloon"
+                  />
+
+                  {/* Keyboard template */}
+                  <TemplateSelector
+                    equipmentType="keyboard"
+                    value={keyboardTemplate}
+                    onChange={setKeyboardTemplate}
+                    label="Toetsenbord sjabloon"
+                  />
+
+                  {/* Mouse template */}
+                  <TemplateSelector
+                    equipmentType="mouse"
+                    value={mouseTemplate}
+                    onChange={setMouseTemplate}
+                    label="Muis sjabloon"
                   />
                 </Box>
 
