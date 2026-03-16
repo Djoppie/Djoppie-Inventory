@@ -104,4 +104,10 @@ public class RolloutSession
     /// Collection of days planned for this rollout session
     /// </summary>
     public ICollection<RolloutDay> Days { get; set; } = new List<RolloutDay>();
+
+    /// <summary>
+    /// Collection of all asset movements recorded during this session.
+    /// Provides audit trail and reporting data.
+    /// </summary>
+    public ICollection<RolloutAssetMovement> AssetMovements { get; set; } = new List<RolloutAssetMovement>();
 }

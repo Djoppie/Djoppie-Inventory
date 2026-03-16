@@ -1133,7 +1133,7 @@ public class RolloutsController : ControllerBase
             InProgressWorkplaces = stats.InProgressWorkplaces,
             SkippedWorkplaces = stats.SkippedWorkplaces,
             FailedWorkplaces = stats.FailedWorkplaces,
-            CompletionPercentage = stats.CompletionPercentage,
+            WorkplaceProgressPercent = (int)stats.CompletionPercentage,
             DayProgress = days.Select(d => new DayProgressDto
             {
                 DayId = d.Id,
@@ -1141,7 +1141,7 @@ public class RolloutsController : ControllerBase
                 Name = d.Name,
                 TotalWorkplaces = d.TotalWorkplaces,
                 CompletedWorkplaces = d.CompletedWorkplaces,
-                CompletionPercentage = d.TotalWorkplaces > 0 ? Math.Round((decimal)d.CompletedWorkplaces / d.TotalWorkplaces * 100, 2) : 0
+                ProgressPercent = d.TotalWorkplaces > 0 ? (int)Math.Round((decimal)d.CompletedWorkplaces / d.TotalWorkplaces * 100) : 0
             }).ToList()
         };
 

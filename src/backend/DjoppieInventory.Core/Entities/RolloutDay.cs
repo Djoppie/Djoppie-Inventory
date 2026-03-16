@@ -95,4 +95,10 @@ public class RolloutDay
     /// Collection of workplaces scheduled for this day
     /// </summary>
     public ICollection<RolloutWorkplace> Workplaces { get; set; } = new List<RolloutWorkplace>();
+
+    /// <summary>
+    /// Collection of services scheduled for this day (proper relational model).
+    /// Replaces the comma-separated ScheduledServiceIds string.
+    /// </summary>
+    public ICollection<RolloutDayService> ScheduledServices { get; set; } = new List<RolloutDayService>();
 }

@@ -27,7 +27,7 @@ public class RolloutRepository : IRolloutRepository
 
     // ===== RolloutSession Operations =====
 
-    public async Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(RolloutSessionStatus? status = null)
+    public async Task<IEnumerable<RolloutSession>> GetAllSessionsAsync(RolloutSessionStatus? status = null, CancellationToken cancellationToken = default)
     {
         var query = _context.RolloutSessions.AsQueryable();
 
@@ -40,10 +40,10 @@ public class RolloutRepository : IRolloutRepository
             .Include(s => s.Days)
                 .ThenInclude(d => d.Workplaces)
             .OrderByDescending(s => s.PlannedStartDate)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<RolloutSession?> GetSessionByIdAsync(int id, bool includeDays = false, bool includeWorkplaces = false)
+    public async Task<RolloutSession?> GetSessionByIdAsync(int id, bool includeDays = false, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
     {
         var query = _context.RolloutSessions.AsQueryable();
 
@@ -57,47 +57,47 @@ public class RolloutRepository : IRolloutRepository
             }
         }
 
-        return await query.FirstOrDefaultAsync(s => s.Id == id);
+        return await query.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
-    public async Task<RolloutSession> CreateSessionAsync(RolloutSession session)
+    public async Task<RolloutSession> CreateSessionAsync(RolloutSession session, CancellationToken cancellationToken = default)
     {
         session.CreatedAt = DateTime.UtcNow;
         session.UpdatedAt = DateTime.UtcNow;
 
         _context.RolloutSessions.Add(session);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return session;
     }
 
-    public async Task<RolloutSession> UpdateSessionAsync(RolloutSession session)
+    public async Task<RolloutSession> UpdateSessionAsync(RolloutSession session, CancellationToken cancellationToken = default)
     {
         session.UpdatedAt = DateTime.UtcNow;
 
         _context.RolloutSessions.Update(session);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return session;
     }
 
-    public async Task<bool> DeleteSessionAsync(int id)
+    public async Task<bool> DeleteSessionAsync(int id, CancellationToken cancellationToken = default)
     {
-        var session = await _context.RolloutSessions.FindAsync(id);
+        var session = await _context.RolloutSessions.FindAsync(new object[] { id }, cancellationToken);
         if (session == null)
         {
             return false;
         }
 
         _context.RolloutSessions.Remove(session);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 
     // ===== RolloutDay Operations =====
 
-    public async Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false)
+    public async Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
     {
         var query = _context.RolloutDays
             .Where(d => d.RolloutSessionId == sessionId);
@@ -110,10 +110,10 @@ public class RolloutRepository : IRolloutRepository
         return await query
             .OrderBy(d => d.Date)
             .ThenBy(d => d.DayNumber)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false)
+    public async Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
     {
         var query = _context.RolloutDays.AsQueryable();
 
@@ -122,84 +122,84 @@ public class RolloutRepository : IRolloutRepository
             query = query.Include(d => d.Workplaces).ThenInclude(w => w.Service);
         }
 
-        return await query.FirstOrDefaultAsync(d => d.Id == id);
+        return await query.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
     }
 
-    public async Task<RolloutDay> CreateDayAsync(RolloutDay day)
+    public async Task<RolloutDay> CreateDayAsync(RolloutDay day, CancellationToken cancellationToken = default)
     {
         day.CreatedAt = DateTime.UtcNow;
         day.UpdatedAt = DateTime.UtcNow;
 
         _context.RolloutDays.Add(day);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return day;
     }
 
-    public async Task<RolloutDay> UpdateDayAsync(RolloutDay day)
+    public async Task<RolloutDay> UpdateDayAsync(RolloutDay day, CancellationToken cancellationToken = default)
     {
         day.UpdatedAt = DateTime.UtcNow;
 
         _context.RolloutDays.Update(day);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return day;
     }
 
-    public async Task<bool> DeleteDayAsync(int id)
+    public async Task<bool> DeleteDayAsync(int id, CancellationToken cancellationToken = default)
     {
-        var day = await _context.RolloutDays.FindAsync(id);
+        var day = await _context.RolloutDays.FindAsync(new object[] { id }, cancellationToken);
         if (day == null)
         {
             return false;
         }
 
         _context.RolloutDays.Remove(day);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 
     // ===== RolloutWorkplace Operations =====
 
-    public async Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByDayIdAsync(int dayId)
+    public async Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByDayIdAsync(int dayId, CancellationToken cancellationToken = default)
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
             .Where(w => w.RolloutDayId == dayId)
             .OrderBy(w => w.Status)
             .ThenBy(w => w.UserName)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByStatusAsync(int dayId, RolloutWorkplaceStatus status)
+    public async Task<IEnumerable<RolloutWorkplace>> GetWorkplacesByStatusAsync(int dayId, RolloutWorkplaceStatus status, CancellationToken cancellationToken = default)
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
             .Where(w => w.RolloutDayId == dayId && w.Status == status)
             .OrderBy(w => w.UserName)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<RolloutWorkplace?> GetWorkplaceByIdAsync(int id)
+    public async Task<RolloutWorkplace?> GetWorkplaceByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
             .Include(w => w.RolloutDay)
                 .ThenInclude(d => d.RolloutSession)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
     }
 
-    public async Task<RolloutWorkplace> CreateWorkplaceAsync(RolloutWorkplace workplace)
+    public async Task<RolloutWorkplace> CreateWorkplaceAsync(RolloutWorkplace workplace, CancellationToken cancellationToken = default)
     {
         workplace.CreatedAt = DateTime.UtcNow;
         workplace.UpdatedAt = DateTime.UtcNow;
 
         // Process asset plans and create assets if needed
-        await ProcessAssetPlansAsync(workplace);
+        await ProcessAssetPlansAsync(workplace, cancellationToken);
 
         _context.RolloutWorkplaces.Add(workplace);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         // Update day totals
         await UpdateDayTotalsAsync(workplace.RolloutDayId);
@@ -207,15 +207,15 @@ public class RolloutRepository : IRolloutRepository
         return workplace;
     }
 
-    public async Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace)
+    public async Task<RolloutWorkplace> UpdateWorkplaceAsync(RolloutWorkplace workplace, CancellationToken cancellationToken = default)
     {
         workplace.UpdatedAt = DateTime.UtcNow;
 
         // Process asset plans and create assets if needed
-        await ProcessAssetPlansAsync(workplace);
+        await ProcessAssetPlansAsync(workplace, cancellationToken);
 
         _context.RolloutWorkplaces.Update(workplace);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         // Update day totals
         await UpdateDayTotalsAsync(workplace.RolloutDayId);
@@ -223,9 +223,9 @@ public class RolloutRepository : IRolloutRepository
         return workplace;
     }
 
-    public async Task<bool> DeleteWorkplaceAsync(int id)
+    public async Task<bool> DeleteWorkplaceAsync(int id, CancellationToken cancellationToken = default)
     {
-        var workplace = await _context.RolloutWorkplaces.FindAsync(id);
+        var workplace = await _context.RolloutWorkplaces.FindAsync(new object[] { id }, cancellationToken);
         if (workplace == null)
         {
             return false;
@@ -234,7 +234,7 @@ public class RolloutRepository : IRolloutRepository
         var dayId = workplace.RolloutDayId;
 
         _context.RolloutWorkplaces.Remove(workplace);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
 
         // Update day totals
         await UpdateDayTotalsAsync(dayId);
@@ -331,7 +331,7 @@ public class RolloutRepository : IRolloutRepository
     /// <summary>
     /// Processes asset plans and creates assets for plans marked as createNew with serial numbers
     /// </summary>
-    private async Task ProcessAssetPlansAsync(RolloutWorkplace workplace)
+    private async Task ProcessAssetPlansAsync(RolloutWorkplace workplace, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(workplace.AssetPlansJson))
         {
@@ -369,7 +369,7 @@ public class RolloutRepository : IRolloutRepository
             if (hasSerial)
             {
                 var existingAsset = await _context.Assets
-                    .FirstOrDefaultAsync(a => a.SerialNumber == plan.Metadata!["serialNumber"]);
+                    .FirstOrDefaultAsync(a => a.SerialNumber == plan.Metadata!["serialNumber"], cancellationToken);
                 if (existingAsset != null)
                 {
                     // Link to existing asset instead of creating a duplicate
@@ -383,7 +383,7 @@ public class RolloutRepository : IRolloutRepository
             }
 
             // Determine asset type based on equipment type
-            var assetType = await GetAssetTypeByEquipmentTypeAsync(plan.EquipmentType);
+            var assetType = await GetAssetTypeByEquipmentTypeAsync(plan.EquipmentType, cancellationToken);
             if (assetType == null)
             {
                 continue; // Skip if asset type not found
@@ -412,7 +412,7 @@ public class RolloutRepository : IRolloutRepository
             // Generate AssetCode using centralized service (4-char brand code, proper numbering)
             // Year is calculated from current date (Nov/Dec uses next year)
             asset.AssetCode = await _assetCodeGenerator.GenerateCodeAsync(
-                assetType.Id, plan.Brand, DateTime.UtcNow, false);
+                assetType.Id, plan.Brand, DateTime.UtcNow, false, cancellationToken);
 
             // Create the asset
             var createdAsset = await _assetRepository.CreateAsync(asset);
@@ -446,7 +446,7 @@ public class RolloutRepository : IRolloutRepository
     /// <summary>
     /// Gets the AssetType entity for a given equipment type string
     /// </summary>
-    private async Task<AssetType?> GetAssetTypeByEquipmentTypeAsync(string equipmentType)
+    private async Task<AssetType?> GetAssetTypeByEquipmentTypeAsync(string equipmentType, CancellationToken cancellationToken = default)
     {
         // Map equipment type to asset type code
         var assetTypeCode = equipmentType.ToLower() switch
@@ -467,7 +467,7 @@ public class RolloutRepository : IRolloutRepository
 
         return await _context.AssetTypes
             .Include(at => at.Category)
-            .FirstOrDefaultAsync(at => at.Code == assetTypeCode && at.IsActive);
+            .FirstOrDefaultAsync(at => at.Code == assetTypeCode && at.IsActive, cancellationToken);
     }
 
     /// <summary>

@@ -374,3 +374,94 @@ export interface RolloutWorkplaceAssetSummary {
   completedBy: string;
   completedAt?: string;
 }
+
+// ===== ASSIGNMENT TYPES =====
+
+/**
+ * Asset assignment for a workplace
+ */
+export interface AssetAssignment {
+  id: number;
+  workplaceId: number;
+  assetId?: number;
+  assetCode?: string;
+  assetName?: string;
+  equipmentType: EquipmentType;
+  assignmentType: 'new' | 'existing' | 'return';
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  templateId?: number;
+  templateName?: string;
+  status: 'pending' | 'assigned' | 'installed' | 'returned' | 'skipped';
+  assignedAt?: string;
+  assignedBy?: string;
+  installedAt?: string;
+  installedBy?: string;
+  notes?: string;
+}
+
+/**
+ * Create a new asset assignment
+ */
+export interface CreateAssetAssignment {
+  workplaceId: number;
+  equipmentType: EquipmentType;
+  assignmentType: 'new' | 'existing' | 'return';
+  assetId?: number;
+  templateId?: number;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  notes?: string;
+}
+
+/**
+ * Update an existing asset assignment
+ */
+export interface UpdateAssetAssignment {
+  assetId?: number;
+  serialNumber?: string;
+  brand?: string;
+  model?: string;
+  status?: 'pending' | 'assigned' | 'installed' | 'returned' | 'skipped';
+  notes?: string;
+}
+
+/**
+ * Workplace assignments summary
+ */
+export interface WorkplaceAssignmentsSummary {
+  workplaceId: number;
+  userName: string;
+  totalAssignments: number;
+  pendingAssignments: number;
+  completedAssignments: number;
+  assignments: AssetAssignment[];
+}
+
+// ===== VIEW PREFERENCE TYPES =====
+
+/**
+ * Planning view mode preference
+ */
+export type PlanningViewMode = 'calendar' | 'list';
+
+/**
+ * Planning list view filter options
+ */
+export interface PlanningListFilters {
+  status?: RolloutDayStatus | 'all';
+  serviceId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  searchQuery?: string;
+}
+
+/**
+ * Planning list sort configuration
+ */
+export interface PlanningListSort {
+  field: 'date' | 'name' | 'workplaces' | 'status' | 'completion';
+  direction: 'asc' | 'desc';
+}

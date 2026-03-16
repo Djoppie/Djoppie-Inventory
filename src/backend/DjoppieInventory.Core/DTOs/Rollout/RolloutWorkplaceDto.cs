@@ -1,3 +1,5 @@
+using DjoppieInventory.Core.DTOs;
+
 namespace DjoppieInventory.Core.DTOs.Rollout;
 
 /// <summary>
@@ -9,6 +11,10 @@ public class RolloutWorkplaceDto
     public int RolloutDayId { get; set; }
     public string UserName { get; set; } = string.Empty;
     public string? UserEmail { get; set; }
+    /// <summary>
+    /// Microsoft Entra ID (GUID) of the user
+    /// </summary>
+    public string? UserEntraId { get; set; }
     public string? Location { get; set; }
     /// <summary>
     /// Custom scheduled date for this workplace. When null, uses the date from RolloutDay.
@@ -16,8 +22,23 @@ public class RolloutWorkplaceDto
     public DateTime? ScheduledDate { get; set; }
     public int? ServiceId { get; set; }
     public string? ServiceName { get; set; }
+    /// <summary>
+    /// Building/location ID for this workplace
+    /// </summary>
+    public int? BuildingId { get; set; }
+    /// <summary>
+    /// Building name for this workplace
+    /// </summary>
+    public string? BuildingName { get; set; }
     public bool IsLaptopSetup { get; set; }
+    /// <summary>
+    /// Legacy JSON-based asset plans (for backwards compatibility)
+    /// </summary>
     public List<AssetPlanDto> AssetPlans { get; set; } = new();
+    /// <summary>
+    /// New relational asset assignments (replaces AssetPlans)
+    /// </summary>
+    public List<WorkplaceAssetAssignmentDto>? AssetAssignments { get; set; }
     public string Status { get; set; } = string.Empty;
     public int TotalItems { get; set; }
     public int CompletedItems { get; set; }

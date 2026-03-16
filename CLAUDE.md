@@ -434,17 +434,35 @@ The pipeline includes:
 
 ## Rollout Workflow Feature
 
-The rollout feature manages IT device deployments to workplaces. It's a major subsystem with its own architecture.
+The rollout feature manages IT device deployments to workplaces for employee on/offboarding. It's a major subsystem with its own architecture.
+
+### Primary Use Case
+
+- **Onboarding**: New employee receives laptop + docking + monitors + peripherals at their workplace
+- **Offboarding**: Employee leaves, equipment returns to stock or is reassigned
+- **Bulk Import**: Create workplaces from Entra mail groups (MG-*) for team onboarding
 
 ### Workflow Phases
 
 1. **Planning** (RolloutPlannerPage): Create sessions → Add days → Configure workplaces
-2. **Configuration** (RolloutWorkplaceDialog): Three asset regions per workplace:
-   - **Update Assets**: Assign existing assets (status=Nieuw) to workplace
-   - **Old Devices**: Register devices being returned (InGebruik→UitDienst)
-   - **New Devices**: Create new assets from templates (Nieuw→InGebruik)
+   - Dual-view scheduling: Calendar-based AND list-based views
+   - Bulk import from Entra mail groups
+2. **Configuration** (RolloutWorkplaceDialog): Asset assignment per workplace:
+   - **User-assigned assets**: Laptops assigned to users (status=Nieuw→InGebruik)
+   - **Workplace-fixed assets**: Docking, monitors, keyboard, mouse assigned to workplace location
+   - **Old devices**: Register devices being returned (InGebruik→UitDienst)
 3. **Execution** (RolloutExecutionPage): Scan serials, track progress, complete workplaces
-4. **Reporting** (RolloutReportPage): View statistics and export data
+4. **Reporting** (RolloutReportPage): Professional asset movement reports with export
+
+### Organization Hierarchy
+
+```
+Sector (MG-SECTOR-*) → Service (MG-*) → Workplace
+   ↓                      ↓
+Sector Manager      Teamcoördinator → Employees
+```
+
+Auto-synced from Microsoft Entra mail groups.
 
 ### Asset Status Transitions (Atomic)
 
@@ -457,15 +475,53 @@ Completion Transaction:
 
 ### Key Files
 
-- **Hook**: `src/frontend/src/hooks/useRollout.ts` - React Query mutations/queries
-- **API**: `src/frontend/src/api/rollout.api.ts` - Axios client
-- **Controller**: `src/backend/.../Controllers/RolloutsController.cs` (70KB)
-- **Entities**: `RolloutSession.cs`, `RolloutDay.cs`, `RolloutWorkplace.cs`
-- **Documentation**: `docs/ROLLOUT-ARCHITECTURE.md`, `docs/ROLLOUT-WORKFLOW-GUIDE.md`
+**Backend Controllers** (split from original 70KB RolloutsController):
+- `Controllers/Rollout/RolloutSessionsController.cs` - Session CRUD, start/complete
+- `Controllers/Rollout/RolloutDaysController.cs` - Day management, service scheduling
+- `Controllers/Rollout/RolloutWorkplacesController.cs` - Workplace CRUD, asset assignments
+- `Controllers/Rollout/RolloutReportsController.cs` - Progress reports, asset movement exports
 
-### AssetPlansJson Structure
+**Backend Services**:
+- `Services/OrganizationSyncService.cs` - Entra mail group sync
+- `Services/AssetMovementService.cs` - Asset deployment/decommission tracking
+- `Services/WorkplaceAssetAssignmentService.cs` - Workplace asset assignment management
 
-Workplaces store asset plans as JSON in `RolloutWorkplace.AssetPlansJson`:
+**Frontend Hooks**:
+- `hooks/useRollout.ts` - Core rollout mutations/queries
+- `hooks/rollout/useRolloutReports.ts` - Report queries and exports
+- `hooks/rollout/useAssetAssignments.ts` - Assignment management
+- `hooks/usePlanningViewMode.ts` - Calendar/list view preference
+
+**Frontend Components**:
+- `components/rollout/planning/PlanningViewToggle.tsx` - View mode toggle
+- `components/rollout/planning/PlanningListView.tsx` - List view with sorting/filtering
+- `components/rollout/reporting/AssetMovementTable.tsx` - Movement audit table
+- `components/rollout/reporting/ProgressDashboard.tsx` - Session progress visualization
+
+**Entities**:
+- `RolloutSession.cs`, `RolloutDay.cs`, `RolloutWorkplace.cs`
+- `WorkplaceAssetAssignment.cs` - Relational asset assignments (replaces JSON)
+- `RolloutAssetMovement.cs` - Asset movement audit trail
+- `RolloutDayService.cs` - Day-service junction table
+
+**Documentation**: `docs/ROLLOUT-ARCHITECTURE.md`, `docs/ROLLOUT-WORKFLOW-GUIDE.md`
+
+### Database Schema
+
+**WorkplaceAssetAssignment** (replaces AssetPlansJson for new features):
+- Links workplace to asset type, new asset, old asset, and template
+- Tracks assignment category (UserAssigned, WorkplaceFixed)
+- Tracks source type (ExistingInventory, NewFromTemplate, CreateOnSite)
+- Tracks status (Pending, Installed, Skipped, Failed)
+
+**RolloutAssetMovement** (audit trail):
+- Records all asset status transitions during rollout execution
+- Captures previous/new status, owner, service, location, building
+- Links to session and workplace for reporting
+
+### AssetPlansJson Structure (Legacy)
+
+Existing workplaces may still use JSON in `RolloutWorkplace.AssetPlansJson`:
 
 ```json
 [
