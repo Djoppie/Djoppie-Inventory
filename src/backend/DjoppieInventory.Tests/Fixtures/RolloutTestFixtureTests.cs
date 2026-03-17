@@ -77,7 +77,7 @@ public class RolloutTestFixtureTests : IDisposable
 
         // Assert
         assets.Should().HaveCount(10);
-        assets.Should().OnlyContain(a => a.Status == Core.Entities.Enums.AssetStatus.Nieuw);
+        assets.Should().OnlyContain(a => a.Status == Core.Entities.AssetStatus.Nieuw);
         assets.Should().OnlyContain(a => a.AssetTypeId == laptopType.Id);
     }
 

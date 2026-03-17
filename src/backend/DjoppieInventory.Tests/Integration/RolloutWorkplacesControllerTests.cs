@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using DjoppieInventory.Core.DTOs;
+using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
+using DjoppieInventory.Infrastructure.Data;
 using DjoppieInventory.Tests.Helpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -52,7 +54,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
         var workplace = new RolloutWorkplace
@@ -112,7 +114,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
 
@@ -120,7 +122,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         context.RolloutDays.Add(day);
         await context.SaveChangesAsync();
 
-        var request = new CreateRolloutWorkplaceRequest
+        var request = new CreateRolloutWorkplaceDto
         {
             RolloutDayId = day.Id,
             UserName = "Jane Doe",
@@ -149,7 +151,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
     public async Task CreateWorkplace_InvalidRequest_ReturnsBadRequest()
     {
         // Arrange
-        var request = new CreateRolloutWorkplaceRequest
+        var request = new CreateRolloutWorkplaceDto
         {
             RolloutDayId = 99999, // Non-existent day
             UserName = "Test User"
@@ -182,7 +184,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
         var workplace = new RolloutWorkplace
@@ -199,7 +201,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
-        var request = new UpdateRolloutWorkplaceRequest
+        var request = new UpdateRolloutWorkplaceDto
         {
             UserName = "Updated Name",
             UserEmail = "updated@example.com",
@@ -238,7 +240,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
         var workplace = new RolloutWorkplace
@@ -286,7 +288,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
         var workplace = new RolloutWorkplace
@@ -308,8 +310,8 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
             {
                 RolloutWorkplaceId = workplace.Id,
                 AssetTypeId = assetType.Id,
-                AssignmentCategory = AssignmentCategory.NewDevice,
-                SourceType = AssetSourceType.NewPurchase,
+                AssignmentCategory = AssignmentCategory.UserAssigned,
+                SourceType = AssetSourceType.NewFromTemplate,
                 Status = AssetAssignmentStatus.Pending,
                 Position = 0
             },
@@ -317,8 +319,8 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
             {
                 RolloutWorkplaceId = workplace.Id,
                 AssetTypeId = assetType.Id,
-                AssignmentCategory = AssignmentCategory.OldDevice,
-                SourceType = AssetSourceType.UserOwned,
+                AssignmentCategory = AssignmentCategory.WorkplaceFixed,
+                SourceType = AssetSourceType.CreateOnSite,
                 Status = AssetAssignmentStatus.Pending,
                 Position = 1
             }
@@ -357,7 +359,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
         var workplace = new RolloutWorkplace
@@ -434,7 +436,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         var day = new RolloutDay
         {
             RolloutSession = session,
-            DayDate = DateTime.Today,
+            Date = DateTime.Today,
             DayNumber = 1
         };
         var workplace = new RolloutWorkplace
@@ -444,7 +446,7 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
             ServiceId = 1,
             TotalItems = 2,
             CompletedItems = 0,
-            Status = WorkplaceStatus.InProgress
+            Status = RolloutWorkplaceStatus.InProgress
         };
 
         context.AssetTypes.Add(assetType);
@@ -476,13 +478,13 @@ public class RolloutWorkplacesControllerTests : IClassFixture<WebApplicationFact
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var updatedWorkplace = await context.RolloutWorkplaces
-            .Include(w => w.WorkplaceAssetAssignments)
+            .Include(w => w.AssetAssignments)
             .FirstOrDefaultAsync(w => w.Id == workplace.Id);
 
         updatedWorkplace.Should().NotBeNull();
-        updatedWorkplace!.Status.Should().Be(WorkplaceStatus.Completed);
+        updatedWorkplace!.Status.Should().Be(RolloutWorkplaceStatus.Completed);
         updatedWorkplace.CompletedAt.Should().NotBeNull();
-        updatedWorkplace.WorkplaceAssetAssignments.Should().OnlyContain(a =>
+        updatedWorkplace.AssetAssignments.Should().OnlyContain(a =>
             a.Status == AssetAssignmentStatus.Installed);
     }
 

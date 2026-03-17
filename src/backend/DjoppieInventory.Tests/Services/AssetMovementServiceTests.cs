@@ -38,46 +38,49 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var serviceEntity = new Service { Id = 1, Name = "IT Department" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        var serviceEntity = new Service { Name = "IT Department", Code = "IT" };
+        context.AssetTypes.Add(assetType);
+        context.Services.Add(serviceEntity);
+        await context.SaveChangesAsync();
+
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-24-DELL-00001",
             AssetName = "Dell Latitude",
             Status = AssetStatus.Nieuw,
             SerialNumber = "ABC123",
-            AssetTypeId = 1,
+            AssetTypeId = assetType.Id,
             ServiceId = null,
             Owner = null
         };
+        context.Assets.Add(asset);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "John Doe",
-            ServiceId = 1,
+            ServiceId = serviceEntity.Id,
             Location = "Office 101"
         };
-
-        context.AssetTypes.Add(assetType);
-        context.Services.Add(serviceEntity);
-        context.Assets.Add(asset);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new AssetDeploymentRequest
         {
-            RolloutSessionId = 1,
-            RolloutWorkplaceId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            RolloutWorkplaceId = workplace.Id,
+            AssetId = asset.Id,
             NewOwner = "John Doe",
-            NewServiceId = 1,
+            NewServiceId = serviceEntity.Id,
             NewLocation = "Office 101",
             Notes = "Deployed during rollout"
         };
@@ -94,19 +97,19 @@ public class AssetMovementServiceTests : IDisposable
         result.PreviousStatus.Should().Be(AssetStatus.Nieuw);
         result.NewStatus.Should().Be(AssetStatus.InGebruik);
         result.NewOwner.Should().Be("John Doe");
-        result.NewServiceId.Should().Be(1);
+        result.NewServiceId.Should().Be(serviceEntity.Id);
         result.NewLocation.Should().Be("Office 101");
         result.PerformedBy.Should().Be(_performedBy);
         result.PerformedByEmail.Should().Be(_performedByEmail);
 
         // Verify asset was updated
-        var updatedAsset = await context.Assets.FindAsync(1);
+        var updatedAsset = await context.Assets.FindAsync(asset.Id);
         updatedAsset.Should().NotBeNull();
         updatedAsset!.Status.Should().Be(AssetStatus.InGebruik);
         updatedAsset.Owner.Should().Be("John Doe");
-        updatedAsset.ServiceId.Should().Be(1);
+        updatedAsset.ServiceId.Should().Be(serviceEntity.Id);
         updatedAsset.InstallationLocation.Should().Be("Office 101");
-        updatedAsset.LastRolloutSessionId.Should().Be(1);
+        updatedAsset.LastRolloutSessionId.Should().Be(session.Id);
         updatedAsset.InstallationDate.Should().NotBeNull();
     }
 
@@ -139,43 +142,53 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        var serviceEntity = new Service { Name = "IT Department", Code = "IT" };
+        context.AssetTypes.Add(assetType);
+        context.Services.Add(serviceEntity);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "John Doe",
-            ServiceId = 1,
+            ServiceId = serviceEntity.Id,
             Location = "Office 101"
         };
-
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
+        var assets = new List<Asset>();
         for (int i = 1; i <= 5; i++)
         {
-            context.Assets.Add(new Asset
+            var asset = new Asset
             {
-                Id = i,
                 AssetCode = $"LAP-24-DELL-{i:D5}",
                 AssetName = $"Dell Laptop {i}",
                 Status = AssetStatus.Nieuw,
                 SerialNumber = $"SN{i}",
-                AssetTypeId = 1
-            });
+                AssetTypeId = assetType.Id
+            };
+            assets.Add(asset);
+            context.Assets.Add(asset);
         }
-
         await context.SaveChangesAsync();
 
-        var requests = Enumerable.Range(1, 5).Select(i => new AssetDeploymentRequest
+        var requests = assets.Select(a => new AssetDeploymentRequest
         {
-            RolloutSessionId = 1,
-            RolloutWorkplaceId = 1,
-            AssetId = i,
+            RolloutSessionId = session.Id,
+            RolloutWorkplaceId = workplace.Id,
+            AssetId = a.Id,
             NewOwner = "John Doe",
-            NewServiceId = 1,
+            NewServiceId = serviceEntity.Id,
             NewLocation = "Office 101"
         });
 
@@ -203,41 +216,44 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var serviceEntity = new Service { Id = 1, Name = "IT Department" };
+        var serviceEntity = new Service { Name = "IT Department", Code = "IT" };
+        context.Services.Add(serviceEntity);
+        await context.SaveChangesAsync();
+
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-24-DELL-00001",
             AssetName = "Dell Latitude",
             Status = AssetStatus.InGebruik,
             SerialNumber = "ABC123",
             Owner = "John Doe",
-            ServiceId = 1,
+            ServiceId = serviceEntity.Id,
             InstallationLocation = "Office 101"
         };
+        context.Assets.Add(asset);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "John Doe",
-            ServiceId = 1
+            ServiceId = serviceEntity.Id
         };
-
-        context.Services.Add(serviceEntity);
-        context.Assets.Add(asset);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new AssetDecommissionRequest
         {
-            RolloutSessionId = 1,
-            RolloutWorkplaceId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            RolloutWorkplaceId = workplace.Id,
+            AssetId = asset.Id,
             TargetStatus = AssetStatus.UitDienst,
             Notes = "Device replaced"
         };
@@ -257,7 +273,7 @@ public class AssetMovementServiceTests : IDisposable
         result.NewOwner.Should().BeNull();
 
         // Verify asset was updated
-        var updatedAsset = await context.Assets.FindAsync(1);
+        var updatedAsset = await context.Assets.FindAsync(asset.Id);
         updatedAsset.Should().NotBeNull();
         updatedAsset!.Status.Should().Be(AssetStatus.UitDienst);
         updatedAsset.Owner.Should().BeNull();
@@ -275,7 +291,6 @@ public class AssetMovementServiceTests : IDisposable
 
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-24-DELL-00001",
             Status = AssetStatus.InGebruik,
             SerialNumber = "ABC123"
@@ -288,7 +303,7 @@ public class AssetMovementServiceTests : IDisposable
         {
             RolloutSessionId = 1,
             RolloutWorkplaceId = 1,
-            AssetId = 1,
+            AssetId = asset.Id,
             TargetStatus = AssetStatus.Stock // Invalid target status
         };
 
@@ -310,27 +325,29 @@ public class AssetMovementServiceTests : IDisposable
 
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-24-DELL-00001",
             Status = AssetStatus.InGebruik,
             SerialNumber = "ABC123"
         };
-
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
-
         context.Assets.Add(asset);
+
+        var session = new RolloutSession { SessionName = "Test Session" };
         context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
         context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new AssetDecommissionRequest
         {
-            RolloutSessionId = 1,
-            RolloutWorkplaceId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            RolloutWorkplaceId = workplace.Id,
+            AssetId = asset.Id,
             TargetStatus = targetStatus
         };
 
@@ -356,37 +373,41 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var service1 = new Service { Id = 1, Name = "IT Department" };
-        var service2 = new Service { Id = 2, Name = "Finance Department" };
+        var service1 = new Service { Name = "IT Department", Code = "IT" };
+        var service2 = new Service { Name = "Finance Department", Code = "FIN" };
+        context.Services.AddRange(service1, service2);
+        await context.SaveChangesAsync();
+
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-24-DELL-00001",
             Status = AssetStatus.InGebruik,
             SerialNumber = "ABC123",
             Owner = "John Doe",
-            ServiceId = 1,
+            ServiceId = service1.Id,
             InstallationLocation = "Office 101"
         };
-
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Jane Doe" };
-
-        context.Services.AddRange(service1, service2);
         context.Assets.Add(asset);
+
+        var session = new RolloutSession { SessionName = "Test Session" };
         context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
         context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Jane Doe" };
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new AssetTransferRequest
         {
-            RolloutSessionId = 1,
-            RolloutWorkplaceId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            RolloutWorkplaceId = workplace.Id,
+            AssetId = asset.Id,
             NewOwner = "Jane Doe",
-            NewServiceId = 2,
+            NewServiceId = service2.Id,
             NewLocation = "Office 202",
             Notes = "Transfer to Finance"
         };
@@ -402,16 +423,16 @@ public class AssetMovementServiceTests : IDisposable
         result.MovementType.Should().Be(MovementType.Transferred);
         result.PreviousOwner.Should().Be("John Doe");
         result.NewOwner.Should().Be("Jane Doe");
-        result.PreviousServiceId.Should().Be(1);
-        result.NewServiceId.Should().Be(2);
+        result.PreviousServiceId.Should().Be(service1.Id);
+        result.NewServiceId.Should().Be(service2.Id);
         result.PreviousLocation.Should().Be("Office 101");
         result.NewLocation.Should().Be("Office 202");
 
         // Verify asset was updated
-        var updatedAsset = await context.Assets.FindAsync(1);
+        var updatedAsset = await context.Assets.FindAsync(asset.Id);
         updatedAsset.Should().NotBeNull();
         updatedAsset!.Owner.Should().Be("Jane Doe");
-        updatedAsset.ServiceId.Should().Be(2);
+        updatedAsset.ServiceId.Should().Be(service2.Id);
         updatedAsset.InstallationLocation.Should().Be("Office 202");
     }
 
@@ -422,32 +443,38 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
+        var serviceEntity = new Service { Name = "IT Department", Code = "IT" };
+        context.Services.Add(serviceEntity);
+        await context.SaveChangesAsync();
+
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-24-DELL-00001",
             Status = AssetStatus.InGebruik,
             SerialNumber = "ABC123",
             Owner = "John Doe",
-            ServiceId = 1,
+            ServiceId = serviceEntity.Id,
             InstallationLocation = "Office 101"
         };
-
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
-
         context.Assets.Add(asset);
+
+        var session = new RolloutSession { SessionName = "Test Session" };
         context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
         context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new AssetTransferRequest
         {
-            RolloutSessionId = 1,
-            RolloutWorkplaceId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            RolloutWorkplaceId = workplace.Id,
+            AssetId = asset.Id,
             NewOwner = "Jane Doe",
             // NewServiceId and NewLocation are null - should keep existing values
         };
@@ -459,9 +486,9 @@ public class AssetMovementServiceTests : IDisposable
             _performedByEmail);
 
         // Assert
-        var updatedAsset = await context.Assets.FindAsync(1);
+        var updatedAsset = await context.Assets.FindAsync(asset.Id);
         updatedAsset!.Owner.Should().Be("Jane Doe");
-        updatedAsset.ServiceId.Should().Be(1); // Unchanged
+        updatedAsset.ServiceId.Should().Be(serviceEntity.Id); // Unchanged
         updatedAsset.InstallationLocation.Should().Be("Office 101"); // Unchanged
     }
 
@@ -476,18 +503,20 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var asset1 = new Asset { Id = 1, AssetCode = "LAP-001", SerialNumber = "SN1" };
-        var asset2 = new Asset { Id = 2, AssetCode = "LAP-002", SerialNumber = "SN2" };
-
+        var session = new RolloutSession { SessionName = "Test Session" };
         context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var asset1 = new Asset { AssetCode = "LAP-001", SerialNumber = "SN1" };
+        var asset2 = new Asset { AssetCode = "LAP-002", SerialNumber = "SN2" };
         context.Assets.AddRange(asset1, asset2);
+        await context.SaveChangesAsync();
+
         context.RolloutAssetMovements.AddRange(
             new RolloutAssetMovement
             {
-                Id = 1,
-                RolloutSessionId = 1,
-                AssetId = 1,
+                RolloutSessionId = session.Id,
+                AssetId = asset1.Id,
                 MovementType = MovementType.Deployed,
                 PreviousStatus = AssetStatus.Nieuw,
                 NewStatus = AssetStatus.InGebruik,
@@ -497,9 +526,8 @@ public class AssetMovementServiceTests : IDisposable
             },
             new RolloutAssetMovement
             {
-                Id = 2,
-                RolloutSessionId = 1,
-                AssetId = 2,
+                RolloutSessionId = session.Id,
+                AssetId = asset2.Id,
                 MovementType = MovementType.Deployed,
                 PreviousStatus = AssetStatus.Nieuw,
                 NewStatus = AssetStatus.InGebruik,
@@ -511,7 +539,7 @@ public class AssetMovementServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         // Act
-        var results = await service.GetMovementsBySessionAsync(1);
+        var results = await service.GetMovementsBySessionAsync(session.Id);
 
         // Assert
         results.Should().HaveCount(2);
@@ -525,12 +553,12 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
+        var session = new RolloutSession { SessionName = "Test Session" };
         context.RolloutSessions.Add(session);
         await context.SaveChangesAsync();
 
         // Act
-        var results = await service.GetMovementsBySessionAsync(1);
+        var results = await service.GetMovementsBySessionAsync(session.Id);
 
         // Assert
         results.Should().BeEmpty();
@@ -547,41 +575,42 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var serviceEntity = new Service { Id = 1, Name = "IT Department" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        var serviceEntity = new Service { Name = "IT Department", Code = "IT" };
+        context.AssetTypes.Add(assetType);
+        context.Services.Add(serviceEntity);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
 
         var asset1 = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-001",
             SerialNumber = "SN1",
-            AssetTypeId = 1
+            AssetTypeId = assetType.Id
         };
-
-        context.RolloutSessions.Add(session);
-        context.AssetTypes.Add(assetType);
-        context.Services.Add(serviceEntity);
         context.Assets.Add(asset1);
+        await context.SaveChangesAsync();
+
         context.RolloutAssetMovements.AddRange(
             new RolloutAssetMovement
             {
-                Id = 1,
-                RolloutSessionId = 1,
-                AssetId = 1,
+                RolloutSessionId = session.Id,
+                AssetId = asset1.Id,
                 MovementType = MovementType.Deployed,
                 PreviousStatus = AssetStatus.Nieuw,
                 NewStatus = AssetStatus.InGebruik,
-                NewServiceId = 1,
+                NewServiceId = serviceEntity.Id,
                 PerformedBy = "Tech1",
                 PerformedByEmail = "tech1@example.com",
                 PerformedAt = DateTime.UtcNow
             },
             new RolloutAssetMovement
             {
-                Id = 2,
-                RolloutSessionId = 1,
-                AssetId = 1,
+                RolloutSessionId = session.Id,
+                AssetId = asset1.Id,
                 MovementType = MovementType.Decommissioned,
                 PreviousStatus = AssetStatus.InGebruik,
                 NewStatus = AssetStatus.UitDienst,
@@ -593,11 +622,11 @@ public class AssetMovementServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         // Act
-        var summary = await service.GetMovementSummaryAsync(1);
+        var summary = await service.GetMovementSummaryAsync(session.Id);
 
         // Assert
         summary.Should().NotBeNull();
-        summary.RolloutSessionId.Should().Be(1);
+        summary.RolloutSessionId.Should().Be(session.Id);
         summary.SessionName.Should().Be("Test Session");
         summary.TotalMovements.Should().Be(2);
         summary.Deployments.Should().Be(1);
@@ -632,22 +661,23 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-001",
             AssetName = "Test Laptop",
             SerialNumber = "SN1"
         };
-
-        context.RolloutSessions.Add(session);
         context.Assets.Add(asset);
+        await context.SaveChangesAsync();
+
         context.RolloutAssetMovements.Add(new RolloutAssetMovement
         {
-            Id = 1,
-            RolloutSessionId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            AssetId = asset.Id,
             MovementType = MovementType.Deployed,
             PreviousStatus = AssetStatus.Nieuw,
             NewStatus = AssetStatus.InGebruik,
@@ -659,7 +689,7 @@ public class AssetMovementServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         // Act
-        var csv = await service.ExportToCsvAsync(1);
+        var csv = await service.ExportToCsvAsync(session.Id);
 
         // Assert
         csv.Should().NotBeNullOrEmpty();
@@ -676,22 +706,23 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
         var asset = new Asset
         {
-            Id = 1,
             AssetCode = "LAP-001",
             AssetName = "Test, Laptop with \"quotes\"",
             SerialNumber = "SN1"
         };
-
-        context.RolloutSessions.Add(session);
         context.Assets.Add(asset);
+        await context.SaveChangesAsync();
+
         context.RolloutAssetMovements.Add(new RolloutAssetMovement
         {
-            Id = 1,
-            RolloutSessionId = 1,
-            AssetId = 1,
+            RolloutSessionId = session.Id,
+            AssetId = asset.Id,
             MovementType = MovementType.Deployed,
             PreviousStatus = AssetStatus.Nieuw,
             NewStatus = AssetStatus.InGebruik,
@@ -704,7 +735,7 @@ public class AssetMovementServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         // Act
-        var csv = await service.ExportToCsvAsync(1);
+        var csv = await service.ExportToCsvAsync(session.Id);
 
         // Assert
         csv.Should().Contain("\"Test, Laptop with \"\"quotes\"\"\"");
@@ -722,40 +753,40 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var asset = new Asset { Id = 1, AssetCode = "LAP-001", SerialNumber = "SN1" };
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var asset = new Asset { AssetCode = "LAP-001", SerialNumber = "SN1" };
+        context.Assets.Add(asset);
+        await context.SaveChangesAsync();
 
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 1, 31);
 
-        context.RolloutSessions.Add(session);
-        context.Assets.Add(asset);
-        context.RolloutAssetMovements.AddRange(
-            new RolloutAssetMovement
-            {
-                Id = 1,
-                RolloutSessionId = 1,
-                AssetId = 1,
-                MovementType = MovementType.Deployed,
-                PreviousStatus = AssetStatus.Nieuw,
-                NewStatus = AssetStatus.InGebruik,
-                PerformedBy = _performedBy,
-                PerformedByEmail = _performedByEmail,
-                PerformedAt = new DateTime(2024, 1, 15) // Within range
-            },
-            new RolloutAssetMovement
-            {
-                Id = 2,
-                RolloutSessionId = 1,
-                AssetId = 1,
-                MovementType = MovementType.Deployed,
-                PreviousStatus = AssetStatus.Nieuw,
-                NewStatus = AssetStatus.InGebruik,
-                PerformedBy = _performedBy,
-                PerformedByEmail = _performedByEmail,
-                PerformedAt = new DateTime(2024, 2, 15) // Outside range
-            }
-        );
+        var movement1 = new RolloutAssetMovement
+        {
+            RolloutSessionId = session.Id,
+            AssetId = asset.Id,
+            MovementType = MovementType.Deployed,
+            PreviousStatus = AssetStatus.Nieuw,
+            NewStatus = AssetStatus.InGebruik,
+            PerformedBy = _performedBy,
+            PerformedByEmail = _performedByEmail,
+            PerformedAt = new DateTime(2024, 1, 15) // Within range
+        };
+        var movement2 = new RolloutAssetMovement
+        {
+            RolloutSessionId = session.Id,
+            AssetId = asset.Id,
+            MovementType = MovementType.Deployed,
+            PreviousStatus = AssetStatus.Nieuw,
+            NewStatus = AssetStatus.InGebruik,
+            PerformedBy = _performedBy,
+            PerformedByEmail = _performedByEmail,
+            PerformedAt = new DateTime(2024, 2, 15) // Outside range
+        };
+        context.RolloutAssetMovements.AddRange(movement1, movement2);
         await context.SaveChangesAsync();
 
         // Act
@@ -763,7 +794,7 @@ public class AssetMovementServiceTests : IDisposable
 
         // Assert
         results.Should().HaveCount(1);
-        results.First().Id.Should().Be(1);
+        results.First().Id.Should().Be(movement1.Id);
     }
 
     [Fact]
@@ -773,20 +804,22 @@ public class AssetMovementServiceTests : IDisposable
         await using var context = TestDbContextFactory.CreateInMemoryContext();
         var service = new AssetMovementService(context, _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var asset = new Asset { Id = 1, AssetCode = "LAP-001", SerialNumber = "SN1" };
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var asset = new Asset { AssetCode = "LAP-001", SerialNumber = "SN1" };
+        context.Assets.Add(asset);
+        await context.SaveChangesAsync();
 
         var startDate = new DateTime(2024, 1, 1);
         var endDate = new DateTime(2024, 12, 31);
 
-        context.RolloutSessions.Add(session);
-        context.Assets.Add(asset);
         context.RolloutAssetMovements.AddRange(
             new RolloutAssetMovement
             {
-                Id = 1,
-                RolloutSessionId = 1,
-                AssetId = 1,
+                RolloutSessionId = session.Id,
+                AssetId = asset.Id,
                 MovementType = MovementType.Deployed,
                 PreviousStatus = AssetStatus.Nieuw,
                 NewStatus = AssetStatus.InGebruik,
@@ -796,9 +829,8 @@ public class AssetMovementServiceTests : IDisposable
             },
             new RolloutAssetMovement
             {
-                Id = 2,
-                RolloutSessionId = 1,
-                AssetId = 1,
+                RolloutSessionId = session.Id,
+                AssetId = asset.Id,
                 MovementType = MovementType.Decommissioned,
                 PreviousStatus = AssetStatus.InGebruik,
                 NewStatus = AssetStatus.UitDienst,

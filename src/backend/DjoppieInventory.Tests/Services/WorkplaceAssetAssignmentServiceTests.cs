@@ -47,30 +47,33 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test Session" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test Session" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "John Doe",
-            ServiceId = 1,
             TotalItems = 0
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new CreateWorkplaceAssetAssignmentRequest
         {
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
-            AssignmentCategory = AssignmentCategory.NewDevice,
-            SourceType = AssetSourceType.NewPurchase,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
+            SourceType = AssetSourceType.NewFromTemplate,
             Position = 0,
             SerialNumberRequired = true,
             QRCodeRequired = true
@@ -81,13 +84,13 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.RolloutWorkplaceId.Should().Be(1);
-        result.AssetTypeId.Should().Be(1);
+        result.RolloutWorkplaceId.Should().Be(workplace.Id);
+        result.AssetTypeId.Should().Be(assetType.Id);
         result.AssetTypeName.Should().Be("Laptop");
         result.Status.Should().Be(AssetAssignmentStatus.Pending);
 
         // Verify workplace total items incremented
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.TotalItems.Should().Be(1);
     }
 
@@ -106,8 +109,8 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         {
             RolloutWorkplaceId = 999, // Non-existent
             AssetTypeId = 1,
-            AssignmentCategory = AssignmentCategory.NewDevice,
-            SourceType = AssetSourceType.NewPurchase
+            AssignmentCategory = AssignmentCategory.UserAssigned,
+            SourceType = AssetSourceType.NewFromTemplate
         };
 
         // Act & Assert
@@ -126,21 +129,24 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
-
+        var session = new RolloutSession { SessionName = "Test" };
         context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
         context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         var request = new CreateWorkplaceAssetAssignmentRequest
         {
-            RolloutWorkplaceId = 1,
+            RolloutWorkplaceId = workplace.Id,
             AssetTypeId = 999, // Non-existent
-            AssignmentCategory = AssignmentCategory.NewDevice,
-            SourceType = AssetSourceType.NewPurchase
+            AssignmentCategory = AssignmentCategory.UserAssigned,
+            SourceType = AssetSourceType.NewFromTemplate
         };
 
         // Act & Assert
@@ -163,20 +169,24 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "Test",
             TotalItems = 0
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
@@ -184,34 +194,34 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         {
             new()
             {
-                AssetTypeId = 1,
-                AssignmentCategory = AssignmentCategory.NewDevice,
-                SourceType = AssetSourceType.NewPurchase,
+                AssetTypeId = assetType.Id,
+                AssignmentCategory = AssignmentCategory.UserAssigned,
+                SourceType = AssetSourceType.NewFromTemplate,
                 Position = 0
             },
             new()
             {
-                AssetTypeId = 1,
-                AssignmentCategory = AssignmentCategory.UpdateDevice,
+                AssetTypeId = assetType.Id,
+                AssignmentCategory = AssignmentCategory.UserAssigned,
                 SourceType = AssetSourceType.ExistingInventory,
                 Position = 1
             },
             new()
             {
-                AssetTypeId = 1,
-                AssignmentCategory = AssignmentCategory.OldDevice,
-                SourceType = AssetSourceType.UserOwned,
+                AssetTypeId = assetType.Id,
+                AssignmentCategory = AssignmentCategory.WorkplaceFixed,
+                SourceType = AssetSourceType.CreateOnSite,
                 Position = 2
             }
         };
 
         // Act
-        var results = await service.BulkCreateAsync(1, requests);
+        var results = await service.BulkCreateAsync(workplace.Id, requests);
 
         // Assert
         results.Should().HaveCount(3);
 
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.TotalItems.Should().Be(3);
     }
 
@@ -226,28 +236,30 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "Test",
             TotalItems = 0
         };
-
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
         await context.SaveChangesAsync();
 
         // Act
-        var results = await service.BulkCreateAsync(1, new List<CreateWorkplaceAssetAssignmentRequest>());
+        var results = await service.BulkCreateAsync(workplace.Id, new List<CreateWorkplaceAssetAssignmentRequest>());
 
         // Assert
         results.Should().BeEmpty();
 
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.TotalItems.Should().Be(0);
     }
 
@@ -266,42 +278,49 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var serviceEntity = new Service { Id = 1, Name = "IT Department" };
-        var newAsset = new Asset { Id = 1, AssetCode = "LAP-001", SerialNumber = "SN1" };
-        var oldAsset = new Asset { Id = 2, AssetCode = "LAP-002", SerialNumber = "SN2" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var serviceEntity = new Service { Name = "IT Department" };
+        context.Services.Add(serviceEntity);
+        await context.SaveChangesAsync();
+
+        var newAsset = new Asset { AssetCode = "LAP-001", SerialNumber = "SN1" };
+        var oldAsset = new Asset { AssetCode = "LAP-002", SerialNumber = "SN2" };
+        context.Assets.AddRange(newAsset, oldAsset);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "John Doe",
-            ServiceId = 1,
+            ServiceId = serviceEntity.Id,
             Location = "Office 101",
             TotalItems = 1,
             CompletedItems = 0
         };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
-            AssignmentCategory = AssignmentCategory.NewDevice,
-            SourceType = AssetSourceType.NewPurchase,
-            NewAssetId = 1,
-            OldAssetId = 2,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
+            SourceType = AssetSourceType.NewFromTemplate,
+            NewAssetId = newAsset.Id,
+            OldAssetId = oldAsset.Id,
             Status = AssetAssignmentStatus.Pending
         };
-
-        context.AssetTypes.Add(assetType);
-        context.Services.Add(serviceEntity);
-        context.Assets.AddRange(newAsset, oldAsset);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
@@ -330,7 +349,7 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
 
         // Act
         var result = await service.UpdateStatusAsync(
-            1,
+            assignment.Id,
             request,
             _performedBy,
             _performedByEmail);
@@ -342,13 +361,13 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         result.InstalledAt.Should().NotBeNull();
 
         // Verify workplace completed items incremented
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.CompletedItems.Should().Be(1);
 
         // Verify deployment movement was recorded
         _movementServiceMock.Verify(
             m => m.RecordDeploymentAsync(
-                It.Is<AssetDeploymentRequest>(r => r.AssetId == 1),
+                It.Is<AssetDeploymentRequest>(r => r.AssetId == newAsset.Id),
                 _performedBy,
                 _performedByEmail,
                 It.IsAny<CancellationToken>()),
@@ -357,7 +376,7 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         // Verify decommission movement was recorded
         _movementServiceMock.Verify(
             m => m.RecordDecommissionAsync(
-                It.Is<AssetDecommissionRequest>(r => r.AssetId == 2),
+                It.Is<AssetDecommissionRequest>(r => r.AssetId == oldAsset.Id),
                 _performedBy,
                 _performedByEmail,
                 It.IsAny<CancellationToken>()),
@@ -375,30 +394,34 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "Test",
             TotalItems = 1,
             CompletedItems = 1
         };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
             Status = AssetAssignmentStatus.Installed // Already installed
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
@@ -409,10 +432,10 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         };
 
         // Act
-        await service.UpdateStatusAsync(1, request, _performedBy, _performedByEmail);
+        await service.UpdateStatusAsync(assignment.Id, request, _performedBy, _performedByEmail);
 
         // Assert
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.CompletedItems.Should().Be(1); // Should not increment
     }
 
@@ -452,43 +475,50 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var asset = new Asset { Id = 1, AssetCode = "LAP-001" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var asset = new Asset { AssetCode = "LAP-001" };
+        context.Assets.Add(asset);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
             Position = 0,
             Notes = "Original notes"
         };
-
-        context.AssetTypes.Add(assetType);
-        context.Assets.Add(asset);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         var request = new UpdateWorkplaceAssetAssignmentRequest
         {
-            NewAssetId = 1,
+            NewAssetId = asset.Id,
             Position = 5,
             Notes = "Updated notes",
             SerialNumberRequired = true
         };
 
         // Act
-        var result = await service.UpdateAsync(1, request);
+        var result = await service.UpdateAsync(assignment.Id, request);
 
         // Assert
         result.Should().NotBeNull();
-        result.NewAssetId.Should().Be(1);
+        result.NewAssetId.Should().Be(asset.Id);
         result.Position.Should().Be(5);
         result.Notes.Should().Be("Updated notes");
         result.SerialNumberRequired.Should().BeTrue();
@@ -505,25 +535,30 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
             Position = 0,
             Notes = "Original notes",
             SerialNumberRequired = false
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
@@ -534,7 +569,7 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         };
 
         // Act
-        var result = await service.UpdateAsync(1, request);
+        var result = await service.UpdateAsync(assignment.Id, request);
 
         // Assert
         result.Notes.Should().Be("Updated notes only");
@@ -557,41 +592,45 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "Test",
             TotalItems = 1,
             CompletedItems = 0
         };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
             Status = AssetAssignmentStatus.Pending
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         // Act
-        await service.DeleteAsync(1);
+        await service.DeleteAsync(assignment.Id);
 
         // Assert
-        var deletedAssignment = await context.WorkplaceAssetAssignments.FindAsync(1);
+        var deletedAssignment = await context.WorkplaceAssetAssignments.FindAsync(assignment.Id);
         deletedAssignment.Should().BeNull();
 
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.TotalItems.Should().Be(0);
     }
 
@@ -606,38 +645,42 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "Test",
             TotalItems = 1,
             CompletedItems = 1
         };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
             Status = AssetAssignmentStatus.Installed
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         // Act
-        await service.DeleteAsync(1);
+        await service.DeleteAsync(assignment.Id);
 
         // Assert
-        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(1);
+        var updatedWorkplace = await context.RolloutWorkplaces.FindAsync(workplace.Id);
         updatedWorkplace!.TotalItems.Should().Be(0);
         updatedWorkplace.CompletedItems.Should().Be(0);
     }
@@ -657,38 +700,45 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var asset = new Asset { Id = 1, AssetCode = "LAP-001", SerialNumber = "SN1" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var asset = new Asset { AssetCode = "LAP-001", SerialNumber = "SN1" };
+        context.Assets.Add(asset);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
-            SourceType = AssetSourceType.NewPurchase
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
+            SourceType = AssetSourceType.NewFromTemplate
         };
-
-        context.AssetTypes.Add(assetType);
-        context.Assets.Add(asset);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         // Act
-        var result = await service.AssignExistingAssetAsync(1, 1);
+        var result = await service.AssignExistingAssetAsync(assignment.Id, asset.Id);
 
         // Assert
         result.Should().NotBeNull();
-        result.NewAssetId.Should().Be(1);
+        result.NewAssetId.Should().Be(asset.Id);
         result.SourceType.Should().Be(AssetSourceType.ExistingInventory);
 
-        var updatedAsset = await context.Assets.FindAsync(1);
-        updatedAsset!.CurrentWorkplaceAssignmentId.Should().Be(1);
+        var updatedAsset = await context.Assets.FindAsync(asset.Id);
+        updatedAsset!.CurrentWorkplaceAssignmentId.Should().Be(assignment.Id);
     }
 
     [Fact]
@@ -702,27 +752,33 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
+
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.AssignExistingAssetAsync(1, 999));
+            () => service.AssignExistingAssetAsync(assignment.Id, 999));
     }
 
     #endregion
@@ -749,47 +805,51 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync("LAP-24-DELL-00001");
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
         var template = new AssetTemplate
         {
-            Id = 1,
             TemplateName = "Dell Laptop Template",
             AssetName = "Dell Latitude 5420",
             Category = "Hardware",
             Brand = "Dell",
             Model = "Latitude 5420"
         };
+        context.AssetTemplates.Add(template);
+        await context.SaveChangesAsync();
 
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "John Doe",
             ServiceId = 1,
             Location = "Office 101"
         };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
-            AssetTemplateId = 1
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
+            AssetTemplateId = template.Id
         };
-
-        context.AssetTypes.Add(assetType);
-        context.AssetTemplates.Add(template);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         // Act
         var result = await service.CreateAssetFromTemplateAsync(
-            1,
+            assignment.Id,
             "ABC123",
             _performedBy,
             _performedByEmail);
@@ -820,28 +880,34 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
+        context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
+
         var assignment = new WorkplaceAssetAssignment
         {
-            Id = 1,
-            RolloutWorkplaceId = 1,
-            AssetTypeId = 1,
+            RolloutWorkplaceId = workplace.Id,
+            AssetTypeId = assetType.Id,
             AssetTemplateId = null // No template
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
-        context.RolloutWorkplaces.Add(workplace);
         context.WorkplaceAssetAssignments.Add(assignment);
         await context.SaveChangesAsync();
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.CreateAssetFromTemplateAsync(1, "SN123", _performedBy, _performedByEmail));
+            () => service.CreateAssetFromTemplateAsync(assignment.Id, "SN123", _performedBy, _performedByEmail));
 
         exception.Message.Should().Contain("template");
     }
@@ -861,35 +927,42 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
-        var workplace = new RolloutWorkplace { Id = 1, RolloutDayId = 1, UserName = "Test" };
-
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
         context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
         context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
         context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
+        var workplace = new RolloutWorkplace { RolloutDayId = day.Id, UserName = "Test" };
         context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
+
         context.WorkplaceAssetAssignments.AddRange(
             new WorkplaceAssetAssignment
             {
-                RolloutWorkplaceId = 1,
-                AssetTypeId = 1,
+                RolloutWorkplaceId = workplace.Id,
+                AssetTypeId = assetType.Id,
                 Status = AssetAssignmentStatus.Pending,
                 SerialNumberRequired = true
             },
             new WorkplaceAssetAssignment
             {
-                RolloutWorkplaceId = 1,
-                AssetTypeId = 1,
+                RolloutWorkplaceId = workplace.Id,
+                AssetTypeId = assetType.Id,
                 Status = AssetAssignmentStatus.Installed,
                 SerialNumberRequired = true,
                 SerialNumberCaptured = "SN1"
             },
             new WorkplaceAssetAssignment
             {
-                RolloutWorkplaceId = 1,
-                AssetTypeId = 1,
+                RolloutWorkplaceId = workplace.Id,
+                AssetTypeId = assetType.Id,
                 Status = AssetAssignmentStatus.Skipped,
                 SerialNumberRequired = false
             }
@@ -897,11 +970,11 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
         await context.SaveChangesAsync();
 
         // Act
-        var summary = await service.GetSummaryAsync(1);
+        var summary = await service.GetSummaryAsync(workplace.Id);
 
         // Assert
         summary.Should().NotBeNull();
-        summary.WorkplaceId.Should().Be(1);
+        summary.WorkplaceId.Should().Be(workplace.Id);
         summary.TotalAssignments.Should().Be(3);
         summary.PendingAssignments.Should().Be(1);
         summary.InstalledAssignments.Should().Be(1);
@@ -927,39 +1000,45 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
             _codeGeneratorMock.Object,
             _loggerMock.Object);
 
-        var assetType = new AssetType { Id = 1, Name = "Laptop", Code = "LAP" };
-        var session = new RolloutSession { Id = 1, SessionName = "Test" };
-        var day = new RolloutDay { Id = 1, RolloutSessionId = 1, DayDate = DateTime.Today };
+        var assetType = new AssetType { Name = "Laptop", Code = "LAP" };
+        context.AssetTypes.Add(assetType);
+        await context.SaveChangesAsync();
+
+        var session = new RolloutSession { SessionName = "Test" };
+        context.RolloutSessions.Add(session);
+        await context.SaveChangesAsync();
+
+        var day = new RolloutDay { RolloutSessionId = session.Id, Date = DateTime.Today };
+        context.RolloutDays.Add(day);
+        await context.SaveChangesAsync();
+
         var workplace = new RolloutWorkplace
         {
-            Id = 1,
-            RolloutDayId = 1,
+            RolloutDayId = day.Id,
             UserName = "Test",
             TotalItems = 3,
             CompletedItems = 0
         };
-
-        context.AssetTypes.Add(assetType);
-        context.RolloutSessions.Add(session);
-        context.RolloutDays.Add(day);
         context.RolloutWorkplaces.Add(workplace);
+        await context.SaveChangesAsync();
+
         context.WorkplaceAssetAssignments.AddRange(
             new WorkplaceAssetAssignment
             {
-                RolloutWorkplaceId = 1,
-                AssetTypeId = 1,
+                RolloutWorkplaceId = workplace.Id,
+                AssetTypeId = assetType.Id,
                 Status = AssetAssignmentStatus.Pending
             },
             new WorkplaceAssetAssignment
             {
-                RolloutWorkplaceId = 1,
-                AssetTypeId = 1,
+                RolloutWorkplaceId = workplace.Id,
+                AssetTypeId = assetType.Id,
                 Status = AssetAssignmentStatus.Pending
             },
             new WorkplaceAssetAssignment
             {
-                RolloutWorkplaceId = 1,
-                AssetTypeId = 1,
+                RolloutWorkplaceId = workplace.Id,
+                AssetTypeId = assetType.Id,
                 Status = AssetAssignmentStatus.Installed // Already completed
             }
         );
@@ -967,14 +1046,14 @@ public class WorkplaceAssetAssignmentServiceTests : IDisposable
 
         // Act
         var completedCount = await service.CompleteWorkplaceAssignmentsAsync(
-            1,
+            workplace.Id,
             _performedBy,
             _performedByEmail);
 
         // Assert
         completedCount.Should().Be(2);
 
-        var assignments = context.WorkplaceAssetAssignments.Where(a => a.RolloutWorkplaceId == 1);
+        var assignments = context.WorkplaceAssetAssignments.Where(a => a.RolloutWorkplaceId == workplace.Id);
         assignments.Should().OnlyContain(a => a.Status == AssetAssignmentStatus.Installed);
     }
 

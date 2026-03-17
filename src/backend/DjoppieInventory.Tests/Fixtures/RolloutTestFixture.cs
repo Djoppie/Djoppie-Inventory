@@ -1,6 +1,7 @@
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace DjoppieInventory.Tests.Fixtures;
 
@@ -16,7 +17,8 @@ public static class RolloutTestFixture
     public static async Task<RolloutSession> CreateFullSessionAsync(
         ApplicationDbContext context,
         int dayCount = 1,
-        int workplacesPerDay = 2)
+        int workplacesPerDay = 2,
+        int? serviceId = null)
     {
         var session = new RolloutSession
         {
@@ -39,10 +41,10 @@ public static class RolloutTestFixture
             var day = new RolloutDay
             {
                 RolloutSessionId = session.Id,
-                DayDate = DateTime.Today.AddDays(d),
+                Date = DateTime.Today.AddDays(d),
                 DayNumber = d + 1,
-                Status = RolloutDayStatus.Planned,
-                PlannedWorkplaces = workplacesPerDay,
+                Status = RolloutDayStatus.Planning,
+                TotalWorkplaces = workplacesPerDay,
                 CompletedWorkplaces = 0,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -58,9 +60,9 @@ public static class RolloutTestFixture
                     RolloutDayId = day.Id,
                     UserName = $"User {d + 1}.{w + 1}",
                     UserEmail = $"user{d + 1}.{w + 1}@example.com",
-                    ServiceId = 1,
+                    ServiceId = serviceId,
                     Location = $"Office {d + 1}{w + 1}",
-                    Status = WorkplaceStatus.Planned,
+                    Status = RolloutWorkplaceStatus.Pending,
                     TotalItems = 0,
                     CompletedItems = 0,
                     CreatedAt = DateTime.UtcNow,
@@ -112,7 +114,6 @@ public static class RolloutTestFixture
                 AssetTypeId = assetTypeId,
                 Brand = "Dell",
                 Model = "Latitude 5420",
-                Description = "Standard Dell laptop for office work",
                 IsActive = true
             },
             new()
@@ -123,7 +124,6 @@ public static class RolloutTestFixture
                 AssetTypeId = assetTypeId,
                 Brand = "HP",
                 Model = "EliteBook 840",
-                Description = "Standard HP laptop for office work",
                 IsActive = true
             }
         };
@@ -145,21 +145,18 @@ public static class RolloutTestFixture
             {
                 Name = "IT Department",
                 Code = "IT",
-                Description = "Information Technology",
                 IsActive = true
             },
             new()
             {
                 Name = "Finance Department",
                 Code = "FIN",
-                Description = "Finance and Accounting",
                 IsActive = true
             },
             new()
             {
                 Name = "HR Department",
                 Code = "HR",
-                Description = "Human Resources",
                 IsActive = true
             }
         };
@@ -225,15 +222,14 @@ public static class RolloutTestFixture
                 AssetTypeId = assetTypeId,
                 AssignmentCategory = i switch
                 {
-                    0 => AssignmentCategory.NewDevice,
-                    1 => AssignmentCategory.UpdateDevice,
-                    _ => AssignmentCategory.OldDevice
+                    0 => AssignmentCategory.UserAssigned,
+                    _ => AssignmentCategory.WorkplaceFixed
                 },
                 SourceType = i switch
                 {
-                    0 => AssetSourceType.NewPurchase,
+                    0 => AssetSourceType.NewFromTemplate,
                     1 => AssetSourceType.ExistingInventory,
-                    _ => AssetSourceType.UserOwned
+                    _ => AssetSourceType.CreateOnSite
                 },
                 Position = i,
                 Status = AssetAssignmentStatus.Pending,
@@ -263,7 +259,7 @@ public static class RolloutTestFixture
         var laptopType = assetTypes.First(t => t.Code == "LAP");
         var templates = await CreateAssetTemplatesAsync(context, laptopType.Id);
         var assets = await CreateAssetsAsync(context, laptopType.Id, 10, AssetStatus.Nieuw);
-        var session = await CreateFullSessionAsync(context, dayCount: 2, workplacesPerDay: 2);
+        var session = await CreateFullSessionAsync(context, dayCount: 2, workplacesPerDay: 2, serviceId: services.First().Id);
 
         var day = await context.RolloutDays
             .FirstOrDefaultAsync(d => d.RolloutSessionId == session.Id);

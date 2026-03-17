@@ -179,3 +179,6 @@ app.MapHealthCheckEndpoints();
 app.EnsureDatabaseReady();
 
 app.Run();
+
+// Required for integration tests with WebApplicationFactory
+public partial class Program { }

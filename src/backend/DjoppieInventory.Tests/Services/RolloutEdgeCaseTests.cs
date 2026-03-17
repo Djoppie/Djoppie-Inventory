@@ -90,7 +90,7 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.NewDevice,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
             SourceType = AssetSourceType.ExistingInventory,
             NewAssetId = asset.Id
         };
@@ -102,7 +102,7 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.NewDevice,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
             SourceType = AssetSourceType.ExistingInventory,
             NewAssetId = asset.Id // Same asset!
         };
@@ -144,8 +144,8 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.NewDevice,
-            SourceType = AssetSourceType.NewPurchase
+            AssignmentCategory = AssignmentCategory.UserAssigned,
+            SourceType = AssetSourceType.NewFromTemplate
         };
 
         var created = await service.CreateAsync(request);
@@ -221,7 +221,6 @@ public class RolloutEdgeCaseTests : IDisposable
         // Create template with minimal data
         var template = new AssetTemplate
         {
-            Id = 999,
             TemplateName = "Minimal Template",
             AssetName = null, // Null asset name
             Category = "Hardware",
@@ -229,6 +228,7 @@ public class RolloutEdgeCaseTests : IDisposable
             Model = null // Null model
         };
         context.AssetTemplates.Add(template);
+        await context.SaveChangesAsync();
 
         var assignment = new WorkplaceAssetAssignment
         {
@@ -280,15 +280,15 @@ public class RolloutEdgeCaseTests : IDisposable
             new()
             {
                 AssetTypeId = assetType.Id,
-                AssignmentCategory = AssignmentCategory.NewDevice,
-                SourceType = AssetSourceType.NewPurchase,
+                AssignmentCategory = AssignmentCategory.UserAssigned,
+                SourceType = AssetSourceType.NewFromTemplate,
                 Position = 0
             },
             new()
             {
                 AssetTypeId = assetType.Id,
-                AssignmentCategory = AssignmentCategory.NewDevice,
-                SourceType = AssetSourceType.NewPurchase,
+                AssignmentCategory = AssignmentCategory.UserAssigned,
+                SourceType = AssetSourceType.NewFromTemplate,
                 Position = 0 // Duplicate position
             }
         };
@@ -318,8 +318,8 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.OldDevice,
-            SourceType = AssetSourceType.UserOwned,
+            AssignmentCategory = AssignmentCategory.WorkplaceFixed,
+            SourceType = AssetSourceType.CreateOnSite,
             NewAssetId = null, // No new asset
             OldAssetId = null,
             Status = AssetAssignmentStatus.Pending
@@ -447,7 +447,7 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace1.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.NewDevice,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
             SourceType = AssetSourceType.ExistingInventory
         };
         var created1 = await service.CreateAsync(assignment1);
@@ -456,7 +456,7 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace2.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.NewDevice,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
             SourceType = AssetSourceType.ExistingInventory
         };
         var created2 = await service.CreateAsync(assignment2);
@@ -553,8 +553,8 @@ public class RolloutEdgeCaseTests : IDisposable
         {
             RolloutWorkplaceId = workplace.Id,
             AssetTypeId = assetType.Id,
-            AssignmentCategory = AssignmentCategory.NewDevice,
-            SourceType = AssetSourceType.NewPurchase,
+            AssignmentCategory = AssignmentCategory.UserAssigned,
+            SourceType = AssetSourceType.NewFromTemplate,
             MetadataJson = metadata
         };
 
