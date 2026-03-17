@@ -63,3 +63,7 @@ publish/
 appsettings.*.local.json
 appsettings.Development.local.json
 appsettings.Production.local.json
+
+# Claude Code workflow state directories
+.full-stack-feature/
+.feature-dev/
