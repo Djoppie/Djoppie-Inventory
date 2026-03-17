@@ -336,17 +336,17 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.AssetTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Foreign key to NewAsset (set null)
+            // Foreign key to NewAsset (no action - SQL Server doesn't allow multiple cascade paths)
             entity.HasOne(e => e.NewAsset)
                 .WithMany()
                 .HasForeignKey(e => e.NewAssetId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
 
-            // Foreign key to OldAsset (set null)
+            // Foreign key to OldAsset (no action - SQL Server doesn't allow multiple cascade paths)
             entity.HasOne(e => e.OldAsset)
                 .WithMany()
                 .HasForeignKey(e => e.OldAssetId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Foreign key to AssetTemplate (set null)
             entity.HasOne(e => e.AssetTemplate)

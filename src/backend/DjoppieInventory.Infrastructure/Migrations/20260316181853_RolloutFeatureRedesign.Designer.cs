@@ -1925,12 +1925,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasOne("DjoppieInventory.Core.Entities.Asset", "NewAsset")
                         .WithMany()
                         .HasForeignKey("NewAssetId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.Asset", "OldAsset")
                         .WithMany()
                         .HasForeignKey("OldAssetId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutWorkplace", "RolloutWorkplace")
                         .WithMany("AssetAssignments")

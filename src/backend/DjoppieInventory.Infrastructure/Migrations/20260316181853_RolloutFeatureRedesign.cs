@@ -253,13 +253,13 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         column: x => x.NewAssetId,
                         principalTable: "Assets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_WorkplaceAssetAssignments_Assets_OldAssetId",
                         column: x => x.OldAssetId,
                         principalTable: "Assets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_WorkplaceAssetAssignments_RolloutWorkplaces_RolloutWorkplaceId",
                         column: x => x.RolloutWorkplaceId,
