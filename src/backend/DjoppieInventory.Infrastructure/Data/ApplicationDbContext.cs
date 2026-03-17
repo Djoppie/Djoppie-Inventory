@@ -383,17 +383,17 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.RolloutSessionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Foreign key to RolloutWorkplace (set null - preserve audit trail even if workplace deleted)
+            // Foreign key to RolloutWorkplace (no action - SQL Server cascade path limitation)
             entity.HasOne(e => e.RolloutWorkplace)
                 .WithMany(w => w.AssetMovements)
                 .HasForeignKey(e => e.RolloutWorkplaceId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
 
-            // Foreign key to WorkplaceAssetAssignment (set null)
+            // Foreign key to WorkplaceAssetAssignment (no action - SQL Server cascade path limitation)
             entity.HasOne(e => e.WorkplaceAssetAssignment)
                 .WithMany()
                 .HasForeignKey(e => e.WorkplaceAssetAssignmentId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Foreign key to Asset (restrict - don't allow deleting asset with movement history)
             entity.HasOne(e => e.Asset)
@@ -401,17 +401,17 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.AssetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Foreign key to PreviousService (set null)
+            // Foreign key to PreviousService (no action - SQL Server cascade path limitation)
             entity.HasOne(e => e.PreviousService)
                 .WithMany()
                 .HasForeignKey(e => e.PreviousServiceId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
 
-            // Foreign key to NewService (set null)
+            // Foreign key to NewService (no action - SQL Server cascade path limitation)
             entity.HasOne(e => e.NewService)
                 .WithMany()
                 .HasForeignKey(e => e.NewServiceId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         // RolloutDayService configuration (junction table)
@@ -428,11 +428,11 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.RolloutDayId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Foreign key to Service (cascade delete - if service is deleted, remove from schedules)
+            // Foreign key to Service (no action - SQL Server cascade path limitation)
             entity.HasOne(e => e.Service)
                 .WithMany(s => s.ScheduledRolloutDays)
                 .HasForeignKey(e => e.ServiceId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         // ===== SEED DATA =====

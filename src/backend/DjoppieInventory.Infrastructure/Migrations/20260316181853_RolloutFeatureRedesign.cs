@@ -204,7 +204,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         column: x => x.ServiceId,
                         principalTable: "Services",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -314,25 +314,25 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         column: x => x.RolloutWorkplaceId,
                         principalTable: "RolloutWorkplaces",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_RolloutAssetMovements_Services_NewServiceId",
                         column: x => x.NewServiceId,
                         principalTable: "Services",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_RolloutAssetMovements_Services_PreviousServiceId",
                         column: x => x.PreviousServiceId,
                         principalTable: "Services",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_RolloutAssetMovements_WorkplaceAssetAssignments_WorkplaceAssetAssignmentId",
                         column: x => x.WorkplaceAssetAssignmentId,
                         principalTable: "WorkplaceAssetAssignments",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.UpdateData(
