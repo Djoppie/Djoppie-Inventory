@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   IconButton,
   Card,
   CardContent,
@@ -26,15 +25,11 @@ import {
   Alert,
   useMediaQuery,
   useTheme,
-  Divider,
-  alpha,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Tooltip,
-  Switch,
-  FormControlLabel,
   Collapse,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
@@ -42,7 +37,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import CloseIcon from '@mui/icons-material/Close';
 import PlaceIcon from '@mui/icons-material/Place';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
@@ -57,15 +51,11 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {
   usePhysicalWorkplaces,
-  useCreatePhysicalWorkplace,
-  useUpdatePhysicalWorkplace,
   useDeletePhysicalWorkplace,
   useClearOccupant,
 } from '../hooks/usePhysicalWorkplaces';
 import {
   PhysicalWorkplace,
-  CreatePhysicalWorkplaceDto,
-  UpdatePhysicalWorkplaceDto,
   WorkplaceType,
   WorkplaceTypeLabels,
   PhysicalWorkplaceFilters,
@@ -76,6 +66,7 @@ import BuildingSelect from '../components/common/BuildingSelect';
 import ServiceSelect from '../components/common/ServiceSelect';
 import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
 import BulkImportWorkplacesDialog from '../components/physicalWorkplaces/BulkImportWorkplacesDialog';
+import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -107,34 +98,6 @@ const iconButtonSx = {
         ? '0 4px 16px rgba(255, 215, 0, 0.2)'
         : '0 2px 12px rgba(253, 185, 49, 0.3)',
   },
-};
-
-interface FormData {
-  code: string;
-  name: string;
-  description: string;
-  buildingId: number | null;
-  serviceId: number | null;
-  floor: string;
-  room: string;
-  type: WorkplaceType;
-  monitorCount: number;
-  hasDockingStation: boolean;
-  isActive: boolean;
-}
-
-const initialFormData: FormData = {
-  code: '',
-  name: '',
-  description: '',
-  buildingId: null,
-  serviceId: null,
-  floor: '',
-  room: '',
-  type: WorkplaceType.Laptop,
-  monitorCount: 2,
-  hasDockingStation: true,
-  isActive: true,
 };
 
 type SnackbarState = {
@@ -179,8 +142,6 @@ const PhysicalWorkplacesPage = () => {
   const [deletingWorkplace, setDeletingWorkplace] = useState<PhysicalWorkplace | null>(null);
   const [clearingOccupantWorkplace, setClearingOccupantWorkplace] = useState<PhysicalWorkplace | null>(null);
   const [managingAssetsWorkplace, setManagingAssetsWorkplace] = useState<PhysicalWorkplace | null>(null);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
@@ -188,8 +149,6 @@ const PhysicalWorkplacesPage = () => {
   });
 
   const { data: workplaces, isLoading, error, refetch } = usePhysicalWorkplaces(filters);
-  const createMutation = useCreatePhysicalWorkplace();
-  const updateMutation = useUpdatePhysicalWorkplace();
   const deleteMutation = useDeletePhysicalWorkplace();
   const clearOccupantMutation = useClearOccupant();
 
@@ -207,34 +166,13 @@ const PhysicalWorkplacesPage = () => {
   }, [workplaces]);
 
   const handleOpenDialog = (workplace?: PhysicalWorkplace) => {
-    if (workplace) {
-      setEditingWorkplace(workplace);
-      setFormData({
-        code: workplace.code,
-        name: workplace.name,
-        description: workplace.description || '',
-        buildingId: workplace.buildingId,
-        serviceId: workplace.serviceId ?? null,
-        floor: workplace.floor || '',
-        room: workplace.room || '',
-        type: workplace.type,
-        monitorCount: workplace.monitorCount,
-        hasDockingStation: workplace.hasDockingStation,
-        isActive: workplace.isActive,
-      });
-    } else {
-      setEditingWorkplace(null);
-      setFormData(initialFormData);
-    }
-    setFormErrors({});
+    setEditingWorkplace(workplace ?? null);
     setDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingWorkplace(null);
-    setFormData(initialFormData);
-    setFormErrors({});
   };
 
   const handleOpenDeleteDialog = (workplace: PhysicalWorkplace) => {
@@ -265,87 +203,6 @@ const PhysicalWorkplacesPage = () => {
   const handleCloseAssetsDialog = () => {
     setAssetsDialogOpen(false);
     setManagingAssetsWorkplace(null);
-  };
-
-  const handleInputChange = (field: keyof FormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (formErrors[field]) {
-      setFormErrors((prev) => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const errors: Partial<Record<keyof FormData, string>> = {};
-
-    if (!formData.code.trim()) {
-      errors.code = t('validation.required');
-    }
-    if (!formData.name.trim()) {
-      errors.name = t('validation.required');
-    }
-    if (!formData.buildingId) {
-      errors.buildingId = t('validation.required');
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    try {
-      if (editingWorkplace) {
-        const dto: UpdatePhysicalWorkplaceDto = {
-          code: formData.code.trim(),
-          name: formData.name.trim(),
-          description: formData.description.trim() || undefined,
-          buildingId: formData.buildingId ?? undefined,
-          serviceId: formData.serviceId ?? undefined,
-          floor: formData.floor.trim() || undefined,
-          room: formData.room.trim() || undefined,
-          type: formData.type,
-          monitorCount: formData.monitorCount,
-          hasDockingStation: formData.hasDockingStation,
-          isActive: formData.isActive,
-        };
-        await updateMutation.mutateAsync({ id: editingWorkplace.id, data: dto });
-        setSnackbar({
-          open: true,
-          message: t('physicalWorkplaces.updateSuccess'),
-          severity: 'success',
-        });
-      } else {
-        const dto: CreatePhysicalWorkplaceDto = {
-          code: formData.code.trim(),
-          name: formData.name.trim(),
-          description: formData.description.trim() || undefined,
-          buildingId: formData.buildingId!,
-          serviceId: formData.serviceId ?? undefined,
-          floor: formData.floor.trim() || undefined,
-          room: formData.room.trim() || undefined,
-          type: formData.type,
-          monitorCount: formData.monitorCount,
-          hasDockingStation: formData.hasDockingStation,
-        };
-        await createMutation.mutateAsync(dto);
-        setSnackbar({
-          open: true,
-          message: t('physicalWorkplaces.createSuccess'),
-          severity: 'success',
-        });
-      }
-      handleCloseDialog();
-    } catch {
-      setSnackbar({
-        open: true,
-        message: t('physicalWorkplaces.saveError'),
-        severity: 'error',
-      });
-    }
   };
 
   const handleDelete = async () => {
@@ -874,236 +731,17 @@ const PhysicalWorkplacesPage = () => {
       )}
 
       {/* Create/Edit Dialog */}
-      <Dialog
+      <EditPhysicalWorkplaceDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
-        fullScreen={isMobile}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: isMobile ? 0 : 2,
-          },
+        workplace={editingWorkplace}
+        onSuccess={(message) => {
+          setSnackbar({ open: true, message, severity: 'success' });
         }}
-      >
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? 'rgba(255, 119, 0, 0.05)'
-                : 'rgba(255, 119, 0, 0.02)',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
-            {editingWorkplace ? t('physicalWorkplaces.editWorkplace') : t('physicalWorkplaces.addWorkplace')}
-          </Typography>
-          <IconButton size="small" onClick={handleCloseDialog} edge="end">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Identification */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: 'primary.main',
-                }}
-              >
-                <PlaceIcon fontSize="small" />
-              </Box>
-              <Typography variant="subtitle1" fontWeight={600} color="primary">
-                {t('physicalWorkplaces.identification')}
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label={t('physicalWorkplaces.code')}
-                value={formData.code}
-                onChange={handleInputChange('code')}
-                error={!!formErrors.code}
-                helperText={formErrors.code || t('physicalWorkplaces.codeHint')}
-                required
-                sx={{ flex: '1 1 150px' }}
-              />
-              <TextField
-                label={t('physicalWorkplaces.name')}
-                value={formData.name}
-                onChange={handleInputChange('name')}
-                error={!!formErrors.name}
-                helperText={formErrors.name}
-                required
-                sx={{ flex: '2 1 250px' }}
-              />
-            </Box>
-
-            <TextField
-              label={t('physicalWorkplaces.description')}
-              value={formData.description}
-              onChange={handleInputChange('description')}
-              multiline
-              rows={2}
-              fullWidth
-            />
-
-            <Divider sx={{ my: 1 }} />
-
-            {/* Location */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: 'primary.main',
-                }}
-              >
-                <MeetingRoomIcon fontSize="small" />
-              </Box>
-              <Typography variant="subtitle1" fontWeight={600} color="primary">
-                {t('physicalWorkplaces.location')}
-              </Typography>
-            </Box>
-
-            <BuildingSelect
-              value={formData.buildingId}
-              onChange={(value) => setFormData((prev) => ({ ...prev, buildingId: value }))}
-              label={t('physicalWorkplaces.building')}
-              required
-              error={!!formErrors.buildingId}
-            />
-
-            <ServiceSelect
-              value={formData.serviceId}
-              onChange={(value) => setFormData((prev) => ({ ...prev, serviceId: value }))}
-              label={t('physicalWorkplaces.service')}
-            />
-
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <TextField
-                label={t('physicalWorkplaces.floor')}
-                value={formData.floor}
-                onChange={handleInputChange('floor')}
-                sx={{ flex: '1 1 150px' }}
-              />
-              <TextField
-                label={t('physicalWorkplaces.room')}
-                value={formData.room}
-                onChange={handleInputChange('room')}
-                sx={{ flex: '1 1 150px' }}
-              />
-            </Box>
-
-            <Divider sx={{ my: 1 }} />
-
-            {/* Configuration */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 32,
-                  height: 32,
-                  borderRadius: 1.5,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  color: 'primary.main',
-                }}
-              >
-                <ComputerIcon fontSize="small" />
-              </Box>
-              <Typography variant="subtitle1" fontWeight={600} color="primary">
-                {t('physicalWorkplaces.configuration')}
-              </Typography>
-            </Box>
-
-            <FormControl fullWidth>
-              <InputLabel>{t('physicalWorkplaces.type')}</InputLabel>
-              <Select
-                value={formData.type}
-                onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value as WorkplaceType }))}
-                label={t('physicalWorkplaces.type')}
-              >
-                {Object.entries(WorkplaceTypeLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={Number(value)}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      {getWorkplaceTypeIcon(Number(value) as WorkplaceType)}
-                      <span>{label}</span>
-                    </Stack>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <TextField
-                label={t('physicalWorkplaces.monitorCount')}
-                type="number"
-                value={formData.monitorCount}
-                onChange={(e) => setFormData((prev) => ({ ...prev, monitorCount: parseInt(e.target.value) || 0 }))}
-                inputProps={{ min: 0, max: 6 }}
-                sx={{ flex: '1 1 150px' }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.hasDockingStation}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, hasDockingStation: e.target.checked }))}
-                  />
-                }
-                label={t('physicalWorkplaces.hasDockingStation')}
-              />
-            </Box>
-
-            {editingWorkplace && (
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))}
-                  />
-                }
-                label={t('physicalWorkplaces.isActive')}
-              />
-            )}
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={handleCloseDialog} color="inherit">
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={createMutation.isPending || updateMutation.isPending}
-          >
-            {createMutation.isPending || updateMutation.isPending
-              ? t('common.saving')
-              : t('common.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onError={(message) => {
+          setSnackbar({ open: true, message, severity: 'error' });
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog
