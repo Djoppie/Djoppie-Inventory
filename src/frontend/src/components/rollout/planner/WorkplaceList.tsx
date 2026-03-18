@@ -340,26 +340,30 @@ export default function WorkplaceList({
                     </Tooltip>
                     {workplace.status === 'Pending' && (
                       <Tooltip title="Gereed">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSetReady(workplace)}
-                          disabled={workplaceStatusMutation.isPending}
-                          sx={{ color: 'rgba(22, 163, 74, 0.7)', '&:hover': { color: '#16a34a' } }}
-                        >
-                          <CheckCircleOutlineIcon fontSize="small" />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleSetReady(workplace)}
+                            disabled={workplaceStatusMutation.isPending}
+                            sx={{ color: 'rgba(22, 163, 74, 0.7)', '&:hover': { color: '#16a34a' } }}
+                          >
+                            <CheckCircleOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     )}
                     {workplace.status === 'Ready' && (
                       <Tooltip title="Terug">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSetPending(workplace)}
-                          disabled={workplaceStatusMutation.isPending}
-                          sx={{ color: 'rgba(234, 179, 8, 0.7)', '&:hover': { color: '#eab308' } }}
-                        >
-                          <ChevronLeftIcon fontSize="small" />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleSetPending(workplace)}
+                            disabled={workplaceStatusMutation.isPending}
+                            sx={{ color: 'rgba(234, 179, 8, 0.7)', '&:hover': { color: '#eab308' } }}
+                          >
+                            <ChevronLeftIcon fontSize="small" />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     )}
                     {workplace.status === 'InProgress' && (
@@ -381,23 +385,29 @@ export default function WorkplaceList({
                       </Tooltip>
                     )}
                     <Tooltip title="Bewerken">
-                      <IconButton size="small" onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton size="small" onClick={() => onEditWorkplace(workplace)} disabled={!isEditable}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Print">
-                      <IconButton
-                        size="small"
-                        onClick={() => onPrintWorkplace(workplace)}
-                        disabled={!workplace.assetPlans?.some(p => p.existingAssetId)}
-                      >
-                        <PrintIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={() => onPrintWorkplace(workplace)}
+                          disabled={!workplace.assetPlans?.some(p => p.existingAssetId)}
+                        >
+                          <PrintIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Verwijderen">
-                      <IconButton size="small" onClick={() => handleDelete(workplace)} disabled={!isEditable}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton size="small" onClick={() => handleDelete(workplace)} disabled={!isEditable}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </Box>
                 )}

@@ -444,9 +444,11 @@ const LiveStatusSection = ({ serialNumber, assetId }: LiveStatusSectionProps) =>
                 </IconButton>
               </Tooltip>
               <Tooltip title={t('liveStatus.refresh', 'Refresh now')}>
-                <IconButton onClick={refresh} size="small" disabled={isFetching}>
-                  <RefreshIcon />
-                </IconButton>
+                <span>
+                  <IconButton onClick={refresh} size="small" disabled={isFetching}>
+                    <RefreshIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
               <Typography variant="caption" color="text.secondary">
                 {isPaused

@@ -243,20 +243,22 @@ const OccupierSection = ({
               )}
             </Box>
             <Tooltip title={t('physicalWorkplaces.occupier.clearOccupier')}>
-              <IconButton
-                size="small"
-                onClick={handleClear}
-                disabled={isLoading}
-                sx={{
-                  bgcolor: bgColor,
-                  boxShadow: neomorphBoxShadow,
-                  '&:hover': {
-                    boxShadow: neomorphInsetShadow,
-                  },
-                }}
-              >
-                <ClearIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={handleClear}
+                  disabled={isLoading}
+                  sx={{
+                    bgcolor: bgColor,
+                    boxShadow: neomorphBoxShadow,
+                    '&:hover': {
+                      boxShadow: neomorphInsetShadow,
+                    },
+                  }}
+                >
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
         </Box>

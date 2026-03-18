@@ -279,9 +279,11 @@ const ProvisioningTimeline = ({ serialNumber }: ProvisioningTimelineProps) => {
             {/* Refresh button */}
             <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
               <Tooltip title={t('provisioning.refresh', 'Refresh timeline')}>
-                <IconButton onClick={refresh} size="small" disabled={isFetching}>
-                  <RefreshIcon />
-                </IconButton>
+                <span>
+                  <IconButton onClick={refresh} size="small" disabled={isFetching}>
+                    <RefreshIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Stack>
           </Box>
