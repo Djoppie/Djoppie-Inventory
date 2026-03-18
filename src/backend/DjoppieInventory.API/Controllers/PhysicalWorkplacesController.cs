@@ -1039,6 +1039,18 @@ public class PhysicalWorkplacesController : ControllerBase
 
     private static PhysicalWorkplaceDto MapToDto(PhysicalWorkplace pw)
     {
+        // Count equipment slots that have assets assigned
+        var equipmentSlotCount = 0;
+        if (pw.DockingStationAssetId.HasValue) equipmentSlotCount++;
+        if (pw.Monitor1AssetId.HasValue) equipmentSlotCount++;
+        if (pw.Monitor2AssetId.HasValue) equipmentSlotCount++;
+        if (pw.Monitor3AssetId.HasValue) equipmentSlotCount++;
+        if (pw.KeyboardAssetId.HasValue) equipmentSlotCount++;
+        if (pw.MouseAssetId.HasValue) equipmentSlotCount++;
+
+        // Total asset count = equipment slots + other fixed assets
+        var totalAssetCount = equipmentSlotCount + (pw.FixedAssets?.Count ?? 0);
+
         return new PhysicalWorkplaceDto(
             pw.Id,
             pw.Code,
@@ -1079,7 +1091,7 @@ public class PhysicalWorkplacesController : ControllerBase
             pw.CurrentOccupantEmail,
             pw.OccupiedSince,
             pw.IsActive,
-            pw.FixedAssets?.Count ?? 0,
+            totalAssetCount,
             pw.CreatedAt,
             pw.UpdatedAt
         );

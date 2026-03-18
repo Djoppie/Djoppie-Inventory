@@ -54,8 +54,13 @@ const EquipmentSlotsSection = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  // Fetch all assets for selection
-  const { data: allAssets = [], isLoading: assetsLoading } = useAssets('Stock');
+  // Fetch all assets for selection (Stock and Nieuw are available for assignment)
+  const { data: stockAssets = [], isLoading: stockLoading } = useAssets('Stock');
+  const { data: nieuwAssets = [], isLoading: nieuwLoading } = useAssets('Nieuw');
+
+  // Combine available assets
+  const allAssets = useMemo(() => [...stockAssets, ...nieuwAssets], [stockAssets, nieuwAssets]);
+  const assetsLoading = stockLoading || nieuwLoading;
 
   // Local state for equipment slots
   const [equipmentData, setEquipmentData] = useState<UpdateEquipmentSlotsDto>({
@@ -76,7 +81,7 @@ const EquipmentSlotsSection = ({
       assetId: equipmentData.dockingStationAssetId ?? workplace.dockingStationAssetId,
       assetCode: workplace.dockingStationAssetCode,
       serialNumber: workplace.dockingStationSerialNumber,
-      assetTypes: ['DOK', 'DOCK'],
+      assetTypes: ['DOK', 'DOCK', 'DOCKING'],
       visible: workplace.hasDockingStation,
     },
     {
@@ -86,7 +91,7 @@ const EquipmentSlotsSection = ({
       assetId: equipmentData.monitor1AssetId ?? workplace.monitor1AssetId,
       assetCode: workplace.monitor1AssetCode,
       serialNumber: workplace.monitor1SerialNumber,
-      assetTypes: ['MON', 'SCH'],
+      assetTypes: ['MON', 'SCH', 'SCHERM', 'BEELDSCHERM', 'DISPLAY'],
       visible: workplace.monitorCount >= 1,
     },
     {
@@ -96,7 +101,7 @@ const EquipmentSlotsSection = ({
       assetId: equipmentData.monitor2AssetId ?? workplace.monitor2AssetId,
       assetCode: workplace.monitor2AssetCode,
       serialNumber: workplace.monitor2SerialNumber,
-      assetTypes: ['MON', 'SCH'],
+      assetTypes: ['MON', 'SCH', 'SCHERM', 'BEELDSCHERM', 'DISPLAY'],
       visible: workplace.monitorCount >= 2,
     },
     {
@@ -106,7 +111,7 @@ const EquipmentSlotsSection = ({
       assetId: equipmentData.monitor3AssetId ?? workplace.monitor3AssetId,
       assetCode: workplace.monitor3AssetCode,
       serialNumber: workplace.monitor3SerialNumber,
-      assetTypes: ['MON', 'SCH'],
+      assetTypes: ['MON', 'SCH', 'SCHERM', 'BEELDSCHERM', 'DISPLAY'],
       visible: workplace.monitorCount >= 3,
     },
     {
@@ -116,7 +121,7 @@ const EquipmentSlotsSection = ({
       assetId: equipmentData.keyboardAssetId ?? workplace.keyboardAssetId,
       assetCode: workplace.keyboardAssetCode,
       serialNumber: workplace.keyboardSerialNumber,
-      assetTypes: ['KEY', 'TOE'],
+      assetTypes: ['KEY', 'TOE', 'TOETSENBORD', 'KEYBOARD'],
       visible: true,
     },
     {
@@ -126,7 +131,7 @@ const EquipmentSlotsSection = ({
       assetId: equipmentData.mouseAssetId ?? workplace.mouseAssetId,
       assetCode: workplace.mouseAssetCode,
       serialNumber: workplace.mouseSerialNumber,
-      assetTypes: ['MUI', 'MOU'],
+      assetTypes: ['MUI', 'MOU', 'MUIS', 'MOUSE'],
       visible: true,
     },
   ], [workplace, equipmentData, t]);
@@ -134,9 +139,21 @@ const EquipmentSlotsSection = ({
   // Filter assets by type for each slot
   const getFilteredAssets = useCallback((assetTypes: string[]) => {
     return allAssets.filter(asset => {
-      // Check if asset type code starts with any of the filter types
+      // Check if asset type code or name contains any of the filter types
       const assetTypeCode = asset.assetType?.code?.toUpperCase() || '';
-      return assetTypes.some(type => assetTypeCode.startsWith(type.toUpperCase()));
+      const assetTypeName = asset.assetType?.name?.toUpperCase() || '';
+      const assetCategory = asset.category?.toUpperCase() || '';
+      const assetName = asset.assetName?.toUpperCase() || '';
+
+      return assetTypes.some(type => {
+        const upperType = type.toUpperCase();
+        return (
+          assetTypeCode.includes(upperType) ||
+          assetTypeName.includes(upperType) ||
+          assetCategory.includes(upperType) ||
+          assetName.includes(upperType)
+        );
+      });
     });
   }, [allAssets]);
 
