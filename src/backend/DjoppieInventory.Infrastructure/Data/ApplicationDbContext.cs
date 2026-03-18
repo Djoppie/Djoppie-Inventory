@@ -480,6 +480,37 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Equipment slot FKs (all optional, SetNull on delete)
+            entity.HasOne(e => e.DockingStationAsset)
+                .WithMany()
+                .HasForeignKey(e => e.DockingStationAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Monitor1Asset)
+                .WithMany()
+                .HasForeignKey(e => e.Monitor1AssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Monitor2Asset)
+                .WithMany()
+                .HasForeignKey(e => e.Monitor2AssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Monitor3Asset)
+                .WithMany()
+                .HasForeignKey(e => e.Monitor3AssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.KeyboardAsset)
+                .WithMany()
+                .HasForeignKey(e => e.KeyboardAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.MouseAsset)
+                .WithMany()
+                .HasForeignKey(e => e.MouseAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ===== SEED DATA =====

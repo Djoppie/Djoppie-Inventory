@@ -45,6 +45,12 @@ public class PhysicalWorkplacesController : ControllerBase
             .Include(pw => pw.Building)
             .Include(pw => pw.Service)
             .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
             .AsNoTracking();
 
         if (buildingId.HasValue)
@@ -130,6 +136,12 @@ public class PhysicalWorkplacesController : ControllerBase
             .Include(pw => pw.Building)
             .Include(pw => pw.Service)
             .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
             .AsNoTracking()
             .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
 
@@ -193,6 +205,12 @@ public class PhysicalWorkplacesController : ControllerBase
             .Include(pw => pw.Building)
             .Include(pw => pw.Service)
             .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
             .FirstAsync(pw => pw.Id == workplace.Id, cancellationToken);
 
         _logger.LogInformation("Created physical workplace {Code} ({Name}) in building {Building}",
@@ -217,6 +235,12 @@ public class PhysicalWorkplacesController : ControllerBase
             .Include(pw => pw.Building)
             .Include(pw => pw.Service)
             .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
             .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
 
         if (workplace == null)
@@ -285,6 +309,12 @@ public class PhysicalWorkplacesController : ControllerBase
             .Include(pw => pw.Building)
             .Include(pw => pw.Service)
             .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
             .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
 
         if (workplace == null)
@@ -306,6 +336,64 @@ public class PhysicalWorkplacesController : ControllerBase
         else
             _logger.LogInformation("Workplace {Code} occupant '{Previous}' removed",
                 workplace.Code, previousOccupant ?? "none");
+
+        return Ok(MapToDto(workplace));
+    }
+
+    /// <summary>
+    /// Updates the equipment slots of a physical workplace.
+    /// Equipment slots allow direct linking of specific assets (docking, monitors, keyboard, mouse)
+    /// to their designated slots rather than generic FixedAssets.
+    /// </summary>
+    [HttpPut("{id}/equipment")]
+    [ProducesResponseType(typeof(PhysicalWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PhysicalWorkplaceDto>> UpdateEquipmentSlots(
+        int id,
+        [FromBody] UpdateEquipmentSlotsDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _context.PhysicalWorkplaces
+            .Include(pw => pw.Building)
+            .Include(pw => pw.Service)
+            .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
+            .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
+
+        if (workplace == null)
+            return NotFound($"Physical workplace with ID {id} not found");
+
+        // Update equipment slots
+        workplace.DockingStationAssetId = dto.DockingStationAssetId;
+        workplace.Monitor1AssetId = dto.Monitor1AssetId;
+        workplace.Monitor2AssetId = dto.Monitor2AssetId;
+        workplace.Monitor3AssetId = dto.Monitor3AssetId;
+        workplace.KeyboardAssetId = dto.KeyboardAssetId;
+        workplace.MouseAssetId = dto.MouseAssetId;
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Reload to get updated navigation properties
+        workplace = await _context.PhysicalWorkplaces
+            .Include(pw => pw.Building)
+            .Include(pw => pw.Service)
+            .Include(pw => pw.FixedAssets)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
+            .Include(pw => pw.Monitor3Asset)
+            .Include(pw => pw.KeyboardAsset)
+            .Include(pw => pw.MouseAsset)
+            .FirstAsync(pw => pw.Id == id, cancellationToken);
+
+        _logger.LogInformation("Updated equipment slots for workplace {Code}", workplace.Code);
 
         return Ok(MapToDto(workplace));
     }
@@ -966,6 +1054,26 @@ public class PhysicalWorkplacesController : ControllerBase
             pw.Type,
             pw.MonitorCount,
             pw.HasDockingStation,
+            // Equipment slots
+            pw.DockingStationAssetId,
+            pw.DockingStationAsset?.AssetCode,
+            pw.DockingStationAsset?.SerialNumber,
+            pw.Monitor1AssetId,
+            pw.Monitor1Asset?.AssetCode,
+            pw.Monitor1Asset?.SerialNumber,
+            pw.Monitor2AssetId,
+            pw.Monitor2Asset?.AssetCode,
+            pw.Monitor2Asset?.SerialNumber,
+            pw.Monitor3AssetId,
+            pw.Monitor3Asset?.AssetCode,
+            pw.Monitor3Asset?.SerialNumber,
+            pw.KeyboardAssetId,
+            pw.KeyboardAsset?.AssetCode,
+            pw.KeyboardAsset?.SerialNumber,
+            pw.MouseAssetId,
+            pw.MouseAsset?.AssetCode,
+            pw.MouseAsset?.SerialNumber,
+            // Occupant info
             pw.CurrentOccupantEntraId,
             pw.CurrentOccupantName,
             pw.CurrentOccupantEmail,

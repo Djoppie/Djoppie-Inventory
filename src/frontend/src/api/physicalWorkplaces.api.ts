@@ -5,6 +5,7 @@ import {
   CreatePhysicalWorkplaceDto,
   UpdatePhysicalWorkplaceDto,
   UpdateOccupantDto,
+  UpdateEquipmentSlotsDto,
   PhysicalWorkplaceFilters,
   WorkplaceFixedAsset,
 } from '../types/physicalWorkplace.types';
@@ -79,6 +80,14 @@ export const physicalWorkplacesApi = {
       occupantName: null,
       occupantEmail: null,
     });
+    return response.data;
+  },
+
+  /**
+   * Update equipment slots of a physical workplace
+   */
+  updateEquipment: async (id: number, data: UpdateEquipmentSlotsDto): Promise<PhysicalWorkplace> => {
+    const response = await apiClient.put<PhysicalWorkplace>(`/physicalworkplaces/${id}/equipment`, data);
     return response.data;
   },
 

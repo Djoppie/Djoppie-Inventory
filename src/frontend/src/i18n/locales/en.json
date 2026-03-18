@@ -31,7 +31,8 @@
     "clearFilters": "Clear Filters",
     "all": "All",
     "processing": "Processing...",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "clear": "Clear"
   },
   "validation": {
     "required": "Required field"
@@ -964,6 +965,28 @@
     "assignError": "Error assigning asset",
     "unassignError": "Error unassigning asset",
     "errorLoadingAssets": "Error loading assets",
+    "equipment": {
+      "title": "Equipment",
+      "dockingStation": "Docking Station",
+      "monitor1": "Monitor 1",
+      "monitor2": "Monitor 2",
+      "monitor3": "Monitor 3",
+      "keyboard": "Keyboard",
+      "mouse": "Mouse",
+      "selectAsset": "Select asset...",
+      "noSlotsConfigured": "No equipment slots configured for this workplace type"
+    },
+    "occupier": {
+      "title": "Main Occupier",
+      "noOccupier": "No occupier assigned",
+      "assignOccupier": "Assign an occupier",
+      "changeOccupier": "Change occupier",
+      "clearOccupier": "Remove occupier",
+      "searchPlaceholder": "Search by name or email...",
+      "typeToSearch": "Type at least 2 characters to search",
+      "noUsersFound": "No users found",
+      "since": "Since:"
+    },
     "bulk": {
       "title": "Bulk Import Workplaces",
       "subtitle": "Import workplaces via CSV or create multiple at once",

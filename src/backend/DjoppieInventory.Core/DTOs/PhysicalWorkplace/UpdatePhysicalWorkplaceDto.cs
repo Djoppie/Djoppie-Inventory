@@ -27,3 +27,15 @@ public record UpdateOccupantDto(
     string? OccupantName,
     string? OccupantEmail
 );
+
+/// <summary>
+/// DTO for updating equipment slots of a physical workplace
+/// </summary>
+public record UpdateEquipmentSlotsDto(
+    int? DockingStationAssetId,
+    int? Monitor1AssetId,
+    int? Monitor2AssetId,
+    int? Monitor3AssetId,
+    int? KeyboardAssetId,
+    int? MouseAssetId
+);

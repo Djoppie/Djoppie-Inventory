@@ -83,6 +83,38 @@ public class PhysicalWorkplace
     /// </summary>
     public bool HasDockingStation { get; set; } = true;
 
+    // ===== Dedicated Equipment Slots =====
+
+    /// <summary>
+    /// FK to docking station asset assigned to this workplace.
+    /// </summary>
+    public int? DockingStationAssetId { get; set; }
+
+    /// <summary>
+    /// FK to primary monitor (slot 1).
+    /// </summary>
+    public int? Monitor1AssetId { get; set; }
+
+    /// <summary>
+    /// FK to secondary monitor (slot 2).
+    /// </summary>
+    public int? Monitor2AssetId { get; set; }
+
+    /// <summary>
+    /// FK to tertiary monitor (slot 3, optional for triple-monitor setups).
+    /// </summary>
+    public int? Monitor3AssetId { get; set; }
+
+    /// <summary>
+    /// FK to keyboard asset assigned to this workplace.
+    /// </summary>
+    public int? KeyboardAssetId { get; set; }
+
+    /// <summary>
+    /// FK to mouse asset assigned to this workplace.
+    /// </summary>
+    public int? MouseAssetId { get; set; }
+
     // ===== Current Occupant (Real-time Tracking) =====
 
     /// <summary>
@@ -137,6 +169,38 @@ public class PhysicalWorkplace
     /// The service/department this workplace belongs to (optional)
     /// </summary>
     public Service? Service { get; set; }
+
+    // ===== Equipment Slot Navigation Properties =====
+
+    /// <summary>
+    /// The docking station asset assigned to this workplace.
+    /// </summary>
+    public Asset? DockingStationAsset { get; set; }
+
+    /// <summary>
+    /// The primary monitor (slot 1) assigned to this workplace.
+    /// </summary>
+    public Asset? Monitor1Asset { get; set; }
+
+    /// <summary>
+    /// The secondary monitor (slot 2) assigned to this workplace.
+    /// </summary>
+    public Asset? Monitor2Asset { get; set; }
+
+    /// <summary>
+    /// The tertiary monitor (slot 3) assigned to this workplace.
+    /// </summary>
+    public Asset? Monitor3Asset { get; set; }
+
+    /// <summary>
+    /// The keyboard asset assigned to this workplace.
+    /// </summary>
+    public Asset? KeyboardAsset { get; set; }
+
+    /// <summary>
+    /// The mouse asset assigned to this workplace.
+    /// </summary>
+    public Asset? MouseAsset { get; set; }
 
     /// <summary>
     /// Fixed assets assigned to this workplace (monitors, docking stations, etc.).

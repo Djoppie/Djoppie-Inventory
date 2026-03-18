@@ -9,6 +9,7 @@ import {
   CreatePhysicalWorkplaceDto,
   UpdatePhysicalWorkplaceDto,
   UpdateOccupantDto,
+  UpdateEquipmentSlotsDto,
   PhysicalWorkplaceFilters,
 } from '../types/physicalWorkplace.types';
 
@@ -130,6 +131,24 @@ export const useClearOccupant = () => {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
       queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.detail(id) });
+    },
+  });
+};
+
+/**
+ * Hook to update equipment slots of a physical workplace
+ */
+export const useUpdateEquipmentSlots = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateEquipmentSlotsDto }) =>
+      physicalWorkplacesApi.updateEquipment(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.detail(variables.id) });
+      // Also invalidate assets list since equipment assignments changed
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
     },
   });
 };

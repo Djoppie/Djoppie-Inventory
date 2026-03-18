@@ -40,6 +40,26 @@ export interface PhysicalWorkplace {
   type: WorkplaceType;
   monitorCount: number;
   hasDockingStation: boolean;
+  // Equipment slots
+  dockingStationAssetId?: number;
+  dockingStationAssetCode?: string;
+  dockingStationSerialNumber?: string;
+  monitor1AssetId?: number;
+  monitor1AssetCode?: string;
+  monitor1SerialNumber?: string;
+  monitor2AssetId?: number;
+  monitor2AssetCode?: string;
+  monitor2SerialNumber?: string;
+  monitor3AssetId?: number;
+  monitor3AssetCode?: string;
+  monitor3SerialNumber?: string;
+  keyboardAssetId?: number;
+  keyboardAssetCode?: string;
+  keyboardSerialNumber?: string;
+  mouseAssetId?: number;
+  mouseAssetCode?: string;
+  mouseSerialNumber?: string;
+  // Occupant info
   currentOccupantEntraId?: string;
   currentOccupantName?: string;
   currentOccupantEmail?: string;
@@ -95,6 +115,15 @@ export interface UpdateOccupantDto {
   occupantEntraId?: string;
   occupantName?: string;
   occupantEmail?: string;
+}
+
+export interface UpdateEquipmentSlotsDto {
+  dockingStationAssetId?: number | null;
+  monitor1AssetId?: number | null;
+  monitor2AssetId?: number | null;
+  monitor3AssetId?: number | null;
+  keyboardAssetId?: number | null;
+  mouseAssetId?: number | null;
 }
 
 // ============================================================

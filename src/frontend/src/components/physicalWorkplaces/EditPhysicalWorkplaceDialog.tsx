@@ -34,16 +34,22 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import {
   useCreatePhysicalWorkplace,
   useUpdatePhysicalWorkplace,
+  useUpdateOccupant,
+  useUpdateEquipmentSlots,
 } from '../../hooks/usePhysicalWorkplaces';
 import {
   PhysicalWorkplace,
   CreatePhysicalWorkplaceDto,
   UpdatePhysicalWorkplaceDto,
+  UpdateOccupantDto,
+  UpdateEquipmentSlotsDto,
   WorkplaceType,
   WorkplaceTypeLabels,
 } from '../../types/physicalWorkplace.types';
 import BuildingSelect from '../common/BuildingSelect';
 import ServiceSelect from '../common/ServiceSelect';
+import OccupierSection from './OccupierSection';
+import EquipmentSlotsSection from './EquipmentSlotsSection';
 
 interface EditPhysicalWorkplaceDialogProps {
   open: boolean;
@@ -113,6 +119,12 @@ const EditPhysicalWorkplaceDialog = ({
 
   const createMutation = useCreatePhysicalWorkplace();
   const updateMutation = useUpdatePhysicalWorkplace();
+  const updateOccupantMutation = useUpdateOccupant();
+  const updateEquipmentMutation = useUpdateEquipmentSlots();
+
+  // Track changes for occupier and equipment (only in edit mode)
+  const [pendingOccupier, setPendingOccupier] = useState<UpdateOccupantDto | null>(null);
+  const [pendingEquipment, setPendingEquipment] = useState<UpdateEquipmentSlotsDto | null>(null);
 
   // Sync form data when workplace changes
   useEffect(() => {
@@ -131,9 +143,13 @@ const EditPhysicalWorkplaceDialog = ({
         isActive: workplace.isActive,
       });
       setFormErrors({});
+      setPendingOccupier(null);
+      setPendingEquipment(null);
     } else if (open && !workplace) {
       setFormData(initialFormData);
       setFormErrors({});
+      setPendingOccupier(null);
+      setPendingEquipment(null);
     }
   }, [open, workplace]);
 
@@ -169,6 +185,7 @@ const EditPhysicalWorkplaceDialog = ({
 
     try {
       if (isEditMode && workplace) {
+        // Update basic workplace info
         const dto: UpdatePhysicalWorkplaceDto = {
           code: formData.code.trim(),
           name: formData.name.trim(),
@@ -183,6 +200,17 @@ const EditPhysicalWorkplaceDialog = ({
           isActive: formData.isActive,
         };
         await updateMutation.mutateAsync({ id: workplace.id, data: dto });
+
+        // Update occupier if changed
+        if (pendingOccupier) {
+          await updateOccupantMutation.mutateAsync({ id: workplace.id, data: pendingOccupier });
+        }
+
+        // Update equipment if changed
+        if (pendingEquipment) {
+          await updateEquipmentMutation.mutateAsync({ id: workplace.id, data: pendingEquipment });
+        }
+
         onSuccess?.(t('physicalWorkplaces.updateSuccess'));
       } else {
         const dto: CreatePhysicalWorkplaceDto = {
@@ -619,6 +647,24 @@ const EditPhysicalWorkplaceDialog = ({
             )}
           </Stack>
         </Box>
+
+        {/* Occupier Section - only in edit mode */}
+        {isEditMode && workplace && (
+          <OccupierSection
+            workplace={workplace}
+            onOccupierChange={setPendingOccupier}
+            isLoading={updateOccupantMutation.isPending}
+          />
+        )}
+
+        {/* Equipment Slots Section - only in edit mode */}
+        {isEditMode && workplace && (
+          <EquipmentSlotsSection
+            workplace={workplace}
+            onEquipmentChange={setPendingEquipment}
+            isLoading={updateEquipmentMutation.isPending}
+          />
+        )}
       </DialogContent>
 
       {/* Actions */}
@@ -655,7 +701,12 @@ const EditPhysicalWorkplaceDialog = ({
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={createMutation.isPending || updateMutation.isPending}
+          disabled={
+            createMutation.isPending ||
+            updateMutation.isPending ||
+            updateOccupantMutation.isPending ||
+            updateEquipmentMutation.isPending
+          }
           sx={{
             fontWeight: 700,
             px: 4,
@@ -679,7 +730,10 @@ const EditPhysicalWorkplaceDialog = ({
             },
           }}
         >
-          {createMutation.isPending || updateMutation.isPending
+          {createMutation.isPending ||
+          updateMutation.isPending ||
+          updateOccupantMutation.isPending ||
+          updateEquipmentMutation.isPending
             ? t('common.saving')
             : t('common.save')}
         </Button>
