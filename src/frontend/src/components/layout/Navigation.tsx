@@ -5,6 +5,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import BusinessIcon from '@mui/icons-material/Business';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { ROUTES } from '../../constants/routes';
 
@@ -23,7 +24,8 @@ const Navigation = () => {
     if (location.pathname.startsWith('/devices') || location.pathname === ROUTES.TEMPLATES) return 1; // Device Management hub, sub-pages, and templates
     if (location.pathname === ROUTES.SCAN) return 2;
     if (location.pathname.startsWith('/rollouts')) return 3;
-    if (location.pathname === ROUTES.ADMIN) return 4;
+    if (location.pathname === ROUTES.PHYSICAL_WORKPLACES) return 4;
+    if (location.pathname === ROUTES.ADMIN) return 5;
     return 0;
   };
 
@@ -42,6 +44,9 @@ const Navigation = () => {
         navigate(ROUTES.ROLLOUTS);
         break;
       case 4:
+        navigate(ROUTES.PHYSICAL_WORKPLACES);
+        break;
+      case 5:
         navigate(ROUTES.ADMIN);
         break;
     }
@@ -63,6 +68,7 @@ const Navigation = () => {
         <BottomNavigationAction label={t('navigation.devices', { defaultValue: 'Devices' })} icon={<DevicesIcon />} />
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
         <BottomNavigationAction label={t('navigation.rollouts')} icon={<RocketLaunchIcon />} />
+        <BottomNavigationAction label={t('navigation.workplaces')} icon={<BusinessIcon />} />
         <BottomNavigationAction label={t('navigation.admin')} icon={<AdminPanelSettingsIcon />} />
       </BottomNavigation>
     </Paper>

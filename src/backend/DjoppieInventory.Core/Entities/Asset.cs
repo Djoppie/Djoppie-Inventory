@@ -149,6 +149,13 @@ public class Asset
     /// </summary>
     public int? BuildingId { get; set; }
 
+    /// <summary>
+    /// Foreign key to the physical workplace this asset is fixed to (optional).
+    /// Set for workplace-fixed assets (monitors, docking stations, desktops).
+    /// Null for user-assigned assets (laptops) which follow the user.
+    /// </summary>
+    public int? PhysicalWorkplaceId { get; set; }
+
     // ===== Navigation Properties =====
 
     /// <summary>
@@ -185,6 +192,12 @@ public class Asset
     /// The building/location for this asset (optional)
     /// </summary>
     public Building? Building { get; set; }
+
+    /// <summary>
+    /// The physical workplace this asset is fixed to (optional).
+    /// Only set for workplace-fixed assets (monitors, docking stations, desktops).
+    /// </summary>
+    public PhysicalWorkplace? PhysicalWorkplace { get; set; }
 
     /// <summary>
     /// Asset movements recorded for this asset

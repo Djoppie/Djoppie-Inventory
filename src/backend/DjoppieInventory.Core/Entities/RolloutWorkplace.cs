@@ -93,6 +93,13 @@ public class RolloutWorkplace
     public int? BuildingId { get; set; }
 
     /// <summary>
+    /// Foreign key to the physical workplace being set up (optional).
+    /// Links this rollout workplace to a permanent physical location.
+    /// When set, fixed assets will be assigned to the PhysicalWorkplace.
+    /// </summary>
+    public int? PhysicalWorkplaceId { get; set; }
+
+    /// <summary>
     /// Indicates if this is a laptop setup (true) or desktop setup (false)
     /// Affects which peripherals are included (wireless vs wired keyboard, etc.)
     /// </summary>
@@ -184,6 +191,12 @@ public class RolloutWorkplace
     /// The building/location for this workplace (optional)
     /// </summary>
     public Building? Building { get; set; }
+
+    /// <summary>
+    /// The physical workplace being set up (optional).
+    /// Links to a permanent physical location for fixed asset assignment.
+    /// </summary>
+    public PhysicalWorkplace? PhysicalWorkplace { get; set; }
 
     /// <summary>
     /// Collection of asset assignments planned for this workplace.

@@ -24,6 +24,7 @@ const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
 const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
+const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
+                  <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
                 </Routes>
               </Suspense>
             </Layout>

@@ -21,6 +21,8 @@ export interface Asset {
   serviceId?: number;
   service?: { id: number; code: string; name: string }; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
+  buildingId?: number;
+  physicalWorkplaceId?: number; // Physical workplace this asset is assigned to
 
   // Legacy fields (for historical data)
   legacyBuilding?: string;

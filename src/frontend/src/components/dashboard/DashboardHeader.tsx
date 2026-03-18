@@ -1,12 +1,15 @@
 import { Box, Typography, Tooltip, IconButton, Chip, Badge, alpha, useTheme, Card } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CommentIcon from '@mui/icons-material/Comment';
 import EventIcon from '@mui/icons-material/Event';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import BusinessIcon from '@mui/icons-material/Business';
 import StatusCardGrid from './StatusCardGrid';
 import { StatusCounts } from '../../hooks/dashboard';
+import { ROUTES } from '../../constants/routes';
 
 interface DashboardHeaderProps {
   statusCounts: StatusCounts;
@@ -37,6 +40,7 @@ export default function DashboardHeader({
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+  const navigate = useNavigate();
 
   return (
     <Card
@@ -163,6 +167,28 @@ export default function DashboardHeader({
               }}
             >
               <NotificationsIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+
+          {/* Physical Workplaces */}
+          <Tooltip title={t('physicalWorkplaces.title')}>
+            <IconButton
+              onClick={() => navigate(ROUTES.PHYSICAL_WORKPLACES)}
+              size="small"
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1.5,
+                color: 'text.secondary',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                },
+              }}
+            >
+              <BusinessIcon fontSize="small" />
             </IconButton>
           </Tooltip>
 

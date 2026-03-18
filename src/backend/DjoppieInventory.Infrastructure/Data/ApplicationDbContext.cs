@@ -31,6 +31,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<RolloutAssetMovement> RolloutAssetMovements { get; set; }
     public DbSet<RolloutDayService> RolloutDayServices { get; set; }
 
+    // Physical workplace management
+    public DbSet<PhysicalWorkplace> PhysicalWorkplaces { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -82,6 +85,12 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.LastRolloutSession)
                 .WithMany()
                 .HasForeignKey(e => e.LastRolloutSessionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Physical workplace FK - for workplace-fixed assets
+            entity.HasOne(e => e.PhysicalWorkplace)
+                .WithMany(pw => pw.FixedAssets)
+                .HasForeignKey(e => e.PhysicalWorkplaceId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -304,6 +313,12 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BuildingId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to PhysicalWorkplace (set null - if physical workplace deleted, set FK to null)
+            entity.HasOne(e => e.PhysicalWorkplace)
+                .WithMany(pw => pw.RolloutWorkplaces)
+                .HasForeignKey(e => e.PhysicalWorkplaceId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // WorkplaceAssetAssignment configuration
@@ -433,6 +448,38 @@ public class ApplicationDbContext : DbContext
                 .WithMany(s => s.ScheduledRolloutDays)
                 .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // PhysicalWorkplace configuration
+        modelBuilder.Entity<PhysicalWorkplace>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Code);
+            entity.HasIndex(e => e.BuildingId);
+            entity.HasIndex(e => e.ServiceId);
+            entity.HasIndex(e => e.CurrentOccupantEntraId);
+
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Floor).HasMaxLength(50);
+            entity.Property(e => e.Room).HasMaxLength(100);
+            entity.Property(e => e.Type).HasConversion<int>();
+            entity.Property(e => e.CurrentOccupantEntraId).HasMaxLength(50);
+            entity.Property(e => e.CurrentOccupantName).HasMaxLength(200);
+            entity.Property(e => e.CurrentOccupantEmail).HasMaxLength(200);
+
+            // Foreign key to Building (required)
+            entity.HasOne(e => e.Building)
+                .WithMany()
+                .HasForeignKey(e => e.BuildingId)
+                .OnDelete(DeleteBehavior.Restrict); // Don't allow deleting building if workplaces exist
+
+            // Foreign key to Service (optional, set null)
+            entity.HasOne(e => e.Service)
+                .WithMany()
+                .HasForeignKey(e => e.ServiceId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ===== SEED DATA =====
@@ -583,6 +630,133 @@ public class ApplicationDbContext : DbContext
                 Brand = "Logitech",
                 Model = "MX Master 3",
                 IsActive = true
+            }
+        );
+
+        // Seed data - Physical Workplaces (test data)
+        modelBuilder.Entity<PhysicalWorkplace>().HasData(
+            // Gemeentehuis - Burgerzaken loketten
+            new PhysicalWorkplace
+            {
+                Id = 1,
+                Code = "GH-BZ-L01",
+                Name = "Loket 1 Burgerzaken",
+                Description = "Eerste loket Burgerzaken - Identiteitskaarten",
+                BuildingId = 2, // Gemeentehuis
+                ServiceId = 9, // Burgerzaken
+                Floor = "Gelijkvloers",
+                Room = "Lokettenhal",
+                Type = WorkplaceType.Laptop,
+                MonitorCount = 2,
+                HasDockingStation = true,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new PhysicalWorkplace
+            {
+                Id = 2,
+                Code = "GH-BZ-L02",
+                Name = "Loket 2 Burgerzaken",
+                Description = "Tweede loket Burgerzaken - Rijbewijzen",
+                BuildingId = 2, // Gemeentehuis
+                ServiceId = 9, // Burgerzaken
+                Floor = "Gelijkvloers",
+                Room = "Lokettenhal",
+                Type = WorkplaceType.Laptop,
+                MonitorCount = 2,
+                HasDockingStation = true,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new PhysicalWorkplace
+            {
+                Id = 3,
+                Code = "GH-BZ-L03",
+                Name = "Loket 3 Burgerzaken",
+                Description = "Derde loket Burgerzaken - Paspoorten",
+                BuildingId = 2, // Gemeentehuis
+                ServiceId = 9, // Burgerzaken
+                Floor = "Gelijkvloers",
+                Room = "Lokettenhal",
+                Type = WorkplaceType.Laptop,
+                MonitorCount = 2,
+                HasDockingStation = true,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            // Poortgebouw - Dienst IT
+            new PhysicalWorkplace
+            {
+                Id = 4,
+                Code = "PG-IT-01",
+                Name = "Werkplek IT 1",
+                Description = "Helpdesk werkplek",
+                BuildingId = 1, // Poortgebouw
+                ServiceId = 3, // Dienst IT
+                Floor = "1e verdieping",
+                Room = "Lokaal IT",
+                Type = WorkplaceType.Desktop,
+                MonitorCount = 3,
+                HasDockingStation = false,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new PhysicalWorkplace
+            {
+                Id = 5,
+                Code = "PG-IT-02",
+                Name = "Werkplek IT 2",
+                Description = "Systeembeheer werkplek",
+                BuildingId = 1, // Poortgebouw
+                ServiceId = 3, // Dienst IT
+                Floor = "1e verdieping",
+                Room = "Lokaal IT",
+                Type = WorkplaceType.Desktop,
+                MonitorCount = 3,
+                HasDockingStation = false,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            // De Plak - Flexplekken
+            new PhysicalWorkplace
+            {
+                Id = 6,
+                Code = "PL-FLEX-01",
+                Name = "Flexplek 1",
+                Description = "Gedeelde werkplek voor medewerkers Sector Mens",
+                BuildingId = 3, // De Plak
+                ServiceId = 13, // Sociale Dienst (Sector Mens)
+                Floor = "Gelijkvloers",
+                Room = "Open kantoor",
+                Type = WorkplaceType.HotDesk,
+                MonitorCount = 1,
+                HasDockingStation = true,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            // Gemeentehuis - Vergaderzaal
+            new PhysicalWorkplace
+            {
+                Id = 7,
+                Code = "GH-VERG-01",
+                Name = "Vergaderzaal Raadzaal",
+                Description = "Grote vergaderzaal met presentatiescherm",
+                BuildingId = 2, // Gemeentehuis
+                ServiceId = null,
+                Floor = "1e verdieping",
+                Room = "Raadzaal",
+                Type = WorkplaceType.MeetingRoom,
+                MonitorCount = 1,
+                HasDockingStation = true,
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

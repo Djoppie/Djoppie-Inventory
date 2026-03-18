@@ -3,6 +3,7 @@ using System;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DjoppieInventory.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260317220454_AddPhysicalWorkplace")]
+    partial class AddPhysicalWorkplace
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -895,126 +898,6 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("PhysicalWorkplaces");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BuildingId = 2,
-                            Code = "GH-BZ-L01",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Eerste loket Burgerzaken - Identiteitskaarten",
-                            Floor = "Gelijkvloers",
-                            HasDockingStation = true,
-                            IsActive = true,
-                            MonitorCount = 2,
-                            Name = "Loket 1 Burgerzaken",
-                            Room = "Lokettenhal",
-                            ServiceId = 9,
-                            Type = 1,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BuildingId = 2,
-                            Code = "GH-BZ-L02",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Tweede loket Burgerzaken - Rijbewijzen",
-                            Floor = "Gelijkvloers",
-                            HasDockingStation = true,
-                            IsActive = true,
-                            MonitorCount = 2,
-                            Name = "Loket 2 Burgerzaken",
-                            Room = "Lokettenhal",
-                            ServiceId = 9,
-                            Type = 1,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            BuildingId = 2,
-                            Code = "GH-BZ-L03",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Derde loket Burgerzaken - Paspoorten",
-                            Floor = "Gelijkvloers",
-                            HasDockingStation = true,
-                            IsActive = true,
-                            MonitorCount = 2,
-                            Name = "Loket 3 Burgerzaken",
-                            Room = "Lokettenhal",
-                            ServiceId = 9,
-                            Type = 1,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 4,
-                            BuildingId = 1,
-                            Code = "PG-IT-01",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Helpdesk werkplek",
-                            Floor = "1e verdieping",
-                            HasDockingStation = false,
-                            IsActive = true,
-                            MonitorCount = 3,
-                            Name = "Werkplek IT 1",
-                            Room = "Lokaal IT",
-                            ServiceId = 3,
-                            Type = 0,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 5,
-                            BuildingId = 1,
-                            Code = "PG-IT-02",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Systeembeheer werkplek",
-                            Floor = "1e verdieping",
-                            HasDockingStation = false,
-                            IsActive = true,
-                            MonitorCount = 3,
-                            Name = "Werkplek IT 2",
-                            Room = "Lokaal IT",
-                            ServiceId = 3,
-                            Type = 0,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 6,
-                            BuildingId = 3,
-                            Code = "PL-FLEX-01",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Gedeelde werkplek voor medewerkers Sector Mens",
-                            Floor = "Gelijkvloers",
-                            HasDockingStation = true,
-                            IsActive = true,
-                            MonitorCount = 1,
-                            Name = "Flexplek 1",
-                            Room = "Open kantoor",
-                            ServiceId = 13,
-                            Type = 2,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 7,
-                            BuildingId = 2,
-                            Code = "GH-VERG-01",
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Grote vergaderzaal met presentatiescherm",
-                            Floor = "1e verdieping",
-                            HasDockingStation = true,
-                            IsActive = true,
-                            MonitorCount = 1,
-                            Name = "Vergaderzaal Raadzaal",
-                            Room = "Raadzaal",
-                            Type = 3,
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutAssetMovement", b =>

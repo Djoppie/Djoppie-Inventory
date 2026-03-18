@@ -57,6 +57,9 @@ export const ROUTES = {
 
   /** Autopilot device timeline page (requires :serialNumber parameter) */
   AUTOPILOT_TIMELINE: '/devices/autopilot/timeline/:serialNumber',
+
+  /** Physical workplaces management page */
+  PHYSICAL_WORKPLACES: '/workplaces',
 } as const;
 
 /**
