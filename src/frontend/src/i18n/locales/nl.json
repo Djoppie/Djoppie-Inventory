@@ -966,8 +966,10 @@
     "errorLoadingAssets": "Fout bij laden assets",
     "bulk": {
       "title": "Werkplekken Bulk Importeren",
+      "subtitle": "Importeer werkplekken via CSV of maak er meerdere tegelijk aan",
       "csvImport": "CSV Importeren",
       "quickAdd": "Snel Toevoegen",
+      "naming": "Naamgeving",
       "step1": "Stap 1: Download de sjabloon",
       "step2": "Stap 2: Upload uw ingevulde CSV",
       "downloadTemplate": "Download Sjabloon",

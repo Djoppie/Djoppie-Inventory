@@ -966,8 +966,10 @@
     "errorLoadingAssets": "Error loading assets",
     "bulk": {
       "title": "Bulk Import Workplaces",
+      "subtitle": "Import workplaces via CSV or create multiple at once",
       "csvImport": "CSV Import",
       "quickAdd": "Quick Add",
+      "naming": "Naming",
       "step1": "Step 1: Download the template",
       "step2": "Step 2: Upload your filled CSV",
       "downloadTemplate": "Download Template",

@@ -1,17 +1,12 @@
 import { useState, useRef } from 'react';
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   Box,
   Typography,
   IconButton,
   TextField,
   Alert,
   Stack,
-  Divider,
   CircularProgress,
   Table,
   TableBody,
@@ -83,6 +78,7 @@ const BulkImportWorkplacesDialog = ({
 }: BulkImportWorkplacesDialogProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,6 +101,17 @@ const BulkImportWorkplacesDialog = ({
     monitorCount: 2,
     hasDockingStation: true,
   });
+
+  // Neomorph styling constants
+  const neomorphBoxShadow = isDark
+    ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33'
+    : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff';
+  const neomorphInsetShadow = isDark
+    ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+    : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff';
+  const bgColor = isDark ? '#1e2328' : '#e8eef3';
+  const sectionBg = isDark ? '#1e2328' : '#e8eef3';
+  const accentColor = '#FF7700';
 
   const downloadTemplateMutation = useDownloadWorkplaceTemplate();
   const exportCsvMutation = useExportWorkplacesCsv();
@@ -199,6 +206,66 @@ const BulkImportWorkplacesDialog = ({
     onClose();
   };
 
+  // Neomorph text field styling
+  const neomorphTextFieldSx = {
+    '& .MuiOutlinedInput-root': {
+      backgroundColor: bgColor,
+      borderRadius: 2,
+      boxShadow: neomorphInsetShadow,
+      transition: 'all 0.3s ease',
+      '& fieldset': {
+        borderColor: 'transparent',
+      },
+      '&:hover fieldset': {
+        borderColor: accentColor,
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: accentColor,
+        borderWidth: 2,
+      },
+    },
+  };
+
+  // Neomorph button styling
+  const neomorphButtonSx = {
+    backgroundColor: bgColor,
+    boxShadow: neomorphBoxShadow,
+    borderRadius: 2,
+    border: 'none',
+    color: isDark ? '#fff' : '#333',
+    textTransform: 'none' as const,
+    fontWeight: 600,
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      backgroundColor: bgColor,
+      boxShadow: isDark
+        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33'
+        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff',
+      transform: 'translateY(-1px)',
+    },
+    '&:active': {
+      boxShadow: neomorphInsetShadow,
+      transform: 'translateY(0)',
+    },
+    '&.Mui-disabled': {
+      backgroundColor: bgColor,
+      opacity: 0.5,
+    },
+  };
+
+  const neomorphPrimaryButtonSx = {
+    ...neomorphButtonSx,
+    backgroundColor: accentColor,
+    color: '#fff',
+    '&:hover': {
+      backgroundColor: accentColor,
+      boxShadow: isDark
+        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 20px rgba(255, 119, 0, 0.4)'
+        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 20px rgba(255, 119, 0, 0.3)',
+      transform: 'translateY(-1px)',
+    },
+  };
+
   return (
     <Dialog
       open={open}
@@ -208,87 +275,172 @@ const BulkImportWorkplacesDialog = ({
       fullWidth
       PaperProps={{
         sx: {
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: isMobile ? 0 : 2,
+          borderRadius: isMobile ? 0 : 4,
+          boxShadow: neomorphBoxShadow,
+          backgroundColor: bgColor,
+          backgroundImage: 'none',
+          border: 'none',
+          overflow: 'hidden',
         },
       }}
     >
-      <DialogTitle
+      {/* Header */}
+      <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'rgba(255, 119, 0, 0.05)'
-              : 'rgba(255, 119, 0, 0.02)',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+          p: 3,
+          background: isDark
+            ? `linear-gradient(135deg, ${bgColor} 0%, #252a30 100%)`
+            : `linear-gradient(135deg, ${bgColor} 0%, #dde4eb 100%)`,
+          borderBottom: `2px solid ${accentColor}`,
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <UploadFileIcon sx={{ color: 'primary.main' }} />
-          <Typography variant="h6" component="span" sx={{ fontWeight: 700 }}>
-            {t('physicalWorkplaces.bulk.title')}
-          </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: bgColor,
+                boxShadow: neomorphBoxShadow,
+              }}
+            >
+              <UploadFileIcon sx={{ color: accentColor, fontSize: 28 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="text.primary">
+                {t('physicalWorkplaces.bulk.title')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('physicalWorkplaces.bulk.subtitle')}
+              </Typography>
+            </Box>
+          </Stack>
+          <IconButton
+            onClick={handleClose}
+            sx={{
+              backgroundColor: bgColor,
+              boxShadow: neomorphBoxShadow,
+              '&:hover': {
+                backgroundColor: bgColor,
+                boxShadow: neomorphInsetShadow,
+              },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
         </Stack>
-        <IconButton size="small" onClick={handleClose} edge="end">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+      </Box>
 
-      <DialogContent sx={{ mt: 2 }}>
-        <Tabs
-          value={tabValue}
-          onChange={(_, newValue) => setTabValue(newValue)}
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+      {/* Content */}
+      <Box sx={{ p: 3 }}>
+        {/* Tabs */}
+        <Box
+          sx={{
+            backgroundColor: sectionBg,
+            borderRadius: 2,
+            boxShadow: neomorphInsetShadow,
+            p: 0.5,
+            mb: 3,
+          }}
         >
-          <Tab label={t('physicalWorkplaces.bulk.csvImport')} />
-          <Tab label={t('physicalWorkplaces.bulk.quickAdd')} />
-        </Tabs>
+          <Tabs
+            value={tabValue}
+            onChange={(_, newValue) => setTabValue(newValue)}
+            variant="fullWidth"
+            TabIndicatorProps={{ sx: { display: 'none' } }}
+            sx={{
+              '& .MuiTab-root': {
+                borderRadius: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
+                transition: 'all 0.3s ease',
+                '&.Mui-selected': {
+                  backgroundColor: bgColor,
+                  boxShadow: neomorphBoxShadow,
+                  color: accentColor,
+                },
+              },
+            }}
+          >
+            <Tab label={t('physicalWorkplaces.bulk.csvImport')} />
+            <Tab label={t('physicalWorkplaces.bulk.quickAdd')} />
+          </Tabs>
+        </Box>
 
         {/* CSV Import Tab */}
         <TabPanel value={tabValue} index={0}>
           <Stack spacing={3}>
             {/* Download Template / Export Section */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                backgroundColor: sectionBg,
+                boxShadow: neomorphBoxShadow,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: accentColor }}>
                 {t('physicalWorkplaces.bulk.step1')}
               </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-                <Button
-                  variant="outlined"
-                  startIcon={<DownloadIcon />}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                <Box
+                  component="button"
                   onClick={handleDownloadTemplate}
                   disabled={downloadTemplateMutation.isPending}
+                  sx={{
+                    ...neomorphButtonSx,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 3,
+                    py: 1.5,
+                    cursor: 'pointer',
+                  }}
                 >
+                  <DownloadIcon sx={{ fontSize: 20 }} />
                   {downloadTemplateMutation.isPending
                     ? t('common.downloading')
                     : t('physicalWorkplaces.bulk.downloadTemplate')}
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  startIcon={<FileUploadIcon />}
+                </Box>
+                <Box
+                  component="button"
                   onClick={handleExportCsv}
                   disabled={exportCsvMutation.isPending}
+                  sx={{
+                    ...neomorphButtonSx,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 3,
+                    py: 1.5,
+                    cursor: 'pointer',
+                  }}
                 >
+                  <FileUploadIcon sx={{ fontSize: 20 }} />
                   {exportCsvMutation.isPending
                     ? t('common.exporting')
                     : t('physicalWorkplaces.bulk.exportCurrent')}
-                </Button>
+                </Box>
               </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                 {t('physicalWorkplaces.bulk.templateHint')}
               </Typography>
             </Box>
 
-            <Divider />
-
             {/* Upload Section */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                backgroundColor: sectionBg,
+                boxShadow: neomorphBoxShadow,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: accentColor }}>
                 {t('physicalWorkplaces.bulk.step2')}
               </Typography>
               <input
@@ -298,41 +450,71 @@ const BulkImportWorkplacesDialog = ({
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
               />
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Button
-                  variant="outlined"
-                  startIcon={<CloudUploadIcon />}
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2 }}>
+                <Box
+                  component="button"
                   onClick={() => fileInputRef.current?.click()}
+                  sx={{
+                    ...neomorphButtonSx,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 3,
+                    py: 1.5,
+                    cursor: 'pointer',
+                  }}
                 >
+                  <CloudUploadIcon sx={{ fontSize: 20 }} />
                   {t('physicalWorkplaces.bulk.selectFile')}
-                </Button>
+                </Box>
                 {selectedFile && (
                   <Typography variant="body2" color="text.secondary">
                     {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
                   </Typography>
                 )}
               </Stack>
-            </Box>
 
-            {selectedFile && !importResult && (
-              <Button
-                variant="contained"
-                startIcon={importCsvMutation.isPending ? <CircularProgress size={20} /> : <UploadFileIcon />}
-                onClick={handleImportCsv}
-                disabled={importCsvMutation.isPending}
-              >
-                {importCsvMutation.isPending
-                  ? t('common.importing')
-                  : t('physicalWorkplaces.bulk.importNow')}
-              </Button>
-            )}
+              {selectedFile && !importResult && (
+                <Box
+                  component="button"
+                  onClick={handleImportCsv}
+                  disabled={importCsvMutation.isPending}
+                  sx={{
+                    ...neomorphPrimaryButtonSx,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 3,
+                    py: 1.5,
+                    mt: 2,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {importCsvMutation.isPending ? (
+                    <CircularProgress size={20} sx={{ color: '#fff' }} />
+                  ) : (
+                    <UploadFileIcon sx={{ fontSize: 20 }} />
+                  )}
+                  {importCsvMutation.isPending
+                    ? t('common.importing')
+                    : t('physicalWorkplaces.bulk.importNow')}
+                </Box>
+              )}
+            </Box>
 
             {/* Import Results */}
             {importResult && (
-              <Box>
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  backgroundColor: sectionBg,
+                  boxShadow: neomorphBoxShadow,
+                }}
+              >
                 <Alert
                   severity={importResult.isFullySuccessful ? 'success' : importResult.successCount > 0 ? 'warning' : 'error'}
-                  sx={{ mb: 2 }}
+                  sx={{ mb: 2, borderRadius: 2 }}
                 >
                   {t('physicalWorkplaces.bulk.importResult', {
                     success: importResult.successCount,
@@ -342,14 +524,23 @@ const BulkImportWorkplacesDialog = ({
                 </Alert>
 
                 {importResult.results.length > 0 && (
-                  <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 300, border: '1px solid', borderColor: 'divider' }}>
+                  <TableContainer
+                    component={Paper}
+                    elevation={0}
+                    sx={{
+                      maxHeight: 300,
+                      borderRadius: 2,
+                      boxShadow: neomorphInsetShadow,
+                      backgroundColor: bgColor,
+                    }}
+                  >
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow>
-                          <TableCell>{t('common.row')}</TableCell>
-                          <TableCell>{t('physicalWorkplaces.code')}</TableCell>
-                          <TableCell>{t('physicalWorkplaces.name')}</TableCell>
-                          <TableCell>{t('common.status')}</TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor, fontWeight: 600 }}>{t('common.row')}</TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor, fontWeight: 600 }}>{t('physicalWorkplaces.code')}</TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor, fontWeight: 600 }}>{t('physicalWorkplaces.name')}</TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor, fontWeight: 600 }}>{t('common.status')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -378,118 +569,171 @@ const BulkImportWorkplacesDialog = ({
 
         {/* Quick Add Tab */}
         <TabPanel value={tabValue} index={1}>
-          <Stack spacing={2}>
-            <Alert severity="info">
+          <Stack spacing={3}>
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
               {t('physicalWorkplaces.bulk.quickAddHint')}
             </Alert>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <Box sx={{ flex: 1 }}>
-                <BuildingSelect
-                  value={bulkForm.buildingId ?? null}
-                  onChange={(value) => setBulkForm({ ...bulkForm, buildingId: value ?? 0 })}
-                  required
-                />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <ServiceSelect
-                  value={bulkForm.serviceId ?? null}
-                  onChange={(value) => setBulkForm({ ...bulkForm, serviceId: value ?? undefined })}
-                />
-              </Box>
-            </Stack>
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label={t('physicalWorkplaces.bulk.codePrefix')}
-                value={bulkForm.codePrefix}
-                onChange={(e) => setBulkForm({ ...bulkForm, codePrefix: e.target.value })}
-                required
-                placeholder="GH-BZ-L"
-                helperText={t('physicalWorkplaces.bulk.codePrefixHint')}
-                sx={{ flex: 1 }}
-              />
-              <TextField
-                label={t('physicalWorkplaces.bulk.startNumber')}
-                type="number"
-                value={bulkForm.startNumber}
-                onChange={(e) => setBulkForm({ ...bulkForm, startNumber: parseInt(e.target.value) || 1 })}
-                inputProps={{ min: 1, max: 999 }}
-                sx={{ width: 120 }}
-              />
-              <TextField
-                label={t('physicalWorkplaces.bulk.count')}
-                type="number"
-                value={bulkForm.count}
-                onChange={(e) => setBulkForm({ ...bulkForm, count: parseInt(e.target.value) || 1 })}
-                inputProps={{ min: 1, max: 100 }}
-                sx={{ width: 100 }}
-              />
-            </Stack>
-
-            <TextField
-              label={t('physicalWorkplaces.bulk.nameTemplate')}
-              value={bulkForm.nameTemplate}
-              onChange={(e) => setBulkForm({ ...bulkForm, nameTemplate: e.target.value })}
-              required
-              placeholder="Loket {n} Burgerzaken"
-              helperText={t('physicalWorkplaces.bulk.nameTemplateHint')}
-              fullWidth
-            />
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label={t('physicalWorkplaces.floor')}
-                value={bulkForm.floor}
-                onChange={(e) => setBulkForm({ ...bulkForm, floor: e.target.value })}
-                sx={{ flex: 1 }}
-              />
-              <TextField
-                label={t('physicalWorkplaces.room')}
-                value={bulkForm.room}
-                onChange={(e) => setBulkForm({ ...bulkForm, room: e.target.value })}
-                sx={{ flex: 1 }}
-              />
-            </Stack>
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-              <FormControl sx={{ minWidth: 150 }}>
-                <InputLabel>{t('physicalWorkplaces.type')}</InputLabel>
-                <Select
-                  value={bulkForm.type}
-                  label={t('physicalWorkplaces.type')}
-                  onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value as WorkplaceType })}
-                >
-                  {Object.entries(WorkplaceTypeLabels).map(([value, label]) => (
-                    <MenuItem key={value} value={Number(value)}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                label={t('physicalWorkplaces.monitorCount')}
-                type="number"
-                value={bulkForm.monitorCount}
-                onChange={(e) => setBulkForm({ ...bulkForm, monitorCount: parseInt(e.target.value) || 0 })}
-                inputProps={{ min: 0, max: 10 }}
-                sx={{ width: 130 }}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={bulkForm.hasDockingStation}
-                    onChange={(e) => setBulkForm({ ...bulkForm, hasDockingStation: e.target.checked })}
+            {/* Location Section */}
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                backgroundColor: sectionBg,
+                boxShadow: neomorphBoxShadow,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: accentColor }}>
+                {t('physicalWorkplaces.location')}
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                <Box sx={{ flex: 1, ...neomorphTextFieldSx }}>
+                  <BuildingSelect
+                    value={bulkForm.buildingId ?? null}
+                    onChange={(value) => setBulkForm({ ...bulkForm, buildingId: value ?? 0 })}
+                    required
                   />
-                }
-                label={t('physicalWorkplaces.hasDockingStation')}
+                </Box>
+                <Box sx={{ flex: 1, ...neomorphTextFieldSx }}>
+                  <ServiceSelect
+                    value={bulkForm.serviceId ?? null}
+                    onChange={(value) => setBulkForm({ ...bulkForm, serviceId: value ?? undefined })}
+                  />
+                </Box>
+              </Stack>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                <TextField
+                  label={t('physicalWorkplaces.floor')}
+                  value={bulkForm.floor}
+                  onChange={(e) => setBulkForm({ ...bulkForm, floor: e.target.value })}
+                  sx={{ flex: 1, ...neomorphTextFieldSx }}
+                />
+                <TextField
+                  label={t('physicalWorkplaces.room')}
+                  value={bulkForm.room}
+                  onChange={(e) => setBulkForm({ ...bulkForm, room: e.target.value })}
+                  sx={{ flex: 1, ...neomorphTextFieldSx }}
+                />
+              </Stack>
+            </Box>
+
+            {/* Naming Section */}
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                backgroundColor: sectionBg,
+                boxShadow: neomorphBoxShadow,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: accentColor }}>
+                {t('physicalWorkplaces.bulk.naming')}
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
+                <TextField
+                  label={t('physicalWorkplaces.bulk.codePrefix')}
+                  value={bulkForm.codePrefix}
+                  onChange={(e) => setBulkForm({ ...bulkForm, codePrefix: e.target.value })}
+                  required
+                  placeholder="GH-BZ-L"
+                  helperText={t('physicalWorkplaces.bulk.codePrefixHint')}
+                  sx={{ flex: 1, ...neomorphTextFieldSx }}
+                />
+                <TextField
+                  label={t('physicalWorkplaces.bulk.startNumber')}
+                  type="number"
+                  value={bulkForm.startNumber}
+                  onChange={(e) => setBulkForm({ ...bulkForm, startNumber: parseInt(e.target.value) || 1 })}
+                  inputProps={{ min: 1, max: 999 }}
+                  sx={{ width: 120, ...neomorphTextFieldSx }}
+                />
+                <TextField
+                  label={t('physicalWorkplaces.bulk.count')}
+                  type="number"
+                  value={bulkForm.count}
+                  onChange={(e) => setBulkForm({ ...bulkForm, count: parseInt(e.target.value) || 1 })}
+                  inputProps={{ min: 1, max: 100 }}
+                  sx={{ width: 100, ...neomorphTextFieldSx }}
+                />
+              </Stack>
+              <TextField
+                label={t('physicalWorkplaces.bulk.nameTemplate')}
+                value={bulkForm.nameTemplate}
+                onChange={(e) => setBulkForm({ ...bulkForm, nameTemplate: e.target.value })}
+                required
+                placeholder="Loket {n} Burgerzaken"
+                helperText={t('physicalWorkplaces.bulk.nameTemplateHint')}
+                fullWidth
+                sx={{ mt: 2, ...neomorphTextFieldSx }}
               />
-            </Stack>
+            </Box>
+
+            {/* Configuration Section */}
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                backgroundColor: sectionBg,
+                boxShadow: neomorphBoxShadow,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: accentColor }}>
+                {t('physicalWorkplaces.configuration')}
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ mt: 2 }}>
+                <FormControl sx={{ minWidth: 150, ...neomorphTextFieldSx }}>
+                  <InputLabel>{t('physicalWorkplaces.type')}</InputLabel>
+                  <Select
+                    value={bulkForm.type}
+                    label={t('physicalWorkplaces.type')}
+                    onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value as WorkplaceType })}
+                  >
+                    {Object.entries(WorkplaceTypeLabels).map(([value, label]) => (
+                      <MenuItem key={value} value={Number(value)}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label={t('physicalWorkplaces.monitorCount')}
+                  type="number"
+                  value={bulkForm.monitorCount}
+                  onChange={(e) => setBulkForm({ ...bulkForm, monitorCount: parseInt(e.target.value) || 0 })}
+                  inputProps={{ min: 0, max: 10 }}
+                  sx={{ width: 130, ...neomorphTextFieldSx }}
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={bulkForm.hasDockingStation}
+                      onChange={(e) => setBulkForm({ ...bulkForm, hasDockingStation: e.target.checked })}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: accentColor,
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: accentColor,
+                        },
+                      }}
+                    />
+                  }
+                  label={t('physicalWorkplaces.hasDockingStation')}
+                />
+              </Stack>
+            </Box>
 
             {/* Preview */}
             {bulkForm.buildingId > 0 && bulkForm.codePrefix && bulkForm.count > 0 && (
-              <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                <Typography variant="subtitle2" gutterBottom>
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  backgroundColor: sectionBg,
+                  boxShadow: neomorphInsetShadow,
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ color: accentColor }}>
                   {t('physicalWorkplaces.bulk.preview')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -502,9 +746,9 @@ const BulkImportWorkplacesDialog = ({
               </Box>
             )}
 
-            <Button
-              variant="contained"
-              startIcon={bulkCreateMutation.isPending ? <CircularProgress size={20} /> : <AddIcon />}
+            {/* Create Button */}
+            <Box
+              component="button"
               onClick={handleBulkCreate}
               disabled={
                 bulkCreateMutation.isPending ||
@@ -513,18 +757,41 @@ const BulkImportWorkplacesDialog = ({
                 !bulkForm.nameTemplate ||
                 bulkForm.count < 1
               }
+              sx={{
+                ...neomorphPrimaryButtonSx,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                px: 3,
+                py: 1.5,
+                cursor: 'pointer',
+                width: '100%',
+              }}
             >
+              {bulkCreateMutation.isPending ? (
+                <CircularProgress size={20} sx={{ color: '#fff' }} />
+              ) : (
+                <AddIcon sx={{ fontSize: 20 }} />
+              )}
               {bulkCreateMutation.isPending
                 ? t('common.creating')
                 : t('physicalWorkplaces.bulk.createWorkplaces', { count: bulkForm.count })}
-            </Button>
+            </Box>
 
             {/* Bulk Create Results */}
             {bulkResult && (
-              <Box>
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  backgroundColor: sectionBg,
+                  boxShadow: neomorphBoxShadow,
+                }}
+              >
                 <Alert
                   severity={bulkResult.errorCount === 0 ? 'success' : bulkResult.successCount > 0 ? 'warning' : 'error'}
-                  sx={{ mb: 2 }}
+                  sx={{ mb: 2, borderRadius: 2 }}
                 >
                   {t('physicalWorkplaces.bulk.createResult', {
                     success: bulkResult.successCount,
@@ -533,12 +800,21 @@ const BulkImportWorkplacesDialog = ({
                 </Alert>
 
                 {bulkResult.results.some(r => !r.success) && (
-                  <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 200, border: '1px solid', borderColor: 'divider' }}>
+                  <TableContainer
+                    component={Paper}
+                    elevation={0}
+                    sx={{
+                      maxHeight: 200,
+                      borderRadius: 2,
+                      boxShadow: neomorphInsetShadow,
+                      backgroundColor: bgColor,
+                    }}
+                  >
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow>
-                          <TableCell>{t('physicalWorkplaces.code')}</TableCell>
-                          <TableCell>{t('common.error')}</TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor, fontWeight: 600 }}>{t('physicalWorkplaces.code')}</TableCell>
+                          <TableCell sx={{ backgroundColor: bgColor, fontWeight: 600 }}>{t('common.error')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -556,13 +832,30 @@ const BulkImportWorkplacesDialog = ({
             )}
           </Stack>
         </TabPanel>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Button onClick={handleClose} variant="outlined">
+      {/* Footer */}
+      <Box
+        sx={{
+          p: 3,
+          borderTop: `1px solid ${isDark ? '#2a3038' : '#d0d7de'}`,
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <Box
+          component="button"
+          onClick={handleClose}
+          sx={{
+            ...neomorphButtonSx,
+            px: 4,
+            py: 1.5,
+            cursor: 'pointer',
+          }}
+        >
           {t('common.close')}
-        </Button>
-      </DialogActions>
+        </Box>
+      </Box>
     </Dialog>
   );
 };
