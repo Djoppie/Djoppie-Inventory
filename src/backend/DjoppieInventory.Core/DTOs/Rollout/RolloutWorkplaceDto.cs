@@ -30,6 +30,18 @@ public class RolloutWorkplaceDto
     /// Building name for this workplace
     /// </summary>
     public string? BuildingName { get; set; }
+    /// <summary>
+    /// Foreign key to the physical workplace being set up
+    /// </summary>
+    public int? PhysicalWorkplaceId { get; set; }
+    /// <summary>
+    /// Physical workplace code (for display)
+    /// </summary>
+    public string? PhysicalWorkplaceCode { get; set; }
+    /// <summary>
+    /// Physical workplace name (for display)
+    /// </summary>
+    public string? PhysicalWorkplaceName { get; set; }
     public bool IsLaptopSetup { get; set; }
     /// <summary>
     /// Legacy JSON-based asset plans (for backwards compatibility)

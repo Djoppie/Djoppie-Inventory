@@ -21,6 +21,7 @@ interface UseWorkplaceFormReturn {
   setServiceId: (value: number | undefined) => void;
   setScheduledDate: (value: string | undefined) => void;
   setWorkplaceStatus: (status: RolloutWorkplaceStatus) => void;
+  setPhysicalWorkplaceId: (value: number | undefined) => void;
 
   // Device state setters
   setOldDevices: (devices: OldDeviceConfig[]) => void;
@@ -44,6 +45,7 @@ const initialState: WorkplaceFormState = {
   serviceId: undefined,
   scheduledDate: undefined,
   workplaceStatus: 'Pending',
+  physicalWorkplaceId: undefined,
   oldDevices: [],
   configItems: [],
   returningOldDevice: false,
@@ -75,6 +77,10 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const setWorkplaceStatus = useCallback((status: RolloutWorkplaceStatus) => {
     setState(prev => ({ ...prev, workplaceStatus: status }));
+  }, []);
+
+  const setPhysicalWorkplaceId = useCallback((value: number | undefined) => {
+    setState(prev => ({ ...prev, physicalWorkplaceId: value }));
   }, []);
 
   // Device state setters
@@ -130,6 +136,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
       serviceId: workplace.serviceId,
       scheduledDate: workplace.scheduledDate || undefined,
       workplaceStatus: workplace.status,
+      physicalWorkplaceId: workplace.physicalWorkplaceId,
       oldDevices,
       configItems,
       returningOldDevice: oldDevicePlans.length > 0,
@@ -166,6 +173,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     setServiceId,
     setScheduledDate,
     setWorkplaceStatus,
+    setPhysicalWorkplaceId,
     setOldDevices,
     setConfigItems,
     setReturningOldDevice,

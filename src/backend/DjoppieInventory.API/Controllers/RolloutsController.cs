@@ -388,6 +388,7 @@ public class RolloutsController : ControllerBase
             Location = dto.Location,
             ScheduledDate = dto.ScheduledDate,
             ServiceId = dto.ServiceId,
+            PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans),
             TotalItems = dto.AssetPlans.Count,
@@ -426,6 +427,7 @@ public class RolloutsController : ControllerBase
         workplace.Location = dto.Location;
         workplace.ScheduledDate = dto.ScheduledDate;
         workplace.ServiceId = dto.ServiceId;
+        workplace.PhysicalWorkplaceId = dto.PhysicalWorkplaceId;
         workplace.IsLaptopSetup = dto.IsLaptopSetup;
         workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
         workplace.Status = status;
@@ -1646,6 +1648,9 @@ public class RolloutsController : ControllerBase
             ScheduledDate = workplace.ScheduledDate,
             ServiceId = workplace.ServiceId,
             ServiceName = workplace.Service?.Name,
+            PhysicalWorkplaceId = workplace.PhysicalWorkplaceId,
+            PhysicalWorkplaceCode = workplace.PhysicalWorkplace?.Code,
+            PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             IsLaptopSetup = workplace.IsLaptopSetup,
             AssetPlans = assetPlans,
             Status = workplace.Status.ToString(),

@@ -119,6 +119,7 @@ public class RolloutWorkplacesController : ControllerBase
             Location = dto.Location,
             ScheduledDate = dto.ScheduledDate,
             ServiceId = dto.ServiceId,
+            PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             Status = RolloutWorkplaceStatus.Pending,
             Notes = dto.Notes
@@ -162,6 +163,7 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.Location = dto.Location;
         workplace.ScheduledDate = dto.ScheduledDate;
         workplace.ServiceId = dto.ServiceId;
+        workplace.PhysicalWorkplaceId = dto.PhysicalWorkplaceId;
         workplace.IsLaptopSetup = dto.IsLaptopSetup;
         workplace.Notes = dto.Notes;
         workplace.UpdatedAt = DateTime.UtcNow;
@@ -519,6 +521,9 @@ public class RolloutWorkplacesController : ControllerBase
             ServiceName = workplace.Service?.Name,
             BuildingId = workplace.BuildingId,
             BuildingName = workplace.Building?.Name,
+            PhysicalWorkplaceId = workplace.PhysicalWorkplaceId,
+            PhysicalWorkplaceCode = workplace.PhysicalWorkplace?.Code,
+            PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             ScheduledDate = workplace.ScheduledDate,
             IsLaptopSetup = workplace.IsLaptopSetup,
             Status = workplace.Status.ToString(),
