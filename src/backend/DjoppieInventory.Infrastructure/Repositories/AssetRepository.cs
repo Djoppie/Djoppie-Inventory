@@ -253,15 +253,69 @@ public class AssetRepository : IAssetRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Asset>> GetByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Asset>> GetByOwnerAsync(
+        string ownerEmail,
+        string? assetTypeCode = null,
+        string? status = null,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(ownerEmail))
             return Enumerable.Empty<Asset>();
 
-        return await _context.Assets
+        var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
-            .Where(a => a.Owner != null && a.Owner.ToLower() == ownerEmail.ToLower())
+            .Where(a => a.Owner != null && a.Owner.ToLower() == ownerEmail.ToLower());
+
+        // Apply asset type filter if provided
+        if (!string.IsNullOrWhiteSpace(assetTypeCode))
+        {
+            var upperCode = assetTypeCode.ToUpper();
+            query = query.Where(a => a.AssetType != null &&
+                (a.AssetType.Code.ToUpper().Contains(upperCode) ||
+                 a.AssetType.Name.ToUpper().Contains(upperCode)));
+        }
+
+        // Apply status filter if provided
+        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<AssetStatus>(status, true, out var assetStatus))
+        {
+            query = query.Where(a => a.Status == assetStatus);
+        }
+
+        return await query
+            .OrderBy(a => a.AssetCode)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Asset>> GetAvailableLaptopsAsync(
+        string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Laptop type codes to filter by
+        var laptopTypeCodes = new[] { "LAP", "LAPTOP", "NOTEBOOK", "NOT" };
+
+        var query = _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Where(a => (a.Status == AssetStatus.Stock || a.Status == AssetStatus.Nieuw))
+            .Where(a => a.AssetType != null &&
+                laptopTypeCodes.Any(code =>
+                    a.AssetType.Code.ToUpper().Contains(code) ||
+                    a.AssetType.Name.ToUpper().Contains(code)));
+
+        // Apply search filter if provided
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.ToLower();
+            query = query.Where(a =>
+                (a.Brand != null && a.Brand.ToLower().Contains(searchLower)) ||
+                (a.Model != null && a.Model.ToLower().Contains(searchLower)) ||
+                (a.SerialNumber != null && a.SerialNumber.ToLower().Contains(searchLower)) ||
+                a.AssetCode.ToLower().Contains(searchLower));
+        }
+
+        return await query
             .OrderBy(a => a.AssetCode)
             .AsNoTracking()
             .ToListAsync(cancellationToken);

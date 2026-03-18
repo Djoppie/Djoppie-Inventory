@@ -60,6 +60,12 @@ export const ROUTES = {
 
   /** Physical workplaces management page */
   PHYSICAL_WORKPLACES: '/workplaces',
+
+  /** Laptop swap / Device deployment page */
+  LAPTOP_SWAP: '/laptop-swap',
+
+  /** Deployment history page */
+  DEPLOYMENT_HISTORY: '/laptop-swap/history',
 } as const;
 
 /**

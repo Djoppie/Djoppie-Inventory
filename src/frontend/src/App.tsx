@@ -25,6 +25,8 @@ const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
 const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
 const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
+const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
+const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +66,8 @@ function App() {
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
+                  <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
+                  <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
                 </Routes>
               </Suspense>
             </Layout>

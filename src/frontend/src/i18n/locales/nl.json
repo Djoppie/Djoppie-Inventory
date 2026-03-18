@@ -42,6 +42,7 @@
     "scan": "Scannen",
     "assets": "Activa",
     "templates": "Sjablonen",
+    "laptopSwap": "Swap",
     "rollouts": "Uitrol",
     "workplaces": "Werkplekken",
     "admin": "Beheer"
@@ -1049,5 +1050,113 @@
     "successMessage": "{{count}} assets succesvol bijgewerkt",
     "partialSuccess": "{{updated}} assets bijgewerkt, {{failed}} mislukt",
     "errors": "Fouten:"
+  },
+  "deployment": {
+    "title": "Laptop Swap / Onboarding",
+    "subtitle": "Voer een laptop swap uit of onboard een nieuwe gebruiker",
+    "mode": {
+      "label": "Modus",
+      "onboarding": "Onboarding",
+      "onboardingDesc": "Nieuwe medewerker krijgt laptop (zonder oud apparaat)",
+      "swap": "Swap",
+      "swapDesc": "Vervang oude laptop door nieuwe"
+    },
+    "user": {
+      "title": "Gebruiker",
+      "search": "Zoek gebruiker...",
+      "searchHint": "Zoek op naam of e-mail in Microsoft Entra",
+      "selected": "Geselecteerde gebruiker",
+      "noUserSelected": "Geen gebruiker geselecteerd",
+      "currentAssets": "Huidige assets van deze gebruiker"
+    },
+    "oldLaptop": {
+      "title": "Oud Apparaat",
+      "select": "Selecteer oud apparaat",
+      "noOldLaptop": "Geen oud apparaat",
+      "selectFromList": "Selecteer uit lijst van gebruikersapparaten",
+      "newStatus": "Nieuwe status voor oud apparaat",
+      "statusOptions": {
+        "stock": "Stock (terug in voorraad)",
+        "defect": "Defect (kapot)",
+        "uitdienst": "Uit dienst (afvoeren)"
+      }
+    },
+    "newLaptop": {
+      "title": "Nieuw Apparaat",
+      "search": "Zoek beschikbare laptop...",
+      "searchHint": "Zoek op code, serienummer of naam",
+      "noNewLaptop": "Geen nieuw apparaat geselecteerd",
+      "availableCount": "{{count}} laptops beschikbaar"
+    },
+    "workplace": {
+      "title": "Werkplek (optioneel)",
+      "select": "Selecteer werkplek",
+      "noWorkplace": "Geen werkplek",
+      "updateEquipment": "Werkplek apparatuur bijwerken",
+      "currentOccupant": "Huidige bezetter",
+      "willUpdateOccupant": "Bezetter wordt bijgewerkt naar nieuwe gebruiker"
+    },
+    "equipment": {
+      "title": "Werkplek Apparatuur",
+      "updateEquipment": "Apparatuur bijwerken",
+      "noChanges": "Geen wijzigingen aan apparatuur"
+    },
+    "occupantConflict": {
+      "title": "Bezetter Conflict",
+      "message": "Deze werkplek is momenteel bezet door {{currentOccupant}}.",
+      "question": "Wilt u de bezetter bijwerken naar {{newOccupant}}?",
+      "confirmUpdate": "Ja, bezetter bijwerken",
+      "cancel": "Annuleren"
+    },
+    "execute": {
+      "button": "Deployment Uitvoeren",
+      "executing": "Deployment uitvoeren...",
+      "confirmTitle": "Deployment Bevestigen",
+      "confirmSwap": "U staat op het punt om de laptop van {{userName}} te verwisselen.",
+      "confirmOnboarding": "U staat op het punt om {{userName}} te onboarden met een nieuwe laptop.",
+      "oldDevice": "Oud apparaat: {{device}} → {{status}}",
+      "newDevice": "Nieuw apparaat: {{device}}",
+      "workplaceUpdate": "Werkplek: {{workplace}}"
+    },
+    "success": {
+      "title": "Deployment Succesvol",
+      "swapComplete": "Laptop swap succesvol voltooid voor {{userName}}",
+      "onboardingComplete": "Onboarding succesvol voltooid voor {{userName}}",
+      "viewHistory": "Bekijk geschiedenis"
+    },
+    "error": {
+      "title": "Deployment Mislukt",
+      "generic": "Er is een fout opgetreden tijdens de deployment",
+      "noUser": "Selecteer een gebruiker",
+      "noNewLaptop": "Selecteer een nieuw apparaat",
+      "noOldLaptop": "Selecteer het oude apparaat voor swap",
+      "retry": "Opnieuw proberen"
+    },
+    "history": {
+      "title": "Deployment Geschiedenis",
+      "subtitle": "Overzicht van alle laptop swaps en onboardings",
+      "filters": "Filters",
+      "dateRange": "Datumbereik",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "modeFilter": "Filter op modus",
+      "allModes": "Alle modi",
+      "noHistory": "Geen deployment geschiedenis gevonden",
+      "columns": {
+        "date": "Datum",
+        "mode": "Modus",
+        "user": "Gebruiker",
+        "oldDevice": "Oud Apparaat",
+        "newDevice": "Nieuw Apparaat",
+        "workplace": "Werkplek",
+        "performedBy": "Uitgevoerd door"
+      },
+      "export": "Exporteren naar CSV"
+    },
+    "validation": {
+      "userRequired": "Gebruiker is verplicht",
+      "newLaptopRequired": "Nieuw apparaat is verplicht",
+      "oldLaptopRequiredForSwap": "Oud apparaat is verplicht voor swap modus"
+    }
   }
 }

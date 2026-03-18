@@ -42,6 +42,7 @@
     "scan": "Scan",
     "assets": "Assets",
     "templates": "Templates",
+    "laptopSwap": "Swap",
     "rollouts": "Rollouts",
     "workplaces": "Workplaces",
     "admin": "Admin"
@@ -1049,5 +1050,113 @@
     "successMessage": "Successfully updated {{count}} assets",
     "partialSuccess": "Updated {{updated}} assets, {{failed}} failed",
     "errors": "Errors:"
+  },
+  "deployment": {
+    "title": "Laptop Swap / Onboarding",
+    "subtitle": "Perform a laptop swap or onboard a new user",
+    "mode": {
+      "label": "Mode",
+      "onboarding": "Onboarding",
+      "onboardingDesc": "New employee gets laptop (no old device)",
+      "swap": "Swap",
+      "swapDesc": "Replace old laptop with new one"
+    },
+    "user": {
+      "title": "User",
+      "search": "Search user...",
+      "searchHint": "Search by name or email in Microsoft Entra",
+      "selected": "Selected user",
+      "noUserSelected": "No user selected",
+      "currentAssets": "Current assets for this user"
+    },
+    "oldLaptop": {
+      "title": "Old Device",
+      "select": "Select old device",
+      "noOldLaptop": "No old device",
+      "selectFromList": "Select from user's device list",
+      "newStatus": "New status for old device",
+      "statusOptions": {
+        "stock": "Stock (back to inventory)",
+        "defect": "Defective (broken)",
+        "uitdienst": "Decommissioned (retire)"
+      }
+    },
+    "newLaptop": {
+      "title": "New Device",
+      "search": "Search available laptop...",
+      "searchHint": "Search by code, serial number or name",
+      "noNewLaptop": "No new device selected",
+      "availableCount": "{{count}} laptops available"
+    },
+    "workplace": {
+      "title": "Workplace (optional)",
+      "select": "Select workplace",
+      "noWorkplace": "No workplace",
+      "updateEquipment": "Update workplace equipment",
+      "currentOccupant": "Current occupant",
+      "willUpdateOccupant": "Occupant will be updated to new user"
+    },
+    "equipment": {
+      "title": "Workplace Equipment",
+      "updateEquipment": "Update equipment",
+      "noChanges": "No equipment changes"
+    },
+    "occupantConflict": {
+      "title": "Occupant Conflict",
+      "message": "This workplace is currently occupied by {{currentOccupant}}.",
+      "question": "Do you want to update the occupant to {{newOccupant}}?",
+      "confirmUpdate": "Yes, update occupant",
+      "cancel": "Cancel"
+    },
+    "execute": {
+      "button": "Execute Deployment",
+      "executing": "Executing deployment...",
+      "confirmTitle": "Confirm Deployment",
+      "confirmSwap": "You are about to swap the laptop for {{userName}}.",
+      "confirmOnboarding": "You are about to onboard {{userName}} with a new laptop.",
+      "oldDevice": "Old device: {{device}} → {{status}}",
+      "newDevice": "New device: {{device}}",
+      "workplaceUpdate": "Workplace: {{workplace}}"
+    },
+    "success": {
+      "title": "Deployment Successful",
+      "swapComplete": "Laptop swap completed successfully for {{userName}}",
+      "onboardingComplete": "Onboarding completed successfully for {{userName}}",
+      "viewHistory": "View history"
+    },
+    "error": {
+      "title": "Deployment Failed",
+      "generic": "An error occurred during deployment",
+      "noUser": "Please select a user",
+      "noNewLaptop": "Please select a new device",
+      "noOldLaptop": "Please select the old device for swap",
+      "retry": "Try again"
+    },
+    "history": {
+      "title": "Deployment History",
+      "subtitle": "Overview of all laptop swaps and onboardings",
+      "filters": "Filters",
+      "dateRange": "Date range",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "modeFilter": "Filter by mode",
+      "allModes": "All modes",
+      "noHistory": "No deployment history found",
+      "columns": {
+        "date": "Date",
+        "mode": "Mode",
+        "user": "User",
+        "oldDevice": "Old Device",
+        "newDevice": "New Device",
+        "workplace": "Workplace",
+        "performedBy": "Performed by"
+      },
+      "export": "Export to CSV"
+    },
+    "validation": {
+      "userRequired": "User is required",
+      "newLaptopRequired": "New device is required",
+      "oldLaptopRequiredForSwap": "Old device is required for swap mode"
+    }
   }
 }

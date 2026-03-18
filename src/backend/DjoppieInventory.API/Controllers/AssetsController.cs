@@ -115,6 +115,44 @@ public class AssetsController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves all assets assigned to a specific owner (by email/UPN).
+    /// Used for laptop swap to show user's current devices.
+    /// </summary>
+    /// <param name="ownerName">The owner's display name (as stored in the Owner field)</param>
+    /// <param name="assetTypeCode">Optional asset type code filter (e.g., LAP, LAPTOP)</param>
+    /// <param name="status">Optional status filter (default: InGebruik)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of assets owned by the specified user</returns>
+    [HttpGet("by-owner/{ownerName}")]
+    [ProducesResponseType(typeof(IEnumerable<AssetDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<AssetDto>>> GetAssetsByOwner(
+        string ownerName,
+        [FromQuery] string? assetTypeCode = null,
+        [FromQuery] string? status = "InGebruik",
+        CancellationToken cancellationToken = default)
+    {
+        var assets = await _assetService.GetAssetsByOwnerAsync(ownerName, assetTypeCode, status, cancellationToken);
+        return Ok(assets);
+    }
+
+    /// <summary>
+    /// Retrieves available laptops for assignment (status: Stock or Nieuw).
+    /// Used for laptop swap/onboarding to show available devices.
+    /// </summary>
+    /// <param name="search">Optional search term to filter by brand/model/serial</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of available laptop assets</returns>
+    [HttpGet("available-laptops")]
+    [ProducesResponseType(typeof(IEnumerable<AssetDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<AssetDto>>> GetAvailableLaptops(
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var assets = await _assetService.GetAvailableLaptopsAsync(search, cancellationToken);
+        return Ok(assets);
+    }
+
+    /// <summary>
     /// Creates a new asset in the inventory system.
     /// </summary>
     /// <param name="createAssetDto">The asset creation data</param>
@@ -295,25 +333,4 @@ public class AssetsController : ControllerBase
         return Ok(asset);
     }
 
-    /// <summary>
-    /// Retrieves all assets owned by a specific user (by email address).
-    /// </summary>
-    /// <param name="email">The owner's email address</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    [HttpGet("by-owner/{email}")]
-    [ProducesResponseType(typeof(IEnumerable<AssetDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<AssetDto>>> GetAssetsByOwner(
-        string email,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            return BadRequest("Email address is required");
-
-        // Decode URL-encoded email (e.g., %40 -> @)
-        var decodedEmail = Uri.UnescapeDataString(email);
-
-        var assets = await _assetService.GetAssetsByOwnerAsync(decodedEmail, cancellationToken);
-        return Ok(assets);
-    }
 }

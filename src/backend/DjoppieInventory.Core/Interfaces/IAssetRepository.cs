@@ -74,7 +74,23 @@ public interface IAssetRepository
     /// Gets all assets owned by a specific user (by email address).
     /// </summary>
     /// <param name="ownerEmail">The owner's email address</param>
+    /// <param name="assetTypeCode">Optional asset type code filter</param>
+    /// <param name="status">Optional status filter</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of assets owned by the user</returns>
-    Task<IEnumerable<Asset>> GetByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Asset>> GetByOwnerAsync(
+        string ownerEmail,
+        string? assetTypeCode = null,
+        string? status = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets available laptops for assignment (status: Stock or Nieuw).
+    /// </summary>
+    /// <param name="search">Optional search term to filter by brand/model/serial</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of available laptop assets</returns>
+    Task<IEnumerable<Asset>> GetAvailableLaptopsAsync(
+        string? search = null,
+        CancellationToken cancellationToken = default);
 }

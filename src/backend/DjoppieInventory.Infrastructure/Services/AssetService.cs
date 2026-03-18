@@ -514,12 +514,24 @@ public class AssetService : IAssetService
         return result;
     }
 
-    public async Task<IEnumerable<AssetDto>> GetAssetsByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<AssetDto>> GetAssetsByOwnerAsync(
+        string ownerEmail,
+        string? assetTypeCode = null,
+        string? status = "InGebruik",
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(ownerEmail))
             return Enumerable.Empty<AssetDto>();
 
-        var assets = await _assetRepository.GetByOwnerAsync(ownerEmail, cancellationToken);
+        var assets = await _assetRepository.GetByOwnerAsync(ownerEmail, assetTypeCode, status, cancellationToken);
+        return _mapper.Map<IEnumerable<AssetDto>>(assets);
+    }
+
+    public async Task<IEnumerable<AssetDto>> GetAvailableLaptopsAsync(
+        string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var assets = await _assetRepository.GetAvailableLaptopsAsync(search, cancellationToken);
         return _mapper.Map<IEnumerable<AssetDto>>(assets);
     }
 

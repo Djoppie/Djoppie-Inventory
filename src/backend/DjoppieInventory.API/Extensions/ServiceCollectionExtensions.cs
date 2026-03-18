@@ -42,6 +42,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetMovementService, AssetMovementService>();
         services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
 
+        // Device Deployment Services (Laptop Swap / Onboarding)
+        services.AddScoped<IDeploymentService, DeploymentService>();
+
         // Configure AutoMapper (v13+ API - AddAutoMapper is now in core package)
         services.AddAutoMapper(cfg => { }, typeof(Profiles.MappingProfile).Assembly);
 

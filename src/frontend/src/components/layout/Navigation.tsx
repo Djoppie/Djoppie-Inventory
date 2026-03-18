@@ -4,6 +4,7 @@ import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import DevicesIcon from '@mui/icons-material/Devices';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import BusinessIcon from '@mui/icons-material/Business';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -23,9 +24,10 @@ const Navigation = () => {
     if (location.pathname === ROUTES.DASHBOARD) return 0;
     if (location.pathname.startsWith('/devices') || location.pathname === ROUTES.TEMPLATES) return 1; // Device Management hub, sub-pages, and templates
     if (location.pathname === ROUTES.SCAN) return 2;
-    if (location.pathname.startsWith('/rollouts')) return 3;
-    if (location.pathname === ROUTES.PHYSICAL_WORKPLACES) return 4;
-    if (location.pathname === ROUTES.ADMIN) return 5;
+    if (location.pathname.startsWith('/laptop-swap')) return 3; // Laptop Swap / Deployment
+    if (location.pathname.startsWith('/rollouts')) return 4;
+    if (location.pathname === ROUTES.PHYSICAL_WORKPLACES) return 5;
+    if (location.pathname === ROUTES.ADMIN) return 6;
     return 0;
   };
 
@@ -41,12 +43,15 @@ const Navigation = () => {
         navigate(ROUTES.SCAN);
         break;
       case 3:
-        navigate(ROUTES.ROLLOUTS);
+        navigate(ROUTES.LAPTOP_SWAP);
         break;
       case 4:
-        navigate(ROUTES.PHYSICAL_WORKPLACES);
+        navigate(ROUTES.ROLLOUTS);
         break;
       case 5:
+        navigate(ROUTES.PHYSICAL_WORKPLACES);
+        break;
+      case 6:
         navigate(ROUTES.ADMIN);
         break;
     }
@@ -67,6 +72,7 @@ const Navigation = () => {
         <BottomNavigationAction label={t('navigation.dashboard')} icon={<DashboardIcon />} />
         <BottomNavigationAction label={t('navigation.devices', { defaultValue: 'Devices' })} icon={<DevicesIcon />} />
         <BottomNavigationAction label={t('navigation.scan')} icon={<QrCodeScannerIcon />} />
+        <BottomNavigationAction label={t('navigation.laptopSwap', { defaultValue: 'Swap' })} icon={<SwapHorizIcon />} />
         <BottomNavigationAction label={t('navigation.rollouts')} icon={<RocketLaunchIcon />} />
         <BottomNavigationAction label={t('navigation.workplaces')} icon={<BusinessIcon />} />
         <BottomNavigationAction label={t('navigation.admin')} icon={<AdminPanelSettingsIcon />} />
