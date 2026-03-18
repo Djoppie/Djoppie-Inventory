@@ -6,10 +6,6 @@ import {
   Paper,
   Chip,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Card,
   CardContent,
@@ -67,6 +63,7 @@ import ServiceSelect from '../components/common/ServiceSelect';
 import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
 import BulkImportWorkplacesDialog from '../components/physicalWorkplaces/BulkImportWorkplacesDialog';
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
+import NeomorphConfirmDialog from '../components/physicalWorkplaces/NeomorphConfirmDialog';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -744,117 +741,45 @@ const PhysicalWorkplacesPage = () => {
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
+      <NeomorphConfirmDialog
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            border: '2px solid',
-            borderColor: 'error.main',
-            borderRadius: 2,
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? 'rgba(244, 67, 54, 0.1)'
-                : 'rgba(244, 67, 54, 0.05)',
-            color: 'error.main',
-            fontWeight: 700,
-            borderBottom: '1px solid',
-            borderColor: 'error.main',
-          }}
-        >
-          {t('physicalWorkplaces.deleteWorkplace')}
-        </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
-          <Typography variant="body1">
-            {t('physicalWorkplaces.deleteConfirm', {
-              name: deletingWorkplace?.name,
-              code: deletingWorkplace?.code,
-            })}
-          </Typography>
-          {(deletingWorkplace?.fixedAssetCount ?? 0) > 0 && (
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              {t('physicalWorkplaces.deleteWarningAssets', {
+        onConfirm={handleDelete}
+        title={t('physicalWorkplaces.deleteWorkplace')}
+        message={t('physicalWorkplaces.deleteConfirm', {
+          name: deletingWorkplace?.name,
+          code: deletingWorkplace?.code,
+        })}
+        warning={
+          (deletingWorkplace?.fixedAssetCount ?? 0) > 0
+            ? t('physicalWorkplaces.deleteWarningAssets', {
                 count: deletingWorkplace?.fixedAssetCount,
-              })}
-            </Alert>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={handleCloseDeleteDialog} color="inherit">
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleDelete}
-            variant="contained"
-            color="error"
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              })
+            : undefined
+        }
+        confirmText={deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
+        cancelText={t('common.cancel')}
+        isLoading={deleteMutation.isPending}
+        variant="delete"
+        icon="delete"
+      />
 
       {/* Clear Occupant Dialog */}
-      <Dialog
+      <NeomorphConfirmDialog
         open={clearOccupantDialogOpen}
         onClose={handleCloseClearOccupantDialog}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            border: '2px solid',
-            borderColor: 'warning.main',
-            borderRadius: 2,
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? 'rgba(255, 152, 0, 0.1)'
-                : 'rgba(255, 152, 0, 0.05)',
-            color: 'warning.dark',
-            fontWeight: 700,
-            borderBottom: '1px solid',
-            borderColor: 'warning.main',
-          }}
-        >
-          {t('physicalWorkplaces.clearOccupant')}
-        </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
-          <Typography variant="body1">
-            {t('physicalWorkplaces.clearOccupantConfirm', {
-              name: clearingOccupantWorkplace?.currentOccupantName,
-              workplace: clearingOccupantWorkplace?.name,
-            })}
-          </Typography>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={handleCloseClearOccupantDialog} color="inherit">
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleClearOccupant}
-            variant="contained"
-            color="warning"
-            disabled={clearOccupantMutation.isPending}
-          >
-            {clearOccupantMutation.isPending ? t('common.processing') : t('common.confirm')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onConfirm={handleClearOccupant}
+        title={t('physicalWorkplaces.clearOccupant')}
+        message={t('physicalWorkplaces.clearOccupantConfirm', {
+          name: clearingOccupantWorkplace?.currentOccupantName,
+          workplace: clearingOccupantWorkplace?.name,
+        })}
+        confirmText={clearOccupantMutation.isPending ? t('common.processing') : t('common.confirm')}
+        cancelText={t('common.cancel')}
+        isLoading={clearOccupantMutation.isPending}
+        variant="warning"
+        icon="person-off"
+      />
 
       {/* Workplace Assets Dialog */}
       <WorkplaceAssetsDialog
