@@ -236,6 +236,16 @@ const DeviceManagementPage = () => {
       gradientDark: 'linear-gradient(135deg, rgba(33,150,243,0.2) 0%, rgba(25,118,210,0.1) 100%)',
       route: ROUTES.TEMPLATES,
     },
+    {
+      title: t('navigation.rollouts', { defaultValue: 'Rollouts' }),
+      description: t('deviceManagement.rolloutsDesc', { defaultValue: 'Plan and execute device rollouts for teams and departments' }),
+      icon: <RocketLaunchIcon sx={{ fontSize: 28 }} />,
+      color: '#E91E63',
+      shadowColor: 'rgba(233, 30, 99, 0.3)',
+      gradientLight: 'linear-gradient(135deg, rgba(233,30,99,0.12) 0%, rgba(244,143,177,0.06) 100%)',
+      gradientDark: 'linear-gradient(135deg, rgba(233,30,99,0.2) 0%, rgba(194,24,91,0.1) 100%)',
+      route: ROUTES.ROLLOUTS,
+    },
   ];
 
   return (
