@@ -281,15 +281,18 @@ The application uses **Azure Key Vault** for production secret management:
 - **Configuration**: Key Vault secrets override appsettings.json values
 
 **Key Vault Secret Naming Convention**:
+
 - Configuration key: `AzureAd:ClientSecret`
 - Key Vault secret name: `AzureAd--ClientSecret` (uses `--` instead of `:`)
 
 **Required Secrets in Key Vault**:
+
 - `ConnectionStrings--DefaultConnection` - SQL Database connection string
 - `AzureAd--ClientSecret` - Entra ID client secret for Microsoft Graph API
 - `ApplicationInsights--ConnectionString` - Application Insights telemetry
 
 For detailed Key Vault management, see:
+
 - [Key Vault Configuration Guide](docs/KEYVAULT-CONFIGURATION-GUIDE.md)
 - [Key Vault Quick Reference](KEYVAULT-QUICK-REFERENCE.md)
 
@@ -476,29 +479,34 @@ Completion Transaction:
 ### Key Files
 
 **Backend Controllers** (split from original 70KB RolloutsController):
+
 - `Controllers/Rollout/RolloutSessionsController.cs` - Session CRUD, start/complete
 - `Controllers/Rollout/RolloutDaysController.cs` - Day management, service scheduling
 - `Controllers/Rollout/RolloutWorkplacesController.cs` - Workplace CRUD, asset assignments
 - `Controllers/Rollout/RolloutReportsController.cs` - Progress reports, asset movement exports
 
 **Backend Services**:
+
 - `Services/OrganizationSyncService.cs` - Entra mail group sync
 - `Services/AssetMovementService.cs` - Asset deployment/decommission tracking
 - `Services/WorkplaceAssetAssignmentService.cs` - Workplace asset assignment management
 
 **Frontend Hooks**:
+
 - `hooks/useRollout.ts` - Core rollout mutations/queries
 - `hooks/rollout/useRolloutReports.ts` - Report queries and exports
 - `hooks/rollout/useAssetAssignments.ts` - Assignment management
 - `hooks/usePlanningViewMode.ts` - Calendar/list view preference
 
 **Frontend Components**:
+
 - `components/rollout/planning/PlanningViewToggle.tsx` - View mode toggle
 - `components/rollout/planning/PlanningListView.tsx` - List view with sorting/filtering
 - `components/rollout/reporting/AssetMovementTable.tsx` - Movement audit table
 - `components/rollout/reporting/ProgressDashboard.tsx` - Session progress visualization
 
 **Entities**:
+
 - `RolloutSession.cs`, `RolloutDay.cs`, `RolloutWorkplace.cs`
 - `WorkplaceAssetAssignment.cs` - Relational asset assignments (replaces JSON)
 - `RolloutAssetMovement.cs` - Asset movement audit trail
@@ -509,12 +517,14 @@ Completion Transaction:
 ### Database Schema
 
 **WorkplaceAssetAssignment** (replaces AssetPlansJson for new features):
+
 - Links workplace to asset type, new asset, old asset, and template
 - Tracks assignment category (UserAssigned, WorkplaceFixed)
 - Tracks source type (ExistingInventory, NewFromTemplate, CreateOnSite)
 - Tracks status (Pending, Installed, Skipped, Failed)
 
 **RolloutAssetMovement** (audit trail):
+
 - Records all asset status transitions during rollout execution
 - Captures previous/new status, owner, service, location, building
 - Links to session and workplace for reporting

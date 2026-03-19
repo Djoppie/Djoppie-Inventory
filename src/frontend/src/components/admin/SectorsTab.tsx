@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
+import SyncIcon from '@mui/icons-material/Sync';
 import AdminDataTable, { Column } from './AdminDataTable';
 import AdminFormDialog from './AdminFormDialog';
 import { Sector, CreateSectorDto, UpdateSectorDto } from '../../types/admin.types';
@@ -54,15 +55,15 @@ const SectorsTab = () => {
   });
 
   const { data: sectors = [], isLoading } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => sectorsApi.getAll(),
+    queryKey: ['admin', 'sectors', 'active'],
+    queryFn: () => sectorsApi.getAll(false), // Only active sectors
   });
 
   const createMutation = useMutation({
     mutationFn: sectorsApi.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sectors'] });
-      setSnackbar({ open: true, message: 'Sector created successfully', severity: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'sectors'] });
+      setSnackbar({ open: true, message: 'Sector created', severity: 'success' });
       handleCloseDialog();
     },
     onError: () => {
@@ -71,11 +72,10 @@ const SectorsTab = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateSectorDto }) =>
-      sectorsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: UpdateSectorDto }) => sectorsApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sectors'] });
-      setSnackbar({ open: true, message: 'Sector updated successfully', severity: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'sectors'] });
+      setSnackbar({ open: true, message: 'Sector updated', severity: 'success' });
       handleCloseDialog();
     },
     onError: () => {
@@ -86,12 +86,27 @@ const SectorsTab = () => {
   const deleteMutation = useMutation({
     mutationFn: sectorsApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sectors'] });
-      setSnackbar({ open: true, message: 'Sector deleted successfully', severity: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'sectors'] });
+      setSnackbar({ open: true, message: 'Sector deleted', severity: 'success' });
       handleCloseDeleteDialog();
     },
     onError: () => {
       setSnackbar({ open: true, message: 'Failed to delete sector', severity: 'error' });
+    },
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: sectorsApi.syncFromEntra,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'sectors'] });
+      setSnackbar({
+        open: true,
+        message: `Sync: ${result.created} created, ${result.updated} updated`,
+        severity: 'success',
+      });
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Failed to sync from Entra', severity: 'error' });
     },
   });
 
@@ -130,57 +145,48 @@ const SectorsTab = () => {
     setDeletingItem(null);
   };
 
-  const handleInputChange = (field: keyof FormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'isActive'
-      ? (event.target as HTMLInputElement).checked
-      : event.target.value;
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (formErrors[field]) {
-      setFormErrors((prev) => ({ ...prev, [field]: '' }));
-    }
-  };
+  const handleInputChange =
+    (field: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value =
+        field === 'isActive' ? (event.target as HTMLInputElement).checked : event.target.value;
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      if (formErrors[field]) {
+        setFormErrors((prev) => ({ ...prev, [field]: '' }));
+      }
+    };
 
   const validateForm = (): boolean => {
     const errors: Partial<FormData> = {};
-
-    if (!formData.code.trim()) {
-      errors.code = 'Code is required';
-    }
-    if (!formData.name.trim()) {
-      errors.name = 'Name is required';
-    }
-    if (!formData.sortOrder || isNaN(Number(formData.sortOrder))) {
+    if (!formData.code.trim()) errors.code = 'Code is required';
+    if (!formData.name.trim()) errors.name = 'Name is required';
+    if (!formData.sortOrder || isNaN(Number(formData.sortOrder)))
       errors.sortOrder = 'Sort order must be a number';
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     const sortOrder = Number(formData.sortOrder);
 
     try {
       if (editingItem) {
-        const dto: UpdateSectorDto = {
-          name: formData.name.trim(),
-          description: formData.description.trim() || undefined,
-          isActive: formData.isActive,
-          sortOrder,
-        };
-        await updateMutation.mutateAsync({ id: editingItem.id, data: dto });
+        await updateMutation.mutateAsync({
+          id: editingItem.id,
+          data: {
+            name: formData.name.trim(),
+            description: formData.description.trim() || undefined,
+            isActive: formData.isActive,
+            sortOrder,
+          },
+        });
       } else {
-        const dto: CreateSectorDto = {
+        await createMutation.mutateAsync({
           code: formData.code.trim().toUpperCase(),
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
           sortOrder,
-        };
-        await createMutation.mutateAsync(dto);
+        });
       }
     } catch {
       // Error handled by mutation callbacks
@@ -196,16 +202,16 @@ const SectorsTab = () => {
     {
       id: 'code',
       label: 'Code',
-      minWidth: 100,
+      minWidth: 80,
       format: (item) => (
-        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
+        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#FF7700', fontSize: '0.8rem' }}>
           {item.code}
         </Typography>
       ),
     },
     { id: 'name', label: 'Name', minWidth: 150 },
-    { id: 'description', label: 'Description', minWidth: 200 },
-    { id: 'sortOrder', label: 'Sort Order', minWidth: 80, align: 'center' },
+    { id: 'description', label: 'Description', minWidth: 180 },
+    { id: 'sortOrder', label: 'Order', minWidth: 60, align: 'center' },
   ];
 
   if (isLoading) return <Loading message="Loading sectors..." />;
@@ -218,34 +224,41 @@ const SectorsTab = () => {
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
         searchPlaceholder="Search sectors..."
-        emptyMessage="No sectors available. Click the + button to add one."
+        emptyMessage="No sectors available"
         getItemId={(item) => item.id}
         showActiveStatus
       />
 
-      {/* Add Button */}
+      {/* Sync FAB */}
       <Fab
-        color="primary"
-        aria-label="add sector"
-        onClick={() => handleOpenDialog()}
+        size="medium"
+        color="secondary"
+        onClick={() => syncMutation.mutate()}
+        disabled={syncMutation.isPending}
         sx={{
           position: 'fixed',
           bottom: 80,
-          right: 24,
+          right: 80,
           zIndex: 1100,
-          boxShadow: (theme) =>
-            theme.palette.mode === 'dark'
-              ? '0 4px 20px rgba(255, 119, 0, 0.4)'
-              : '0 4px 20px rgba(255, 119, 0, 0.3)',
-          '&:hover': {
-            transform: 'scale(1.1)',
-            boxShadow: (theme) =>
-              theme.palette.mode === 'dark'
-                ? '0 6px 24px rgba(255, 119, 0, 0.5)'
-                : '0 6px 24px rgba(255, 119, 0, 0.4)',
-          },
-          transition: 'all 0.2s ease',
         }}
+      >
+        <SyncIcon
+          sx={{
+            animation: syncMutation.isPending ? 'spin 1s linear infinite' : 'none',
+            '@keyframes spin': {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            },
+          }}
+        />
+      </Fab>
+
+      {/* Add FAB */}
+      <Fab
+        size="medium"
+        color="primary"
+        onClick={() => handleOpenDialog()}
+        sx={{ position: 'fixed', bottom: 80, right: 24, zIndex: 1100 }}
       >
         <AddIcon />
       </Fab>
@@ -258,52 +271,50 @@ const SectorsTab = () => {
         title={editingItem ? 'Edit Sector' : 'Add Sector'}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             label="Code"
+            size="small"
             value={formData.code}
             onChange={handleInputChange('code')}
             error={!!formErrors.code}
-            helperText={formErrors.code || 'Unique identifier (e.g., ORG, RUI, ZOR)'}
+            helperText={formErrors.code}
             required
             fullWidth
             disabled={!!editingItem}
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
-
           <TextField
             label="Name"
+            size="small"
             value={formData.name}
             onChange={handleInputChange('name')}
             error={!!formErrors.name}
-            helperText={formErrors.name || 'Sector name'}
+            helperText={formErrors.name}
             required
             fullWidth
           />
-
           <TextField
             label="Description"
+            size="small"
             value={formData.description}
             onChange={handleInputChange('description')}
-            helperText="Optional description"
             fullWidth
             multiline
             rows={2}
           />
-
           <Divider />
-
           <TextField
             label="Sort Order"
+            size="small"
             type="number"
             value={formData.sortOrder}
             onChange={handleInputChange('sortOrder')}
             error={!!formErrors.sortOrder}
-            helperText={formErrors.sortOrder || 'Display order in lists'}
+            helperText={formErrors.sortOrder}
             required
             fullWidth
           />
-
           {editingItem && (
             <FormControlLabel
               control={
@@ -311,6 +322,7 @@ const SectorsTab = () => {
                   checked={formData.isActive}
                   onChange={handleInputChange('isActive')}
                   color="primary"
+                  size="small"
                 />
               }
               label="Active"
@@ -319,50 +331,25 @@ const SectorsTab = () => {
         </Box>
       </AdminFormDialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            border: '2px solid',
-            borderColor: 'error.main',
-            borderRadius: 2,
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? 'rgba(244, 67, 54, 0.1)'
-                : 'rgba(244, 67, 54, 0.05)',
-            color: 'error.main',
-            fontWeight: 700,
-            borderBottom: '1px solid',
-            borderColor: 'error.main',
-          }}
-        >
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ bgcolor: 'rgba(244, 67, 54, 0.1)', color: '#F44336', fontWeight: 600 }}>
           Delete Sector
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
-          <Typography variant="body1">
-            Are you sure you want to delete <strong>{deletingItem?.name}</strong>?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            This action cannot be undone.
+          <Typography variant="body2">
+            Delete <strong>{deletingItem?.name}</strong>? This cannot be undone.
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button onClick={handleCloseDeleteDialog} color="inherit">
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseDeleteDialog} size="small">
             Cancel
           </Button>
           <Button
             onClick={handleDelete}
             variant="contained"
             color="error"
+            size="small"
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
@@ -373,15 +360,15 @@ const SectorsTab = () => {
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
           severity={snackbar.severity}
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ fontSize: '0.85rem' }}
         >
           {snackbar.message}
         </Alert>

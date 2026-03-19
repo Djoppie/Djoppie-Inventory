@@ -16,6 +16,7 @@ import {
   Service,
   CreateServiceDto,
   UpdateServiceDto,
+  SyncResult,
 } from '../types/admin.types';
 
 // ============================================================
@@ -144,6 +145,11 @@ export const sectorsApi = {
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/admin/sectors/${id}`);
   },
+
+  syncFromEntra: async (): Promise<SyncResult> => {
+    const response = await apiClient.post<SyncResult>('/admin/sectors/sync-from-entra');
+    return response.data;
+  },
 };
 
 // ============================================================
@@ -179,6 +185,11 @@ export const servicesApi = {
 
   getBySector: async (sectorId: number): Promise<Service[]> => {
     const response = await apiClient.get<Service[]>(`/admin/services/by-sector/${sectorId}`);
+    return response.data;
+  },
+
+  syncFromEntra: async (): Promise<SyncResult> => {
+    const response = await apiClient.post<SyncResult>('/admin/services/sync-from-entra');
     return response.data;
   },
 };
