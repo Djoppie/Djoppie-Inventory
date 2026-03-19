@@ -1,19 +1,18 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Chip, IconButton, Tooltip, Button } from '@mui/material';
+import { Box, Typography, Chip, IconButton, Tooltip, useTheme } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import GroupsIcon from '@mui/icons-material/Groups';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import PlaceIcon from '@mui/icons-material/Place';
 import {
   useRolloutWorkplaces,
   useDeleteRolloutWorkplace,
@@ -35,7 +34,6 @@ interface WorkplaceListProps {
   originalDayDate?: string;
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
-  onImportFromGraph: () => void;
   onRescheduleWorkplace: (workplace: RolloutWorkplace, dayId: number, originalDate: string) => void;
 }
 
@@ -58,7 +56,17 @@ const getStatusChip = (status: string) => {
       );
     case 'InProgress':
       return (
-        <Chip label="Bezig" size="small" color="warning" component="span" />
+        <Chip
+          label="Bezig"
+          size="small"
+          sx={{
+            bgcolor: 'rgba(245, 158, 11, 0.15)',
+            border: '1px solid rgba(245, 158, 11, 0.5)',
+            color: '#f59e0b',
+            fontWeight: 600,
+          }}
+          component="span"
+        />
       );
     case 'Completed':
       return (
@@ -97,10 +105,11 @@ export default function WorkplaceList({
   originalDayDate,
   onEditWorkplace,
   onPrintWorkplace,
-  onImportFromGraph,
   onRescheduleWorkplace,
 }: WorkplaceListProps) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const { data: fetchedWorkplaces, isLoading } = useRolloutWorkplaces(dayId);
   // Use provided workplaces if available, otherwise fetch
   const workplaces = providedWorkplaces || fetchedWorkplaces;
@@ -148,26 +157,6 @@ export default function WorkplaceList({
 
   return (
     <Box>
-      {/* Header with actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <GroupsIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Werkplekken ({workplaces?.length || 0})
-          </Typography>
-        </Box>
-        <Button
-          size="small"
-          variant="text"
-          startIcon={<CloudDownloadIcon />}
-          onClick={onImportFromGraph}
-          disabled={!isEditable}
-          sx={{ color: '#FF7700' }}
-        >
-          Importeren
-        </Button>
-      </Box>
-
       {!workplaces || workplaces.length === 0 ? (
         <Box sx={{
           py: 3,
@@ -207,7 +196,12 @@ export default function WorkplaceList({
                     ? 'rgba(239, 68, 68, 0.04)'
                     : workplace.status === 'Ready'
                       ? 'rgba(34, 197, 94, 0.04)'
-                      : 'transparent',
+                      : isDark ? '#1e2328' : '#ffffff',
+                  boxShadow: isGhost || workplace.status === 'Ready'
+                    ? 'none'
+                    : isDark
+                      ? '2px 2px 4px #141719, -2px -2px 4px #282e33'
+                      : '2px 2px 4px #e0e3e6, -2px -2px 4px #ffffff',
                   opacity: isGhost ? 0.7 : 1,
                   transition: 'all 0.2s ease',
                   '&:hover': {
@@ -291,9 +285,37 @@ export default function WorkplaceList({
                       </Tooltip>
                     )}
                   </Box>
-                  <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                    {workplace.userEmail || workplace.location || '-'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="caption" color="text.secondary" noWrap>
+                      {workplace.userEmail || workplace.location || '-'}
+                    </Typography>
+                    {/* Physical Workplace indicator */}
+                    {workplace.physicalWorkplaceCode && (
+                      <Tooltip title={`Fysieke werkplek: ${workplace.physicalWorkplaceName || workplace.physicalWorkplaceCode}`}>
+                        <Chip
+                          icon={<PlaceIcon sx={{ fontSize: '12px !important' }} />}
+                          label={workplace.physicalWorkplaceCode}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                            bgcolor: 'rgba(0, 150, 136, 0.12)',
+                            color: '#009688',
+                            border: '1px solid rgba(0, 150, 136, 0.3)',
+                            '& .MuiChip-icon': {
+                              color: '#009688',
+                              marginLeft: '4px',
+                            },
+                            '& .MuiChip-label': {
+                              paddingRight: '6px',
+                            },
+                          }}
+                          component="span"
+                        />
+                      </Tooltip>
+                    )}
+                  </Box>
                 </Box>
 
                 {/* Asset Progress indicator */}
@@ -307,7 +329,7 @@ export default function WorkplaceList({
                       fontWeight: 600,
                       fontSize: '0.75rem',
                       ...(workplace.totalItems === 0
-                        ? { bgcolor: 'grey.200', color: 'grey.600', '& .MuiChip-icon': { color: 'grey.500' } }
+                        ? { bgcolor: 'grey.200', color: 'grey.600', border: '1px solid rgba(100, 100, 100, 0.2)', '& .MuiChip-icon': { color: 'grey.500' } }
                         : workplace.completedItems === workplace.totalItems
                           ? { bgcolor: 'rgba(22, 163, 74, 0.15)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.3)', '& .MuiChip-icon': { color: '#16a34a' } }
                           : workplace.completedItems > 0

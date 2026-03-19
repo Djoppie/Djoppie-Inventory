@@ -46,6 +46,8 @@ import MonitorIcon from '@mui/icons-material/Monitor';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import MouseIcon from '@mui/icons-material/Mouse';
 import VideocamIcon from '@mui/icons-material/Videocam';
+import PersonIcon from '@mui/icons-material/Person';
+import PlaceIcon from '@mui/icons-material/Place';
 import type { Asset, AssetTemplate } from '../../types/asset.types';
 import type { EquipmentType, AssetPlanStatus } from '../../types/rollout';
 import { getAssets } from '../../api/assets.api';
@@ -73,10 +75,28 @@ export interface AssetConfigItem {
   originalStatus?: AssetPlanStatus;
 }
 
+// Assignment type: user-assigned (goes to employee) or workplace-fixed (stays at physical workplace)
+type AssignmentType = 'user' | 'workplace';
+
+// Equipment types that are assigned to the user (employee takes it with them)
+const USER_ASSIGNED_EQUIPMENT: EquipmentType[] = ['laptop', 'desktop'];
+
+// Equipment types that are fixed to the physical workplace (stays at location)
+const WORKPLACE_FIXED_EQUIPMENT: EquipmentType[] = ['docking', 'monitor', 'keyboard', 'mouse'];
+
+// Get assignment type for equipment
+const getAssignmentType = (equipmentType: EquipmentType): AssignmentType => {
+  return USER_ASSIGNED_EQUIPMENT.includes(equipmentType) ? 'user' : 'workplace';
+};
+
 interface WorkplaceConfigSectionProps {
   items: AssetConfigItem[];
   onChange: (items: AssetConfigItem[]) => void;
   onScanRequest: (itemId: string) => void;
+  /** Name of the user/employee to assign user-assigned assets to */
+  userName?: string;
+  /** Name of the physical workplace to assign workplace-fixed assets to */
+  physicalWorkplaceName?: string;
 }
 
 // Equipment type icons
@@ -150,6 +170,61 @@ const StatusBadge = ({
   );
 };
 
+// Assignment badge component - shows where the asset will be assigned
+const AssignmentBadge = ({
+  assignmentType,
+  targetName,
+  isDark,
+}: {
+  assignmentType: AssignmentType;
+  targetName?: string;
+  isDark: boolean;
+}) => {
+  const isUserAssigned = assignmentType === 'user';
+
+  return (
+    <Tooltip
+      title={isUserAssigned
+        ? `Dit apparaat wordt toegewezen aan de werknemer${targetName ? ` (${targetName})` : ''}`
+        : `Dit apparaat wordt toegewezen aan de fysieke werkplek${targetName ? ` (${targetName})` : ''}`
+      }
+    >
+      <Chip
+        icon={isUserAssigned
+          ? <PersonIcon sx={{ fontSize: '0.85rem !important' }} />
+          : <PlaceIcon sx={{ fontSize: '0.85rem !important' }} />
+        }
+        label={isUserAssigned
+          ? (targetName || 'Werknemer')
+          : (targetName || 'Werkplek')
+        }
+        size="small"
+        sx={{
+          height: 20,
+          maxWidth: 120,
+          fontSize: '0.6rem',
+          fontWeight: 600,
+          bgcolor: isUserAssigned
+            ? 'rgba(156, 39, 176, 0.12)'
+            : 'rgba(0, 150, 136, 0.12)',
+          color: isUserAssigned ? '#9c27b0' : '#009688',
+          border: `1px solid ${isUserAssigned ? 'rgba(156, 39, 176, 0.3)' : 'rgba(0, 150, 136, 0.3)'}`,
+          '& .MuiChip-icon': {
+            color: isUserAssigned ? '#9c27b0' : '#009688',
+            marginLeft: '4px',
+          },
+          '& .MuiChip-label': {
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            paddingRight: '6px',
+          },
+        }}
+      />
+    </Tooltip>
+  );
+};
+
 // Single asset config item component
 const AssetConfigItemCard = ({
   item,
@@ -158,6 +233,8 @@ const AssetConfigItemCard = ({
   onScanRequest,
   availableAssets,
   isLoadingAssets,
+  userName,
+  physicalWorkplaceName,
 }: {
   item: AssetConfigItem;
   onUpdate: (updates: Partial<AssetConfigItem>) => void;
@@ -165,6 +242,8 @@ const AssetConfigItemCard = ({
   onScanRequest: () => void;
   availableAssets: Asset[];
   isLoadingAssets: boolean;
+  userName?: string;
+  physicalWorkplaceName?: string;
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -192,17 +271,35 @@ const AssetConfigItemCard = ({
 
   const hasCamera = item.metadata?.hasCamera === 'true';
 
+  // Determine assignment type for border color
+  const assignmentType = getAssignmentType(item.equipmentType);
+  const isUserAssigned = assignmentType === 'user';
+
+  // Assignment type colors
+  const assignmentBgColor = isUserAssigned
+    ? (isDark ? 'rgba(156, 39, 176, 0.08)' : 'rgba(156, 39, 176, 0.06)')
+    : (isDark ? 'rgba(0, 150, 136, 0.08)' : 'rgba(0, 150, 136, 0.06)');
+  const assignmentBorderColor = isUserAssigned
+    ? (isDark ? 'rgba(156, 39, 176, 0.5)' : 'rgba(156, 39, 176, 0.4)')
+    : (isDark ? 'rgba(0, 150, 136, 0.5)' : 'rgba(0, 150, 136, 0.4)');
+  const assignmentGlow = isUserAssigned
+    ? '0 0 12px rgba(156, 39, 176, 0.25)'
+    : '0 0 12px rgba(0, 150, 136, 0.25)';
+
   return (
     <Box
       sx={{
         p: 2,
         borderRadius: 2.5,
-        bgcolor: neuBg,
-        boxShadow: `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}`,
+        bgcolor: assignmentBgColor,
+        boxShadow: isConfigured
+          ? `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}, ${assignmentGlow}`
+          : `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}`,
         transition: 'all 0.2s ease',
-        border: isConfigured
-          ? `2px solid ${item.mode === 'link' ? 'rgba(33, 150, 243, 0.3)' : 'rgba(76, 175, 80, 0.3)'}`
-          : '2px solid transparent',
+        // Border based on assignment type
+        border: `2px solid ${assignmentBorderColor}`,
+        // Left accent border for assignment type (thicker)
+        borderLeft: `4px solid ${isUserAssigned ? '#9c27b0' : '#009688'}`,
       }}
     >
       {/* Header: Type + Status + Delete */}
@@ -244,7 +341,12 @@ const AssetConfigItemCard = ({
           </Box>
         </Stack>
 
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" alignItems="center" spacing={0.75}>
+          <AssignmentBadge
+            assignmentType={getAssignmentType(item.equipmentType)}
+            targetName={getAssignmentType(item.equipmentType) === 'user' ? userName : physicalWorkplaceName}
+            isDark={isDark}
+          />
           <StatusBadge configured={isConfigured} mode={item.mode} isDark={isDark} />
           <Tooltip title="Verwijderen">
             <IconButton
@@ -430,6 +532,8 @@ export const WorkplaceConfigSection = ({
   items,
   onChange,
   onScanRequest,
+  userName,
+  physicalWorkplaceName,
 }: WorkplaceConfigSectionProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -602,6 +706,8 @@ export const WorkplaceConfigSection = ({
               onScanRequest={() => onScanRequest(item.id)}
               availableAssets={filteredAssets}
               isLoadingAssets={isLoadingAssets}
+              userName={userName}
+              physicalWorkplaceName={physicalWorkplaceName}
             />
           ))}
         </Stack>

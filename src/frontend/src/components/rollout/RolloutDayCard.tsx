@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -9,6 +9,7 @@ import {
   Collapse,
   LinearProgress,
   Divider,
+  useTheme,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
@@ -45,10 +46,10 @@ interface RolloutDayCardProps {
 }
 
 /**
- * Enhanced Planning Batch card with modern design, clear status indicators, smooth animations,
+ * Enhanced Planning Batch card with neumorphic design, clear status indicators, smooth animations,
  * and rescheduling capability visual cues
  */
-const RolloutDayCard = ({
+const RolloutDayCard = React.memo(function RolloutDayCard({
   day,
   serviceColor,
   isEditable,
@@ -64,8 +65,14 @@ const RolloutDayCard = ({
   onExecute,
   onSetPlanning,
   children,
-}: RolloutDayCardProps) => {
+}: RolloutDayCardProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [expanded, setExpanded] = useState(isRescheduledCard); // Auto-expand rescheduled cards
+
+  const handleToggleExpand = useCallback(() => {
+    setExpanded(prev => !prev);
+  }, []);
 
   const completionPercentage = day.totalWorkplaces > 0
     ? (day.completedWorkplaces / day.totalWorkplaces) * 100
@@ -114,30 +121,14 @@ const RolloutDayCard = ({
       elevation={0}
       sx={{
         position: 'relative',
-        // Rescheduled cards now use status-based styling as they are the primary location
-        border: '1px solid',
-        borderColor: 'divider',
         borderRadius: 2,
         overflow: 'hidden',
-        background: statusStyles.bgGradient,
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
+        border: '1px solid',
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+        transition: 'all 0.2s ease',
         '&:hover': {
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          borderColor: statusStyles.borderColor,
-        },
-        // Left border accent - use status color for all cards
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 4,
-          bgcolor: statusStyles.borderColor,
-          transition: 'width 0.3s ease',
-        },
-        '&:hover::before': {
-          width: 6,
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
         },
       }}
     >
@@ -150,11 +141,11 @@ const RolloutDayCard = ({
           gap: 2,
           cursor: 'pointer',
           '&:hover': {
-            bgcolor: 'rgba(0, 0, 0, 0.02)',
+            bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
           },
           transition: 'background-color 0.2s ease',
         }}
-        onClick={() => setExpanded(!expanded)}
+        onClick={handleToggleExpand}
       >
         {/* Planning Info */}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -463,16 +454,13 @@ const RolloutDayCard = ({
             size="small"
             onClick={(e) => {
               e.stopPropagation();
-              setExpanded(!expanded);
+              handleToggleExpand();
             }}
             sx={{
               transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.3s ease',
-              color: 'text.secondary',
+              transition: 'transform 0.2s ease',
+              color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'text.secondary',
               ml: 0.5,
-              '&:hover': {
-                bgcolor: 'rgba(0, 0, 0, 0.08)',
-              },
             }}
           >
             <ExpandMoreIcon />
@@ -480,31 +468,23 @@ const RolloutDayCard = ({
         </Box>
       </Box>
 
-      {/* Progress Bar */}
-      {day.totalWorkplaces > 0 && (
-        <LinearProgress
-          variant="determinate"
-          value={completionPercentage}
-          sx={{
-            height: 3,
-            bgcolor: 'rgba(0, 0, 0, 0.05)',
-            '& .MuiLinearProgress-bar': {
-              bgcolor: completionPercentage === 100 ? '#16a34a' : '#FF7700',
-              transition: 'transform 0.5s ease, background-color 0.3s ease',
-            },
-          }}
-        />
-      )}
-
       {/* Expandable Content */}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Divider />
-        <Box sx={{ p: 2, bgcolor: 'rgba(0, 0, 0, 0.01)' }}>
+        <Divider sx={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.08)' }} />
+        <Box
+          sx={{
+            p: 2,
+            bgcolor: isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.02)',
+            boxShadow: isDark
+              ? 'inset 0 4px 8px rgba(0, 0, 0, 0.2)'
+              : 'inset 0 4px 8px rgba(0, 0, 0, 0.03)',
+          }}
+        >
           {children}
         </Box>
       </Collapse>
     </Card>
   );
-};
+});
 
 export default RolloutDayCard;
