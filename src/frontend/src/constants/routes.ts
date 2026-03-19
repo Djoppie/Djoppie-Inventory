@@ -52,6 +52,12 @@ export const ROUTES = {
   /** Rollout report page (requires :id parameter) */
   ROLLOUT_REPORT: '/rollouts/:id/report',
 
+  /** Rollout day detail page (requires :id and :dayId parameters) */
+  ROLLOUT_DAY_DETAIL: '/rollouts/:id/days/:dayId',
+
+  /** Rollout day edit page (requires :id and :dayId parameters) */
+  ROLLOUT_DAY_EDIT: '/rollouts/:id/days/:dayId/edit',
+
   /** Autopilot devices list page */
   AUTOPILOT_DEVICES: '/devices/autopilot',
 
@@ -120,6 +126,22 @@ export const buildRoute = {
    * @returns The full route path
    */
   rolloutReport: (id: number | string) => `/rollouts/${id}/report`,
+
+  /**
+   * Builds the rollout day detail route.
+   * @param sessionId - The rollout session ID
+   * @param dayId - The rollout day ID
+   * @returns The full route path
+   */
+  rolloutDayDetail: (sessionId: number | string, dayId: number | string) => `/rollouts/${sessionId}/days/${dayId}`,
+
+  /**
+   * Builds the rollout day edit route.
+   * @param sessionId - The rollout session ID
+   * @param dayId - The rollout day ID
+   * @returns The full route path
+   */
+  rolloutDayEdit: (sessionId: number | string, dayId: number | string) => `/rollouts/${sessionId}/days/${dayId}/edit`,
 
   /**
    * Builds the Autopilot timeline route with the specified serial number.

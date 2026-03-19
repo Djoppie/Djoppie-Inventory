@@ -21,6 +21,7 @@ const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
 const RolloutPlannerPage = lazy(() => import('./pages/RolloutPlannerPage'));
 const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
 const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
+const RolloutDayDetailPage = lazy(() => import('./pages/RolloutDayDetailPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
 const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
@@ -63,6 +64,8 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
                   <Route path={ROUTES.ROLLOUT_EXECUTE} element={<RolloutExecutionPage />} />
                   <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
+                  <Route path={ROUTES.ROLLOUT_DAY_DETAIL} element={<RolloutDayDetailPage />} />
+                  <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />

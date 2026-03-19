@@ -90,10 +90,6 @@ const RolloutPlannerPage = () => {
     state.openBulkPrintDialog(dayId, assetIds);
   }, [state]);
 
-  const handleImportFromGraph = useCallback((dayId: number, serviceId: number | undefined, serviceName: string | undefined) => {
-    state.openImportGraphDialog(dayId, serviceId, serviceName);
-  }, [state]);
-
   const handleRescheduledClick = useCallback((wp: { workplaceId: number; dayId: number }) => {
     const day = data.days?.find(d => d.id === wp.dayId);
     if (day && day.workplaces) {
@@ -196,9 +192,9 @@ const RolloutPlannerPage = () => {
             onDeleteDay={data.deleteDay}
             onDayStatus={data.updateDayStatus}
             onBulkPrint={handleBulkPrint}
+            onImportWorkplaces={state.openImportGraphDialog}
             onEditWorkplace={(dayId, workplace) => state.openWorkplaceDialog(dayId, workplace)}
             onPrintWorkplace={handlePrintWorkplace}
-            onImportFromGraph={handleImportFromGraph}
             onRescheduleWorkplace={state.openRescheduleDialog}
           />
         </>

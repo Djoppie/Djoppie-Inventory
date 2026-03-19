@@ -658,7 +658,7 @@ public class RolloutsController : ControllerBase
             {
                 RolloutDayId = dayId,
                 UserName = $"Werkplek {i}",
-                ServiceId = dto.ServiceId,
+                ServiceId = dto.ServiceId > 0 ? dto.ServiceId : null,
                 IsLaptopSetup = dto.IsLaptopSetup,
                 AssetPlansJson = JsonSerializer.Serialize(standardPlans),
                 Status = RolloutWorkplaceStatus.Pending,
@@ -1004,7 +1004,7 @@ public class RolloutsController : ControllerBase
                     RolloutDayId = dayId,
                     UserName = user.DisplayName ?? "Unknown",
                     UserEmail = user.UserPrincipalName ?? user.Mail,
-                    ServiceId = dto.ServiceId,
+                    ServiceId = dto.ServiceId > 0 ? dto.ServiceId : null,
                     Location = user.OfficeLocation,
                     IsLaptopSetup = dto.AssetPlanConfig.IncludeLaptop,
                     AssetPlansJson = JsonSerializer.Serialize(standardPlans),
