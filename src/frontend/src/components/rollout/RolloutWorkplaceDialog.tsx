@@ -687,6 +687,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         autoHideDuration={4000}
         onClose={() => scanner.setScanError('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
       >
         <Alert
           severity="error"
@@ -711,6 +712,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         autoHideDuration={ROLLOUT_TIMING.SNACKBAR_AUTO_HIDE_MS}
         onClose={() => scanner.setScanSuccess('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
       >
         <Alert
           severity="success"

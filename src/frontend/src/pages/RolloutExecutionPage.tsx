@@ -379,6 +379,8 @@ const RolloutExecutionPage = () => {
         open={snackbar.open}
         autoHideDuration={3000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
       >
         <Alert
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}

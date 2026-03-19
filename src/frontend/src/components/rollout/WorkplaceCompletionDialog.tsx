@@ -23,6 +23,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LaptopIcon from '@mui/icons-material/Laptop';
+import DeskIcon from '@mui/icons-material/Desk';
 import type { RolloutWorkplace } from '../../types/rollout';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 
@@ -66,6 +67,15 @@ const WorkplaceCompletionDialog = ({
   const swapItems = workplace.assetPlans.filter((p) => p.oldAssetId && p.existingAssetId);
   const newItems = workplace.assetPlans.filter((p) => p.existingAssetId && !p.oldAssetId);
   const hasSwaps = swapItems.length > 0;
+
+  // Check if physical workplace is linked
+  const hasPhysicalWorkplace = !!workplace.physicalWorkplaceId;
+
+  // Count fixed assets (monitors, keyboard, mouse, docking) for physical workplace update
+  const fixedAssetTypes = ['monitor', 'keyboard', 'mouse', 'docking'];
+  const fixedAssetCount = workplace.assetPlans.filter(
+    (p) => p.existingAssetId && fixedAssetTypes.includes(p.equipmentType.toLowerCase())
+  ).length;
 
   return (
     <Dialog
@@ -265,6 +275,24 @@ const WorkplaceCompletionDialog = ({
                   }}
                 />{' '}
                 gezet
+              </li>
+            )}
+            {hasPhysicalWorkplace && (
+              <li style={{ marginTop: '8px' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <DeskIcon sx={{ fontSize: 16, color: 'info.main' }} />
+                  <span>
+                    Fysieke werkplek{' '}
+                    <strong>{workplace.physicalWorkplaceCode || workplace.physicalWorkplaceName}</strong>{' '}
+                    wordt bijgewerkt:
+                  </span>
+                </Box>
+                <Box component="ul" sx={{ m: '4px 0 0', pl: '20px', fontSize: '0.8rem' }}>
+                  <li>Bewoner: <strong>{workplace.userName}</strong></li>
+                  {fixedAssetCount > 0 && (
+                    <li>Vaste apparatuur: <strong>{fixedAssetCount}</strong> items (monitoren, toetsenbord, muis, docking)</li>
+                  )}
+                </Box>
               </li>
             )}
           </Box>

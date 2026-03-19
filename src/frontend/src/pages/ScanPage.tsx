@@ -245,7 +245,7 @@ const ScanPage = () => {
         autoHideDuration={4000}
         onClose={() => setErrorMessage('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ mb: 4 }}
+        sx={{ mb: 8 }}
       >
         <Alert
           severity="error"
