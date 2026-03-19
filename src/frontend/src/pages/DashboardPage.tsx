@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../utils/neumorphicStyles';
 
 // Hooks
 import { useDashboardFilters, useDashboardAssets } from '../hooks/dashboard';
@@ -30,6 +31,9 @@ import { EXPIRING_LEASES_DAYS } from '../constants/dashboard.constants';
 
 const DashboardPage = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const { bgBase, bgSurface, accentColor } = getNeumorphColors(isDark);
 
   // Filter state from custom hook
   const filters = useDashboardFilters();
@@ -160,7 +164,14 @@ const DashboardPage = () => {
   }
 
   return (
-    <Box>
+    <Box
+      sx={{
+        bgcolor: bgBase,
+        borderRadius: 3,
+        p: { xs: 1.5, sm: 2 },
+        boxShadow: getNeumorph(isDark, 'medium'),
+      }}
+    >
       {/* Dashboard Header with Status Cards */}
       <DashboardHeader
         statusCounts={statusCounts}
@@ -182,14 +193,9 @@ const DashboardPage = () => {
         sx={{
           mb: 2,
           p: 2,
-          border: '1px solid',
-          borderColor: 'divider',
           borderRadius: 2,
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'rgba(18, 18, 18, 0.6)'
-              : 'rgba(255, 255, 255, 0.6)',
-          backdropFilter: 'blur(8px)',
+          bgcolor: bgSurface,
+          boxShadow: getNeumorphInset(isDark),
         }}
       >
         <CategorySwitcher

@@ -12,8 +12,11 @@ import {
   Menu,
   MenuItem,
   Divider,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 import ViewToggle, { ViewMode } from '../common/ViewToggle';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -62,6 +65,9 @@ export default function DashboardToolbar({
   onBulkDeleteClick,
 }: DashboardToolbarProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const { bgBase, bgSurface, accentColor } = getNeumorphColors(isDark);
   const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
 
@@ -96,16 +102,11 @@ export default function DashboardToolbar({
       <Paper
         elevation={0}
         sx={{
-          mb: 3,
-          p: 2,
-          border: '1px solid',
-          borderColor: 'divider',
+          mb: 2,
+          p: 1.5,
           borderRadius: 2,
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'dark'
-              ? 'rgba(18, 18, 18, 0.95)'
-              : 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
+          bgcolor: bgSurface,
+          boxShadow: getNeumorphInset(isDark),
           position: 'sticky',
           top: 16,
           zIndex: 10,
@@ -226,73 +227,85 @@ export default function DashboardToolbar({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
+                    <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
                   </InputAdornment>
                 ),
                 endAdornment: searchInputValue && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={onSearchClear} edge="end">
-                      <ClearIcon fontSize="small" />
+                    <IconButton size="small" onClick={onSearchClear} edge="end" sx={{ p: 0.25 }}>
+                      <ClearIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </InputAdornment>
                 ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
+                  bgcolor: bgBase,
+                  borderRadius: 1.5,
+                  fontSize: '0.85rem',
+                  boxShadow: getNeumorphInset(isDark),
+                  '& fieldset': { border: 'none' },
+                  '&:hover': {
+                    boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
                   },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
+                  '&.Mui-focused': {
+                    boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
                   },
+                },
+                '& .MuiInputBase-input': {
+                  py: 0.75,
                 },
               }}
             />
           </Box>
 
           {/* Right side - Sort and Filter */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 0.75 }}>
             {/* Sort Button */}
             <Tooltip title="Sort assets">
               <IconButton
+                size="small"
                 onClick={handleSortMenuOpen}
                 sx={{
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: 2,
+                  width: 32,
+                  height: 32,
+                  bgcolor: bgBase,
+                  color: 'text.secondary',
+                  boxShadow: getNeumorph(isDark, 'soft'),
+                  transition: 'all 0.15s ease',
                   '&:hover': {
-                    backgroundColor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 119, 0, 0.1)'
-                        : 'rgba(255, 119, 0, 0.05)',
-                    borderColor: 'primary.main',
+                    bgcolor: accentColor,
+                    color: '#fff',
+                    transform: 'translateY(-1px)',
+                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
                   },
                 }}
               >
-                <SortIcon />
+                <SortIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
 
             {/* Category Filter Button */}
             <Tooltip title="Filter by category">
               <IconButton
+                size="small"
                 onClick={handleCategoryMenuOpen}
                 sx={{
-                  border: '1px solid',
-                  borderColor: categoryFilter ? 'primary.main' : 'divider',
-                  borderRadius: 2,
-                  color: categoryFilter ? 'primary.main' : 'inherit',
+                  width: 32,
+                  height: 32,
+                  bgcolor: categoryFilter ? alpha(accentColor, 0.15) : bgBase,
+                  color: categoryFilter ? accentColor : 'text.secondary',
+                  boxShadow: getNeumorph(isDark, 'soft'),
+                  transition: 'all 0.15s ease',
                   '&:hover': {
-                    backgroundColor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 119, 0, 0.1)'
-                        : 'rgba(255, 119, 0, 0.05)',
-                    borderColor: 'primary.main',
+                    bgcolor: accentColor,
+                    color: '#fff',
+                    transform: 'translateY(-1px)',
+                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
                   },
                 }}
               >
-                {categoryFilter ? <CheckIcon /> : <FilterAltIcon />}
+                {categoryFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <FilterAltIcon sx={{ fontSize: 18 }} />}
               </IconButton>
             </Tooltip>
           </Box>
@@ -300,8 +313,8 @@ export default function DashboardToolbar({
 
         {/* Active Filters Display */}
         {(searchInputValue || categoryFilter) && (
-          <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
+          <Box sx={{ mt: 1.5, display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
               Active filters:
             </Typography>
             {searchInputValue && (
@@ -310,13 +323,17 @@ export default function DashboardToolbar({
                 onDelete={onSearchClear}
                 size="small"
                 sx={{
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'rgba(255, 119, 0, 0.1)',
-                  color: 'primary.main',
-                  border: '1px solid',
-                  borderColor: 'primary.main',
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha(accentColor, 0.1),
+                  color: accentColor,
+                  border: 'none',
+                  '& .MuiChip-deleteIcon': {
+                    color: accentColor,
+                    fontSize: 14,
+                    '&:hover': { color: alpha(accentColor, 0.7) },
+                  },
                 }}
               />
             )}
@@ -326,13 +343,17 @@ export default function DashboardToolbar({
                 onDelete={() => onCategoryChange('')}
                 size="small"
                 sx={{
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'rgba(255, 119, 0, 0.1)',
-                  color: 'primary.main',
-                  border: '1px solid',
-                  borderColor: 'primary.main',
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha(accentColor, 0.1),
+                  color: accentColor,
+                  border: 'none',
+                  '& .MuiChip-deleteIcon': {
+                    color: accentColor,
+                    fontSize: 14,
+                    '&:hover': { color: alpha(accentColor, 0.7) },
+                  },
                 }}
               />
             )}
@@ -348,48 +369,62 @@ export default function DashboardToolbar({
         PaperProps={{
           sx: {
             mt: 1,
-            minWidth: 200,
-            border: '1px solid',
-            borderColor: 'divider',
+            minWidth: 180,
+            bgcolor: bgSurface,
+            boxShadow: getNeumorph(isDark, 'medium'),
+            borderRadius: 2,
+            '& .MuiMenuItem-root': {
+              fontSize: '0.8rem',
+              py: 0.75,
+              '&:hover': {
+                bgcolor: alpha(accentColor, isDark ? 0.15 : 0.08),
+              },
+              '&.Mui-selected': {
+                bgcolor: alpha(accentColor, isDark ? 0.2 : 0.12),
+                '&:hover': {
+                  bgcolor: alpha(accentColor, isDark ? 0.25 : 0.15),
+                },
+              },
+            },
           },
         }}
       >
         <MenuItem onClick={() => handleSortSelect('name-asc')} selected={sortBy === 'name-asc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Name (A-Z)</span>
-            {sortBy === 'name-asc' && <CheckIcon fontSize="small" color="primary" />}
+            {sortBy === 'name-asc' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
         <MenuItem onClick={() => handleSortSelect('name-desc')} selected={sortBy === 'name-desc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Name (Z-A)</span>
-            {sortBy === 'name-desc' && <CheckIcon fontSize="small" color="primary" />}
+            {sortBy === 'name-desc' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
         <Divider />
         <MenuItem onClick={() => handleSortSelect('code-asc')} selected={sortBy === 'code-asc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Code (A-Z)</span>
-            {sortBy === 'code-asc' && <CheckIcon fontSize="small" color="primary" />}
+            {sortBy === 'code-asc' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
         <MenuItem onClick={() => handleSortSelect('code-desc')} selected={sortBy === 'code-desc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Code (Z-A)</span>
-            {sortBy === 'code-desc' && <CheckIcon fontSize="small" color="primary" />}
+            {sortBy === 'code-desc' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
         <Divider />
         <MenuItem onClick={() => handleSortSelect('date-newest')} selected={sortBy === 'date-newest'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Newest First</span>
-            {sortBy === 'date-newest' && <CheckIcon fontSize="small" color="primary" />}
+            {sortBy === 'date-newest' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
         <MenuItem onClick={() => handleSortSelect('date-oldest')} selected={sortBy === 'date-oldest'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Oldest First</span>
-            {sortBy === 'date-oldest' && <CheckIcon fontSize="small" color="primary" />}
+            {sortBy === 'date-oldest' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
       </Menu>
@@ -402,16 +437,30 @@ export default function DashboardToolbar({
         PaperProps={{
           sx: {
             mt: 1,
-            minWidth: 200,
-            border: '1px solid',
-            borderColor: 'divider',
+            minWidth: 180,
+            bgcolor: bgSurface,
+            boxShadow: getNeumorph(isDark, 'medium'),
+            borderRadius: 2,
+            '& .MuiMenuItem-root': {
+              fontSize: '0.8rem',
+              py: 0.75,
+              '&:hover': {
+                bgcolor: alpha(accentColor, isDark ? 0.15 : 0.08),
+              },
+              '&.Mui-selected': {
+                bgcolor: alpha(accentColor, isDark ? 0.2 : 0.12),
+                '&:hover': {
+                  bgcolor: alpha(accentColor, isDark ? 0.25 : 0.15),
+                },
+              },
+            },
           },
         }}
       >
         <MenuItem onClick={() => handleCategorySelect('')} selected={categoryFilter === ''}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>All Categories</span>
-            {categoryFilter === '' && <CheckIcon fontSize="small" color="primary" />}
+            {categoryFilter === '' && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
           </Box>
         </MenuItem>
         <Divider />
@@ -423,7 +472,7 @@ export default function DashboardToolbar({
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
               <span>{category}</span>
-              {categoryFilter === category && <CheckIcon fontSize="small" color="primary" />}
+              {categoryFilter === category && <CheckIcon sx={{ fontSize: 16, color: accentColor }} />}
             </Box>
           </MenuItem>
         ))}
