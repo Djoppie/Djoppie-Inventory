@@ -26,7 +26,6 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
-  CircularProgress,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -83,7 +82,6 @@ const DeploymentHistoryPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const dateLocale = i18n.language === 'nl' ? nl : enUS;
 

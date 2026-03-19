@@ -69,7 +69,7 @@ export const getNeumorphIconButton = (isDark: boolean, color: string = '#FF7700'
 });
 
 // Chip with neumorphic styling
-export const getNeumorphChip = (isDark: boolean, accentColor: string = '#FF7700') => ({
+export const getNeumorphChip = (_isDark: boolean, accentColor: string = '#FF7700') => ({
   bgcolor: alpha(accentColor, 0.1),
   color: accentColor,
   border: 'none',

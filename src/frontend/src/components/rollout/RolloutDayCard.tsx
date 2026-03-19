@@ -7,7 +7,6 @@ import {
   Tooltip,
   Chip,
   Collapse,
-  LinearProgress,
   Divider,
   useTheme,
 } from '@mui/material';
@@ -20,6 +19,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import type { RolloutDay } from '../../types/rollout';
 
 interface RolloutDayCardProps {
@@ -40,6 +40,7 @@ interface RolloutDayCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onPrint: () => void;
+  onImport?: () => void;
   onExecute?: () => void;
   onSetPlanning: () => void;
   children: React.ReactNode;
@@ -62,6 +63,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
   onEdit,
   onDelete,
   onPrint,
+  onImport,
   onExecute,
   onSetPlanning,
   children,
@@ -363,6 +365,33 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                   }}
                 >
                   <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
+          {/* Import from Azure AD - Hide for rescheduled cards */}
+          {!isRescheduledCard && onImport && (
+            <Tooltip title="Importeren uit Azure AD">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onImport}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(33, 150, 243, 0.6)',
+                    '&:hover:not(:disabled)': {
+                      color: '#2196F3',
+                      bgcolor: 'rgba(33, 150, 243, 0.08)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <CloudDownloadIcon fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>

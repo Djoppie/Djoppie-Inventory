@@ -1,8 +1,11 @@
+import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Paper, Typography, Chip, IconButton, Collapse } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PlanningCalendar, { type RescheduledWorkplace } from '../PlanningCalendar';
-import type { RolloutSession, RolloutDay, RolloutWorkplace } from '../../../types/rollout';
+import { buildRoute } from '../../../constants/routes';
+import type { RolloutSession, RolloutDay } from '../../../types/rollout';
 
 interface CalendarOverviewProps {
   session: RolloutSession;
@@ -10,9 +13,12 @@ interface CalendarOverviewProps {
   rescheduledWorkplaces: RescheduledWorkplace[];
   expanded: boolean;
   onToggleExpand: () => void;
-  onDayClick: (day: RolloutDay) => void;
+  /** @deprecated - Calendar now navigates to detail page directly */
+  onDayClick?: (day: RolloutDay) => void;
   onDateClick: (date: string) => void;
   onRescheduledClick: (wp: RescheduledWorkplace) => void;
+  /** If true, clicking a planning navigates to detail page. Default: true */
+  navigateOnDayClick?: boolean;
 }
 
 export default function CalendarOverview({
@@ -24,7 +30,19 @@ export default function CalendarOverview({
   onDayClick,
   onDateClick,
   onRescheduledClick,
+  navigateOnDayClick = true,
 }: CalendarOverviewProps) {
+  const navigate = useNavigate();
+
+  // Handle day click - navigate to detail page or use callback
+  const handleDayClick = useCallback((day: RolloutDay) => {
+    if (navigateOnDayClick) {
+      navigate(buildRoute.rolloutDayDetail(session.id, day.id));
+    } else if (onDayClick) {
+      onDayClick(day);
+    }
+  }, [navigate, session.id, navigateOnDayClick, onDayClick]);
+
   if (!days || days.length === 0) {
     return null;
   }
@@ -96,7 +114,7 @@ export default function CalendarOverview({
             plannedStartDate={session?.plannedStartDate?.split('T')[0]}
             plannedEndDate={session?.plannedEndDate?.split('T')[0]}
             rescheduledWorkplaces={rescheduledWorkplaces}
-            onDayClick={onDayClick}
+            onDayClick={handleDayClick}
             onDateClick={onDateClick}
             onRescheduledClick={onRescheduledClick}
           />

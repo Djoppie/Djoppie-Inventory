@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Typography, Paper, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../utils/neumorphicStyles';
@@ -33,7 +33,9 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const { bgBase, bgSurface, accentColor } = getNeumorphColors(isDark);
+
+  // Memoize neumorphic colors to prevent recalculation on every render
+  const { bgBase, bgSurface } = useMemo(() => getNeumorphColors(isDark), [isDark]);
 
   // Filter state from custom hook
   const filters = useDashboardFilters();

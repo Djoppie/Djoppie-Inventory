@@ -24,8 +24,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import ClearIcon from '@mui/icons-material/Clear';
 import EmailIcon from '@mui/icons-material/Email';
-import BusinessIcon from '@mui/icons-material/Business';
-import BadgeIcon from '@mui/icons-material/Badge';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { graphApi } from '../../api/graph.api';
 import type { GraphUser } from '../../types/graph.types';

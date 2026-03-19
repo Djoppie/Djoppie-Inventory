@@ -81,9 +81,6 @@ type AssignmentType = 'user' | 'workplace';
 // Equipment types that are assigned to the user (employee takes it with them)
 const USER_ASSIGNED_EQUIPMENT: EquipmentType[] = ['laptop', 'desktop'];
 
-// Equipment types that are fixed to the physical workplace (stays at location)
-const WORKPLACE_FIXED_EQUIPMENT: EquipmentType[] = ['docking', 'monitor', 'keyboard', 'mouse'];
-
 // Get assignment type for equipment
 const getAssignmentType = (equipmentType: EquipmentType): AssignmentType => {
   return USER_ASSIGNED_EQUIPMENT.includes(equipmentType) ? 'user' : 'workplace';
@@ -174,7 +171,7 @@ const StatusBadge = ({
 const AssignmentBadge = ({
   assignmentType,
   targetName,
-  isDark,
+  isDark: _isDark,
 }: {
   assignmentType: AssignmentType;
   targetName?: string;

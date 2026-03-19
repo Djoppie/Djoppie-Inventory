@@ -35,12 +35,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import FolderIcon from '@mui/icons-material/Folder';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import AdminFormDialog from './AdminFormDialog';
-import { Service, CreateServiceDto, UpdateServiceDto, Sector } from '../../types/admin.types';
+import { Service, UpdateServiceDto, Sector } from '../../types/admin.types';
 import { servicesApi, sectorsApi } from '../../api/admin.api';
 import Loading from '../common/Loading';
 

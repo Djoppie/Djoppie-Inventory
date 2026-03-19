@@ -25,21 +25,15 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Autocomplete,
-  TextField,
-  CircularProgress,
 } from '@mui/material';
 import ComputerIcon from '@mui/icons-material/Computer';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
-import PlaceIcon from '@mui/icons-material/Place';
-import ClearIcon from '@mui/icons-material/Clear';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
 import { usePhysicalWorkplacesSummary } from '../../hooks/usePhysicalWorkplaces';
 import { OldDeviceConfigSection, type OldDeviceConfig } from './OldDeviceConfigSection';
 import { WorkplaceConfigSection, type AssetConfigItem } from './WorkplaceConfigSection';
 import type { RolloutWorkplace, CreateRolloutWorkplace, UpdateRolloutWorkplace } from '../../types/rollout';
-import type { PhysicalWorkplaceSummary } from '../../types/physicalWorkplace.types';
 import type { Asset } from '../../types/asset.types';
 import type { IntuneDevice } from '../../types/graph.types';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
@@ -433,14 +427,16 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           <UserInfoSection
             userName={form.state.userName}
             userEmail={form.state.userEmail}
-            location={form.state.location}
             scheduledDate={form.state.scheduledDate}
+            physicalWorkplaces={physicalWorkplaces || []}
+            physicalWorkplacesLoading={physicalWorkplacesLoading}
+            selectedPhysicalWorkplace={selectedPhysicalWorkplace || null}
+            onPhysicalWorkplaceChange={(wp) => form.setPhysicalWorkplaceId(wp?.id)}
             userOptions={userSearch.userOptions}
             userSearchLoading={userSearch.userSearchLoading}
             userDropdownOpen={userSearch.userDropdownOpen}
             onUserNameChange={form.setUserName}
             onUserEmailChange={form.setUserEmail}
-            onLocationChange={form.setLocation}
             onScheduledDateChange={form.setScheduledDate}
             onUserSearch={userSearch.handleUserSearch}
             onUserSelect={handleUserSelect}
@@ -456,210 +452,14 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             onDeviceClick={handleDeviceClick}
           />
 
-          {/* Physical Workplace Selection Section */}
-          <Box
-            sx={{
-              mt: 3,
-              p: 2.5,
-              borderRadius: 3,
-              bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              boxShadow: selectedPhysicalWorkplace
-                ? (isDark
-                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.4)'
-                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.3)')
-                : (isDark
-                  ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
-                  : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                  boxShadow: selectedPhysicalWorkplace
-                    ? (isDark
-                      ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
-                      : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff')
-                    : (isDark
-                      ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
-                      : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff'),
-                  transition: 'all 0.3s ease',
-                }}
-              >
-                <PlaceIcon sx={{
-                  color: selectedPhysicalWorkplace ? '#FF7700' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
-                  fontSize: '1.3rem',
-                  transition: 'color 0.3s ease',
-                }} />
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-                  Fysieke werkplek
-                </Typography>
-                <Typography variant="caption" sx={{ color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }}>
-                  Koppel aan een bestaande fysieke werkplek
-                </Typography>
-              </Box>
-              {selectedPhysicalWorkplace && (
-                <Chip
-                  label={selectedPhysicalWorkplace.code}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                    color: '#FF7700',
-                    border: 'none',
-                    boxShadow: isDark
-                      ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
-                      : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
-                  }}
-                />
-              )}
-            </Stack>
-
-            <Autocomplete
-              options={physicalWorkplaces || []}
-              getOptionLabel={(option: PhysicalWorkplaceSummary) => `${option.code} - ${option.name}`}
-              value={selectedPhysicalWorkplace || null}
-              onChange={(_, newValue) => {
-                form.setPhysicalWorkplaceId(newValue?.id);
-              }}
-              loading={physicalWorkplacesLoading}
-              isOptionEqualToValue={(option, value) => option.id === value?.id}
-              renderOption={(props, option: PhysicalWorkplaceSummary) => (
-                <Box component="li" {...props} key={option.id}>
-                  <Stack>
-                    <Typography variant="body2" fontWeight={600}>
-                      {option.code} - {option.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option.buildingName}
-                      {option.currentOccupantName && ` • ${option.currentOccupantName}`}
-                    </Typography>
-                  </Stack>
-                </Box>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder="Selecteer fysieke werkplek..."
-                  size="small"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {physicalWorkplacesLoading ? <CircularProgress color="inherit" size={18} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                      borderRadius: 2,
-                      boxShadow: isDark
-                        ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
-                        : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
-                      '& fieldset': { border: 'none' },
-                      '&:hover fieldset': { border: 'none' },
-                      '&.Mui-focused fieldset': { border: 'none' },
-                    },
-                    '& .MuiInputBase-input': {
-                      color: isDark ? '#fff' : '#333',
-                    },
-                    '& .MuiInputBase-input::placeholder': {
-                      color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
-                      opacity: 1,
-                    },
-                  }}
-                />
-              )}
-            />
-
-            {selectedPhysicalWorkplace && (
-              <Box
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                  boxShadow: isDark
-                    ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
-                    : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
-                }}
-              >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack spacing={0.5}>
-                    <Typography variant="body2" fontWeight={600} color="text.primary">
-                      {selectedPhysicalWorkplace.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {selectedPhysicalWorkplace.buildingName}
-                      {selectedPhysicalWorkplace.serviceName && ` • ${selectedPhysicalWorkplace.serviceName}`}
-                    </Typography>
-                    {selectedPhysicalWorkplace.currentOccupantName && (
-                      <Typography variant="caption" sx={{ color: 'warning.main' }}>
-                        Huidige gebruiker: {selectedPhysicalWorkplace.currentOccupantName}
-                      </Typography>
-                    )}
-                  </Stack>
-                  <Button
-                    size="small"
-                    onClick={() => form.setPhysicalWorkplaceId(undefined)}
-                    startIcon={<ClearIcon />}
-                    sx={{
-                      minWidth: 'auto',
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1.5,
-                      color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                      bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                      boxShadow: isDark
-                        ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
-                        : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
-                      '&:hover': {
-                        bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                        boxShadow: isDark
-                          ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
-                          : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
-                      },
-                    }}
-                  >
-                    Wissen
-                  </Button>
-                </Stack>
-              </Box>
-            )}
-          </Box>
-
-          {/* Neumorphic Divider */}
-          <Box
-            sx={{
-              my: 3,
-              height: 2,
-              borderRadius: 1,
-              bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              boxShadow: isDark
-                ? 'inset 1px 1px 2px #161a1d, inset -1px -1px 2px #262c33'
-                : 'inset 1px 1px 2px #c5cad0, inset -1px -1px 2px #ffffff',
-            }}
-          />
-
           {/* Unified Workplace Configuration Section */}
           <Box sx={{ mb: 2.5 }}>
             <WorkplaceConfigSection
               items={form.state.configItems}
               onChange={form.setConfigItems}
               onScanRequest={(itemId) => handleOpenScanDialog({ type: 'config-item', itemId })}
+              userName={form.state.userName}
+              physicalWorkplaceName={selectedPhysicalWorkplace?.name}
             />
           </Box>
 

@@ -20,7 +20,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SyncIcon from '@mui/icons-material/Sync';
 import AdminDataTable, { Column } from './AdminDataTable';
 import AdminFormDialog from './AdminFormDialog';
-import { Sector, CreateSectorDto, UpdateSectorDto } from '../../types/admin.types';
+import { Sector, UpdateSectorDto } from '../../types/admin.types';
 import { sectorsApi } from '../../api/admin.api';
 import Loading from '../common/Loading';
 

@@ -41,7 +41,6 @@ import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import DeskIcon from '@mui/icons-material/Desk';
 import LaptopIcon from '@mui/icons-material/Laptop';
-import GroupsIcon from '@mui/icons-material/Groups';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -122,7 +121,6 @@ const PhysicalWorkplacesPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   // Filter state

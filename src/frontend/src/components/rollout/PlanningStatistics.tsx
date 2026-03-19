@@ -25,11 +25,11 @@ interface PostponedInfo {
  * Statistics component showing progress over 5 days with postponement tracking
  * Designed for reporting verplichte verplaatsingen wegens vertraging
  */
-const PlanningStatistics: React.FC<PlanningStatisticsProps> = ({
+const PlanningStatistics = React.memo<PlanningStatisticsProps>(function PlanningStatistics({
   days,
   targetDays = 5,
   targetWorkstations = 64,
-}) => {
+}) {
   // Calculate statistics
   const stats = useMemo(() => {
     const now = new Date();
@@ -393,6 +393,6 @@ const PlanningStatistics: React.FC<PlanningStatisticsProps> = ({
       )}
     </Paper>
   );
-};
+});
 
 export default PlanningStatistics;

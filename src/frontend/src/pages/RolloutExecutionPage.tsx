@@ -88,7 +88,6 @@ const EQUIPMENT_ICONS: Record<string, string> = {
 
 // Assignment type constants - match WorkplaceConfigSection
 const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop', 'desktop'];
-const WORKPLACE_FIXED_EQUIPMENT: string[] = ['docking', 'monitor', 'keyboard', 'mouse'];
 
 type AssignmentType = 'user' | 'workplace';
 
@@ -1098,7 +1097,6 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
   const hasSerial = !!plan.metadata?.serialNumber;
 
   // Neumorphic inset styling
-  const neumorphicBg = isDark ? '#1e2328' : '#e8eef3';
   const neumorphicInset = isDark
     ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
     : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff';

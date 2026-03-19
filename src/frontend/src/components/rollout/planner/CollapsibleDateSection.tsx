@@ -33,7 +33,7 @@ interface CollapsibleDateSectionProps {
 const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
   dateKey,
   isToday,
-  isPast,
+  isPast: _isPast,
   isFuture,
   totalWorkplaces,
   completedWorkplaces,

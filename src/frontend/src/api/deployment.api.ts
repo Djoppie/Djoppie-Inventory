@@ -5,7 +5,6 @@ import type {
   DeploymentHistoryResult,
   DeploymentHistoryParams,
   OccupantConflict,
-  DeploymentMode,
 } from '../types/deployment.types';
 import type { Asset } from '../types/asset.types';
 
