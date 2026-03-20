@@ -63,6 +63,7 @@ import {
 } from '../hooks/useRollout';
 import { getAssetBySerialNumber } from '../api/assets.api';
 import { TemplateSelector } from '../components/rollout/TemplateSelector';
+import WorkplaceCompletionDialog from '../components/rollout/WorkplaceCompletionDialog';
 import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../types/rollout';
@@ -424,7 +425,6 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     : '10px 10px 20px #c5cad0, -10px -10px 20px #ffffff';
 
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
-  const [completeNotes, setCompleteNotes] = useState('');
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
@@ -456,14 +456,13 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (notes?: string) => {
     try {
       await completeMutation.mutateAsync({
         workplaceId: workplace.id,
-        data: { notes: completeNotes || undefined },
+        data: { notes: notes || undefined },
       });
       setCompleteDialogOpen(false);
-      setCompleteNotes('');
       onSnackbar(`Werkplek "${workplace.userName}" voltooid! Assets zijn bijgewerkt.`);
     } catch {
       onSnackbar('Fout bij voltooien werkplek', 'error');
@@ -752,157 +751,14 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
         />
       )}
 
-      {/* Complete Confirmation Dialog */}
-      <Dialog
+      {/* Complete Confirmation Dialog - Uses WorkplaceCompletionDialog with physical workplace info */}
+      <WorkplaceCompletionDialog
         open={completeDialogOpen}
+        workplace={workplace}
         onClose={() => setCompleteDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        disableRestoreFocus
-        PaperProps={{
-          sx: {
-            bgcolor: isDark ? '#1e2328' : '#e8eef3',
-            borderRadius: 3,
-            boxShadow: isDark
-              ? '8px 8px 16px #0d0f11, -4px -4px 12px #2f373f'
-              : '8px 8px 16px #c8cdd2, -4px -4px 12px #f8fcff',
-            border: '2px solid rgba(76, 175, 80, 0.4)',
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            pb: 1.5,
-            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              bgcolor: 'rgba(76, 175, 80, 0.15)',
-              boxShadow: isDark
-                ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
-                : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
-            }}
-          >
-            <DoneAllIcon sx={{ color: '#4caf50', fontSize: '1.4rem' }} />
-          </Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-            Werkplek Voltooien
-          </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Weet je zeker dat je werkplek <strong>"{workplace.userName}"</strong> wilt voltooien?
-          </Typography>
-          <Alert
-            severity="info"
-            sx={{
-              mb: 2,
-              bgcolor: isDark ? 'rgba(33, 150, 243, 0.1)' : 'rgba(33, 150, 243, 0.08)',
-              border: '1px solid rgba(33, 150, 243, 0.3)',
-              borderRadius: 2,
-            }}
-          >
-            <strong>Dit zal de volgende acties uitvoeren:</strong>
-            <Box component="ul" sx={{ m: '8px 0 0', pl: '20px' }}>
-              <li>Nieuwe assets worden <strong>InGebruik</strong> gezet</li>
-              <li>Eigenaar wordt ingesteld op <strong>{workplace.userName}</strong></li>
-              <li>Installatiedatum wordt ingesteld op <strong>vandaag</strong></li>
-              {workplace.assetPlans.some((p) => p.oldAssetId) && (
-                <li>Oude assets worden <strong>UitDienst</strong> gezet</li>
-              )}
-            </Box>
-          </Alert>
-          <TextField
-            fullWidth
-            label="Opmerkingen (optioneel)"
-            multiline
-            rows={2}
-            value={completeNotes}
-            onChange={(e) => setCompleteNotes(e.target.value)}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                borderRadius: 2,
-                boxShadow: isDark
-                  ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
-                  : 'inset 2px 2px 4px #d1d6db, inset -2px -2px 4px #f5f9fc',
-                '& fieldset': { border: 'none' },
-                '&:hover, &.Mui-focused': {
-                  boxShadow: isDark
-                    ? 'inset 2px 2px 5px #161a1d, inset -2px -2px 5px #262c33, 0 0 0 2px rgba(76, 175, 80, 0.3)'
-                    : 'inset 2px 2px 5px #d1d6db, inset -2px -2px 5px #f5f9fc, 0 0 0 2px rgba(76, 175, 80, 0.25)',
-                },
-              },
-              '& .MuiInputLabel-root': {
-                color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                '&.Mui-focused': { color: '#4caf50' },
-              },
-            }}
-          />
-        </DialogContent>
-        <DialogActions
-          sx={{
-            px: 3,
-            pb: 2.5,
-            pt: 2,
-            gap: 1.5,
-            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
-          }}
-        >
-          <Button
-            onClick={() => setCompleteDialogOpen(false)}
-            sx={{
-              bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-              boxShadow: isDark
-                ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
-                : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
-              '&:hover': {
-                bgcolor: isDark ? '#252a30' : '#dde3e8',
-                boxShadow: isDark
-                  ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
-                  : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc',
-              },
-            }}
-          >
-            Annuleren
-          </Button>
-          <Button
-            onClick={handleComplete}
-            disabled={completeMutation.isPending}
-            startIcon={<DoneAllIcon />}
-            sx={{
-              bgcolor: '#4caf50',
-              color: 'white',
-              boxShadow: isDark
-                ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
-                : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
-              '&:hover': {
-                bgcolor: '#43a047',
-                boxShadow: isDark
-                  ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33, 0 0 8px rgba(76, 175, 80, 0.3)'
-                  : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc, 0 0 8px rgba(76, 175, 80, 0.2)',
-              },
-              '&:disabled': {
-                bgcolor: isDark ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.4)',
-                color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.7)',
-              },
-            }}
-          >
-            {completeMutation.isPending ? 'Voltooien...' : 'Bevestigen & Voltooien'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onComplete={handleComplete}
+        isCompleting={completeMutation.isPending}
+      />
 
       {/* Reopen Confirmation Dialog */}
       <Dialog

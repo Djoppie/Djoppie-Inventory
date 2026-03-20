@@ -705,14 +705,15 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
 
         foreach (var assignment in installedAssignments)
         {
-            var assetTypeCode = assignment.AssetType?.Code?.ToLowerInvariant() ?? "";
+            // AssetType codes are uppercase (DOCK, MON, KEYB, MOUSE)
+            var assetTypeCode = assignment.AssetType?.Code?.ToUpperInvariant() ?? "";
 
             switch (assetTypeCode)
             {
-                case "docking":
+                case "DOCK":
                     physicalWorkplace.DockingStationAssetId = assignment.NewAssetId;
                     break;
-                case "monitor":
+                case "MON":
                     // Assign monitors to slots in order (1, 2, 3)
                     switch (monitorSlot)
                     {
@@ -728,10 +729,10 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
                     }
                     monitorSlot++;
                     break;
-                case "keyboard":
+                case "KEYB":
                     physicalWorkplace.KeyboardAssetId = assignment.NewAssetId;
                     break;
-                case "mouse":
+                case "MOUSE":
                     physicalWorkplace.MouseAssetId = assignment.NewAssetId;
                     break;
             }
