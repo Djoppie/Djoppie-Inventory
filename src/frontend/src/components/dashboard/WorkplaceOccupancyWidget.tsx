@@ -24,7 +24,7 @@ const WorkplaceOccupancyWidget = () => {
   const { data: stats, isLoading, error } = useWorkplaceStatistics();
 
   const handleClick = () => {
-    navigate('/physical-workplaces');
+    navigate('/workplaces');
   };
 
   // Loading state

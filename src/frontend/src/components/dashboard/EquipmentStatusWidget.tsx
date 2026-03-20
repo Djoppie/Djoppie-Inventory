@@ -44,7 +44,7 @@ const EquipmentStatusWidget = () => {
   const { data: equipmentStats, isLoading, error } = useWorkplaceEquipmentStatistics();
 
   const handleClick = () => {
-    navigate('/physical-workplaces');
+    navigate('/workplaces');
   };
 
   // Loading state

@@ -61,7 +61,7 @@ const RecentWorkplaceChangesWidget = () => {
   const { data: changes, isLoading, error } = useWorkplaceRecentChanges(8);
 
   const handleChangeClick = (workplaceId: number) => {
-    navigate(`/physical-workplaces/${workplaceId}`);
+    navigate(`/workplaces/${workplaceId}`);
   };
 
   // Format relative time
@@ -308,7 +308,7 @@ const RecentWorkplaceChangesWidget = () => {
           cursor: 'pointer',
           '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
         }}
-        onClick={() => navigate('/physical-workplaces')}
+        onClick={() => navigate('/workplaces')}
       >
         <Typography
           variant="caption"
