@@ -19,10 +19,6 @@ import {
   DashboardToolbar,
   DashboardPopovers,
   BulkDeleteDialog,
-  WorkplaceOccupancyWidget,
-  EquipmentStatusWidget,
-  RecentWorkplaceChangesWidget,
-  TodaysRolloutWidget,
 } from '../components/dashboard';
 
 // API
@@ -192,25 +188,6 @@ const DashboardPage = () => {
         notesOpen={Boolean(notesAnchor)}
         alarmsOpen={Boolean(alarmsAnchor)}
       />
-
-      {/* Workplace Widgets Section */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            md: 'repeat(2, 1fr)',
-            lg: 'repeat(4, 1fr)',
-          },
-          gap: 2,
-          mb: 2,
-        }}
-      >
-        <WorkplaceOccupancyWidget />
-        <EquipmentStatusWidget />
-        <TodaysRolloutWidget />
-        <RecentWorkplaceChangesWidget />
-      </Box>
 
       {/* Category Switcher */}
       <Paper
