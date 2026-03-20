@@ -62,3 +62,86 @@ public record PhysicalWorkplaceSummaryDto(
     string? CurrentOccupantName,
     bool IsActive
 );
+
+// ============================================================
+// Statistics DTOs for Dashboard Widgets
+// ============================================================
+
+/// <summary>
+/// Overall workplace statistics for dashboard overview widget
+/// </summary>
+public record WorkplaceStatisticsDto(
+    int TotalWorkplaces,
+    int ActiveWorkplaces,
+    int OccupiedWorkplaces,
+    int VacantWorkplaces,
+    decimal OccupancyRate,
+    EquipmentStatisticsDto Equipment
+);
+
+/// <summary>
+/// Equipment slot statistics across all workplaces
+/// </summary>
+public record EquipmentStatisticsDto(
+    int TotalDockingSlots,
+    int FilledDockingSlots,
+    int TotalMonitorSlots,
+    int FilledMonitorSlots,
+    int TotalKeyboardSlots,
+    int FilledKeyboardSlots,
+    int TotalMouseSlots,
+    int FilledMouseSlots,
+    decimal OverallEquipmentRate
+);
+
+/// <summary>
+/// Occupancy statistics grouped by building
+/// </summary>
+public record BuildingOccupancyDto(
+    int BuildingId,
+    string BuildingName,
+    string? BuildingCode,
+    int TotalWorkplaces,
+    int OccupiedWorkplaces,
+    int VacantWorkplaces,
+    decimal OccupancyRate
+);
+
+/// <summary>
+/// Occupancy statistics grouped by service
+/// </summary>
+public record ServiceOccupancyDto(
+    int? ServiceId,
+    string? ServiceName,
+    string? ServiceCode,
+    int TotalWorkplaces,
+    int OccupiedWorkplaces,
+    int VacantWorkplaces,
+    decimal OccupancyRate
+);
+
+/// <summary>
+/// Recent workplace change event for activity feed
+/// </summary>
+public record WorkplaceChangeDto(
+    int WorkplaceId,
+    string WorkplaceCode,
+    string WorkplaceName,
+    string ChangeType,
+    string Description,
+    string? UserName,
+    string? AssetCode,
+    DateTime ChangedAt
+);
+
+/// <summary>
+/// Equipment status by type for equipment distribution widget
+/// </summary>
+public record EquipmentTypeStatusDto(
+    string EquipmentType,
+    string DisplayName,
+    int TotalSlots,
+    int FilledSlots,
+    int EmptySlots,
+    decimal FillRate
+);

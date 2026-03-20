@@ -8,6 +8,11 @@ import {
   UpdateEquipmentSlotsDto,
   PhysicalWorkplaceFilters,
   WorkplaceFixedAsset,
+  WorkplaceStatistics,
+  BuildingOccupancy,
+  ServiceOccupancy,
+  EquipmentTypeStatus,
+  WorkplaceChange,
 } from '../types/physicalWorkplace.types';
 
 // ============================================================
@@ -246,6 +251,59 @@ export const physicalWorkplacesBulkApi = {
       '/physicalworkplaces/bulk',
       dto
     );
+    return response.data;
+  },
+};
+
+// ============================================================
+// Statistics API for Dashboard Widgets
+// ============================================================
+
+export const physicalWorkplacesStatisticsApi = {
+  /**
+   * Get overall workplace statistics including occupancy and equipment rates.
+   * Used for the main dashboard workplace overview widget.
+   */
+  getStatistics: async (): Promise<WorkplaceStatistics> => {
+    const response = await apiClient.get<WorkplaceStatistics>('/physicalworkplaces/statistics');
+    return response.data;
+  },
+
+  /**
+   * Get occupancy statistics grouped by building.
+   * Used for the building occupancy distribution widget.
+   */
+  getStatisticsByBuilding: async (): Promise<BuildingOccupancy[]> => {
+    const response = await apiClient.get<BuildingOccupancy[]>('/physicalworkplaces/statistics/by-building');
+    return response.data;
+  },
+
+  /**
+   * Get occupancy statistics grouped by service/department.
+   * Used for the service occupancy distribution widget.
+   */
+  getStatisticsByService: async (): Promise<ServiceOccupancy[]> => {
+    const response = await apiClient.get<ServiceOccupancy[]>('/physicalworkplaces/statistics/by-service');
+    return response.data;
+  },
+
+  /**
+   * Get equipment status breakdown by type.
+   * Used for the equipment distribution widget.
+   */
+  getEquipmentStatistics: async (): Promise<EquipmentTypeStatus[]> => {
+    const response = await apiClient.get<EquipmentTypeStatus[]>('/physicalworkplaces/statistics/equipment');
+    return response.data;
+  },
+
+  /**
+   * Get recent workplace changes (occupancy changes, equipment assignments).
+   * Used for the activity feed widget on the dashboard.
+   */
+  getRecentChanges: async (limit = 10, buildingId?: number): Promise<WorkplaceChange[]> => {
+    const response = await apiClient.get<WorkplaceChange[]>('/physicalworkplaces/recent-changes', {
+      params: { limit, buildingId },
+    });
     return response.data;
   },
 };

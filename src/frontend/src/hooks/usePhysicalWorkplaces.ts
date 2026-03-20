@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   physicalWorkplacesApi,
   physicalWorkplacesBulkApi,
+  physicalWorkplacesStatisticsApi,
   BulkCreateWorkplacesDto,
   ExportWorkplacesParams,
 } from '../api/physicalWorkplaces.api';
@@ -277,5 +278,82 @@ export const useBulkCreateWorkplaces = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
     },
+  });
+};
+
+// ============================================================
+// Statistics Hooks for Dashboard Widgets
+// ============================================================
+
+/**
+ * Query key factory for workplace statistics
+ */
+export const workplaceStatisticsKeys = {
+  all: ['workplaceStatistics'] as const,
+  statistics: () => [...workplaceStatisticsKeys.all, 'overview'] as const,
+  byBuilding: () => [...workplaceStatisticsKeys.all, 'byBuilding'] as const,
+  byService: () => [...workplaceStatisticsKeys.all, 'byService'] as const,
+  equipment: () => [...workplaceStatisticsKeys.all, 'equipment'] as const,
+  recentChanges: (limit?: number, buildingId?: number) =>
+    [...workplaceStatisticsKeys.all, 'recentChanges', { limit, buildingId }] as const,
+};
+
+/**
+ * Hook to fetch overall workplace statistics
+ * Used for the main dashboard workplace overview widget
+ */
+export const useWorkplaceStatistics = () => {
+  return useQuery({
+    queryKey: workplaceStatisticsKeys.statistics(),
+    queryFn: () => physicalWorkplacesStatisticsApi.getStatistics(),
+    staleTime: 30 * 1000, // 30 seconds - statistics don't change that often
+  });
+};
+
+/**
+ * Hook to fetch occupancy statistics by building
+ * Used for the building occupancy distribution widget
+ */
+export const useWorkplaceStatisticsByBuilding = () => {
+  return useQuery({
+    queryKey: workplaceStatisticsKeys.byBuilding(),
+    queryFn: () => physicalWorkplacesStatisticsApi.getStatisticsByBuilding(),
+    staleTime: 30 * 1000,
+  });
+};
+
+/**
+ * Hook to fetch occupancy statistics by service
+ * Used for the service occupancy distribution widget
+ */
+export const useWorkplaceStatisticsByService = () => {
+  return useQuery({
+    queryKey: workplaceStatisticsKeys.byService(),
+    queryFn: () => physicalWorkplacesStatisticsApi.getStatisticsByService(),
+    staleTime: 30 * 1000,
+  });
+};
+
+/**
+ * Hook to fetch equipment statistics by type
+ * Used for the equipment distribution widget
+ */
+export const useWorkplaceEquipmentStatistics = () => {
+  return useQuery({
+    queryKey: workplaceStatisticsKeys.equipment(),
+    queryFn: () => physicalWorkplacesStatisticsApi.getEquipmentStatistics(),
+    staleTime: 30 * 1000,
+  });
+};
+
+/**
+ * Hook to fetch recent workplace changes
+ * Used for the activity feed widget on the dashboard
+ */
+export const useWorkplaceRecentChanges = (limit = 10, buildingId?: number) => {
+  return useQuery({
+    queryKey: workplaceStatisticsKeys.recentChanges(limit, buildingId),
+    queryFn: () => physicalWorkplacesStatisticsApi.getRecentChanges(limit, buildingId),
+    staleTime: 10 * 1000, // 10 seconds - recent changes should refresh more often
   });
 };

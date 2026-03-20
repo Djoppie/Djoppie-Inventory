@@ -4,3 +4,8 @@ export { default as DashboardPopovers } from './DashboardPopovers';
 export { default as StatusCardGrid } from './StatusCardGrid';
 export { default as BulkDeleteDialog } from './BulkDeleteDialog';
 export { default as ExpiringLeasesWidget } from './ExpiringLeasesWidget';
+
+// Workplace widgets
+export { default as WorkplaceOccupancyWidget } from './WorkplaceOccupancyWidget';
+export { default as EquipmentStatusWidget } from './EquipmentStatusWidget';
+export { default as RecentWorkplaceChangesWidget } from './RecentWorkplaceChangesWidget';

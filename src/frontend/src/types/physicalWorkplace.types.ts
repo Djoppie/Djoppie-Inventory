@@ -151,3 +151,86 @@ export interface WorkplaceFixedAsset {
   serialNumber?: string;
   status: string;
 }
+
+// ============================================================
+// Statistics types for Dashboard Widgets
+// ============================================================
+
+/**
+ * Overall workplace statistics for dashboard overview widget
+ */
+export interface WorkplaceStatistics {
+  totalWorkplaces: number;
+  activeWorkplaces: number;
+  occupiedWorkplaces: number;
+  vacantWorkplaces: number;
+  occupancyRate: number;
+  equipment: EquipmentStatistics;
+}
+
+/**
+ * Equipment slot statistics across all workplaces
+ */
+export interface EquipmentStatistics {
+  totalDockingSlots: number;
+  filledDockingSlots: number;
+  totalMonitorSlots: number;
+  filledMonitorSlots: number;
+  totalKeyboardSlots: number;
+  filledKeyboardSlots: number;
+  totalMouseSlots: number;
+  filledMouseSlots: number;
+  overallEquipmentRate: number;
+}
+
+/**
+ * Occupancy statistics grouped by building
+ */
+export interface BuildingOccupancy {
+  buildingId: number;
+  buildingName: string;
+  buildingCode?: string;
+  totalWorkplaces: number;
+  occupiedWorkplaces: number;
+  vacantWorkplaces: number;
+  occupancyRate: number;
+}
+
+/**
+ * Occupancy statistics grouped by service
+ */
+export interface ServiceOccupancy {
+  serviceId?: number;
+  serviceName?: string;
+  serviceCode?: string;
+  totalWorkplaces: number;
+  occupiedWorkplaces: number;
+  vacantWorkplaces: number;
+  occupancyRate: number;
+}
+
+/**
+ * Recent workplace change event for activity feed
+ */
+export interface WorkplaceChange {
+  workplaceId: number;
+  workplaceCode: string;
+  workplaceName: string;
+  changeType: 'occupancy' | 'equipment';
+  description: string;
+  userName?: string;
+  assetCode?: string;
+  changedAt: string;
+}
+
+/**
+ * Equipment status by type for equipment distribution widget
+ */
+export interface EquipmentTypeStatus {
+  equipmentType: string;
+  displayName: string;
+  totalSlots: number;
+  filledSlots: number;
+  emptySlots: number;
+  fillRate: number;
+}

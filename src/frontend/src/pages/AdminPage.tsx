@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -11,8 +10,6 @@ import {
   Stack,
   IconButton,
   Tooltip,
-  alpha,
-  useTheme,
 } from '@mui/material';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -21,14 +18,11 @@ import BusinessIcon from '@mui/icons-material/Business';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeskIcon from '@mui/icons-material/Desk';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CategoriesTab from '../components/admin/CategoriesTab';
 import AssetTypesTab from '../components/admin/AssetTypesTab';
 import BuildingsTab from '../components/admin/BuildingsTab';
 import SectorsTab from '../components/admin/SectorsTab';
 import ServicesTab from '../components/admin/ServicesTab';
-import { ROUTES } from '../constants/routes';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -82,9 +76,7 @@ const TabPanel = ({ children, value, index }: TabPanelProps) => {
 };
 
 const AdminPage = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const theme = useTheme();
   const [currentTab, setCurrentTab] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -151,53 +143,6 @@ const AdminPage = () => {
                 Manage reference data and system configuration
               </Typography>
             </Box>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      {/* Physical Workplaces Navigation Card */}
-      <Card
-        elevation={0}
-        onClick={() => navigate(ROUTES.PHYSICAL_WORKPLACES)}
-        sx={{
-          ...scannerCardSx,
-          cursor: 'pointer',
-          '&:hover': {
-            borderColor: '#00BCD4',
-            boxShadow: theme.palette.mode === 'dark'
-              ? '0 8px 32px rgba(0, 188, 212, 0.2), inset 0 0 24px rgba(0, 188, 212, 0.05)'
-              : '0 4px 20px rgba(0, 188, 212, 0.3)',
-          },
-        }}
-      >
-        <CardContent sx={{ p: 2.5 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  bgcolor: alpha('#00BCD4', 0.1),
-                  border: '1px solid',
-                  borderColor: alpha('#00BCD4', 0.3),
-                }}
-              >
-                <DeskIcon sx={{ fontSize: 24, color: '#00BCD4' }} />
-              </Box>
-              <Box>
-                <Typography variant="h6" fontWeight={600}>
-                  {t('navigation.workplaces', { defaultValue: 'Physical Workplaces' })}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('admin.workplacesDesc', { defaultValue: 'Manage physical workplaces, equipment slots and occupants' })}
-                </Typography>
-              </Box>
-            </Stack>
-            <ChevronRightIcon sx={{ color: 'text.secondary' }} />
           </Stack>
         </CardContent>
       </Card>

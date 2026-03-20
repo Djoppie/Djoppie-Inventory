@@ -591,6 +591,245 @@ public class PhysicalWorkplacesController : ControllerBase
     }
 
     // ============================================================
+    // Statistics Endpoints for Dashboard Widgets
+    // ============================================================
+
+    /// <summary>
+    /// Gets overall workplace statistics including occupancy and equipment rates.
+    /// Used for the main dashboard workplace overview widget.
+    /// </summary>
+    [HttpGet("statistics")]
+    [ProducesResponseType(typeof(WorkplaceStatisticsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<WorkplaceStatisticsDto>> GetStatistics(
+        CancellationToken cancellationToken = default)
+    {
+        var workplaces = await _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var totalWorkplaces = workplaces.Count;
+        var activeWorkplaces = workplaces.Count(pw => pw.IsActive);
+        var occupiedWorkplaces = workplaces.Count(pw => pw.CurrentOccupantEntraId != null);
+        var vacantWorkplaces = activeWorkplaces - occupiedWorkplaces;
+        var occupancyRate = activeWorkplaces > 0
+            ? Math.Round((decimal)occupiedWorkplaces / activeWorkplaces * 100, 1)
+            : 0;
+
+        // Equipment statistics
+        var totalDocking = workplaces.Count(pw => pw.HasDockingStation);
+        var filledDocking = workplaces.Count(pw => pw.DockingStationAssetId.HasValue);
+
+        var totalMonitors = workplaces.Sum(pw => pw.MonitorCount);
+        var filledMonitors = workplaces.Count(pw => pw.Monitor1AssetId.HasValue)
+            + workplaces.Count(pw => pw.Monitor2AssetId.HasValue)
+            + workplaces.Count(pw => pw.Monitor3AssetId.HasValue);
+
+        var totalKeyboards = activeWorkplaces; // Every workplace needs a keyboard
+        var filledKeyboards = workplaces.Count(pw => pw.KeyboardAssetId.HasValue);
+
+        var totalMice = activeWorkplaces; // Every workplace needs a mouse
+        var filledMice = workplaces.Count(pw => pw.MouseAssetId.HasValue);
+
+        var totalSlots = totalDocking + totalMonitors + totalKeyboards + totalMice;
+        var filledSlots = filledDocking + filledMonitors + filledKeyboards + filledMice;
+        var overallEquipmentRate = totalSlots > 0
+            ? Math.Round((decimal)filledSlots / totalSlots * 100, 1)
+            : 0;
+
+        var equipment = new EquipmentStatisticsDto(
+            totalDocking, filledDocking,
+            totalMonitors, filledMonitors,
+            totalKeyboards, filledKeyboards,
+            totalMice, filledMice,
+            overallEquipmentRate
+        );
+
+        return Ok(new WorkplaceStatisticsDto(
+            totalWorkplaces,
+            activeWorkplaces,
+            occupiedWorkplaces,
+            vacantWorkplaces,
+            occupancyRate,
+            equipment
+        ));
+    }
+
+    /// <summary>
+    /// Gets occupancy statistics grouped by building.
+    /// Used for the building occupancy distribution widget.
+    /// </summary>
+    [HttpGet("statistics/by-building")]
+    [ProducesResponseType(typeof(IEnumerable<BuildingOccupancyDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<BuildingOccupancyDto>>> GetStatisticsByBuilding(
+        CancellationToken cancellationToken = default)
+    {
+        var stats = await _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive)
+            .GroupBy(pw => new { pw.BuildingId, pw.Building.Name, pw.Building.Code })
+            .Select(g => new BuildingOccupancyDto(
+                g.Key.BuildingId,
+                g.Key.Name,
+                g.Key.Code,
+                g.Count(),
+                g.Count(pw => pw.CurrentOccupantEntraId != null),
+                g.Count(pw => pw.CurrentOccupantEntraId == null),
+                g.Count() > 0
+                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null) / g.Count() * 100, 1)
+                    : 0
+            ))
+            .OrderByDescending(b => b.TotalWorkplaces)
+            .ToListAsync(cancellationToken);
+
+        return Ok(stats);
+    }
+
+    /// <summary>
+    /// Gets occupancy statistics grouped by service/department.
+    /// Used for the service occupancy distribution widget.
+    /// </summary>
+    [HttpGet("statistics/by-service")]
+    [ProducesResponseType(typeof(IEnumerable<ServiceOccupancyDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ServiceOccupancyDto>>> GetStatisticsByService(
+        CancellationToken cancellationToken = default)
+    {
+        var stats = await _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive)
+            .GroupBy(pw => new { pw.ServiceId, ServiceName = pw.Service != null ? pw.Service.Name : null, ServiceCode = pw.Service != null ? pw.Service.Code : null })
+            .Select(g => new ServiceOccupancyDto(
+                g.Key.ServiceId,
+                g.Key.ServiceName ?? "Geen dienst",
+                g.Key.ServiceCode,
+                g.Count(),
+                g.Count(pw => pw.CurrentOccupantEntraId != null),
+                g.Count(pw => pw.CurrentOccupantEntraId == null),
+                g.Count() > 0
+                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null) / g.Count() * 100, 1)
+                    : 0
+            ))
+            .OrderByDescending(s => s.TotalWorkplaces)
+            .ToListAsync(cancellationToken);
+
+        return Ok(stats);
+    }
+
+    /// <summary>
+    /// Gets equipment status breakdown by type.
+    /// Used for the equipment distribution widget.
+    /// </summary>
+    [HttpGet("statistics/equipment")]
+    [ProducesResponseType(typeof(IEnumerable<EquipmentTypeStatusDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<EquipmentTypeStatusDto>>> GetEquipmentStatistics(
+        CancellationToken cancellationToken = default)
+    {
+        var workplaces = await _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var activeCount = workplaces.Count;
+
+        var equipmentStats = new List<EquipmentTypeStatusDto>
+        {
+            CreateEquipmentStat("docking", "Docking Stations",
+                workplaces.Count(pw => pw.HasDockingStation),
+                workplaces.Count(pw => pw.DockingStationAssetId.HasValue)),
+            CreateEquipmentStat("monitor", "Monitors",
+                workplaces.Sum(pw => pw.MonitorCount),
+                workplaces.Count(pw => pw.Monitor1AssetId.HasValue)
+                    + workplaces.Count(pw => pw.Monitor2AssetId.HasValue)
+                    + workplaces.Count(pw => pw.Monitor3AssetId.HasValue)),
+            CreateEquipmentStat("keyboard", "Keyboards",
+                activeCount,
+                workplaces.Count(pw => pw.KeyboardAssetId.HasValue)),
+            CreateEquipmentStat("mouse", "Mice",
+                activeCount,
+                workplaces.Count(pw => pw.MouseAssetId.HasValue))
+        };
+
+        return Ok(equipmentStats);
+    }
+
+    /// <summary>
+    /// Gets recent workplace changes (occupancy changes, equipment assignments).
+    /// Used for the activity feed widget on the dashboard.
+    /// </summary>
+    [HttpGet("recent-changes")]
+    [ProducesResponseType(typeof(IEnumerable<WorkplaceChangeDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<WorkplaceChangeDto>>> GetRecentChanges(
+        [FromQuery] int limit = 10,
+        [FromQuery] int? buildingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Get recently updated workplaces (those with occupants are likely recent changes)
+        var query = _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive)
+            .AsNoTracking();
+
+        if (buildingId.HasValue)
+            query = query.Where(pw => pw.BuildingId == buildingId.Value);
+
+        // Get workplaces with recent activity (occupied or recently updated)
+        var recentWorkplaces = await query
+            .Where(pw => pw.OccupiedSince.HasValue || pw.UpdatedAt > DateTime.UtcNow.AddDays(-30))
+            .OrderByDescending(pw => pw.UpdatedAt)
+            .Take(limit * 2) // Get more to filter
+            .Select(pw => new
+            {
+                pw.Id,
+                pw.Code,
+                pw.Name,
+                pw.CurrentOccupantName,
+                pw.OccupiedSince,
+                pw.UpdatedAt,
+                HasEquipment = pw.DockingStationAssetId.HasValue
+                    || pw.Monitor1AssetId.HasValue
+                    || pw.KeyboardAssetId.HasValue
+            })
+            .ToListAsync(cancellationToken);
+
+        var changes = new List<WorkplaceChangeDto>();
+
+        foreach (var wp in recentWorkplaces)
+        {
+            if (wp.OccupiedSince.HasValue && wp.CurrentOccupantName != null)
+            {
+                changes.Add(new WorkplaceChangeDto(
+                    wp.Id,
+                    wp.Code,
+                    wp.Name,
+                    "occupancy",
+                    $"Bezet door {wp.CurrentOccupantName}",
+                    wp.CurrentOccupantName,
+                    null,
+                    wp.OccupiedSince.Value
+                ));
+            }
+            else if (wp.HasEquipment)
+            {
+                changes.Add(new WorkplaceChangeDto(
+                    wp.Id,
+                    wp.Code,
+                    wp.Name,
+                    "equipment",
+                    "Apparatuur toegewezen",
+                    null,
+                    null,
+                    wp.UpdatedAt
+                ));
+            }
+        }
+
+        return Ok(changes.OrderByDescending(c => c.ChangedAt).Take(limit));
+    }
+
+    private static EquipmentTypeStatusDto CreateEquipmentStat(string type, string displayName, int total, int filled)
+    {
+        var fillRate = total > 0 ? Math.Round((decimal)filled / total * 100, 1) : 0;
+        return new EquipmentTypeStatusDto(type, displayName, total, filled, total - filled, fillRate);
+    }
+
+    // ============================================================
     // Bulk Operations
     // ============================================================
 
