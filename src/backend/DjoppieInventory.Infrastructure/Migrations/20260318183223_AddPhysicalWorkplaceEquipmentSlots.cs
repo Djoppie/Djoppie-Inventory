@@ -13,37 +13,37 @@ namespace DjoppieInventory.Infrastructure.Migrations
             migrationBuilder.AddColumn<int>(
                 name: "DockingStationAssetId",
                 table: "PhysicalWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "KeyboardAssetId",
                 table: "PhysicalWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "Monitor1AssetId",
                 table: "PhysicalWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "Monitor2AssetId",
                 table: "PhysicalWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "Monitor3AssetId",
                 table: "PhysicalWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "MouseAssetId",
                 table: "PhysicalWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.UpdateData(

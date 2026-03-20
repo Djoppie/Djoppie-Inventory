@@ -137,7 +137,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("Assets");
+                    b.ToTable("Assets", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetEvent", b =>
@@ -189,7 +189,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("EventDate");
 
-                    b.ToTable("AssetEvents");
+                    b.ToTable("AssetEvents", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
@@ -266,7 +266,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("AssetTemplates");
+                    b.ToTable("AssetTemplates", (string)null);
 
                     b.HasData(
                         new
@@ -368,7 +368,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("AssetTypes");
+                    b.ToTable("AssetTypes", (string)null);
 
                     b.HasData(
                         new
@@ -510,7 +510,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Buildings");
+                    b.ToTable("Buildings", (string)null);
 
                     b.HasData(
                         new
@@ -699,7 +699,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
 
                     b.HasData(
                         new
@@ -814,7 +814,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("EndDate");
 
-                    b.ToTable("LeaseContracts");
+                    b.ToTable("LeaseContracts", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.PhysicalWorkplace", b =>
@@ -924,7 +924,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("PhysicalWorkplaces");
+                    b.ToTable("PhysicalWorkplaces", (string)null);
 
                     b.HasData(
                         new
@@ -1138,7 +1138,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("WorkplaceAssetAssignmentId");
 
-                    b.ToTable("RolloutAssetMovements");
+                    b.ToTable("RolloutAssetMovements", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>
@@ -1189,7 +1189,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("RolloutSessionId");
 
-                    b.ToTable("RolloutDays");
+                    b.ToTable("RolloutDays", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDayService", b =>
@@ -1219,7 +1219,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("RolloutDayId", "ServiceId")
                         .IsUnique();
 
-                    b.ToTable("RolloutDayServices");
+                    b.ToTable("RolloutDayServices", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutSession", b =>
@@ -1274,7 +1274,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("RolloutSessions");
+                    b.ToTable("RolloutSessions", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutWorkplace", b =>
@@ -1370,7 +1370,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("RolloutWorkplaces");
+                    b.ToTable("RolloutWorkplaces", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Sector", b =>
@@ -1439,7 +1439,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Sectors");
+                    b.ToTable("Sectors", (string)null);
 
                     b.HasData(
                         new
@@ -1578,7 +1578,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("SectorId");
 
-                    b.ToTable("Services");
+                    b.ToTable("Services", (string)null);
 
                     b.HasData(
                         new
@@ -1937,7 +1937,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("WorkplaceAssetAssignments");
+                    b.ToTable("WorkplaceAssetAssignments", (string)null);
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Asset", b =>

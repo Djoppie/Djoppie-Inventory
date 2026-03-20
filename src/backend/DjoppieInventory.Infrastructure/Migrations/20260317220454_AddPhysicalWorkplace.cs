@@ -34,38 +34,38 @@ namespace DjoppieInventory.Infrastructure.Migrations
             migrationBuilder.AddColumn<int>(
                 name: "PhysicalWorkplaceId",
                 table: "RolloutWorkplaces",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "PhysicalWorkplaceId",
                 table: "Assets",
-                type: "INTEGER",
+                type: "int",
                 nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "PhysicalWorkplaces",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Code = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    BuildingId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ServiceId = table.Column<int>(type: "INTEGER", nullable: true),
-                    Floor = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    Room = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    Type = table.Column<int>(type: "INTEGER", nullable: false),
-                    MonitorCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    HasDockingStation = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CurrentOccupantEntraId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
-                    CurrentOccupantName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
-                    CurrentOccupantEmail = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
-                    OccupiedSince = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    BuildingId = table.Column<int>(type: "int", nullable: false),
+                    ServiceId = table.Column<int>(type: "int", nullable: true),
+                    Floor = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Room = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    MonitorCount = table.Column<int>(type: "int", nullable: false),
+                    HasDockingStation = table.Column<bool>(type: "bit", nullable: false),
+                    CurrentOccupantEntraId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    CurrentOccupantName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    CurrentOccupantEmail = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    OccupiedSince = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
