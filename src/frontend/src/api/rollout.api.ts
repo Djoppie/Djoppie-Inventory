@@ -10,6 +10,7 @@ import type {
   CreateRolloutSession,
   UpdateRolloutSession,
   RolloutDay,
+  RolloutDayWithSession,
   CreateRolloutDay,
   UpdateRolloutDay,
   RolloutWorkplace,
@@ -86,6 +87,18 @@ export const getRolloutDays = async (
   params?: RolloutDaysQueryParams
 ): Promise<RolloutDay[]> => {
   const response = await apiClient.get<RolloutDay[]>(`/rollouts/${sessionId}/days`, { params });
+  return response.data;
+};
+
+/**
+ * Get today's rollout days across all active sessions
+ */
+export const getTodaysRolloutDays = async (
+  includeWorkplaces = false
+): Promise<RolloutDayWithSession[]> => {
+  const response = await apiClient.get<RolloutDayWithSession[]>('/rollout/days/today', {
+    params: { includeWorkplaces },
+  });
   return response.data;
 };
 

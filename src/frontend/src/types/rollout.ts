@@ -66,6 +66,11 @@ export interface RolloutDay {
   workplaces?: RolloutWorkplace[];
 }
 
+export interface RolloutDayWithSession extends RolloutDay {
+  sessionName: string;
+  sessionStatus: string;
+}
+
 export interface CreateRolloutDay {
   rolloutSessionId: number;
   date: string;

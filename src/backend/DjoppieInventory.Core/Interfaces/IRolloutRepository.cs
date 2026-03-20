@@ -44,6 +44,11 @@ public interface IRolloutRepository
     Task<IEnumerable<RolloutDay>> GetDaysBySessionIdAsync(int sessionId, bool includeWorkplaces = false, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets all days for a specific date across all active sessions
+    /// </summary>
+    Task<IEnumerable<RolloutDay>> GetDaysByDateAsync(DateOnly date, bool includeWorkplaces = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a specific day by ID
     /// </summary>
     Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false, CancellationToken cancellationToken = default);

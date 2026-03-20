@@ -9,3 +9,4 @@ export { default as ExpiringLeasesWidget } from './ExpiringLeasesWidget';
 export { default as WorkplaceOccupancyWidget } from './WorkplaceOccupancyWidget';
 export { default as EquipmentStatusWidget } from './EquipmentStatusWidget';
 export { default as RecentWorkplaceChangesWidget } from './RecentWorkplaceChangesWidget';
+export { default as TodaysRolloutWidget } from './TodaysRolloutWidget';

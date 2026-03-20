@@ -113,6 +113,24 @@ public class RolloutRepository : IRolloutRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<RolloutDay>> GetDaysByDateAsync(DateOnly date, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
+    {
+        var dateTime = date.ToDateTime(TimeOnly.MinValue);
+        var query = _context.RolloutDays
+            .Include(d => d.RolloutSession)
+            .Where(d => d.Date.Date == dateTime.Date && d.RolloutSession!.Status != RolloutSessionStatus.Completed);
+
+        if (includeWorkplaces)
+        {
+            query = query.Include(d => d.Workplaces);
+        }
+
+        return await query
+            .OrderBy(d => d.RolloutSession!.SessionName)
+            .ThenBy(d => d.DayNumber)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
     {
         var query = _context.RolloutDays.AsQueryable();

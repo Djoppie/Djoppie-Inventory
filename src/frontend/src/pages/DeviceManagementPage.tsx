@@ -22,6 +22,7 @@ import {
   WorkplaceOccupancyWidget,
   EquipmentStatusWidget,
   RecentWorkplaceChangesWidget,
+  TodaysRolloutWidget,
 } from '../components/dashboard';
 
 interface NavigationCardProps {
@@ -288,6 +289,7 @@ const DeviceManagementPage = () => {
       >
         <WorkplaceOccupancyWidget />
         <EquipmentStatusWidget />
+        <TodaysRolloutWidget />
         <RecentWorkplaceChangesWidget />
       </Box>
 

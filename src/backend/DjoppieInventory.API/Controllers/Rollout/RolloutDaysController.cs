@@ -30,6 +30,24 @@ public class RolloutDaysController : ControllerBase
     }
 
     /// <summary>
+    /// Gets all days scheduled for today across all active sessions.
+    /// </summary>
+    /// <param name="includeWorkplaces">Include workplaces in response</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("today")]
+    [ProducesResponseType(typeof(IEnumerable<RolloutDayWithSessionDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<RolloutDayWithSessionDto>>> GetToday(
+        [FromQuery] bool includeWorkplaces = false,
+        CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var days = await _rolloutRepository.GetDaysByDateAsync(today, includeWorkplaces, cancellationToken);
+        var dayDtos = days.Select(MapToDtoWithSession).ToList();
+
+        return Ok(dayDtos);
+    }
+
+    /// <summary>
     /// Gets all days for a specific session.
     /// </summary>
     /// <param name="sessionId">Session ID</param>
@@ -362,6 +380,28 @@ public class RolloutDaysController : ControllerBase
             CreatedAt = day.CreatedAt,
             UpdatedAt = day.UpdatedAt,
             Workplaces = day.Workplaces?.Select(MapToWorkplaceDto).ToList()
+        };
+    }
+
+    private static RolloutDayWithSessionDto MapToDtoWithSession(RolloutDay day)
+    {
+        return new RolloutDayWithSessionDto
+        {
+            Id = day.Id,
+            RolloutSessionId = day.RolloutSessionId,
+            Date = day.Date,
+            Name = day.Name,
+            DayNumber = day.DayNumber,
+            ScheduledServiceIds = ParseScheduledServiceIds(day.ScheduledServiceIds),
+            TotalWorkplaces = day.TotalWorkplaces,
+            CompletedWorkplaces = day.CompletedWorkplaces,
+            Status = day.Status.ToString(),
+            Notes = day.Notes,
+            CreatedAt = day.CreatedAt,
+            UpdatedAt = day.UpdatedAt,
+            Workplaces = day.Workplaces?.Select(MapToWorkplaceDto).ToList(),
+            SessionName = day.RolloutSession?.SessionName ?? string.Empty,
+            SessionStatus = day.RolloutSession?.Status.ToString() ?? string.Empty
         };
     }
 

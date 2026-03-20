@@ -22,6 +22,7 @@ import {
   WorkplaceOccupancyWidget,
   EquipmentStatusWidget,
   RecentWorkplaceChangesWidget,
+  TodaysRolloutWidget,
 } from '../components/dashboard';
 
 // API
@@ -198,7 +199,8 @@ const DashboardPage = () => {
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
-            md: 'repeat(3, 1fr)',
+            md: 'repeat(2, 1fr)',
+            lg: 'repeat(4, 1fr)',
           },
           gap: 2,
           mb: 2,
@@ -206,6 +208,7 @@ const DashboardPage = () => {
       >
         <WorkplaceOccupancyWidget />
         <EquipmentStatusWidget />
+        <TodaysRolloutWidget />
         <RecentWorkplaceChangesWidget />
       </Box>
 
