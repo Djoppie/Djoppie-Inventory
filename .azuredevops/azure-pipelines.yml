@@ -596,7 +596,7 @@ stages:
                   inputs:
                     buildType: 'current'
                     artifactName: 'frontend-drop'
-                    downloadPath: '$(Pipeline.Workspace)'
+                    downloadPath: '$(Build.SourcesDirectory)/frontend-dist'
 
                 - task: AzureCLI@2
                   name: GetStaticWebAppToken
@@ -627,7 +627,7 @@ stages:
                   displayName: 'Deploy Frontend to Static Web App'
                   inputs:
                     azure_static_web_apps_api_token: $(staticWebAppToken)
-                    app_location: '$(Pipeline.Workspace)/frontend-drop'
+                    app_location: 'frontend-dist'
                     skip_app_build: true
                     skip_api_build: true
 
