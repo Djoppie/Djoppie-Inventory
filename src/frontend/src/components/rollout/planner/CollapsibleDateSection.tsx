@@ -20,7 +20,6 @@ import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 interface CollapsibleDateSectionProps {
   dateKey: string;
   isToday: boolean;
-  isPast: boolean;
   isFuture: boolean;
   totalWorkplaces: number;
   completedWorkplaces: number;
@@ -33,7 +32,6 @@ interface CollapsibleDateSectionProps {
 const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
   dateKey,
   isToday,
-  isPast: _isPast,
   isFuture,
   totalWorkplaces,
   completedWorkplaces,

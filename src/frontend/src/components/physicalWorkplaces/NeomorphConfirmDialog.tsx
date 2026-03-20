@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import {
   Dialog,
   Box,
@@ -76,8 +76,8 @@ const NeomorphConfirmDialog = ({
 
   const colors = variantColors[variant];
 
-  // Icon component based on type
-  const IconComponent = () => {
+  // Icon element based on type - using useMemo to avoid recreating on every render
+  const iconElement = useMemo(() => {
     switch (icon) {
       case 'delete':
         return <DeleteIcon sx={{ color: colors.accent, fontSize: 28 }} />;
@@ -86,7 +86,7 @@ const NeomorphConfirmDialog = ({
       default:
         return <WarningAmberIcon sx={{ color: colors.accent, fontSize: 28 }} />;
     }
-  };
+  }, [icon, colors.accent]);
 
   // Neomorph button styling
   const neomorphButtonSx = {
@@ -180,7 +180,7 @@ const NeomorphConfirmDialog = ({
                 boxShadow: neomorphBoxShadow,
               }}
             >
-              <IconComponent />
+              {iconElement}
             </Box>
             <Typography variant="h6" fontWeight={700} color="text.primary">
               {title}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -157,10 +157,13 @@ const ServicesTab = () => {
     return { groupedServices: grouped, ungroupedServices: ungrouped };
   }, [services, sectors, searchTerm]);
 
-  useMemo(() => {
+  // Initialize expanded sectors when sectors are first loaded
+  useEffect(() => {
     if (sectors.length > 0 && expandedSectors.size === 0) {
       setExpandedSectors(new Set(sectors.map((s) => s.id)));
     }
+    // Only run when sectors change, not when expandedSectors changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectors]);
 
   const createMutation = useMutation({

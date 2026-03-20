@@ -6,7 +6,6 @@ import {
   useCreateRolloutSession,
   useUpdateRolloutSession,
   useRolloutDays,
-  useNewAssetsForDay,
   useDeleteRolloutDay,
   useUpdateRolloutDayStatus,
 } from '../useRollout';
@@ -45,7 +44,6 @@ export interface UseRolloutPlannerDataResult {
   session: RolloutSession | undefined;
   days: RolloutDay[] | undefined;
   services: Array<{ id: number; code: string; name: string }>;
-  bulkPrintAssets: Array<{ id: number; assetCode: string; assetName: string }> | undefined;
 
   // Loading/Error states
   isLoading: boolean;
@@ -71,9 +69,6 @@ export interface UseRolloutPlannerDataResult {
   isCreatePending: boolean;
   isUpdatePending: boolean;
   isDayStatusPending: boolean;
-
-  // Helpers
-  setBulkPrintDayId: (dayId: number | undefined) => void;
 }
 
 export function useRolloutPlannerData({
@@ -112,17 +107,6 @@ export function useRolloutPlannerData({
   const updateMutation = useUpdateRolloutSession();
   const deleteDayMutation = useDeleteRolloutDay();
   const dayStatusMutation = useUpdateRolloutDayStatus();
-
-  // Bulk print state - managed externally but we need to fetch assets
-  const [bulkPrintDayIdState, setBulkPrintDayIdState] = useMemo(() => {
-    let _dayId: number | undefined;
-    return [
-      _dayId,
-      (dayId: number | undefined) => { _dayId = dayId; },
-    ];
-  }, []);
-
-  const { data: bulkPrintAssets } = useNewAssetsForDay(bulkPrintDayIdState || 0);
 
   // Extract rescheduled workplaces for calendar display
   const rescheduledWorkplaces = useMemo((): RescheduledWorkplace[] => {
@@ -300,7 +284,6 @@ export function useRolloutPlannerData({
     session,
     days,
     services,
-    bulkPrintAssets,
 
     // Loading/Error states
     isLoading: sessionLoading || daysLoading,
@@ -326,8 +309,5 @@ export function useRolloutPlannerData({
     isCreatePending: createMutation.isPending,
     isUpdatePending: updateMutation.isPending,
     isDayStatusPending: dayStatusMutation.isPending,
-
-    // Helpers
-    setBulkPrintDayId: setBulkPrintDayIdState,
   };
 }

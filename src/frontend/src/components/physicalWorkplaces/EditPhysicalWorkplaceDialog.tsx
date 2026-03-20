@@ -126,7 +126,9 @@ const EditPhysicalWorkplaceDialog = ({
   const [pendingOccupier, setPendingOccupier] = useState<UpdateOccupantDto | null>(null);
   const [pendingEquipment, setPendingEquipment] = useState<UpdateEquipmentSlotsDto | null>(null);
 
-  // Sync form data when workplace changes
+  // Sync form data when dialog opens or workplace changes
+  // This is intentional - we need to reset form state when the dialog opens
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && workplace) {
       setFormData({
@@ -152,6 +154,7 @@ const EditPhysicalWorkplaceDialog = ({
       setPendingEquipment(null);
     }
   }, [open, workplace]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleInputChange = (field: keyof FormData) => (
     event: React.ChangeEvent<HTMLInputElement>

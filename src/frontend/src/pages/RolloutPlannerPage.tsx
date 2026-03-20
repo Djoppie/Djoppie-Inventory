@@ -44,10 +44,12 @@ const RolloutPlannerPage = () => {
   const { data: bulkPrintAssets } = useNewAssetsForDay(state.dialogs.bulkPrintDayId || 0);
 
   // Sync form with session data (only once when session first loads)
+  // We intentionally only depend on specific state properties, not the entire state object
   useEffect(() => {
     if (data.session && state.form.sessionName === '') {
       state.syncFormWithSession(data.session);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.session, state.form.sessionName, state.syncFormWithSession]);
 
   // Handlers

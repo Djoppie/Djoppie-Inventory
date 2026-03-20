@@ -298,7 +298,7 @@ export default function PlanningDaysList({
         </Paper>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          {dateMetadata.map(({ dateKey, isToday, isPast, isFuture }) => {
+          {dateMetadata.map(({ dateKey, isToday, isFuture }) => {
             const stats = dateStats.get(dateKey);
             if (!stats) return null;
 
@@ -310,7 +310,6 @@ export default function PlanningDaysList({
                 key={dateKey}
                 dateKey={dateKey}
                 isToday={isToday}
-                isPast={isPast}
                 isFuture={isFuture}
                 totalWorkplaces={stats.totalWorkplaces}
                 completedWorkplaces={stats.completedWorkplaces}

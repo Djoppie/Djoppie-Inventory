@@ -171,11 +171,9 @@ const StatusBadge = ({
 const AssignmentBadge = ({
   assignmentType,
   targetName,
-  isDark: _isDark,
 }: {
   assignmentType: AssignmentType;
   targetName?: string;
-  isDark: boolean;
 }) => {
   const isUserAssigned = assignmentType === 'user';
 
@@ -342,7 +340,6 @@ const AssetConfigItemCard = ({
           <AssignmentBadge
             assignmentType={getAssignmentType(item.equipmentType)}
             targetName={getAssignmentType(item.equipmentType) === 'user' ? userName : physicalWorkplaceName}
-            isDark={isDark}
           />
           <StatusBadge configured={isConfigured} mode={item.mode} isDark={isDark} />
           <Tooltip title="Verwijderen">
