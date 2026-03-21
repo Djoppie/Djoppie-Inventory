@@ -131,7 +131,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 column: "DockingStationAssetId",
                 principalTable: "Assets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_PhysicalWorkplaces_Assets_KeyboardAssetId",
@@ -139,7 +139,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 column: "KeyboardAssetId",
                 principalTable: "Assets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_PhysicalWorkplaces_Assets_Monitor1AssetId",
@@ -147,7 +147,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 column: "Monitor1AssetId",
                 principalTable: "Assets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_PhysicalWorkplaces_Assets_Monitor2AssetId",
@@ -155,7 +155,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 column: "Monitor2AssetId",
                 principalTable: "Assets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_PhysicalWorkplaces_Assets_Monitor3AssetId",
@@ -163,7 +163,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 column: "Monitor3AssetId",
                 principalTable: "Assets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_PhysicalWorkplaces_Assets_MouseAssetId",
@@ -171,7 +171,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 column: "MouseAssetId",
                 principalTable: "Assets",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
         }
 
         /// <inheritdoc />
