@@ -5,6 +5,7 @@
  * with neumorphic styling.
  */
 
+import { useState, useMemo } from 'react';
 import {
   Box,
   Stack,
@@ -15,10 +16,14 @@ import {
   InputAdornment,
   Chip,
   useTheme,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlaceIcon from '@mui/icons-material/Place';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import BlockIcon from '@mui/icons-material/Block';
 import type { GraphUser } from '../../../types/graph.types';
 import type { PhysicalWorkplaceSummary } from '../../../types/physicalWorkplace.types';
 
@@ -65,6 +70,25 @@ export function UserInfoSection({
 }: UserInfoSectionProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+
+  // Filter state for showing only available workplaces
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
+
+  // Helper to check if workplace is occupied
+  const isWorkplaceOccupied = (workplace: PhysicalWorkplaceSummary): boolean => {
+    return !!workplace.currentOccupantName;
+  };
+
+  // Filter workplaces based on availability
+  const filteredWorkplaces = useMemo(() => {
+    if (!showOnlyAvailable) return physicalWorkplaces;
+    return physicalWorkplaces.filter(wp => !isWorkplaceOccupied(wp));
+  }, [physicalWorkplaces, showOnlyAvailable]);
+
+  // Check if selected workplace is occupied (for warning)
+  const isSelectedWorkplaceOccupied = selectedPhysicalWorkplace
+    ? isWorkplaceOccupied(selectedPhysicalWorkplace)
+    : false;
 
   // User-assigned input styling (purple tint)
   const userInputSx = {
@@ -274,52 +298,99 @@ export function UserInfoSection({
         />
 
         {/* Physical Workplace Selector */}
-        <Autocomplete
-          options={physicalWorkplaces}
-          getOptionLabel={(option: PhysicalWorkplaceSummary) => `${option.code} - ${option.name}`}
-          value={selectedPhysicalWorkplace}
-          onChange={(_, newValue) => onPhysicalWorkplaceChange(newValue)}
-          loading={physicalWorkplacesLoading}
-          slotProps={{
-            listbox: {
-              sx: {
-                '& .MuiAutocomplete-option': {
-                  '&:hover': {
-                    bgcolor: 'rgba(0, 150, 136, 0.08)',
-                  },
-                  '&[aria-selected="true"]': {
-                    bgcolor: 'rgba(0, 150, 136, 0.15) !important',
-                    borderLeft: '3px solid #009688',
-                  },
-                  '&[aria-selected="true"]:hover': {
-                    bgcolor: 'rgba(0, 150, 136, 0.2) !important',
-                  },
-                  '&.Mui-focused': {
-                    bgcolor: 'rgba(0, 150, 136, 0.1)',
+        <Box>
+          {/* Filter checkbox */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showOnlyAvailable}
+                onChange={(e) => setShowOnlyAvailable(e.target.checked)}
+                size="small"
+                sx={{
+                  color: '#009688',
+                  '&.Mui-checked': { color: '#009688' },
+                  p: 0.5,
+                }}
+              />
+            }
+            label={
+              <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
+                Alleen beschikbare werkplekken tonen ({filteredWorkplaces.filter(wp => !isWorkplaceOccupied(wp)).length} beschikbaar)
+              </Typography>
+            }
+            sx={{ mb: 1, ml: 0.5 }}
+          />
+          <Autocomplete
+            options={filteredWorkplaces}
+            getOptionLabel={(option: PhysicalWorkplaceSummary) => `${option.code} - ${option.name}`}
+            value={selectedPhysicalWorkplace}
+            onChange={(_, newValue) => onPhysicalWorkplaceChange(newValue)}
+            loading={physicalWorkplacesLoading}
+            slotProps={{
+              listbox: {
+                sx: {
+                  '& .MuiAutocomplete-option': {
+                    '&:hover': {
+                      bgcolor: 'rgba(0, 150, 136, 0.08)',
+                    },
+                    '&[aria-selected="true"]': {
+                      bgcolor: 'rgba(0, 150, 136, 0.15) !important',
+                      borderLeft: '3px solid #009688',
+                    },
+                    '&[aria-selected="true"]:hover': {
+                      bgcolor: 'rgba(0, 150, 136, 0.2) !important',
+                    },
+                    '&.Mui-focused': {
+                      bgcolor: 'rgba(0, 150, 136, 0.1)',
+                    },
                   },
                 },
               },
-            },
-          }}
-          renderOption={(props, option: PhysicalWorkplaceSummary) => {
-            const { key, ...otherProps } = props;
-            return (
-              <li {...otherProps} key={key}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
-                  <PlaceIcon sx={{ color: '#009688', fontSize: '1.1rem' }} />
-                  <Box>
-                    <Typography variant="body2" fontWeight={600}>
-                      {option.code}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option.name}
-                      {option.buildingName && ` • ${option.buildingName}`}
-                    </Typography>
+            }}
+            renderOption={(props, option: PhysicalWorkplaceSummary) => {
+              const { key, ...otherProps } = props;
+              const occupied = isWorkplaceOccupied(option);
+              return (
+                <li {...otherProps} key={key}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, width: '100%' }}>
+                    <PlaceIcon sx={{ color: occupied ? '#ef4444' : '#009688', fontSize: '1.1rem' }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {option.code}
+                        </Typography>
+                        {/* Availability badge */}
+                        <Chip
+                          icon={occupied
+                            ? <BlockIcon sx={{ fontSize: '0.75rem !important' }} />
+                            : <CheckCircleIcon sx={{ fontSize: '0.75rem !important' }} />
+                          }
+                          label={occupied ? 'Bezet' : 'Beschikbaar'}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.6rem',
+                            fontWeight: 600,
+                            bgcolor: occupied ? 'rgba(239, 68, 68, 0.12)' : 'rgba(34, 197, 94, 0.12)',
+                            color: occupied ? '#dc2626' : '#16a34a',
+                            border: `1px solid ${occupied ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
+                            '& .MuiChip-icon': {
+                              color: occupied ? '#dc2626' : '#16a34a',
+                              marginLeft: '4px',
+                            },
+                          }}
+                        />
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.name}
+                        {option.buildingName && ` • ${option.buildingName}`}
+                        {occupied && option.currentOccupantName && ` • ${option.currentOccupantName}`}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              </li>
-            );
-          }}
+                </li>
+              );
+            }}
           renderInput={(params) => (
             <TextField
               {...params}
@@ -362,37 +433,85 @@ export function UserInfoSection({
             />
           )}
         />
-        {/* Show selected workplace details */}
-        {selectedPhysicalWorkplace && (
-          <Box
-            sx={{
-              mt: -1,
-              ml: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <Chip
-              icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
-              label={selectedPhysicalWorkplace.code}
-              size="small"
+          {/* Show selected workplace details */}
+          {selectedPhysicalWorkplace && (
+            <Box
               sx={{
-                height: 22,
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                bgcolor: 'rgba(0, 150, 136, 0.15)',
-                color: '#009688',
-                border: '1px solid rgba(0, 150, 136, 0.4)',
-                '& .MuiChip-icon': { color: '#009688' },
+                mt: 1,
+                ml: 0.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
               }}
-            />
-            <Typography variant="caption" color="text.secondary">
-              {selectedPhysicalWorkplace.buildingName}
-              {selectedPhysicalWorkplace.serviceName && ` • ${selectedPhysicalWorkplace.serviceName}`}
-            </Typography>
-          </Box>
-        )}
+            >
+              <Chip
+                icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
+                label={selectedPhysicalWorkplace.code}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: isSelectedWorkplaceOccupied ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 150, 136, 0.15)',
+                  color: isSelectedWorkplaceOccupied ? '#dc2626' : '#009688',
+                  border: `1px solid ${isSelectedWorkplaceOccupied ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 150, 136, 0.4)'}`,
+                  '& .MuiChip-icon': { color: isSelectedWorkplaceOccupied ? '#dc2626' : '#009688' },
+                }}
+              />
+              {/* Availability status badge */}
+              <Chip
+                icon={isSelectedWorkplaceOccupied
+                  ? <BlockIcon sx={{ fontSize: '12px !important' }} />
+                  : <CheckCircleIcon sx={{ fontSize: '12px !important' }} />
+                }
+                label={isSelectedWorkplaceOccupied ? 'Bezet' : 'Beschikbaar'}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  bgcolor: isSelectedWorkplaceOccupied ? 'rgba(239, 68, 68, 0.12)' : 'rgba(34, 197, 94, 0.12)',
+                  color: isSelectedWorkplaceOccupied ? '#dc2626' : '#16a34a',
+                  border: `1px solid ${isSelectedWorkplaceOccupied ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
+                  '& .MuiChip-icon': {
+                    color: isSelectedWorkplaceOccupied ? '#dc2626' : '#16a34a',
+                    marginLeft: '4px',
+                  },
+                }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                {selectedPhysicalWorkplace.buildingName}
+                {selectedPhysicalWorkplace.serviceName && ` • ${selectedPhysicalWorkplace.serviceName}`}
+              </Typography>
+            </Box>
+          )}
+          {/* Warning for occupied workplace */}
+          {isSelectedWorkplaceOccupied && selectedPhysicalWorkplace && (
+            <Box
+              sx={{
+                mt: 1.5,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.06)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <BlockIcon sx={{ color: '#dc2626', fontSize: '1rem', mt: 0.25 }} />
+                <Box>
+                  <Typography variant="caption" fontWeight={600} sx={{ color: '#dc2626', display: 'block' }}>
+                    Werkplek is bezet
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
+                    Huidige gebruiker: <strong>{selectedPhysicalWorkplace.currentOccupantName}</strong>
+                    <br />
+                    De huidige gebruiker zal worden vervangen wanneer de rollout wordt voltooid.
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
+          )}
+        </Box>
 
         <TextField
           type="date"

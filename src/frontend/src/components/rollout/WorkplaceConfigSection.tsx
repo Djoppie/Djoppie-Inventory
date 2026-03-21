@@ -415,7 +415,7 @@ const AssetConfigItemCard = ({
           {item.linkedAsset ? (
             <Chip
               icon={<InventoryIcon sx={{ fontSize: '0.9rem !important' }} />}
-              label={`${item.linkedAsset.assetCode} — ${item.linkedAsset.assetName || ''}`}
+              label={`${item.linkedAsset.assetCode} — ${item.linkedAsset.serialNumber || 'Geen S/N'} — ${item.linkedAsset.status}${item.linkedAsset.assetName ? ` (${item.linkedAsset.assetName})` : ''}`}
               onDelete={() => onUpdate({ linkedAsset: null })}
               sx={{
                 width: '100%',

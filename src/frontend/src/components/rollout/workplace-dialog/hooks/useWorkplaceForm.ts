@@ -36,6 +36,7 @@ interface UseWorkplaceFormReturn {
   isFormValid: boolean;
   hasTemplateErrors: boolean;
   hasDeviceConfigured: boolean;
+  hasWorkplaceFixedWithoutPhysicalWorkplace: boolean;
 }
 
 const initialState: WorkplaceFormState = {
@@ -163,6 +164,18 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const hasDeviceConfigured = hasConfigItemConfigured || hasOldDeviceConfigured;
 
+  // Equipment types that are assigned to the user (employee takes it with them)
+  // All other equipment types are workplace-fixed (docking, monitor, keyboard, mouse)
+  const USER_ASSIGNED_EQUIPMENT = ['laptop', 'desktop'];
+
+  // Check if workplace-fixed assets are configured but no physical workplace is selected
+  const hasWorkplaceFixedWithoutPhysicalWorkplace = state.configItems.some(item => {
+    const isWorkplaceFixed = !USER_ASSIGNED_EQUIPMENT.includes(item.equipmentType);
+    const isConfigured = (item.mode === 'link' && item.linkedAsset) ||
+      (item.mode === 'create' && (item.template || item.brand || item.serialNumber));
+    return isWorkplaceFixed && isConfigured && !state.physicalWorkplaceId;
+  });
+
   const isFormValid = state.userName.trim() !== '' && !hasTemplateErrors;
 
   return {
@@ -182,5 +195,6 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     isFormValid,
     hasTemplateErrors,
     hasDeviceConfigured,
+    hasWorkplaceFixedWithoutPhysicalWorkplace,
   };
 }

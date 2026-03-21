@@ -30,7 +30,7 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
 import { useCreateRolloutWorkplace, useUpdateRolloutWorkplace } from '../../hooks/useRollout';
-import { usePhysicalWorkplacesSummary } from '../../hooks/usePhysicalWorkplaces';
+import { usePhysicalWorkplacesSummary, usePhysicalWorkplace } from '../../hooks/usePhysicalWorkplaces';
 import { OldDeviceConfigSection, type OldDeviceConfig } from './OldDeviceConfigSection';
 import { WorkplaceConfigSection, type AssetConfigItem } from './WorkplaceConfigSection';
 import type { RolloutWorkplace, CreateRolloutWorkplace, UpdateRolloutWorkplace } from '../../types/rollout';
@@ -42,6 +42,7 @@ import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 import {
   UserInfoSection,
   DeviceDisplaySection,
+  WorkplaceEquipmentDisplaySection,
   ScanDialog,
   useWorkplaceForm,
   useUserSearch,
@@ -78,6 +79,11 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   // Find the currently selected physical workplace for display
   const selectedPhysicalWorkplace = physicalWorkplaces?.find(
     (pw) => pw.id === form.state.physicalWorkplaceId
+  );
+
+  // Fetch full physical workplace details (including equipment) when selected
+  const { data: physicalWorkplaceDetails, isLoading: physicalWorkplaceDetailsLoading } = usePhysicalWorkplace(
+    form.state.physicalWorkplaceId || 0
   );
 
   // Device menu state
@@ -207,6 +213,42 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       : `Toegevoegd als in te leveren apparaat`);
     handleDeviceMenuClose();
   };
+
+  // Handle equipment click from physical workplace (add as old device for replacement)
+  const handleEquipmentClick = useCallback((slot: {
+    type: string;
+    label: string;
+    assetId?: number;
+    assetCode?: string;
+    serialNumber?: string;
+  }) => {
+    if (!slot.assetId || !slot.assetCode) return;
+
+    // Check if this asset is already added as old device
+    const alreadyAdded = form.state.oldDevices.some(
+      od => od.linkedAsset?.id === slot.assetId
+    );
+
+    if (alreadyAdded) {
+      scanner.setScanError(`${slot.label} (${slot.assetCode}) is al toegevoegd als in te leveren apparaat`);
+      return;
+    }
+
+    // Add as old device
+    const oldDevice: OldDeviceConfig = {
+      id: `old-device-${Date.now()}-${Math.random()}`,
+      serialNumber: slot.serialNumber || '',
+      linkedAsset: {
+        id: slot.assetId,
+        assetCode: slot.assetCode,
+        serialNumber: slot.serialNumber,
+      } as Asset,
+    };
+
+    form.setOldDevices([...form.state.oldDevices, oldDevice]);
+    form.setReturningOldDevice(true);
+    scanner.setScanSuccess(`${slot.label} (${slot.assetCode}) toegevoegd als te vervangen apparaat`);
+  }, [form, scanner]);
 
   // Handle scan dialog operations
   const handleOpenScanDialog = (mode: AssetScanMode) => {
@@ -452,6 +494,13 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             onDeviceClick={handleDeviceClick}
           />
 
+          {/* Physical Workplace Equipment Section */}
+          <WorkplaceEquipmentDisplaySection
+            workplace={physicalWorkplaceDetails}
+            isLoading={physicalWorkplaceDetailsLoading}
+            onEquipmentClick={handleEquipmentClick}
+          />
+
           {/* Unified Workplace Configuration Section */}
           <Box sx={{ mb: 2.5 }}>
             <WorkplaceConfigSection
@@ -463,7 +512,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             />
           </Box>
 
-          {/* Old Device Section */}
+          {/* Old Device Section - Red-purple theme for returning devices */}
           <Box
             sx={{
               mb: 2.5,
@@ -472,8 +521,8 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               bgcolor: isDark ? '#1e2328' : '#e8eef3',
               boxShadow: form.state.returningOldDevice
                 ? (isDark
-                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(255, 152, 0, 0.4)'
-                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(255, 152, 0, 0.3)')
+                  ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, inset 0 0 0 2px rgba(233, 30, 99, 0.4)'
+                  : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, inset 0 0 0 2px rgba(233, 30, 99, 0.3)')
                 : (isDark
                   ? '5px 5px 10px #161a1d, -5px -5px 10px #262c33'
                   : '5px 5px 10px #c5cad0, -5px -5px 10px #ffffff'),
@@ -502,7 +551,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   }}
                 >
                   <HistoryIcon sx={{
-                    color: form.state.returningOldDevice ? 'warning.main' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
+                    color: form.state.returningOldDevice ? '#E91E63' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
                     fontSize: '1.3rem',
                     transition: 'color 0.3s ease',
                   }} />
@@ -524,7 +573,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                       fontSize: '0.7rem',
                       fontWeight: 700,
                       bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                      color: 'warning.main',
+                      color: '#E91E63',
                       border: 'none',
                       boxShadow: isDark
                         ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
@@ -536,8 +585,16 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               <Switch
                 checked={form.state.returningOldDevice}
                 onChange={(e) => form.setReturningOldDevice(e.target.checked)}
-                color="warning"
                 sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': {
+                    color: '#E91E63',
+                    '&:hover': {
+                      backgroundColor: 'rgba(233, 30, 99, 0.08)',
+                    },
+                  },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#E91E63',
+                  },
                   '& .MuiSwitch-track': {
                     borderRadius: 2,
                     bgcolor: isDark ? '#161a1d' : '#d0d5db',
@@ -573,6 +630,25 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               }}
             >
               Selecteer een template voor alle toegevoegde apparaten
+            </Alert>
+          )}
+          {form.hasWorkplaceFixedWithoutPhysicalWorkplace && (
+            <Alert
+              severity="warning"
+              sx={{
+                mb: 2,
+                borderRadius: 2,
+                bgcolor: isDark ? '#1e2328' : '#e8eef3',
+                boxShadow: isDark
+                  ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
+                  : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+                border: 'none',
+                '& .MuiAlert-icon': {
+                  color: '#009688',
+                },
+              }}
+            >
+              <strong>Werkplek-vaste apparaten zonder fysieke werkplek:</strong> Docking, monitor, toetsenbord of muis zijn geconfigureerd, maar er is geen fysieke werkplek geselecteerd. Deze apparaten worden niet aan een werkplek toegewezen bij voltooiing.
             </Alert>
           )}
           {!form.hasDeviceConfigured && form.state.userName.trim() && (
@@ -761,7 +837,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             my: 0.5,
             transition: 'all 0.2s ease',
             '&:hover': {
-              bgcolor: isDark ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.1)',
+              bgcolor: isDark ? 'rgba(156, 39, 176, 0.15)' : 'rgba(156, 39, 176, 0.1)',
               boxShadow: isDark
                 ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
                 : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
@@ -769,12 +845,12 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           }}
         >
           <ListItemIcon>
-            <AddIcon sx={{ color: '#4CAF50' }} />
+            <AddIcon sx={{ color: '#9C27B0' }} />
           </ListItemIcon>
           <ListItemText
-            primary="Toevoegen als nieuw apparaat"
-            secondary="Wordt toegekend aan deze werkplek"
-            primaryTypographyProps={{ fontWeight: 600, color: '#4CAF50', fontSize: '0.9rem' }}
+            primary="Toewijzen aan werkplek"
+            secondary="Wordt toegekend als nieuw apparaat"
+            primaryTypographyProps={{ fontWeight: 600, color: '#9C27B0', fontSize: '0.9rem' }}
             secondaryTypographyProps={{ fontSize: '0.75rem', color: 'text.secondary' }}
           />
         </MenuItem>
@@ -788,7 +864,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             my: 0.5,
             transition: 'all 0.2s ease',
             '&:hover': {
-              bgcolor: isDark ? 'rgba(255, 152, 0, 0.15)' : 'rgba(255, 152, 0, 0.1)',
+              bgcolor: isDark ? 'rgba(233, 30, 99, 0.15)' : 'rgba(233, 30, 99, 0.1)',
               boxShadow: isDark
                 ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
                 : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff',
@@ -796,12 +872,12 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           }}
         >
           <ListItemIcon>
-            <HistoryIcon sx={{ color: '#FF9800' }} />
+            <HistoryIcon sx={{ color: '#E91E63' }} />
           </ListItemIcon>
           <ListItemText
-            primary="Toevoegen als oud apparaat"
-            secondary="Wordt ingeleverd / vervangen"
-            primaryTypographyProps={{ fontWeight: 600, color: '#FF9800', fontSize: '0.9rem' }}
+            primary="Inleveren / vervangen"
+            secondary="Wordt geregistreerd als oud apparaat"
+            primaryTypographyProps={{ fontWeight: 600, color: '#E91E63', fontSize: '0.9rem' }}
             secondaryTypographyProps={{ fontSize: '0.75rem', color: 'text.secondary' }}
           />
         </MenuItem>

@@ -10,6 +10,7 @@
 // Sub-components
 export { UserInfoSection } from './UserInfoSection';
 export { DeviceDisplaySection } from './DeviceDisplaySection';
+export { WorkplaceEquipmentDisplaySection } from './WorkplaceEquipmentDisplaySection';
 export { ScanDialog } from './ScanDialog';
 
 // Hooks
