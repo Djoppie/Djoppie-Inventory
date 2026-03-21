@@ -58,6 +58,7 @@ public record PhysicalWorkplaceSummaryDto(
     string Code,
     string Name,
     string? BuildingName,
+    int? ServiceId,
     string? ServiceName,
     string? CurrentOccupantName,
     bool IsActive

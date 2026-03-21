@@ -113,6 +113,7 @@ public class PhysicalWorkplacesController : ControllerBase
                 pw.Code,
                 pw.Name,
                 pw.Building.Name,
+                pw.ServiceId,
                 pw.Service != null ? pw.Service.Name : null,
                 pw.CurrentOccupantName,
                 pw.IsActive

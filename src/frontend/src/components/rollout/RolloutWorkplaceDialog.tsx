@@ -474,6 +474,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
             physicalWorkplacesLoading={physicalWorkplacesLoading}
             selectedPhysicalWorkplace={selectedPhysicalWorkplace || null}
             onPhysicalWorkplaceChange={(wp) => form.setPhysicalWorkplaceId(wp?.id)}
+            workplaceServiceId={form.state.serviceId}
             userOptions={userSearch.userOptions}
             userSearchLoading={userSearch.userSearchLoading}
             userDropdownOpen={userSearch.userDropdownOpen}

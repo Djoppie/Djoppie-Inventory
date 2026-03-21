@@ -75,6 +75,7 @@ export interface PhysicalWorkplaceSummary {
   code: string;
   name: string;
   buildingName?: string;
+  serviceId?: number;
   serviceName?: string;
   currentOccupantName?: string;
   isActive: boolean;

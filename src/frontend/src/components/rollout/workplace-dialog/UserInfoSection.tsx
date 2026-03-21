@@ -36,6 +36,8 @@ interface UserInfoSectionProps {
   physicalWorkplacesLoading: boolean;
   selectedPhysicalWorkplace: PhysicalWorkplaceSummary | null;
   onPhysicalWorkplaceChange: (workplace: PhysicalWorkplaceSummary | null) => void;
+  // Service ID of the workplace being edited (for filtering)
+  workplaceServiceId?: number;
   // User search props
   userOptions: GraphUser[];
   userSearchLoading: boolean;
@@ -57,6 +59,7 @@ export function UserInfoSection({
   physicalWorkplacesLoading,
   selectedPhysicalWorkplace,
   onPhysicalWorkplaceChange,
+  workplaceServiceId,
   userOptions,
   userSearchLoading,
   userDropdownOpen,
@@ -71,19 +74,45 @@ export function UserInfoSection({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  // Filter state for showing only available workplaces
+  // Filter states for workplaces
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
+  const [showOnlyFromService, setShowOnlyFromService] = useState(false);
 
   // Helper to check if workplace is occupied
   const isWorkplaceOccupied = (workplace: PhysicalWorkplaceSummary): boolean => {
     return !!workplace.currentOccupantName;
   };
 
-  // Filter workplaces based on availability
+  // Get service name for the current workplace (for display)
+  // First try to find from physical workplaces, but they might not have serviceId yet
+  const workplaceServiceName = useMemo(() => {
+    if (!workplaceServiceId || !physicalWorkplaces.length) return null;
+    const wpWithService = physicalWorkplaces.find(wp => wp.serviceId === workplaceServiceId);
+    return wpWithService?.serviceName || null;
+  }, [workplaceServiceId, physicalWorkplaces]);
+
+  // Count workplaces in same service
+  const workplacesInSameServiceCount = useMemo(() => {
+    if (!workplaceServiceId) return 0;
+    return physicalWorkplaces.filter(wp => wp.serviceId === workplaceServiceId).length;
+  }, [workplaceServiceId, physicalWorkplaces]);
+
+  // Check if physical workplaces have serviceId data (might be missing if backend not updated)
+  const hasPhysicalWorkplacesWithServiceData = useMemo(() => {
+    return physicalWorkplaces.some(wp => wp.serviceId !== undefined && wp.serviceId !== null);
+  }, [physicalWorkplaces]);
+
+  // Filter workplaces based on availability and service
   const filteredWorkplaces = useMemo(() => {
-    if (!showOnlyAvailable) return physicalWorkplaces;
-    return physicalWorkplaces.filter(wp => !isWorkplaceOccupied(wp));
-  }, [physicalWorkplaces, showOnlyAvailable]);
+    let result = physicalWorkplaces;
+    if (showOnlyAvailable) {
+      result = result.filter(wp => !isWorkplaceOccupied(wp));
+    }
+    if (showOnlyFromService && workplaceServiceId) {
+      result = result.filter(wp => wp.serviceId === workplaceServiceId);
+    }
+    return result;
+  }, [physicalWorkplaces, showOnlyAvailable, showOnlyFromService, workplaceServiceId]);
 
   // Check if selected workplace is occupied (for warning)
   const isSelectedWorkplaceOccupied = selectedPhysicalWorkplace
@@ -323,27 +352,51 @@ export function UserInfoSection({
 
         {/* Physical Workplace Selector */}
         <Box>
-          {/* Filter checkbox */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={showOnlyAvailable}
-                onChange={(e) => setShowOnlyAvailable(e.target.checked)}
-                size="small"
-                sx={{
-                  color: '#009688',
-                  '&.Mui-checked': { color: '#009688' },
-                  p: 0.5,
-                }}
+          {/* Filter checkboxes */}
+          <Stack spacing={0.5} sx={{ mb: 1 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showOnlyAvailable}
+                  onChange={(e) => setShowOnlyAvailable(e.target.checked)}
+                  size="small"
+                  sx={{
+                    color: '#009688',
+                    '&.Mui-checked': { color: '#009688' },
+                    p: 0.5,
+                  }}
+                />
+              }
+              label={
+                <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
+                  Alleen beschikbare werkplekken tonen ({filteredWorkplaces.filter(wp => !isWorkplaceOccupied(wp)).length} beschikbaar)
+                </Typography>
+              }
+              sx={{ ml: 0.5 }}
+            />
+            {workplaceServiceId && hasPhysicalWorkplacesWithServiceData && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={showOnlyFromService}
+                    onChange={(e) => setShowOnlyFromService(e.target.checked)}
+                    size="small"
+                    sx={{
+                      color: '#009688',
+                      '&.Mui-checked': { color: '#009688' },
+                      p: 0.5,
+                    }}
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
+                    Alleen van dienst{workplaceServiceName ? ` "${workplaceServiceName}"` : ''} ({workplacesInSameServiceCount} werkplekken)
+                  </Typography>
+                }
+                sx={{ ml: 0.5 }}
               />
-            }
-            label={
-              <Typography variant="caption" sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)' }}>
-                Alleen beschikbare werkplekken tonen ({filteredWorkplaces.filter(wp => !isWorkplaceOccupied(wp)).length} beschikbaar)
-              </Typography>
-            }
-            sx={{ mb: 1, ml: 0.5 }}
-          />
+            )}
+          </Stack>
           <Autocomplete
             options={filteredWorkplaces}
             getOptionLabel={(option: PhysicalWorkplaceSummary) => `${option.code} - ${option.name}`}
