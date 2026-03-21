@@ -297,6 +297,30 @@ export function UserInfoSection({
           sx={userInputSx}
         />
 
+        {/* Scheduled Date */}
+        <TextField
+          type="date"
+          label="Geplande datum"
+          value={scheduledDate ? scheduledDate.split('T')[0] : ''}
+          onChange={(e) => onScheduledDateChange(e.target.value || undefined)}
+          fullWidth
+          size="small"
+          InputLabelProps={{ shrink: true }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <CalendarTodayIcon
+                  sx={{
+                    fontSize: '1rem',
+                    color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
+                  }}
+                />
+              </InputAdornment>
+            ),
+          }}
+          sx={neutralInputSx}
+        />
+
         {/* Physical Workplace Selector */}
         <Box>
           {/* Filter checkbox */}
@@ -512,29 +536,6 @@ export function UserInfoSection({
             </Box>
           )}
         </Box>
-
-        <TextField
-          type="date"
-          label="Geplande datum"
-          value={scheduledDate ? scheduledDate.split('T')[0] : ''}
-          onChange={(e) => onScheduledDateChange(e.target.value || undefined)}
-          fullWidth
-          size="small"
-          InputLabelProps={{ shrink: true }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <CalendarTodayIcon
-                  sx={{
-                    fontSize: '1rem',
-                    color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
-                  }}
-                />
-              </InputAdornment>
-            ),
-          }}
-          sx={neutralInputSx}
-        />
       </Stack>
     </Box>
   );

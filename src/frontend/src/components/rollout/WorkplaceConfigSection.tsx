@@ -176,12 +176,42 @@ const AssignmentBadge = ({
   targetName?: string;
 }) => {
   const isUserAssigned = assignmentType === 'user';
+  const isWorkplaceWithoutTarget = !isUserAssigned && !targetName;
+
+  // Determine colors based on assignment state
+  const getColors = () => {
+    if (isUserAssigned) {
+      return {
+        bg: 'rgba(156, 39, 176, 0.12)',
+        color: '#9c27b0',
+        border: 'rgba(156, 39, 176, 0.3)',
+      };
+    }
+    if (isWorkplaceWithoutTarget) {
+      // Warning state - no workplace selected
+      return {
+        bg: 'rgba(255, 152, 0, 0.12)',
+        color: '#f59e0b',
+        border: 'rgba(255, 152, 0, 0.3)',
+      };
+    }
+    // Normal workplace state
+    return {
+      bg: 'rgba(0, 150, 136, 0.12)',
+      color: '#009688',
+      border: 'rgba(0, 150, 136, 0.3)',
+    };
+  };
+
+  const colors = getColors();
 
   return (
     <Tooltip
       title={isUserAssigned
         ? `Dit apparaat wordt toegewezen aan de werknemer${targetName ? ` (${targetName})` : ''}`
-        : `Dit apparaat wordt toegewezen aan de fysieke werkplek${targetName ? ` (${targetName})` : ''}`
+        : isWorkplaceWithoutTarget
+          ? 'Selecteer een fysieke werkplek om dit apparaat toe te wijzen'
+          : `Dit apparaat wordt toegewezen aan de fysieke werkplek (${targetName})`
       }
     >
       <Chip
@@ -191,7 +221,7 @@ const AssignmentBadge = ({
         }
         label={isUserAssigned
           ? (targetName || 'Werknemer')
-          : (targetName || 'Werkplek')
+          : (targetName || 'Geen werkplek')
         }
         size="small"
         sx={{
@@ -199,13 +229,11 @@ const AssignmentBadge = ({
           maxWidth: 120,
           fontSize: '0.6rem',
           fontWeight: 600,
-          bgcolor: isUserAssigned
-            ? 'rgba(156, 39, 176, 0.12)'
-            : 'rgba(0, 150, 136, 0.12)',
-          color: isUserAssigned ? '#9c27b0' : '#009688',
-          border: `1px solid ${isUserAssigned ? 'rgba(156, 39, 176, 0.3)' : 'rgba(0, 150, 136, 0.3)'}`,
+          bgcolor: colors.bg,
+          color: colors.color,
+          border: `1px solid ${colors.border}`,
           '& .MuiChip-icon': {
-            color: isUserAssigned ? '#9c27b0' : '#009688',
+            color: colors.color,
             marginLeft: '4px',
           },
           '& .MuiChip-label': {
