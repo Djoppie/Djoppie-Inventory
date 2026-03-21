@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Box,
   TextField,
@@ -15,8 +15,21 @@ import {
   Divider,
   Button,
   MenuItem,
+  Stack,
+  Tooltip,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  alpha,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import AdminDataTable, { Column } from './AdminDataTable';
 import AdminFormDialog from './AdminFormDialog';
 import {
@@ -31,10 +44,14 @@ import {
   useCreatePhysicalWorkplace,
   useUpdatePhysicalWorkplace,
   useDeletePhysicalWorkplace,
+  useDownloadWorkplaceTemplate,
+  useExportWorkplacesCsv,
+  useImportWorkplacesCsv,
 } from '../../hooks/usePhysicalWorkplaces';
 import { useBuildings } from '../../hooks/useBuildings';
 import { useServices } from '../../hooks/useServices';
 import Loading from '../common/Loading';
+import { WorkplaceCsvImportResult } from '../../api/physicalWorkplaces.api';
 
 interface FormData {
   code: string;
@@ -63,6 +80,8 @@ const initialFormData: FormData = {
 const PhysicalWorkplacesTab = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [importResultDialogOpen, setImportResultDialogOpen] = useState(false);
+  const [importResult, setImportResult] = useState<WorkplaceCsvImportResult | null>(null);
   const [editingItem, setEditingItem] = useState<PhysicalWorkplace | null>(null);
   const [deletingItem, setDeletingItem] = useState<PhysicalWorkplace | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -72,6 +91,7 @@ const PhysicalWorkplacesTab = () => {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Data queries
   const { data: workplaces = [], isLoading } = usePhysicalWorkplaces();
@@ -82,6 +102,9 @@ const PhysicalWorkplacesTab = () => {
   const createMutation = useCreatePhysicalWorkplace();
   const updateMutation = useUpdatePhysicalWorkplace();
   const deleteMutation = useDeletePhysicalWorkplace();
+  const downloadTemplateMutation = useDownloadWorkplaceTemplate();
+  const exportCsvMutation = useExportWorkplacesCsv();
+  const importCsvMutation = useImportWorkplacesCsv();
 
   const handleOpenDialog = (item?: PhysicalWorkplace) => {
     if (item) {
@@ -209,6 +232,53 @@ const PhysicalWorkplacesTab = () => {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadTemplateMutation.mutateAsync();
+      setSnackbar({ open: true, message: 'Template gedownload', severity: 'success' });
+    } catch {
+      setSnackbar({ open: true, message: 'Fout bij downloaden template', severity: 'error' });
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      await exportCsvMutation.mutateAsync({});
+      setSnackbar({ open: true, message: 'Werkplekken geëxporteerd', severity: 'success' });
+    } catch {
+      setSnackbar({ open: true, message: 'Fout bij exporteren werkplekken', severity: 'error' });
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await importCsvMutation.mutateAsync(file);
+      setImportResult(result);
+      setImportResultDialogOpen(true);
+      if (result.isFullySuccessful) {
+        setSnackbar({ open: true, message: `${result.successCount} werkplekken geïmporteerd`, severity: 'success' });
+      } else if (result.successCount > 0) {
+        setSnackbar({ open: true, message: `${result.successCount} van ${result.totalRows} werkplekken geïmporteerd`, severity: 'success' });
+      } else {
+        setSnackbar({ open: true, message: 'Geen werkplekken geïmporteerd', severity: 'error' });
+      }
+    } catch {
+      setSnackbar({ open: true, message: 'Fout bij importeren werkplekken', severity: 'error' });
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const columns: Column<PhysicalWorkplace>[] = [
     {
       id: 'code',
@@ -249,8 +319,91 @@ const PhysicalWorkplacesTab = () => {
 
   if (isLoading) return <Loading message="Werkplekken laden..." />;
 
+  const isAnyMutationPending = downloadTemplateMutation.isPending || exportCsvMutation.isPending || importCsvMutation.isPending;
+
   return (
     <Box>
+      {/* Toolbar with Import/Export buttons */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          mb: 2,
+          p: 1.5,
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0, 150, 136, 0.08)' : 'rgba(0, 150, 136, 0.05)',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0, 150, 136, 0.2)' : 'rgba(0, 150, 136, 0.15)',
+        }}
+      >
+        <Tooltip title="Download CSV template voor import">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={downloadTemplateMutation.isPending ? <CircularProgress size={16} /> : <FileDownloadIcon />}
+            onClick={handleDownloadTemplate}
+            disabled={isAnyMutationPending}
+            sx={{
+              borderColor: '#009688',
+              color: '#009688',
+              '&:hover': {
+                borderColor: '#00796b',
+                bgcolor: alpha('#009688', 0.08),
+              },
+            }}
+          >
+            Template
+          </Button>
+        </Tooltip>
+
+        <Tooltip title="Exporteer alle werkplekken naar CSV">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={exportCsvMutation.isPending ? <CircularProgress size={16} /> : <DownloadIcon />}
+            onClick={handleExportCsv}
+            disabled={isAnyMutationPending || workplaces.length === 0}
+            sx={{
+              borderColor: '#009688',
+              color: '#009688',
+              '&:hover': {
+                borderColor: '#00796b',
+                bgcolor: alpha('#009688', 0.08),
+              },
+            }}
+          >
+            Exporteer ({workplaces.length})
+          </Button>
+        </Tooltip>
+
+        <Tooltip title="Importeer werkplekken vanuit CSV">
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={importCsvMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />}
+            onClick={handleImportClick}
+            disabled={isAnyMutationPending}
+            sx={{
+              bgcolor: '#009688',
+              '&:hover': {
+                bgcolor: '#00796b',
+              },
+            }}
+          >
+            Importeer CSV
+          </Button>
+        </Tooltip>
+
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".csv"
+          style={{ display: 'none' }}
+        />
+      </Stack>
+
       <AdminDataTable
         data={workplaces}
         columns={columns}
@@ -457,6 +610,127 @@ const PhysicalWorkplacesTab = () => {
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? 'Verwijderen...' : 'Verwijderen'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Import Result Dialog */}
+      <Dialog
+        open={importResultDialogOpen}
+        onClose={() => setImportResultDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            border: '2px solid',
+            borderColor: importResult?.isFullySuccessful ? 'success.main' : 'warning.main',
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: (theme) =>
+              importResult?.isFullySuccessful
+                ? theme.palette.mode === 'dark'
+                  ? 'rgba(76, 175, 80, 0.1)'
+                  : 'rgba(76, 175, 80, 0.05)'
+                : theme.palette.mode === 'dark'
+                  ? 'rgba(255, 152, 0, 0.1)'
+                  : 'rgba(255, 152, 0, 0.05)',
+            color: importResult?.isFullySuccessful ? 'success.main' : 'warning.main',
+            fontWeight: 700,
+            borderBottom: '1px solid',
+            borderColor: importResult?.isFullySuccessful ? 'success.main' : 'warning.main',
+          }}
+        >
+          Import Resultaat
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {importResult && (
+            <>
+              <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="success.main" fontWeight={700}>
+                    {importResult.successCount}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Geslaagd
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="error.main" fontWeight={700}>
+                    {importResult.errorCount}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Fouten
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="text.primary" fontWeight={700}>
+                    {importResult.totalRows}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Totaal
+                  </Typography>
+                </Box>
+              </Stack>
+
+              {importResult.errorCount > 0 && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" color="error.main" sx={{ mb: 1 }}>
+                    Fouten:
+                  </Typography>
+                  <List dense sx={{ maxHeight: 200, overflow: 'auto' }}>
+                    {importResult.results
+                      .filter((r) => !r.success)
+                      .map((r) => (
+                        <ListItem key={r.rowNumber} sx={{ py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <ErrorIcon color="error" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={`Rij ${r.rowNumber}: ${r.code || 'onbekend'}`}
+                            secondary={r.error}
+                            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                            secondaryTypographyProps={{ variant: 'caption' }}
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                </>
+              )}
+
+              {importResult.successCount > 0 && importResult.successCount <= 10 && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" color="success.main" sx={{ mb: 1 }}>
+                    Aangemaakt:
+                  </Typography>
+                  <List dense sx={{ maxHeight: 150, overflow: 'auto' }}>
+                    {importResult.results
+                      .filter((r) => r.success)
+                      .map((r) => (
+                        <ListItem key={r.rowNumber} sx={{ py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <CheckCircleIcon color="success" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={`${r.code} - ${r.name}`}
+                            primaryTypographyProps={{ variant: 'body2' }}
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                </>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setImportResultDialogOpen(false)} variant="contained" color="primary">
+            Sluiten
           </Button>
         </DialogActions>
       </Dialog>
