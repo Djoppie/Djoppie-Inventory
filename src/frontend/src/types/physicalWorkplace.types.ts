@@ -26,6 +26,7 @@ export const WorkplaceTypeLabels: Record<WorkplaceType, string> = {
 // ============================================================
 
 export interface PhysicalWorkplace {
+  [key: string]: unknown;
   id: number;
   code: string;
   name: string;
