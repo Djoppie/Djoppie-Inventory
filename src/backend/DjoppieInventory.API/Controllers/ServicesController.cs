@@ -275,13 +275,15 @@ public class ServicesController : ControllerBase
 
                     if (existingCodes.TryGetValue(code, out var existingService))
                     {
-                        // Service exists - update if needed
-                        if (existingService.IsActive && (existingService.Name != name || existingService.SectorId != sector.Id))
+                        // Service exists - only update EntraGroupId and SectorId, preserve custom Name
+                        var needsUpdate = existingService.EntraGroupId != serviceGroup.Id || existingService.SectorId != sector.Id;
+                        if (existingService.IsActive && needsUpdate)
                         {
                             await _context.Services
                                 .Where(s => s.Id == existingService.Id)
                                 .ExecuteUpdateAsync(setters => setters
-                                    .SetProperty(s => s.Name, name)
+                                    .SetProperty(s => s.EntraGroupId, serviceGroup.Id)
+                                    .SetProperty(s => s.EntraMailNickname, serviceGroup.MailNickname)
                                     .SetProperty(s => s.SectorId, sector.Id)
                                     .SetProperty(s => s.UpdatedAt, DateTime.UtcNow),
                                     cancellationToken);
@@ -294,14 +296,16 @@ public class ServicesController : ControllerBase
                     }
                     else
                     {
-                        // Create new service with sector
+                        // Create new service with sector and Entra link
                         var newService = new Service
                         {
                             Code = code,
                             Name = name,
                             SectorId = sector.Id,
                             SortOrder = 0,
-                            IsActive = true
+                            IsActive = true,
+                            EntraGroupId = serviceGroup.Id,
+                            EntraMailNickname = serviceGroup.MailNickname
                         };
                         await _serviceRepository.CreateAsync(newService, cancellationToken);
                         existingCodes[code] = newService; // Add to tracking
@@ -334,13 +338,14 @@ public class ServicesController : ControllerBase
 
                 if (existingCodes.TryGetValue(code, out var existingService))
                 {
-                    // Service exists - update name if needed (keep existing sector)
-                    if (existingService.IsActive && existingService.Name != name)
+                    // Service exists - only update EntraGroupId if missing, preserve custom Name and Sector
+                    if (existingService.IsActive && existingService.EntraGroupId != serviceGroup.Id)
                     {
                         await _context.Services
                             .Where(s => s.Id == existingService.Id)
                             .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(s => s.Name, name)
+                                .SetProperty(s => s.EntraGroupId, serviceGroup.Id)
+                                .SetProperty(s => s.EntraMailNickname, serviceGroup.MailNickname)
                                 .SetProperty(s => s.UpdatedAt, DateTime.UtcNow),
                                 cancellationToken);
                         updated++;
@@ -352,14 +357,16 @@ public class ServicesController : ControllerBase
                 }
                 else
                 {
-                    // Create new service without sector
+                    // Create new service without sector but with Entra link
                     var newService = new Service
                     {
                         Code = code,
                         Name = name,
                         SectorId = null, // No sector for non-nested services
                         SortOrder = 0,
-                        IsActive = true
+                        IsActive = true,
+                        EntraGroupId = serviceGroup.Id,
+                        EntraMailNickname = serviceGroup.MailNickname
                     };
                     await _serviceRepository.CreateAsync(newService, cancellationToken);
                     created++;

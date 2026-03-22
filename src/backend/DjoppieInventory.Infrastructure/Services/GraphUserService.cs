@@ -311,15 +311,16 @@ public class GraphUserService : IGraphUserService
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<Group>> GetServiceGroupsAsync(int top = 100)
+    public async Task<IEnumerable<Group>> GetServiceGroupsAsync(int top = 999)
     {
         try
         {
-            _logger.LogInformation("Retrieving service distribution groups (MG-*) from Azure AD");
+            _logger.LogInformation("Retrieving ALL service distribution groups (MG-*) from Azure AD with pagination");
 
-            // Get groups starting with "MG-" using startsWith filter
-            // Note: Can't use $orderBy with startsWith filter, so we sort client-side
-            var groups = await _graphClient.Groups
+            var allGroups = new List<Group>();
+
+            // Get groups starting with "MG-" using startsWith filter with pagination
+            var response = await _graphClient.Groups
                 .GetAsync(requestConfiguration =>
                 {
                     requestConfiguration.QueryParameters.Filter = "startsWith(displayName, 'MG-')";
@@ -327,18 +328,37 @@ public class GraphUserService : IGraphUserService
                     requestConfiguration.QueryParameters.Select = new[]
                     {
                         "id", "displayName", "description", "mail", "mailEnabled",
-                        "securityEnabled", "groupTypes"
+                        "securityEnabled", "groupTypes", "mailNickname"
                     };
                 });
 
+            if (response?.Value != null)
+            {
+                allGroups.AddRange(response.Value);
+            }
+
+            // Handle pagination - fetch all pages
+            while (response?.OdataNextLink != null)
+            {
+                _logger.LogInformation("Fetching next page of service groups...");
+                response = await _graphClient.Groups
+                    .WithUrl(response.OdataNextLink)
+                    .GetAsync();
+
+                if (response?.Value != null)
+                {
+                    allGroups.AddRange(response.Value);
+                }
+            }
+
             // Filter out sector groups (MG-SECTOR-*) client-side and sort by displayName
-            var serviceGroups = groups?.Value?
+            var serviceGroups = allGroups
                 .Where(g => !string.IsNullOrEmpty(g.DisplayName) &&
                            !g.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(g => g.DisplayName)
-                .ToList() ?? new List<Group>();
+                .ToList();
 
-            _logger.LogInformation("Found {Count} service groups", serviceGroups.Count);
+            _logger.LogInformation("Found {Count} service groups (total)", serviceGroups.Count);
 
             return serviceGroups;
         }
