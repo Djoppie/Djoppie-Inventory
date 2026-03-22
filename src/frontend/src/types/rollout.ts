@@ -95,6 +95,8 @@ export interface RolloutWorkplace {
   rolloutDayId: number;
   userName: string;
   userEmail?: string;
+  /** Entra ID (Azure AD Object ID) of the user */
+  userEntraId?: string;
   location?: string;
   /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
   scheduledDate?: string;
@@ -131,6 +133,8 @@ export interface CreateRolloutWorkplace {
   rolloutDayId: number;
   userName: string;
   userEmail?: string;
+  /** Entra ID (Azure AD Object ID) of the user */
+  userEntraId?: string;
   location?: string;
   /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
   scheduledDate?: string;
@@ -145,6 +149,8 @@ export interface CreateRolloutWorkplace {
 export interface UpdateRolloutWorkplace {
   userName: string;
   userEmail?: string | null;
+  /** Entra ID (Azure AD Object ID) of the user */
+  userEntraId?: string | null;
   location?: string | null;
   /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
   scheduledDate?: string | null;

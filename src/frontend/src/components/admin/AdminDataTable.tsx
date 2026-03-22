@@ -58,6 +58,9 @@ interface AdminDataTableProps<T> {
   selectable?: boolean;
   selectedIds?: Set<number | string>;
   onSelectionChange?: (selectedIds: Set<number | string>) => void;
+  // Custom actions support
+  renderActions?: (item: T) => React.ReactNode;
+  actionsColumnWidth?: number;
 }
 
 // Neumorphic shadow utilities
@@ -94,6 +97,8 @@ function AdminDataTable<T extends Record<string, unknown>>({
   selectable = false,
   selectedIds = new Set(),
   onSelectionChange,
+  renderActions,
+  actionsColumnWidth = 80,
 }: AdminDataTableProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -440,7 +445,7 @@ function AdminDataTable<T extends Record<string, unknown>>({
                   color: 'text.secondary',
                   bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
                   borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                  width: 80,
+                  width: actionsColumnWidth,
                 }}
               >
                 Actions
@@ -551,64 +556,68 @@ function AdminDataTable<T extends Record<string, unknown>>({
                         borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
                       }}
                     >
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
-                        {onEdit && (
-                          <Tooltip title="Edit" arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => onEdit(item)}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                bgcolor: bgBase,
-                                color: accentColor,
-                                boxShadow: getNeumorph(isDark, 'soft'),
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  bgcolor: accentColor,
-                                  color: '#fff',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                                },
-                                '&:active': {
-                                  transform: 'translateY(0)',
-                                  boxShadow: getNeumorphInset(isDark),
-                                },
-                              }}
-                            >
-                              <EditIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {onDelete && (
-                          <Tooltip title="Delete" arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => onDelete(item)}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                bgcolor: bgBase,
-                                color: '#EF5350',
-                                boxShadow: getNeumorph(isDark, 'soft'),
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  bgcolor: '#EF5350',
-                                  color: '#fff',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: `0 4px 12px ${alpha('#EF5350', 0.4)}`,
-                                },
-                                '&:active': {
-                                  transform: 'translateY(0)',
-                                  boxShadow: getNeumorphInset(isDark),
-                                },
-                              }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
+                      {renderActions ? (
+                        renderActions(item)
+                      ) : (
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          {onEdit && (
+                            <Tooltip title="Edit" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => onEdit(item)}
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  bgcolor: bgBase,
+                                  color: accentColor,
+                                  boxShadow: getNeumorph(isDark, 'soft'),
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    bgcolor: accentColor,
+                                    color: '#fff',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
+                                  },
+                                  '&:active': {
+                                    transform: 'translateY(0)',
+                                    boxShadow: getNeumorphInset(isDark),
+                                  },
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 15 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {onDelete && (
+                            <Tooltip title="Delete" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => onDelete(item)}
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  bgcolor: bgBase,
+                                  color: '#EF5350',
+                                  boxShadow: getNeumorph(isDark, 'soft'),
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    bgcolor: '#EF5350',
+                                    color: '#fff',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: `0 4px 12px ${alpha('#EF5350', 0.4)}`,
+                                  },
+                                  '&:active': {
+                                    transform: 'translateY(0)',
+                                    boxShadow: getNeumorphInset(isDark),
+                                  },
+                                }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 15 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

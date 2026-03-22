@@ -17,6 +17,7 @@ interface UseWorkplaceFormReturn {
   // User info setters
   setUserName: (value: string) => void;
   setUserEmail: (value: string) => void;
+  setUserEntraId: (value: string) => void;
   setLocation: (value: string) => void;
   setServiceId: (value: number | undefined) => void;
   setScheduledDate: (value: string | undefined) => void;
@@ -42,6 +43,7 @@ interface UseWorkplaceFormReturn {
 const initialState: WorkplaceFormState = {
   userName: '',
   userEmail: '',
+  userEntraId: '',
   location: '',
   serviceId: undefined,
   scheduledDate: undefined,
@@ -62,6 +64,10 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const setUserEmail = useCallback((value: string) => {
     setState(prev => ({ ...prev, userEmail: value }));
+  }, []);
+
+  const setUserEntraId = useCallback((value: string) => {
+    setState(prev => ({ ...prev, userEntraId: value }));
   }, []);
 
   const setLocation = useCallback((value: string) => {
@@ -133,6 +139,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     setState({
       userName: workplace.userName,
       userEmail: workplace.userEmail || '',
+      userEntraId: workplace.userEntraId || '',
       location: workplace.location || '',
       serviceId: workplace.serviceId,
       scheduledDate: workplace.scheduledDate || undefined,
@@ -182,6 +189,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     state,
     setUserName,
     setUserEmail,
+    setUserEntraId,
     setLocation,
     setServiceId,
     setScheduledDate,

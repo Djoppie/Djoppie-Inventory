@@ -125,10 +125,12 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   }, [open]);
 
   // Handle user selection from autocomplete
-  const handleUserSelect = useCallback((user: { displayName?: string; mail?: string; userPrincipalName?: string; officeLocation?: string }) => {
+  const handleUserSelect = useCallback((user: { id?: string; displayName?: string; mail?: string; userPrincipalName?: string; officeLocation?: string }) => {
     form.setUserName(user.displayName || '');
     const upn = user.mail || user.userPrincipalName || '';
     form.setUserEmail(upn);
+    // Set the Entra ID (Azure AD Object ID)
+    if (user.id) form.setUserEntraId(user.id);
     if (user.officeLocation) form.setLocation(user.officeLocation);
 
     if (upn) {
@@ -312,6 +314,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       const updateData: UpdateRolloutWorkplace = {
         userName: form.state.userName,
         userEmail: form.state.userEmail || null,
+        userEntraId: form.state.userEntraId || null,
         location: form.state.location || null,
         scheduledDate: form.state.scheduledDate || null,
         serviceId: form.state.serviceId || null,
@@ -327,6 +330,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         rolloutDayId: dayId,
         userName: form.state.userName,
         userEmail: form.state.userEmail || undefined,
+        userEntraId: form.state.userEntraId || undefined,
         location: form.state.location || undefined,
         scheduledDate: form.state.scheduledDate || undefined,
         serviceId: form.state.serviceId,

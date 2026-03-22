@@ -137,8 +137,18 @@ const EquipmentSlotsSection = ({
   ], [workplace, equipmentData, t]);
 
   // Filter assets by type for each slot
+  // Only show assets that have no owner OR are owned by the current occupant
   const getFilteredAssets = useCallback((assetTypes: string[]) => {
     return allAssets.filter(asset => {
+      // Owner filter: only show assets without owner or owned by current occupant
+      const hasNoOwner = !asset.owner || asset.owner.trim() === '';
+      const isOwnedByOccupant = workplace.currentOccupantEmail &&
+        asset.owner?.toLowerCase() === workplace.currentOccupantEmail.toLowerCase();
+
+      if (!hasNoOwner && !isOwnedByOccupant) {
+        return false;
+      }
+
       // Check if asset type code or name contains any of the filter types
       const assetTypeCode = asset.assetType?.code?.toUpperCase() || '';
       const assetTypeName = asset.assetType?.name?.toUpperCase() || '';
@@ -155,7 +165,7 @@ const EquipmentSlotsSection = ({
         );
       });
     });
-  }, [allAssets]);
+  }, [allAssets, workplace.currentOccupantEmail]);
 
   // Get currently selected asset IDs to exclude from other slots
   const selectedAssetIds = useMemo(() => {

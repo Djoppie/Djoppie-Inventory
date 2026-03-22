@@ -15,6 +15,12 @@ public class UpdateRolloutWorkplaceDto
     [StringLength(200, ErrorMessage = "Email cannot exceed 200 characters")]
     public string? UserEmail { get; set; }
 
+    /// <summary>
+    /// Entra ID (Azure AD Object ID) of the user
+    /// </summary>
+    [StringLength(100, ErrorMessage = "User Entra ID cannot exceed 100 characters")]
+    public string? UserEntraId { get; set; }
+
     [StringLength(200, ErrorMessage = "Location cannot exceed 200 characters")]
     public string? Location { get; set; }
 

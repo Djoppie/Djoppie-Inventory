@@ -3,8 +3,10 @@ using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace DjoppieInventory.API.Controllers.Rollout;
@@ -22,6 +24,7 @@ public class RolloutWorkplacesController : ControllerBase
     private readonly IWorkplaceAssetAssignmentService _assignmentService;
     private readonly IAssetMovementService _movementService;
     private readonly IRolloutWorkplaceService _workplaceService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<RolloutWorkplacesController> _logger;
 
     public RolloutWorkplacesController(
@@ -29,12 +32,14 @@ public class RolloutWorkplacesController : ControllerBase
         IWorkplaceAssetAssignmentService assignmentService,
         IAssetMovementService movementService,
         IRolloutWorkplaceService workplaceService,
+        ApplicationDbContext context,
         ILogger<RolloutWorkplacesController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assignmentService = assignmentService;
         _movementService = movementService;
         _workplaceService = workplaceService;
+        _context = context;
         _logger = logger;
     }
 
@@ -116,6 +121,7 @@ public class RolloutWorkplacesController : ControllerBase
             RolloutDayId = dayId,
             UserName = dto.UserName,
             UserEmail = dto.UserEmail,
+            UserEntraId = dto.UserEntraId,
             Location = dto.Location,
             ScheduledDate = dto.ScheduledDate,
             ServiceId = dto.ServiceId,
@@ -126,6 +132,30 @@ public class RolloutWorkplacesController : ControllerBase
         };
 
         var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace, cancellationToken);
+
+        // If a physical workplace is assigned, update its occupant
+        if (dto.PhysicalWorkplaceId.HasValue)
+        {
+            var physicalWorkplace = await _context.PhysicalWorkplaces
+                .FirstOrDefaultAsync(pw => pw.Id == dto.PhysicalWorkplaceId.Value, cancellationToken);
+
+            if (physicalWorkplace != null)
+            {
+                // Set the user as the occupant of this physical workplace
+                physicalWorkplace.CurrentOccupantEntraId = dto.UserEntraId;
+                physicalWorkplace.CurrentOccupantName = dto.UserName;
+                physicalWorkplace.CurrentOccupantEmail = dto.UserEmail;
+                physicalWorkplace.OccupiedSince = DateTime.UtcNow;
+                physicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Assigned user {UserName} as occupant of physical workplace {WorkplaceCode}",
+                    physicalWorkplace.CurrentOccupantName,
+                    physicalWorkplace.Code);
+            }
+        }
 
         // Update day totals
         day.TotalWorkplaces++;
@@ -158,8 +188,11 @@ public class RolloutWorkplacesController : ControllerBase
             return NotFound(new { message = $"Workplace with ID {id} not found" });
         }
 
+        var previousPhysicalWorkplaceId = workplace.PhysicalWorkplaceId;
+
         workplace.UserName = dto.UserName ?? workplace.UserName;
         workplace.UserEmail = dto.UserEmail;
+        workplace.UserEntraId = dto.UserEntraId ?? workplace.UserEntraId;
         workplace.Location = dto.Location;
         workplace.ScheduledDate = dto.ScheduledDate;
         workplace.ServiceId = dto.ServiceId;
@@ -169,6 +202,52 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.UpdatedAt = DateTime.UtcNow;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        // If a physical workplace is assigned, update its occupant
+        if (dto.PhysicalWorkplaceId.HasValue)
+        {
+            var physicalWorkplace = await _context.PhysicalWorkplaces
+                .FirstOrDefaultAsync(pw => pw.Id == dto.PhysicalWorkplaceId.Value, cancellationToken);
+
+            if (physicalWorkplace != null)
+            {
+                // Set the user as the occupant of this physical workplace
+                physicalWorkplace.CurrentOccupantEntraId = dto.UserEntraId ?? workplace.UserEntraId;
+                physicalWorkplace.CurrentOccupantName = dto.UserName ?? workplace.UserName;
+                physicalWorkplace.CurrentOccupantEmail = dto.UserEmail ?? workplace.UserEmail;
+                physicalWorkplace.OccupiedSince = DateTime.UtcNow;
+                physicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Assigned user {UserName} as occupant of physical workplace {WorkplaceCode}",
+                    physicalWorkplace.CurrentOccupantName,
+                    physicalWorkplace.Code);
+            }
+        }
+
+        // If the physical workplace was changed, clear the occupant from the previous one
+        if (previousPhysicalWorkplaceId.HasValue && previousPhysicalWorkplaceId != dto.PhysicalWorkplaceId)
+        {
+            var previousPhysicalWorkplace = await _context.PhysicalWorkplaces
+                .FirstOrDefaultAsync(pw => pw.Id == previousPhysicalWorkplaceId.Value, cancellationToken);
+
+            if (previousPhysicalWorkplace != null)
+            {
+                previousPhysicalWorkplace.CurrentOccupantEntraId = null;
+                previousPhysicalWorkplace.CurrentOccupantName = null;
+                previousPhysicalWorkplace.CurrentOccupantEmail = null;
+                previousPhysicalWorkplace.OccupiedSince = null;
+                previousPhysicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Cleared occupant from physical workplace {WorkplaceCode}",
+                    previousPhysicalWorkplace.Code);
+            }
+        }
 
         _logger.LogInformation("Updated workplace {WorkplaceId}", id);
 

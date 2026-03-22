@@ -211,6 +211,55 @@ public class DeploymentService : IDeploymentService
                 {
                     var slots = request.EquipmentSlots;
 
+                    // Collect old and new asset IDs to update PhysicalWorkplaceId
+                    var oldAssetIds = new List<int?>
+                    {
+                        workplace.DockingStationAssetId,
+                        workplace.Monitor1AssetId,
+                        workplace.Monitor2AssetId,
+                        workplace.Monitor3AssetId,
+                        workplace.KeyboardAssetId,
+                        workplace.MouseAssetId
+                    }.Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+                    var newAssetIds = new List<int?>
+                    {
+                        slots.DockingStationAssetId,
+                        slots.Monitor1AssetId,
+                        slots.Monitor2AssetId,
+                        slots.Monitor3AssetId,
+                        slots.KeyboardAssetId,
+                        slots.MouseAssetId
+                    }.Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+                    // Assets removed from workplace - clear PhysicalWorkplaceId
+                    var removedAssetIds = oldAssetIds.Except(newAssetIds).ToList();
+                    if (removedAssetIds.Any())
+                    {
+                        var removedAssets = await _context.Assets
+                            .Where(a => removedAssetIds.Contains(a.Id))
+                            .ToListAsync(cancellationToken);
+                        foreach (var asset in removedAssets)
+                        {
+                            asset.PhysicalWorkplaceId = null;
+                            asset.BuildingId = null;
+                        }
+                    }
+
+                    // Assets added to workplace - set PhysicalWorkplaceId and BuildingId
+                    var addedAssetIds = newAssetIds.Except(oldAssetIds).ToList();
+                    if (addedAssetIds.Any())
+                    {
+                        var addedAssets = await _context.Assets
+                            .Where(a => addedAssetIds.Contains(a.Id))
+                            .ToListAsync(cancellationToken);
+                        foreach (var asset in addedAssets)
+                        {
+                            asset.PhysicalWorkplaceId = workplace.Id;
+                            asset.BuildingId = workplace.BuildingId;
+                        }
+                    }
+
                     // Track which slots changed
                     if (workplace.DockingStationAssetId != slots.DockingStationAssetId)
                     {
