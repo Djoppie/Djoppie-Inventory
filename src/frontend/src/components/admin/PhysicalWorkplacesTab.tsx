@@ -30,6 +30,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import AdminDataTable, { Column } from './AdminDataTable';
 import AdminFormDialog from './AdminFormDialog';
 import {
@@ -47,6 +48,8 @@ import {
   useDownloadWorkplaceTemplate,
   useExportWorkplacesCsv,
   useImportWorkplacesCsv,
+  useBulkDeleteWorkplaces,
+  useDeleteAllWorkplaces,
 } from '../../hooks/usePhysicalWorkplaces';
 import { useBuildings } from '../../hooks/useBuildings';
 import { useServices } from '../../hooks/useServices';
@@ -80,10 +83,12 @@ const initialFormData: FormData = {
 const PhysicalWorkplacesTab = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [importResultDialogOpen, setImportResultDialogOpen] = useState(false);
   const [importResult, setImportResult] = useState<WorkplaceCsvImportResult | null>(null);
   const [editingItem, setEditingItem] = useState<PhysicalWorkplace | null>(null);
   const [deletingItem, setDeletingItem] = useState<PhysicalWorkplace | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [snackbar, setSnackbar] = useState({
@@ -102,6 +107,8 @@ const PhysicalWorkplacesTab = () => {
   const createMutation = useCreatePhysicalWorkplace();
   const updateMutation = useUpdatePhysicalWorkplace();
   const deleteMutation = useDeletePhysicalWorkplace();
+  const bulkDeleteMutation = useBulkDeleteWorkplaces();
+  const deleteAllMutation = useDeleteAllWorkplaces();
   const downloadTemplateMutation = useDownloadWorkplaceTemplate();
   const exportCsvMutation = useExportWorkplacesCsv();
   const importCsvMutation = useImportWorkplacesCsv();
@@ -229,6 +236,38 @@ const PhysicalWorkplacesTab = () => {
       handleCloseDeleteDialog();
     } catch {
       setSnackbar({ open: true, message: 'Fout bij verwijderen werkplek', severity: 'error' });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const ids = Array.from(selectedIds).map((id) => Number(id));
+      const result = await bulkDeleteMutation.mutateAsync(ids);
+      setSnackbar({
+        open: true,
+        message: `${result.deleted} werkplekken verwijderd${result.errors.length > 0 ? `, ${result.errors.length} fouten` : ''}`,
+        severity: result.errors.length > 0 ? 'error' : 'success',
+      });
+      setSelectedIds(new Set());
+      setBulkDeleteDialogOpen(false);
+    } catch {
+      setSnackbar({ open: true, message: 'Fout bij verwijderen werkplekken', severity: 'error' });
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const result = await deleteAllMutation.mutateAsync();
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: 'success',
+      });
+      setSelectedIds(new Set());
+      setBulkDeleteDialogOpen(false);
+    } catch {
+      setSnackbar({ open: true, message: 'Fout bij verwijderen alle werkplekken', severity: 'error' });
     }
   };
 
@@ -394,6 +433,22 @@ const PhysicalWorkplacesTab = () => {
           </Button>
         </Tooltip>
 
+        {/* Delete Selected Button */}
+        {selectedIds.size > 0 && (
+          <Tooltip title={`Verwijder ${selectedIds.size} geselecteerde werkplekken`}>
+            <Button
+              variant="contained"
+              size="small"
+              color="error"
+              startIcon={bulkDeleteMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <DeleteSweepIcon />}
+              onClick={() => setBulkDeleteDialogOpen(true)}
+              disabled={isAnyMutationPending || bulkDeleteMutation.isPending}
+            >
+              Verwijder ({selectedIds.size})
+            </Button>
+          </Tooltip>
+        )}
+
         {/* Hidden file input */}
         <input
           type="file"
@@ -413,6 +468,9 @@ const PhysicalWorkplacesTab = () => {
         emptyMessage="Geen werkplekken gevonden. Klik op + om een werkplek toe te voegen."
         getItemId={(item) => item.id}
         showActiveStatus
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
       />
 
       {/* Add Button */}
@@ -610,6 +668,69 @@ const PhysicalWorkplacesTab = () => {
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? 'Verwijderen...' : 'Verwijderen'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog
+        open={bulkDeleteDialogOpen}
+        onClose={() => setBulkDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            border: '2px solid',
+            borderColor: 'error.main',
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'rgba(244, 67, 54, 0.1)'
+                : 'rgba(244, 67, 54, 0.05)',
+            color: 'error.main',
+            fontWeight: 700,
+            borderBottom: '1px solid',
+            borderColor: 'error.main',
+          }}
+        >
+          Werkplekken Verwijderen
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1">
+            Weet je zeker dat je <strong>{selectedIds.size} werkplekken</strong> wilt verwijderen?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Deze actie kan niet ongedaan worden gemaakt.
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2" color="text.secondary">
+            Of wil je <strong>alle {workplaces.length} werkplekken</strong> in één keer verwijderen?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}>
+          <Button onClick={() => setBulkDeleteDialogOpen(false)} color="inherit">
+            Annuleren
+          </Button>
+          <Button
+            onClick={handleDeleteAll}
+            variant="outlined"
+            color="error"
+            disabled={deleteAllMutation.isPending || bulkDeleteMutation.isPending}
+          >
+            {deleteAllMutation.isPending ? 'Verwijderen...' : `Verwijder Alles (${workplaces.length})`}
+          </Button>
+          <Button
+            onClick={handleBulkDelete}
+            variant="contained"
+            color="error"
+            disabled={bulkDeleteMutation.isPending || deleteAllMutation.isPending}
+          >
+            {bulkDeleteMutation.isPending ? 'Verwijderen...' : `Verwijder (${selectedIds.size})`}
           </Button>
         </DialogActions>
       </Dialog>

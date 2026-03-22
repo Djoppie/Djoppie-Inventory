@@ -192,4 +192,83 @@ export const servicesApi = {
     const response = await apiClient.post<SyncResult>('/admin/services/sync-from-entra');
     return response.data;
   },
+
+  downloadTemplate: async (): Promise<void> => {
+    const response = await apiClient.get('/admin/services/template', {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'services-template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
+  exportCsv: async (): Promise<void> => {
+    const response = await apiClient.get('/admin/services/export', {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `services-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
+  importCsv: async (file: File): Promise<ServiceCsvImportResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ServiceCsvImportResult>(
+      '/admin/services/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
+
+  deleteAll: async (): Promise<{ message: string; deletedCount: number }> => {
+    const response = await apiClient.delete<{ message: string; deletedCount: number }>(
+      '/admin/services/all',
+      { params: { confirm: true } }
+    );
+    return response.data;
+  },
+
+  deleteMany: async (ids: number[]): Promise<{ deleted: number; errors: string[] }> => {
+    const results = await Promise.allSettled(
+      ids.map((id) => apiClient.delete(`/admin/services/${id}`))
+    );
+    const deleted = results.filter((r) => r.status === 'fulfilled').length;
+    const errors = results
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r) => r.reason?.message || 'Unknown error');
+    return { deleted, errors };
+  },
 };
+
+// Service CSV Import Result types
+export interface ServiceCsvImportRowResult {
+  rowNumber: number;
+  code: string;
+  name: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface ServiceCsvImportResult {
+  totalRows: number;
+  successCount: number;
+  errorCount: number;
+  isFullySuccessful: boolean;
+  results: ServiceCsvImportRowResult[];
+}

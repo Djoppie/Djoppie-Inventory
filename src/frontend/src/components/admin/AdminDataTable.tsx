@@ -20,6 +20,7 @@ import {
   ToggleButton,
   Tooltip,
   alpha,
+  Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -53,6 +54,10 @@ interface AdminDataTableProps<T> {
   showActiveStatus?: boolean;
   title?: string;
   defaultRowsPerPage?: number;
+  // Selection support
+  selectable?: boolean;
+  selectedIds?: Set<number | string>;
+  onSelectionChange?: (selectedIds: Set<number | string>) => void;
 }
 
 // Neumorphic shadow utilities
@@ -86,6 +91,9 @@ function AdminDataTable<T extends Record<string, unknown>>({
   getItemId,
   showActiveStatus = false,
   defaultRowsPerPage = 15,
+  selectable = false,
+  selectedIds = new Set(),
+  onSelectionChange,
 }: AdminDataTableProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -124,6 +132,28 @@ function AdminDataTable<T extends Record<string, unknown>>({
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  // Selection handlers
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onSelectionChange) return;
+    if (event.target.checked) {
+      const allIds = new Set(filteredAndSortedData.map((item) => getItemId(item)));
+      onSelectionChange(allIds);
+    } else {
+      onSelectionChange(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: number | string) => {
+    if (!onSelectionChange) return;
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    onSelectionChange(newSelected);
   };
 
   const filteredAndSortedData = useMemo(() => {
@@ -319,6 +349,30 @@ function AdminDataTable<T extends Record<string, unknown>>({
         <Table size="small">
           <TableHead>
             <TableRow>
+              {selectable && (
+                <TableCell
+                  padding="checkbox"
+                  sx={{
+                    py: 1,
+                    px: 0.5,
+                    bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                    width: 42,
+                  }}
+                >
+                  <Checkbox
+                    indeterminate={selectedIds.size > 0 && selectedIds.size < filteredAndSortedData.length}
+                    checked={filteredAndSortedData.length > 0 && selectedIds.size === filteredAndSortedData.length}
+                    onChange={handleSelectAll}
+                    sx={{
+                      color: alpha(accentColor, 0.5),
+                      '&.Mui-checked, &.MuiCheckbox-indeterminate': {
+                        color: accentColor,
+                      },
+                    }}
+                  />
+                </TableCell>
+              )}
               {columns.map((column) => (
                 <TableCell
                   key={String(column.id)}
@@ -397,7 +451,7 @@ function AdminDataTable<T extends Record<string, unknown>>({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (showActiveStatus ? 1 : 0) + 1}
+                  colSpan={columns.length + (showActiveStatus ? 1 : 0) + 1 + (selectable ? 1 : 0)}
                   sx={{ py: 4, textAlign: 'center' }}
                 >
                   <TableRowsIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
@@ -409,11 +463,18 @@ function AdminDataTable<T extends Record<string, unknown>>({
             ) : (
               paginatedData.map((item, idx) => {
                 const isInactive = showActiveStatus && !item.isActive;
+                const itemId = getItemId(item);
+                const isSelected = selectedIds.has(itemId);
                 return (
                   <TableRow
-                    key={getItemId(item)}
+                    key={itemId}
+                    selected={isSelected}
                     sx={{
-                      bgcolor: idx % 2 === 0 ? 'transparent' : alpha(bgBase, 0.3),
+                      bgcolor: isSelected
+                        ? alpha(accentColor, isDark ? 0.15 : 0.08)
+                        : idx % 2 === 0
+                        ? 'transparent'
+                        : alpha(bgBase, 0.3),
                       opacity: isInactive ? 0.5 : 1,
                       transition: 'all 0.12s ease',
                       '&:hover': {
@@ -421,6 +482,27 @@ function AdminDataTable<T extends Record<string, unknown>>({
                       },
                     }}
                   >
+                    {selectable && (
+                      <TableCell
+                        padding="checkbox"
+                        sx={{
+                          py: 0.5,
+                          px: 0.5,
+                          borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                        }}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(itemId)}
+                          sx={{
+                            color: alpha(accentColor, 0.5),
+                            '&.Mui-checked': {
+                              color: accentColor,
+                            },
+                          }}
+                        />
+                      </TableCell>
+                    )}
                     {columns.map((column) => (
                       <TableCell
                         key={String(column.id)}

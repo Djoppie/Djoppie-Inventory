@@ -1,3 +1,4 @@
+using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
@@ -142,6 +143,7 @@ public class ServicesController : ControllerBase
     [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
     [ProducesResponseType(typeof(ServiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ServiceDto>> Update(
         int id,
         UpdateServiceDto dto,
@@ -150,6 +152,15 @@ public class ServicesController : ControllerBase
         var service = await _serviceRepository.GetByIdAsync(id, cancellationToken);
         if (service == null)
             return NotFound($"Service with ID {id} not found");
+
+        // If code is being changed, validate uniqueness
+        if (!string.IsNullOrWhiteSpace(dto.Code) && !dto.Code.Equals(service.Code, StringComparison.OrdinalIgnoreCase))
+        {
+            var newCode = dto.Code.Trim().ToUpperInvariant();
+            if (await _serviceRepository.CodeExistsAsync(newCode, id, cancellationToken))
+                return Conflict($"Service code '{newCode}' already exists");
+            service.Code = newCode;
+        }
 
         service.Name = dto.Name;
         service.SectorId = dto.SectorId;
@@ -366,4 +377,215 @@ public class ServicesController : ControllerBase
             return StatusCode(500, new { error = "Failed to sync services from Entra", details = ex.Message });
         }
     }
+
+    // ============================================================
+    // CSV Import/Export Endpoints
+    // ============================================================
+
+    /// <summary>
+    /// Downloads a CSV template for bulk service import.
+    /// </summary>
+    [HttpGet("template")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public IActionResult DownloadTemplate()
+    {
+        var template = "Code,Name,SectorCode,SortOrder\nDIENST-001,Voorbeeld Dienst,SECTOR-A,0";
+        var bytes = Encoding.UTF8.GetBytes(template);
+        return File(bytes, "text/csv", $"services-template_{DateTime.Now:yyyy-MM-dd}.csv");
+    }
+
+    /// <summary>
+    /// Exports all services to a CSV file.
+    /// </summary>
+    [HttpGet("export")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ExportCsv(CancellationToken cancellationToken = default)
+    {
+        var services = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Code,Name,SectorCode,SortOrder,IsActive");
+
+        foreach (var service in services)
+        {
+            var sectorCode = service.Sector?.Code ?? "";
+            sb.AppendLine($"\"{service.Code}\",\"{service.Name}\",\"{sectorCode}\",{service.SortOrder},{service.IsActive}");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"services-export_{DateTime.Now:yyyy-MM-dd}.csv");
+    }
+
+    /// <summary>
+    /// Imports services from a CSV file.
+    /// </summary>
+    [HttpPost("import")]
+    [Authorize]
+    [ProducesResponseType(typeof(ServiceImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ServiceImportResultDto>> ImportCsv(
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+
+        var results = new List<ServiceImportRowResult>();
+        var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
+        var sectorsByCode = sectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+        var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
+        var existingCodes = new HashSet<string>(existingServices.Select(s => s.Code.ToUpperInvariant()));
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        var headerLine = await reader.ReadLineAsync(cancellationToken);
+        if (string.IsNullOrEmpty(headerLine))
+            return BadRequest("CSV file is empty");
+
+        int rowNumber = 1;
+        int created = 0;
+        int updated = 0;
+        int errors = 0;
+
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            try
+            {
+                var values = ParseCsvLine(line);
+                if (values.Length < 2)
+                {
+                    results.Add(new ServiceImportRowResult(rowNumber, null, null, false, "Onvoldoende kolommen"));
+                    errors++;
+                    continue;
+                }
+
+                var code = values[0].Trim().ToUpperInvariant();
+                var name = values[1].Trim();
+                var sectorCode = values.Length > 2 ? values[2].Trim().ToUpperInvariant() : "";
+                var sortOrder = values.Length > 3 && int.TryParse(values[3].Trim(), out var so) ? so : 0;
+
+                if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
+                {
+                    results.Add(new ServiceImportRowResult(rowNumber, code, name, false, "Code en Naam zijn verplicht"));
+                    errors++;
+                    continue;
+                }
+
+                int? sectorId = null;
+                if (!string.IsNullOrEmpty(sectorCode) && sectorsByCode.TryGetValue(sectorCode, out var sector))
+                {
+                    sectorId = sector.Id;
+                }
+
+                if (existingCodes.Contains(code))
+                {
+                    // Update existing
+                    var existing = existingServices.First(s => s.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+                    existing.Name = name;
+                    existing.SectorId = sectorId;
+                    existing.SortOrder = sortOrder;
+                    await _serviceRepository.UpdateAsync(existing, cancellationToken);
+                    results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, existing.Id, true));
+                    updated++;
+                }
+                else
+                {
+                    // Create new
+                    var newService = new Service
+                    {
+                        Code = code,
+                        Name = name,
+                        SectorId = sectorId,
+                        SortOrder = sortOrder,
+                        IsActive = true
+                    };
+                    var createdService = await _serviceRepository.CreateAsync(newService, cancellationToken);
+                    existingCodes.Add(code);
+                    results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, createdService.Id, false));
+                    created++;
+                }
+            }
+            catch (Exception ex)
+            {
+                results.Add(new ServiceImportRowResult(rowNumber, null, null, false, ex.Message));
+                errors++;
+            }
+        }
+
+        return Ok(new ServiceImportResultDto(rowNumber - 1, created, updated, errors, errors == 0, results));
+    }
+
+    /// <summary>
+    /// Deletes ALL services. Use with caution!
+    /// </summary>
+    [HttpDelete("all")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteAll(
+        [FromQuery] bool confirm = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (!confirm)
+            return BadRequest("You must pass ?confirm=true to delete all services");
+
+        var allServices = await _context.Services.ToListAsync(cancellationToken);
+        var count = allServices.Count;
+
+        _context.Services.RemoveRange(allServices);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogWarning("Deleted ALL {Count} services", count);
+
+        return Ok(new { message = $"Deleted {count} services", count });
+    }
+
+    private static string[] ParseCsvLine(string line)
+    {
+        var result = new List<string>();
+        var inQuotes = false;
+        var current = new StringBuilder();
+
+        foreach (var c in line)
+        {
+            if (c == '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                result.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
+        }
+        result.Add(current.ToString());
+
+        return result.ToArray();
+    }
 }
+
+public record ServiceImportResultDto(
+    int TotalRows,
+    int CreatedCount,
+    int UpdatedCount,
+    int ErrorCount,
+    bool IsFullySuccessful,
+    List<ServiceImportRowResult> Results
+);
+
+public record ServiceImportRowResult(
+    int RowNumber,
+    string? Code,
+    string? Name,
+    bool Success,
+    string? Error,
+    int? ServiceId = null,
+    bool WasUpdated = false
+);

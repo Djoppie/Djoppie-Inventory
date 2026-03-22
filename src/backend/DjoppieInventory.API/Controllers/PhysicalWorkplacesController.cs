@@ -1154,6 +1154,77 @@ public class PhysicalWorkplacesController : ControllerBase
     }
 
     /// <summary>
+    /// Deletes ALL physical workplaces. Use with caution!
+    /// This is a hard delete that cannot be undone.
+    /// </summary>
+    [HttpDelete("all")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteAll(
+        [FromQuery] bool confirm = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (!confirm)
+            return BadRequest("You must pass ?confirm=true to delete all workplaces");
+
+        // Check for any workplaces with fixed assets
+        var workplacesWithAssets = await _context.PhysicalWorkplaces
+            .Where(pw => pw.DockingStationAssetId != null
+                || pw.Monitor1AssetId != null
+                || pw.Monitor2AssetId != null
+                || pw.Monitor3AssetId != null
+                || pw.KeyboardAssetId != null
+                || pw.MouseAssetId != null)
+            .CountAsync(cancellationToken);
+
+        if (workplacesWithAssets > 0)
+        {
+            // Clear asset assignments first
+            var workplacesWithEquipment = await _context.PhysicalWorkplaces
+                .Where(pw => pw.DockingStationAssetId != null
+                    || pw.Monitor1AssetId != null
+                    || pw.Monitor2AssetId != null
+                    || pw.Monitor3AssetId != null
+                    || pw.KeyboardAssetId != null
+                    || pw.MouseAssetId != null)
+                .ToListAsync(cancellationToken);
+
+            foreach (var wp in workplacesWithEquipment)
+            {
+                wp.DockingStationAssetId = null;
+                wp.Monitor1AssetId = null;
+                wp.Monitor2AssetId = null;
+                wp.Monitor3AssetId = null;
+                wp.KeyboardAssetId = null;
+                wp.MouseAssetId = null;
+            }
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        // Clear PhysicalWorkplaceId from assets
+        var assetsWithWorkplace = await _context.Assets
+            .Where(a => a.PhysicalWorkplaceId != null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var asset in assetsWithWorkplace)
+        {
+            asset.PhysicalWorkplaceId = null;
+        }
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Now delete all workplaces
+        var allWorkplaces = await _context.PhysicalWorkplaces.ToListAsync(cancellationToken);
+        var count = allWorkplaces.Count;
+
+        _context.PhysicalWorkplaces.RemoveRange(allWorkplaces);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogWarning("Deleted ALL {Count} physical workplaces", count);
+
+        return Ok(new { message = $"Deleted {count} physical workplaces", count });
+    }
+
+    /// <summary>
     /// Bulk creates multiple workplaces for a service/building using a template.
     /// Creates workplaces with sequential codes like "GH-BZ-L01", "GH-BZ-L02", etc.
     /// </summary>

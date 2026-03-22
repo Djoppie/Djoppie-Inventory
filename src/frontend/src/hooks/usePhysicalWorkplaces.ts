@@ -281,6 +281,34 @@ export const useBulkCreateWorkplaces = () => {
   });
 };
 
+/**
+ * Hook to delete all workplaces (use with caution!)
+ */
+export const useDeleteAllWorkplaces = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => physicalWorkplacesBulkApi.deleteAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to delete multiple workplaces by IDs
+ */
+export const useBulkDeleteWorkplaces = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: number[]) => physicalWorkplacesBulkApi.deleteMany(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+    },
+  });
+};
+
 // ============================================================
 // Statistics Hooks for Dashboard Widgets
 // ============================================================

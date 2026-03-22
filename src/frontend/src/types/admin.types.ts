@@ -150,6 +150,7 @@ export interface CreateServiceDto {
 }
 
 export interface UpdateServiceDto {
+  code?: string;
   name: string;
   description?: string;
   sectorId: number;
