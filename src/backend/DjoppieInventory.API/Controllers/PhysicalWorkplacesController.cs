@@ -65,9 +65,9 @@ public class PhysicalWorkplacesController : ControllerBase
         if (hasOccupant.HasValue)
         {
             if (hasOccupant.Value)
-                query = query.Where(pw => pw.CurrentOccupantEntraId != null);
+                query = query.Where(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null);
             else
-                query = query.Where(pw => pw.CurrentOccupantEntraId == null);
+                query = query.Where(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null);
         }
 
         var workplaces = await query
@@ -370,6 +370,55 @@ public class PhysicalWorkplacesController : ControllerBase
         if (workplace == null)
             return NotFound($"Physical workplace with ID {id} not found");
 
+        // Collect old and new asset IDs to update PhysicalWorkplaceId
+        var oldAssetIds = new List<int?>
+        {
+            workplace.DockingStationAssetId,
+            workplace.Monitor1AssetId,
+            workplace.Monitor2AssetId,
+            workplace.Monitor3AssetId,
+            workplace.KeyboardAssetId,
+            workplace.MouseAssetId
+        }.Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+        var newAssetIds = new List<int?>
+        {
+            dto.DockingStationAssetId,
+            dto.Monitor1AssetId,
+            dto.Monitor2AssetId,
+            dto.Monitor3AssetId,
+            dto.KeyboardAssetId,
+            dto.MouseAssetId
+        }.Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+        // Assets removed from workplace - clear PhysicalWorkplaceId
+        var removedAssetIds = oldAssetIds.Except(newAssetIds).ToList();
+        if (removedAssetIds.Any())
+        {
+            var removedAssets = await _context.Assets
+                .Where(a => removedAssetIds.Contains(a.Id))
+                .ToListAsync(cancellationToken);
+            foreach (var asset in removedAssets)
+            {
+                asset.PhysicalWorkplaceId = null;
+                asset.BuildingId = null;
+            }
+        }
+
+        // Assets added to workplace - set PhysicalWorkplaceId and BuildingId
+        var addedAssetIds = newAssetIds.Except(oldAssetIds).ToList();
+        if (addedAssetIds.Any())
+        {
+            var addedAssets = await _context.Assets
+                .Where(a => addedAssetIds.Contains(a.Id))
+                .ToListAsync(cancellationToken);
+            foreach (var asset in addedAssets)
+            {
+                asset.PhysicalWorkplaceId = workplace.Id;
+                asset.BuildingId = workplace.BuildingId;
+            }
+        }
+
         // Update equipment slots
         workplace.DockingStationAssetId = dto.DockingStationAssetId;
         workplace.Monitor1AssetId = dto.Monitor1AssetId;
@@ -611,7 +660,7 @@ public class PhysicalWorkplacesController : ControllerBase
 
         var totalWorkplaces = workplaces.Count;
         var activeWorkplaces = workplaces.Count(pw => pw.IsActive);
-        var occupiedWorkplaces = workplaces.Count(pw => pw.CurrentOccupantEntraId != null);
+        var occupiedWorkplaces = workplaces.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null);
         var vacantWorkplaces = activeWorkplaces - occupiedWorkplaces;
         var occupancyRate = activeWorkplaces > 0
             ? Math.Round((decimal)occupiedWorkplaces / activeWorkplaces * 100, 1)
@@ -673,10 +722,10 @@ public class PhysicalWorkplacesController : ControllerBase
                 g.Key.Name,
                 g.Key.Code,
                 g.Count(),
-                g.Count(pw => pw.CurrentOccupantEntraId != null),
-                g.Count(pw => pw.CurrentOccupantEntraId == null),
+                g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null),
+                g.Count(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null),
                 g.Count() > 0
-                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null) / g.Count() * 100, 1)
+                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null) / g.Count() * 100, 1)
                     : 0
             ))
             .OrderByDescending(b => b.TotalWorkplaces)
@@ -702,10 +751,10 @@ public class PhysicalWorkplacesController : ControllerBase
                 g.Key.ServiceName ?? "Geen dienst",
                 g.Key.ServiceCode,
                 g.Count(),
-                g.Count(pw => pw.CurrentOccupantEntraId != null),
-                g.Count(pw => pw.CurrentOccupantEntraId == null),
+                g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null),
+                g.Count(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null),
                 g.Count() > 0
-                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null) / g.Count() * 100, 1)
+                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null) / g.Count() * 100, 1)
                     : 0
             ))
             .OrderByDescending(s => s.TotalWorkplaces)
@@ -1401,6 +1450,11 @@ public class PhysicalWorkplacesController : ControllerBase
             pw.CurrentOccupantName,
             pw.CurrentOccupantEmail,
             pw.OccupiedSince,
+            // Occupant's device info
+            pw.OccupantDeviceSerial,
+            pw.OccupantDeviceBrand,
+            pw.OccupantDeviceModel,
+            pw.OccupantDeviceAssetCode,
             pw.IsActive,
             totalAssetCount,
             pw.CreatedAt,

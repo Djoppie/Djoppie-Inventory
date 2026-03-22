@@ -44,6 +44,11 @@ public record PhysicalWorkplaceDto(
     string? CurrentOccupantName,
     string? CurrentOccupantEmail,
     DateTime? OccupiedSince,
+    // Occupant's device info
+    string? OccupantDeviceSerial,
+    string? OccupantDeviceBrand,
+    string? OccupantDeviceModel,
+    string? OccupantDeviceAssetCode,
     bool IsActive,
     int FixedAssetCount,
     DateTime CreatedAt,

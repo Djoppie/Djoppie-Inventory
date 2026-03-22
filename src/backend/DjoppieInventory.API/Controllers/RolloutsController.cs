@@ -2,8 +2,10 @@ using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -24,6 +26,7 @@ public class RolloutsController : ControllerBase
     private readonly IGraphUserService _graphUserService;
     private readonly IServiceRepository _serviceRepository;
     private readonly IRolloutWorkplaceService _workplaceService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<RolloutsController> _logger;
 
     public RolloutsController(
@@ -33,6 +36,7 @@ public class RolloutsController : ControllerBase
         IGraphUserService graphUserService,
         IServiceRepository serviceRepository,
         IRolloutWorkplaceService workplaceService,
+        ApplicationDbContext context,
         ILogger<RolloutsController> logger)
     {
         _rolloutRepository = rolloutRepository;
@@ -41,6 +45,7 @@ public class RolloutsController : ControllerBase
         _graphUserService = graphUserService;
         _serviceRepository = serviceRepository;
         _workplaceService = workplaceService;
+        _context = context;
         _logger = logger;
     }
 
@@ -385,6 +390,7 @@ public class RolloutsController : ControllerBase
             RolloutDayId = dto.RolloutDayId,
             UserName = dto.UserName,
             UserEmail = dto.UserEmail,
+            UserEntraId = dto.UserEntraId,
             Location = dto.Location,
             ScheduledDate = dto.ScheduledDate,
             ServiceId = dto.ServiceId,
@@ -396,6 +402,31 @@ public class RolloutsController : ControllerBase
         };
 
         var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace);
+
+        // If a physical workplace is assigned, update its occupant
+        if (dto.PhysicalWorkplaceId.HasValue)
+        {
+            var physicalWorkplace = await _context.PhysicalWorkplaces
+                .FirstOrDefaultAsync(pw => pw.Id == dto.PhysicalWorkplaceId.Value);
+
+            if (physicalWorkplace != null)
+            {
+                // Set the user as the occupant of this physical workplace
+                physicalWorkplace.CurrentOccupantEntraId = dto.UserEntraId;
+                physicalWorkplace.CurrentOccupantName = dto.UserName;
+                physicalWorkplace.CurrentOccupantEmail = dto.UserEmail;
+                physicalWorkplace.OccupiedSince = DateTime.UtcNow;
+                physicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Assigned user {UserName} as occupant of physical workplace {WorkplaceCode}",
+                    physicalWorkplace.CurrentOccupantName,
+                    physicalWorkplace.Code);
+            }
+        }
+
         var workplaceDto = MapToWorkplaceDto(createdWorkplace);
 
         return CreatedAtAction(nameof(GetWorkplaceById), new { workplaceId = createdWorkplace.Id }, workplaceDto);
@@ -422,8 +453,11 @@ public class RolloutsController : ControllerBase
             return BadRequest(new { message = $"Invalid status value: {dto.Status}" });
         }
 
+        var previousPhysicalWorkplaceId = workplace.PhysicalWorkplaceId;
+
         workplace.UserName = dto.UserName;
         workplace.UserEmail = dto.UserEmail;
+        workplace.UserEntraId = dto.UserEntraId ?? workplace.UserEntraId;
         workplace.Location = dto.Location;
         workplace.ScheduledDate = dto.ScheduledDate;
         workplace.ServiceId = dto.ServiceId;
@@ -436,6 +470,98 @@ public class RolloutsController : ControllerBase
         workplace.Notes = dto.Notes;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+
+        // If a physical workplace is assigned, update its occupant
+        if (dto.PhysicalWorkplaceId.HasValue)
+        {
+            var physicalWorkplace = await _context.PhysicalWorkplaces
+                .FirstOrDefaultAsync(pw => pw.Id == dto.PhysicalWorkplaceId.Value);
+
+            if (physicalWorkplace != null)
+            {
+                var occupantEmail = dto.UserEmail ?? workplace.UserEmail;
+
+                // Set the user as the occupant of this physical workplace
+                physicalWorkplace.CurrentOccupantEntraId = dto.UserEntraId ?? workplace.UserEntraId;
+                physicalWorkplace.CurrentOccupantName = dto.UserName ?? workplace.UserName;
+                physicalWorkplace.CurrentOccupantEmail = occupantEmail;
+                physicalWorkplace.OccupiedSince = DateTime.UtcNow;
+                physicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+                // Look up the occupant's primary device (laptop/desktop) from our inventory
+                // Owner field may contain either name or email, so check both
+                var occupantName = workplace.UserName;
+                if (!string.IsNullOrWhiteSpace(occupantEmail) || !string.IsNullOrWhiteSpace(occupantName))
+                {
+                    var occupantDevice = await _context.Assets
+                        .Include(a => a.AssetType)
+                        .Where(a => a.Owner != null &&
+                                    ((occupantEmail != null && a.Owner.ToLower() == occupantEmail.ToLower()) || (occupantName != null && a.Owner.ToLower() == occupantName.ToLower())) &&
+                                    a.Status == AssetStatus.InGebruik &&
+                                    (a.Category == "Laptop" || a.Category == "Desktop" ||
+                                     (a.AssetType != null && (a.AssetType.Name == "Laptop" || a.AssetType.Name == "Desktop"))))
+                        .OrderByDescending(a => a.InstallationDate ?? a.CreatedAt)
+                        .FirstOrDefaultAsync();
+
+                    if (occupantDevice != null)
+                    {
+                        physicalWorkplace.OccupantDeviceSerial = occupantDevice.SerialNumber;
+                        physicalWorkplace.OccupantDeviceBrand = occupantDevice.Brand;
+                        physicalWorkplace.OccupantDeviceModel = occupantDevice.Model;
+                        physicalWorkplace.OccupantDeviceAssetCode = occupantDevice.AssetCode;
+
+                        _logger.LogInformation(
+                            "Found occupant device {AssetCode} ({Serial}) for {UserName}",
+                            occupantDevice.AssetCode,
+                            occupantDevice.SerialNumber,
+                            physicalWorkplace.CurrentOccupantName);
+                    }
+                    else
+                    {
+                        // Clear device info if no device found
+                        physicalWorkplace.OccupantDeviceSerial = null;
+                        physicalWorkplace.OccupantDeviceBrand = null;
+                        physicalWorkplace.OccupantDeviceModel = null;
+                        physicalWorkplace.OccupantDeviceAssetCode = null;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Assigned user {UserName} as occupant of physical workplace {WorkplaceCode}",
+                    physicalWorkplace.CurrentOccupantName,
+                    physicalWorkplace.Code);
+            }
+        }
+
+        // If the physical workplace was changed, clear the occupant from the previous one
+        if (previousPhysicalWorkplaceId.HasValue && previousPhysicalWorkplaceId != dto.PhysicalWorkplaceId)
+        {
+            var previousPhysicalWorkplace = await _context.PhysicalWorkplaces
+                .FirstOrDefaultAsync(pw => pw.Id == previousPhysicalWorkplaceId.Value);
+
+            if (previousPhysicalWorkplace != null)
+            {
+                previousPhysicalWorkplace.CurrentOccupantEntraId = null;
+                previousPhysicalWorkplace.CurrentOccupantName = null;
+                previousPhysicalWorkplace.CurrentOccupantEmail = null;
+                previousPhysicalWorkplace.OccupiedSince = null;
+                // Clear device info
+                previousPhysicalWorkplace.OccupantDeviceSerial = null;
+                previousPhysicalWorkplace.OccupantDeviceBrand = null;
+                previousPhysicalWorkplace.OccupantDeviceModel = null;
+                previousPhysicalWorkplace.OccupantDeviceAssetCode = null;
+                previousPhysicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Cleared occupant from physical workplace {WorkplaceCode}",
+                    previousPhysicalWorkplace.Code);
+            }
+        }
+
         var workplaceDto = MapToWorkplaceDto(updatedWorkplace);
 
         return Ok(workplaceDto);
@@ -1004,6 +1130,7 @@ public class RolloutsController : ControllerBase
                     RolloutDayId = dayId,
                     UserName = user.DisplayName ?? "Unknown",
                     UserEmail = user.UserPrincipalName ?? user.Mail,
+                    UserEntraId = user.Id,
                     ServiceId = dto.ServiceId > 0 ? dto.ServiceId : null,
                     Location = user.OfficeLocation,
                     IsLaptopSetup = dto.AssetPlanConfig.IncludeLaptop,
@@ -1644,6 +1771,7 @@ public class RolloutsController : ControllerBase
             RolloutDayId = workplace.RolloutDayId,
             UserName = workplace.UserName,
             UserEmail = workplace.UserEmail,
+            UserEntraId = workplace.UserEntraId,
             Location = workplace.Location,
             ScheduledDate = workplace.ScheduledDate,
             ServiceId = workplace.ServiceId,

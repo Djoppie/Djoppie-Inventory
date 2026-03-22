@@ -3,18 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Paper,
-  Chip,
   Button,
   IconButton,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Fab,
   Stack,
   Snackbar,
@@ -27,6 +19,8 @@ import {
   MenuItem,
   Tooltip,
   Collapse,
+  Chip,
+  alpha,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -63,6 +57,9 @@ import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAss
 import BulkImportWorkplacesDialog from '../components/physicalWorkplaces/BulkImportWorkplacesDialog';
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
 import NeomorphConfirmDialog from '../components/physicalWorkplaces/NeomorphConfirmDialog';
+import EquipmentChip from '../components/physicalWorkplaces/EquipmentChip';
+import WorkplaceOccupantChip from '../components/physicalWorkplaces/WorkplaceOccupantChip';
+import AdminDataTable, { Column } from '../components/admin/AdminDataTable';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -96,6 +93,9 @@ const iconButtonSx = {
   },
 };
 
+// Teal accent for workplaces (consistent with admin)
+const tealAccent = '#009688';
+
 type SnackbarState = {
   open: boolean;
   message: string;
@@ -121,6 +121,7 @@ const PhysicalWorkplacesPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   // Filter state
@@ -151,7 +152,7 @@ const PhysicalWorkplacesPage = () => {
   const stats = useMemo(() => {
     if (!workplaces) return { total: 0, active: 0, occupied: 0, vacant: 0 };
     const active = workplaces.filter(w => w.isActive);
-    const occupied = active.filter(w => w.currentOccupantEntraId);
+    const occupied = active.filter(w => w.currentOccupantEntraId || w.currentOccupantName);
     return {
       total: workplaces.length,
       active: active.length,
@@ -248,6 +249,198 @@ const PhysicalWorkplacesPage = () => {
     setFilters({});
   };
 
+  // Define columns for AdminDataTable
+  const columns: Column<PhysicalWorkplace>[] = useMemo(() => [
+    {
+      id: 'code',
+      label: 'Code',
+      minWidth: 120,
+      format: (item) => (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: 1.5,
+              bgcolor: isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.1),
+              color: tealAccent,
+            }}
+          >
+            {getWorkplaceTypeIcon(item.type)}
+          </Box>
+          <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, color: tealAccent, fontSize: '0.85rem' }}>
+            {item.code}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      id: 'name',
+      label: 'Naam',
+      minWidth: 150,
+      format: (item) => (
+        <Box>
+          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.85rem' }}>
+            {item.name}
+          </Typography>
+          {item.serviceName && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+              {item.serviceName}
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      id: 'type',
+      label: 'Type',
+      minWidth: 100,
+      format: (item) => (
+        <Chip
+          label={WorkplaceTypeLabels[item.type]}
+          size="small"
+          sx={{
+            height: 22,
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            bgcolor: isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.08),
+            color: tealAccent,
+            border: '1px solid',
+            borderColor: alpha(tealAccent, 0.3),
+          }}
+        />
+      ),
+    },
+    {
+      id: 'buildingName',
+      label: 'Locatie',
+      minWidth: 130,
+      format: (item) => (
+        <Box>
+          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8rem' }}>
+            {item.buildingName || '-'}
+          </Typography>
+          {(item.floor || item.room) && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+              {item.floor && `${item.floor}`}
+              {item.floor && item.room && ' • '}
+              {item.room && `${item.room}`}
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      id: 'currentOccupantName',
+      label: 'Bezetter',
+      minWidth: 140,
+      format: (item) => <WorkplaceOccupantChip workplace={item} showVacant={true} />,
+    },
+    {
+      id: 'fixedAssetCount',
+      label: 'Equipment',
+      minWidth: 110,
+      sortable: false,
+      searchable: false,
+      format: (item) => <EquipmentChip workplace={item} compact={true} />,
+    },
+  ], [isDark]);
+
+  // Custom action render for AdminDataTable
+  const renderActions = (item: PhysicalWorkplace) => (
+    <Stack direction="row" spacing={0.5} justifyContent="center">
+      <Tooltip title={t('physicalWorkplaces.manageAssets')} arrow>
+        <IconButton
+          size="small"
+          onClick={() => handleOpenAssetsDialog(item)}
+          sx={{
+            width: 28,
+            height: 28,
+            bgcolor: isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.08),
+            color: tealAccent,
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              bgcolor: tealAccent,
+              color: '#fff',
+              transform: 'translateY(-1px)',
+              boxShadow: `0 4px 12px ${alpha(tealAccent, 0.4)}`,
+            },
+          }}
+        >
+          <InventoryIcon sx={{ fontSize: 15 }} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={t('common.edit')} arrow>
+        <IconButton
+          size="small"
+          onClick={() => handleOpenDialog(item)}
+          sx={{
+            width: 28,
+            height: 28,
+            bgcolor: isDark ? alpha('#FF7700', 0.15) : alpha('#FF7700', 0.08),
+            color: '#FF7700',
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              bgcolor: '#FF7700',
+              color: '#fff',
+              transform: 'translateY(-1px)',
+              boxShadow: `0 4px 12px ${alpha('#FF7700', 0.4)}`,
+            },
+          }}
+        >
+          <EditIcon sx={{ fontSize: 15 }} />
+        </IconButton>
+      </Tooltip>
+      {(item.currentOccupantEntraId || item.currentOccupantName) && (
+        <Tooltip title={t('physicalWorkplaces.clearOccupant')} arrow>
+          <IconButton
+            size="small"
+            onClick={() => handleOpenClearOccupantDialog(item)}
+            sx={{
+              width: 28,
+              height: 28,
+              bgcolor: isDark ? alpha('#9C27B0', 0.15) : alpha('#9C27B0', 0.08),
+              color: '#9C27B0',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                bgcolor: '#9C27B0',
+                color: '#fff',
+                transform: 'translateY(-1px)',
+                boxShadow: `0 4px 12px ${alpha('#9C27B0', 0.4)}`,
+              },
+            }}
+          >
+            <PersonOffIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+        </Tooltip>
+      )}
+      <Tooltip title={t('common.delete')} arrow>
+        <IconButton
+          size="small"
+          onClick={() => handleOpenDeleteDialog(item)}
+          sx={{
+            width: 28,
+            height: 28,
+            bgcolor: isDark ? alpha('#EF5350', 0.15) : alpha('#EF5350', 0.08),
+            color: '#EF5350',
+            transition: 'all 0.15s ease',
+            '&:hover': {
+              bgcolor: '#EF5350',
+              color: '#fff',
+              transform: 'translateY(-1px)',
+              boxShadow: `0 4px 12px ${alpha('#EF5350', 0.4)}`,
+            },
+          }}
+        >
+          <DeleteIcon sx={{ fontSize: 15 }} />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+
   if (isLoading) return <Loading message={t('physicalWorkplaces.loading')} />;
 
   if (error) {
@@ -309,20 +502,14 @@ const PhysicalWorkplacesPage = () => {
                 borderRadius: 2,
                 border: '1px solid',
                 borderColor: 'divider',
-                bgcolor: (thm) =>
-                  thm.palette.mode === 'dark'
-                    ? 'rgba(255, 215, 0, 0.08)'
-                    : 'rgba(253, 185, 49, 0.08)',
+                bgcolor: isDark ? alpha(tealAccent, 0.08) : alpha(tealAccent, 0.05),
               }}
             >
               <PlaceIcon
                 sx={{
                   fontSize: 28,
-                  color: 'primary.main',
-                  filter: (thm: { palette: { mode: string } }) =>
-                    thm.palette.mode === 'dark'
-                      ? 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.5))'
-                      : 'none',
+                  color: tealAccent,
+                  filter: isDark ? `drop-shadow(0 0 4px ${alpha(tealAccent, 0.5)})` : 'none',
                 }}
               />
             </Box>
@@ -334,125 +521,195 @@ const PhysicalWorkplacesPage = () => {
                 {t('physicalWorkplaces.subtitle')}
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ gap: 1 }}>
               <Chip
                 icon={<PlaceIcon />}
-                label={t('physicalWorkplaces.totalCount', { count: stats.total })}
-                sx={{ fontWeight: 600 }}
+                label={`${stats.total} werkplekken`}
+                sx={{
+                  height: 32,
+                  fontWeight: 700,
+                  bgcolor: tealAccent,
+                  color: '#fff',
+                  '& .MuiChip-icon': { color: '#fff' },
+                }}
               />
               <Chip
                 icon={<PersonIcon />}
-                label={t('physicalWorkplaces.occupiedCount', { count: stats.occupied })}
-                color="success"
+                label={`${stats.occupied} bezet`}
                 variant="outlined"
-                sx={{ fontWeight: 600 }}
+                sx={{
+                  height: 32,
+                  fontWeight: 600,
+                  borderColor: '#4CAF50',
+                  color: '#4CAF50',
+                  '& .MuiChip-icon': { color: '#4CAF50' },
+                }}
               />
               <Chip
                 icon={<DeskIcon />}
-                label={t('physicalWorkplaces.vacantCount', { count: stats.vacant })}
-                color="info"
+                label={`${stats.vacant} vrij`}
                 variant="outlined"
-                sx={{ fontWeight: 600 }}
+                sx={{
+                  height: 32,
+                  fontWeight: 600,
+                  borderColor: '#2196F3',
+                  color: '#2196F3',
+                  '& .MuiChip-icon': { color: '#2196F3' },
+                }}
               />
             </Stack>
           </Stack>
         </CardContent>
       </Card>
 
-      {/* Filters */}
-      <Card elevation={0} sx={{ ...scannerCardSx, mb: 2 }}>
-        <CardContent sx={{ p: 2 }}>
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={1}>
-              <Button
-                startIcon={showFilters ? <FilterListOffIcon /> : <FilterListIcon />}
-                onClick={() => setShowFilters(!showFilters)}
-                size="small"
-              >
-                {t('common.filters')}
-              </Button>
-              {hasActiveFilters && (
-                <Button size="small" onClick={clearFilters} color="secondary">
-                  {t('common.clearFilters')}
-                </Button>
-              )}
-            </Stack>
-            <Button
-              startIcon={<UploadFileIcon />}
-              onClick={() => setBulkImportDialogOpen(true)}
-              size="small"
-              variant="outlined"
-            >
-              {t('physicalWorkplaces.bulk.title')}
-            </Button>
-          </Stack>
+      {/* Advanced Filters - Teal themed */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          mb: 2,
+          p: 1.5,
+          bgcolor: isDark ? alpha(tealAccent, 0.08) : alpha(tealAccent, 0.05),
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: isDark ? alpha(tealAccent, 0.2) : alpha(tealAccent, 0.15),
+        }}
+      >
+        <Button
+          startIcon={showFilters ? <FilterListOffIcon /> : <FilterListIcon />}
+          onClick={() => setShowFilters(!showFilters)}
+          size="small"
+          variant={hasActiveFilters ? 'contained' : 'outlined'}
+          sx={{
+            borderColor: tealAccent,
+            color: hasActiveFilters ? '#fff' : tealAccent,
+            bgcolor: hasActiveFilters ? tealAccent : 'transparent',
+            fontWeight: 600,
+            '&:hover': {
+              borderColor: '#00796b',
+              bgcolor: hasActiveFilters ? '#00796b' : alpha(tealAccent, 0.08),
+            },
+          }}
+        >
+          {t('common.filters')} {hasActiveFilters && `(${Object.values(filters).filter(v => v !== undefined).length})`}
+        </Button>
 
-          <Collapse in={showFilters}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
-              <Box sx={{ minWidth: 200 }}>
-                <BuildingSelect
-                  value={filters.buildingId ?? null}
-                  onChange={(value) => setFilters(prev => ({ ...prev, buildingId: value ?? undefined }))}
-                  label={t('physicalWorkplaces.building')}
-                />
-              </Box>
-              <Box sx={{ minWidth: 200 }}>
-                <ServiceSelect
-                  value={filters.serviceId ?? null}
-                  onChange={(value) => setFilters(prev => ({ ...prev, serviceId: value ?? undefined }))}
-                  label={t('physicalWorkplaces.service')}
-                />
-              </Box>
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>{t('physicalWorkplaces.status')}</InputLabel>
-                <Select<string>
-                  value={filters.isActive === undefined ? '' : filters.isActive ? 'active' : 'inactive'}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFilters(prev => ({
-                      ...prev,
-                      isActive: value === '' ? undefined : value === 'active',
-                    }));
-                  }}
-                  label={t('physicalWorkplaces.status')}
-                >
-                  <MenuItem value="">{t('common.all')}</MenuItem>
-                  <MenuItem value="active">{t('physicalWorkplaces.active')}</MenuItem>
-                  <MenuItem value="inactive">{t('physicalWorkplaces.inactive')}</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>{t('physicalWorkplaces.occupancy')}</InputLabel>
-                <Select<string>
-                  value={filters.hasOccupant === undefined ? '' : filters.hasOccupant ? 'occupied' : 'vacant'}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFilters(prev => ({
-                      ...prev,
-                      hasOccupant: value === '' ? undefined : value === 'occupied',
-                    }));
-                  }}
-                  label={t('physicalWorkplaces.occupancy')}
-                >
-                  <MenuItem value="">{t('common.all')}</MenuItem>
-                  <MenuItem value="occupied">{t('physicalWorkplaces.occupied')}</MenuItem>
-                  <MenuItem value="vacant">{t('physicalWorkplaces.vacant')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Stack>
-          </Collapse>
-        </CardContent>
-      </Card>
+        {hasActiveFilters && (
+          <Button
+            size="small"
+            onClick={clearFilters}
+            variant="outlined"
+            sx={{
+              borderColor: '#9C27B0',
+              color: '#9C27B0',
+              fontWeight: 600,
+              '&:hover': {
+                borderColor: '#7B1FA2',
+                bgcolor: alpha('#9C27B0', 0.08),
+              },
+            }}
+          >
+            {t('common.clearFilters')}
+          </Button>
+        )}
+
+        <Box sx={{ flex: 1 }} />
+
+        <Button
+          startIcon={<UploadFileIcon />}
+          onClick={() => setBulkImportDialogOpen(true)}
+          size="small"
+          variant="contained"
+          sx={{
+            bgcolor: tealAccent,
+            fontWeight: 600,
+            '&:hover': {
+              bgcolor: '#00796b',
+            },
+          }}
+        >
+          {t('physicalWorkplaces.bulk.title')}
+        </Button>
+      </Stack>
+
+      {/* Collapsible Filter Panel */}
+      <Collapse in={showFilters}>
+        <Box
+          sx={{
+            mb: 2,
+            p: 2.5,
+            borderRadius: 2,
+            bgcolor: isDark ? '#1a1f2e' : '#f0f2f5',
+            boxShadow: isDark
+              ? 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03)'
+              : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)',
+          }}
+        >
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Box sx={{ minWidth: 200 }}>
+              <BuildingSelect
+                value={filters.buildingId ?? null}
+                onChange={(value) => setFilters(prev => ({ ...prev, buildingId: value ?? undefined }))}
+                label={t('physicalWorkplaces.building')}
+              />
+            </Box>
+            <Box sx={{ minWidth: 200 }}>
+              <ServiceSelect
+                value={filters.serviceId ?? null}
+                onChange={(value) => setFilters(prev => ({ ...prev, serviceId: value ?? undefined }))}
+                label={t('physicalWorkplaces.service')}
+              />
+            </Box>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>{t('physicalWorkplaces.status')}</InputLabel>
+              <Select<string>
+                value={filters.isActive === undefined ? '' : filters.isActive ? 'active' : 'inactive'}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFilters(prev => ({
+                    ...prev,
+                    isActive: value === '' ? undefined : value === 'active',
+                  }));
+                }}
+                label={t('physicalWorkplaces.status')}
+              >
+                <MenuItem value="">{t('common.all')}</MenuItem>
+                <MenuItem value="active">{t('physicalWorkplaces.active')}</MenuItem>
+                <MenuItem value="inactive">{t('physicalWorkplaces.inactive')}</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>{t('physicalWorkplaces.occupancy')}</InputLabel>
+              <Select<string>
+                value={filters.hasOccupant === undefined ? '' : filters.hasOccupant ? 'occupied' : 'vacant'}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFilters(prev => ({
+                    ...prev,
+                    hasOccupant: value === '' ? undefined : value === 'occupied',
+                  }));
+                }}
+                label={t('physicalWorkplaces.occupancy')}
+              >
+                <MenuItem value="">{t('common.all')}</MenuItem>
+                <MenuItem value="occupied">{t('physicalWorkplaces.occupied')}</MenuItem>
+                <MenuItem value="vacant">{t('physicalWorkplaces.vacant')}</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </Box>
+      </Collapse>
 
       {/* Workplace List */}
       {stats.total === 0 ? (
-        <Paper
-          elevation={0}
+        <Box
           sx={{
             p: 6,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
+            bgcolor: isDark ? '#1a1f2e' : '#f0f2f5',
+            borderRadius: 3,
+            boxShadow: isDark
+              ? '6px 6px 12px rgba(0,0,0,0.5), -3px -3px 8px rgba(255,255,255,0.04)'
+              : '6px 6px 12px rgba(0,0,0,0.1), -3px -3px 8px rgba(255,255,255,0.9)',
             textAlign: 'center',
           }}
         >
@@ -468,10 +725,14 @@ const PhysicalWorkplacesPage = () => {
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
             size="large"
+            sx={{
+              bgcolor: tealAccent,
+              '&:hover': { bgcolor: '#00796b' },
+            }}
           >
             {t('physicalWorkplaces.addWorkplace')}
           </Button>
-        </Paper>
+        </Box>
       ) : (
         <>
           {/* Mobile/Tablet: Card View */}
@@ -482,79 +743,136 @@ const PhysicalWorkplacesPage = () => {
                   key={workplace.id}
                   elevation={0}
                   sx={{
-                    border: '1px solid',
+                    border: '2px solid',
                     borderColor: workplace.isActive ? 'divider' : 'error.light',
-                    borderRadius: 2,
-                    opacity: workplace.isActive ? 1 : 0.7,
-                    transition: 'all 0.2s ease',
+                    borderRadius: 2.5,
+                    opacity: workplace.isActive ? 1 : 0.6,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    overflow: 'hidden',
+                    bgcolor: isDark ? '#232936' : '#ffffff',
                     '&:hover': {
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? '0 8px 32px rgba(255, 215, 0, 0.2)'
-                          : '0 4px 20px rgba(253, 185, 49, 0.3)',
-                      borderColor: 'primary.main',
+                      boxShadow: `0 8px 32px ${alpha(tealAccent, 0.25)}`,
+                      borderColor: tealAccent,
+                      transform: 'translateY(-2px)',
                     },
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <CardContent sx={{ pb: 1, flex: 1, minWidth: 0 }}>
-                      <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-                        {getWorkplaceTypeIcon(workplace.type)}
-                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                          {workplace.code}
-                        </Typography>
-                        {!workplace.isActive && (
-                          <Chip label={t('physicalWorkplaces.inactive')} size="small" color="error" />
-                        )}
+                    <CardContent sx={{ pb: 2, flex: 1, minWidth: 0, p: 2.5 }}>
+                      {/* Code and Status */}
+                      <Stack direction="row" spacing={1.5} alignItems="center" mb={1.5}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 40,
+                            height: 40,
+                            borderRadius: 2,
+                            bgcolor: alpha(tealAccent, isDark ? 0.15 : 0.1),
+                            color: tealAccent,
+                          }}
+                        >
+                          {getWorkplaceTypeIcon(workplace.type)}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 800,
+                              color: tealAccent,
+                              fontSize: '1rem',
+                              letterSpacing: '0.03em',
+                            }}
+                          >
+                            {workplace.code}
+                          </Typography>
+                          {!workplace.isActive && (
+                            <Chip
+                              label="INACTIEF"
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                mt: 0.5,
+                                bgcolor: '#F44336',
+                                color: '#fff',
+                              }}
+                            />
+                          )}
+                        </Box>
                       </Stack>
 
-                      <Typography variant="body1" fontWeight={500} gutterBottom>
+                      {/* Name */}
+                      <Typography variant="body1" fontWeight={700} gutterBottom sx={{ fontSize: '0.95rem' }}>
                         {workplace.name}
                       </Typography>
 
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      {/* Location */}
+                      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 1.5 }}>
                         {workplace.buildingName}
-                        {workplace.floor && ` - ${workplace.floor}`}
-                        {workplace.room && ` - ${workplace.room}`}
+                        {workplace.floor && ` • ${workplace.floor}`}
+                        {workplace.room && ` • ${workplace.room}`}
                       </Typography>
 
+                      {/* Service */}
                       {workplace.serviceName && (
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
                           {workplace.serviceName}
                         </Typography>
                       )}
 
-                      {workplace.currentOccupantName ? (
-                        <Chip
-                          icon={<PersonIcon />}
-                          label={workplace.currentOccupantName}
-                          size="small"
-                          color="success"
-                          sx={{ mt: 1 }}
-                        />
-                      ) : (
-                        <Chip
-                          icon={<DeskIcon />}
-                          label={t('physicalWorkplaces.vacant')}
-                          size="small"
-                          variant="outlined"
-                          sx={{ mt: 1 }}
-                        />
-                      )}
+                      {/* Occupant */}
+                      <Box sx={{ mb: 1.5 }}>
+                        <WorkplaceOccupantChip workplace={workplace} showVacant={true} />
+                      </Box>
+
+                      {/* Equipment */}
+                      <EquipmentChip workplace={workplace} compact={false} />
                     </CardContent>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', pr: 1, pt: 1.5 }}>
-                      <IconButton size="small" onClick={() => handleOpenAssetsDialog(workplace)}>
+                    {/* Actions */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        p: 1.5,
+                        gap: 1,
+                        bgcolor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                      }}
+                    >
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenAssetsDialog(workplace)}
+                        sx={{
+                          bgcolor: alpha(tealAccent, isDark ? 0.12 : 0.08),
+                          color: tealAccent,
+                          '&:hover': { bgcolor: alpha(tealAccent, 0.2) },
+                        }}
+                      >
                         <InventoryIcon fontSize="small" />
                       </IconButton>
-                      <IconButton size="small" onClick={() => handleOpenDialog(workplace)}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDialog(workplace)}
+                        sx={{
+                          bgcolor: alpha('#FF7700', isDark ? 0.12 : 0.08),
+                          color: '#FF7700',
+                          '&:hover': { bgcolor: alpha('#FF7700', 0.2) },
+                        }}
+                      >
                         <EditIcon fontSize="small" />
                       </IconButton>
-                      {workplace.currentOccupantEntraId && (
+                      {(workplace.currentOccupantEntraId || workplace.currentOccupantName) && (
                         <IconButton
                           size="small"
                           onClick={() => handleOpenClearOccupantDialog(workplace)}
-                          color="warning"
+                          sx={{
+                            bgcolor: alpha('#9C27B0', isDark ? 0.12 : 0.08),
+                            color: '#9C27B0',
+                            '&:hover': { bgcolor: alpha('#9C27B0', 0.2) },
+                          }}
                         >
                           <PersonOffIcon fontSize="small" />
                         </IconButton>
@@ -562,7 +880,11 @@ const PhysicalWorkplacesPage = () => {
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDeleteDialog(workplace)}
-                        color="error"
+                        sx={{
+                          bgcolor: alpha('#F44336', isDark ? 0.12 : 0.08),
+                          color: '#F44336',
+                          '&:hover': { bgcolor: alpha('#F44336', 0.15) },
+                        }}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -573,129 +895,19 @@ const PhysicalWorkplacesPage = () => {
             </Box>
           )}
 
-          {/* Desktop: Table View */}
+          {/* Desktop: AdminDataTable */}
           {!isTablet && (
-            <TableContainer
-              component={Paper}
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-              }}
-            >
-              <Table>
-                <TableHead>
-                  <TableRow
-                    sx={{
-                      backgroundColor: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255, 119, 0, 0.05)'
-                          : 'rgba(255, 119, 0, 0.02)',
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.code')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.name')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.type')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.building')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.occupant')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('physicalWorkplaces.assets')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>{t('common.actions')}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {workplaces?.map((workplace) => (
-                    <TableRow
-                      key={workplace.id}
-                      sx={{
-                        opacity: workplace.isActive ? 1 : 0.6,
-                        '&:hover': {
-                          backgroundColor: (theme) =>
-                            theme.palette.mode === 'dark'
-                              ? 'rgba(255, 119, 0, 0.05)'
-                              : 'rgba(255, 119, 0, 0.02)',
-                        },
-                      }}
-                    >
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {getWorkplaceTypeIcon(workplace.type)}
-                          <Typography fontWeight={600} color="primary.main">
-                            {workplace.code}
-                          </Typography>
-                          {!workplace.isActive && (
-                            <Chip label={t('physicalWorkplaces.inactive')} size="small" color="error" />
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell>{workplace.name}</TableCell>
-                      <TableCell>{WorkplaceTypeLabels[workplace.type]}</TableCell>
-                      <TableCell>
-                        {workplace.buildingName}
-                        {workplace.floor && `, ${workplace.floor}`}
-                        {workplace.room && ` (${workplace.room})`}
-                      </TableCell>
-                      <TableCell>{workplace.serviceName || '-'}</TableCell>
-                      <TableCell>
-                        {workplace.currentOccupantName ? (
-                          <Chip
-                            icon={<PersonIcon />}
-                            label={workplace.currentOccupantName}
-                            size="small"
-                            color="success"
-                          />
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            {t('physicalWorkplaces.vacant')}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={t('physicalWorkplaces.manageAssets')}>
-                          <Chip
-                            icon={<InventoryIcon />}
-                            label={workplace.fixedAssetCount}
-                            size="small"
-                            variant="outlined"
-                            onClick={() => handleOpenAssetsDialog(workplace)}
-                            sx={{ cursor: 'pointer' }}
-                          />
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                        <Tooltip title={t('physicalWorkplaces.manageAssets')}>
-                          <IconButton size="small" onClick={() => handleOpenAssetsDialog(workplace)}>
-                            <InventoryIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <IconButton size="small" onClick={() => handleOpenDialog(workplace)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        {workplace.currentOccupantEntraId && (
-                          <Tooltip title={t('physicalWorkplaces.clearOccupant')}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenClearOccupantDialog(workplace)}
-                              color="warning"
-                            >
-                              <PersonOffIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDeleteDialog(workplace)}
-                          color="error"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <AdminDataTable
+              data={workplaces || []}
+              columns={columns}
+              searchPlaceholder="Zoek werkplekken (code, naam, gebouw)..."
+              emptyMessage="Geen werkplekken gevonden"
+              getItemId={(item) => item.id}
+              showActiveStatus
+              defaultRowsPerPage={15}
+              renderActions={renderActions}
+              actionsColumnWidth={140}
+            />
           )}
         </>
       )}
@@ -703,7 +915,6 @@ const PhysicalWorkplacesPage = () => {
       {/* Floating Action Button */}
       {stats.total > 0 && (
         <Fab
-          color="primary"
           aria-label="add workplace"
           onClick={() => handleOpenDialog()}
           sx={{
@@ -711,11 +922,11 @@ const PhysicalWorkplacesPage = () => {
             bottom: 80,
             right: 24,
             zIndex: 1100,
-            boxShadow: (theme) =>
-              theme.palette.mode === 'dark'
-                ? '0 4px 20px rgba(255, 119, 0, 0.4)'
-                : '0 4px 20px rgba(255, 119, 0, 0.3)',
+            bgcolor: tealAccent,
+            color: '#fff',
+            boxShadow: `0 4px 20px ${alpha(tealAccent, 0.4)}`,
             '&:hover': {
+              bgcolor: '#00796b',
               transform: 'scale(1.1)',
             },
             transition: 'all 0.2s ease',

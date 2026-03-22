@@ -65,6 +65,11 @@ export interface PhysicalWorkplace {
   currentOccupantName?: string;
   currentOccupantEmail?: string;
   occupiedSince?: string;
+  // Occupant's device info
+  occupantDeviceSerial?: string;
+  occupantDeviceBrand?: string;
+  occupantDeviceModel?: string;
+  occupantDeviceAssetCode?: string;
   isActive: boolean;
   fixedAssetCount: number;
   createdAt: string;
