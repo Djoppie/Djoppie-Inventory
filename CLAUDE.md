@@ -269,6 +269,32 @@ npm run lint -- --fix
 # When added, typically: npm test
 ```
 
+**Manual Deployment (SWA CLI)**:
+
+Use this when the Azure DevOps pipeline is not available or for quick deployments:
+
+```bash
+# 1. Build the frontend
+cd src/frontend
+npm run build
+
+# 2. Get the SWA deployment token (requires Azure CLI login)
+az staticwebapp secrets list --name swa-djoppie-inventory-dev --query "properties.apiKey" -o tsv
+
+# 3. Deploy using SWA CLI
+npx @azure/static-web-apps-cli deploy ./dist \
+  --deployment-token "<TOKEN_FROM_STEP_2>" \
+  --env production
+```
+
+Alternative one-liner (if logged into Azure CLI):
+
+```bash
+cd src/frontend && npm run build && npx @azure/static-web-apps-cli deploy ./dist --deployment-token "$(az staticwebapp secrets list --name swa-djoppie-inventory-dev --query 'properties.apiKey' -o tsv)" --env production
+```
+
+Frontend URL: https://blue-cliff-031d65b03.1.azurestaticapps.net
+
 ## Environment Configuration
 
 ### Secret Management
