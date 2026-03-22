@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
@@ -219,11 +220,11 @@ public class ServicesController : ControllerBase
             _logger.LogInformation("Starting service sync from Entra mail groups");
 
             var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
-            var existingCodes = existingServices.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+            var existingCodes = existingServices.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
 
             // Get all sectors for linking services
             var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-            var sectorsByCode = sectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+            var sectorsByCode = sectors.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
 
             // Get sector groups to find nested service groups
             var sectorGroups = await _graphUserService.GetSectorGroupsAsync();
@@ -241,9 +242,10 @@ public class ServicesController : ControllerBase
             {
                 if (string.IsNullOrEmpty(sectorGroup.Id) || string.IsNullOrEmpty(sectorGroup.DisplayName)) continue;
 
-                var sectorCode = sectorGroup.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
-                    ? sectorGroup.DisplayName.Substring("MG-SECTOR-".Length).ToUpperInvariant()
-                    : sectorGroup.DisplayName.ToUpperInvariant();
+                var rawSectorCode = sectorGroup.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
+                    ? sectorGroup.DisplayName.Substring("MG-SECTOR-".Length)
+                    : sectorGroup.DisplayName;
+                var sectorCode = RemoveDiacritics(rawSectorCode).ToUpperInvariant();
 
                 if (!sectorsByCode.TryGetValue(sectorCode, out var sector))
                 {
@@ -262,9 +264,10 @@ public class ServicesController : ControllerBase
 
                     // Extract service code and name from group name (MG-XXX -> XXX)
                     var groupName = serviceGroup.DisplayName;
-                    var code = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
-                        ? groupName.Substring("MG-".Length).ToUpperInvariant()
-                        : groupName.ToUpperInvariant();
+                    var rawCode = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
+                        ? groupName.Substring("MG-".Length)
+                        : groupName;
+                    var code = RemoveDiacritics(rawCode).ToUpperInvariant();
 
                     // Use clean name without MG- prefix
                     var name = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
@@ -323,9 +326,10 @@ public class ServicesController : ControllerBase
                 if (string.IsNullOrEmpty(serviceGroup.DisplayName) || string.IsNullOrEmpty(serviceGroup.Id)) continue;
 
                 var groupName = serviceGroup.DisplayName;
-                var code = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
-                    ? groupName.Substring("MG-".Length).ToUpperInvariant()
-                    : groupName.ToUpperInvariant();
+                var rawCode = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
+                    ? groupName.Substring("MG-".Length)
+                    : groupName;
+                var code = RemoveDiacritics(rawCode).ToUpperInvariant();
 
                 // Skip if already processed in phase 1
                 if (processedCodes.Contains(code)) continue;
@@ -440,10 +444,11 @@ public class ServicesController : ControllerBase
         var results = new List<ServiceImportRowResult>();
 
         // Build lookup dictionaries - only store IDs, not tracked entities
+        // Normalize codes to remove diacritics for consistent matching
         var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-        var sectorIdsByCode = sectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s.Id);
+        var sectorIdsByCode = sectors.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
         var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
-        var existingServicesByCode = existingServices.ToDictionary(s => s.Code.ToUpperInvariant(), s => s.Id);
+        var existingServicesByCode = existingServices.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
 
         using var reader = new StreamReader(file.OpenReadStream());
         var headerLine = await reader.ReadLineAsync(cancellationToken);
@@ -474,9 +479,9 @@ public class ServicesController : ControllerBase
                     continue;
                 }
 
-                var code = values[0].Trim().ToUpperInvariant();
+                var code = RemoveDiacritics(values[0].Trim()).ToUpperInvariant();
                 var name = values[1].Trim();
-                var sectorCode = values.Length > 2 ? values[2].Trim().ToUpperInvariant() : "";
+                var sectorCode = values.Length > 2 ? RemoveDiacritics(values[2].Trim()).ToUpperInvariant() : "";
                 var sortOrder = values.Length > 3 && int.TryParse(values[3].Trim(), out var so) ? so : 0;
 
                 if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
@@ -599,6 +604,29 @@ public class ServicesController : ControllerBase
         if (tabCount > commaCount)
             return '\t';
         return ',';
+    }
+
+    /// <summary>
+    /// Removes diacritics/accents from a string (e.g., "financiën" → "financien")
+    /// </summary>
+    private static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(normalizedString.Length);
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 }
 

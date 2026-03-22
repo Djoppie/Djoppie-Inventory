@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
@@ -193,8 +195,9 @@ public class SectorsController : ControllerBase
             var existingSectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
 
             // Store only IDs and essential data to avoid EF Core tracking conflicts
+            // Normalize codes to remove diacritics for consistent matching
             var existingCodes = existingSectors.ToDictionary(
-                s => s.Code.ToUpperInvariant(),
+                s => RemoveDiacritics(s.Code).ToUpperInvariant(),
                 s => new { s.Id, s.Name, s.IsActive, s.SortOrder });
 
             int created = 0;
@@ -206,10 +209,12 @@ public class SectorsController : ControllerBase
                 if (string.IsNullOrEmpty(group.DisplayName)) continue;
 
                 // Extract sector code from group name (MG-SECTOR-XXX -> XXX)
+                // Normalize to remove diacritics (e.g., "financiën" -> "FINANCIEN")
                 var groupName = group.DisplayName;
-                var code = groupName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
-                    ? groupName.Substring("MG-SECTOR-".Length).ToUpperInvariant()
-                    : groupName.ToUpperInvariant();
+                var rawCode = groupName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
+                    ? groupName.Substring("MG-SECTOR-".Length)
+                    : groupName;
+                var code = RemoveDiacritics(rawCode).ToUpperInvariant();
 
                 // Use display name or mail nickname as the sector name
                 var name = group.DisplayName;
@@ -245,5 +250,28 @@ public class SectorsController : ControllerBase
             _logger.LogError(ex, "Failed to sync sectors from Entra");
             return StatusCode(500, new { error = "Failed to sync sectors from Entra", details = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Removes diacritics/accents from a string (e.g., "financiën" → "financien")
+    /// </summary>
+    private static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(normalizedString.Length);
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 }
