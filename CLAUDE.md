@@ -295,6 +295,33 @@ cd src/frontend && npm run build && npx @azure/static-web-apps-cli deploy ./dist
 
 Frontend URL: https://blue-cliff-031d65b03.1.azurestaticapps.net
 
+### > Backend Manual Deployment
+
+Use this when the Azure DevOps pipeline is not available or for quick deployments:
+
+```bash
+# 1. Build the backend
+cd src/backend/DjoppieInventory.API
+dotnet publish -c Release -o ./publish
+
+# 2. Create zip package (PowerShell)
+powershell -Command "Compress-Archive -Path './publish/*' -DestinationPath './deploy.zip' -Force"
+
+# 3. Deploy to Azure App Service (requires Azure CLI login)
+az webapp deployment source config-zip \
+  --resource-group rg-djoppie-inventory-dev \
+  --name app-djoppie-inventory-dev-api-k5xdqp \
+  --src deploy.zip
+```
+
+Alternative one-liner (if logged into Azure CLI):
+
+```bash
+cd src/backend/DjoppieInventory.API && dotnet publish -c Release -o ./publish && powershell -Command "Compress-Archive -Path './publish/*' -DestinationPath './deploy.zip' -Force" && az webapp deployment source config-zip --resource-group rg-djoppie-inventory-dev --name app-djoppie-inventory-dev-api-k5xdqp --src deploy.zip
+```
+
+Backend URL: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net
+
 ## Environment Configuration
 
 ### Secret Management
