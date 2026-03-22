@@ -108,7 +108,21 @@
       "Bash(dotnet ef migrations script:*)",
       "Bash(az webapp show:*)",
       "Bash(az group list:*)",
-      "Bash(AZURE_SQL_CONNECTION=\"Server=tcp:sql-djoppie-inventory-dev-k5xdqp.database.windows.net,1433;Initial Catalog=sqldb-djoppie-inventory-dev;Persist Security Info=False;User ID=sqladmin;Password=Dj0ppenbeek026;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;\" dotnet ef:*)"
+      "Bash(AZURE_SQL_CONNECTION=\"Server=tcp:sql-djoppie-inventory-dev-k5xdqp.database.windows.net,1433;Initial Catalog=sqldb-djoppie-inventory-dev;Persist Security Info=False;User ID=sqladmin;Password=Dj0ppenbeek026;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;\" dotnet ef:*)",
+      "Bash(find:*)",
+      "Bash(dir \"C:\\\\Djoppie\\\\Djoppie-Inventory\\\\src\\\\frontend\\\\src\\\\hooks\")",
+      "Bash(git log:*)",
+      "Bash(az pipelines:*)",
+      "WebFetch(domain:dev.azure.com)",
+      "Bash(for i in {10..20})",
+      "Bash(do echo \"=== Log $i ===\")",
+      "Bash(done)",
+      "Bash(for i in {25..35})",
+      "Bash(az webapp deployment list-publishing-profiles:*)",
+      "Bash(az monitor app-insights component list:*)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(az group:*)"
     ]
   }
 }
+
