@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger';
 import { useMsal } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
-import { tokenRequest } from '../config/authConfig';
+import { loginRequest, tokenRequest } from '../config/authConfig';
 
 /**
  * Custom hook for authentication operations
@@ -52,9 +52,7 @@ export const useAuth = () => {
    */
   const login = async () => {
     try {
-      await instance.loginRedirect({
-        scopes: ['User.Read'],
-      });
+      await instance.loginRedirect(loginRequest);
     } catch (error) {
       logger.error('Login failed:', error);
       throw error;

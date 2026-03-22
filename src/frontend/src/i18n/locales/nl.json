@@ -21,16 +21,30 @@
     "actions": "Acties",
     "saving": "Opslaan...",
     "deleting": "Verwijderen...",
+    "downloading": "Downloaden...",
+    "exporting": "Exporteren...",
     "or": "of",
     "rowsPerPage": "Rijen per pagina",
-    "backToAsset": "Terug naar Activa"
+    "backToAsset": "Terug naar Activa",
+    "backToDashboard": "Terug naar Dashboard",
+    "filters": "Filters",
+    "clearFilters": "Filters wissen",
+    "all": "Alle",
+    "processing": "Verwerken...",
+    "confirm": "Bevestigen",
+    "clear": "Wissen"
+  },
+  "validation": {
+    "required": "Verplicht veld"
   },
   "navigation": {
     "dashboard": "Dashboard",
     "scan": "Scannen",
     "assets": "Activa",
     "templates": "Sjablonen",
+    "laptopSwap": "Swap",
     "rollouts": "Uitrol",
+    "workplaces": "Werkplekken",
     "admin": "Beheer"
   },
   "dashboard": {
@@ -891,6 +905,127 @@
       "clear": "Terminal wissen"
     }
   },
+  "physicalWorkplaces": {
+    "title": "Werkplekken",
+    "subtitle": "Beheer fysieke werkpleklocaties en bezetting",
+    "loading": "Werkplekken laden...",
+    "errorLoading": "Fout bij laden werkplekken",
+    "noWorkplaces": "Geen werkplekken gevonden",
+    "noWorkplacesDesc": "Maak uw eerste werkplek aan om te beginnen",
+    "addWorkplace": "Werkplek toevoegen",
+    "addWorkplaceDesc": "Maak een nieuwe fysieke werkplek aan",
+    "editWorkplace": "Werkplek bewerken",
+    "editWorkplaceDesc": "Pas de werkplekconfiguratie aan",
+    "deleteWorkplace": "Werkplek verwijderen",
+    "code": "Code",
+    "codeHint": "Unieke identificatie (bijv. BZ-L01)",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "building": "Gebouw",
+    "service": "Dienst",
+    "floor": "Verdieping",
+    "room": "Lokaal/Kamer",
+    "type": "Type werkplek",
+    "monitorCount": "Aantal monitoren",
+    "hasDockingStation": "Docking station aanwezig",
+    "isActive": "Actief",
+    "active": "Actief",
+    "inactive": "Inactief",
+    "occupant": "Bezetter",
+    "occupied": "Bezet",
+    "vacant": "Vrij",
+    "status": "Status",
+    "occupancy": "Bezetting",
+    "assets": "Assets",
+    "identification": "Identificatie",
+    "location": "Locatie",
+    "configuration": "Configuratie",
+    "createSuccess": "Werkplek succesvol aangemaakt",
+    "updateSuccess": "Werkplek succesvol bijgewerkt",
+    "deleteSuccess": "Werkplek succesvol verwijderd",
+    "saveError": "Fout bij opslaan werkplek",
+    "deleteError": "Fout bij verwijderen werkplek",
+    "deleteConfirm": "Weet je zeker dat je werkplek '{{name}}' ({{code}}) wilt verwijderen?",
+    "deleteWarningAssets": "Let op: Er zijn {{count}} assets gekoppeld aan deze werkplek",
+    "clearOccupant": "Bezetter verwijderen",
+    "clearOccupantConfirm": "Wil je {{name}} verwijderen als bezetter van {{workplace}}?",
+    "clearOccupantError": "Fout bij verwijderen bezetter",
+    "occupantCleared": "Bezetter succesvol verwijderd",
+    "totalCount": "{{count}} werkplekken",
+    "occupiedCount": "{{count}} bezet",
+    "vacantCount": "{{count}} vrij",
+    "manageAssets": "Assets beheren",
+    "assignedAssets": "Toegewezen Assets",
+    "addAsset": "Asset toevoegen",
+    "searchAssetPlaceholder": "Zoek op code, naam, serienummer...",
+    "noAssetsAssigned": "Geen assets toegewezen aan deze werkplek",
+    "noAvailableAssets": "Geen beschikbare assets gevonden",
+    "allAssetsAssigned": "Alle assets zijn al toegewezen aan werkplekken",
+    "assetAssigned": "Asset {{asset}} succesvol toegewezen",
+    "assetUnassigned": "Asset {{asset}} succesvol ontkoppeld",
+    "assignError": "Fout bij toewijzen asset",
+    "unassignError": "Fout bij ontkoppelen asset",
+    "errorLoadingAssets": "Fout bij laden assets",
+    "equipment": {
+      "title": "Apparatuur",
+      "dockingStation": "Docking Station",
+      "monitor1": "Monitor 1",
+      "monitor2": "Monitor 2",
+      "monitor3": "Monitor 3",
+      "keyboard": "Toetsenbord",
+      "mouse": "Muis",
+      "selectAsset": "Selecteer asset...",
+      "noSlotsConfigured": "Geen apparatuur slots geconfigureerd voor dit werkplektype"
+    },
+    "occupier": {
+      "title": "Hoofdgebruiker",
+      "noOccupier": "Geen gebruiker toegewezen",
+      "assignOccupier": "Wijs een gebruiker toe",
+      "changeOccupier": "Wijzig gebruiker",
+      "clearOccupier": "Verwijder gebruiker",
+      "searchPlaceholder": "Zoek op naam of e-mail...",
+      "typeToSearch": "Typ minimaal 2 tekens om te zoeken",
+      "noUsersFound": "Geen gebruikers gevonden",
+      "since": "Sinds:"
+    },
+    "bulk": {
+      "title": "Werkplekken Bulk Importeren",
+      "subtitle": "Importeer werkplekken via CSV of maak er meerdere tegelijk aan",
+      "csvImport": "CSV Importeren",
+      "quickAdd": "Snel Toevoegen",
+      "naming": "Naamgeving",
+      "step1": "Stap 1: Download de sjabloon",
+      "step2": "Stap 2: Upload uw ingevulde CSV",
+      "downloadTemplate": "Download Sjabloon",
+      "templateDownloaded": "Sjabloon succesvol gedownload",
+      "templateError": "Fout bij downloaden sjabloon",
+      "templateHint": "De sjabloon bevat geldige gebouw- en dienstcodes",
+      "exportCurrent": "Exporteer Huidige",
+      "exportSuccess": "Werkplekken succesvol geëxporteerd",
+      "exportError": "Fout bij exporteren werkplekken",
+      "selectFile": "Selecteer CSV Bestand",
+      "importNow": "Werkplekken Importeren",
+      "importSuccess": "{{count}} werkplekken succesvol geimporteerd",
+      "importPartial": "{{success}} werkplekken geimporteerd, {{errors}} fouten",
+      "importFailed": "Import mislukt - geen werkplekken aangemaakt",
+      "importError": "Fout tijdens import",
+      "importResult": "{{success}} van {{total}} werkplekken geimporteerd ({{errors}} fouten)",
+      "quickAddHint": "Maak snel meerdere werkplekken met opeenvolgende codes voor een gebouw/dienst",
+      "codePrefix": "Code Voorvoegsel",
+      "codePrefixHint": "bijv. GH-BZ-L maakt GH-BZ-L01, GH-BZ-L02, etc.",
+      "startNumber": "Startnummer",
+      "count": "Aantal",
+      "nameTemplate": "Naam Sjabloon",
+      "nameTemplateHint": "Gebruik {n} voor het nummer, bijv. 'Loket {n} Burgerzaken'",
+      "preview": "Voorbeeld:",
+      "createWorkplaces": "{{count}} Werkplekken Aanmaken",
+      "createSuccess": "{{count}} werkplekken succesvol aangemaakt",
+      "createPartial": "{{success}} werkplekken aangemaakt, {{errors}} fouten",
+      "createFailed": "Aanmaken mislukt - geen werkplekken aangemaakt",
+      "createError": "Fout bij aanmaken werkplekken",
+      "createResult": "{{success}} werkplekken aangemaakt ({{errors}} fouten)"
+    }
+  },
   "bulkEdit": {
     "title": "Bulk Wijzigen Assets",
     "editSelected": "Geselecteerde Wijzigen",
@@ -915,5 +1050,113 @@
     "successMessage": "{{count}} assets succesvol bijgewerkt",
     "partialSuccess": "{{updated}} assets bijgewerkt, {{failed}} mislukt",
     "errors": "Fouten:"
+  },
+  "deployment": {
+    "title": "Laptop Swap / Onboarding",
+    "subtitle": "Voer een laptop swap uit of onboard een nieuwe gebruiker",
+    "mode": {
+      "label": "Modus",
+      "onboarding": "Onboarding",
+      "onboardingDesc": "Nieuwe medewerker krijgt laptop (zonder oud apparaat)",
+      "swap": "Swap",
+      "swapDesc": "Vervang oude laptop door nieuwe"
+    },
+    "user": {
+      "title": "Gebruiker",
+      "search": "Zoek gebruiker...",
+      "searchHint": "Zoek op naam of e-mail in Microsoft Entra",
+      "selected": "Geselecteerde gebruiker",
+      "noUserSelected": "Geen gebruiker geselecteerd",
+      "currentAssets": "Huidige assets van deze gebruiker"
+    },
+    "oldLaptop": {
+      "title": "Oud Apparaat",
+      "select": "Selecteer oud apparaat",
+      "noOldLaptop": "Geen oud apparaat",
+      "selectFromList": "Selecteer uit lijst van gebruikersapparaten",
+      "newStatus": "Nieuwe status voor oud apparaat",
+      "statusOptions": {
+        "stock": "Stock (terug in voorraad)",
+        "defect": "Defect (kapot)",
+        "uitdienst": "Uit dienst (afvoeren)"
+      }
+    },
+    "newLaptop": {
+      "title": "Nieuw Apparaat",
+      "search": "Zoek beschikbare laptop...",
+      "searchHint": "Zoek op code, serienummer of naam",
+      "noNewLaptop": "Geen nieuw apparaat geselecteerd",
+      "availableCount": "{{count}} laptops beschikbaar"
+    },
+    "workplace": {
+      "title": "Werkplek (optioneel)",
+      "select": "Selecteer werkplek",
+      "noWorkplace": "Geen werkplek",
+      "updateEquipment": "Werkplek apparatuur bijwerken",
+      "currentOccupant": "Huidige bezetter",
+      "willUpdateOccupant": "Bezetter wordt bijgewerkt naar nieuwe gebruiker"
+    },
+    "equipment": {
+      "title": "Werkplek Apparatuur",
+      "updateEquipment": "Apparatuur bijwerken",
+      "noChanges": "Geen wijzigingen aan apparatuur"
+    },
+    "occupantConflict": {
+      "title": "Bezetter Conflict",
+      "message": "Deze werkplek is momenteel bezet door {{currentOccupant}}.",
+      "question": "Wilt u de bezetter bijwerken naar {{newOccupant}}?",
+      "confirmUpdate": "Ja, bezetter bijwerken",
+      "cancel": "Annuleren"
+    },
+    "execute": {
+      "button": "Deployment Uitvoeren",
+      "executing": "Deployment uitvoeren...",
+      "confirmTitle": "Deployment Bevestigen",
+      "confirmSwap": "U staat op het punt om de laptop van {{userName}} te verwisselen.",
+      "confirmOnboarding": "U staat op het punt om {{userName}} te onboarden met een nieuwe laptop.",
+      "oldDevice": "Oud apparaat: {{device}} → {{status}}",
+      "newDevice": "Nieuw apparaat: {{device}}",
+      "workplaceUpdate": "Werkplek: {{workplace}}"
+    },
+    "success": {
+      "title": "Deployment Succesvol",
+      "swapComplete": "Laptop swap succesvol voltooid voor {{userName}}",
+      "onboardingComplete": "Onboarding succesvol voltooid voor {{userName}}",
+      "viewHistory": "Bekijk geschiedenis"
+    },
+    "error": {
+      "title": "Deployment Mislukt",
+      "generic": "Er is een fout opgetreden tijdens de deployment",
+      "noUser": "Selecteer een gebruiker",
+      "noNewLaptop": "Selecteer een nieuw apparaat",
+      "noOldLaptop": "Selecteer het oude apparaat voor swap",
+      "retry": "Opnieuw proberen"
+    },
+    "history": {
+      "title": "Deployment Geschiedenis",
+      "subtitle": "Overzicht van alle laptop swaps en onboardings",
+      "filters": "Filters",
+      "dateRange": "Datumbereik",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "modeFilter": "Filter op modus",
+      "allModes": "Alle modi",
+      "noHistory": "Geen deployment geschiedenis gevonden",
+      "columns": {
+        "date": "Datum",
+        "mode": "Modus",
+        "user": "Gebruiker",
+        "oldDevice": "Oud Apparaat",
+        "newDevice": "Nieuw Apparaat",
+        "workplace": "Werkplek",
+        "performedBy": "Uitgevoerd door"
+      },
+      "export": "Exporteren naar CSV"
+    },
+    "validation": {
+      "userRequired": "Gebruiker is verplicht",
+      "newLaptopRequired": "Nieuw apparaat is verplicht",
+      "oldLaptopRequiredForSwap": "Oud apparaat is verplicht voor swap modus"
+    }
   }
 }

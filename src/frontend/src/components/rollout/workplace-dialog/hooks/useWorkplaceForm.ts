@@ -21,6 +21,7 @@ interface UseWorkplaceFormReturn {
   setServiceId: (value: number | undefined) => void;
   setScheduledDate: (value: string | undefined) => void;
   setWorkplaceStatus: (status: RolloutWorkplaceStatus) => void;
+  setPhysicalWorkplaceId: (value: number | undefined) => void;
 
   // Device state setters
   setOldDevices: (devices: OldDeviceConfig[]) => void;
@@ -35,6 +36,7 @@ interface UseWorkplaceFormReturn {
   isFormValid: boolean;
   hasTemplateErrors: boolean;
   hasDeviceConfigured: boolean;
+  hasWorkplaceFixedWithoutPhysicalWorkplace: boolean;
 }
 
 const initialState: WorkplaceFormState = {
@@ -44,6 +46,7 @@ const initialState: WorkplaceFormState = {
   serviceId: undefined,
   scheduledDate: undefined,
   workplaceStatus: 'Pending',
+  physicalWorkplaceId: undefined,
   oldDevices: [],
   configItems: [],
   returningOldDevice: false,
@@ -75,6 +78,10 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const setWorkplaceStatus = useCallback((status: RolloutWorkplaceStatus) => {
     setState(prev => ({ ...prev, workplaceStatus: status }));
+  }, []);
+
+  const setPhysicalWorkplaceId = useCallback((value: number | undefined) => {
+    setState(prev => ({ ...prev, physicalWorkplaceId: value }));
   }, []);
 
   // Device state setters
@@ -130,6 +137,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
       serviceId: workplace.serviceId,
       scheduledDate: workplace.scheduledDate || undefined,
       workplaceStatus: workplace.status,
+      physicalWorkplaceId: workplace.physicalWorkplaceId,
       oldDevices,
       configItems,
       returningOldDevice: oldDevicePlans.length > 0,
@@ -156,6 +164,18 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const hasDeviceConfigured = hasConfigItemConfigured || hasOldDeviceConfigured;
 
+  // Equipment types that are assigned to the user (employee takes it with them)
+  // All other equipment types are workplace-fixed (docking, monitor, keyboard, mouse)
+  const USER_ASSIGNED_EQUIPMENT = ['laptop', 'desktop'];
+
+  // Check if workplace-fixed assets are configured but no physical workplace is selected
+  const hasWorkplaceFixedWithoutPhysicalWorkplace = state.configItems.some(item => {
+    const isWorkplaceFixed = !USER_ASSIGNED_EQUIPMENT.includes(item.equipmentType);
+    const isConfigured = (item.mode === 'link' && item.linkedAsset) ||
+      (item.mode === 'create' && (item.template || item.brand || item.serialNumber));
+    return isWorkplaceFixed && isConfigured && !state.physicalWorkplaceId;
+  });
+
   const isFormValid = state.userName.trim() !== '' && !hasTemplateErrors;
 
   return {
@@ -166,6 +186,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     setServiceId,
     setScheduledDate,
     setWorkplaceStatus,
+    setPhysicalWorkplaceId,
     setOldDevices,
     setConfigItems,
     setReturningOldDevice,
@@ -174,5 +195,6 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     isFormValid,
     hasTemplateErrors,
     hasDeviceConfigured,
+    hasWorkplaceFixedWithoutPhysicalWorkplace,
   };
 }

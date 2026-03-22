@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -24,7 +24,7 @@ interface AssetCardProps {
   onSelectionChange?: (assetId: number, selected: boolean) => void;
 }
 
-const AssetCard = ({ asset, selectable = false, selected = false, onSelectionChange }: AssetCardProps) => {
+const AssetCard = React.memo(function AssetCard({ asset, selectable = false, selected = false, onSelectionChange }: AssetCardProps) {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
@@ -340,6 +340,6 @@ const AssetCard = ({ asset, selectable = false, selected = false, onSelectionCha
       </CardActionArea>
     </Card>
   );
-};
+});
 
 export default AssetCard;

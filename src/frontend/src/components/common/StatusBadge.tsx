@@ -1,3 +1,4 @@
+import React from 'react';
 import { Chip } from '@mui/material';
 import { AssetStatus } from '../../types/asset.types';
 
@@ -6,7 +7,7 @@ interface StatusBadgeProps {
   size?: 'small' | 'medium';
 }
 
-const StatusBadge = ({ status, size = 'small' }: StatusBadgeProps) => {
+const StatusBadge = React.memo(function StatusBadge({ status, size = 'small' }: StatusBadgeProps) {
   // Define color schemes for each status
   const getStatusStyle = () => {
     switch (status) {
@@ -141,6 +142,6 @@ const StatusBadge = ({ status, size = 'small' }: StatusBadgeProps) => {
       }}
     />
   );
-};
+});
 
 export default StatusBadge;

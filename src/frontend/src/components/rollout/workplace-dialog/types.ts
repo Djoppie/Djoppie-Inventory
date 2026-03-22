@@ -41,6 +41,8 @@ export interface WorkplaceFormState {
   serviceId: number | undefined;
   scheduledDate: string | undefined;
   workplaceStatus: RolloutWorkplaceStatus;
+  /** Linked physical workplace ID */
+  physicalWorkplaceId: number | undefined;
   oldDevices: OldDeviceConfig[];
   configItems: AssetConfigItem[];
   returningOldDevice: boolean;

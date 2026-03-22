@@ -17,12 +17,14 @@ import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
+import PlaceIcon from '@mui/icons-material/Place';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CategoriesTab from '../components/admin/CategoriesTab';
 import AssetTypesTab from '../components/admin/AssetTypesTab';
 import BuildingsTab from '../components/admin/BuildingsTab';
 import SectorsTab from '../components/admin/SectorsTab';
 import ServicesTab from '../components/admin/ServicesTab';
+import PhysicalWorkplacesTab from '../components/admin/PhysicalWorkplacesTab';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -188,25 +190,33 @@ const AdminPage = () => {
             aria-controls="admin-tabpanel-1"
           />
           <Tab
-            icon={<BusinessIcon />}
+            icon={<AccountTreeIcon />}
             iconPosition="start"
-            label="Buildings"
+            label="Sectors"
             id="admin-tab-2"
             aria-controls="admin-tabpanel-2"
           />
           <Tab
-            icon={<AccountTreeIcon />}
+            icon={<MiscellaneousServicesIcon />}
             iconPosition="start"
-            label="Sectors"
+            label="Diensten"
             id="admin-tab-3"
             aria-controls="admin-tabpanel-3"
           />
           <Tab
-            icon={<MiscellaneousServicesIcon />}
+            icon={<PlaceIcon />}
             iconPosition="start"
-            label="Services"
+            label="Werkplekken"
             id="admin-tab-4"
             aria-controls="admin-tabpanel-4"
+            sx={{ color: '#009688', '&.Mui-selected': { color: '#009688' } }}
+          />
+          <Tab
+            icon={<BusinessIcon />}
+            iconPosition="start"
+            label="Gebouwen"
+            id="admin-tab-5"
+            aria-controls="admin-tabpanel-5"
           />
         </Tabs>
 
@@ -218,13 +228,16 @@ const AdminPage = () => {
             <AssetTypesTab />
           </TabPanel>
           <TabPanel value={currentTab} index={2}>
-            <BuildingsTab />
-          </TabPanel>
-          <TabPanel value={currentTab} index={3}>
             <SectorsTab />
           </TabPanel>
-          <TabPanel value={currentTab} index={4}>
+          <TabPanel value={currentTab} index={3}>
             <ServicesTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={4}>
+            <PhysicalWorkplacesTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={5}>
+            <BuildingsTab />
           </TabPanel>
         </CardContent>
       </Card>

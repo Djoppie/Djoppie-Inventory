@@ -30,8 +30,11 @@ import {
   InputAdornment,
   CircularProgress,
   Divider,
+  Tooltip,
+  useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PlaceIcon from '@mui/icons-material/Place';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
@@ -60,6 +63,7 @@ import {
 } from '../hooks/useRollout';
 import { getAssetBySerialNumber } from '../api/assets.api';
 import { TemplateSelector } from '../components/rollout/TemplateSelector';
+import WorkplaceCompletionDialog from '../components/rollout/WorkplaceCompletionDialog';
 import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../types/rollout';
@@ -83,6 +87,35 @@ const EQUIPMENT_ICONS: Record<string, string> = {
   mouse: '🖱️',
 };
 
+// Assignment type constants - match WorkplaceConfigSection
+const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop', 'desktop'];
+
+type AssignmentType = 'user' | 'workplace';
+
+const getAssignmentType = (equipmentType: string): AssignmentType => {
+  return USER_ASSIGNED_EQUIPMENT.includes(equipmentType) ? 'user' : 'workplace';
+};
+
+// Assignment colors
+const ASSIGNMENT_COLORS = {
+  user: '#9c27b0',      // Purple - assigned to user
+  workplace: '#009688', // Teal - assigned to physical workplace
+};
+
+// Assignment chip styling (light background, colored border)
+const ASSIGNMENT_CHIP_STYLES = {
+  user: {
+    bgcolor: 'rgba(156, 39, 176, 0.12)',     // Light purple background
+    color: '#9c27b0',                         // Purple text
+    border: '1px solid rgba(156, 39, 176, 0.5)', // Purple border
+  },
+  workplace: {
+    bgcolor: 'rgba(0, 150, 136, 0.12)',      // Light teal background
+    color: '#009688',                         // Teal text
+    border: '1px solid rgba(0, 150, 136, 0.5)', // Teal border
+  },
+};
+
 /**
  * Rollout Execution Page - Execute rollout for a specific session
  * Mobile-optimized interface for technicians with inline serial entry
@@ -92,8 +125,20 @@ const RolloutExecutionPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const sessionId = Number(id);
   const initialDayId = searchParams.get('dayId') ? Number(searchParams.get('dayId')) : null;
+
+  // Neumorphic styling for page-level cards
+  const neumorphicCardSx = {
+    bgcolor: isDark ? '#1e2328' : '#e8eef3',
+    borderRadius: 3,
+    boxShadow: isDark
+      ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33'
+      : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff',
+    border: 'none',
+  };
 
   // User-selected day index (null = use URL initial or default to 0)
   const [userSelectedDayIndex, setUserSelectedDayIndex] = useState<number | null>(null);
@@ -220,14 +265,15 @@ const RolloutExecutionPage = () => {
       <Card
         elevation={0}
         sx={{
-          p: 2,
+          p: 2.5,
           mb: 3,
-          border: '1px solid',
-          borderColor: overallProgress === 100 ? 'success.main' : 'divider',
-          borderRadius: 2,
-          background: overallProgress === 100
-            ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.02) 100%)'
-            : undefined,
+          ...neumorphicCardSx,
+          ...(overallProgress === 100 && {
+            border: '2px solid rgba(76, 175, 80, 0.5)',
+            boxShadow: isDark
+              ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33, 0 0 0 2px rgba(76, 175, 80, 0.3)'
+              : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, 0 0 0 2px rgba(76, 175, 80, 0.25)',
+          }),
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -263,9 +309,7 @@ const RolloutExecutionPage = () => {
             elevation={0}
             sx={{
               mb: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
+              ...neumorphicCardSx,
               overflow: 'hidden',
             }}
           >
@@ -336,6 +380,8 @@ const RolloutExecutionPage = () => {
         open={snackbar.open}
         autoHideDuration={3000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
       >
         <Alert
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
@@ -359,6 +405,9 @@ interface WorkplaceCardProps {
 }
 
 const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceCardProps) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   const isComplete = workplace.status === 'Completed';
   const isInProgress = workplace.status === 'InProgress';
   const isPending = workplace.status === 'Pending';
@@ -366,8 +415,16 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   const canStart = isPending || isReady;
   const progress = workplace.totalItems > 0 ? (workplace.completedItems / workplace.totalItems) * 100 : 0;
 
+  // Neumorphic styling
+  const neumorphicShadow = isDark
+    ? '8px 8px 16px #161a1d, -8px -8px 16px #262c33'
+    : '8px 8px 16px #c5cad0, -8px -8px 16px #ffffff';
+
+  const neumorphicHoverShadow = isDark
+    ? '10px 10px 20px #161a1d, -10px -10px 20px #262c33'
+    : '10px 10px 20px #c5cad0, -10px -10px 20px #ffffff';
+
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
-  const [completeNotes, setCompleteNotes] = useState('');
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
@@ -399,14 +456,13 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (notes?: string) => {
     try {
       await completeMutation.mutateAsync({
         workplaceId: workplace.id,
-        data: { notes: completeNotes || undefined },
+        data: { notes: notes || undefined },
       });
       setCompleteDialogOpen(false);
-      setCompleteNotes('');
       onSnackbar(`Werkplek "${workplace.userName}" voltooid! Assets zijn bijgewerkt.`);
     } catch {
       onSnackbar('Fout bij voltooien werkplek', 'error');
@@ -450,13 +506,29 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
         elevation={0}
         sx={{
           position: 'relative',
-          border: '1px solid',
-          borderColor: isInProgress ? 'warning.main' : isReady ? 'info.main' : 'divider',
-          borderRadius: 2,
-          transition: 'border-color 0.2s',
+          bgcolor: isDark ? '#1e2328' : '#e8eef3',
+          borderRadius: 3,
+          border: isInProgress
+            ? '2px solid rgba(255, 152, 0, 0.5)'
+            : isComplete
+            ? '2px solid rgba(76, 175, 80, 0.5)'
+            : isReady
+            ? '2px solid rgba(33, 150, 243, 0.4)'
+            : '2px solid transparent',
+          boxShadow: neumorphicShadow,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           overflow: 'hidden',
-          ...(isReady && { bgcolor: 'rgba(25, 118, 210, 0.04)' }),
-          ...(isComplete && { bgcolor: 'rgba(22, 163, 74, 0.03)' }),
+          transform: 'translateZ(8px)',
+          '&:hover': {
+            transform: 'translateZ(12px)',
+            boxShadow: neumorphicHoverShadow,
+          },
+          ...(isReady && {
+            boxShadow: `${neumorphicShadow}, 0 0 0 2px rgba(33, 150, 243, 0.3)`,
+          }),
+          ...(isComplete && {
+            boxShadow: `${neumorphicShadow}, 0 0 0 2px rgba(76, 175, 80, 0.3)`,
+          }),
         }}
       >
         {/* Done stamp overlay for completed workplaces */}
@@ -509,6 +581,32 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
                   </Typography>
                 </Box>
               )}
+              {/* Physical Workplace Indicator */}
+              {workplace.physicalWorkplaceCode && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Tooltip title={`Fysieke werkplek: ${workplace.physicalWorkplaceName || workplace.physicalWorkplaceCode}`}>
+                    <Chip
+                      icon={<PlaceIcon sx={{ fontSize: '12px !important' }} />}
+                      label={workplace.physicalWorkplaceCode}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        bgcolor: 'rgba(0, 150, 136, 0.15)',
+                        color: '#009688',
+                        border: '1px solid rgba(0, 150, 136, 0.4)',
+                        '& .MuiChip-icon': { color: '#009688' },
+                      }}
+                    />
+                  </Tooltip>
+                  {workplace.physicalWorkplaceName && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                      {workplace.physicalWorkplaceName}
+                    </Typography>
+                  )}
+                </Box>
+              )}
             </Box>
             {/* Only show status chip for non-completed workplaces (completed ones have Done stamp) */}
             {!isComplete && (
@@ -546,12 +644,23 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
               {/* Start button for pending/ready workplaces */}
               {canStart && (
                 <Button
-                  variant="contained"
+                  variant="outlined"
                   fullWidth
                   startIcon={<PlayArrowIcon />}
                   onClick={handleStart}
                   disabled={startMutation.isPending}
-                  sx={{ mb: 2 }}
+                  sx={{
+                    mb: 2,
+                    borderColor: '#FF7700',
+                    borderWidth: 2,
+                    color: '#FF7700',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#FF7700',
+                      borderWidth: 2,
+                      bgcolor: 'rgba(255, 119, 0, 0.08)',
+                    },
+                  }}
                 >
                   {startMutation.isPending ? 'Starten...' : 'Start Uitvoering'}
                 </Button>
@@ -642,83 +751,162 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
         />
       )}
 
-      {/* Complete Confirmation Dialog */}
-      <Dialog open={completeDialogOpen} onClose={() => setCompleteDialogOpen(false)} maxWidth="sm" fullWidth disableRestoreFocus>
-        <DialogTitle>Werkplek Voltooien</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Weet je zeker dat je werkplek <strong>"{workplace.userName}"</strong> wilt voltooien?
-          </Typography>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <strong>Dit zal de volgende acties uitvoeren:</strong>
-            <Box component="ul" sx={{ m: '8px 0 0', pl: '20px' }}>
-              <li>Nieuwe assets worden <strong>InGebruik</strong> gezet</li>
-              <li>Eigenaar wordt ingesteld op <strong>{workplace.userName}</strong></li>
-              <li>Installatiedatum wordt ingesteld op <strong>vandaag</strong></li>
-              {workplace.assetPlans.some((p) => p.oldAssetId) && (
-                <li>Oude assets worden <strong>UitDienst</strong> gezet</li>
-              )}
-            </Box>
-          </Alert>
-          <TextField
-            fullWidth
-            label="Opmerkingen (optioneel)"
-            multiline
-            rows={2}
-            value={completeNotes}
-            onChange={(e) => setCompleteNotes(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCompleteDialogOpen(false)}>Annuleren</Button>
-          <Button
-            variant="contained"
-            color="success"
-            onClick={handleComplete}
-            disabled={completeMutation.isPending}
-          >
-            {completeMutation.isPending ? 'Voltooien...' : 'Bevestigen & Voltooien'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Complete Confirmation Dialog - Uses WorkplaceCompletionDialog with physical workplace info */}
+      <WorkplaceCompletionDialog
+        open={completeDialogOpen}
+        workplace={workplace}
+        onClose={() => setCompleteDialogOpen(false)}
+        onComplete={handleComplete}
+        isCompleting={completeMutation.isPending}
+      />
 
       {/* Reopen Confirmation Dialog */}
-      <Dialog open={reopenDialogOpen} onClose={() => setReopenDialogOpen(false)} maxWidth="sm" fullWidth disableRestoreFocus>
-        <DialogTitle>Werkplek Heropenen</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={reopenDialogOpen}
+        onClose={() => setReopenDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        disableRestoreFocus
+        PaperProps={{
+          sx: {
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            borderRadius: 3,
+            boxShadow: isDark
+              ? '8px 8px 16px #0d0f11, -4px -4px 12px #2f373f'
+              : '8px 8px 16px #c8cdd2, -4px -4px 12px #f8fcff',
+            border: '2px solid rgba(255, 152, 0, 0.4)',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            pb: 1.5,
+            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: 'rgba(255, 152, 0, 0.15)',
+              boxShadow: isDark
+                ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
+            }}
+          >
+            <ReplayIcon sx={{ color: '#ff9800', fontSize: '1.4rem' }} />
+          </Box>
+          <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+            Werkplek Heropenen
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2.5 }}>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Weet je zeker dat je werkplek <strong>"{workplace.userName}"</strong> wilt heropenen?
           </Typography>
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert
+            severity="warning"
+            sx={{
+              mb: 2,
+              bgcolor: isDark ? 'rgba(255, 152, 0, 0.1)' : 'rgba(255, 152, 0, 0.08)',
+              border: '1px solid rgba(255, 152, 0, 0.3)',
+              borderRadius: 2,
+            }}
+          >
             De werkplek wordt teruggezet naar <strong>Bezig</strong> status zodat je wijzigingen kunt aanbrengen.
           </Alert>
-          <Box sx={{ mb: 2 }}>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              boxShadow: isDark
+                ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+                : 'inset 2px 2px 4px #d1d6db, inset -2px -2px 4px #f5f9fc',
+              border: reverseAssets ? '2px solid rgba(255, 152, 0, 0.5)' : '2px solid transparent',
+              transition: 'border-color 0.2s',
+            }}
+          >
             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <input
+              <Box
+                component="input"
                 type="checkbox"
                 checked={reverseAssets}
-                onChange={(e) => setReverseAssets(e.target.checked)}
-                style={{ marginRight: 8 }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReverseAssets(e.target.checked)}
+                sx={{
+                  width: 18,
+                  height: 18,
+                  mr: 1.5,
+                  accentColor: '#ff9800',
+                  cursor: 'pointer',
+                }}
               />
-              <Typography variant="body2">
-                <strong>Asset wijzigingen terugdraaien</strong>
+              <Typography variant="body2" fontWeight={600}>
+                Asset wijzigingen terugdraaien
               </Typography>
             </label>
-            <Typography variant="caption" color="text.secondary" sx={{ ml: 3.5, display: 'block' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: 'block', mt: 0.5 }}>
               Indien aangevinkt worden de asset statussen teruggezet:
               <br />• InGebruik → Nieuw (eigenaar en locatie worden gewist)
               <br />• UitDienst → InGebruik (oude assets worden hersteld)
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReopenDialogOpen(false)}>Annuleren</Button>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2.5,
+            pt: 2,
+            gap: 1.5,
+            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+          }}
+        >
           <Button
-            variant="contained"
-            color="warning"
+            onClick={() => setReopenDialogOpen(false)}
+            sx={{
+              bgcolor: isDark ? '#1e2328' : '#e8eef3',
+              color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+              boxShadow: isDark
+                ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
+              '&:hover': {
+                bgcolor: isDark ? '#252a30' : '#dde3e8',
+                boxShadow: isDark
+                  ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                  : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc',
+              },
+            }}
+          >
+            Annuleren
+          </Button>
+          <Button
             onClick={handleReopen}
             disabled={reopenMutation.isPending}
             startIcon={<ReplayIcon />}
+            sx={{
+              bgcolor: '#ff9800',
+              color: 'white',
+              boxShadow: isDark
+                ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+                : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
+              '&:hover': {
+                bgcolor: '#f57c00',
+                boxShadow: isDark
+                  ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33, 0 0 8px rgba(255, 152, 0, 0.3)'
+                  : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc, 0 0 8px rgba(255, 152, 0, 0.2)',
+              },
+              '&:disabled': {
+                bgcolor: isDark ? 'rgba(255, 152, 0, 0.3)' : 'rgba(255, 152, 0, 0.4)',
+                color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.7)',
+              },
+            }}
           >
             {reopenMutation.isPending ? 'Heropenen...' : 'Heropenen'}
           </Button>
@@ -740,6 +928,9 @@ interface AssetChecklistItemProps {
 }
 
 const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }: AssetChecklistItemProps) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   const isInstalled = plan.status === 'installed';
   const isSkipped = plan.status === 'skipped';
   const isDone = isInstalled || isSkipped;
@@ -750,6 +941,11 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
   const isOldDevice = plan.metadata?.isOldDevice === 'true';
   const returnStatus = plan.metadata?.returnStatus as string | undefined;
 
+  // Assignment type styling
+  const assignmentType = getAssignmentType(plan.equipmentType);
+  const isUserAssigned = assignmentType === 'user';
+  const assignmentColor = ASSIGNMENT_COLORS[assignmentType];
+
   const baseLabel = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
   const label = isOldDevice ? `${baseLabel} (inleveren)` : baseLabel;
   const icon = isOldDevice ? '📤' : (EQUIPMENT_ICONS[plan.equipmentType] || '📦');
@@ -758,42 +954,79 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
   const hasAsset = !!plan.existingAssetCode;
   const hasSerial = !!plan.metadata?.serialNumber;
 
+  // Neumorphic inset styling
+  const neumorphicInset = isDark
+    ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+    : 'inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff';
+
+  // Assignment type background colors (light tint)
+  const assignmentBgColor = isUserAssigned
+    ? (isDark ? 'rgba(156, 39, 176, 0.08)' : 'rgba(156, 39, 176, 0.06)')  // Light purple
+    : (isDark ? 'rgba(0, 150, 136, 0.08)' : 'rgba(0, 150, 136, 0.06)');   // Light teal
+
+  // Assignment type border color
+  const assignmentBorderColor = isUserAssigned
+    ? (isDark ? 'rgba(156, 39, 176, 0.4)' : 'rgba(156, 39, 176, 0.3)')
+    : (isDark ? 'rgba(0, 150, 136, 0.4)' : 'rgba(0, 150, 136, 0.3)');
+
+  // Completed state colors (more intense assignment colors)
+  const completedBgColor = isUserAssigned
+    ? '#9c27b0'  // Purple for user-assigned
+    : '#009688'; // Teal for workplace-assigned
+
+  const completedBorderColor = isUserAssigned
+    ? '#7b1fa2'  // Darker purple
+    : '#00796b'; // Darker teal
+
+  // Needs attention indicator (dashed top border when serial/brand required)
+  const needsAttention = (needsSerial || needsBrand) && interactive;
+
   return (
     <ListItem
       sx={{
         bgcolor: isInstalled
-          ? 'success.main'
+          ? completedBgColor
           : isSkipped
           ? 'action.disabledBackground'
           : isOldDevice
-          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.12)' : 'rgba(255,152,0,0.08)'
-          : (needsSerial || needsBrand) && interactive
-          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,152,0,0.08)' : 'rgba(255,152,0,0.05)'
-          : 'background.paper',
-        color: isInstalled ? 'success.contrastText' : undefined,
-        borderRadius: 1.5,
-        mb: 0.5,
-        border: '1px solid',
+          ? isDark ? 'rgba(255,152,0,0.12)' : 'rgba(255,152,0,0.08)'
+          : assignmentBgColor,
+        color: isInstalled ? '#fff' : undefined,
+        borderRadius: 2,
+        mb: 1,
+        border: isInstalled
+          ? '2px solid'
+          : isSkipped
+          ? '1px solid'
+          : '2px solid',
         borderColor: isInstalled
-          ? 'success.main'
+          ? completedBorderColor
           : isSkipped
           ? 'action.disabled'
           : isOldDevice
           ? 'warning.main'
-          : (needsSerial || needsBrand) && interactive
-          ? 'warning.main'
-          : 'divider',
+          : assignmentBorderColor,
+        borderLeft: `4px solid ${isInstalled ? completedBorderColor : isOldDevice ? '#ff9800' : assignmentColor}`,
+        boxShadow: isInstalled || isSkipped ? 'none' : neumorphicInset,
         cursor: interactive && !isDone ? 'pointer' : undefined,
         opacity: isSkipped ? 0.6 : 1,
         px: 1.5,
         py: 1,
-        '&:hover': interactive && !isDone ? { bgcolor: 'action.hover' } : undefined,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': interactive && !isDone ? {
+          bgcolor: isUserAssigned
+            ? (isDark ? 'rgba(156, 39, 176, 0.15)' : 'rgba(156, 39, 176, 0.1)')
+            : (isDark ? 'rgba(0, 150, 136, 0.15)' : 'rgba(0, 150, 136, 0.1)'),
+          boxShadow: isDark
+            ? `inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33, 0 0 0 2px ${assignmentColor}40`
+            : `inset 2px 2px 4px #c5cad0, inset -2px -2px 4px #ffffff, 0 0 0 2px ${assignmentColor}30`,
+        } : undefined,
       }}
       onClick={interactive && !isDone ? onConfigure : undefined}
     >
       <ListItemIcon sx={{ minWidth: 32 }}>
         {isInstalled ? (
-          <CheckCircleIcon sx={{ color: 'success.contrastText' }} />
+          <CheckCircleIcon sx={{ color: '#fff' }} />
         ) : isSkipped ? (
           <SkipNextIcon color="disabled" />
         ) : (
@@ -804,7 +1037,24 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
         primary={
           <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
             <span>{icon}</span>
-            <Box component="span" sx={{ textDecoration: isSkipped ? 'line-through' : undefined, fontWeight: 500 }}>{label}</Box>
+            <Box component="span" sx={{ textDecoration: isSkipped ? 'line-through' : undefined, fontWeight: needsAttention ? 700 : 500 }}>{label}</Box>
+            {/* Assignment type badge */}
+            {!isOldDevice && (
+              <Tooltip title={isUserAssigned ? 'Toegewezen aan gebruiker' : 'Toegewezen aan fysieke werkplek'}>
+                <Chip
+                  label={isUserAssigned ? 'Gebruiker' : 'Werkplek'}
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.03em',
+                    ...ASSIGNMENT_CHIP_STYLES[assignmentType],
+                  }}
+                  component="span"
+                />
+              </Tooltip>
+            )}
             {isOldDevice && returnStatus && (
               <Chip
                 label={returnStatus === 'Defect' ? '🔧 Defect' : '🔄 Uit Dienst'}
@@ -921,6 +1171,9 @@ interface ItemConfigDialogProps {
 }
 
 const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, onSnackbar }: ItemConfigDialogProps) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   const [serialNumber, setSerialNumber] = useState(plan.metadata?.serialNumber || '');
   const [oldSerialNumber, setOldSerialNumber] = useState(plan.metadata?.oldSerial || '');
   const [selectedTemplate, setSelectedTemplate] = useState<AssetTemplate | null>(null);
@@ -937,6 +1190,42 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
   const needsSerial = plan.requiresSerialNumber;
   const isComputerType = plan.equipmentType === 'laptop' || plan.equipmentType === 'desktop';
   const needsTemplate = ['docking', 'monitor', 'keyboard', 'mouse'].includes(plan.equipmentType);
+
+  // Assignment type for styling
+  const assignmentType = getAssignmentType(plan.equipmentType);
+  const isUserAssigned = assignmentType === 'user';
+  const assignmentColor = ASSIGNMENT_COLORS[assignmentType];
+
+  // Input styling with assignment type colors
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      bgcolor: isDark
+        ? (isUserAssigned ? '#2d2530' : '#252d2c')
+        : (isUserAssigned ? '#f0e8f3' : '#e8f3f0'),
+      borderRadius: 2,
+      border: `1px solid ${assignmentColor}40`,
+      boxShadow: isDark
+        ? 'inset 2px 2px 4px #161a1d, inset -2px -2px 4px #262c33'
+        : 'inset 2px 2px 4px #d1d6db, inset -2px -2px 4px #f5f9fc',
+      '& fieldset': { border: 'none' },
+      '&:hover, &.Mui-focused': {
+        boxShadow: isDark
+          ? `inset 2px 2px 5px #161a1d, inset -2px -2px 5px #262c33, 0 0 0 2px ${assignmentColor}40`
+          : `inset 2px 2px 5px #d1d6db, inset -2px -2px 5px #f5f9fc, 0 0 0 2px ${assignmentColor}30`,
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+      '&.Mui-focused': { color: assignmentColor },
+    },
+    '& .MuiInputBase-input': {
+      color: isDark ? '#fff' : '#333',
+    },
+    '& .MuiInputBase-input::placeholder': {
+      color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+      opacity: 1,
+    },
+  };
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -1024,13 +1313,78 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
   const canSave = (!needsSerial || serialNumber.trim().length > 0) && (!monitorNeedsBrand || selectedTemplate);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth disableRestoreFocus>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
-        <Box component="span" sx={{ fontSize: '1.3rem' }}>{icon}</Box>
-        {label} Configureren
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      disableRestoreFocus
+      slotProps={{
+        backdrop: {
+          sx: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
+      }}
+      PaperProps={{
+        sx: {
+          bgcolor: isDark
+            ? (isUserAssigned ? '#251e28' : '#1e2625')
+            : (isUserAssigned ? '#f5eef7' : '#eef7f5'),
+          borderRadius: 3,
+          boxShadow: isDark
+            ? '8px 8px 16px #0d0f11, -4px -4px 12px #2f373f'
+            : '8px 8px 16px #c8cdd2, -4px -4px 12px #f8fcff',
+          border: `2px solid ${assignmentColor}50`,
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          pb: 1.5,
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            bgcolor: isUserAssigned ? 'rgba(156, 39, 176, 0.1)' : 'rgba(0, 150, 136, 0.1)',
+            border: `1px solid ${assignmentColor}30`,
+            fontSize: '1.3rem',
+          }}
+        >
+          {icon}
+        </Box>
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+            {label} Configureren
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {workplace.userName}
+          </Typography>
+        </Box>
+        <Chip
+          label={isUserAssigned ? 'Gebruiker' : 'Werkplek'}
+          size="small"
+          sx={{
+            height: 22,
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            ...ASSIGNMENT_CHIP_STYLES[assignmentType],
+          }}
+        />
       </DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <DialogContent sx={{ pt: 3, overflow: 'visible' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
           {/* Computer type: old serial + new serial */}
           {isComputerType && (
             <>
@@ -1043,6 +1397,7 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
                   onChange={(e) => { setOldSerialNumber(e.target.value); setFoundOldAsset(null); setOldSearchError(null); }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(oldSerialNumber, true)}
                   helperText="Optioneel — serienummer van het oude toestel"
+                  sx={inputSx}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -1075,6 +1430,7 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
                   onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
                   helperText="Serienummer van het nieuwe toestel"
+                  sx={inputSx}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
@@ -1114,6 +1470,7 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
                 onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
                 helperText="Serienummer van het docking station"
+                sx={inputSx}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -1158,6 +1515,7 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
                 onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
                 helperText="Serienummer van de monitor — optioneel maar aanbevolen"
+                sx={inputSx}
                 InputProps={{
                   endAdornment: serialNumber ? (
                     <InputAdornment position="end">
@@ -1206,21 +1564,78 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
           )}
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-        <Button onClick={onClose}>Annuleren</Button>
+      <DialogActions
+        sx={{
+          px: 3,
+          pb: 2.5,
+          pt: 2,
+          gap: 1.5,
+          borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+        }}
+      >
+        <Button
+          onClick={onClose}
+          sx={{
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
+            boxShadow: isDark
+              ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+              : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
+            '&:hover': {
+              bgcolor: isDark ? '#252a30' : '#dde3e8',
+              boxShadow: isDark
+                ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
+                : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc',
+            },
+          }}
+        >
+          Annuleren
+        </Button>
         <Button
           onClick={handleSaveWithoutInstall}
           disabled={updateDetailsMutation.isPending}
-          variant="outlined"
+          sx={{
+            bgcolor: isDark ? '#1e2328' : '#e8eef3',
+            color: '#FF7700',
+            border: '1px solid rgba(255, 119, 0, 0.3)',
+            boxShadow: isDark
+              ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+              : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
+            '&:hover': {
+              bgcolor: isDark ? '#252a30' : '#dde3e8',
+              borderColor: '#FF7700',
+              boxShadow: isDark
+                ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.2)'
+                : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc, 0 0 0 2px rgba(255, 119, 0, 0.15)',
+            },
+            '&:disabled': {
+              opacity: 0.5,
+            },
+          }}
         >
           Opslaan
         </Button>
         <Button
-          variant="contained"
-          color="success"
           onClick={handleSave}
           disabled={!canSave || updateDetailsMutation.isPending}
           startIcon={<CheckCircleIcon />}
+          sx={{
+            bgcolor: '#4caf50',
+            color: 'white',
+            boxShadow: isDark
+              ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
+              : '2px 2px 4px #d1d6db, -2px -2px 4px #f5f9fc',
+            '&:hover': {
+              bgcolor: '#43a047',
+              boxShadow: isDark
+                ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33, 0 0 8px rgba(76, 175, 80, 0.3)'
+                : '3px 3px 6px #d1d6db, -3px -3px 6px #f5f9fc, 0 0 8px rgba(76, 175, 80, 0.2)',
+            },
+            '&:disabled': {
+              bgcolor: isDark ? 'rgba(76, 175, 80, 0.3)' : 'rgba(76, 175, 80, 0.4)',
+              color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.7)',
+            },
+          }}
         >
           {updateDetailsMutation.isPending ? 'Opslaan...' : 'Opslaan & Installeren'}
         </Button>

@@ -29,3 +29,13 @@ public record UpdateSectorDto(
     bool IsActive,
     int SortOrder
 );
+
+/// <summary>
+/// DTO for returning sync operation results
+/// </summary>
+public record SyncResultDto(
+    int Created,
+    int Updated,
+    int Skipped,
+    int TotalFromSource
+);

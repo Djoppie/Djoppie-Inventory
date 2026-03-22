@@ -21,3 +21,12 @@ public class RolloutDayDto
     // Optional: Include workplaces in response
     public List<RolloutWorkplaceDto>? Workplaces { get; set; }
 }
+
+/// <summary>
+/// DTO for rollout day with session information (for today's planning widget)
+/// </summary>
+public class RolloutDayWithSessionDto : RolloutDayDto
+{
+    public string SessionName { get; set; } = string.Empty;
+    public string SessionStatus { get; set; } = string.Empty;
+}

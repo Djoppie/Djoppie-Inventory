@@ -5,7 +5,7 @@
  * Supports QR scanning and serial number entry for each device
  * Auto-checks serial numbers in Djoppie DB with debounce
  *
- * Design: Neumorphic soft UI with warning orange accent for old devices
+ * Design: Neumorphic soft UI with red-purple accent (#E91E63) for old devices
  */
 
 import { useEffect, useRef } from 'react';
@@ -152,7 +152,7 @@ export const OldDeviceConfigSection = ({
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                bgcolor: 'warning.main',
+                bgcolor: '#E91E63',
               }}
             />
           </Box>
@@ -179,7 +179,7 @@ export const OldDeviceConfigSection = ({
               fontSize: '0.7rem',
               fontWeight: 700,
               bgcolor: neuBg,
-              color: '#FF9800',
+              color: '#E91E63',
               border: 'none',
               boxShadow: `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}`,
             }}
@@ -228,13 +228,13 @@ export const OldDeviceConfigSection = ({
                   fontSize: '0.7rem',
                   fontWeight: 600,
                   bgcolor: neuBg,
-                  color: device.linkedAsset ? '#FF9800' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
+                  color: device.linkedAsset ? '#E91E63' : (isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)'),
                   border: 'none',
                   boxShadow: device.linkedAsset
-                    ? `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}, 0 0 0 2px rgba(255, 152, 0, 0.3)`
+                    ? `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}, 0 0 0 2px rgba(233, 30, 99, 0.3)`
                     : `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}`,
                   transition: 'all 0.2s ease',
-                  '& .MuiChip-icon': { color: device.linkedAsset ? '#FF9800' : (isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)') },
+                  '& .MuiChip-icon': { color: device.linkedAsset ? '#E91E63' : (isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)') },
                   '&:hover': {
                     boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
                   },
@@ -256,7 +256,7 @@ export const OldDeviceConfigSection = ({
               p: 2.5,
               bgcolor: neuBg,
               boxShadow: device.linkedAsset
-                ? `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}, 0 0 0 2px rgba(255, 152, 0, 0.3)`
+                ? `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}, 0 0 0 2px rgba(233, 30, 99, 0.3)`
                 : `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}`,
               transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
               animation: `slideIn 0.3s ease-out ${index * 0.05}s backwards`,
@@ -271,7 +271,7 @@ export const OldDeviceConfigSection = ({
                 },
               },
               '&:hover': {
-                boxShadow: `6px 6px 12px ${neuShadowDark}, -6px -6px 12px ${neuShadowLight}, inset 0 0 0 2px rgba(255, 152, 0, 0.2)`,
+                boxShadow: `6px 6px 12px ${neuShadowDark}, -6px -6px 12px ${neuShadowLight}, inset 0 0 0 2px rgba(233, 30, 99, 0.2)`,
                 '& .delete-button': {
                   opacity: 1,
                   transform: 'scale(1)',
@@ -291,14 +291,14 @@ export const OldDeviceConfigSection = ({
                   borderRadius: 2,
                   bgcolor: neuBg,
                   boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
-                  color: '#FF9800',
+                  color: '#E91E63',
                   transition: 'all 0.3s ease',
                 }}
               >
                 <HistoryIcon sx={{ fontSize: '1.1rem' }} />
               </Box>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#FF9800' }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#E91E63' }}>
                   Apparaat {index + 1}
                 </Typography>
                 {device.linkedAsset && (
@@ -339,25 +339,25 @@ export const OldDeviceConfigSection = ({
                 mb: 2,
                 borderRadius: 2,
                 bgcolor: neuBg,
-                color: '#FF7700',
+                color: '#E91E63',
                 fontWeight: 600,
                 fontSize: '0.8rem',
                 py: 1,
                 border: 'none',
                 textTransform: 'none',
                 // Djoppie neumorphic raised style
-                boxShadow: `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}, inset 0 0 0 1px rgba(255, 119, 0, 0.15)`,
+                boxShadow: `4px 4px 8px ${neuShadowDark}, -4px -4px 8px ${neuShadowLight}, inset 0 0 0 1px rgba(233, 30, 99, 0.15)`,
                 transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   bgcolor: neuBg,
                   transform: 'translateY(-1px)',
                   // Enhanced depth with orange glow
-                  boxShadow: `5px 5px 10px ${neuShadowDark}, -5px -5px 10px ${neuShadowLight}, 0 3px 8px rgba(255, 119, 0, 0.25), inset 0 0 0 2px rgba(255, 119, 0, 0.35)`,
+                  boxShadow: `5px 5px 10px ${neuShadowDark}, -5px -5px 10px ${neuShadowLight}, 0 3px 8px rgba(233, 30, 99, 0.25), inset 0 0 0 2px rgba(233, 30, 99, 0.35)`,
                 },
                 '&:active': {
                   transform: 'translateY(0)',
                   // Press-down inset effect
-                  boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, inset 0 0 0 2px rgba(255, 119, 0, 0.5)`,
+                  boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, inset 0 0 0 2px rgba(233, 30, 99, 0.5)`,
                 },
               }}
             >
@@ -389,7 +389,7 @@ export const OldDeviceConfigSection = ({
                       size="small"
                       sx={{
                         color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)',
-                        '&:hover': { color: '#FF7700' },
+                        '&:hover': { color: '#E91E63' },
                       }}
                     >
                       <SearchIcon sx={{ fontSize: '1rem' }} />
@@ -404,12 +404,12 @@ export const OldDeviceConfigSection = ({
                   boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
                   '& fieldset': { border: 'none' },
                   '&:hover, &.Mui-focused': {
-                    boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, 0 0 0 2px rgba(255, 119, 0, 0.2)`,
+                    boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, 0 0 0 2px rgba(233, 30, 99, 0.2)`,
                   },
                 },
                 '& .MuiInputLabel-root': {
                   color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                  '&.Mui-focused': { color: '#FF7700' },
+                  '&.Mui-focused': { color: '#E91E63' },
                 },
               }}
             />
@@ -441,7 +441,7 @@ export const OldDeviceConfigSection = ({
                 id={`status-label-${device.id}`}
                 sx={{
                   color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                  '&.Mui-focused': { color: '#FF7700' },
+                  '&.Mui-focused': { color: '#E91E63' },
                 }}
               >
                 Status na inleveren
@@ -457,7 +457,7 @@ export const OldDeviceConfigSection = ({
                   boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
                   '& fieldset': { border: 'none' },
                   '&:hover, &.Mui-focused': {
-                    boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, 0 0 0 2px rgba(255, 119, 0, 0.2)`,
+                    boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}, 0 0 0 2px rgba(233, 30, 99, 0.2)`,
                   },
                   '& .MuiSelect-select': {
                     display: 'flex',
@@ -493,22 +493,22 @@ export const OldDeviceConfigSection = ({
           mt: devices.length > 0 ? 2.5 : 0,
           borderRadius: 2.5,
           bgcolor: `${neuBg} !important`,
-          color: '#FF9800',
+          color: '#E91E63',
           fontWeight: 700,
           py: 1.5,
           textTransform: 'none',
           fontSize: '0.85rem',
           border: 'none',
-          boxShadow: `5px 5px 10px ${neuShadowDark}, -5px -5px 10px ${neuShadowLight}, inset 0 0 0 1px rgba(255, 152, 0, 0.2)`,
+          boxShadow: `5px 5px 10px ${neuShadowDark}, -5px -5px 10px ${neuShadowLight}, inset 0 0 0 1px rgba(233, 30, 99, 0.2)`,
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             bgcolor: `${neuBg} !important`,
             transform: 'translateY(-2px)',
-            boxShadow: `7px 7px 14px ${neuShadowDark}, -7px -7px 14px ${neuShadowLight}, inset 0 0 0 2px rgba(255, 152, 0, 0.4)`,
+            boxShadow: `7px 7px 14px ${neuShadowDark}, -7px -7px 14px ${neuShadowLight}, inset 0 0 0 2px rgba(233, 30, 99, 0.4)`,
           },
           '&:active': {
             transform: 'translateY(0)',
-            boxShadow: `inset 4px 4px 8px ${neuShadowDark}, inset -4px -4px 8px ${neuShadowLight}, inset 0 0 0 2px rgba(255, 152, 0, 0.5)`,
+            boxShadow: `inset 4px 4px 8px ${neuShadowDark}, inset -4px -4px 8px ${neuShadowLight}, inset 0 0 0 2px rgba(233, 30, 99, 0.5)`,
           },
         }}
       >

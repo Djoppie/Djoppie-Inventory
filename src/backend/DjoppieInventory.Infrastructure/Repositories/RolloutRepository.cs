@@ -113,6 +113,24 @@ public class RolloutRepository : IRolloutRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<RolloutDay>> GetDaysByDateAsync(DateOnly date, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
+    {
+        var dateTime = date.ToDateTime(TimeOnly.MinValue);
+        var query = _context.RolloutDays
+            .Include(d => d.RolloutSession)
+            .Where(d => d.Date.Date == dateTime.Date && d.RolloutSession!.Status != RolloutSessionStatus.Completed);
+
+        if (includeWorkplaces)
+        {
+            query = query.Include(d => d.Workplaces);
+        }
+
+        return await query
+            .OrderBy(d => d.RolloutSession!.SessionName)
+            .ThenBy(d => d.DayNumber)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<RolloutDay?> GetDayByIdAsync(int id, bool includeWorkplaces = false, CancellationToken cancellationToken = default)
     {
         var query = _context.RolloutDays.AsQueryable();
@@ -166,6 +184,7 @@ public class RolloutRepository : IRolloutRepository
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
+            .Include(w => w.PhysicalWorkplace)
             .Where(w => w.RolloutDayId == dayId)
             .OrderBy(w => w.Status)
             .ThenBy(w => w.UserName)
@@ -176,6 +195,7 @@ public class RolloutRepository : IRolloutRepository
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
+            .Include(w => w.PhysicalWorkplace)
             .Where(w => w.RolloutDayId == dayId && w.Status == status)
             .OrderBy(w => w.UserName)
             .ToListAsync(cancellationToken);
@@ -185,6 +205,7 @@ public class RolloutRepository : IRolloutRepository
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
+            .Include(w => w.PhysicalWorkplace)
             .Include(w => w.RolloutDay)
                 .ThenInclude(d => d.RolloutSession)
             .FirstOrDefaultAsync(w => w.Id == id, cancellationToken);

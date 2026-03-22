@@ -25,6 +25,11 @@ public class UpdateRolloutWorkplaceDto
 
     public int? ServiceId { get; set; }
 
+    /// <summary>
+    /// Foreign key to the physical workplace being set up (optional)
+    /// </summary>
+    public int? PhysicalWorkplaceId { get; set; }
+
     public bool IsLaptopSetup { get; set; }
 
     /// <summary>

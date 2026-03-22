@@ -66,6 +66,11 @@ export interface RolloutDay {
   workplaces?: RolloutWorkplace[];
 }
 
+export interface RolloutDayWithSession extends RolloutDay {
+  sessionName: string;
+  sessionStatus: string;
+}
+
 export interface CreateRolloutDay {
   rolloutSessionId: number;
   date: string;
@@ -95,6 +100,12 @@ export interface RolloutWorkplace {
   scheduledDate?: string;
   serviceId?: number;
   serviceName?: string;
+  /** Linked physical workplace ID */
+  physicalWorkplaceId?: number;
+  /** Linked physical workplace code (for display) */
+  physicalWorkplaceCode?: string;
+  /** Linked physical workplace name (for display) */
+  physicalWorkplaceName?: string;
   isLaptopSetup: boolean;
   assetPlans: AssetPlan[];
   status: RolloutWorkplaceStatus;
@@ -124,6 +135,8 @@ export interface CreateRolloutWorkplace {
   /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
   scheduledDate?: string;
   serviceId?: number;
+  /** Linked physical workplace ID (optional) */
+  physicalWorkplaceId?: number;
   isLaptopSetup: boolean;
   assetPlans: AssetPlan[];
   notes?: string;
@@ -136,6 +149,8 @@ export interface UpdateRolloutWorkplace {
   /** Custom scheduled date for this workplace. When null, uses the date from RolloutDay. */
   scheduledDate?: string | null;
   serviceId?: number | null;
+  /** Linked physical workplace ID (optional, null to clear) */
+  physicalWorkplaceId?: number | null;
   isLaptopSetup: boolean;
   assetPlans: AssetPlan[];
   status: RolloutWorkplaceStatus;

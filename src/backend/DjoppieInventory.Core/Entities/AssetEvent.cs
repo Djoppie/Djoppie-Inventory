@@ -46,6 +46,16 @@ public enum AssetEventType
     Note = 7,
 
     /// <summary>
+    /// Laptop was swapped (old laptop out, new laptop in)
+    /// </summary>
+    LaptopSwapped = 8,
+
+    /// <summary>
+    /// Device onboarded to new user (no previous device)
+    /// </summary>
+    DeviceOnboarded = 9,
+
+    /// <summary>
     /// Other type of event
     /// </summary>
     Other = 99

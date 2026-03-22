@@ -547,7 +547,7 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
         {
             AssetCode = assetCode,
             AssetName = template.AssetName ?? $"{template.TemplateName} - {assignment.RolloutWorkplace.UserName}",
-            Category = template.Category,
+            Category = template.Category ?? string.Empty,
             AssetTypeId = assignment.AssetTypeId,
             Brand = template.Brand,
             Model = template.Model,
@@ -629,6 +629,7 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
         var pendingAssignments = await _context.WorkplaceAssetAssignments
             .Include(a => a.RolloutWorkplace)
                 .ThenInclude(w => w.RolloutDay)
+            .Include(a => a.AssetType)
             .Include(a => a.NewAsset)
             .Include(a => a.OldAsset)
             .Where(a => a.RolloutWorkplaceId == workplaceId &&
@@ -655,11 +656,95 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
             completedCount++;
         }
 
+        // Update PhysicalWorkplace with occupant and fixed assets
+        await UpdatePhysicalWorkplaceAsync(workplaceId, cancellationToken);
+
         _logger.LogInformation(
             "Completed {Count} pending assignments for workplace {WorkplaceId} by {PerformedBy}",
             completedCount, workplaceId, performedBy);
 
         return completedCount;
+    }
+
+    /// <summary>
+    /// Updates the PhysicalWorkplace with occupant information and fixed asset slots
+    /// when a rollout workplace is completed.
+    /// </summary>
+    private async Task UpdatePhysicalWorkplaceAsync(int rolloutWorkplaceId, CancellationToken cancellationToken)
+    {
+        // Get the rollout workplace with its physical workplace reference
+        var rolloutWorkplace = await _context.RolloutWorkplaces
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == rolloutWorkplaceId, cancellationToken);
+
+        if (rolloutWorkplace?.PhysicalWorkplaceId == null || rolloutWorkplace.PhysicalWorkplace == null)
+        {
+            _logger.LogDebug("No PhysicalWorkplace linked to RolloutWorkplace {WorkplaceId}, skipping update", rolloutWorkplaceId);
+            return;
+        }
+
+        var physicalWorkplace = rolloutWorkplace.PhysicalWorkplace;
+
+        // Update occupant information
+        physicalWorkplace.CurrentOccupantEntraId = rolloutWorkplace.UserEntraId;
+        physicalWorkplace.CurrentOccupantName = rolloutWorkplace.UserName;
+        physicalWorkplace.CurrentOccupantEmail = rolloutWorkplace.UserEmail;
+        physicalWorkplace.OccupiedSince = DateTime.UtcNow;
+
+        // Get all installed assignments for this workplace to update equipment slots
+        var installedAssignments = await _context.WorkplaceAssetAssignments
+            .Include(a => a.AssetType)
+            .Where(a => a.RolloutWorkplaceId == rolloutWorkplaceId &&
+                       a.Status == AssetAssignmentStatus.Installed &&
+                       a.AssignmentCategory == AssignmentCategory.WorkplaceFixed &&
+                       a.NewAssetId.HasValue)
+            .ToListAsync(cancellationToken);
+
+        // Track monitors for slot assignment
+        var monitorSlot = 1;
+
+        foreach (var assignment in installedAssignments)
+        {
+            // AssetType codes are uppercase (DOCK, MON, KEYB, MOUSE)
+            var assetTypeCode = assignment.AssetType?.Code?.ToUpperInvariant() ?? "";
+
+            switch (assetTypeCode)
+            {
+                case "DOCK":
+                    physicalWorkplace.DockingStationAssetId = assignment.NewAssetId;
+                    break;
+                case "MON":
+                    // Assign monitors to slots in order (1, 2, 3)
+                    switch (monitorSlot)
+                    {
+                        case 1:
+                            physicalWorkplace.Monitor1AssetId = assignment.NewAssetId;
+                            break;
+                        case 2:
+                            physicalWorkplace.Monitor2AssetId = assignment.NewAssetId;
+                            break;
+                        case 3:
+                            physicalWorkplace.Monitor3AssetId = assignment.NewAssetId;
+                            break;
+                    }
+                    monitorSlot++;
+                    break;
+                case "KEYB":
+                    physicalWorkplace.KeyboardAssetId = assignment.NewAssetId;
+                    break;
+                case "MOUSE":
+                    physicalWorkplace.MouseAssetId = assignment.NewAssetId;
+                    break;
+            }
+        }
+
+        physicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Updated PhysicalWorkplace {PhysicalWorkplaceId} with occupant {OccupantName} and {EquipmentCount} fixed assets",
+            physicalWorkplace.Id, physicalWorkplace.CurrentOccupantName, installedAssignments.Count);
     }
 
     #region Private Methods

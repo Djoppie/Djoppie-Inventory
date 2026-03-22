@@ -103,7 +103,12 @@
       "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:/Djoppie/Djoppie-Inventory/fix-azure-sql.ps1\")",
       "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:/Djoppie/Djoppie-Inventory/check-azure-sql.ps1\")",
       "Bash(npx eslint:*)",
-      "Bash(start http://localhost:5173)"
+      "Bash(start http://localhost:5173)",
+      "WebFetch(domain:docs.automapper.io)",
+      "Bash(dotnet ef migrations script:*)",
+      "Bash(az webapp show:*)",
+      "Bash(az group list:*)",
+      "Bash(AZURE_SQL_CONNECTION=\"Server=tcp:sql-djoppie-inventory-dev-k5xdqp.database.windows.net,1433;Initial Catalog=sqldb-djoppie-inventory-dev;Persist Security Info=False;User ID=sqladmin;Password=Dj0ppenbeek026;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;\" dotnet ef:*)"
     ]
   }
 }

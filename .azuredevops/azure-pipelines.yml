@@ -8,6 +8,13 @@
 # - Frontend SPA build and deployment (React + Vite)
 # - Database migrations (Entity Framework Core)
 #
+# Optimizations applied:
+# - NuGet & npm dependency caching
+# - Frontend built once in Build stage, reused in Deploy stage
+# - Migration validation (catches SQLite-specific types before deploy)
+# - Smart health check with retry instead of sleep 30
+# - Parallel backend + frontend deployment
+#
 # Prerequisites:
 # 1. Azure Resource Manager service connection named 'AzureServiceConnection'
 # 2. Pipeline variables configured (see setup-azure-devops-variables.ps1)
@@ -50,13 +57,13 @@ variables:
   - name: resourceGroupName
     value: 'rg-djoppie-inventory-dev'
   - name: location
-    value: 'westeurope'  # Can be changed to any Azure region
+    value: 'westeurope'
 
   # Application Names
   - name: backendAppServiceName
-    value: 'app-djoppie-inventory-dev-api'
+    value: 'app-djoppie-inventory-dev-api-k5xdqp'
   - name: frontendStaticWebAppName
-    value: 'swa-djoppie-inventory-dev-ui'
+    value: 'swa-djoppie-inventory-dev'
 
   # Paths
   - name: backendPath
@@ -73,6 +80,10 @@ variables:
     value: 'frontend-drop'
   - name: infraArtifactName
     value: 'infra-drop'
+
+  # Cache keys
+  - name: NUGET_PACKAGES
+    value: $(Pipeline.Workspace)/.nuget/packages
 
 stages:
   # ============================================================================
@@ -93,11 +104,22 @@ stages:
               packageType: 'sdk'
               version: $(dotnetSdkVersion)
 
+          # NuGet cache
+          - task: Cache@2
+            displayName: 'Cache NuGet packages'
+            inputs:
+              key: 'nuget | "$(Agent.OS)" | $(backendPath)/**/packages.lock.json, $(backendPath)/**/*.csproj'
+              restoreKeys: |
+                nuget | "$(Agent.OS)"
+              path: $(NUGET_PACKAGES)
+
           - task: DotNetCoreCLI@2
             displayName: 'Restore NuGet packages'
             inputs:
               command: 'restore'
               projects: '$(backendPath)/**/*.csproj'
+            env:
+              NUGET_PACKAGES: $(NUGET_PACKAGES)
 
           - task: DotNetCoreCLI@2
             displayName: 'Build Backend'
@@ -112,6 +134,45 @@ stages:
               command: 'test'
               projects: '$(backendPath)/**/*Tests.csproj'
               arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"'
+
+          # Validate migrations don't contain SQLite-specific types that break SQL Server
+          - script: |
+              echo "Validating EF migrations for SQL Server compatibility..."
+              ERRORS=0
+
+              # Check for TEXT type used as index key (breaks SQL Server)
+              for f in $(backendPath)/DjoppieInventory.Infrastructure/Migrations/*.cs; do
+                [[ "$f" == *.Designer.cs ]] && continue
+                [[ "$f" == *Snapshot.cs ]] && continue
+
+                # Find columns declared as TEXT that are also indexed
+                if grep -q 'type: "TEXT"' "$f" 2>/dev/null; then
+                  # Check if this migration also creates indexes on string columns
+                  TEXT_COLS=$(grep -B1 'type: "TEXT"' "$f" | grep 'name:' | sed 's/.*name: "\(.*\)".*/\1/' || true)
+                  for col in $TEXT_COLS; do
+                    if grep -q "column: \"$col\"" "$f" 2>/dev/null && grep -q "CreateIndex" "$f" 2>/dev/null; then
+                      # Check if this specific column has an index
+                      if grep -A3 "CreateIndex" "$f" | grep -q "column: \"$col\""; then
+                        echo "##[warning]Migration $(basename $f): Column '$col' is type TEXT with an index - will fail on SQL Server"
+                        ERRORS=$((ERRORS + 1))
+                      fi
+                    fi
+                  done
+                fi
+
+                # Check for SQLite-only SQL syntax
+                if grep -q 'INSERT OR IGNORE\|INSERT OR REPLACE' "$f" 2>/dev/null; then
+                  echo "##[warning]Migration $(basename $f): Contains SQLite-only SQL syntax (INSERT OR IGNORE/REPLACE)"
+                  ERRORS=$((ERRORS + 1))
+                fi
+              done
+
+              if [ $ERRORS -gt 0 ]; then
+                echo "##[warning]Found $ERRORS migration compatibility issues. Review warnings above."
+              else
+                echo "All migrations are SQL Server compatible."
+              fi
+            displayName: 'Validate Migration Compatibility'
 
           - task: DotNetCoreCLI@2
             displayName: 'Publish Backend'
@@ -144,6 +205,15 @@ stages:
             inputs:
               versionSpec: $(nodeVersion)
 
+          # npm cache
+          - task: Cache@2
+            displayName: 'Cache npm packages'
+            inputs:
+              key: 'npm | "$(Agent.OS)" | $(frontendPath)/package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(frontendPath)/node_modules
+
           - script: |
               cd $(frontendPath)
               npm ci
@@ -165,7 +235,8 @@ stages:
               cd $(frontendPath)
 
               # Create production .env file
-              echo "VITE_API_URL=https://$(backendAppServiceName).azurewebsites.net" > .env.production
+              # Note: uses pipeline variables for known-ahead-of-time values
+              echo "VITE_API_URL=https://$(backendAppServiceName).azurewebsites.net/api" > .env.production
               echo "VITE_ENTRA_CLIENT_ID=$(ENTRA_FRONTEND_CLIENT_ID)" >> .env.production
               echo "VITE_ENTRA_TENANT_ID=$(ENTRA_TENANT_ID)" >> .env.production
               echo "VITE_ENTRA_REDIRECT_URI=https://$(frontendStaticWebAppName).azurestaticapps.net" >> .env.production
@@ -426,15 +497,16 @@ stages:
                         -o table
 
   # ============================================================================
-  # STAGE 3: DEPLOY BACKEND
+  # STAGE 3: DEPLOY BACKEND + FRONTEND (parallel)
   # ============================================================================
-  - stage: DeployBackend
-    displayName: 'Deploy Backend API'
+  - stage: Deploy
+    displayName: 'Deploy Backend & Frontend'
     dependsOn: DeployInfrastructure
     condition: succeeded()
     jobs:
+      # Backend deployment
       - deployment: DeployBackendAPI
-        displayName: 'Deploy to App Service'
+        displayName: 'Deploy Backend to App Service'
         pool:
           vmImage: 'ubuntu-latest'
         environment: 'dev'
@@ -481,37 +553,36 @@ stages:
                     deploymentMethod: 'zipDeploy'
 
                 - task: AzureCLI@2
-                  displayName: 'Run Database Migrations'
+                  displayName: 'Verify Backend Health'
                   inputs:
                     azureSubscription: $(azureServiceConnection)
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
                     inlineScript: |
-                      echo "Database migrations will be applied on application startup"
-                      echo "Verifying API health..."
+                      echo "Waiting for backend to start and apply migrations..."
 
-                      # Wait for app to start
-                      sleep 30
-
-                      # Check health endpoint
                       HEALTH_URL="https://$(backendAppServiceName).azurewebsites.net/health"
-                      echo "Checking: $HEALTH_URL"
+                      MAX_RETRIES=10
+                      RETRY_DELAY=5
 
-                      curl -f $HEALTH_URL || echo "Health check failed - app may still be starting"
+                      for i in $(seq 1 $MAX_RETRIES); do
+                        echo "Health check attempt $i/$MAX_RETRIES: $HEALTH_URL"
+                        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" --max-time 10 || echo "000")
 
-  # ============================================================================
-  # STAGE 4: DEPLOY FRONTEND
-  # ============================================================================
-  - stage: DeployFrontend
-    displayName: 'Deploy Frontend SPA'
-    dependsOn:
-      - DeployBackend
-      - DeployInfrastructure
-      - Build
-    condition: succeeded()
-    jobs:
+                        if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "401" ]; then
+                          echo "Backend is healthy (HTTP $HTTP_STATUS)"
+                          exit 0
+                        fi
+
+                        echo "Got HTTP $HTTP_STATUS, retrying in ${RETRY_DELAY}s..."
+                        sleep $RETRY_DELAY
+                      done
+
+                      echo "##[warning]Backend health check did not return 200/401 after $MAX_RETRIES attempts"
+
+      # Frontend deployment (runs in parallel with backend)
       - deployment: DeployFrontendSPA
-        displayName: 'Deploy to Static Web App'
+        displayName: 'Deploy Frontend to Static Web App'
         pool:
           vmImage: 'ubuntu-latest'
         environment: 'dev'
@@ -519,58 +590,13 @@ stages:
           runOnce:
             deploy:
               steps:
-                - checkout: self
-                  displayName: 'Checkout source code'
-
-                - task: NodeTool@0
-                  displayName: 'Install Node.js'
+                # Use pre-built artifact from Stage 1 - no rebuild needed
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Frontend Artifact'
                   inputs:
-                    versionSpec: $(nodeVersion)
-
-                - task: AzureCLI@2
-                  name: RebuildFrontend
-                  displayName: 'Rebuild Frontend with Production URLs'
-                  inputs:
-                    azureSubscription: $(azureServiceConnection)
-                    scriptType: 'bash'
-                    scriptLocation: 'inlineScript'
-                    inlineScript: |
-                      echo "Building frontend with production configuration..."
-
-                      # Get actual resource names from infrastructure outputs
-                      DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
-
-                      APP_SERVICE_URL=$(az deployment sub show \
-                        --name $DEPLOYMENT_NAME \
-                        --query 'properties.outputs.appServiceUrl.value' \
-                        -o tsv)
-
-                      STATIC_WEB_APP_URL=$(az deployment sub show \
-                        --name $DEPLOYMENT_NAME \
-                        --query 'properties.outputs.staticWebAppUrl.value' \
-                        -o tsv)
-
-                      echo "Backend API URL: $APP_SERVICE_URL"
-                      echo "Frontend URL: $STATIC_WEB_APP_URL"
-
-                      # Navigate to frontend directory
-                      cd $(frontendPath)
-
-                      # Install dependencies
-                      npm ci
-
-                      # Create production .env file with actual URLs
-                      echo "VITE_API_URL=${APP_SERVICE_URL}/api" > .env.production
-                      echo "VITE_ENTRA_CLIENT_ID=$(ENTRA_FRONTEND_CLIENT_ID)" >> .env.production
-                      echo "VITE_ENTRA_TENANT_ID=$(ENTRA_TENANT_ID)" >> .env.production
-                      echo "VITE_ENTRA_REDIRECT_URI=${STATIC_WEB_APP_URL}" >> .env.production
-                      echo "VITE_ENTRA_AUTHORITY=https://login.microsoftonline.com/$(ENTRA_TENANT_ID)" >> .env.production
-                      echo "VITE_ENTRA_API_SCOPE=api://$(ENTRA_BACKEND_CLIENT_ID)/access_as_user" >> .env.production
-
-                      # Build frontend
-                      npm run build
-
-                      echo "Frontend build completed"
+                    buildType: 'current'
+                    artifactName: 'frontend-drop'
+                    downloadPath: '$(Build.SourcesDirectory)/frontend-dist'
 
                 - task: AzureCLI@2
                   name: GetStaticWebAppToken
@@ -582,7 +608,6 @@ stages:
                     inlineScript: |
                       echo "Getting Static Web App deployment token..."
 
-                      # Get deployment outputs
                       DEPLOYMENT_NAME="djoppie-dev-$(Build.BuildId)"
 
                       STATIC_WEB_APP_API_KEY=$(az deployment sub show \
@@ -602,7 +627,7 @@ stages:
                   displayName: 'Deploy Frontend to Static Web App'
                   inputs:
                     azure_static_web_apps_api_token: $(staticWebAppToken)
-                    app_location: '$(frontendPath)/dist'
+                    app_location: 'frontend-dist'
                     skip_app_build: true
                     skip_api_build: true
 
@@ -638,13 +663,11 @@ stages:
                       echo "Backend CORS updated successfully"
 
   # ============================================================================
-  # STAGE 5: SMOKE TESTS
+  # STAGE 4: SMOKE TESTS
   # ============================================================================
   - stage: SmokeTests
     displayName: 'Smoke Tests'
-    dependsOn:
-      - DeployFrontend
-      - DeployInfrastructure
+    dependsOn: Deploy
     condition: succeeded()
     jobs:
       - job: RunSmokeTests
@@ -693,9 +716,9 @@ stages:
               HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/health")
 
               if [ "$HEALTH_STATUS" = "401" ] || [ "$HEALTH_STATUS" = "200" ]; then
-                echo "✓ Backend is running (HTTP $HEALTH_STATUS)"
+                echo "Backend is running (HTTP $HEALTH_STATUS)"
               else
-                echo "✗ Backend health check failed (HTTP $HEALTH_STATUS)"
+                echo "Backend health check failed (HTTP $HEALTH_STATUS)"
                 exit 1
               fi
 
@@ -707,9 +730,9 @@ stages:
               FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
 
               if [ "$FRONTEND_STATUS" = "200" ]; then
-                echo "✓ Frontend is accessible (HTTP $FRONTEND_STATUS)"
+                echo "Frontend is accessible (HTTP $FRONTEND_STATUS)"
               else
-                echo "✗ Frontend check failed (HTTP $FRONTEND_STATUS)"
+                echo "Frontend check failed (HTTP $FRONTEND_STATUS)"
                 exit 1
               fi
 

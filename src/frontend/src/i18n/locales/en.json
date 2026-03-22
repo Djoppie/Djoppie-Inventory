@@ -21,16 +21,30 @@
     "actions": "Actions",
     "saving": "Saving...",
     "deleting": "Deleting...",
+    "downloading": "Downloading...",
+    "exporting": "Exporting...",
     "or": "or",
     "rowsPerPage": "Rows per page",
-    "backToAsset": "Back to Asset"
+    "backToAsset": "Back to Asset",
+    "backToDashboard": "Back to Dashboard",
+    "filters": "Filters",
+    "clearFilters": "Clear Filters",
+    "all": "All",
+    "processing": "Processing...",
+    "confirm": "Confirm",
+    "clear": "Clear"
+  },
+  "validation": {
+    "required": "Required field"
   },
   "navigation": {
     "dashboard": "Dashboard",
     "scan": "Scan",
     "assets": "Assets",
     "templates": "Templates",
+    "laptopSwap": "Swap",
     "rollouts": "Rollouts",
+    "workplaces": "Workplaces",
     "admin": "Admin"
   },
   "dashboard": {
@@ -891,6 +905,127 @@
       "clear": "Clear terminal"
     }
   },
+  "physicalWorkplaces": {
+    "title": "Workplaces",
+    "subtitle": "Manage physical workplace locations and occupancy",
+    "loading": "Loading workplaces...",
+    "errorLoading": "Error loading workplaces",
+    "noWorkplaces": "No workplaces found",
+    "noWorkplacesDesc": "Create your first workplace to get started",
+    "addWorkplace": "Add Workplace",
+    "addWorkplaceDesc": "Create a new physical workplace location",
+    "editWorkplace": "Edit Workplace",
+    "editWorkplaceDesc": "Modify the workplace configuration",
+    "deleteWorkplace": "Delete Workplace",
+    "code": "Code",
+    "codeHint": "Unique identifier (e.g., BZ-L01)",
+    "name": "Name",
+    "description": "Description",
+    "building": "Building",
+    "service": "Service",
+    "floor": "Floor",
+    "room": "Room",
+    "type": "Workplace Type",
+    "monitorCount": "Monitor Count",
+    "hasDockingStation": "Has Docking Station",
+    "isActive": "Active",
+    "active": "Active",
+    "inactive": "Inactive",
+    "occupant": "Occupant",
+    "occupied": "Occupied",
+    "vacant": "Vacant",
+    "status": "Status",
+    "occupancy": "Occupancy",
+    "assets": "Assets",
+    "identification": "Identification",
+    "location": "Location",
+    "configuration": "Configuration",
+    "createSuccess": "Workplace created successfully",
+    "updateSuccess": "Workplace updated successfully",
+    "deleteSuccess": "Workplace deleted successfully",
+    "saveError": "Error saving workplace",
+    "deleteError": "Error deleting workplace",
+    "deleteConfirm": "Are you sure you want to delete workplace '{{name}}' ({{code}})?",
+    "deleteWarningAssets": "Warning: There are {{count}} assets linked to this workplace",
+    "clearOccupant": "Clear Occupant",
+    "clearOccupantConfirm": "Do you want to remove {{name}} as occupant from {{workplace}}?",
+    "clearOccupantError": "Error clearing occupant",
+    "occupantCleared": "Occupant cleared successfully",
+    "totalCount": "{{count}} workplaces",
+    "occupiedCount": "{{count}} occupied",
+    "vacantCount": "{{count}} vacant",
+    "manageAssets": "Manage Assets",
+    "assignedAssets": "Assigned Assets",
+    "addAsset": "Add Asset",
+    "searchAssetPlaceholder": "Search by code, name, serial number...",
+    "noAssetsAssigned": "No assets assigned to this workplace",
+    "noAvailableAssets": "No available assets found",
+    "allAssetsAssigned": "All assets are already assigned to workplaces",
+    "assetAssigned": "Asset {{asset}} assigned successfully",
+    "assetUnassigned": "Asset {{asset}} unassigned successfully",
+    "assignError": "Error assigning asset",
+    "unassignError": "Error unassigning asset",
+    "errorLoadingAssets": "Error loading assets",
+    "equipment": {
+      "title": "Equipment",
+      "dockingStation": "Docking Station",
+      "monitor1": "Monitor 1",
+      "monitor2": "Monitor 2",
+      "monitor3": "Monitor 3",
+      "keyboard": "Keyboard",
+      "mouse": "Mouse",
+      "selectAsset": "Select asset...",
+      "noSlotsConfigured": "No equipment slots configured for this workplace type"
+    },
+    "occupier": {
+      "title": "Main Occupier",
+      "noOccupier": "No occupier assigned",
+      "assignOccupier": "Assign an occupier",
+      "changeOccupier": "Change occupier",
+      "clearOccupier": "Remove occupier",
+      "searchPlaceholder": "Search by name or email...",
+      "typeToSearch": "Type at least 2 characters to search",
+      "noUsersFound": "No users found",
+      "since": "Since:"
+    },
+    "bulk": {
+      "title": "Bulk Import Workplaces",
+      "subtitle": "Import workplaces via CSV or create multiple at once",
+      "csvImport": "CSV Import",
+      "quickAdd": "Quick Add",
+      "naming": "Naming",
+      "step1": "Step 1: Download the template",
+      "step2": "Step 2: Upload your filled CSV",
+      "downloadTemplate": "Download Template",
+      "templateDownloaded": "Template downloaded successfully",
+      "templateError": "Error downloading template",
+      "templateHint": "The template includes valid building and service codes",
+      "exportCurrent": "Export Current",
+      "exportSuccess": "Workplaces exported successfully",
+      "exportError": "Error exporting workplaces",
+      "selectFile": "Select CSV File",
+      "importNow": "Import Workplaces",
+      "importSuccess": "{{count}} workplaces imported successfully",
+      "importPartial": "{{success}} workplaces imported, {{errors}} errors",
+      "importFailed": "Import failed - no workplaces created",
+      "importError": "Error during import",
+      "importResult": "Imported {{success}} of {{total}} workplaces ({{errors}} errors)",
+      "quickAddHint": "Quickly create multiple workplaces with sequential codes for a building/service",
+      "codePrefix": "Code Prefix",
+      "codePrefixHint": "e.g., GH-BZ-L will create GH-BZ-L01, GH-BZ-L02, etc.",
+      "startNumber": "Start Number",
+      "count": "Count",
+      "nameTemplate": "Name Template",
+      "nameTemplateHint": "Use {n} for the number, e.g., 'Loket {n} Burgerzaken'",
+      "preview": "Preview:",
+      "createWorkplaces": "Create {{count}} Workplaces",
+      "createSuccess": "{{count}} workplaces created successfully",
+      "createPartial": "{{success}} workplaces created, {{errors}} errors",
+      "createFailed": "Creation failed - no workplaces created",
+      "createError": "Error creating workplaces",
+      "createResult": "Created {{success}} workplaces ({{errors}} errors)"
+    }
+  },
   "bulkEdit": {
     "title": "Bulk Edit Assets",
     "editSelected": "Edit Selected",
@@ -915,5 +1050,113 @@
     "successMessage": "Successfully updated {{count}} assets",
     "partialSuccess": "Updated {{updated}} assets, {{failed}} failed",
     "errors": "Errors:"
+  },
+  "deployment": {
+    "title": "Laptop Swap / Onboarding",
+    "subtitle": "Perform a laptop swap or onboard a new user",
+    "mode": {
+      "label": "Mode",
+      "onboarding": "Onboarding",
+      "onboardingDesc": "New employee gets laptop (no old device)",
+      "swap": "Swap",
+      "swapDesc": "Replace old laptop with new one"
+    },
+    "user": {
+      "title": "User",
+      "search": "Search user...",
+      "searchHint": "Search by name or email in Microsoft Entra",
+      "selected": "Selected user",
+      "noUserSelected": "No user selected",
+      "currentAssets": "Current assets for this user"
+    },
+    "oldLaptop": {
+      "title": "Old Device",
+      "select": "Select old device",
+      "noOldLaptop": "No old device",
+      "selectFromList": "Select from user's device list",
+      "newStatus": "New status for old device",
+      "statusOptions": {
+        "stock": "Stock (back to inventory)",
+        "defect": "Defective (broken)",
+        "uitdienst": "Decommissioned (retire)"
+      }
+    },
+    "newLaptop": {
+      "title": "New Device",
+      "search": "Search available laptop...",
+      "searchHint": "Search by code, serial number or name",
+      "noNewLaptop": "No new device selected",
+      "availableCount": "{{count}} laptops available"
+    },
+    "workplace": {
+      "title": "Workplace (optional)",
+      "select": "Select workplace",
+      "noWorkplace": "No workplace",
+      "updateEquipment": "Update workplace equipment",
+      "currentOccupant": "Current occupant",
+      "willUpdateOccupant": "Occupant will be updated to new user"
+    },
+    "equipment": {
+      "title": "Workplace Equipment",
+      "updateEquipment": "Update equipment",
+      "noChanges": "No equipment changes"
+    },
+    "occupantConflict": {
+      "title": "Occupant Conflict",
+      "message": "This workplace is currently occupied by {{currentOccupant}}.",
+      "question": "Do you want to update the occupant to {{newOccupant}}?",
+      "confirmUpdate": "Yes, update occupant",
+      "cancel": "Cancel"
+    },
+    "execute": {
+      "button": "Execute Deployment",
+      "executing": "Executing deployment...",
+      "confirmTitle": "Confirm Deployment",
+      "confirmSwap": "You are about to swap the laptop for {{userName}}.",
+      "confirmOnboarding": "You are about to onboard {{userName}} with a new laptop.",
+      "oldDevice": "Old device: {{device}} → {{status}}",
+      "newDevice": "New device: {{device}}",
+      "workplaceUpdate": "Workplace: {{workplace}}"
+    },
+    "success": {
+      "title": "Deployment Successful",
+      "swapComplete": "Laptop swap completed successfully for {{userName}}",
+      "onboardingComplete": "Onboarding completed successfully for {{userName}}",
+      "viewHistory": "View history"
+    },
+    "error": {
+      "title": "Deployment Failed",
+      "generic": "An error occurred during deployment",
+      "noUser": "Please select a user",
+      "noNewLaptop": "Please select a new device",
+      "noOldLaptop": "Please select the old device for swap",
+      "retry": "Try again"
+    },
+    "history": {
+      "title": "Deployment History",
+      "subtitle": "Overview of all laptop swaps and onboardings",
+      "filters": "Filters",
+      "dateRange": "Date range",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "modeFilter": "Filter by mode",
+      "allModes": "All modes",
+      "noHistory": "No deployment history found",
+      "columns": {
+        "date": "Date",
+        "mode": "Mode",
+        "user": "User",
+        "oldDevice": "Old Device",
+        "newDevice": "New Device",
+        "workplace": "Workplace",
+        "performedBy": "Performed by"
+      },
+      "export": "Export to CSV"
+    },
+    "validation": {
+      "userRequired": "User is required",
+      "newLaptopRequired": "New device is required",
+      "oldLaptopRequiredForSwap": "Old device is required for swap mode"
+    }
   }
 }

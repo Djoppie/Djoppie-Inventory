@@ -242,6 +242,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                   : 'rgba(255, 119, 0, 0.15)',
               color: stats.completionPercentage === 100 ? '#16a34a' : '#FF7700',
               fontWeight: 600,
+              border: `1px solid ${stats.completionPercentage === 100 ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 119, 0, 0.4)'}`,
             }}
           />
         </Box>

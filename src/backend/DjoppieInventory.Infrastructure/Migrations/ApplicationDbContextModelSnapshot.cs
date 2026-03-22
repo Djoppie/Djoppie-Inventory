@@ -94,6 +94,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("PhysicalWorkplaceId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("PurchaseDate")
                         .HasColumnType("TEXT");
 
@@ -125,6 +128,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("CurrentWorkplaceAssignmentId");
 
                     b.HasIndex("LastRolloutSessionId");
+
+                    b.HasIndex("PhysicalWorkplaceId");
 
                     b.HasIndex("SerialNumber")
                         .IsUnique()
@@ -812,6 +817,236 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.ToTable("LeaseContracts");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.PhysicalWorkplace", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BuildingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentOccupantEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentOccupantEntraId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrentOccupantName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DockingStationAssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Floor")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("HasDockingStation")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("KeyboardAssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Monitor1AssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Monitor2AssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Monitor3AssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MonitorCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MouseAssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("OccupiedSince")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Room")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("CurrentOccupantEntraId");
+
+                    b.HasIndex("DockingStationAssetId");
+
+                    b.HasIndex("KeyboardAssetId");
+
+                    b.HasIndex("Monitor1AssetId");
+
+                    b.HasIndex("Monitor2AssetId");
+
+                    b.HasIndex("Monitor3AssetId");
+
+                    b.HasIndex("MouseAssetId");
+
+                    b.HasIndex("ServiceId");
+
+                    b.ToTable("PhysicalWorkplaces");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BuildingId = 2,
+                            Code = "GH-BZ-L01",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Eerste loket Burgerzaken - Identiteitskaarten",
+                            Floor = "Gelijkvloers",
+                            HasDockingStation = true,
+                            IsActive = true,
+                            MonitorCount = 2,
+                            Name = "Loket 1 Burgerzaken",
+                            Room = "Lokettenhal",
+                            ServiceId = 9,
+                            Type = 1,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 2,
+                            BuildingId = 2,
+                            Code = "GH-BZ-L02",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Tweede loket Burgerzaken - Rijbewijzen",
+                            Floor = "Gelijkvloers",
+                            HasDockingStation = true,
+                            IsActive = true,
+                            MonitorCount = 2,
+                            Name = "Loket 2 Burgerzaken",
+                            Room = "Lokettenhal",
+                            ServiceId = 9,
+                            Type = 1,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 3,
+                            BuildingId = 2,
+                            Code = "GH-BZ-L03",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Derde loket Burgerzaken - Paspoorten",
+                            Floor = "Gelijkvloers",
+                            HasDockingStation = true,
+                            IsActive = true,
+                            MonitorCount = 2,
+                            Name = "Loket 3 Burgerzaken",
+                            Room = "Lokettenhal",
+                            ServiceId = 9,
+                            Type = 1,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 4,
+                            BuildingId = 1,
+                            Code = "PG-IT-01",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Helpdesk werkplek",
+                            Floor = "1e verdieping",
+                            HasDockingStation = false,
+                            IsActive = true,
+                            MonitorCount = 3,
+                            Name = "Werkplek IT 1",
+                            Room = "Lokaal IT",
+                            ServiceId = 3,
+                            Type = 0,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 5,
+                            BuildingId = 1,
+                            Code = "PG-IT-02",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Systeembeheer werkplek",
+                            Floor = "1e verdieping",
+                            HasDockingStation = false,
+                            IsActive = true,
+                            MonitorCount = 3,
+                            Name = "Werkplek IT 2",
+                            Room = "Lokaal IT",
+                            ServiceId = 3,
+                            Type = 0,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 6,
+                            BuildingId = 3,
+                            Code = "PL-FLEX-01",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Gedeelde werkplek voor medewerkers Sector Mens",
+                            Floor = "Gelijkvloers",
+                            HasDockingStation = true,
+                            IsActive = true,
+                            MonitorCount = 1,
+                            Name = "Flexplek 1",
+                            Room = "Open kantoor",
+                            ServiceId = 13,
+                            Type = 2,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 7,
+                            BuildingId = 2,
+                            Code = "GH-VERG-01",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Grote vergaderzaal met presentatiescherm",
+                            Floor = "1e verdieping",
+                            HasDockingStation = true,
+                            IsActive = true,
+                            MonitorCount = 1,
+                            Name = "Vergaderzaal Raadzaal",
+                            Room = "Raadzaal",
+                            Type = 3,
+                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutAssetMovement", b =>
                 {
                     b.Property<int>("Id")
@@ -1089,6 +1324,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("PhysicalWorkplaceId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RolloutDayId")
                         .HasColumnType("INTEGER");
 
@@ -1123,6 +1361,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("BuildingId");
+
+                    b.HasIndex("PhysicalWorkplaceId");
 
                     b.HasIndex("RolloutDayId");
 
@@ -1722,6 +1962,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("LastRolloutSessionId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("DjoppieInventory.Core.Entities.PhysicalWorkplace", "PhysicalWorkplace")
+                        .WithMany("FixedAssets")
+                        .HasForeignKey("PhysicalWorkplaceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
                         .WithMany("Assets")
                         .HasForeignKey("ServiceId")
@@ -1734,6 +1979,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("CurrentWorkplaceAssignment");
 
                     b.Navigation("LastRolloutSession");
+
+                    b.Navigation("PhysicalWorkplace");
 
                     b.Navigation("Service");
                 });
@@ -1787,6 +2034,66 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Asset");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.PhysicalWorkplace", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "DockingStationAsset")
+                        .WithMany()
+                        .HasForeignKey("DockingStationAssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "KeyboardAsset")
+                        .WithMany()
+                        .HasForeignKey("KeyboardAssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Monitor1Asset")
+                        .WithMany()
+                        .HasForeignKey("Monitor1AssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Monitor2Asset")
+                        .WithMany()
+                        .HasForeignKey("Monitor2AssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "Monitor3Asset")
+                        .WithMany()
+                        .HasForeignKey("Monitor3AssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "MouseAsset")
+                        .WithMany()
+                        .HasForeignKey("MouseAssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Building");
+
+                    b.Navigation("DockingStationAsset");
+
+                    b.Navigation("KeyboardAsset");
+
+                    b.Navigation("Monitor1Asset");
+
+                    b.Navigation("Monitor2Asset");
+
+                    b.Navigation("Monitor3Asset");
+
+                    b.Navigation("MouseAsset");
+
+                    b.Navigation("Service");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutAssetMovement", b =>
                 {
                     b.HasOne("DjoppieInventory.Core.Entities.Asset", "Asset")
@@ -1798,12 +2105,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "NewService")
                         .WithMany()
                         .HasForeignKey("NewServiceId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "PreviousService")
                         .WithMany()
                         .HasForeignKey("PreviousServiceId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "RolloutSession")
                         .WithMany("AssetMovements")
@@ -1814,12 +2121,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutWorkplace", "RolloutWorkplace")
                         .WithMany("AssetMovements")
                         .HasForeignKey("RolloutWorkplaceId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.WorkplaceAssetAssignment", "WorkplaceAssetAssignment")
                         .WithMany()
                         .HasForeignKey("WorkplaceAssetAssignmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Asset");
 
@@ -1856,7 +2163,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
                         .WithMany("ScheduledRolloutDays")
                         .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("RolloutDay");
@@ -1871,6 +2178,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("BuildingId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("DjoppieInventory.Core.Entities.PhysicalWorkplace", "PhysicalWorkplace")
+                        .WithMany("RolloutWorkplaces")
+                        .HasForeignKey("PhysicalWorkplaceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutDay", "RolloutDay")
                         .WithMany("Workplaces")
                         .HasForeignKey("RolloutDayId")
@@ -1883,6 +2195,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Building");
+
+                    b.Navigation("PhysicalWorkplace");
 
                     b.Navigation("RolloutDay");
 
@@ -1922,12 +2236,12 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasOne("DjoppieInventory.Core.Entities.Asset", "NewAsset")
                         .WithMany()
                         .HasForeignKey("NewAssetId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.Asset", "OldAsset")
                         .WithMany()
                         .HasForeignKey("OldAssetId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutWorkplace", "RolloutWorkplace")
                         .WithMany("AssetAssignments")
@@ -1965,6 +2279,13 @@ namespace DjoppieInventory.Infrastructure.Migrations
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Category", b =>
                 {
                     b.Navigation("AssetTypes");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.PhysicalWorkplace", b =>
+                {
+                    b.Navigation("FixedAssets");
+
+                    b.Navigation("RolloutWorkplaces");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.RolloutDay", b =>

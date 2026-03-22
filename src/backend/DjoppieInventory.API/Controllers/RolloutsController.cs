@@ -388,6 +388,7 @@ public class RolloutsController : ControllerBase
             Location = dto.Location,
             ScheduledDate = dto.ScheduledDate,
             ServiceId = dto.ServiceId,
+            PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans),
             TotalItems = dto.AssetPlans.Count,
@@ -426,6 +427,7 @@ public class RolloutsController : ControllerBase
         workplace.Location = dto.Location;
         workplace.ScheduledDate = dto.ScheduledDate;
         workplace.ServiceId = dto.ServiceId;
+        workplace.PhysicalWorkplaceId = dto.PhysicalWorkplaceId;
         workplace.IsLaptopSetup = dto.IsLaptopSetup;
         workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
         workplace.Status = status;
@@ -656,7 +658,7 @@ public class RolloutsController : ControllerBase
             {
                 RolloutDayId = dayId,
                 UserName = $"Werkplek {i}",
-                ServiceId = dto.ServiceId,
+                ServiceId = dto.ServiceId > 0 ? dto.ServiceId : null,
                 IsLaptopSetup = dto.IsLaptopSetup,
                 AssetPlansJson = JsonSerializer.Serialize(standardPlans),
                 Status = RolloutWorkplaceStatus.Pending,
@@ -965,7 +967,7 @@ public class RolloutsController : ControllerBase
             // Filter to selected users if specified
             if (dto.SelectedUserIds?.Any() == true)
             {
-                userList = userList.Where(u => dto.SelectedUserIds.Contains(u.Id)).ToList();
+                userList = userList.Where(u => u.Id != null && dto.SelectedUserIds.Contains(u.Id)).ToList();
             }
 
             if (!userList.Any())
@@ -1002,7 +1004,7 @@ public class RolloutsController : ControllerBase
                     RolloutDayId = dayId,
                     UserName = user.DisplayName ?? "Unknown",
                     UserEmail = user.UserPrincipalName ?? user.Mail,
-                    ServiceId = dto.ServiceId,
+                    ServiceId = dto.ServiceId > 0 ? dto.ServiceId : null,
                     Location = user.OfficeLocation,
                     IsLaptopSetup = dto.AssetPlanConfig.IncludeLaptop,
                     AssetPlansJson = JsonSerializer.Serialize(standardPlans),
@@ -1068,7 +1070,7 @@ public class RolloutsController : ControllerBase
 
             foreach (var plan in assetPlans.Where(p => p.ExistingAssetId.HasValue))
             {
-                assetIds.Add(plan.ExistingAssetId.Value);
+                assetIds.Add(plan.ExistingAssetId!.Value);
             }
         }
 
@@ -1646,6 +1648,9 @@ public class RolloutsController : ControllerBase
             ScheduledDate = workplace.ScheduledDate,
             ServiceId = workplace.ServiceId,
             ServiceName = workplace.Service?.Name,
+            PhysicalWorkplaceId = workplace.PhysicalWorkplaceId,
+            PhysicalWorkplaceCode = workplace.PhysicalWorkplace?.Code,
+            PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             IsLaptopSetup = workplace.IsLaptopSetup,
             AssetPlans = assetPlans,
             Status = workplace.Status.ToString(),

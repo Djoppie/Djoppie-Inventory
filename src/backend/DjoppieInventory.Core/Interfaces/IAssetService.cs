@@ -90,7 +90,23 @@ public interface IAssetService
     /// Gets all assets owned by a specific user (by email address).
     /// </summary>
     /// <param name="ownerEmail">The owner's email address</param>
+    /// <param name="assetTypeCode">Optional asset type code filter</param>
+    /// <param name="status">Optional status filter (default: InGebruik)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of assets owned by the user</returns>
-    Task<IEnumerable<AssetDto>> GetAssetsByOwnerAsync(string ownerEmail, CancellationToken cancellationToken = default);
+    Task<IEnumerable<AssetDto>> GetAssetsByOwnerAsync(
+        string ownerEmail,
+        string? assetTypeCode = null,
+        string? status = "InGebruik",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets available laptops for assignment (status: Stock or Nieuw).
+    /// </summary>
+    /// <param name="search">Optional search term to filter by brand/model/serial</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of available laptop assets</returns>
+    Task<IEnumerable<AssetDto>> GetAvailableLaptopsAsync(
+        string? search = null,
+        CancellationToken cancellationToken = default);
 }

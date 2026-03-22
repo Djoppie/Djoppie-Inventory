@@ -49,15 +49,18 @@ export function DeviceDisplaySection({
     transition: 'all 0.2s ease',
   };
 
+  // Purple color for user devices
+  const purpleColor = '#9C27B0';
+
   const intuneChipSx = {
     ...chipBaseSx,
-    color: '#2196F3',
-    '& .MuiChip-icon': { color: '#2196F3' },
+    color: purpleColor,
+    '& .MuiChip-icon': { color: purpleColor },
     '&:hover': {
       transform: 'translateY(-2px)',
       boxShadow: isDark
-        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 0 2px rgba(33, 150, 243, 0.4)'
-        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 0 2px rgba(33, 150, 243, 0.3)',
+        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 0 2px rgba(156, 39, 176, 0.4)'
+        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 0 2px rgba(156, 39, 176, 0.3)',
     },
     '&:active': {
       transform: 'translateY(0)',
@@ -69,13 +72,13 @@ export function DeviceDisplaySection({
 
   const ownerChipSx = {
     ...chipBaseSx,
-    color: '#FF7700',
-    '& .MuiChip-icon': { color: '#FF7700' },
+    color: purpleColor,
+    '& .MuiChip-icon': { color: purpleColor },
     '&:hover': {
       transform: 'translateY(-2px)',
       boxShadow: isDark
-        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 0 2px rgba(255, 119, 0, 0.4)'
-        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 0 2px rgba(255, 119, 0, 0.3)',
+        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 0 2px rgba(156, 39, 176, 0.4)'
+        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 0 2px rgba(156, 39, 176, 0.3)',
     },
     '&:active': {
       transform: 'translateY(0)',
@@ -114,12 +117,12 @@ export function DeviceDisplaySection({
             sx={{
               mb: 1.5,
               display: 'block',
-              color: '#2196F3',
+              color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}
           >
-            HUIDIGE APPARATEN (INTUNE) — Klik om toe te voegen
+            HUIDIGE APPARATEN (INTUNE) — Klik voor toevoegen of inleveren
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1}>
             {userDevices.map((device) => (
@@ -145,16 +148,16 @@ export function DeviceDisplaySection({
             sx={{
               mb: 1.5,
               display: 'block',
-              color: '#FF7700',
+              color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}
           >
-            ASSETS IN DJOPPIE DB — Klik om toe te voegen
+            ASSETS IN DJOPPIE DB — Klik voor toevoegen of inleveren
           </Typography>
           {ownerAssetsLoading ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={16} sx={{ color: '#FF7700' }} />
+              <CircularProgress size={16} sx={{ color: purpleColor }} />
               <Typography variant="caption" color="text.secondary">
                 Assets laden...
               </Typography>

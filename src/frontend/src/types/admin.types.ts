@@ -220,3 +220,14 @@ export interface UpdateLeaseContractDto {
   description?: string;
   isActive: boolean;
 }
+
+// ============================================================
+// Sync Result - Response from Entra sync operations
+// ============================================================
+
+export interface SyncResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  totalFromSource: number;
+}

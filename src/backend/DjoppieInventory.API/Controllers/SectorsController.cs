@@ -15,10 +15,17 @@ namespace DjoppieInventory.API.Controllers;
 public class SectorsController : ControllerBase
 {
     private readonly ISectorRepository _sectorRepository;
+    private readonly IGraphUserService _graphUserService;
+    private readonly ILogger<SectorsController> _logger;
 
-    public SectorsController(ISectorRepository sectorRepository)
+    public SectorsController(
+        ISectorRepository sectorRepository,
+        IGraphUserService graphUserService,
+        ILogger<SectorsController> logger)
     {
         _sectorRepository = sectorRepository;
+        _graphUserService = graphUserService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -164,5 +171,83 @@ public class SectorsController : ControllerBase
             return NotFound($"Sector with ID {id} not found");
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Syncs sectors from Microsoft Entra mail groups (MG-SECTOR-*).
+    /// Creates new sectors for groups not yet in the database.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Sync result with counts of created and updated sectors</returns>
+    [HttpPost("sync-from-entra")]
+    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [ProducesResponseType(typeof(SyncResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SyncResultDto>> SyncFromEntra(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Starting sector sync from Entra mail groups");
+
+            var groups = await _graphUserService.GetSectorGroupsAsync();
+            var existingSectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
+            var existingCodes = existingSectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+
+            int created = 0;
+            int updated = 0;
+            int skipped = 0;
+
+            foreach (var group in groups)
+            {
+                if (string.IsNullOrEmpty(group.DisplayName)) continue;
+
+                // Extract sector code from group name (MG-SECTOR-XXX -> XXX)
+                var groupName = group.DisplayName;
+                var code = groupName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
+                    ? groupName.Substring("MG-SECTOR-".Length).ToUpperInvariant()
+                    : groupName.ToUpperInvariant();
+
+                // Use display name or mail nickname as the sector name
+                var name = group.DisplayName;
+
+                if (existingCodes.TryGetValue(code, out var existingSector))
+                {
+                    // Sector exists - update if name changed and sector is still active
+                    if (existingSector.IsActive && existingSector.Name != name)
+                    {
+                        existingSector.Name = name;
+                        await _sectorRepository.UpdateAsync(existingSector, cancellationToken);
+                        updated++;
+                    }
+                    else
+                    {
+                        skipped++;
+                    }
+                }
+                else
+                {
+                    // Create new sector
+                    var newSector = new Sector
+                    {
+                        Code = code,
+                        Name = name,
+                        SortOrder = 0,
+                        IsActive = true
+                    };
+                    await _sectorRepository.CreateAsync(newSector, cancellationToken);
+                    created++;
+                }
+            }
+
+            _logger.LogInformation("Sector sync completed: {Created} created, {Updated} updated, {Skipped} skipped",
+                created, updated, skipped);
+
+            return Ok(new SyncResultDto(created, updated, skipped, groups.Count()));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to sync sectors from Entra");
+            return StatusCode(500, new { error = "Failed to sync sectors from Entra", details = ex.Message });
+        }
     }
 }

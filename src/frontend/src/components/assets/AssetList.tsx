@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Typography, Box, Pagination, Stack } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import AssetCard from './AssetCard';
@@ -26,6 +26,28 @@ const AssetList = ({
 }: AssetListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
 
+  // All hooks must be called before any early returns
+  const { totalPages, startIndex, endIndex, currentAssets } = useMemo(() => {
+    if (assets.length === 0) {
+      return { totalPages: 0, startIndex: 0, endIndex: 0, currentAssets: [] as Asset[] };
+    }
+    const total = Math.ceil(assets.length / ITEMS_PER_PAGE);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    return {
+      totalPages: total,
+      startIndex: start,
+      endIndex: end,
+      currentAssets: assets.slice(start, end),
+    };
+  }, [assets, currentPage]);
+
+  const handlePageChange = useCallback((_event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Now we can have early returns after hooks
   if (assets.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -51,18 +73,6 @@ const AssetList = ({
       />
     );
   }
-
-  // Card view logic (existing implementation)
-  const totalPages = Math.ceil(assets.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentAssets = assets.slice(startIndex, endIndex);
-
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
-    setCurrentPage(page);
-    // Scroll to top of asset list
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   return (
     <Stack spacing={3}>

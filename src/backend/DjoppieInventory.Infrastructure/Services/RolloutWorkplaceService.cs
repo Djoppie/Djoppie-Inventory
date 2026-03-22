@@ -53,6 +53,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
             {
                 await TransitionAssetsForCompletion(workplace, assetPlans, completedBy, completedByEmail);
                 UpdateWorkplaceAsCompleted(workplace, assetPlans, notes, completedBy, completedByEmail);
+                await UpdatePhysicalWorkplaceAsync(workplace, assetPlans);
                 await _rolloutRepository.SaveChangesAsync();
                 await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
             });
@@ -269,6 +270,78 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
     }
 
     #region Private Helper Methods
+
+    /// <summary>
+    /// Updates the PhysicalWorkplace with occupant information and fixed asset slots
+    /// when a rollout workplace is completed.
+    /// </summary>
+    private Task UpdatePhysicalWorkplaceAsync(RolloutWorkplace workplace, List<AssetPlanDto> assetPlans)
+    {
+        // Skip if no physical workplace is linked
+        if (workplace.PhysicalWorkplaceId == null || workplace.PhysicalWorkplace == null)
+        {
+            _logger.LogDebug("No PhysicalWorkplace linked to RolloutWorkplace {WorkplaceId}, skipping update", workplace.Id);
+            return Task.CompletedTask;
+        }
+
+        var physicalWorkplace = workplace.PhysicalWorkplace;
+
+        // Update occupant information
+        physicalWorkplace.CurrentOccupantEntraId = workplace.UserEntraId;
+        physicalWorkplace.CurrentOccupantName = workplace.UserName;
+        physicalWorkplace.CurrentOccupantEmail = workplace.UserEmail;
+        physicalWorkplace.OccupiedSince = DateTime.UtcNow;
+
+        // Track monitors for slot assignment
+        var monitorSlot = 1;
+        var equipmentCount = 0;
+
+        // Update equipment slots from asset plans
+        foreach (var plan in assetPlans.Where(p => p.ExistingAssetId.HasValue))
+        {
+            var equipmentType = plan.EquipmentType?.ToLowerInvariant() ?? "";
+
+            switch (equipmentType)
+            {
+                case "docking":
+                    physicalWorkplace.DockingStationAssetId = plan.ExistingAssetId;
+                    equipmentCount++;
+                    break;
+                case "monitor":
+                    switch (monitorSlot)
+                    {
+                        case 1:
+                            physicalWorkplace.Monitor1AssetId = plan.ExistingAssetId;
+                            break;
+                        case 2:
+                            physicalWorkplace.Monitor2AssetId = plan.ExistingAssetId;
+                            break;
+                        case 3:
+                            physicalWorkplace.Monitor3AssetId = plan.ExistingAssetId;
+                            break;
+                    }
+                    monitorSlot++;
+                    equipmentCount++;
+                    break;
+                case "keyboard":
+                    physicalWorkplace.KeyboardAssetId = plan.ExistingAssetId;
+                    equipmentCount++;
+                    break;
+                case "mouse":
+                    physicalWorkplace.MouseAssetId = plan.ExistingAssetId;
+                    equipmentCount++;
+                    break;
+            }
+        }
+
+        physicalWorkplace.UpdatedAt = DateTime.UtcNow;
+
+        _logger.LogInformation(
+            "Updated PhysicalWorkplace {PhysicalWorkplaceId} ({Code}) with occupant {OccupantName} and {EquipmentCount} fixed assets",
+            physicalWorkplace.Id, physicalWorkplace.Code, physicalWorkplace.CurrentOccupantName, equipmentCount);
+
+        return Task.CompletedTask;
+    }
 
     private static List<AssetPlanDto> ParseAssetPlans(string? json)
     {
