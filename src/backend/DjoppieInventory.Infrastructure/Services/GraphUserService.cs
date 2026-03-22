@@ -468,7 +468,7 @@ public class GraphUserService : IGraphUserService
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<Group>> GetSectorServiceGroupsAsync(string sectorGroupId, int top = 100)
+    public async Task<IEnumerable<Group>> GetSectorServiceGroupsAsync(string sectorGroupId, int top = 999)
     {
         try
         {
@@ -477,23 +477,72 @@ public class GraphUserService : IGraphUserService
                 throw new ArgumentException("Sector group ID cannot be null or empty", nameof(sectorGroupId));
             }
 
-            _logger.LogInformation("Retrieving service groups nested in sector: {SectorGroupId}", sectorGroupId);
+            _logger.LogInformation("Retrieving ALL service groups nested in sector: {SectorGroupId}", sectorGroupId);
 
-            // Get all members of the sector group (including nested groups)
-            var members = await _graphClient.Groups[sectorGroupId].Members
+            var allMembers = new List<DirectoryObject>();
+
+            // Get all members of the sector group with pagination
+            var response = await _graphClient.Groups[sectorGroupId].Members
                 .GetAsync(requestConfiguration =>
                 {
                     requestConfiguration.QueryParameters.Top = top;
                 });
 
+            if (response?.Value != null)
+            {
+                allMembers.AddRange(response.Value);
+            }
+
+            // Handle pagination - fetch all pages
+            while (response?.OdataNextLink != null)
+            {
+                _logger.LogInformation("Fetching next page of sector members...");
+                response = await _graphClient.Groups[sectorGroupId].Members
+                    .WithUrl(response.OdataNextLink)
+                    .GetAsync();
+
+                if (response?.Value != null)
+                {
+                    allMembers.AddRange(response.Value);
+                }
+            }
+
             // Filter to only Group objects that start with "MG-" but not "MG-SECTOR-"
-            var serviceGroups = members?.Value?
+            var groupIds = allMembers
                 .OfType<Group>()
                 .Where(g => !string.IsNullOrEmpty(g.DisplayName) &&
                            g.DisplayName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase) &&
                            !g.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(g => g.DisplayName)
-                .ToList() ?? new List<Group>();
+                .ToList();
+
+            // Fetch full group details including mailNickname for each group
+            var serviceGroups = new List<Group>();
+            foreach (var group in groupIds)
+            {
+                if (string.IsNullOrEmpty(group.Id)) continue;
+                try
+                {
+                    var fullGroup = await _graphClient.Groups[group.Id]
+                        .GetAsync(requestConfiguration =>
+                        {
+                            requestConfiguration.QueryParameters.Select = new[]
+                            {
+                                "id", "displayName", "description", "mail", "mailEnabled",
+                                "securityEnabled", "groupTypes", "mailNickname"
+                            };
+                        });
+                    if (fullGroup != null)
+                    {
+                        serviceGroups.Add(fullGroup);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not fetch details for group {GroupId}", group.Id);
+                }
+            }
+
+            serviceGroups = serviceGroups.OrderBy(g => g.DisplayName).ToList();
 
             _logger.LogInformation("Found {Count} service groups in sector {SectorGroupId}", serviceGroups.Count, sectorGroupId);
 
