@@ -443,6 +443,9 @@ public class ServicesController : ControllerBase
         if (string.IsNullOrEmpty(headerLine))
             return BadRequest("CSV file is empty");
 
+        // Detect delimiter from header line (supports comma, semicolon, tab)
+        var delimiter = DetectDelimiter(headerLine);
+
         int rowNumber = 1;
         int created = 0;
         int updated = 0;
@@ -456,7 +459,7 @@ public class ServicesController : ControllerBase
 
             try
             {
-                var values = ParseCsvLine(line);
+                var values = ParseCsvLine(line, delimiter);
                 if (values.Length < 2)
                 {
                     results.Add(new ServiceImportRowResult(rowNumber, null, null, false, "Onvoldoende kolommen"));
@@ -549,7 +552,7 @@ public class ServicesController : ControllerBase
         return Ok(new { message = $"Deleted {count} services", count });
     }
 
-    private static string[] ParseCsvLine(string line)
+    private static string[] ParseCsvLine(string line, char delimiter = ',')
     {
         var result = new List<string>();
         var inQuotes = false;
@@ -561,7 +564,7 @@ public class ServicesController : ControllerBase
             {
                 inQuotes = !inQuotes;
             }
-            else if (c == ',' && !inQuotes)
+            else if (c == delimiter && !inQuotes)
             {
                 result.Add(current.ToString());
                 current.Clear();
@@ -574,6 +577,21 @@ public class ServicesController : ControllerBase
         result.Add(current.ToString());
 
         return result.ToArray();
+    }
+
+    private static char DetectDelimiter(string headerLine)
+    {
+        // Count occurrences of common delimiters
+        var commaCount = headerLine.Count(c => c == ',');
+        var semicolonCount = headerLine.Count(c => c == ';');
+        var tabCount = headerLine.Count(c => c == '\t');
+
+        // Return the most common one (prefer semicolon for European locales)
+        if (semicolonCount >= commaCount && semicolonCount >= tabCount)
+            return ';';
+        if (tabCount > commaCount)
+            return '\t';
+        return ',';
     }
 }
 
