@@ -431,10 +431,12 @@ public class ServicesController : ControllerBase
             return BadRequest("No file uploaded");
 
         var results = new List<ServiceImportRowResult>();
+
+        // Build lookup dictionaries - only store IDs, not tracked entities
         var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-        var sectorsByCode = sectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+        var sectorIdsByCode = sectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s.Id);
         var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
-        var existingCodes = new HashSet<string>(existingServices.Select(s => s.Code.ToUpperInvariant()));
+        var existingServicesByCode = existingServices.ToDictionary(s => s.Code.ToUpperInvariant(), s => s.Id);
 
         using var reader = new StreamReader(file.OpenReadStream());
         var headerLine = await reader.ReadLineAsync(cancellationToken);
@@ -475,21 +477,25 @@ public class ServicesController : ControllerBase
                 }
 
                 int? sectorId = null;
-                if (!string.IsNullOrEmpty(sectorCode) && sectorsByCode.TryGetValue(sectorCode, out var sector))
+                if (!string.IsNullOrEmpty(sectorCode) && sectorIdsByCode.TryGetValue(sectorCode, out var foundSectorId))
                 {
-                    sectorId = sector.Id;
+                    sectorId = foundSectorId;
                 }
 
-                if (existingCodes.Contains(code))
+                if (existingServicesByCode.TryGetValue(code, out var existingId))
                 {
-                    // Update existing
-                    var existing = existingServices.First(s => s.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
-                    existing.Name = name;
-                    existing.SectorId = sectorId;
-                    existing.SortOrder = sortOrder;
-                    await _serviceRepository.UpdateAsync(existing, cancellationToken);
-                    results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, existing.Id, true));
-                    updated++;
+                    // Update existing - fetch fresh to avoid tracking issues
+                    var existing = await _serviceRepository.GetByIdAsync(existingId, cancellationToken);
+                    if (existing != null)
+                    {
+                        existing.Name = name;
+                        existing.SectorId = sectorId;
+                        existing.SortOrder = sortOrder;
+                        existing.Sector = null; // Clear navigation property to avoid tracking issues
+                        await _serviceRepository.UpdateAsync(existing, cancellationToken);
+                        results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, existing.Id, true));
+                        updated++;
+                    }
                 }
                 else
                 {
@@ -503,7 +509,7 @@ public class ServicesController : ControllerBase
                         IsActive = true
                     };
                     var createdService = await _serviceRepository.CreateAsync(newService, cancellationToken);
-                    existingCodes.Add(code);
+                    existingServicesByCode[code] = createdService.Id;
                     results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, createdService.Id, false));
                     created++;
                 }
