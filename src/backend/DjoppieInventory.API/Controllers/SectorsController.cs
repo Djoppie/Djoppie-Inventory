@@ -191,7 +191,11 @@ public class SectorsController : ControllerBase
 
             var groups = await _graphUserService.GetSectorGroupsAsync();
             var existingSectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-            var existingCodes = existingSectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+
+            // Store only IDs and essential data to avoid EF Core tracking conflicts
+            var existingCodes = existingSectors.ToDictionary(
+                s => s.Code.ToUpperInvariant(),
+                s => new { s.Id, s.Name, s.IsActive, s.SortOrder });
 
             int created = 0;
             int updated = 0;
@@ -210,19 +214,11 @@ public class SectorsController : ControllerBase
                 // Use display name or mail nickname as the sector name
                 var name = group.DisplayName;
 
-                if (existingCodes.TryGetValue(code, out var existingSector))
+                if (existingCodes.TryGetValue(code, out var existingSectorInfo))
                 {
-                    // Sector exists - update if name changed and sector is still active
-                    if (existingSector.IsActive && existingSector.Name != name)
-                    {
-                        existingSector.Name = name;
-                        await _sectorRepository.UpdateAsync(existingSector, cancellationToken);
-                        updated++;
-                    }
-                    else
-                    {
-                        skipped++;
-                    }
+                    // Sector exists - skip (don't overwrite custom names like we do for services)
+                    // The sync is primarily to create new sectors from Entra
+                    skipped++;
                 }
                 else
                 {
