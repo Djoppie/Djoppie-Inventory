@@ -67,3 +67,5 @@ appsettings.Production.local.json
 # Claude Code workflow state directories
 .full-stack-feature/
 .feature-dev/
+azure-logs/
+azure-logs.zip
