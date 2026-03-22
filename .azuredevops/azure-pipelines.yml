@@ -61,9 +61,9 @@ variables:
 
   # Application Names
   - name: backendAppServiceName
-    value: 'app-djoppie-inventory-dev-api'
+    value: 'app-djoppie-inventory-dev-api-k5xdqp'
   - name: frontendStaticWebAppName
-    value: 'swa-djoppie-inventory-dev-ui'
+    value: 'swa-djoppie-inventory-dev'
 
   # Paths
   - name: backendPath
