@@ -30,9 +30,13 @@ const EquipmentChip = ({ workplace, compact = false }: EquipmentChipProps) => {
 
   // Teal accent color for workplace equipment
   const tealColor = '#00897B';
+  // Warning color for missing serial number
+  const warningColor = '#FFA000';
 
   // Equipment status
   const hasDock = workplace.hasDockingStation && !!workplace.dockingStationAssetId;
+  const dockSerialNumber = workplace.dockingStationSerialNumber;
+  const dockWarning = hasDock && (!dockSerialNumber || dockSerialNumber.length > 8);
   const monitorCount = [
     workplace.monitor1AssetId,
     workplace.monitor2AssetId,
@@ -43,27 +47,30 @@ const EquipmentChip = ({ workplace, compact = false }: EquipmentChipProps) => {
   const hasMouse = !!workplace.mouseAssetId;
 
   // Compact mini-badge styling
-  const badgeSx = (filled: boolean) => ({
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 0.3,
-    px: 0.6,
-    py: 0.2,
-    borderRadius: 1,
-    fontSize: '0.65rem',
-    fontWeight: 700,
-    letterSpacing: '0.02em',
-    bgcolor: filled ? alpha(tealColor, isDark ? 0.25 : 0.15) : alpha(isDark ? '#fff' : '#000', 0.04),
-    color: filled ? tealColor : alpha(isDark ? '#fff' : '#000', 0.35),
-    border: '1px solid',
-    borderColor: filled ? alpha(tealColor, 0.4) : 'transparent',
-    transition: 'all 0.15s ease',
-    cursor: 'default',
-    whiteSpace: 'nowrap',
-    '&:hover': {
-      bgcolor: filled ? alpha(tealColor, isDark ? 0.35 : 0.25) : alpha(isDark ? '#fff' : '#000', 0.08),
-    },
-  });
+  const badgeSx = (filled: boolean, warning: boolean = false) => {
+    const activeColor = warning ? warningColor : tealColor;
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.3,
+      px: 0.6,
+      py: 0.2,
+      borderRadius: 1,
+      fontSize: '0.65rem',
+      fontWeight: 700,
+      letterSpacing: '0.02em',
+      bgcolor: filled ? alpha(activeColor, isDark ? 0.25 : 0.15) : alpha(isDark ? '#fff' : '#000', 0.04),
+      color: filled ? activeColor : alpha(isDark ? '#fff' : '#000', 0.35),
+      border: '1px solid',
+      borderColor: filled ? alpha(activeColor, 0.4) : 'transparent',
+      transition: 'all 0.15s ease',
+      cursor: 'default',
+      whiteSpace: 'nowrap',
+      '&:hover': {
+        bgcolor: filled ? alpha(activeColor, isDark ? 0.35 : 0.25) : alpha(isDark ? '#fff' : '#000', 0.08),
+      },
+    };
+  };
 
   // Icon styling for mini badges
   const iconSx = {
@@ -104,7 +111,7 @@ const EquipmentChip = ({ workplace, compact = false }: EquipmentChipProps) => {
             placement="top"
             arrow
           >
-            <Box sx={badgeSx(hasDock)}>
+            <Box sx={badgeSx(hasDock, dockWarning)}>
               <DockIcon sx={iconSx} />
               <span>DOCK</span>
             </Box>
@@ -177,34 +184,38 @@ const EquipmentChip = ({ workplace, compact = false }: EquipmentChipProps) => {
   }
 
   // Full mode: Horizontal row with larger chips
-  const fullBadgeSx = (filled: boolean) => ({
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 0.5,
-    px: 1,
-    py: 0.4,
-    borderRadius: 1.5,
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    letterSpacing: '0.03em',
-    bgcolor: filled ? tealColor : alpha(isDark ? '#fff' : '#000', 0.06),
-    color: filled ? '#fff' : alpha(isDark ? '#fff' : '#000', 0.4),
-    border: '1px solid',
-    borderColor: filled ? alpha(tealColor, 0.6) : 'transparent',
-    boxShadow: filled
-      ? isDark
-        ? '0 2px 4px rgba(0, 0, 0, 0.3)'
-        : '0 2px 4px rgba(0, 137, 123, 0.2)'
-      : 'none',
-    transition: 'all 0.2s ease',
-    cursor: 'default',
-    '&:hover': {
-      transform: 'translateY(-1px)',
+  const fullBadgeSx = (filled: boolean, warning: boolean = false) => {
+    const activeColor = warning ? warningColor : tealColor;
+    const shadowColor = warning ? 'rgba(255, 160, 0' : 'rgba(0, 137, 123';
+    return {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.5,
+      px: 1,
+      py: 0.4,
+      borderRadius: 1.5,
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      letterSpacing: '0.03em',
+      bgcolor: filled ? activeColor : alpha(isDark ? '#fff' : '#000', 0.06),
+      color: filled ? '#fff' : alpha(isDark ? '#fff' : '#000', 0.4),
+      border: '1px solid',
+      borderColor: filled ? alpha(activeColor, 0.6) : 'transparent',
       boxShadow: filled
-        ? '0 4px 8px rgba(0, 137, 123, 0.3)'
+        ? isDark
+          ? '0 2px 4px rgba(0, 0, 0, 0.3)'
+          : `0 2px 4px ${shadowColor}, 0.2)`
         : 'none',
-    },
-  });
+      transition: 'all 0.2s ease',
+      cursor: 'default',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: filled
+          ? `0 4px 8px ${shadowColor}, 0.3)`
+          : 'none',
+      },
+    };
+  };
 
   const fullIconSx = {
     fontSize: 14,
@@ -223,7 +234,7 @@ const EquipmentChip = ({ workplace, compact = false }: EquipmentChipProps) => {
           placement="top"
           arrow
         >
-          <Box sx={fullBadgeSx(hasDock)}>
+          <Box sx={fullBadgeSx(hasDock, dockWarning)}>
             <DockIcon sx={fullIconSx} />
             <span>DOCK</span>
           </Box>
