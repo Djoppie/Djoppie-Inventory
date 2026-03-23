@@ -70,6 +70,7 @@ const WorkplaceAssetsDialog = ({
   const bgColor = isDark ? '#1e2328' : '#e8eef3';
   const sectionBg = isDark ? '#1e2328' : '#e8eef3';
   const accentColor = '#FF7700';
+  const tealColor = '#009688';
 
   // Fetch fixed assets for this workplace
   const {
@@ -198,13 +199,13 @@ const WorkplaceAssetsDialog = ({
 
   const neomorphPrimaryButtonSx = {
     ...neomorphButtonSx,
-    backgroundColor: accentColor,
+    backgroundColor: tealColor,
     color: '#fff',
     '&:hover': {
-      backgroundColor: accentColor,
+      backgroundColor: tealColor,
       boxShadow: isDark
-        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 20px rgba(255, 119, 0, 0.4)'
-        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 20px rgba(255, 119, 0, 0.3)',
+        ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, 0 0 20px rgba(0, 150, 136, 0.4)'
+        : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, 0 0 20px rgba(0, 150, 136, 0.3)',
       transform: 'translateY(-1px)',
     },
   };
@@ -350,7 +351,7 @@ const WorkplaceAssetsDialog = ({
                       }}
                     >
                       <TableCell>
-                        <Typography fontWeight={600} sx={{ color: accentColor }}>
+                        <Typography fontWeight={600} sx={{ color: tealColor }}>
                           {asset.assetCode}
                         </Typography>
                       </TableCell>

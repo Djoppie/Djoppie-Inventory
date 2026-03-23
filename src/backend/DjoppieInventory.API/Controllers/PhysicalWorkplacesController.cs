@@ -489,7 +489,8 @@ public class PhysicalWorkplacesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the fixed assets assigned to a physical workplace
+    /// Gets the fixed assets assigned to a physical workplace.
+    /// Includes both assets with PhysicalWorkplaceId set AND assets in equipment slots.
     /// </summary>
     [HttpGet("{id}/assets")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -505,8 +506,22 @@ public class PhysicalWorkplacesController : ControllerBase
         if (workplace == null)
             return NotFound($"Physical workplace with ID {id} not found");
 
+        // Collect all equipment slot asset IDs
+        var equipmentSlotAssetIds = new List<int?>
+        {
+            workplace.DockingStationAssetId,
+            workplace.Monitor1AssetId,
+            workplace.Monitor2AssetId,
+            workplace.Monitor3AssetId,
+            workplace.KeyboardAssetId,
+            workplace.MouseAssetId
+        }.Where(assetId => assetId.HasValue).Select(assetId => assetId!.Value).ToList();
+
+        // Query assets that are either:
+        // 1. Linked via PhysicalWorkplaceId (generic fixed assets)
+        // 2. Linked via equipment slots (dedicated equipment)
         var assets = await _context.Assets
-            .Where(a => a.PhysicalWorkplaceId == id)
+            .Where(a => a.PhysicalWorkplaceId == id || equipmentSlotAssetIds.Contains(a.Id))
             .Include(a => a.AssetType)
             .AsNoTracking()
             .OrderBy(a => a.AssetType != null ? a.AssetType.SortOrder : 999)

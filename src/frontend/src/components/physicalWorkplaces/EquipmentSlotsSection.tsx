@@ -58,8 +58,40 @@ const EquipmentSlotsSection = ({
   const { data: stockAssets = [], isLoading: stockLoading } = useAssets('Stock');
   const { data: nieuwAssets = [], isLoading: nieuwLoading } = useAssets('Nieuw');
 
-  // Combine available assets
-  const allAssets = useMemo(() => [...stockAssets, ...nieuwAssets], [stockAssets, nieuwAssets]);
+  // Create synthetic Asset objects from the workplace's currently assigned equipment
+  // This ensures we can display already-assigned assets (which may have InGebruik status)
+  const currentEquipmentAssets = useMemo(() => {
+    const assets: Asset[] = [];
+    const addAsset = (id: number | undefined, code: string | undefined, serial: string | undefined) => {
+      if (id && code) {
+        assets.push({
+          id,
+          assetCode: code,
+          assetName: code,
+          serialNumber: serial,
+          status: 'InGebruik',
+          category: '',
+        } as Asset);
+      }
+    };
+    addAsset(workplace.dockingStationAssetId, workplace.dockingStationAssetCode, workplace.dockingStationSerialNumber);
+    addAsset(workplace.monitor1AssetId, workplace.monitor1AssetCode, workplace.monitor1SerialNumber);
+    addAsset(workplace.monitor2AssetId, workplace.monitor2AssetCode, workplace.monitor2SerialNumber);
+    addAsset(workplace.monitor3AssetId, workplace.monitor3AssetCode, workplace.monitor3SerialNumber);
+    addAsset(workplace.keyboardAssetId, workplace.keyboardAssetCode, workplace.keyboardSerialNumber);
+    addAsset(workplace.mouseAssetId, workplace.mouseAssetCode, workplace.mouseSerialNumber);
+    return assets;
+  }, [workplace]);
+
+  // Combine available assets with currently assigned equipment assets
+  // The currently assigned assets need to be included so they can be displayed in dropdowns
+  const allAssets = useMemo(() => {
+    const availableAssets = [...stockAssets, ...nieuwAssets];
+    // Add current equipment assets that aren't already in the available list
+    const availableIds = new Set(availableAssets.map(a => a.id));
+    const equipmentToAdd = currentEquipmentAssets.filter(a => !availableIds.has(a.id));
+    return [...availableAssets, ...equipmentToAdd];
+  }, [stockAssets, nieuwAssets, currentEquipmentAssets]);
   const assetsLoading = stockLoading || nieuwLoading;
 
   // Local state for equipment slots
@@ -234,11 +266,19 @@ const EquipmentSlotsSection = ({
       <Stack spacing={2}>
         {visibleSlots.map((slot) => {
           const filteredAssets = getFilteredAssets(slot.assetTypes);
-          // Exclude already selected assets (but include current slot's selection)
-          const availableAssets = filteredAssets.filter(
-            asset => !selectedAssetIds.has(asset.id) || asset.id === slot.assetId
-          );
-          const selectedAsset = allAssets.find(a => a.id === slot.assetId) || null;
+          // Get the currently assigned asset for this slot (may be synthetic from workplace data)
+          const currentSlotAsset = slot.assetId ? allAssets.find(a => a.id === slot.assetId) : null;
+          // Build available options: type-filtered assets, excluding already-selected ones
+          // but always including the current slot's selection so it appears in the dropdown
+          const availableAssets = [
+            // Include current slot's asset first if it exists (even if it doesn't match type filter)
+            ...(currentSlotAsset ? [currentSlotAsset] : []),
+            // Then add type-filtered assets that aren't already selected elsewhere
+            ...filteredAssets.filter(
+              asset => !selectedAssetIds.has(asset.id) && asset.id !== slot.assetId
+            ),
+          ];
+          const selectedAsset = currentSlotAsset || null;
 
           return (
             <Box
