@@ -507,12 +507,11 @@ public class DeploymentService : IDeploymentService
 
     private static DeploymentHistoryItemDto MapToHistoryItem(AssetEvent evt)
     {
-        // Parse the new value to extract owner info
+        // Parse the new value to extract owner email
+        // NewValue format: "Status: InGebruik, Owner: email@example.com"
         var ownerEmail = "";
-        var ownerName = "";
         if (!string.IsNullOrEmpty(evt.NewValue))
         {
-            // NewValue format: "Status: InGebruik, Owner: email@example.com"
             var ownerMatch = evt.NewValue.Split("Owner: ");
             if (ownerMatch.Length > 1)
             {
@@ -520,14 +519,35 @@ public class DeploymentService : IDeploymentService
             }
         }
 
-        // Get owner name from description if possible
+        // Get owner name from description
+        // Description formats:
+        // - Onboarding: "Device onboarded - Status: Stock → InGebruik, Owner: → Jo Wijnen"
+        // - Swap: "Laptop swapped in - Status: Nieuw → InGebruik, Owner: → Jo Wijnen"
+        // - Offboarding: "Device offboarded - Status: InGebruik → Stock, Owner: jo@email.com → cleared"
+        var ownerName = "";
         if (!string.IsNullOrEmpty(evt.Description))
         {
-            // Description format: "... Owner: → Name" or "... Owner: OldOwner → Name"
-            var descParts = evt.Description.Split(" → ");
-            if (descParts.Length > 1)
+            // Split by "Owner: " first, then get after the last " → "
+            var ownerParts = evt.Description.Split("Owner: ");
+            if (ownerParts.Length > 1)
             {
-                ownerName = descParts[1].Trim();
+                var afterOwner = ownerParts[1]; // e.g., "→ Jo Wijnen" or "jo@email.com → cleared"
+                var arrowParts = afterOwner.Split(" → ");
+                if (arrowParts.Length > 1)
+                {
+                    ownerName = arrowParts[^1].Trim(); // Last part after arrow
+                    // For offboarding, "cleared" is not a name
+                    if (ownerName.Equals("cleared", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // For offboarding, get the previous owner from before the arrow
+                        ownerName = arrowParts[0].Trim();
+                        ownerEmail = arrowParts[0].Trim(); // Often the email for offboarding
+                    }
+                }
+                else
+                {
+                    ownerName = afterOwner.Trim();
+                }
             }
         }
 
@@ -538,20 +558,36 @@ public class DeploymentService : IDeploymentService
             _ => DeploymentMode.Swap
         };
 
+        // For the new laptop field, show the asset being processed
+        // For offboarding, this is actually the "old" device being returned
+        var assetInfo = new DeploymentAssetInfoDto(
+            evt.AssetId,
+            evt.Asset?.AssetCode ?? "",
+            evt.Asset?.SerialNumber,
+            evt.Asset?.Brand,
+            evt.Asset?.Model,
+            ParseStatusFromValue(evt.OldValue),
+            ParseStatusFromValue(evt.NewValue)
+        );
+
+        // For offboarding, the asset shown is actually the old device (being returned)
+        // For onboarding/swap, this is the new device being assigned
+        DeploymentAssetInfoDto? oldLaptopInfo = null;
+        DeploymentAssetInfoDto? newLaptopInfo = assetInfo;
+
+        if (deploymentMode == DeploymentMode.Offboarding)
+        {
+            // For offboarding, the recorded asset is the OLD device being returned
+            oldLaptopInfo = assetInfo;
+            newLaptopInfo = null;
+        }
+
         return new DeploymentHistoryItemDto(
             evt.Id,
             evt.EventDate,
             deploymentMode,
-            null, // Old laptop info would need to be fetched separately via deployment ID
-            new DeploymentAssetInfoDto(
-                evt.AssetId,
-                evt.Asset?.AssetCode ?? "",
-                evt.Asset?.SerialNumber,
-                evt.Asset?.Brand,
-                evt.Asset?.Model,
-                ParseStatusFromValue(evt.OldValue),
-                ParseStatusFromValue(evt.NewValue)
-            ),
+            oldLaptopInfo,
+            newLaptopInfo,
             new DeploymentOwnerInfoDto(ownerName, ownerEmail, null),
             null, // Workplace info would need separate tracking
             evt.PerformedBy,

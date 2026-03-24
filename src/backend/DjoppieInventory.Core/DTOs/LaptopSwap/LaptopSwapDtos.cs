@@ -168,7 +168,7 @@ public record DeploymentHistoryItemDto(
     DateTime DeploymentDate,
     DeploymentMode Mode,
     DeploymentAssetInfoDto? OldLaptop,
-    DeploymentAssetInfoDto NewLaptop,
+    DeploymentAssetInfoDto? NewLaptop,
     DeploymentOwnerInfoDto Owner,
     DeploymentWorkplaceInfoDto? PhysicalWorkplace,
     string? PerformedBy,

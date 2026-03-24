@@ -33,7 +33,8 @@
     "processing": "Verwerken...",
     "confirm": "Bevestigen",
     "clear": "Wissen",
-    "none": "Geen"
+    "none": "Geen",
+    "noResults": "Geen resultaten gevonden"
   },
   "validation": {
     "required": "Verplicht veld"
@@ -1152,6 +1153,7 @@
     "history": {
       "title": "Deployment Geschiedenis",
       "subtitle": "Overzicht van alle laptop swaps en onboardings",
+      "items": "items",
       "filters": "Filters",
       "dateRange": "Datumbereik",
       "startDate": "Startdatum",

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Paper,
   Card,
   CardContent,
   Button,
@@ -26,6 +25,8 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
+  InputAdornment,
+  alpha,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -34,6 +35,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HistoryIcon from '@mui/icons-material/History';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import PersonIcon from '@mui/icons-material/Person';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import PlaceIcon from '@mui/icons-material/Place';
@@ -41,13 +43,37 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import TableRowsIcon from '@mui/icons-material/TableRows';
 import { ROUTES } from '../constants/routes';
 import { DeploymentMode, DeploymentHistoryItem, DeploymentHistoryParams } from '../types/deployment.types';
 import { useDeploymentHistory } from '../hooks/useDeployment';
 import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 
-// Scanner-style card wrapper - consistent with other pages
+// Neumorphic shadow utilities
+const getNeumorph = (isDark: boolean, intensity: 'soft' | 'medium' | 'strong' = 'medium') => {
+  const shadows = {
+    soft: isDark
+      ? '4px 4px 8px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.03)'
+      : '4px 4px 8px rgba(0,0,0,0.08), -2px -2px 6px rgba(255,255,255,0.8)',
+    medium: isDark
+      ? '6px 6px 12px rgba(0,0,0,0.5), -3px -3px 8px rgba(255,255,255,0.04)'
+      : '6px 6px 12px rgba(0,0,0,0.1), -3px -3px 8px rgba(255,255,255,0.9)',
+    strong: isDark
+      ? '8px 8px 16px rgba(0,0,0,0.6), -4px -4px 10px rgba(255,255,255,0.05)'
+      : '8px 8px 16px rgba(0,0,0,0.12), -4px -4px 10px rgba(255,255,255,1)',
+  };
+  return shadows[intensity];
+};
+
+const getNeumorphInset = (isDark: boolean) =>
+  isDark
+    ? 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03)'
+    : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)';
+
+// Scanner-style card wrapper
 const scannerCardSx = {
   mb: 3,
   borderRadius: 2,
@@ -82,20 +108,27 @@ const DeploymentHistoryPage = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const dateLocale = i18n.language === 'nl' ? nl : enUS;
+
+  // Theme colors
+  const bgBase = isDark ? '#1a1f2e' : '#f0f2f5';
+  const bgSurface = isDark ? '#232936' : '#ffffff';
+  const accentColor = '#FF7700';
 
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<DeploymentHistoryParams>({
     pageNumber: 1,
-    pageSize: 10,
+    pageSize: 15,
   });
 
   // Temporary filter state (before applying)
   const [tempFromDate, setTempFromDate] = useState<string>('');
   const [tempToDate, setTempToDate] = useState<string>('');
   const [tempMode, setTempMode] = useState<DeploymentMode | ''>('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Data fetching
   const { data: historyResult, isLoading, error, refetch } = useDeploymentHistory(filters);
@@ -106,7 +139,7 @@ const DeploymentHistoryPage = () => {
       fromDate: tempFromDate || undefined,
       toDate: tempToDate || undefined,
       mode: tempMode !== '' ? tempMode : undefined,
-      pageNumber: 1, // Reset to first page when filters change
+      pageNumber: 1,
     }));
   };
 
@@ -114,6 +147,7 @@ const DeploymentHistoryPage = () => {
     setTempFromDate('');
     setTempToDate('');
     setTempMode('');
+    setSearchTerm('');
     setFilters({
       pageNumber: 1,
       pageSize: filters.pageSize,
@@ -148,11 +182,11 @@ const DeploymentHistoryPage = () => {
 
     const rows = historyResult.items.map((item: DeploymentHistoryItem) => [
       format(new Date(item.deploymentDate), 'yyyy-MM-dd HH:mm'),
-      item.mode === DeploymentMode.Swap ? 'Swap' : 'Onboarding',
+      getModeLabel(item.mode),
       item.owner.name,
       item.owner.email,
       item.oldLaptop?.assetCode || '-',
-      item.newLaptop.assetCode,
+      item.newLaptop?.assetCode || '-',
       item.physicalWorkplace?.code || '-',
       item.performedBy || '-',
     ]);
@@ -170,20 +204,52 @@ const DeploymentHistoryPage = () => {
   };
 
   const getModeIcon = (mode: DeploymentMode) => {
-    return mode === DeploymentMode.Swap ? (
-      <SwapHorizIcon fontSize="small" color="primary" />
-    ) : (
-      <PersonAddIcon fontSize="small" color="success" />
-    );
+    switch (mode) {
+      case DeploymentMode.Swap:
+        return <SwapHorizIcon fontSize="small" sx={{ color: accentColor }} />;
+      case DeploymentMode.Offboarding:
+        return <PersonRemoveIcon fontSize="small" sx={{ color: '#EF5350' }} />;
+      default:
+        return <PersonAddIcon fontSize="small" sx={{ color: '#4CAF50' }} />;
+    }
   };
 
   const getModeLabel = (mode: DeploymentMode) => {
-    return mode === DeploymentMode.Swap
-      ? t('deployment.mode.swap')
-      : t('deployment.mode.onboarding');
+    switch (mode) {
+      case DeploymentMode.Swap:
+        return t('deployment.mode.swap');
+      case DeploymentMode.Offboarding:
+        return t('deployment.mode.offboarding');
+      default:
+        return t('deployment.mode.onboarding');
+    }
+  };
+
+  const getModeColor = (mode: DeploymentMode): 'primary' | 'success' | 'error' => {
+    switch (mode) {
+      case DeploymentMode.Swap:
+        return 'primary';
+      case DeploymentMode.Offboarding:
+        return 'error';
+      default:
+        return 'success';
+    }
   };
 
   const hasActiveFilters = Boolean(filters.fromDate || filters.toDate || filters.mode !== undefined);
+
+  // Filter items by search term
+  const filteredItems = historyResult?.items?.filter((item: DeploymentHistoryItem) => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      item.owner.name?.toLowerCase().includes(search) ||
+      item.owner.email?.toLowerCase().includes(search) ||
+      item.oldLaptop?.assetCode?.toLowerCase().includes(search) ||
+      item.newLaptop?.assetCode?.toLowerCase().includes(search) ||
+      item.performedBy?.toLowerCase().includes(search)
+    );
+  }) || [];
 
   if (isLoading) {
     return <Loading message={t('common.loading')} />;
@@ -281,14 +347,14 @@ const DeploymentHistoryPage = () => {
               <Chip
                 icon={<HistoryIcon />}
                 label={`${historyResult.totalCount} ${historyResult.totalCount === 1 ? 'record' : 'records'}`}
-                sx={{ fontWeight: 600 }}
+                sx={{ fontWeight: 600, bgcolor: alpha(accentColor, 0.1), color: accentColor }}
               />
             )}
           </Stack>
         </CardContent>
       </Card>
 
-      {/* Filters */}
+      {/* Filters Card */}
       <Card elevation={0} sx={{ ...scannerCardSx, mb: 2 }}>
         <CardContent sx={{ p: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
@@ -350,8 +416,9 @@ const DeploymentHistoryPage = () => {
                   label={t('deployment.history.modeFilter')}
                 >
                   <MenuItem value="">{t('deployment.history.allModes')}</MenuItem>
-                  <MenuItem value={DeploymentMode.Swap}>{t('deployment.mode.swap')}</MenuItem>
                   <MenuItem value={DeploymentMode.Onboarding}>{t('deployment.mode.onboarding')}</MenuItem>
+                  <MenuItem value={DeploymentMode.Swap}>{t('deployment.mode.swap')}</MenuItem>
+                  <MenuItem value={DeploymentMode.Offboarding}>{t('deployment.mode.offboarding')}</MenuItem>
                 </Select>
               </FormControl>
               <Button variant="contained" size="small" onClick={handleApplyFilters}>
@@ -362,15 +429,14 @@ const DeploymentHistoryPage = () => {
         </CardContent>
       </Card>
 
-      {/* History Table/List */}
+      {/* Table Section */}
       {!historyResult?.items?.length ? (
-        <Paper
-          elevation={0}
+        <Box
           sx={{
+            bgcolor: bgBase,
+            borderRadius: 3,
             p: 6,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
+            boxShadow: getNeumorph(isDark, 'medium'),
             textAlign: 'center',
           }}
         >
@@ -387,27 +453,95 @@ const DeploymentHistoryPage = () => {
           >
             {t('deployment.title')}
           </Button>
-        </Paper>
+        </Box>
       ) : (
-        <>
+        <Box
+          sx={{
+            bgcolor: bgBase,
+            borderRadius: 3,
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: getNeumorph(isDark, 'medium'),
+          }}
+        >
+          {/* Search Bar */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              mb: 2,
+              p: 1.5,
+              bgcolor: bgSurface,
+              borderRadius: 2,
+              boxShadow: getNeumorphInset(isDark),
+            }}
+          >
+            <TextField
+              size="small"
+              placeholder={t('common.search')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setSearchTerm('')} sx={{ p: 0.25 }}>
+                      <ClearIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                flex: { xs: 1, md: '0 0 280px' },
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: bgBase,
+                  borderRadius: 1.5,
+                  fontSize: '0.85rem',
+                  boxShadow: getNeumorphInset(isDark),
+                  '& fieldset': { border: 'none' },
+                  '&:hover': {
+                    boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+                  },
+                  '&.Mui-focused': {
+                    boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+                  },
+                },
+              }}
+            />
+            <Box sx={{ ml: 'auto' }}>
+              <Chip
+                size="small"
+                label={`${filteredItems.length} ${t('deployment.history.items')}`}
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha(accentColor, 0.1),
+                  color: accentColor,
+                }}
+              />
+            </Box>
+          </Box>
+
           {/* Mobile/Tablet: Card View */}
           {isTablet && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {historyResult.items.map((item: DeploymentHistoryItem) => (
+              {filteredItems.map((item: DeploymentHistoryItem) => (
                 <Card
                   key={item.id}
                   elevation={0}
                   sx={{
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    bgcolor: bgSurface,
                     borderRadius: 2,
+                    boxShadow: getNeumorph(isDark, 'soft'),
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      boxShadow: (thm) =>
-                        thm.palette.mode === 'dark'
-                          ? '0 8px 32px rgba(255, 215, 0, 0.2)'
-                          : '0 4px 20px rgba(253, 185, 49, 0.3)',
-                      borderColor: 'primary.main',
+                      transform: 'translateY(-2px)',
+                      boxShadow: getNeumorph(isDark, 'medium'),
                     },
                   }}
                 >
@@ -418,7 +552,7 @@ const DeploymentHistoryPage = () => {
                         <Chip
                           label={getModeLabel(item.mode)}
                           size="small"
-                          color={item.mode === DeploymentMode.Swap ? 'primary' : 'success'}
+                          color={getModeColor(item.mode)}
                           variant="outlined"
                         />
                       </Stack>
@@ -429,13 +563,15 @@ const DeploymentHistoryPage = () => {
 
                     <Stack direction="row" spacing={1} alignItems="center" mb={1}>
                       <PersonIcon fontSize="small" color="action" />
-                      <Typography fontWeight={500}>{item.owner.name}</Typography>
+                      <Typography fontWeight={500}>{item.owner.name || '-'}</Typography>
                     </Stack>
-                    <Typography variant="caption" color="text.secondary" sx={{ ml: 3.5 }}>
-                      {item.owner.email}
-                    </Typography>
+                    {item.owner.email && (
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 3.5 }}>
+                        {item.owner.email}
+                      </Typography>
+                    )}
 
-                    <Stack direction="row" spacing={2} mt={2} flexWrap="wrap">
+                    <Stack direction="row" spacing={2} mt={2} flexWrap="wrap" gap={1}>
                       {item.oldLaptop && (
                         <Chip
                           icon={<LaptopIcon />}
@@ -445,12 +581,14 @@ const DeploymentHistoryPage = () => {
                           variant="outlined"
                         />
                       )}
-                      <Chip
-                        icon={<LaptopIcon />}
-                        label={item.newLaptop.assetCode}
-                        size="small"
-                        color="success"
-                      />
+                      {item.newLaptop && (
+                        <Chip
+                          icon={<LaptopIcon />}
+                          label={item.newLaptop.assetCode}
+                          size="small"
+                          color="success"
+                        />
+                      )}
                       {item.physicalWorkplace && (
                         <Chip
                           icon={<PlaceIcon />}
@@ -476,127 +614,336 @@ const DeploymentHistoryPage = () => {
           {/* Desktop: Table View */}
           {!isTablet && (
             <TableContainer
-              component={Paper}
-              elevation={0}
               sx={{
-                border: '1px solid',
-                borderColor: 'divider',
+                bgcolor: bgSurface,
                 borderRadius: 2,
+                boxShadow: getNeumorph(isDark, 'soft'),
+                overflow: 'hidden',
               }}
             >
-              <Table>
+              <Table size="small">
                 <TableHead>
-                  <TableRow
-                    sx={{
-                      backgroundColor: (thm) =>
-                        thm.palette.mode === 'dark'
-                          ? 'rgba(255, 119, 0, 0.05)'
-                          : 'rgba(255, 119, 0, 0.02)',
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.date')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.mode')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.user')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.oldDevice')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.newDevice')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.workplace')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('deployment.history.columns.performedBy')}</TableCell>
+                  <TableRow>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.date')}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.mode')}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.user')}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.oldDevice')}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.newDevice')}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.workplace')}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                        px: 1.5,
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: 'text.secondary',
+                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
+                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('deployment.history.columns.performedBy')}
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {historyResult.items.map((item: DeploymentHistoryItem) => (
-                    <TableRow
-                      key={item.id}
-                      sx={{
-                        '&:hover': {
-                          backgroundColor: (thm) =>
-                            thm.palette.mode === 'dark'
-                              ? 'rgba(255, 119, 0, 0.05)'
-                              : 'rgba(255, 119, 0, 0.02)',
-                        },
-                      }}
-                    >
-                      <TableCell>
-                        <Typography variant="body2">
-                          {format(new Date(item.deploymentDate), 'dd MMM yyyy', { locale: dateLocale })}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {format(new Date(item.deploymentDate), 'HH:mm')}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {getModeIcon(item.mode)}
-                          <Typography variant="body2">{getModeLabel(item.mode)}</Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight={500}>{item.owner.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.owner.email}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {item.oldLaptop ? (
-                          <Stack>
-                            <Typography variant="body2" color="warning.main" fontWeight={500}>
-                              {item.oldLaptop.assetCode}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              → {item.oldLaptop.newStatus}
-                            </Typography>
-                          </Stack>
-                        ) : (
-                          <Typography variant="body2" color="text.disabled">-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Stack>
-                          <Typography variant="body2" color="success.main" fontWeight={500}>
-                            {item.newLaptop.assetCode}
-                          </Typography>
-                          {item.newLaptop.serialNumber && (
-                            <Typography variant="caption" color="text.secondary">
-                              {item.newLaptop.serialNumber}
-                            </Typography>
-                          )}
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {item.physicalWorkplace ? (
-                          <Stack direction="row" spacing={0.5} alignItems="center">
-                            <PlaceIcon fontSize="small" color="info" />
-                            <Typography variant="body2">{item.physicalWorkplace.code}</Typography>
-                          </Stack>
-                        ) : (
-                          <Typography variant="body2" color="text.disabled">-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {item.performedBy || '-'}
+                  {filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} sx={{ py: 4, textAlign: 'center' }}>
+                        <TableRowsIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {searchTerm ? t('common.noResults') : t('deployment.history.noHistory')}
                         </Typography>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredItems.map((item: DeploymentHistoryItem, idx: number) => (
+                      <TableRow
+                        key={item.id}
+                        sx={{
+                          bgcolor: idx % 2 === 0 ? 'transparent' : alpha(bgBase, 0.3),
+                          transition: 'all 0.12s ease',
+                          '&:hover': {
+                            bgcolor: alpha(accentColor, isDark ? 0.08 : 0.04),
+                          },
+                        }}
+                      >
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          <Typography variant="body2" fontWeight={500}>
+                            {format(new Date(item.deploymentDate), 'dd MMM yyyy', { locale: dateLocale })}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {format(new Date(item.deploymentDate), 'HH:mm')}
+                          </Typography>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            {getModeIcon(item.mode)}
+                            <Typography variant="body2">{getModeLabel(item.mode)}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          <Typography fontWeight={500}>{item.owner.name || '-'}</Typography>
+                          {item.owner.email && (
+                            <Typography variant="caption" color="text.secondary">
+                              {item.owner.email}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          {item.oldLaptop ? (
+                            <Stack>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: '#FF9800', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.8rem' }}
+                              >
+                                {item.oldLaptop.assetCode}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {item.oldLaptop.previousStatus} → {item.oldLaptop.newStatus}
+                              </Typography>
+                            </Stack>
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">-</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          {item.newLaptop ? (
+                            <Stack>
+                              <Typography
+                                variant="body2"
+                                sx={{ color: '#4CAF50', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.8rem' }}
+                              >
+                                {item.newLaptop.assetCode}
+                              </Typography>
+                              {item.newLaptop.serialNumber && (
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.newLaptop.serialNumber}
+                                </Typography>
+                              )}
+                            </Stack>
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">-</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          {item.physicalWorkplace ? (
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <PlaceIcon fontSize="small" sx={{ color: '#2196F3' }} />
+                              <Typography variant="body2">{item.physicalWorkplace.code}</Typography>
+                            </Stack>
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">-</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            py: 0.75,
+                            px: 1.5,
+                            fontSize: '0.8rem',
+                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          }}
+                        >
+                          <Typography variant="body2">
+                            {item.performedBy || '-'}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           )}
 
           {/* Pagination */}
-          <TablePagination
-            component="div"
-            count={historyResult.totalCount}
-            page={(filters.pageNumber || 1) - 1}
-            onPageChange={handlePageChange}
-            rowsPerPage={filters.pageSize || 10}
-            onRowsPerPageChange={handleRowsPerPageChange}
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            labelRowsPerPage={t('common.rowsPerPage')}
-            sx={{ mt: 2 }}
-          />
-        </>
+          <Box
+            sx={{
+              mt: 1.5,
+              px: 1.5,
+              py: 0.75,
+              bgcolor: bgSurface,
+              borderRadius: 1.5,
+              boxShadow: getNeumorph(isDark, 'soft'),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <TablePagination
+              component="div"
+              count={historyResult?.totalCount || 0}
+              page={(filters.pageNumber || 1) - 1}
+              onPageChange={handlePageChange}
+              rowsPerPage={filters.pageSize || 15}
+              onRowsPerPageChange={handleRowsPerPageChange}
+              rowsPerPageOptions={[10, 15, 25, 50]}
+              labelRowsPerPage={t('common.rowsPerPage')}
+              sx={{
+                '& .MuiTablePagination-toolbar': {
+                  minHeight: 32,
+                  pl: 0,
+                },
+                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                  fontSize: '0.75rem',
+                  m: 0,
+                },
+                '& .MuiTablePagination-select': {
+                  fontSize: '0.75rem',
+                },
+                '& .MuiTablePagination-actions': {
+                  ml: 1,
+                  '& .MuiIconButton-root': {
+                    p: 0.5,
+                    bgcolor: bgBase,
+                    boxShadow: getNeumorph(isDark, 'soft'),
+                    mx: 0.25,
+                    '&:hover': {
+                      bgcolor: alpha(accentColor, 0.1),
+                    },
+                    '&.Mui-disabled': {
+                      opacity: 0.4,
+                    },
+                  },
+                },
+              }}
+            />
+          </Box>
+        </Box>
       )}
     </Box>
   );

@@ -133,7 +133,7 @@ export interface DeploymentHistoryItem {
   deploymentDate: string;
   mode: DeploymentMode;
   oldLaptop?: DeploymentAssetInfo | null;
-  newLaptop: DeploymentAssetInfo;
+  newLaptop?: DeploymentAssetInfo | null;
   owner: DeploymentOwnerInfo;
   physicalWorkplace?: DeploymentWorkplaceInfo | null;
   performedBy?: string;

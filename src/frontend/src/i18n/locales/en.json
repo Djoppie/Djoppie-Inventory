@@ -33,7 +33,8 @@
     "processing": "Processing...",
     "confirm": "Confirm",
     "clear": "Clear",
-    "none": "None"
+    "none": "None",
+    "noResults": "No results found"
   },
   "validation": {
     "required": "Required field"
@@ -1152,6 +1153,7 @@
     "history": {
       "title": "Deployment History",
       "subtitle": "Overview of all laptop swaps and onboardings",
+      "items": "items",
       "filters": "Filters",
       "dateRange": "Date range",
       "startDate": "Start date",
