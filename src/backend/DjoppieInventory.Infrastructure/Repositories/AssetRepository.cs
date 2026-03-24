@@ -325,27 +325,25 @@ public class AssetRepository : IAssetRepository
         string? search = null,
         CancellationToken cancellationToken = default)
     {
-        // Laptop type codes to filter by
-        var laptopTypeCodes = new[] { "LAP", "LAPTOP", "NOTEBOOK", "NOT" };
-
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
-            .Where(a => (a.Status == AssetStatus.Stock || a.Status == AssetStatus.Nieuw))
+            .Where(a => a.Status == AssetStatus.Stock || a.Status == AssetStatus.Nieuw)
             .Where(a => a.AssetType != null &&
-                laptopTypeCodes.Any(code =>
-                    a.AssetType.Code.ToUpper().Contains(code) ||
-                    a.AssetType.Name.ToUpper().Contains(code)));
+                (EF.Functions.Like(a.AssetType.Code.ToUpper(), "%LAP%") ||
+                 EF.Functions.Like(a.AssetType.Code.ToUpper(), "%NOTEBOOK%") ||
+                 EF.Functions.Like(a.AssetType.Name.ToUpper(), "%LAP%") ||
+                 EF.Functions.Like(a.AssetType.Name.ToUpper(), "%NOTEBOOK%")));
 
         // Apply search filter if provided
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var searchLower = search.ToLower();
+            var searchPattern = $"%{search}%";
             query = query.Where(a =>
-                (a.Brand != null && a.Brand.ToLower().Contains(searchLower)) ||
-                (a.Model != null && a.Model.ToLower().Contains(searchLower)) ||
-                (a.SerialNumber != null && a.SerialNumber.ToLower().Contains(searchLower)) ||
-                a.AssetCode.ToLower().Contains(searchLower));
+                EF.Functions.Like(a.Brand ?? "", searchPattern) ||
+                EF.Functions.Like(a.Model ?? "", searchPattern) ||
+                EF.Functions.Like(a.SerialNumber ?? "", searchPattern) ||
+                EF.Functions.Like(a.AssetCode, searchPattern));
         }
 
         return await query
