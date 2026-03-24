@@ -23,6 +23,16 @@ export interface Asset {
   installationLocation?: string; // Specific location details (e.g., room number)
   buildingId?: number;
   physicalWorkplaceId?: number; // Physical workplace this asset is assigned to
+  physicalWorkplace?: {
+    id: number;
+    code: string;
+    name: string;
+    currentOccupantName?: string;
+    serviceName?: string;
+    sectorName?: string;
+    buildingName?: string;
+    floor?: string;
+  };
 
   // Legacy fields (for historical data)
   legacyBuilding?: string;

@@ -33,6 +33,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import AdminDataTable, { Column } from './AdminDataTable';
 import AdminFormDialog from './AdminFormDialog';
+import WorkplaceGapAnalysisSection from './WorkplaceGapAnalysisSection';
 import {
   PhysicalWorkplace,
   WorkplaceType,
@@ -362,6 +363,9 @@ const PhysicalWorkplacesTab = () => {
 
   return (
     <Box>
+      {/* Workplace Gap Analysis Section */}
+      <WorkplaceGapAnalysisSection />
+
       {/* Toolbar with Import/Export buttons */}
       <Stack
         direction="row"

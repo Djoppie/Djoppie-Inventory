@@ -18,6 +18,8 @@ public class AssetDto
     public int? ServiceId { get; set; }
     public ServiceInfo? Service { get; set; }
     public string? InstallationLocation { get; set; }
+    public int? PhysicalWorkplaceId { get; set; }
+    public PhysicalWorkplaceInfo? PhysicalWorkplace { get; set; }
 
     // Legacy fields (for historical data)
     public string? LegacyBuilding { get; set; }

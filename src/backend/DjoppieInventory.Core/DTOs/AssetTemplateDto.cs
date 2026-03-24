@@ -42,3 +42,18 @@ public class ServiceInfo
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Lightweight physical workplace info for asset responses
+/// </summary>
+public class PhysicalWorkplaceInfo
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? CurrentOccupantName { get; set; }
+    public string? ServiceName { get; set; }
+    public string? SectorName { get; set; }
+    public string? BuildingName { get; set; }
+    public string? Floor { get; set; }
+}

@@ -23,6 +23,11 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(statusFilter))
@@ -33,10 +38,15 @@ public class AssetRepository : IAssetRepository
             }
         }
 
-        return await query
+        var assets = await query
             .OrderByDescending(a => a.CreatedAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        // Populate PhysicalWorkplace for assets assigned via equipment slots
+        await PopulatePhysicalWorkplaceFromEquipmentSlots(assets, cancellationToken);
+
+        return assets;
     }
 
     public async Task<(IEnumerable<Asset> Items, int TotalCount)> GetPagedAsync(
@@ -48,6 +58,11 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(statusFilter))
@@ -69,6 +84,9 @@ public class AssetRepository : IAssetRepository
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+        // Populate PhysicalWorkplace for assets assigned via equipment slots
+        await PopulatePhysicalWorkplaceFromEquipmentSlots(items, cancellationToken);
+
         return (items, totalCount);
     }
 
@@ -77,6 +95,11 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
@@ -88,6 +111,11 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .Where(a => idList.Contains(a.Id))
             .ToListAsync(cancellationToken);
     }
@@ -99,6 +127,11 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .FirstOrDefaultAsync(a => a.AssetCode == assetCode, cancellationToken);
     }
 
@@ -319,5 +352,62 @@ public class AssetRepository : IAssetRepository
             .OrderBy(a => a.AssetCode)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Populates PhysicalWorkplace for assets that are assigned via equipment slots.
+    /// This handles assets where PhysicalWorkplaceId is null but the asset is assigned
+    /// to a workplace via DockingStationAssetId, Monitor1AssetId, etc.
+    /// </summary>
+    private async Task PopulatePhysicalWorkplaceFromEquipmentSlots(IEnumerable<Asset> assets, CancellationToken cancellationToken)
+    {
+        var assetList = assets.ToList();
+        if (!assetList.Any()) return;
+
+        // Get asset IDs that don't have a PhysicalWorkplace already
+        var assetIdsWithoutWorkplace = assetList
+            .Where(a => a.PhysicalWorkplace == null)
+            .Select(a => a.Id)
+            .ToList();
+
+        if (!assetIdsWithoutWorkplace.Any()) return;
+
+        // Find PhysicalWorkplaces that have these assets in equipment slots
+        var workplacesWithAssets = await _context.PhysicalWorkplaces
+            .Include(pw => pw.Service)
+                .ThenInclude(s => s!.Sector)
+            .Include(pw => pw.Building)
+            .Where(pw => pw.IsActive && (
+                (pw.DockingStationAssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.DockingStationAssetId.Value)) ||
+                (pw.Monitor1AssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.Monitor1AssetId.Value)) ||
+                (pw.Monitor2AssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.Monitor2AssetId.Value)) ||
+                (pw.Monitor3AssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.Monitor3AssetId.Value)) ||
+                (pw.KeyboardAssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.KeyboardAssetId.Value)) ||
+                (pw.MouseAssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.MouseAssetId.Value))
+            ))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Build a lookup from asset ID to PhysicalWorkplace
+        var assetToWorkplace = new Dictionary<int, PhysicalWorkplace>();
+        foreach (var wp in workplacesWithAssets)
+        {
+            if (wp.DockingStationAssetId.HasValue) assetToWorkplace.TryAdd(wp.DockingStationAssetId.Value, wp);
+            if (wp.Monitor1AssetId.HasValue) assetToWorkplace.TryAdd(wp.Monitor1AssetId.Value, wp);
+            if (wp.Monitor2AssetId.HasValue) assetToWorkplace.TryAdd(wp.Monitor2AssetId.Value, wp);
+            if (wp.Monitor3AssetId.HasValue) assetToWorkplace.TryAdd(wp.Monitor3AssetId.Value, wp);
+            if (wp.KeyboardAssetId.HasValue) assetToWorkplace.TryAdd(wp.KeyboardAssetId.Value, wp);
+            if (wp.MouseAssetId.HasValue) assetToWorkplace.TryAdd(wp.MouseAssetId.Value, wp);
+        }
+
+        // Populate the PhysicalWorkplace property on the assets
+        foreach (var asset in assetList)
+        {
+            if (asset.PhysicalWorkplace == null && assetToWorkplace.TryGetValue(asset.Id, out var workplace))
+            {
+                asset.PhysicalWorkplace = workplace;
+                asset.PhysicalWorkplaceId = workplace.Id;
+            }
+        }
     }
 }

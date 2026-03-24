@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -30,6 +30,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import AppsIcon from '@mui/icons-material/Apps';
 import DevicesIcon from '@mui/icons-material/Devices';
+import BusinessIcon from '@mui/icons-material/Business';
+import PersonIcon from '@mui/icons-material/Person';
 
 interface AssetTableViewProps {
   assets: Asset[];
@@ -39,7 +41,21 @@ interface AssetTableViewProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'purchaseDate' | 'model' | 'installationLocation' | 'owner' | 'status';
+type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'purchaseDate' | 'model' | 'assignment' | 'owner' | 'status';
+
+// Helper to check if asset is a laptop/notebook (user-assigned)
+const isUserAssignedAsset = (asset: Asset): boolean => {
+  const category = asset.category?.toLowerCase() || '';
+  const assetTypeName = asset.assetType?.name?.toLowerCase() || '';
+  const assetTypeCode = asset.assetType?.code?.toLowerCase() || '';
+
+  const laptopKeywords = ['laptop', 'notebook', 'not', 'lap'];
+  return laptopKeywords.some(keyword =>
+    category.includes(keyword) ||
+    assetTypeName.includes(keyword) ||
+    assetTypeCode.includes(keyword)
+  );
+};
 type SortOrder = 'asc' | 'desc';
 
 // Responsive display styles for columns
@@ -103,6 +119,10 @@ const AssetTableView = ({
     } else if (sortField === 'purchaseDate') {
       aValue = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
       bValue = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+    } else if (sortField === 'assignment') {
+      // Sort by owner for laptops, workplace code for fixed assets
+      aValue = isUserAssignedAsset(a) ? (a.owner ?? '') : (a.physicalWorkplace?.code ?? '');
+      bValue = isUserAssignedAsset(b) ? (b.owner ?? '') : (b.physicalWorkplace?.code ?? '');
     } else {
       aValue = (a[sortField as keyof typeof a] as string) ?? '';
       bValue = (b[sortField as keyof typeof b] as string) ?? '';
@@ -341,12 +361,12 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Location */}
+              {/* Toewijzing (Owner for laptops, Workplace for fixed assets) */}
               <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
                 <TableSortLabel
-                  active={sortField === 'installationLocation'}
-                  direction={sortField === 'installationLocation' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('installationLocation')}
+                  active={sortField === 'assignment'}
+                  direction={sortField === 'assignment' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('assignment')}
                   IconComponent={UnfoldMoreIcon}
                   sx={{
                     fontSize: 'inherit',
@@ -356,26 +376,7 @@ const AssetTableView = ({
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Location
-                </TableSortLabel>
-              </TableCell>
-
-              {/* Owner */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
-                <TableSortLabel
-                  active={sortField === 'owner'}
-                  direction={sortField === 'owner' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('owner')}
-                  IconComponent={UnfoldMoreIcon}
-                  sx={{
-                    fontSize: 'inherit',
-                    fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
-                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
-                  }}
-                >
-                  Owner
+                  Toewijzing
                 </TableSortLabel>
               </TableCell>
 
@@ -570,7 +571,7 @@ const AssetTableView = ({
                   {asset.model || '-'}
                 </TableCell>
 
-                {/* Install Location */}
+                {/* Toewijzing: Owner (purple) for laptops, Workplace (teal) for fixed assets */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -579,23 +580,110 @@ const AssetTableView = ({
                     ...columnVisibility.lgUp,
                   }}
                 >
-                  {asset.installationLocation || '-'}
-                </TableCell>
-
-                {/* Owner */}
-                <TableCell
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    maxWidth: 160,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    py: { xs: 0.75, sm: 1 },
-                    px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.lgUp,
-                  }}
-                >
-                  {asset.owner || '-'}
+                  {isUserAssignedAsset(asset) ? (
+                    // Laptop/Notebook: Show owner with purple accent
+                    asset.owner ? (
+                      <Tooltip
+                        title={
+                          <Box sx={{ p: 0.5 }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
+                              <Typography variant="caption">{asset.owner}</Typography>
+                            </Box>
+                            {asset.jobTitle && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
+                                <Typography variant="caption">{asset.jobTitle}</Typography>
+                              </Box>
+                            )}
+                            {asset.officeLocation && (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Locatie:</Typography>
+                                <Typography variant="caption">{asset.officeLocation}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Box
+                          sx={{
+                            color: '#7B1FA2',
+                            fontWeight: 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            cursor: 'default',
+                          }}
+                        >
+                          <PersonIcon sx={{ fontSize: 14 }} />
+                          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {asset.owner}
+                          </span>
+                        </Box>
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
+                    )
+                  ) : (
+                    // Fixed asset (monitor, docking, etc.): Show workplace with teal accent
+                    asset.physicalWorkplace ? (
+                      <Tooltip
+                        title={
+                          <Box sx={{ p: 0.5 }}>
+                            {asset.physicalWorkplace.currentOccupantName && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebruiker:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.currentOccupantName}</Typography>
+                              </Box>
+                            )}
+                            {(asset.physicalWorkplace.serviceName || asset.physicalWorkplace.sectorName) && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Dienst:</Typography>
+                                <Typography variant="caption">
+                                  {asset.physicalWorkplace.serviceName}
+                                  {asset.physicalWorkplace.sectorName && ` (${asset.physicalWorkplace.sectorName})`}
+                                </Typography>
+                              </Box>
+                            )}
+                            {asset.physicalWorkplace.buildingName && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebouw:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.buildingName}</Typography>
+                              </Box>
+                            )}
+                            {asset.physicalWorkplace.floor && (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Verdieping:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.floor}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Link
+                          to="/workplaces"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            color: '#009688',
+                            textDecoration: 'none',
+                            fontWeight: 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <BusinessIcon sx={{ fontSize: 14 }} />
+                          {asset.physicalWorkplace.code}
+                        </Link>
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
+                    )
+                  )}
                 </TableCell>
 
                 {/* Actions - Always Visible */}

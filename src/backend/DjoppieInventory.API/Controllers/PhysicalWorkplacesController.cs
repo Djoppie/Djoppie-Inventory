@@ -1380,6 +1380,393 @@ public class PhysicalWorkplacesController : ControllerBase
         return Ok(new BulkCreateWorkplacesResultDto(dto.Count, successCount, errorCount, results));
     }
 
+    // ============================================================
+    // Workplace Gap Analysis Endpoints
+    // ============================================================
+
+    /// <summary>
+    /// Analyzes the gap between laptop owners and physical workplaces.
+    /// Finds laptop owners (InGebruik) who don't have a corresponding PhysicalWorkplace.
+    /// </summary>
+    [HttpGet("workplace-gap-analysis")]
+    [ProducesResponseType(typeof(WorkplaceGapAnalysisDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<WorkplaceGapAnalysisDto>> GetWorkplaceGapAnalysis(
+        [FromQuery] int? serviceId = null,
+        [FromQuery] int limit = 100,
+        CancellationToken cancellationToken = default)
+    {
+        // Define laptop type keywords
+        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+
+        // Get all laptops that are InGebruik and have an owner
+        var laptopsInUseQuery = _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Where(a => a.Status == AssetStatus.InGebruik)
+            .Where(a => a.Owner != null && a.Owner != "")
+            .Where(a =>
+                (a.AssetType != null && (
+                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                )) ||
+                laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))
+            );
+
+        if (serviceId.HasValue)
+        {
+            laptopsInUseQuery = laptopsInUseQuery.Where(a => a.ServiceId == serviceId.Value);
+        }
+
+        var laptopsInUse = await laptopsInUseQuery
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Get all existing workplace occupants (both email and name, normalized to lowercase)
+        var existingOccupants = await _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive && (
+                (pw.CurrentOccupantEmail != null && pw.CurrentOccupantEmail != "") ||
+                (pw.CurrentOccupantName != null && pw.CurrentOccupantName != "")
+            ))
+            .Select(pw => new {
+                Email = pw.CurrentOccupantEmail != null ? pw.CurrentOccupantEmail.ToLower() : null,
+                Name = pw.CurrentOccupantName != null ? pw.CurrentOccupantName.ToLower() : null
+            })
+            .ToListAsync(cancellationToken);
+
+        // Build sets for both email and name matching
+        var existingOccupantEmails = existingOccupants
+            .Where(o => o.Email != null)
+            .Select(o => o.Email!)
+            .ToHashSet();
+        var existingOccupantNames = existingOccupants
+            .Where(o => o.Name != null)
+            .Select(o => o.Name!)
+            .ToHashSet();
+
+        // Find laptop owners without workplaces (check both email and name)
+        var orphanOwners = laptopsInUse
+            .Where(a => {
+                var ownerLower = a.Owner!.ToLower();
+                // Check if owner matches either an email OR a name
+                return !existingOccupantEmails.Contains(ownerLower) &&
+                       !existingOccupantNames.Contains(ownerLower);
+            })
+            .GroupBy(a => a.Owner!.ToLower())
+            .Select(g => g.First()) // Take first laptop per unique owner
+            .ToList();
+
+        var ownersWithWorkplace = laptopsInUse
+            .Where(a => {
+                var ownerLower = a.Owner!.ToLower();
+                return existingOccupantEmails.Contains(ownerLower) ||
+                       existingOccupantNames.Contains(ownerLower);
+            })
+            .GroupBy(a => a.Owner!.ToLower())
+            .Count();
+
+        // Group orphans by service
+        var gapsByService = orphanOwners
+            .GroupBy(a => new { a.ServiceId, ServiceName = a.Service?.Name, ServiceCode = a.Service?.Code })
+            .Select(g => new WorkplaceGapByServiceDto(
+                g.Key.ServiceId,
+                g.Key.ServiceName ?? "Geen dienst",
+                g.Key.ServiceCode,
+                g.Count(),
+                laptopsInUse.Count(l => l.ServiceId == g.Key.ServiceId)
+            ))
+            .OrderByDescending(g => g.OwnersWithoutWorkplace)
+            .ToList();
+
+        // Create detailed orphan list (limited)
+        var orphanDetails = orphanOwners
+            .Take(limit)
+            .Select(a => new OrphanLaptopOwnerDto(
+                a.Owner!,
+                ExtractNameFromEmail(a.Owner!),
+                a.JobTitle,
+                a.OfficeLocation,
+                a.ServiceId,
+                a.Service?.Name,
+                a.Id,
+                a.AssetCode,
+                a.Brand,
+                a.Model,
+                a.SerialNumber
+            ))
+            .OrderBy(o => o.ServiceName)
+            .ThenBy(o => o.OwnerEmail)
+            .ToList();
+
+        var totalLaptopsInUse = laptopsInUse.GroupBy(a => a.Owner!.ToLower()).Count();
+        var ownersWithoutWorkplace = orphanOwners.Count;
+        var gapPercentage = totalLaptopsInUse > 0
+            ? Math.Round((decimal)ownersWithoutWorkplace / totalLaptopsInUse * 100, 1)
+            : 0;
+
+        _logger.LogInformation(
+            "Workplace gap analysis: {Total} laptop owners, {WithWorkplace} with workplace, {Without} without workplace ({Gap}%)",
+            totalLaptopsInUse, ownersWithWorkplace, ownersWithoutWorkplace, gapPercentage);
+
+        // Get debug info about workplaces
+        var totalActiveWorkplaces = await _context.PhysicalWorkplaces
+            .CountAsync(pw => pw.IsActive, cancellationToken);
+        var workplacesWithOccupant = existingOccupants.Count;
+
+        // Sample occupant info (show both name and email)
+        var sampleOccupants = existingOccupants
+            .Take(3)
+            .Select(o => o.Name ?? o.Email ?? "null")
+            .ToList();
+
+        var debugInfo = new WorkplaceGapDebugDto(
+            totalActiveWorkplaces,
+            workplacesWithOccupant,
+            totalActiveWorkplaces - workplacesWithOccupant,
+            laptopsInUse.Take(3).Select(l => l.Owner ?? "null").ToList(),
+            sampleOccupants
+        );
+
+        _logger.LogInformation(
+            "Debug - {TotalWorkplaces} active workplaces, {WithOccupant} with occupant email, {Without} without",
+            totalActiveWorkplaces, workplacesWithOccupant, totalActiveWorkplaces - workplacesWithOccupant);
+
+        return Ok(new WorkplaceGapAnalysisDto(
+            totalLaptopsInUse,
+            ownersWithWorkplace,
+            ownersWithoutWorkplace,
+            gapPercentage,
+            gapsByService,
+            orphanDetails,
+            debugInfo
+        ));
+    }
+
+    /// <summary>
+    /// Auto-creates missing workplaces for laptop owners who don't have one.
+    /// Creates a PhysicalWorkplace for each orphan owner with their laptop info.
+    /// </summary>
+    [HttpPost("auto-create-missing")]
+    [ProducesResponseType(typeof(AutoCreateWorkplacesResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<AutoCreateWorkplacesResultDto>> AutoCreateMissingWorkplaces(
+        [FromBody] AutoCreateMissingWorkplacesDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate default building exists
+        var building = await _context.Buildings.FindAsync(new object[] { dto.DefaultBuildingId }, cancellationToken);
+        if (building == null)
+            return BadRequest($"Building with ID {dto.DefaultBuildingId} not found");
+
+        // Define laptop type keywords
+        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+
+        // Get all laptops that are InGebruik and have an owner
+        var laptopsInUseQuery = _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Where(a => a.Status == AssetStatus.InGebruik)
+            .Where(a => a.Owner != null && a.Owner != "")
+            .Where(a =>
+                (a.AssetType != null && (
+                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                )) ||
+                laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))
+            );
+
+        // Filter by service IDs if provided
+        if (dto.ServiceIds != null && dto.ServiceIds.Length > 0)
+        {
+            laptopsInUseQuery = laptopsInUseQuery.Where(a => a.ServiceId.HasValue && dto.ServiceIds.Contains(a.ServiceId.Value));
+        }
+
+        var laptopsInUse = await laptopsInUseQuery
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Get all existing workplace occupant emails
+        var existingOccupantEmails = await _context.PhysicalWorkplaces
+            .Where(pw => pw.IsActive && pw.CurrentOccupantEmail != null && pw.CurrentOccupantEmail != "")
+            .Select(pw => pw.CurrentOccupantEmail!.ToLower())
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var existingOccupantEmailSet = existingOccupantEmails.ToHashSet();
+
+        // Get existing workplace codes for uniqueness check
+        var existingCodes = (await _context.PhysicalWorkplaces
+            .Select(pw => pw.Code.ToUpperInvariant())
+            .ToListAsync(cancellationToken)).ToHashSet();
+
+        // Find orphan owners (unique by email)
+        var orphanOwners = laptopsInUse
+            .Where(a => !existingOccupantEmailSet.Contains(a.Owner!.ToLower()))
+            .GroupBy(a => a.Owner!.ToLower())
+            .Select(g => g.First())
+            .Take(dto.MaxToCreate)
+            .ToList();
+
+        var results = new List<AutoCreateWorkplaceItemResult>();
+
+        foreach (var laptop in orphanOwners)
+        {
+            var ownerEmail = laptop.Owner!;
+            var ownerName = ExtractNameFromEmail(ownerEmail);
+
+            // Generate unique workplace code: WP-{initials}-{number}
+            var initials = GetInitials(ownerName ?? ownerEmail);
+            var workplaceCode = GenerateUniqueWorkplaceCode(initials, existingCodes);
+            existingCodes.Add(workplaceCode.ToUpperInvariant());
+
+            var workplaceName = $"Werkplek {ownerName ?? ownerEmail}";
+
+            // Determine building - use service's default building if available, otherwise use provided default
+            var buildingId = dto.DefaultBuildingId;
+            var serviceId = laptop.ServiceId;
+
+            var workplace = new PhysicalWorkplace
+            {
+                Code = workplaceCode,
+                Name = workplaceName,
+                Description = $"Auto-aangemaakt voor {ownerEmail}",
+                BuildingId = buildingId,
+                ServiceId = serviceId,
+                Type = dto.WorkplaceType,
+                MonitorCount = dto.MonitorCount,
+                HasDockingStation = dto.HasDockingStation,
+                CurrentOccupantEmail = ownerEmail,
+                CurrentOccupantName = ownerName,
+                OccupiedSince = DateTime.UtcNow,
+                OccupantDeviceAssetCode = laptop.AssetCode,
+                OccupantDeviceSerial = laptop.SerialNumber,
+                OccupantDeviceBrand = laptop.Brand,
+                OccupantDeviceModel = laptop.Model,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            try
+            {
+                _context.PhysicalWorkplaces.Add(workplace);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                results.Add(new AutoCreateWorkplaceItemResult(
+                    workplace.Id,
+                    workplaceCode,
+                    workplaceName,
+                    ownerEmail,
+                    ownerName,
+                    true,
+                    null
+                ));
+
+                _logger.LogInformation("Auto-created workplace {Code} for {Owner}", workplaceCode, ownerEmail);
+            }
+            catch (Exception ex)
+            {
+                results.Add(new AutoCreateWorkplaceItemResult(
+                    null,
+                    workplaceCode,
+                    workplaceName,
+                    ownerEmail,
+                    ownerName,
+                    false,
+                    ex.Message
+                ));
+
+                _logger.LogError(ex, "Failed to auto-create workplace for {Owner}", ownerEmail);
+            }
+        }
+
+        var successCount = results.Count(r => r.Success);
+        var errorCount = results.Count(r => !r.Success);
+
+        _logger.LogInformation(
+            "Auto-create workplaces completed. Success: {Success}, Errors: {Errors}",
+            successCount, errorCount);
+
+        return Ok(new AutoCreateWorkplacesResultDto(
+            results.Count,
+            successCount,
+            errorCount,
+            results
+        ));
+    }
+
+    /// <summary>
+    /// Extracts a display name from an email address.
+    /// E.g., "jan.janssen@domain.be" -> "Jan Janssen"
+    /// </summary>
+    private static string? ExtractNameFromEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
+
+        var atIndex = email.IndexOf('@');
+        if (atIndex <= 0)
+            return null;
+
+        var localPart = email[..atIndex];
+
+        // Handle formats: firstname.lastname, firstname_lastname, firstnamelastname
+        var parts = localPart.Split(new[] { '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length >= 2)
+        {
+            // Capitalize each part
+            var formattedParts = parts.Select(p =>
+                char.ToUpper(p[0]) + (p.Length > 1 ? p[1..].ToLower() : "")
+            );
+            return string.Join(" ", formattedParts);
+        }
+
+        // Single word - just capitalize
+        if (parts.Length == 1)
+        {
+            var part = parts[0];
+            return char.ToUpper(part[0]) + (part.Length > 1 ? part[1..].ToLower() : "");
+        }
+
+        return localPart;
+    }
+
+    /// <summary>
+    /// Gets initials from a name for workplace code generation.
+    /// E.g., "Jan Janssen" -> "JJ", "Marie Van Der Berg" -> "MVD"
+    /// </summary>
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "WP";
+
+        var parts = name.Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+        var initials = string.Concat(parts.Select(p => char.ToUpper(p[0])));
+
+        return initials.Length >= 2 ? initials[..Math.Min(3, initials.Length)] : "WP";
+    }
+
+    /// <summary>
+    /// Generates a unique workplace code based on initials.
+    /// E.g., "JJ" -> "WP-JJ-001", if exists then "WP-JJ-002", etc.
+    /// </summary>
+    private static string GenerateUniqueWorkplaceCode(string initials, HashSet<string> existingCodes)
+    {
+        var prefix = $"WP-{initials}";
+        var number = 1;
+
+        while (number < 1000)
+        {
+            var code = $"{prefix}-{number:D3}";
+            if (!existingCodes.Contains(code.ToUpperInvariant()))
+                return code;
+            number++;
+        }
+
+        // Fallback with timestamp
+        return $"WP-{initials}-{DateTime.UtcNow:HHmmss}";
+    }
+
     /// <summary>
     /// Parses a CSV line handling quoted fields with commas
     /// </summary>

@@ -241,3 +241,112 @@ export interface EquipmentTypeStatus {
   emptySlots: number;
   fillRate: number;
 }
+
+// ============================================================
+// Workplace Gap Analysis Types
+// ============================================================
+
+/**
+ * Summary statistics for workplace gap analysis
+ */
+export interface WorkplaceGapAnalysis {
+  /** Total laptops with status InGebruik that have an owner */
+  totalLaptopsInUse: number;
+  /** Laptop owners who have a matching PhysicalWorkplace */
+  ownersWithWorkplace: number;
+  /** Laptop owners who don't have a PhysicalWorkplace */
+  ownersWithoutWorkplace: number;
+  /** Percentage of owners without workplace */
+  gapPercentage: number;
+  /** List of owners without workplaces, grouped by service */
+  gapsByService: WorkplaceGapByService[];
+  /** Detailed list of orphan owners (limited) */
+  orphanOwners: OrphanLaptopOwner[];
+  /** Debug info for troubleshooting */
+  debug?: WorkplaceGapDebug;
+}
+
+/**
+ * Debug information for troubleshooting gap analysis
+ */
+export interface WorkplaceGapDebug {
+  /** Total active workplaces */
+  totalActiveWorkplaces: number;
+  /** Workplaces with CurrentOccupantEmail set */
+  workplacesWithOccupant: number;
+  /** Workplaces without CurrentOccupantEmail */
+  workplacesWithoutOccupant: number;
+  /** Sample laptop owner emails */
+  sampleLaptopOwners: string[];
+  /** Sample occupant emails */
+  sampleOccupantEmails: string[];
+}
+
+/**
+ * Workplace gap statistics grouped by service/department
+ */
+export interface WorkplaceGapByService {
+  serviceId?: number;
+  serviceName?: string;
+  serviceCode?: string;
+  ownersWithoutWorkplace: number;
+  totalLaptopOwners: number;
+}
+
+/**
+ * Details about a laptop owner who doesn't have a PhysicalWorkplace
+ */
+export interface OrphanLaptopOwner {
+  ownerEmail: string;
+  ownerName?: string;
+  jobTitle?: string;
+  officeLocation?: string;
+  serviceId?: number;
+  serviceName?: string;
+  laptopAssetId: number;
+  laptopAssetCode: string;
+  laptopBrand?: string;
+  laptopModel?: string;
+  laptopSerialNumber?: string;
+}
+
+/**
+ * Request DTO for auto-creating missing workplaces
+ */
+export interface AutoCreateMissingWorkplacesDto {
+  /** Default building ID for new workplaces (required) */
+  defaultBuildingId: number;
+  /** Optional: only create for specific service IDs */
+  serviceIds?: number[];
+  /** Optional: limit number to create (default: 100) */
+  maxToCreate?: number;
+  /** Workplace type for new workplaces (default: Laptop) */
+  workplaceType?: WorkplaceType;
+  /** Number of monitors for new workplaces (default: 2) */
+  monitorCount?: number;
+  /** Whether new workplaces have docking stations (default: true) */
+  hasDockingStation?: boolean;
+}
+
+/**
+ * Result of auto-creating missing workplaces
+ */
+export interface AutoCreateWorkplacesResult {
+  totalProcessed: number;
+  successCount: number;
+  errorCount: number;
+  results: AutoCreateWorkplaceItemResult[];
+}
+
+/**
+ * Result for a single auto-created workplace
+ */
+export interface AutoCreateWorkplaceItemResult {
+  workplaceId?: number;
+  workplaceCode: string;
+  workplaceName: string;
+  ownerEmail: string;
+  ownerName?: string;
+  success: boolean;
+  errorMessage?: string;
+}

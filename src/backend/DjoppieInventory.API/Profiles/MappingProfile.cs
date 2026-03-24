@@ -14,7 +14,20 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
                 src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
-                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
+                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null))
+            .ForMember(dest => dest.PhysicalWorkplace, opt => opt.MapFrom(src =>
+                src.PhysicalWorkplace != null ? new PhysicalWorkplaceInfo
+                {
+                    Id = src.PhysicalWorkplace.Id,
+                    Code = src.PhysicalWorkplace.Code,
+                    Name = src.PhysicalWorkplace.Name,
+                    CurrentOccupantName = src.PhysicalWorkplace.CurrentOccupantName,
+                    ServiceName = src.PhysicalWorkplace.Service != null ? src.PhysicalWorkplace.Service.Name : null,
+                    SectorName = src.PhysicalWorkplace.Service != null && src.PhysicalWorkplace.Service.Sector != null
+                        ? src.PhysicalWorkplace.Service.Sector.Name : null,
+                    BuildingName = src.PhysicalWorkplace.Building != null ? src.PhysicalWorkplace.Building.Name : null,
+                    Floor = src.PhysicalWorkplace.Floor
+                } : null));
 
         CreateMap<CreateAssetDto, Asset>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)))
