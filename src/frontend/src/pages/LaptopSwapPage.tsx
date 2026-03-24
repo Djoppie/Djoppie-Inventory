@@ -44,12 +44,13 @@ import HistoryIcon from '@mui/icons-material/History';
 import PlaceIcon from '@mui/icons-material/Place';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { ROUTES } from '../constants/routes';
 import UserAutocomplete from '../components/common/UserAutocomplete';
 import { GraphUser, IntuneDevice } from '../types/graph.types';
 import { Asset } from '../types/asset.types';
 import { PhysicalWorkplace } from '../types/physicalWorkplace.types';
-import { DeploymentMode, ExecuteDeploymentRequest, OccupantConflict } from '../types/deployment.types';
+import { DeploymentMode, DeploymentResult, ExecuteDeploymentRequest, OccupantConflict } from '../types/deployment.types';
 import {
   useExecuteDeployment,
   useCheckOccupantConflict,
@@ -116,6 +117,8 @@ const LaptopSwapPage = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [occupantConflictDialogOpen, setOccupantConflictDialogOpen] = useState(false);
   const [occupantConflict, setOccupantConflict] = useState<OccupantConflict | null>(null);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<SnackbarState>({
@@ -226,18 +229,11 @@ const LaptopSwapPage = () => {
     };
 
     try {
-      await executeDeployment.mutateAsync({ request, forceOccupantUpdate });
+      const result = await executeDeployment.mutateAsync({ request, forceOccupantUpdate });
 
-      let successMessage: string;
-      if (mode === DeploymentMode.Swap) {
-        successMessage = t('deployment.success.swapComplete', { userName: selectedUser.displayName });
-      } else if (mode === DeploymentMode.Offboarding) {
-        successMessage = t('deployment.success.offboardingComplete', { userName: selectedUser.displayName });
-      } else {
-        successMessage = t('deployment.success.onboardingComplete', { userName: selectedUser.displayName });
-      }
-
-      setSnackbar({ open: true, message: successMessage, severity: 'success' });
+      // Store result and show success dialog
+      setDeploymentResult(result);
+      setSuccessDialogOpen(true);
 
       // Reset form
       setSelectedUser(null);
@@ -762,6 +758,152 @@ const LaptopSwapPage = () => {
           <Button onClick={() => setOccupantConflictDialogOpen(false)}>{t('deployment.occupantConflict.cancel')}</Button>
           <Button onClick={() => handleConfirmDeployment(true)} color="warning" variant="contained">
             {t('deployment.occupantConflict.confirmUpdate')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog
+        open={successDialogOpen}
+        onClose={() => setSuccessDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <CheckCircleIcon color="success" />
+            <span>{t('deployment.success.title')}</span>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {deploymentResult && (
+            <Stack spacing={2}>
+              {/* Mode indicator */}
+              <Chip
+                label={
+                  deploymentResult.mode === DeploymentMode.Swap
+                    ? t('deployment.mode.swap')
+                    : deploymentResult.mode === DeploymentMode.Offboarding
+                      ? t('deployment.mode.offboarding')
+                      : t('deployment.mode.onboarding')
+                }
+                color={
+                  deploymentResult.mode === DeploymentMode.Offboarding
+                    ? 'error'
+                    : deploymentResult.mode === DeploymentMode.Swap
+                      ? 'primary'
+                      : 'success'
+                }
+                size="small"
+                sx={{ alignSelf: 'flex-start' }}
+              />
+
+              {/* Old device info */}
+              {deploymentResult.oldLaptop && (
+                <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {t('deployment.result.oldDevice')}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LaptopIcon color="warning" fontSize="small" />
+                    <Typography fontWeight={500}>
+                      {deploymentResult.oldLaptop.assetCode}
+                    </Typography>
+                    {deploymentResult.oldLaptop.serialNumber && (
+                      <Typography variant="body2" color="text.secondary">
+                        ({deploymentResult.oldLaptop.serialNumber})
+                      </Typography>
+                    )}
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                    <Chip label={deploymentResult.oldLaptop.oldStatus} size="small" variant="outlined" />
+                    <ArrowForwardIcon fontSize="small" color="action" />
+                    <Chip
+                      label={deploymentResult.oldLaptop.newStatus}
+                      size="small"
+                      color={deploymentResult.oldLaptop.newStatus === 'Stock' ? 'info' : 'default'}
+                    />
+                  </Stack>
+                  {deploymentResult.oldLaptop.oldOwner && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      {t('deployment.result.ownerCleared', { owner: deploymentResult.oldLaptop.oldOwner })}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {/* New device info */}
+              {deploymentResult.newLaptop && (
+                <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {t('deployment.result.newDevice')}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LaptopIcon color="success" fontSize="small" />
+                    <Typography fontWeight={500}>
+                      {deploymentResult.newLaptop.assetCode}
+                    </Typography>
+                    {deploymentResult.newLaptop.serialNumber && (
+                      <Typography variant="body2" color="text.secondary">
+                        ({deploymentResult.newLaptop.serialNumber})
+                      </Typography>
+                    )}
+                  </Stack>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                    <Chip label={deploymentResult.newLaptop.oldStatus} size="small" variant="outlined" />
+                    <ArrowForwardIcon fontSize="small" color="action" />
+                    <Chip label="InGebruik" size="small" color="success" />
+                  </Stack>
+                  {deploymentResult.newLaptop.newOwner && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      {t('deployment.result.assignedTo', { owner: deploymentResult.newLaptop.newOwner })}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {/* Workplace info */}
+              {deploymentResult.physicalWorkplace && (
+                <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {t('deployment.result.workplace')}
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <PlaceIcon color="info" fontSize="small" />
+                    <Typography fontWeight={500}>
+                      {deploymentResult.physicalWorkplace.code} - {deploymentResult.physicalWorkplace.name}
+                    </Typography>
+                  </Stack>
+                  {deploymentResult.physicalWorkplace.occupantUpdated && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      {deploymentResult.physicalWorkplace.newOccupant
+                        ? t('deployment.result.occupantUpdated', {
+                            from: deploymentResult.physicalWorkplace.previousOccupant || t('common.none'),
+                            to: deploymentResult.physicalWorkplace.newOccupant,
+                          })
+                        : t('deployment.result.occupantCleared', {
+                            from: deploymentResult.physicalWorkplace.previousOccupant,
+                          })}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+              {/* Timestamp */}
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                {t('deployment.result.completedAt', {
+                  time: new Date(deploymentResult.timestamp).toLocaleString(),
+                })}
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => navigate(ROUTES.DEPLOYMENT_HISTORY)} color="inherit">
+            {t('deployment.success.viewHistory')}
+          </Button>
+          <Button onClick={() => setSuccessDialogOpen(false)} variant="contained" color="success">
+            {t('common.close')}
           </Button>
         </DialogActions>
       </Dialog>

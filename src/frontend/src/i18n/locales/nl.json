@@ -32,7 +32,8 @@
     "all": "Alle",
     "processing": "Verwerken...",
     "confirm": "Bevestigen",
-    "clear": "Wissen"
+    "clear": "Wissen",
+    "none": "Geen"
   },
   "validation": {
     "required": "Verplicht veld"
@@ -1129,6 +1130,16 @@
       "onboardingComplete": "Onboarding succesvol voltooid voor {{userName}}",
       "offboardingComplete": "Offboarding succesvol voltooid voor {{userName}}",
       "viewHistory": "Bekijk geschiedenis"
+    },
+    "result": {
+      "oldDevice": "Oud apparaat",
+      "newDevice": "Nieuw apparaat",
+      "workplace": "Werkplek",
+      "ownerCleared": "Eigenaar {{owner}} verwijderd",
+      "assignedTo": "Toegewezen aan {{owner}}",
+      "occupantUpdated": "Bezetter gewijzigd van {{from}} naar {{to}}",
+      "occupantCleared": "Bezetter {{from}} verwijderd",
+      "completedAt": "Voltooid op {{time}}"
     },
     "error": {
       "title": "Deployment Mislukt",

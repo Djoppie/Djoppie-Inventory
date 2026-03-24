@@ -32,7 +32,8 @@
     "all": "All",
     "processing": "Processing...",
     "confirm": "Confirm",
-    "clear": "Clear"
+    "clear": "Clear",
+    "none": "None"
   },
   "validation": {
     "required": "Required field"
@@ -1129,6 +1130,16 @@
       "onboardingComplete": "Onboarding completed successfully for {{userName}}",
       "offboardingComplete": "Offboarding completed successfully for {{userName}}",
       "viewHistory": "View history"
+    },
+    "result": {
+      "oldDevice": "Old device",
+      "newDevice": "New device",
+      "workplace": "Workplace",
+      "ownerCleared": "Owner {{owner}} cleared",
+      "assignedTo": "Assigned to {{owner}}",
+      "occupantUpdated": "Occupant changed from {{from}} to {{to}}",
+      "occupantCleared": "Occupant {{from}} cleared",
+      "completedAt": "Completed at {{time}}"
     },
     "error": {
       "title": "Deployment Failed",
