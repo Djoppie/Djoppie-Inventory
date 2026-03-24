@@ -1059,7 +1059,9 @@
       "onboarding": "Onboarding",
       "onboardingDesc": "Nieuwe medewerker krijgt laptop (zonder oud apparaat)",
       "swap": "Swap",
-      "swapDesc": "Vervang oude laptop door nieuwe"
+      "swapDesc": "Vervang oude laptop door nieuwe",
+      "offboarding": "Offboarding",
+      "offboardingDesc": "Medewerker vertrekt, apparaat wordt teruggenomen"
     },
     "user": {
       "title": "Gebruiker",
@@ -1094,7 +1096,8 @@
       "noWorkplace": "Geen werkplek",
       "updateEquipment": "Werkplek apparatuur bijwerken",
       "currentOccupant": "Huidige bezetter",
-      "willUpdateOccupant": "Bezetter wordt bijgewerkt naar nieuwe gebruiker"
+      "willUpdateOccupant": "Bezetter wordt bijgewerkt naar nieuwe gebruiker",
+      "clearOccupant": "Bezetter vrijgeven van werkplek"
     },
     "equipment": {
       "title": "Werkplek Apparatuur",
@@ -1114,14 +1117,17 @@
       "confirmTitle": "Deployment Bevestigen",
       "confirmSwap": "U staat op het punt om de laptop van {{userName}} te verwisselen.",
       "confirmOnboarding": "U staat op het punt om {{userName}} te onboarden met een nieuwe laptop.",
+      "confirmOffboarding": "U staat op het punt om {{userName}} te offboarden en het apparaat terug te nemen.",
       "oldDevice": "Oud apparaat: {{device}} → {{status}}",
       "newDevice": "Nieuw apparaat: {{device}}",
-      "workplaceUpdate": "Werkplek: {{workplace}}"
+      "workplaceUpdate": "Werkplek: {{workplace}}",
+      "workplaceClearOccupant": "Werkplek {{workplace}}: bezetter wordt vrijgegeven"
     },
     "success": {
       "title": "Deployment Succesvol",
       "swapComplete": "Laptop swap succesvol voltooid voor {{userName}}",
       "onboardingComplete": "Onboarding succesvol voltooid voor {{userName}}",
+      "offboardingComplete": "Offboarding succesvol voltooid voor {{userName}}",
       "viewHistory": "Bekijk geschiedenis"
     },
     "error": {

@@ -14,6 +14,7 @@ import {
   FormControlLabel,
   RadioGroup,
   Radio,
+  Checkbox,
   Select,
   MenuItem,
   InputLabel,
@@ -36,6 +37,7 @@ import { useTranslation } from 'react-i18next';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import PersonIcon from '@mui/icons-material/Person';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import HistoryIcon from '@mui/icons-material/History';
@@ -108,6 +110,7 @@ const LaptopSwapPage = () => {
   const [oldAssetNewStatus, setOldAssetNewStatus] = useState<string>('Stock');
   const [selectedWorkplace, setSelectedWorkplace] = useState<PhysicalWorkplace | null>(null);
   const [newLaptopSearch, setNewLaptopSearch] = useState('');
+  const [clearWorkplaceOccupant, setClearWorkplaceOccupant] = useState(false);
 
   // Dialog state
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -146,8 +149,15 @@ const LaptopSwapPage = () => {
   }, []);
 
   const handleModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setMode(Number(event.target.value) as DeploymentMode);
+    const newMode = Number(event.target.value) as DeploymentMode;
+    setMode(newMode);
     setSelectedOldDevice(null); // Reset old device when mode changes
+    setSelectedNewAsset(null); // Reset new asset when mode changes
+    setClearWorkplaceOccupant(false); // Reset clear occupant when mode changes
+    // For offboarding, default to UitDienst status
+    if (newMode === DeploymentMode.Offboarding) {
+      setOldAssetNewStatus('UitDienst');
+    }
   };
 
   const handleExecuteClick = async () => {
@@ -156,17 +166,19 @@ const LaptopSwapPage = () => {
       setSnackbar({ open: true, message: t('deployment.error.noUser'), severity: 'error' });
       return;
     }
-    if (!selectedNewAsset) {
+    // For Onboarding and Swap, we need a new asset
+    if (mode !== DeploymentMode.Offboarding && !selectedNewAsset) {
       setSnackbar({ open: true, message: t('deployment.error.noNewLaptop'), severity: 'error' });
       return;
     }
-    if (mode === DeploymentMode.Swap && !selectedOldDevice) {
+    // For Swap and Offboarding, we need an old device
+    if ((mode === DeploymentMode.Swap || mode === DeploymentMode.Offboarding) && !selectedOldDevice) {
       setSnackbar({ open: true, message: t('deployment.error.noOldLaptop'), severity: 'error' });
       return;
     }
 
-    // Check for occupant conflict if workplace is selected
-    if (selectedWorkplace && selectedUser) {
+    // Check for occupant conflict if workplace is selected (only for non-offboarding modes)
+    if (selectedWorkplace && selectedUser && mode !== DeploymentMode.Offboarding) {
       try {
         const conflict = await checkOccupantConflict.mutateAsync({
           physicalWorkplaceId: selectedWorkplace.id,
@@ -193,7 +205,9 @@ const LaptopSwapPage = () => {
     setConfirmDialogOpen(false);
     setOccupantConflictDialogOpen(false);
 
-    if (!selectedUser || !selectedNewAsset) return;
+    if (!selectedUser) return;
+    // For non-offboarding modes, we need a new asset
+    if (mode !== DeploymentMode.Offboarding && !selectedNewAsset) return;
 
     const request: ExecuteDeploymentRequest = {
       mode,
@@ -202,19 +216,26 @@ const LaptopSwapPage = () => {
       newOwnerEmail: selectedUser.mail || selectedUser.userPrincipalName,
       newOwnerJobTitle: selectedUser.jobTitle,
       newOwnerOfficeLocation: selectedUser.officeLocation,
-      newLaptopAssetId: selectedNewAsset.id,
+      newLaptopAssetId: mode !== DeploymentMode.Offboarding ? selectedNewAsset?.id : undefined,
       // Use local asset ID from serial number lookup (if found)
-      oldLaptopAssetId: mode === DeploymentMode.Swap ? oldAssetFromSerial?.id : undefined,
+      oldLaptopAssetId: (mode === DeploymentMode.Swap || mode === DeploymentMode.Offboarding) ? oldAssetFromSerial?.id : undefined,
       physicalWorkplaceId: selectedWorkplace?.id,
       updateEquipmentSlots: false,
+      oldAssetNewStatus: oldAssetNewStatus,
+      clearWorkplaceOccupant: mode === DeploymentMode.Offboarding ? clearWorkplaceOccupant : undefined,
     };
 
     try {
       await executeDeployment.mutateAsync({ request, forceOccupantUpdate });
 
-      const successMessage = mode === DeploymentMode.Swap
-        ? t('deployment.success.swapComplete', { userName: selectedUser.displayName })
-        : t('deployment.success.onboardingComplete', { userName: selectedUser.displayName });
+      let successMessage: string;
+      if (mode === DeploymentMode.Swap) {
+        successMessage = t('deployment.success.swapComplete', { userName: selectedUser.displayName });
+      } else if (mode === DeploymentMode.Offboarding) {
+        successMessage = t('deployment.success.offboardingComplete', { userName: selectedUser.displayName });
+      } else {
+        successMessage = t('deployment.success.onboardingComplete', { userName: selectedUser.displayName });
+      }
 
       setSnackbar({ open: true, message: successMessage, severity: 'success' });
 
@@ -224,6 +245,7 @@ const LaptopSwapPage = () => {
       setSelectedNewAsset(null);
       setSelectedWorkplace(null);
       setNewLaptopSearch('');
+      setClearWorkplaceOccupant(false);
     } catch (error) {
       console.error('Deployment failed:', error);
       setSnackbar({
@@ -240,7 +262,9 @@ const LaptopSwapPage = () => {
 
   const canExecute = Boolean(
     selectedUser &&
-    selectedNewAsset &&
+    // For Onboarding/Swap: need new asset; for Offboarding: not needed
+    (mode === DeploymentMode.Offboarding || selectedNewAsset) &&
+    // For Swap/Offboarding: need old device; for Onboarding: not needed
     (mode === DeploymentMode.Onboarding || selectedOldDevice)
   );
 
@@ -348,11 +372,33 @@ const LaptopSwapPage = () => {
                 control={<Radio />}
                 label={
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <PersonAddIcon color="success" />
+                    <PersonAddIcon
+                      color="success"
+                      sx={{
+                        ...(mode === DeploymentMode.Onboarding && {
+                          filter: 'drop-shadow(0 0 6px rgba(102, 187, 106, 0.8))',
+                        }),
+                      }}
+                    />
                     <Box>
                       <Typography fontWeight={500}>{t('deployment.mode.onboarding')}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         {t('deployment.mode.onboardingDesc')}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                }
+              />
+              <FormControlLabel
+                value={DeploymentMode.Offboarding}
+                control={<Radio />}
+                label={
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <PersonRemoveIcon color="error" />
+                    <Box>
+                      <Typography fontWeight={500}>{t('deployment.mode.offboarding')}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('deployment.mode.offboardingDesc')}
                       </Typography>
                     </Box>
                   </Stack>
@@ -367,7 +413,7 @@ const LaptopSwapPage = () => {
       <Card elevation={0} sx={scannerCardSx}>
         <CardContent sx={{ p: 3 }}>
           <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-            <PersonIcon color="primary" />
+            <PersonIcon sx={{ color: '#ce93d8' }} />
             <Typography variant="h6" fontWeight={600}>
               {t('deployment.user.title')}
             </Typography>
@@ -383,8 +429,13 @@ const LaptopSwapPage = () => {
               <Chip
                 icon={<PersonIcon />}
                 label={selectedUser.displayName}
-                color="success"
-                sx={{ mr: 1 }}
+                sx={{
+                  mr: 1,
+                  bgcolor: 'rgba(156, 39, 176, 0.15)',
+                  color: '#ce93d8',
+                  border: '1px solid rgba(156, 39, 176, 0.5)',
+                  '& .MuiChip-icon': { color: '#ce93d8' },
+                }}
               />
               {selectedUser.mail && (
                 <Typography variant="caption" color="text.secondary">
@@ -396,8 +447,8 @@ const LaptopSwapPage = () => {
         </CardContent>
       </Card>
 
-      {/* Old Device Selection (Swap mode only) */}
-      {mode === DeploymentMode.Swap && (
+      {/* Old Device Selection (Swap and Offboarding modes) */}
+      {(mode === DeploymentMode.Swap || mode === DeploymentMode.Offboarding) && (
         <Card elevation={0} sx={scannerCardSx}>
           <CardContent sx={{ p: 3 }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
@@ -469,69 +520,76 @@ const LaptopSwapPage = () => {
         </Card>
       )}
 
-      {/* New Device Selection */}
-      <Card elevation={0} sx={scannerCardSx}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-            <LaptopIcon color="success" />
-            <Typography variant="h6" fontWeight={600}>
-              {t('deployment.newLaptop.title')}
-            </Typography>
-          </Stack>
+      {/* New Device Selection (not shown for Offboarding) */}
+      {mode !== DeploymentMode.Offboarding && (
+        <Card elevation={0} sx={scannerCardSx}>
+          <CardContent sx={{ p: 3 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+              <LaptopIcon color="success" />
+              <Typography variant="h6" fontWeight={600}>
+                {t('deployment.newLaptop.title')}
+              </Typography>
+            </Stack>
 
-          <Autocomplete
-            options={availableLaptops || []}
-            loading={loadingAvailableLaptops}
-            value={selectedNewAsset}
-            onChange={(_, value) => setSelectedNewAsset(value)}
-            inputValue={newLaptopSearch}
-            onInputChange={(_, value) => setNewLaptopSearch(value)}
-            getOptionLabel={(option) => `${option.assetCode}${option.serialNumber ? ` (${option.serialNumber})` : ''}`}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label={t('deployment.newLaptop.search')}
-                helperText={t('deployment.newLaptop.searchHint')}
-                InputProps={{
-                  ...params.InputProps,
-                  endAdornment: (
-                    <>
-                      {loadingAvailableLaptops && <CircularProgress size={20} />}
-                      {params.InputProps.endAdornment}
-                    </>
-                  ),
-                }}
-              />
-            )}
-            renderOption={(props, option) => (
-              <Box component="li" {...props} key={option.id}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <LaptopIcon fontSize="small" color="success" />
-                  <Box>
-                    <Typography fontWeight={500}>{option.assetCode}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option.brand} {option.model}
-                      {option.serialNumber && ` - ${option.serialNumber}`}
-                    </Typography>
-                  </Box>
-                </Stack>
+            <Autocomplete
+              options={availableLaptops || []}
+              loading={loadingAvailableLaptops}
+              value={selectedNewAsset}
+              onChange={(_, value) => setSelectedNewAsset(value)}
+              inputValue={newLaptopSearch}
+              onInputChange={(_, value) => setNewLaptopSearch(value)}
+              getOptionLabel={(option) => `${option.assetCode}${option.serialNumber ? ` (${option.serialNumber})` : ''}`}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t('deployment.newLaptop.search')}
+                  helperText={t('deployment.newLaptop.searchHint')}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {loadingAvailableLaptops && <CircularProgress size={20} />}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props} key={option.id}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LaptopIcon fontSize="small" color="success" />
+                    <Box>
+                      <Typography fontWeight={500}>{option.assetCode}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.brand} {option.model}
+                        {option.serialNumber && ` - ${option.serialNumber}`}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+              )}
+              noOptionsText={t('deployment.newLaptop.noNewLaptop')}
+            />
+
+            {selectedNewAsset && (
+              <Box sx={{ mt: 2 }}>
+                <Chip
+                  icon={<LaptopIcon />}
+                  label={`${selectedNewAsset.assetCode} (${selectedNewAsset.brand || ''} ${selectedNewAsset.model || ''})`}
+                  sx={{
+                    bgcolor: 'rgba(0, 150, 136, 0.15)',
+                    color: '#4db6ac',
+                    border: '1px solid rgba(0, 150, 136, 0.5)',
+                    '& .MuiChip-icon': { color: '#4db6ac' },
+                  }}
+                />
               </Box>
             )}
-            noOptionsText={t('deployment.newLaptop.noNewLaptop')}
-          />
-
-          {selectedNewAsset && (
-            <Box sx={{ mt: 2 }}>
-              <Chip
-                icon={<LaptopIcon />}
-                label={`${selectedNewAsset.assetCode} (${selectedNewAsset.brand || ''} ${selectedNewAsset.model || ''})`}
-                color="success"
-              />
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Workplace Selection (Optional) */}
       <Card elevation={0} sx={scannerCardSx}>
@@ -593,6 +651,20 @@ const LaptopSwapPage = () => {
                   {t('deployment.workplace.currentOccupant')}: {selectedWorkplace.currentOccupantName}
                 </Typography>
               )}
+              {/* Clear occupant checkbox (Offboarding only) */}
+              {mode === DeploymentMode.Offboarding && selectedWorkplace.currentOccupantName && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={clearWorkplaceOccupant}
+                      onChange={(e) => setClearWorkplaceOccupant(e.target.checked)}
+                      color="warning"
+                    />
+                  }
+                  label={t('deployment.workplace.clearOccupant')}
+                  sx={{ mt: 1, display: 'block' }}
+                />
+              )}
             </Box>
           )}
         </CardContent>
@@ -631,10 +703,12 @@ const LaptopSwapPage = () => {
           <DialogContentText>
             {mode === DeploymentMode.Swap
               ? t('deployment.execute.confirmSwap', { userName: selectedUser?.displayName })
-              : t('deployment.execute.confirmOnboarding', { userName: selectedUser?.displayName })}
+              : mode === DeploymentMode.Offboarding
+                ? t('deployment.execute.confirmOffboarding', { userName: selectedUser?.displayName })
+                : t('deployment.execute.confirmOnboarding', { userName: selectedUser?.displayName })}
           </DialogContentText>
           <Box sx={{ mt: 2 }}>
-            {mode === DeploymentMode.Swap && selectedOldDevice && (
+            {(mode === DeploymentMode.Swap || mode === DeploymentMode.Offboarding) && selectedOldDevice && (
               <Typography variant="body2">
                 {t('deployment.execute.oldDevice', {
                   device: selectedOldDevice.deviceName || selectedOldDevice.serialNumber,
@@ -642,21 +716,23 @@ const LaptopSwapPage = () => {
                 })}
               </Typography>
             )}
-            {selectedNewAsset && (
+            {mode !== DeploymentMode.Offboarding && selectedNewAsset && (
               <Typography variant="body2">
                 {t('deployment.execute.newDevice', { device: selectedNewAsset.assetCode })}
               </Typography>
             )}
             {selectedWorkplace && (
               <Typography variant="body2">
-                {t('deployment.execute.workplaceUpdate', { workplace: selectedWorkplace.name })}
+                {mode === DeploymentMode.Offboarding && clearWorkplaceOccupant
+                  ? t('deployment.execute.workplaceClearOccupant', { workplace: selectedWorkplace.name })
+                  : t('deployment.execute.workplaceUpdate', { workplace: selectedWorkplace.name })}
               </Typography>
             )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDialogOpen(false)}>{t('common.cancel')}</Button>
-          <Button onClick={() => handleConfirmDeployment(false)} color="success" variant="contained">
+          <Button onClick={() => handleConfirmDeployment(false)} color={mode === DeploymentMode.Offboarding ? 'warning' : 'success'} variant="contained">
             {t('common.confirm')}
           </Button>
         </DialogActions>

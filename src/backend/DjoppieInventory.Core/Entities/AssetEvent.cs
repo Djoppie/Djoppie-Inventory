@@ -56,6 +56,11 @@ public enum AssetEventType
     DeviceOnboarded = 9,
 
     /// <summary>
+    /// Device offboarded - user left, device returned to inventory
+    /// </summary>
+    DeviceOffboarded = 10,
+
+    /// <summary>
     /// Other type of event
     /// </summary>
     Other = 99
