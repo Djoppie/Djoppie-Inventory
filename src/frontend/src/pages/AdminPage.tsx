@@ -25,6 +25,8 @@ import BuildingsTab from '../components/admin/BuildingsTab';
 import SectorsTab from '../components/admin/SectorsTab';
 import ServicesTab from '../components/admin/ServicesTab';
 import PhysicalWorkplacesTab from '../components/admin/PhysicalWorkplacesTab';
+import OrganizationTab from '../components/admin/OrganizationTab';
+import SchemaIcon from '@mui/icons-material/Schema';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -218,6 +220,14 @@ const AdminPage = () => {
             id="admin-tab-5"
             aria-controls="admin-tabpanel-5"
           />
+          <Tab
+            icon={<SchemaIcon />}
+            iconPosition="start"
+            label="Organisatie"
+            id="admin-tab-6"
+            aria-controls="admin-tabpanel-6"
+            sx={{ color: '#7b1fa2', '&.Mui-selected': { color: '#7b1fa2' } }}
+          />
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
@@ -238,6 +248,9 @@ const AdminPage = () => {
           </TabPanel>
           <TabPanel value={currentTab} index={5}>
             <BuildingsTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={6}>
+            <OrganizationTab />
           </TabPanel>
         </CardContent>
       </Card>
