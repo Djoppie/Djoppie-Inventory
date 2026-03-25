@@ -21,6 +21,7 @@ import {
   Collapse,
   Chip,
   alpha,
+  Menu,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -30,14 +31,16 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PlaceIcon from '@mui/icons-material/Place';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import DeskIcon from '@mui/icons-material/Desk';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import BusinessIcon from '@mui/icons-material/Business';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import ClearAllIcon from '@mui/icons-material/ClearAll';
+import TuneIcon from '@mui/icons-material/Tune';
 import {
   usePhysicalWorkplaces,
   useDeletePhysicalWorkplace,
@@ -127,6 +130,8 @@ const PhysicalWorkplacesPage = () => {
   // Filter state
   const [filters, setFilters] = useState<PhysicalWorkplaceFilters>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [serviceMenuAnchor, setServiceMenuAnchor] = useState<null | HTMLElement>(null);
+  const [buildingMenuAnchor, setBuildingMenuAnchor] = useState<null | HTMLElement>(null);
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -562,10 +567,11 @@ const PhysicalWorkplacesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Advanced Filters - Teal themed */}
+      {/* Advanced Filters - Teal themed toolbar */}
       <Stack
         direction="row"
         spacing={1}
+        alignItems="center"
         sx={{
           mb: 2,
           p: 1.5,
@@ -575,62 +581,246 @@ const PhysicalWorkplacesPage = () => {
           borderColor: isDark ? alpha(tealAccent, 0.2) : alpha(tealAccent, 0.15),
         }}
       >
-        <Button
-          startIcon={showFilters ? <FilterListOffIcon /> : <FilterListIcon />}
-          onClick={() => setShowFilters(!showFilters)}
-          size="small"
-          variant={hasActiveFilters ? 'contained' : 'outlined'}
-          sx={{
-            borderColor: tealAccent,
-            color: hasActiveFilters ? '#fff' : tealAccent,
-            bgcolor: hasActiveFilters ? tealAccent : 'transparent',
-            fontWeight: 600,
-            '&:hover': {
-              borderColor: '#00796b',
-              bgcolor: hasActiveFilters ? '#00796b' : alpha(tealAccent, 0.08),
-            },
-          }}
-        >
-          {t('common.filters')} {hasActiveFilters && `(${Object.values(filters).filter(v => v !== undefined).length})`}
-        </Button>
-
-        {hasActiveFilters && (
-          <Button
+        {/* Toggle Advanced Filters */}
+        <Tooltip title={showFilters ? 'Verberg geavanceerde filters' : 'Toon geavanceerde filters'} arrow>
+          <IconButton
+            onClick={() => setShowFilters(!showFilters)}
             size="small"
-            onClick={clearFilters}
-            variant="outlined"
             sx={{
-              borderColor: '#9C27B0',
-              color: '#9C27B0',
-              fontWeight: 600,
+              width: 36,
+              height: 36,
+              bgcolor: showFilters ? tealAccent : (isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.1)),
+              color: showFilters ? '#fff' : tealAccent,
+              transition: 'all 0.2s ease',
               '&:hover': {
-                borderColor: '#7B1FA2',
-                bgcolor: alpha('#9C27B0', 0.08),
+                bgcolor: showFilters ? '#00796b' : alpha(tealAccent, 0.2),
+                transform: 'translateY(-1px)',
               },
             }}
           >
-            {t('common.clearFilters')}
-          </Button>
+            <TuneIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Tooltip>
+
+        {/* Quick Service Filter */}
+        <Tooltip title="Filter op dienst" arrow>
+          <IconButton
+            onClick={(e) => setServiceMenuAnchor(e.currentTarget)}
+            size="small"
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: filters.serviceId ? '#388e3c' : (isDark ? alpha('#388e3c', 0.15) : alpha('#388e3c', 0.1)),
+              color: filters.serviceId ? '#fff' : '#388e3c',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: filters.serviceId ? '#2e7d32' : alpha('#388e3c', 0.2),
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            <BusinessIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Tooltip>
+
+        {/* Quick Building Filter */}
+        <Tooltip title="Filter op gebouw" arrow>
+          <IconButton
+            onClick={(e) => setBuildingMenuAnchor(e.currentTarget)}
+            size="small"
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: filters.buildingId ? '#1976d2' : (isDark ? alpha('#1976d2', 0.15) : alpha('#1976d2', 0.1)),
+              color: filters.buildingId ? '#fff' : '#1976d2',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: filters.buildingId ? '#1565c0' : alpha('#1976d2', 0.2),
+                transform: 'translateY(-1px)',
+              },
+            }}
+          >
+            <ApartmentIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Tooltip>
+
+        {/* Clear All Filters */}
+        {hasActiveFilters && (
+          <Tooltip title="Wis alle filters" arrow>
+            <IconButton
+              onClick={clearFilters}
+              size="small"
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: isDark ? alpha('#f44336', 0.15) : alpha('#f44336', 0.1),
+                color: '#f44336',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: '#f44336',
+                  color: '#fff',
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              <ClearAllIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Active Filter Chips */}
+        {hasActiveFilters && (
+          <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
+            {filters.serviceId && (
+              <Chip
+                icon={<BusinessIcon sx={{ fontSize: 14 }} />}
+                label="Dienst"
+                size="small"
+                onDelete={() => setFilters(prev => ({ ...prev, serviceId: undefined }))}
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha('#388e3c', 0.1),
+                  color: '#388e3c',
+                  '& .MuiChip-icon': { color: '#388e3c' },
+                  '& .MuiChip-deleteIcon': { color: '#388e3c', fontSize: 14 },
+                }}
+              />
+            )}
+            {filters.buildingId && (
+              <Chip
+                icon={<ApartmentIcon sx={{ fontSize: 14 }} />}
+                label="Gebouw"
+                size="small"
+                onDelete={() => setFilters(prev => ({ ...prev, buildingId: undefined }))}
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha('#1976d2', 0.1),
+                  color: '#1976d2',
+                  '& .MuiChip-icon': { color: '#1976d2' },
+                  '& .MuiChip-deleteIcon': { color: '#1976d2', fontSize: 14 },
+                }}
+              />
+            )}
+            {filters.isActive !== undefined && (
+              <Chip
+                label={filters.isActive ? 'Actief' : 'Inactief'}
+                size="small"
+                onDelete={() => setFilters(prev => ({ ...prev, isActive: undefined }))}
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha('#9c27b0', 0.1),
+                  color: '#9c27b0',
+                  '& .MuiChip-deleteIcon': { color: '#9c27b0', fontSize: 14 },
+                }}
+              />
+            )}
+            {filters.hasOccupant !== undefined && (
+              <Chip
+                icon={<PersonIcon sx={{ fontSize: 14 }} />}
+                label={filters.hasOccupant ? 'Bezet' : 'Vrij'}
+                size="small"
+                onDelete={() => setFilters(prev => ({ ...prev, hasOccupant: undefined }))}
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha('#ff9800', 0.1),
+                  color: '#ff9800',
+                  '& .MuiChip-icon': { color: '#ff9800' },
+                  '& .MuiChip-deleteIcon': { color: '#ff9800', fontSize: 14 },
+                }}
+              />
+            )}
+          </Stack>
         )}
 
         <Box sx={{ flex: 1 }} />
 
-        <Button
-          startIcon={<UploadFileIcon />}
-          onClick={() => setBulkImportDialogOpen(true)}
-          size="small"
-          variant="contained"
-          sx={{
-            bgcolor: tealAccent,
-            fontWeight: 600,
-            '&:hover': {
-              bgcolor: '#00796b',
-            },
-          }}
-        >
-          {t('physicalWorkplaces.bulk.title')}
-        </Button>
+        {/* Bulk Import Button */}
+        <Tooltip title="Werkplekken bulk importeren" arrow>
+          <IconButton
+            onClick={() => setBulkImportDialogOpen(true)}
+            size="small"
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: tealAccent,
+              color: '#fff',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: '#00796b',
+                transform: 'translateY(-1px)',
+                boxShadow: `0 4px 12px ${alpha(tealAccent, 0.4)}`,
+              },
+            }}
+          >
+            <UploadFileIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Tooltip>
       </Stack>
+
+      {/* Service Filter Menu */}
+      <Menu
+        anchorEl={serviceMenuAnchor}
+        open={Boolean(serviceMenuAnchor)}
+        onClose={() => setServiceMenuAnchor(null)}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 280,
+            maxWidth: 350,
+            borderRadius: 2,
+            p: 1,
+          },
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ px: 1, mb: 1, display: 'block' }}>
+          Filter op dienst
+        </Typography>
+        <ServiceSelect
+          value={filters.serviceId ?? null}
+          onChange={(value) => {
+            setFilters(prev => ({ ...prev, serviceId: value ?? undefined }));
+            setServiceMenuAnchor(null);
+          }}
+          label="Dienst"
+          size="small"
+          required={false}
+        />
+      </Menu>
+
+      {/* Building Filter Menu */}
+      <Menu
+        anchorEl={buildingMenuAnchor}
+        open={Boolean(buildingMenuAnchor)}
+        onClose={() => setBuildingMenuAnchor(null)}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 250,
+            borderRadius: 2,
+            p: 1,
+          },
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ px: 1, mb: 1, display: 'block' }}>
+          Filter op gebouw
+        </Typography>
+        <BuildingSelect
+          value={filters.buildingId ?? null}
+          onChange={(value) => {
+            setFilters(prev => ({ ...prev, buildingId: value ?? undefined }));
+            setBuildingMenuAnchor(null);
+          }}
+          label="Gebouw"
+        />
+      </Menu>
 
       {/* Collapsible Filter Panel */}
       <Collapse in={showFilters}>
