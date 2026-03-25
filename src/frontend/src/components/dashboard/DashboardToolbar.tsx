@@ -18,10 +18,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 import ViewToggle, { ViewMode } from '../common/ViewToggle';
+import ServiceSelect from '../common/ServiceSelect';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import SortIcon from '@mui/icons-material/Sort';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import BusinessIcon from '@mui/icons-material/Business';
 import CheckIcon from '@mui/icons-material/Check';
 import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
@@ -33,6 +35,7 @@ interface DashboardToolbarProps {
   viewMode: ViewMode;
   searchInputValue: string;
   categoryFilter: string;
+  serviceFilter: string;
   sortBy: SortOption;
   categories: string[];
   selectedCount: number;
@@ -41,6 +44,7 @@ interface DashboardToolbarProps {
   onSearchClear: () => void;
   onSortChange: (option: SortOption) => void;
   onCategoryChange: (category: string) => void;
+  onServiceChange: (serviceId: string) => void;
   onExportClick: () => void;
   onBulkEditClick: () => void;
   onBulkPrintClick: () => void;
@@ -51,6 +55,7 @@ export default function DashboardToolbar({
   viewMode,
   searchInputValue,
   categoryFilter,
+  serviceFilter,
   sortBy,
   categories,
   selectedCount,
@@ -59,6 +64,7 @@ export default function DashboardToolbar({
   onSearchClear,
   onSortChange,
   onCategoryChange,
+  onServiceChange,
   onExportClick,
   onBulkEditClick,
   onBulkPrintClick,
@@ -70,6 +76,7 @@ export default function DashboardToolbar({
   const { bgBase, bgSurface, accentColor } = getNeumorphColors(isDark);
   const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
+  const [serviceMenuAnchor, setServiceMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleSortMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setSortMenuAnchor(event.currentTarget);
@@ -95,6 +102,19 @@ export default function DashboardToolbar({
   const handleCategorySelect = (category: string) => {
     onCategoryChange(category);
     handleCategoryMenuClose();
+  };
+
+  const handleServiceMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setServiceMenuAnchor(event.currentTarget);
+  };
+
+  const handleServiceMenuClose = () => {
+    setServiceMenuAnchor(null);
+  };
+
+  const handleServiceSelect = (serviceId: number | null) => {
+    onServiceChange(serviceId ? String(serviceId) : '');
+    handleServiceMenuClose();
   };
 
   return (
@@ -308,11 +328,35 @@ export default function DashboardToolbar({
                 {categoryFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <FilterAltIcon sx={{ fontSize: 18 }} />}
               </IconButton>
             </Tooltip>
+
+            {/* Service Filter Button */}
+            <Tooltip title="Filter by service">
+              <IconButton
+                size="small"
+                onClick={handleServiceMenuOpen}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: serviceFilter ? alpha('#388e3c', 0.15) : bgBase,
+                  color: serviceFilter ? '#388e3c' : 'text.secondary',
+                  boxShadow: getNeumorph(isDark, 'soft'),
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    bgcolor: '#388e3c',
+                    color: '#fff',
+                    transform: 'translateY(-1px)',
+                    boxShadow: `0 4px 12px ${alpha('#388e3c', 0.4)}`,
+                  },
+                }}
+              >
+                {serviceFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <BusinessIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
 
         {/* Active Filters Display */}
-        {(searchInputValue || categoryFilter) && (
+        {(searchInputValue || categoryFilter || serviceFilter) && (
           <Box sx={{ mt: 1.5, display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
               Active filters:
@@ -353,6 +397,30 @@ export default function DashboardToolbar({
                     color: accentColor,
                     fontSize: 14,
                     '&:hover': { color: alpha(accentColor, 0.7) },
+                  },
+                }}
+              />
+            )}
+            {serviceFilter && (
+              <Chip
+                icon={<BusinessIcon sx={{ fontSize: 14 }} />}
+                label="Service"
+                onDelete={() => onServiceChange('')}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha('#388e3c', 0.1),
+                  color: '#388e3c',
+                  border: 'none',
+                  '& .MuiChip-icon': {
+                    color: '#388e3c',
+                  },
+                  '& .MuiChip-deleteIcon': {
+                    color: '#388e3c',
+                    fontSize: 14,
+                    '&:hover': { color: alpha('#388e3c', 0.7) },
                   },
                 }}
               />
@@ -476,6 +544,35 @@ export default function DashboardToolbar({
             </Box>
           </MenuItem>
         ))}
+      </Menu>
+
+      {/* Service Filter Menu */}
+      <Menu
+        anchorEl={serviceMenuAnchor}
+        open={Boolean(serviceMenuAnchor)}
+        onClose={handleServiceMenuClose}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 280,
+            maxWidth: 350,
+            bgcolor: bgSurface,
+            boxShadow: getNeumorph(isDark, 'medium'),
+            borderRadius: 2,
+            p: 1,
+          },
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ px: 1, mb: 1, display: 'block' }}>
+          Filter by service
+        </Typography>
+        <ServiceSelect
+          value={serviceFilter ? parseInt(serviceFilter, 10) : null}
+          onChange={handleServiceSelect}
+          label="Dienst"
+          size="small"
+          required={false}
+        />
       </Menu>
     </>
   );
