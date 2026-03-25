@@ -27,6 +27,7 @@ import ServicesTab from '../components/admin/ServicesTab';
 import PhysicalWorkplacesTab from '../components/admin/PhysicalWorkplacesTab';
 import OrganizationTab from '../components/admin/OrganizationTab';
 import SchemaIcon from '@mui/icons-material/Schema';
+import { WORKPLACE_COLOR, EMPLOYEE_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -211,7 +212,7 @@ const AdminPage = () => {
             label="Werkplekken"
             id="admin-tab-4"
             aria-controls="admin-tabpanel-4"
-            sx={{ color: '#009688', '&.Mui-selected': { color: '#009688' } }}
+            sx={{ color: WORKPLACE_COLOR, '&.Mui-selected': { color: WORKPLACE_COLOR } }}
           />
           <Tab
             icon={<BusinessIcon />}
@@ -226,7 +227,7 @@ const AdminPage = () => {
             label="Organisatie"
             id="admin-tab-6"
             aria-controls="admin-tabpanel-6"
-            sx={{ color: '#7b1fa2', '&.Mui-selected': { color: '#7b1fa2' } }}
+            sx={{ color: EMPLOYEE_COLOR, '&.Mui-selected': { color: EMPLOYEE_COLOR } }}
           />
         </Tabs>
 

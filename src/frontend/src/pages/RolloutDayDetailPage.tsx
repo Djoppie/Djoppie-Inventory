@@ -25,6 +25,7 @@ import {
   Divider,
   Alert,
   LinearProgress,
+  alpha,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -41,6 +42,7 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 import { getRolloutSession, getRolloutDay, getStatusColor } from '../api/rollout.api';
 import { ROUTES, buildRoute } from '../constants/routes';
+import { ASSET_COLOR } from '../constants/filterColors';
 import Loading from '../components/common/Loading';
 import WorkplaceList from '../components/rollout/planner/WorkplaceList';
 import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog';
@@ -183,13 +185,13 @@ const RolloutDayDetailPage = () => {
             onClick={handleBack}
             sx={{
               bgcolor: (theme) =>
-                theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.1)' : 'rgba(255, 119, 0, 0.08)',
+                theme.palette.mode === 'dark' ? alpha(ASSET_COLOR, 0.1) : alpha(ASSET_COLOR, 0.08),
               '&:hover': {
-                bgcolor: 'rgba(255, 119, 0, 0.2)',
+                bgcolor: alpha(ASSET_COLOR, 0.2),
               },
             }}
           >
-            <ArrowBackIcon sx={{ color: '#FF7700' }} />
+            <ArrowBackIcon sx={{ color: ASSET_COLOR }} />
           </IconButton>
 
           <Breadcrumbs
@@ -206,7 +208,7 @@ const RolloutDayDetailPage = () => {
                 alignItems: 'center',
                 gap: 0.5,
                 cursor: 'pointer',
-                '&:hover': { color: '#FF7700' },
+                '&:hover': { color: ASSET_COLOR },
               }}
             >
               <HomeIcon sx={{ fontSize: 18 }} />
@@ -219,7 +221,7 @@ const RolloutDayDetailPage = () => {
               onClick={handleBack}
               sx={{
                 cursor: 'pointer',
-                '&:hover': { color: '#FF7700' },
+                '&:hover': { color: ASSET_COLOR },
               }}
             >
               {session.sessionName}
@@ -250,9 +252,9 @@ const RolloutDayDetailPage = () => {
           value={completionPercentage}
           sx={{
             height: 4,
-            bgcolor: 'rgba(255, 119, 0, 0.1)',
+            bgcolor: alpha(ASSET_COLOR, 0.1),
             '& .MuiLinearProgress-bar': {
-              bgcolor: completionPercentage === 100 ? '#16a34a' : '#FF7700',
+              bgcolor: completionPercentage === 100 ? '#16a34a' : ASSET_COLOR,
             },
           }}
         />
@@ -301,7 +303,7 @@ const RolloutDayDetailPage = () => {
                 onClick={handleStartExecution}
                 disabled={day.totalWorkplaces === 0}
                 sx={{
-                  bgcolor: '#FF7700',
+                  bgcolor: ASSET_COLOR,
                   '&:hover': { bgcolor: '#e66a00' },
                   fontWeight: 600,
                 }}
@@ -325,10 +327,10 @@ const RolloutDayDetailPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  bgcolor: 'rgba(255, 119, 0, 0.1)',
+                  bgcolor: alpha(ASSET_COLOR, 0.1),
                 }}
               >
-                <GroupsIcon sx={{ color: '#FF7700' }} />
+                <GroupsIcon sx={{ color: ASSET_COLOR }} />
               </Box>
               <Box>
                 <Typography variant="h6" fontWeight={700}>
@@ -422,7 +424,7 @@ const RolloutDayDetailPage = () => {
 
           {/* Notes */}
           {day.notes && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 119, 0, 0.04)', borderRadius: 2 }}>
+            <Box sx={{ mt: 2, p: 2, bgcolor: alpha(ASSET_COLOR, 0.04), borderRadius: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 <strong>Notities:</strong> {day.notes}
               </Typography>
@@ -446,7 +448,7 @@ const RolloutDayDetailPage = () => {
         <Box sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <GroupsIcon sx={{ color: '#FF7700', fontSize: 24 }} />
+              <GroupsIcon sx={{ color: ASSET_COLOR, fontSize: 24 }} />
               <Typography variant="h6" fontWeight={700}>
                 Werkplekken
               </Typography>
@@ -454,8 +456,8 @@ const RolloutDayDetailPage = () => {
                 label={day.totalWorkplaces}
                 size="small"
                 sx={{
-                  bgcolor: 'rgba(255, 119, 0, 0.1)',
-                  color: '#FF7700',
+                  bgcolor: alpha(ASSET_COLOR, 0.1),
+                  color: ASSET_COLOR,
                   fontWeight: 600,
                 }}
               />
@@ -469,11 +471,11 @@ const RolloutDayDetailPage = () => {
                 onClick={handleImportFromGraph}
                 disabled={!isEditable}
                 sx={{
-                  borderColor: '#FF7700',
-                  color: '#FF7700',
+                  borderColor: ASSET_COLOR,
+                  color: ASSET_COLOR,
                   '&:hover': {
                     borderColor: '#e66a00',
-                    bgcolor: 'rgba(255, 119, 0, 0.08)',
+                    bgcolor: alpha(ASSET_COLOR, 0.08),
                   },
                 }}
               >

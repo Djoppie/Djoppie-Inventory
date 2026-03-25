@@ -29,6 +29,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import TableRowsIcon from '@mui/icons-material/TableRows';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 type Order = 'asc' | 'desc';
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -129,7 +130,7 @@ function AdminDataTable<T extends Record<string, unknown>>({
   // Theme colors
   const bgBase = isDark ? '#1a1f2e' : '#f0f2f5';
   const bgSurface = isDark ? '#232936' : '#ffffff';
-  const accentColor = '#FF7700';
+  const accentColor = ASSET_COLOR;
 
   const handleRequestSort = (property: keyof T | string) => {
     const isAsc = orderBy === property && order === 'asc';

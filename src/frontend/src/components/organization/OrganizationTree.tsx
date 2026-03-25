@@ -31,6 +31,7 @@ import type {
   OrganizationSelection,
 } from '../../types/organization.types';
 import { useTranslation } from 'react-i18next';
+import { SECTOR_COLOR, EMPLOYEE_COLOR, SERVICE_COLOR, WORKPLACE_COLOR } from '../../constants/filterColors';
 
 interface OrganizationTreeProps {
   /** Tree loading parameters */
@@ -61,10 +62,10 @@ const nodeTypeIcons: Record<OrganizationNodeType, React.ReactNode> = {
 };
 
 const nodeTypeColors: Record<OrganizationNodeType, string> = {
-  sector: '#1976d2',
-  service: '#388e3c',
-  workplace: '#f57c00',
-  employee: '#7b1fa2',
+  sector: SECTOR_COLOR,
+  service: SERVICE_COLOR,
+  workplace: WORKPLACE_COLOR,
+  employee: EMPLOYEE_COLOR,
 };
 
 export const OrganizationTree: React.FC<OrganizationTreeProps> = ({

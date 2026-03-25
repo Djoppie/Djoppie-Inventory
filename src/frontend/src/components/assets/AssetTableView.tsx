@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
+import { ASSET_COLOR, SERVICE_COLOR } from '../../constants/filterColors';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import AppsIcon from '@mui/icons-material/Apps';
@@ -232,7 +233,7 @@ const AssetTableView = ({
                     size="small"
                     sx={{
                       '&.Mui-checked': {
-                        color: '#FF7700',
+                        color: ASSET_COLOR,
                       },
                     }}
                   />
@@ -250,10 +251,10 @@ const AssetTableView = ({
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
                     '&:hover': {
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                     },
                     '&.Mui-active': {
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                       fontWeight: 700,
                     },
                     '& .MuiTableSortLabel-icon': {
@@ -276,8 +277,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -295,8 +296,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -314,8 +315,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -333,8 +334,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -352,8 +353,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -371,8 +372,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -447,7 +448,7 @@ const AssetTableView = ({
                       size="small"
                       sx={{
                         '&.Mui-checked': {
-                          color: '#FF7700',
+                          color: ASSET_COLOR,
                         },
                       }}
                     />
@@ -460,7 +461,7 @@ const AssetTableView = ({
                     fontFamily: '"SF Mono", "Monaco", "Consolas", monospace',
                     fontWeight: 600,
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    color: '#FF7700',
+                    color: ASSET_COLOR,
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
                     letterSpacing: '0.01em',
@@ -668,7 +669,7 @@ const AssetTableView = ({
                           to="/workplaces"
                           onClick={(e) => e.stopPropagation()}
                           style={{
-                            color: '#009688',
+                            color: SERVICE_COLOR,
                             textDecoration: 'none',
                             fontWeight: 500,
                             display: 'flex',
@@ -775,7 +776,7 @@ const AssetTableView = ({
                           width: { xs: 28, sm: 32 },
                           height: { xs: 28, sm: 32 },
                           padding: 0,
-                          color: '#FF7700',
+                          color: ASSET_COLOR,
                           backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.1)' : 'rgba(255, 119, 0, 0.08)',
                           border: '1px solid',
                           borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.25)' : 'rgba(255, 119, 0, 0.2)',
@@ -844,10 +845,10 @@ const AssetTableView = ({
                     borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#FF7700',
+                    borderColor: ASSET_COLOR,
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#FF7700',
+                    borderColor: ASSET_COLOR,
                     borderWidth: 1.5,
                   },
                 }}
@@ -897,15 +898,15 @@ const AssetTableView = ({
                 borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: '#FF7700',
+                  borderColor: ASSET_COLOR,
                   backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.08)' : 'rgba(255, 119, 0, 0.05)',
                 },
               },
               '& .Mui-selected': {
-                backgroundColor: '#FF7700',
+                backgroundColor: ASSET_COLOR,
                 color: '#fff',
                 fontWeight: 600,
-                borderColor: '#FF7700',
+                borderColor: ASSET_COLOR,
                 '&:hover': {
                   backgroundColor: '#E66A00',
                   borderColor: '#E66A00',

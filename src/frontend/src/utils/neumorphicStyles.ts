@@ -1,4 +1,5 @@
 import { alpha } from '@mui/material';
+import { ASSET_COLOR } from '../constants/filterColors';
 
 /**
  * Neumorphic style utilities
@@ -9,7 +10,7 @@ import { alpha } from '@mui/material';
 export const getNeumorphColors = (isDark: boolean) => ({
   bgBase: isDark ? '#1a1f2e' : '#f0f2f5',
   bgSurface: isDark ? '#232936' : '#ffffff',
-  accentColor: '#FF7700',
+  accentColor: ASSET_COLOR,
 });
 
 // Raised neumorphic shadow (for cards, buttons, containers)
@@ -35,7 +36,7 @@ export const getNeumorphInset = (isDark: boolean) =>
     : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)';
 
 // TextField with neumorphic inset styling
-export const getNeumorphTextField = (isDark: boolean, accentColor: string = '#FF7700') => ({
+export const getNeumorphTextField = (isDark: boolean, accentColor: string = ASSET_COLOR) => ({
   '& .MuiOutlinedInput-root': {
     bgcolor: isDark ? '#1a1f2e' : '#f0f2f5',
     borderRadius: 1.5,
@@ -51,7 +52,7 @@ export const getNeumorphTextField = (isDark: boolean, accentColor: string = '#FF
 });
 
 // Icon button with neumorphic styling
-export const getNeumorphIconButton = (isDark: boolean, color: string = '#FF7700') => ({
+export const getNeumorphIconButton = (isDark: boolean, color: string = ASSET_COLOR) => ({
   bgcolor: isDark ? '#1a1f2e' : '#f0f2f5',
   color: color,
   boxShadow: getNeumorph(isDark, 'soft'),
@@ -69,7 +70,7 @@ export const getNeumorphIconButton = (isDark: boolean, color: string = '#FF7700'
 });
 
 // Chip with neumorphic styling
-export const getNeumorphChip = (_isDark: boolean, accentColor: string = '#FF7700') => ({
+export const getNeumorphChip = (_isDark: boolean, accentColor: string = ASSET_COLOR) => ({
   bgcolor: alpha(accentColor, 0.1),
   color: accentColor,
   border: 'none',

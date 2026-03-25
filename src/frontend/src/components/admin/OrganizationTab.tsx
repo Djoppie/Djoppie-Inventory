@@ -17,6 +17,8 @@ import {
 } from '@mui/icons-material';
 import { OrganizationTree } from '../organization/OrganizationTree';
 import type { OrganizationSelection } from '../../types/organization.types';
+import { SECTOR_COLOR, SERVICE_COLOR, WORKPLACE_COLOR } from '../../constants/filterColors';
+import { alpha } from '@mui/material';
 
 const OrganizationTab = () => {
   const [includeInactive, setIncludeInactive] = useState(false);
@@ -44,19 +46,19 @@ const OrganizationTab = () => {
               icon={<SectorIcon />}
               label="Sector"
               size="small"
-              sx={{ bgcolor: 'rgba(25, 118, 210, 0.1)', color: '#1976d2' }}
+              sx={{ bgcolor: alpha(SECTOR_COLOR, 0.1), color: SECTOR_COLOR }}
             />
             <Chip
               icon={<ServiceIcon />}
               label="Service"
               size="small"
-              sx={{ bgcolor: 'rgba(56, 142, 60, 0.1)', color: '#388e3c' }}
+              sx={{ bgcolor: alpha(SERVICE_COLOR, 0.1), color: SERVICE_COLOR }}
             />
             <Chip
               icon={<WorkplaceIcon />}
               label="Workplace"
               size="small"
-              sx={{ bgcolor: 'rgba(245, 124, 0, 0.1)', color: '#f57c00' }}
+              sx={{ bgcolor: alpha(WORKPLACE_COLOR, 0.1), color: WORKPLACE_COLOR }}
             />
           </Stack>
         </CardContent>
