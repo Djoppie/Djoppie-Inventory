@@ -192,15 +192,15 @@ export default function DashboardToolbar({
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: serviceFilter ? alpha('#388e3c', 0.15) : bgBase,
-                color: serviceFilter ? '#388e3c' : 'text.secondary',
+                bgcolor: serviceFilter ? alpha('#009688', 0.15) : bgBase,
+                color: serviceFilter ? '#009688' : 'text.secondary',
                 boxShadow: getNeumorph(isDark, 'soft'),
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  bgcolor: '#388e3c',
+                  bgcolor: '#009688',
                   color: '#fff',
                   transform: 'translateY(-1px)',
-                  boxShadow: `0 4px 12px ${alpha('#388e3c', 0.4)}`,
+                  boxShadow: `0 4px 12px ${alpha('#009688', 0.4)}`,
                 },
               }}
             >
@@ -284,11 +284,11 @@ export default function DashboardToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha('#388e3c', 0.1),
-                    color: '#388e3c',
+                    bgcolor: alpha('#009688', 0.1),
+                    color: '#009688',
                     border: 'none',
-                    '& .MuiChip-icon': { color: '#388e3c' },
-                    '& .MuiChip-deleteIcon': { color: '#388e3c', fontSize: 14 },
+                    '& .MuiChip-icon': { color: '#009688' },
+                    '& .MuiChip-deleteIcon': { color: '#009688', fontSize: 14 },
                   }}
                 />
               )}

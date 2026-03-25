@@ -615,11 +615,11 @@ const PhysicalWorkplacesPage = () => {
             sx={{
               width: 36,
               height: 36,
-              bgcolor: filters.serviceId ? '#388e3c' : (isDark ? alpha('#388e3c', 0.15) : alpha('#388e3c', 0.1)),
-              color: filters.serviceId ? '#fff' : '#388e3c',
+              bgcolor: filters.serviceId ? '#009688' : (isDark ? alpha('#009688', 0.15) : alpha('#009688', 0.1)),
+              color: filters.serviceId ? '#fff' : '#009688',
               transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: filters.serviceId ? '#2e7d32' : alpha('#388e3c', 0.2),
+                bgcolor: filters.serviceId ? '#2e7d32' : alpha('#009688', 0.2),
                 transform: 'translateY(-1px)',
               },
             }}
@@ -732,10 +732,10 @@ const PhysicalWorkplacesPage = () => {
                   height: 24,
                   fontSize: '0.7rem',
                   fontWeight: 600,
-                  bgcolor: alpha('#388e3c', 0.1),
-                  color: '#388e3c',
-                  '& .MuiChip-icon': { color: '#388e3c' },
-                  '& .MuiChip-deleteIcon': { color: '#388e3c', fontSize: 14 },
+                  bgcolor: alpha('#009688', 0.1),
+                  color: '#009688',
+                  '& .MuiChip-icon': { color: '#009688' },
+                  '& .MuiChip-deleteIcon': { color: '#009688', fontSize: 14 },
                 }}
               />
             )}
