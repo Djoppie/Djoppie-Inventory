@@ -57,6 +57,7 @@ const DashboardPage = () => {
     searchQuery: filters.searchQuery,
     categoryFilter: filters.categoryFilter,
     serviceFilter: filters.serviceFilter,
+    buildingFilter: filters.buildingFilter,
     statusFilter: filters.statusFilter,
     sortBy: filters.sortBy,
     selectedAssetIds,
@@ -213,6 +214,7 @@ const DashboardPage = () => {
         searchInputValue={filters.searchInputValue}
         categoryFilter={filters.categoryFilter}
         serviceFilter={filters.serviceFilter}
+        buildingFilter={filters.buildingFilter}
         sortBy={filters.sortBy}
         categories={categories}
         selectedCount={selectedAssetIds.size}
@@ -222,6 +224,7 @@ const DashboardPage = () => {
         onSortChange={filters.setSortBy}
         onCategoryChange={filters.setCategoryFilter}
         onServiceChange={filters.setServiceFilter}
+        onBuildingChange={filters.setBuildingFilter}
         onExportClick={() => setExportDialogOpen(true)}
         onBulkEditClick={() => setBulkEditDialogOpen(true)}
         onBulkPrintClick={() => setBulkPrintDialogOpen(true)}

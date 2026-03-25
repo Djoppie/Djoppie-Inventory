@@ -7,6 +7,7 @@ export interface DashboardFiltersState {
   statusFilter: string;
   categoryFilter: string;
   serviceFilter: string;
+  buildingFilter: string;
   searchQuery: string;
   sortBy: SortOption;
   viewMode: ViewMode;
@@ -17,6 +18,7 @@ export interface DashboardFiltersActions {
   setStatusFilter: (value: string) => void;
   setCategoryFilter: (value: string) => void;
   setServiceFilter: (value: string) => void;
+  setBuildingFilter: (value: string) => void;
   setSearchQuery: (value: string) => void;
   setSortBy: (value: SortOption) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -32,6 +34,7 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
   const statusFilter = searchParams.get('status') || '';
   const categoryFilter = searchParams.get('category') || '';
   const serviceFilter = searchParams.get('service') || '';
+  const buildingFilter = searchParams.get('building') || '';
   const searchQuery = searchParams.get('search') || '';
   const sortBy = (searchParams.get('sort') as SortOption) || 'date-newest';
 
@@ -70,6 +73,10 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
 
   const setServiceFilter = useCallback((value: string) => {
     updateFilters({ service: value || null });
+  }, [updateFilters]);
+
+  const setBuildingFilter = useCallback((value: string) => {
+    updateFilters({ building: value || null });
   }, [updateFilters]);
 
   const setSearchQuery = useCallback((value: string) => {
@@ -121,6 +128,7 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
     statusFilter,
     categoryFilter,
     serviceFilter,
+    buildingFilter,
     searchQuery,
     sortBy,
     viewMode,
@@ -129,6 +137,7 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
     setStatusFilter,
     setCategoryFilter,
     setServiceFilter,
+    setBuildingFilter,
     setSearchQuery,
     setSortBy,
     setViewMode,

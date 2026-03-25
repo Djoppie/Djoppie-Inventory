@@ -38,6 +38,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ## Agent Teams
 
 ### Frontend Team
+
 | Agent | Role | Primary Skills |
 |-------|------|----------------|
 | `frontend-developer` | Component implementation | `/frontend-design` |
@@ -45,6 +46,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 | `code-review-ai:architect-review` | Architecture & review | `comprehensive-review:full-review` |
 
 ### Backend Team
+
 | Agent | Role | Primary Skills |
 |-------|------|----------------|
 | `backend-architect` | API & architecture | `backend-development:api-design-principles` |
@@ -52,12 +54,14 @@ This document defines how Claude Code agents collaborate across the full stack t
 | `security-scanning:security-auditor` | Security review | `security-scanning:security-sast` |
 
 ### DevOps Team
+
 | Agent | Role | Primary Skills |
 |-------|------|----------------|
 | `azure-architect` | Azure infrastructure | `cloud-infrastructure:cloud-architect` |
 | `cloud-infrastructure:deployment-engineer` | CI/CD pipelines | `cloud-infrastructure:deployment-engineer` |
 
 ### Documentation Team
+
 | Agent | Role | Primary Skills |
 |-------|------|----------------|
 | `documentation-writer` | User guides | `documentation-generation:docs-architect` |
@@ -68,6 +72,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ## Full-Stack Feature Workflow
 
 ### Phase 1: Planning
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ PLANNING PHASE                                                   │
@@ -92,6 +97,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ```
 
 ### Phase 2: Implementation
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ IMPLEMENTATION PHASE (Parallel Tracks)                          │
@@ -116,6 +122,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ```
 
 ### Phase 3: Integration & Review
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ INTEGRATION PHASE                                                │
@@ -140,6 +147,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ```
 
 ### Phase 4: Deployment
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ DEPLOYMENT PHASE                                                 │
@@ -168,12 +176,14 @@ This document defines how Claude Code agents collaborate across the full stack t
 ## Master TODO List
 
 ### Critical Path Items
+
 - [ ] **API Versioning** - Backend Architect
 - [ ] **Error Boundary Components** - Frontend Architect
 - [ ] **Request Validation Middleware** - Backend Architect
 - [ ] **Bundle Size Optimization** - Frontend Architect
 
 ### Feature Backlog
+
 | Priority | Feature | Frontend Agent | Backend Agent |
 |----------|---------|----------------|---------------|
 | High | Bulk asset import improvements | frontend-developer | backend-architect |
@@ -184,6 +194,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 | Low | Keyboard shortcuts | frontend-developer | - |
 
 ### Technical Debt
+
 | Area | Issue | Owner |
 |------|-------|-------|
 | Frontend | ExcelJS bundle (936KB) | Frontend Architect |
@@ -192,6 +203,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 | DevOps | No staging environment | Azure Architect |
 
 ### Documentation Tasks
+
 | Document | Status | Owner |
 |----------|--------|-------|
 | API Reference (OpenAPI) | Needs update | Backend Architect |
@@ -204,6 +216,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ## Codebase Health Metrics
 
 ### Quality Gates
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ QUALITY GATES                                                    │
@@ -232,17 +245,20 @@ This document defines how Claude Code agents collaborate across the full stack t
 ### Regular Maintenance Tasks
 
 **Weekly:**
+
 - [ ] Review open issues/PRs
 - [ ] Check Application Insights for errors
 - [ ] Update dependencies with security patches
 
 **Monthly:**
+
 - [ ] Run full security scan (`security-scanning:security-sast`)
 - [ ] Review and optimize database queries
 - [ ] Update documentation for new features
 - [ ] Check bundle size and optimize if needed
 
 **Quarterly:**
+
 - [ ] Major dependency updates
 - [ ] Architecture review
 - [ ] Performance audit
@@ -253,6 +269,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ## Agent Invocation Examples
 
 ### Feature Development
+
 ```markdown
 ## Request: Add asset export to Excel feature
 
@@ -273,6 +290,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ```
 
 ### Bug Fix
+
 ```markdown
 ## Request: Fix 500 error on rollout workplace import
 
@@ -287,6 +305,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ```
 
 ### Security Review
+
 ```markdown
 ## Request: Security audit before production release
 
@@ -306,6 +325,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ## Communication Templates
 
 ### Starting a Feature
+
 ```markdown
 ## Feature: [Feature Name]
 
@@ -329,6 +349,7 @@ This document defines how Claude Code agents collaborate across the full stack t
 ```
 
 ### Completing a Task
+
 ```markdown
 ## Completed: [Task Name]
 
@@ -387,4 +408,4 @@ Human Developer (jo.wijnen@diepenbeek.be)
 
 ---
 
-**Contact:** jo.wijnen@diepenbeek.be
+**Contact:** <jo.wijnen@diepenbeek.be>

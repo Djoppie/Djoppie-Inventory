@@ -66,6 +66,7 @@ interface UseDashboardAssetsParams {
   searchQuery: string;
   categoryFilter: string;
   serviceFilter: string;
+  buildingFilter: string;
   statusFilter: string;
   sortBy: SortOption;
   selectedAssetIds: Set<number>;
@@ -75,6 +76,7 @@ export function useDashboardAssets({
   searchQuery,
   categoryFilter,
   serviceFilter,
+  buildingFilter,
   statusFilter,
   sortBy,
   selectedAssetIds,
@@ -117,8 +119,14 @@ export function useDashboardAssets({
       result = result.filter(a => a.serviceId === serviceId);
     }
 
+    // Apply building filter
+    if (buildingFilter) {
+      const buildingId = parseInt(buildingFilter, 10);
+      result = result.filter(a => a.buildingId === buildingId);
+    }
+
     return result;
-  }, [assets, searchQuery, categoryFilter, serviceFilter]);
+  }, [assets, searchQuery, categoryFilter, serviceFilter, buildingFilter]);
 
   // Split into real assets and dummy assets (code number >= 9000)
   const realAssets = useMemo(() =>

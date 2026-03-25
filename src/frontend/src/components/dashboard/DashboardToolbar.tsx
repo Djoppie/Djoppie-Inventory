@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 import ViewToggle, { ViewMode } from '../common/ViewToggle';
 import ServiceSelect from '../common/ServiceSelect';
+import BuildingSelect from '../common/BuildingSelect';
+import ApartmentIcon from '@mui/icons-material/Apartment';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import SortIcon from '@mui/icons-material/Sort';
@@ -36,6 +38,7 @@ interface DashboardToolbarProps {
   searchInputValue: string;
   categoryFilter: string;
   serviceFilter: string;
+  buildingFilter: string;
   sortBy: SortOption;
   categories: string[];
   selectedCount: number;
@@ -45,6 +48,7 @@ interface DashboardToolbarProps {
   onSortChange: (option: SortOption) => void;
   onCategoryChange: (category: string) => void;
   onServiceChange: (serviceId: string) => void;
+  onBuildingChange: (buildingId: string) => void;
   onExportClick: () => void;
   onBulkEditClick: () => void;
   onBulkPrintClick: () => void;
@@ -56,6 +60,7 @@ export default function DashboardToolbar({
   searchInputValue,
   categoryFilter,
   serviceFilter,
+  buildingFilter,
   sortBy,
   categories,
   selectedCount,
@@ -65,6 +70,7 @@ export default function DashboardToolbar({
   onSortChange,
   onCategoryChange,
   onServiceChange,
+  onBuildingChange,
   onExportClick,
   onBulkEditClick,
   onBulkPrintClick,
@@ -77,6 +83,7 @@ export default function DashboardToolbar({
   const [sortMenuAnchor, setSortMenuAnchor] = useState<null | HTMLElement>(null);
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
   const [serviceMenuAnchor, setServiceMenuAnchor] = useState<null | HTMLElement>(null);
+  const [buildingMenuAnchor, setBuildingMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleSortMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setSortMenuAnchor(event.currentTarget);
@@ -115,6 +122,19 @@ export default function DashboardToolbar({
   const handleServiceSelect = (serviceId: number | null) => {
     onServiceChange(serviceId ? String(serviceId) : '');
     handleServiceMenuClose();
+  };
+
+  const handleBuildingMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setBuildingMenuAnchor(event.currentTarget);
+  };
+
+  const handleBuildingMenuClose = () => {
+    setBuildingMenuAnchor(null);
+  };
+
+  const handleBuildingSelect = (buildingId: number | null) => {
+    onBuildingChange(buildingId ? String(buildingId) : '');
+    handleBuildingMenuClose();
   };
 
   return (
@@ -208,6 +228,30 @@ export default function DashboardToolbar({
             </IconButton>
           </Tooltip>
 
+          {/* Building Filter Button */}
+          <Tooltip title="Filter by building">
+            <IconButton
+              size="small"
+              onClick={handleBuildingMenuOpen}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: buildingFilter ? alpha('#1976d2', 0.15) : bgBase,
+                color: buildingFilter ? '#1976d2' : 'text.secondary',
+                boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: '#1976d2',
+                  color: '#fff',
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 4px 12px ${alpha('#1976d2', 0.4)}`,
+                },
+              }}
+            >
+              {buildingFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <ApartmentIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
+
           {/* Compact Search Field */}
           <TextField
             size="small"
@@ -253,7 +297,7 @@ export default function DashboardToolbar({
           />
 
           {/* Active Filter Chips */}
-          {(categoryFilter || serviceFilter) && (
+          {(categoryFilter || serviceFilter || buildingFilter) && (
             <>
               {categoryFilter && (
                 <Chip
@@ -289,6 +333,24 @@ export default function DashboardToolbar({
                     border: 'none',
                     '& .MuiChip-icon': { color: '#009688' },
                     '& .MuiChip-deleteIcon': { color: '#009688', fontSize: 14 },
+                  }}
+                />
+              )}
+              {buildingFilter && (
+                <Chip
+                  icon={<ApartmentIcon sx={{ fontSize: 14 }} />}
+                  label="Gebouw"
+                  onDelete={() => onBuildingChange('')}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    bgcolor: alpha('#1976d2', 0.1),
+                    color: '#1976d2',
+                    border: 'none',
+                    '& .MuiChip-icon': { color: '#1976d2' },
+                    '& .MuiChip-deleteIcon': { color: '#1976d2', fontSize: 14 },
                   }}
                 />
               )}
@@ -549,6 +611,32 @@ export default function DashboardToolbar({
           label="Dienst"
           size="small"
           required={false}
+        />
+      </Menu>
+
+      {/* Building Filter Menu */}
+      <Menu
+        anchorEl={buildingMenuAnchor}
+        open={Boolean(buildingMenuAnchor)}
+        onClose={handleBuildingMenuClose}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 250,
+            bgcolor: bgSurface,
+            boxShadow: getNeumorph(isDark, 'medium'),
+            borderRadius: 2,
+            p: 1,
+          },
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ px: 1, mb: 1, display: 'block' }}>
+          Filter by building
+        </Typography>
+        <BuildingSelect
+          value={buildingFilter ? parseInt(buildingFilter, 10) : null}
+          onChange={handleBuildingSelect}
+          label="Gebouw"
         />
       </Menu>
     </>
