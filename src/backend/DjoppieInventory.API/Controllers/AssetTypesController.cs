@@ -79,7 +79,7 @@ public class AssetTypesController : ControllerBase
     /// <param name="dto">The asset type creation data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(AssetTypeDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -123,7 +123,7 @@ public class AssetTypesController : ControllerBase
     /// <param name="dto">The updated asset type data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPut("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(AssetTypeDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AssetTypeDto>> Update(
@@ -162,7 +162,7 @@ public class AssetTypesController : ControllerBase
     /// <param name="id">The asset type ID to delete</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpDelete("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)

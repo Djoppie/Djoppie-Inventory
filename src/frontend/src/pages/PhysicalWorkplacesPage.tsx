@@ -13,10 +13,6 @@ import {
   Alert,
   useMediaQuery,
   useTheme,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Tooltip,
   Collapse,
   Chip,
@@ -49,6 +45,7 @@ import {
   usePhysicalWorkplaces,
   useDeletePhysicalWorkplace,
   useClearOccupant,
+  useWorkplaceStatistics,
 } from '../hooks/usePhysicalWorkplaces';
 import {
   PhysicalWorkplace,
@@ -155,21 +152,21 @@ const PhysicalWorkplacesPage = () => {
   });
 
   const { data: workplaces, isLoading, error, refetch } = usePhysicalWorkplaces(filters);
+  const { data: statisticsData } = useWorkplaceStatistics();
   const deleteMutation = useDeletePhysicalWorkplace();
   const clearOccupantMutation = useClearOccupant();
 
-  // Computed statistics
+  // Real statistics from dedicated endpoint (unfiltered)
   const stats = useMemo(() => {
-    if (!workplaces) return { total: 0, active: 0, occupied: 0, vacant: 0 };
-    const active = workplaces.filter(w => w.isActive);
-    const occupied = active.filter(w => w.currentOccupantEntraId || w.currentOccupantName);
+    if (!statisticsData) return { total: 0, active: 0, inactive: 0, occupied: 0, vacant: 0 };
     return {
-      total: workplaces.length,
-      active: active.length,
-      occupied: occupied.length,
-      vacant: active.length - occupied.length,
+      total: statisticsData.totalWorkplaces,
+      active: statisticsData.activeWorkplaces,
+      inactive: statisticsData.totalWorkplaces - statisticsData.activeWorkplaces,
+      occupied: statisticsData.occupiedWorkplaces,
+      vacant: statisticsData.vacantWorkplaces,
     };
-  }, [workplaces]);
+  }, [statisticsData]);
 
   const handleOpenDialog = (workplace?: PhysicalWorkplace) => {
     setEditingWorkplace(workplace ?? null);
@@ -531,40 +528,87 @@ const PhysicalWorkplacesPage = () => {
                 {t('physicalWorkplaces.subtitle')}
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1.5} flexWrap="wrap" sx={{ gap: 1 }}>
+            <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
               <Chip
                 icon={<PlaceIcon />}
                 label={`${stats.total} werkplekken`}
+                onClick={() => setFilters(prev => ({ ...prev, hasOccupant: undefined, isActive: undefined }))}
                 sx={{
                   height: 32,
                   fontWeight: 700,
-                  bgcolor: tealAccent,
-                  color: '#fff',
-                  '& .MuiChip-icon': { color: '#fff' },
+                  cursor: 'pointer',
+                  bgcolor: filters.hasOccupant === undefined && filters.isActive === undefined ? tealAccent : 'transparent',
+                  color: filters.hasOccupant === undefined && filters.isActive === undefined ? '#fff' : tealAccent,
+                  border: '1px solid',
+                  borderColor: tealAccent,
+                  '& .MuiChip-icon': { color: filters.hasOccupant === undefined && filters.isActive === undefined ? '#fff' : tealAccent },
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: filters.hasOccupant === undefined && filters.isActive === undefined ? tealAccent : alpha(tealAccent, 0.15) },
                 }}
               />
               <Chip
                 icon={<PersonIcon />}
                 label={`${stats.occupied} bezet`}
-                variant="outlined"
+                onClick={() => setFilters(prev => ({ ...prev, hasOccupant: prev.hasOccupant === true ? undefined : true }))}
                 sx={{
                   height: 32,
                   fontWeight: 600,
+                  cursor: 'pointer',
+                  bgcolor: filters.hasOccupant === true ? '#4CAF50' : 'transparent',
+                  color: filters.hasOccupant === true ? '#fff' : '#4CAF50',
+                  border: '1px solid',
                   borderColor: '#4CAF50',
-                  color: '#4CAF50',
-                  '& .MuiChip-icon': { color: '#4CAF50' },
+                  '& .MuiChip-icon': { color: filters.hasOccupant === true ? '#fff' : '#4CAF50' },
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: filters.hasOccupant === true ? '#4CAF50' : alpha('#4CAF50', 0.15) },
                 }}
               />
               <Chip
                 icon={<DeskIcon />}
                 label={`${stats.vacant} vrij`}
-                variant="outlined"
+                onClick={() => setFilters(prev => ({ ...prev, hasOccupant: prev.hasOccupant === false ? undefined : false }))}
                 sx={{
                   height: 32,
                   fontWeight: 600,
+                  cursor: 'pointer',
+                  bgcolor: filters.hasOccupant === false ? '#2196F3' : 'transparent',
+                  color: filters.hasOccupant === false ? '#fff' : '#2196F3',
+                  border: '1px solid',
                   borderColor: '#2196F3',
-                  color: '#2196F3',
-                  '& .MuiChip-icon': { color: '#2196F3' },
+                  '& .MuiChip-icon': { color: filters.hasOccupant === false ? '#fff' : '#2196F3' },
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: filters.hasOccupant === false ? '#2196F3' : alpha('#2196F3', 0.15) },
+                }}
+              />
+              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(tealAccent, 0.3), mx: 0.5 }} />
+              <Chip
+                label={`${stats.active} actief`}
+                onClick={() => setFilters(prev => ({ ...prev, isActive: prev.isActive === true ? undefined : true }))}
+                sx={{
+                  height: 32,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  bgcolor: filters.isActive === true ? '#4CAF50' : 'transparent',
+                  color: filters.isActive === true ? '#fff' : '#4CAF50',
+                  border: '1px solid',
+                  borderColor: '#4CAF50',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: filters.isActive === true ? '#4CAF50' : alpha('#4CAF50', 0.15) },
+                }}
+              />
+              <Chip
+                label={`${stats.inactive} inactief`}
+                onClick={() => setFilters(prev => ({ ...prev, isActive: prev.isActive === false ? undefined : false }))}
+                sx={{
+                  height: 32,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  bgcolor: filters.isActive === false ? '#FF5722' : 'transparent',
+                  color: filters.isActive === false ? '#fff' : '#FF5722',
+                  border: '1px solid',
+                  borderColor: '#FF5722',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: filters.isActive === false ? '#FF5722' : alpha('#FF5722', 0.15) },
                 }}
               />
             </Stack>
@@ -901,42 +945,6 @@ const PhysicalWorkplacesPage = () => {
                 label={t('physicalWorkplaces.service')}
               />
             </Box>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('physicalWorkplaces.status')}</InputLabel>
-              <Select<string>
-                value={filters.isActive === undefined ? '' : filters.isActive ? 'active' : 'inactive'}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setFilters(prev => ({
-                    ...prev,
-                    isActive: value === '' ? undefined : value === 'active',
-                  }));
-                }}
-                label={t('physicalWorkplaces.status')}
-              >
-                <MenuItem value="">{t('common.all')}</MenuItem>
-                <MenuItem value="active">{t('physicalWorkplaces.active')}</MenuItem>
-                <MenuItem value="inactive">{t('physicalWorkplaces.inactive')}</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>{t('physicalWorkplaces.occupancy')}</InputLabel>
-              <Select<string>
-                value={filters.hasOccupant === undefined ? '' : filters.hasOccupant ? 'occupied' : 'vacant'}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setFilters(prev => ({
-                    ...prev,
-                    hasOccupant: value === '' ? undefined : value === 'occupied',
-                  }));
-                }}
-                label={t('physicalWorkplaces.occupancy')}
-              >
-                <MenuItem value="">{t('common.all')}</MenuItem>
-                <MenuItem value="occupied">{t('physicalWorkplaces.occupied')}</MenuItem>
-                <MenuItem value="vacant">{t('physicalWorkplaces.vacant')}</MenuItem>
-              </Select>
-            </FormControl>
           </Stack>
         </Box>
       </Collapse>
@@ -1143,7 +1151,6 @@ const PhysicalWorkplacesPage = () => {
               columns={columns}
               emptyMessage="Geen werkplekken gevonden"
               getItemId={(item) => item.id}
-              showActiveStatus
               defaultRowsPerPage={15}
               renderActions={renderActions}
               actionsColumnWidth={140}

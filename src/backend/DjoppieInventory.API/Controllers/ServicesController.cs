@@ -98,7 +98,7 @@ public class ServicesController : ControllerBase
     /// <param name="dto">The service creation data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(ServiceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -141,7 +141,7 @@ public class ServicesController : ControllerBase
     /// <param name="dto">The updated service data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPut("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(ServiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -189,7 +189,7 @@ public class ServicesController : ControllerBase
     /// <param name="id">The service ID to delete</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpDelete("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)
@@ -210,7 +210,7 @@ public class ServicesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Sync result with counts of created and updated services</returns>
     [HttpPost("sync-from-entra")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(SyncResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SyncResultDto>> SyncFromEntra(CancellationToken cancellationToken = default)

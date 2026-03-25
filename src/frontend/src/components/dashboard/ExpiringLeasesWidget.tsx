@@ -236,6 +236,8 @@ const ExpiringLeasesWidget = () => {
                     }}
                   >
                     <ListItemText
+                      primaryTypographyProps={{ component: 'div' }}
+                      secondaryTypographyProps={{ component: 'div' }}
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                           <Typography variant="body1" fontWeight="600">

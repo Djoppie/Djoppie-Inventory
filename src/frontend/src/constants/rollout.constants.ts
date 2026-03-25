@@ -104,3 +104,41 @@ export const ROLLOUT_UI = {
   /** Minimum serial number length for auto-search */
   MIN_SERIAL_LENGTH_FOR_SEARCH: 3,
 } as const;
+
+// Filter constants
+export const ROLLOUT_FILTER = {
+  /** Debounce delay for search input */
+  SEARCH_DEBOUNCE_MS: 300,
+
+  /** LocalStorage key for planning view mode preference */
+  VIEW_MODE_STORAGE_KEY: 'djoppie-rollout-planner-view-mode',
+} as const;
+
+// Accent colors for rollout domain
+export const ROLLOUT_COLORS = {
+  /** Primary teal accent color for rollout domain */
+  TEAL_ACCENT: '#009688',
+
+  /** Blue accent for building/location filters */
+  BLUE_ACCENT: '#1976d2',
+
+  /** Orange accent for planning status */
+  ORANGE_ACCENT: '#FF7700',
+} as const;
+
+// Status chip configurations for planner toolbar
+export const PLANNING_STATUS_CHIPS = [
+  { value: 'all', label: 'Alles', color: '#666' },
+  { value: 'Planning', label: 'Gepland', color: '#FF9800' },
+  { value: 'Ready', label: 'Gereed', color: '#2196F3' },
+  { value: 'Completed', label: 'Voltooid', color: '#4CAF50' },
+] as const;
+
+// Status chip configurations for execution toolbar
+export const EXECUTION_STATUS_CHIPS = [
+  { value: 'all', label: 'Alles', color: '#666' },
+  { value: 'Pending', label: 'Wachtend', color: '#FF9800' },
+  { value: 'Ready', label: 'Gereed', color: '#2196F3' },
+  { value: 'InProgress', label: 'Bezig', color: '#9C27B0' },
+  { value: 'Completed', label: 'Voltooid', color: '#4CAF50' },
+] as const;
