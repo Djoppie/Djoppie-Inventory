@@ -64,6 +64,7 @@ import NeomorphConfirmDialog from '../components/physicalWorkplaces/NeomorphConf
 import EquipmentChip from '../components/physicalWorkplaces/EquipmentChip';
 import WorkplaceOccupantChip from '../components/physicalWorkplaces/WorkplaceOccupantChip';
 import AdminDataTable, { Column } from '../components/admin/AdminDataTable';
+import { SERVICE_COLOR, BUILDING_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -97,8 +98,8 @@ const iconButtonSx = {
   },
 };
 
-// Teal accent for workplaces (consistent with admin)
-const tealAccent = '#009688';
+// Teal accent for workplaces (uses central filter color)
+const tealAccent = SERVICE_COLOR;
 
 type SnackbarState = {
   open: boolean;
@@ -659,11 +660,11 @@ const PhysicalWorkplacesPage = () => {
             sx={{
               width: 36,
               height: 36,
-              bgcolor: filters.serviceId ? '#009688' : (isDark ? alpha('#009688', 0.15) : alpha('#009688', 0.1)),
-              color: filters.serviceId ? '#fff' : '#009688',
+              bgcolor: filters.serviceId ? SERVICE_COLOR : (isDark ? alpha(SERVICE_COLOR, 0.15) : alpha(SERVICE_COLOR, 0.1)),
+              color: filters.serviceId ? '#fff' : SERVICE_COLOR,
               transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: filters.serviceId ? '#2e7d32' : alpha('#009688', 0.2),
+                bgcolor: filters.serviceId ? '#2e7d32' : alpha(SERVICE_COLOR, 0.2),
                 transform: 'translateY(-1px)',
               },
             }}
@@ -680,11 +681,11 @@ const PhysicalWorkplacesPage = () => {
             sx={{
               width: 36,
               height: 36,
-              bgcolor: filters.buildingId ? '#1976d2' : (isDark ? alpha('#1976d2', 0.15) : alpha('#1976d2', 0.1)),
-              color: filters.buildingId ? '#fff' : '#1976d2',
+              bgcolor: filters.buildingId ? BUILDING_COLOR : (isDark ? alpha(BUILDING_COLOR, 0.15) : alpha(BUILDING_COLOR, 0.1)),
+              color: filters.buildingId ? '#fff' : BUILDING_COLOR,
               transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: filters.buildingId ? '#1565c0' : alpha('#1976d2', 0.2),
+                bgcolor: filters.buildingId ? '#d97706' : alpha(BUILDING_COLOR, 0.2),
                 transform: 'translateY(-1px)',
               },
             }}
@@ -776,10 +777,10 @@ const PhysicalWorkplacesPage = () => {
                   height: 24,
                   fontSize: '0.7rem',
                   fontWeight: 600,
-                  bgcolor: alpha('#009688', 0.1),
-                  color: '#009688',
-                  '& .MuiChip-icon': { color: '#009688' },
-                  '& .MuiChip-deleteIcon': { color: '#009688', fontSize: 14 },
+                  bgcolor: alpha(SERVICE_COLOR, 0.1),
+                  color: SERVICE_COLOR,
+                  '& .MuiChip-icon': { color: SERVICE_COLOR },
+                  '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
                 }}
               />
             )}
@@ -793,10 +794,10 @@ const PhysicalWorkplacesPage = () => {
                   height: 24,
                   fontSize: '0.7rem',
                   fontWeight: 600,
-                  bgcolor: alpha('#1976d2', 0.1),
-                  color: '#1976d2',
-                  '& .MuiChip-icon': { color: '#1976d2' },
-                  '& .MuiChip-deleteIcon': { color: '#1976d2', fontSize: 14 },
+                  bgcolor: alpha(BUILDING_COLOR, 0.1),
+                  color: BUILDING_COLOR,
+                  '& .MuiChip-icon': { color: BUILDING_COLOR },
+                  '& .MuiChip-deleteIcon': { color: BUILDING_COLOR, fontSize: 14 },
                 }}
               />
             )}

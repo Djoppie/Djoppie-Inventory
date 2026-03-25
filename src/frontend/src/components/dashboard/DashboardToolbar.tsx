@@ -32,6 +32,7 @@ import PrintIcon from '@mui/icons-material/Print';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { SortOption } from '../../constants/dashboard.constants';
+import { SERVICE_COLOR, BUILDING_COLOR } from '../../constants/filterColors';
 
 interface DashboardToolbarProps {
   viewMode: ViewMode;
@@ -212,15 +213,15 @@ export default function DashboardToolbar({
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: serviceFilter ? alpha('#009688', 0.15) : bgBase,
-                color: serviceFilter ? '#009688' : 'text.secondary',
+                bgcolor: serviceFilter ? alpha(SERVICE_COLOR, 0.15) : bgBase,
+                color: serviceFilter ? SERVICE_COLOR : 'text.secondary',
                 boxShadow: getNeumorph(isDark, 'soft'),
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  bgcolor: '#009688',
+                  bgcolor: SERVICE_COLOR,
                   color: '#fff',
                   transform: 'translateY(-1px)',
-                  boxShadow: `0 4px 12px ${alpha('#009688', 0.4)}`,
+                  boxShadow: `0 4px 12px ${alpha(SERVICE_COLOR, 0.4)}`,
                 },
               }}
             >
@@ -236,15 +237,15 @@ export default function DashboardToolbar({
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: buildingFilter ? alpha('#1976d2', 0.15) : bgBase,
-                color: buildingFilter ? '#1976d2' : 'text.secondary',
+                bgcolor: buildingFilter ? alpha(BUILDING_COLOR, 0.15) : bgBase,
+                color: buildingFilter ? BUILDING_COLOR : 'text.secondary',
                 boxShadow: getNeumorph(isDark, 'soft'),
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  bgcolor: '#1976d2',
+                  bgcolor: BUILDING_COLOR,
                   color: '#fff',
                   transform: 'translateY(-1px)',
-                  boxShadow: `0 4px 12px ${alpha('#1976d2', 0.4)}`,
+                  boxShadow: `0 4px 12px ${alpha(BUILDING_COLOR, 0.4)}`,
                 },
               }}
             >
@@ -328,11 +329,11 @@ export default function DashboardToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha('#009688', 0.1),
-                    color: '#009688',
+                    bgcolor: alpha(SERVICE_COLOR, 0.1),
+                    color: SERVICE_COLOR,
                     border: 'none',
-                    '& .MuiChip-icon': { color: '#009688' },
-                    '& .MuiChip-deleteIcon': { color: '#009688', fontSize: 14 },
+                    '& .MuiChip-icon': { color: SERVICE_COLOR },
+                    '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
                   }}
                 />
               )}
@@ -346,11 +347,11 @@ export default function DashboardToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha('#1976d2', 0.1),
-                    color: '#1976d2',
+                    bgcolor: alpha(BUILDING_COLOR, 0.1),
+                    color: BUILDING_COLOR,
                     border: 'none',
-                    '& .MuiChip-icon': { color: '#1976d2' },
-                    '& .MuiChip-deleteIcon': { color: '#1976d2', fontSize: 14 },
+                    '& .MuiChip-icon': { color: BUILDING_COLOR },
+                    '& .MuiChip-deleteIcon': { color: BUILDING_COLOR, fontSize: 14 },
                   }}
                 />
               )}

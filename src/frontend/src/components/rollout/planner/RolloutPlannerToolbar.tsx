@@ -40,12 +40,7 @@ import type {
   PlanningSortOption,
   DayStatusFilter,
 } from '../../../hooks/rollout/useRolloutFilters';
-
-// Teal accent color for rollout domain
-const TEAL_ACCENT = '#009688';
-
-// Amber/yellow accent color for buildings
-const AMBER_ACCENT = '#F59E0B';
+import { SERVICE_COLOR, BUILDING_COLOR, SECTOR_COLOR } from '../../../constants/filterColors';
 
 // Status filter configurations
 interface StatusChipConfig {
@@ -223,7 +218,7 @@ export default function RolloutPlannerToolbar({
   };
 
   // Icon button style
-  const getIconButtonSx = (isActive: boolean, accentColor: string = TEAL_ACCENT) => ({
+  const getIconButtonSx = (isActive: boolean, accentColor: string = SERVICE_COLOR) => ({
     width: 36,
     height: 36,
     bgcolor: isActive ? accentColor : bgBase,
@@ -246,9 +241,9 @@ export default function RolloutPlannerToolbar({
           mb: (serviceFilterExpanded || buildingFilterExpanded) ? 0 : 2,
           p: 1.5,
           borderRadius: (serviceFilterExpanded || buildingFilterExpanded) ? '8px 8px 0 0' : 2,
-          bgcolor: isDark ? alpha(TEAL_ACCENT, 0.08) : alpha(TEAL_ACCENT, 0.05),
+          bgcolor: isDark ? alpha(SERVICE_COLOR, 0.08) : alpha(SERVICE_COLOR, 0.05),
           border: '1px solid',
-          borderColor: isDark ? alpha(TEAL_ACCENT, 0.2) : alpha(TEAL_ACCENT, 0.15),
+          borderColor: isDark ? alpha(SERVICE_COLOR, 0.2) : alpha(SERVICE_COLOR, 0.15),
           borderBottom: (serviceFilterExpanded || buildingFilterExpanded) ? 'none' : undefined,
           position: 'sticky',
           top: 16,
@@ -272,14 +267,14 @@ export default function RolloutPlannerToolbar({
                 py: 0.5,
                 color: 'text.secondary',
                 '&.Mui-selected': {
-                  bgcolor: TEAL_ACCENT,
+                  bgcolor: SERVICE_COLOR,
                   color: '#fff',
                   '&:hover': {
-                    bgcolor: alpha(TEAL_ACCENT, 0.85),
+                    bgcolor: alpha(SERVICE_COLOR, 0.85),
                   },
                 },
                 '&:hover': {
-                  bgcolor: alpha(TEAL_ACCENT, 0.1),
+                  bgcolor: alpha(SERVICE_COLOR, 0.1),
                 },
               },
             }}
@@ -315,7 +310,7 @@ export default function RolloutPlannerToolbar({
               size="small"
               onClick={handleServiceToggle}
               sx={{
-                ...getIconButtonSx(!!serviceFilter || serviceFilterExpanded, TEAL_ACCENT),
+                ...getIconButtonSx(!!serviceFilter || serviceFilterExpanded, SERVICE_COLOR),
                 '& .expand-icon': {
                   transition: 'transform 0.2s ease',
                   transform: serviceFilterExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -339,7 +334,7 @@ export default function RolloutPlannerToolbar({
               size="small"
               onClick={handleBuildingToggle}
               sx={{
-                ...getIconButtonSx(!!buildingFilter || buildingFilterExpanded, AMBER_ACCENT),
+                ...getIconButtonSx(!!buildingFilter || buildingFilterExpanded, BUILDING_COLOR),
                 '& .expand-icon': {
                   transition: 'transform 0.2s ease',
                   transform: buildingFilterExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -401,13 +396,13 @@ export default function RolloutPlannerToolbar({
                 height: 36,
                 boxShadow: getNeumorphInset(isDark),
                 '& fieldset': {
-                  borderColor: alpha(TEAL_ACCENT, 0.3),
+                  borderColor: alpha(SERVICE_COLOR, 0.3),
                 },
                 '&:hover fieldset': {
-                  borderColor: alpha(TEAL_ACCENT, 0.5),
+                  borderColor: alpha(SERVICE_COLOR, 0.5),
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: TEAL_ACCENT,
+                  borderColor: SERVICE_COLOR,
                 },
               },
               '& .MuiInputBase-input': {
@@ -429,11 +424,11 @@ export default function RolloutPlannerToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha(TEAL_ACCENT, 0.15),
-                    color: TEAL_ACCENT,
-                    border: `1px solid ${alpha(TEAL_ACCENT, 0.3)}`,
-                    '& .MuiChip-icon': { color: TEAL_ACCENT },
-                    '& .MuiChip-deleteIcon': { color: TEAL_ACCENT, fontSize: 14 },
+                    bgcolor: alpha(SERVICE_COLOR, 0.15),
+                    color: SERVICE_COLOR,
+                    border: `1px solid ${alpha(SERVICE_COLOR, 0.3)}`,
+                    '& .MuiChip-icon': { color: SERVICE_COLOR },
+                    '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
                   }}
                 />
               )}
@@ -447,11 +442,11 @@ export default function RolloutPlannerToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha(AMBER_ACCENT, 0.15),
-                    color: AMBER_ACCENT,
-                    border: `1px solid ${alpha(AMBER_ACCENT, 0.3)}`,
-                    '& .MuiChip-icon': { color: AMBER_ACCENT },
-                    '& .MuiChip-deleteIcon': { color: AMBER_ACCENT, fontSize: 14 },
+                    bgcolor: alpha(BUILDING_COLOR, 0.15),
+                    color: BUILDING_COLOR,
+                    border: `1px solid ${alpha(BUILDING_COLOR, 0.3)}`,
+                    '& .MuiChip-icon': { color: BUILDING_COLOR },
+                    '& .MuiChip-deleteIcon': { color: BUILDING_COLOR, fontSize: 14 },
                   }}
                 />
               )}
@@ -549,7 +544,7 @@ export default function RolloutPlannerToolbar({
                 gap: 1,
               }}
             >
-              <BusinessIcon sx={{ fontSize: 18, color: '#1976d2' }} />
+              <BusinessIcon sx={{ fontSize: 18, color: SECTOR_COLOR }} />
               Filter op Dienst
             </Typography>
             {serviceFilter && (
@@ -609,17 +604,17 @@ export default function RolloutPlannerToolbar({
                       gap: 1,
                       px: 1.5,
                       py: 1,
-                      bgcolor: isDark ? alpha('#1976d2', 0.15) : alpha('#1976d2', 0.08),
+                      bgcolor: isDark ? alpha(SECTOR_COLOR, 0.15) : alpha(SECTOR_COLOR, 0.08),
                       borderBottom: '2px solid',
-                      borderColor: '#1976d2',
+                      borderColor: SECTOR_COLOR,
                     }}
                   >
-                    <BusinessIcon sx={{ fontSize: 16, color: '#1976d2' }} />
+                    <BusinessIcon sx={{ fontSize: 16, color: SECTOR_COLOR }} />
                     <Typography
                       variant="caption"
                       sx={{
                         fontWeight: 700,
-                        color: '#1976d2',
+                        color: SECTOR_COLOR,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         flex: 1,
@@ -635,8 +630,8 @@ export default function RolloutPlannerToolbar({
                         minWidth: 28,
                         fontSize: '0.7rem',
                         fontWeight: 700,
-                        bgcolor: isDark ? alpha('#1976d2', 0.3) : alpha('#1976d2', 0.15),
-                        color: '#1976d2',
+                        bgcolor: isDark ? alpha(SECTOR_COLOR, 0.3) : alpha(SECTOR_COLOR, 0.15),
+                        color: SECTOR_COLOR,
                       }}
                     />
                   </Box>
@@ -658,16 +653,16 @@ export default function RolloutPlannerToolbar({
                             borderRadius: 1,
                             cursor: 'pointer',
                             bgcolor: isSelected
-                              ? alpha(TEAL_ACCENT, 0.12)
+                              ? alpha(SERVICE_COLOR, 0.12)
                               : 'transparent',
                             border: '1px solid',
                             borderColor: isSelected
-                              ? TEAL_ACCENT
+                              ? SERVICE_COLOR
                               : 'transparent',
                             transition: 'all 0.15s ease',
                             '&:hover': {
                               bgcolor: isSelected
-                                ? alpha(TEAL_ACCENT, 0.18)
+                                ? alpha(SERVICE_COLOR, 0.18)
                                 : (isDark ? alpha('#fff', 0.05) : alpha('#000', 0.04)),
                             },
                           }}
@@ -680,11 +675,11 @@ export default function RolloutPlannerToolbar({
                               fontSize: '0.7rem',
                               fontWeight: 600,
                               bgcolor: isSelected
-                                ? TEAL_ACCENT
-                                : (isDark ? alpha(TEAL_ACCENT, 0.2) : alpha(TEAL_ACCENT, 0.1)),
+                                ? SERVICE_COLOR
+                                : (isDark ? alpha(SERVICE_COLOR, 0.2) : alpha(SERVICE_COLOR, 0.1)),
                               color: isSelected
                                 ? '#fff'
-                                : TEAL_ACCENT,
+                                : SERVICE_COLOR,
                               minWidth: 50,
                               '& .MuiChip-label': {
                                 px: 1,
@@ -696,7 +691,7 @@ export default function RolloutPlannerToolbar({
                             sx={{
                               fontSize: '0.85rem',
                               fontWeight: isSelected ? 600 : 400,
-                              color: isSelected ? TEAL_ACCENT : 'text.primary',
+                              color: isSelected ? SERVICE_COLOR : 'text.primary',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -709,7 +704,7 @@ export default function RolloutPlannerToolbar({
                             <CheckIcon
                               sx={{
                                 fontSize: 18,
-                                color: TEAL_ACCENT,
+                                color: SERVICE_COLOR,
                               }}
                             />
                           )}
@@ -759,7 +754,7 @@ export default function RolloutPlannerToolbar({
                 gap: 1,
               }}
             >
-              <ApartmentIcon sx={{ fontSize: 18, color: AMBER_ACCENT }} />
+              <ApartmentIcon sx={{ fontSize: 18, color: BUILDING_COLOR }} />
               Filter op Gebouw
             </Typography>
             {buildingFilter && (
@@ -819,16 +814,16 @@ export default function RolloutPlannerToolbar({
                       minWidth: 0,
                       overflow: 'hidden',
                       bgcolor: isSelected
-                        ? alpha(AMBER_ACCENT, 0.12)
+                        ? alpha(BUILDING_COLOR, 0.12)
                         : (isDark ? alpha('#fff', 0.02) : '#fff'),
                       border: '1px solid',
                       borderColor: isSelected
-                        ? AMBER_ACCENT
+                        ? BUILDING_COLOR
                         : (isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08)),
                       transition: 'all 0.15s ease',
                       '&:hover': {
                         bgcolor: isSelected
-                          ? alpha(AMBER_ACCENT, 0.18)
+                          ? alpha(BUILDING_COLOR, 0.18)
                           : (isDark ? alpha('#fff', 0.05) : alpha('#000', 0.04)),
                       },
                     }}
@@ -842,11 +837,11 @@ export default function RolloutPlannerToolbar({
                         fontWeight: 600,
                         flexShrink: 0,
                         bgcolor: isSelected
-                          ? AMBER_ACCENT
-                          : (isDark ? alpha(AMBER_ACCENT, 0.2) : alpha(AMBER_ACCENT, 0.1)),
+                          ? BUILDING_COLOR
+                          : (isDark ? alpha(BUILDING_COLOR, 0.2) : alpha(BUILDING_COLOR, 0.1)),
                         color: isSelected
                           ? '#fff'
-                          : AMBER_ACCENT,
+                          : BUILDING_COLOR,
                         minWidth: 40,
                         '& .MuiChip-label': {
                           px: 1,
@@ -858,7 +853,7 @@ export default function RolloutPlannerToolbar({
                       sx={{
                         fontSize: '0.85rem',
                         fontWeight: isSelected ? 600 : 400,
-                        color: isSelected ? AMBER_ACCENT : 'text.primary',
+                        color: isSelected ? BUILDING_COLOR : 'text.primary',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -872,7 +867,7 @@ export default function RolloutPlannerToolbar({
                       <CheckIcon
                         sx={{
                           fontSize: 18,
-                          color: AMBER_ACCENT,
+                          color: BUILDING_COLOR,
                           flexShrink: 0,
                         }}
                       />
@@ -909,12 +904,12 @@ export default function RolloutPlannerToolbar({
                 fontSize: '0.8rem',
                 py: 0.75,
                 '&:hover': {
-                  bgcolor: alpha(TEAL_ACCENT, isDark ? 0.15 : 0.08),
+                  bgcolor: alpha(SERVICE_COLOR, isDark ? 0.15 : 0.08),
                 },
                 '&.Mui-selected': {
-                  bgcolor: alpha(TEAL_ACCENT, isDark ? 0.2 : 0.12),
+                  bgcolor: alpha(SERVICE_COLOR, isDark ? 0.2 : 0.12),
                   '&:hover': {
-                    bgcolor: alpha(TEAL_ACCENT, isDark ? 0.25 : 0.15),
+                    bgcolor: alpha(SERVICE_COLOR, isDark ? 0.25 : 0.15),
                   },
                 },
               },
@@ -925,39 +920,39 @@ export default function RolloutPlannerToolbar({
         <MenuItem onClick={() => handleSortSelect('date-asc')} selected={sortBy === 'date-asc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Datum (oplopend)</span>
-            {sortBy === 'date-asc' && <CheckIcon sx={{ fontSize: 16, color: TEAL_ACCENT }} />}
+            {sortBy === 'date-asc' && <CheckIcon sx={{ fontSize: 16, color: SERVICE_COLOR }} />}
           </Box>
         </MenuItem>
         <MenuItem onClick={() => handleSortSelect('date-desc')} selected={sortBy === 'date-desc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Datum (aflopend)</span>
-            {sortBy === 'date-desc' && <CheckIcon sx={{ fontSize: 16, color: TEAL_ACCENT }} />}
+            {sortBy === 'date-desc' && <CheckIcon sx={{ fontSize: 16, color: SERVICE_COLOR }} />}
           </Box>
         </MenuItem>
         <Divider />
         <MenuItem onClick={() => handleSortSelect('name-asc')} selected={sortBy === 'name-asc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Naam (A-Z)</span>
-            {sortBy === 'name-asc' && <CheckIcon sx={{ fontSize: 16, color: TEAL_ACCENT }} />}
+            {sortBy === 'name-asc' && <CheckIcon sx={{ fontSize: 16, color: SERVICE_COLOR }} />}
           </Box>
         </MenuItem>
         <MenuItem onClick={() => handleSortSelect('name-desc')} selected={sortBy === 'name-desc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Naam (Z-A)</span>
-            {sortBy === 'name-desc' && <CheckIcon sx={{ fontSize: 16, color: TEAL_ACCENT }} />}
+            {sortBy === 'name-desc' && <CheckIcon sx={{ fontSize: 16, color: SERVICE_COLOR }} />}
           </Box>
         </MenuItem>
         <Divider />
         <MenuItem onClick={() => handleSortSelect('workplaces-desc')} selected={sortBy === 'workplaces-desc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Meeste werkplekken</span>
-            {sortBy === 'workplaces-desc' && <CheckIcon sx={{ fontSize: 16, color: TEAL_ACCENT }} />}
+            {sortBy === 'workplaces-desc' && <CheckIcon sx={{ fontSize: 16, color: SERVICE_COLOR }} />}
           </Box>
         </MenuItem>
         <MenuItem onClick={() => handleSortSelect('completion-desc')} selected={sortBy === 'completion-desc'}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <span>Hoogste voltooiing</span>
-            {sortBy === 'completion-desc' && <CheckIcon sx={{ fontSize: 16, color: TEAL_ACCENT }} />}
+            {sortBy === 'completion-desc' && <CheckIcon sx={{ fontSize: 16, color: SERVICE_COLOR }} />}
           </Box>
         </MenuItem>
       </Menu>

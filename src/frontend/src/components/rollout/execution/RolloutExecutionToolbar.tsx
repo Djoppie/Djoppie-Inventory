@@ -25,9 +25,7 @@ import DoneIcon from '@mui/icons-material/Done';
 import ServiceSelect from '../../common/ServiceSelect';
 import BuildingSelect from '../../common/BuildingSelect';
 import type { WorkplaceStatusFilter } from '../../../hooks/rollout/useRolloutFilters';
-
-// Teal accent color for rollout domain
-const TEAL_ACCENT = '#009688';
+import { SERVICE_COLOR, BUILDING_COLOR } from '../../../constants/filterColors';
 
 // Status filter configurations
 interface StatusChipConfig {
@@ -107,7 +105,7 @@ export default function RolloutExecutionToolbar({
   };
 
   // Icon button style
-  const getIconButtonSx = (isActive: boolean, accentColor: string = TEAL_ACCENT) => ({
+  const getIconButtonSx = (isActive: boolean, accentColor: string = SERVICE_COLOR) => ({
     width: 36,
     height: 36,
     bgcolor: isActive ? accentColor : bgBase,
@@ -130,9 +128,9 @@ export default function RolloutExecutionToolbar({
           mb: 2,
           p: 1.5,
           borderRadius: 2,
-          bgcolor: isDark ? alpha(TEAL_ACCENT, 0.08) : alpha(TEAL_ACCENT, 0.05),
+          bgcolor: isDark ? alpha(SERVICE_COLOR, 0.08) : alpha(SERVICE_COLOR, 0.05),
           border: '1px solid',
-          borderColor: isDark ? alpha(TEAL_ACCENT, 0.2) : alpha(TEAL_ACCENT, 0.15),
+          borderColor: isDark ? alpha(SERVICE_COLOR, 0.2) : alpha(SERVICE_COLOR, 0.15),
         }}
       >
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -141,7 +139,7 @@ export default function RolloutExecutionToolbar({
             <IconButton
               size="small"
               onClick={handleServiceMenuOpen}
-              sx={getIconButtonSx(!!serviceFilter, TEAL_ACCENT)}
+              sx={getIconButtonSx(!!serviceFilter, SERVICE_COLOR)}
             >
               {serviceFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <BusinessIcon sx={{ fontSize: 18 }} />}
             </IconButton>
@@ -152,7 +150,7 @@ export default function RolloutExecutionToolbar({
             <IconButton
               size="small"
               onClick={handleBuildingMenuOpen}
-              sx={getIconButtonSx(!!buildingFilter, '#1976d2')}
+              sx={getIconButtonSx(!!buildingFilter, BUILDING_COLOR)}
             >
               {buildingFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <ApartmentIcon sx={{ fontSize: 18 }} />}
             </IconButton>
@@ -202,13 +200,13 @@ export default function RolloutExecutionToolbar({
                 height: 36,
                 boxShadow: getNeumorphInset(isDark),
                 '& fieldset': {
-                  borderColor: alpha(TEAL_ACCENT, 0.3),
+                  borderColor: alpha(SERVICE_COLOR, 0.3),
                 },
                 '&:hover fieldset': {
-                  borderColor: alpha(TEAL_ACCENT, 0.5),
+                  borderColor: alpha(SERVICE_COLOR, 0.5),
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: TEAL_ACCENT,
+                  borderColor: SERVICE_COLOR,
                 },
               },
               '& .MuiInputBase-input': {
@@ -230,11 +228,11 @@ export default function RolloutExecutionToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha(TEAL_ACCENT, 0.1),
-                    color: TEAL_ACCENT,
+                    bgcolor: alpha(SERVICE_COLOR, 0.1),
+                    color: SERVICE_COLOR,
                     border: 'none',
-                    '& .MuiChip-icon': { color: TEAL_ACCENT },
-                    '& .MuiChip-deleteIcon': { color: TEAL_ACCENT, fontSize: 14 },
+                    '& .MuiChip-icon': { color: SERVICE_COLOR },
+                    '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
                   }}
                 />
               )}
@@ -248,11 +246,11 @@ export default function RolloutExecutionToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha('#1976d2', 0.1),
-                    color: '#1976d2',
+                    bgcolor: alpha(BUILDING_COLOR, 0.1),
+                    color: BUILDING_COLOR,
                     border: 'none',
-                    '& .MuiChip-icon': { color: '#1976d2' },
-                    '& .MuiChip-deleteIcon': { color: '#1976d2', fontSize: 14 },
+                    '& .MuiChip-icon': { color: BUILDING_COLOR },
+                    '& .MuiChip-deleteIcon': { color: BUILDING_COLOR, fontSize: 14 },
                   }}
                 />
               )}

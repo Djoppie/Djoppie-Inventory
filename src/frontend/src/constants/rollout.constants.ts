@@ -5,6 +5,12 @@
  * and ensure consistency across components.
  */
 
+// Import centralized filter colors
+import { SERVICE_COLOR, BUILDING_COLOR, SECTOR_COLOR, FILTER_COLORS } from './filterColors';
+
+// Re-export filter colors for backward compatibility
+export { SERVICE_COLOR, BUILDING_COLOR, SECTOR_COLOR, FILTER_COLORS };
+
 // Timing constants (milliseconds)
 export const ROLLOUT_TIMING = {
   /** Debounce delay for serial number auto-search */
@@ -116,11 +122,14 @@ export const ROLLOUT_FILTER = {
 
 // Accent colors for rollout domain
 export const ROLLOUT_COLORS = {
-  /** Primary teal accent color for rollout domain */
-  TEAL_ACCENT: '#009688',
+  /** Primary teal accent color for rollout domain (same as SERVICE_COLOR) */
+  TEAL_ACCENT: SERVICE_COLOR,
 
-  /** Blue accent for building/location filters */
-  BLUE_ACCENT: '#1976d2',
+  /** Amber accent for building/location filters (same as BUILDING_COLOR) */
+  BUILDING_ACCENT: BUILDING_COLOR,
+
+  /** Blue accent for sector headers (same as SECTOR_COLOR) */
+  SECTOR_ACCENT: SECTOR_COLOR,
 
   /** Orange accent for planning status */
   ORANGE_ACCENT: '#FF7700',
