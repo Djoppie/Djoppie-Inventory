@@ -44,6 +44,9 @@ import type {
 // Teal accent color for rollout domain
 const TEAL_ACCENT = '#009688';
 
+// Amber/yellow accent color for buildings
+const AMBER_ACCENT = '#F59E0B';
+
 // Status filter configurations
 interface StatusChipConfig {
   value: DayStatusFilter;
@@ -336,7 +339,7 @@ export default function RolloutPlannerToolbar({
               size="small"
               onClick={handleBuildingToggle}
               sx={{
-                ...getIconButtonSx(!!buildingFilter || buildingFilterExpanded, '#1976d2'),
+                ...getIconButtonSx(!!buildingFilter || buildingFilterExpanded, AMBER_ACCENT),
                 '& .expand-icon': {
                   transition: 'transform 0.2s ease',
                   transform: buildingFilterExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -444,11 +447,11 @@ export default function RolloutPlannerToolbar({
                     height: 24,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    bgcolor: alpha('#1976d2', 0.1),
-                    color: '#1976d2',
-                    border: `1px solid ${alpha('#1976d2', 0.3)}`,
-                    '& .MuiChip-icon': { color: '#1976d2' },
-                    '& .MuiChip-deleteIcon': { color: '#1976d2', fontSize: 14 },
+                    bgcolor: alpha(AMBER_ACCENT, 0.15),
+                    color: AMBER_ACCENT,
+                    border: `1px solid ${alpha(AMBER_ACCENT, 0.3)}`,
+                    '& .MuiChip-icon': { color: AMBER_ACCENT },
+                    '& .MuiChip-deleteIcon': { color: AMBER_ACCENT, fontSize: 14 },
                   }}
                 />
               )}
@@ -756,7 +759,7 @@ export default function RolloutPlannerToolbar({
                 gap: 1,
               }}
             >
-              <ApartmentIcon sx={{ fontSize: 18, color: '#1976d2' }} />
+              <ApartmentIcon sx={{ fontSize: 18, color: AMBER_ACCENT }} />
               Filter op Gebouw
             </Typography>
             {buildingFilter && (
@@ -816,16 +819,16 @@ export default function RolloutPlannerToolbar({
                       minWidth: 0,
                       overflow: 'hidden',
                       bgcolor: isSelected
-                        ? alpha('#1976d2', 0.12)
+                        ? alpha(AMBER_ACCENT, 0.12)
                         : (isDark ? alpha('#fff', 0.02) : '#fff'),
                       border: '1px solid',
                       borderColor: isSelected
-                        ? '#1976d2'
+                        ? AMBER_ACCENT
                         : (isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08)),
                       transition: 'all 0.15s ease',
                       '&:hover': {
                         bgcolor: isSelected
-                          ? alpha('#1976d2', 0.18)
+                          ? alpha(AMBER_ACCENT, 0.18)
                           : (isDark ? alpha('#fff', 0.05) : alpha('#000', 0.04)),
                       },
                     }}
@@ -839,11 +842,11 @@ export default function RolloutPlannerToolbar({
                         fontWeight: 600,
                         flexShrink: 0,
                         bgcolor: isSelected
-                          ? '#1976d2'
-                          : (isDark ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1)),
+                          ? AMBER_ACCENT
+                          : (isDark ? alpha(AMBER_ACCENT, 0.2) : alpha(AMBER_ACCENT, 0.1)),
                         color: isSelected
                           ? '#fff'
-                          : '#1976d2',
+                          : AMBER_ACCENT,
                         minWidth: 40,
                         '& .MuiChip-label': {
                           px: 1,
@@ -855,7 +858,7 @@ export default function RolloutPlannerToolbar({
                       sx={{
                         fontSize: '0.85rem',
                         fontWeight: isSelected ? 600 : 400,
-                        color: isSelected ? '#1976d2' : 'text.primary',
+                        color: isSelected ? AMBER_ACCENT : 'text.primary',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -869,7 +872,7 @@ export default function RolloutPlannerToolbar({
                       <CheckIcon
                         sx={{
                           fontSize: 18,
-                          color: '#1976d2',
+                          color: AMBER_ACCENT,
                           flexShrink: 0,
                         }}
                       />
