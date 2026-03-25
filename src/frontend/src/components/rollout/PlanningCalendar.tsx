@@ -2,7 +2,8 @@
  * PlanningCalendar Component - Shows plannings on a monthly calendar grid
  *
  * Extracted from RolloutPlannerPage for better code organization.
- * Displays rollout days on a calendar with service filtering and rescheduled workplace indicators.
+ * Displays rollout days on a calendar with rescheduled workplace indicators.
+ * Service filtering is handled by the parent toolbar component.
  */
 
 import { useState, useMemo } from 'react';
@@ -11,20 +12,10 @@ import {
   Paper,
   Typography,
   IconButton,
-  Button,
-  TextField,
   Tooltip,
-  Checkbox,
-  InputAdornment,
 } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ClearIcon from '@mui/icons-material/Clear';
-import SearchIcon from '@mui/icons-material/Search';
-import { useQuery } from '@tanstack/react-query';
-import { servicesApi } from '../../api/admin.api';
 import type { RolloutDay } from '../../types/rollout';
 import { getServiceColor } from './serviceColors';
 
@@ -71,51 +62,6 @@ const PlanningCalendar = ({
     return new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   });
 
-  // Service filter state
-  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
-  const [filterExpanded, setFilterExpanded] = useState(false);
-  const [serviceSearchQuery, setServiceSearchQuery] = useState('');
-
-  // Fetch services for filter
-  const { data: services = [] } = useQuery({
-    queryKey: ['admin', 'services'],
-    queryFn: () => servicesApi.getAll(false),
-  });
-
-  // Group services by sector
-  const servicesBySector = useMemo(() => {
-    return services.reduce<Record<string, typeof services>>((acc, service) => {
-      const sectorName = service.sector?.name || 'Overig';
-      if (!acc[sectorName]) acc[sectorName] = [];
-      acc[sectorName].push(service);
-      return acc;
-    }, {});
-  }, [services]);
-
-  // Filter services by search query
-  const filteredServicesBySector = useMemo(() => {
-    if (!serviceSearchQuery.trim()) return servicesBySector;
-
-    const query = serviceSearchQuery.toLowerCase();
-    const filtered: Record<string, typeof services> = {};
-
-    for (const [sectorName, sectorServices] of Object.entries(servicesBySector)) {
-      // Check if sector name matches
-      const sectorMatches = sectorName.toLowerCase().includes(query);
-      // Filter services that match the query
-      const matchingServices = sectorServices.filter(
-        (service) =>
-          service.name.toLowerCase().includes(query) || sectorMatches
-      );
-
-      if (matchingServices.length > 0) {
-        filtered[sectorName] = matchingServices;
-      }
-    }
-
-    return filtered;
-  }, [servicesBySector, serviceSearchQuery]);
-
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
@@ -128,27 +74,16 @@ const PlanningCalendar = ({
   const firstDayWeekday = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0..Sun=6
   const startOffset = firstDayWeekday <= 4 ? firstDayWeekday : 0;
 
-  // Filter days based on selected services
-  const filteredDays = useMemo(() => {
-    if (selectedServiceIds.length === 0) {
-      return days; // Show all if no filter
-    }
-    // Show day if it has at least one of the selected services
-    return days.filter((day) =>
-      day.scheduledServiceIds.some((svcId) => selectedServiceIds.includes(svcId))
-    );
-  }, [days, selectedServiceIds]);
-
-  // Group plannings by date string (using filtered days)
+  // Group plannings by date string
   const planningsByDate = useMemo(() => {
     const map: Record<string, RolloutDay[]> = {};
-    for (const day of filteredDays) {
+    for (const day of days) {
       const dateKey = day.date.split('T')[0];
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(day);
     }
     return map;
-  }, [filteredDays]);
+  }, [days]);
 
   // Group rescheduled workplaces by their new scheduled date
   const rescheduledByDate = useMemo(() => {
@@ -208,12 +143,6 @@ const PlanningCalendar = ({
     year: 'numeric',
   });
 
-  const handleClearFilter = () => {
-    setSelectedServiceIds([]);
-  };
-
-  const isFilterActive = selectedServiceIds.length > 0;
-
   return (
     <Paper sx={{ p: 2, mb: 0 }} elevation={0}>
       <Box
@@ -251,244 +180,6 @@ const PlanningCalendar = ({
           </IconButton>
         </Box>
       </Box>
-
-      {/* Service Filter - Expandable Panel */}
-      {services.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          {/* Filter Toggle Button */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              mb: isFilterActive || filterExpanded ? 1.5 : 0,
-            }}
-          >
-            <Button
-              size="small"
-              variant={isFilterActive ? 'contained' : 'outlined'}
-              startIcon={<FilterListIcon />}
-              endIcon={
-                filterExpanded ? (
-                  <ExpandMoreIcon sx={{ transform: 'rotate(180deg)' }} />
-                ) : (
-                  <ExpandMoreIcon />
-                )
-              }
-              onClick={() => setFilterExpanded(!filterExpanded)}
-              sx={{
-                borderColor: isFilterActive ? '#FF7700' : 'divider',
-                bgcolor: isFilterActive ? '#FF7700' : 'transparent',
-                color: isFilterActive ? '#fff' : 'text.primary',
-                '&:hover': {
-                  borderColor: '#FF7700',
-                  bgcolor: isFilterActive
-                    ? '#e66a00'
-                    : 'rgba(255, 119, 0, 0.08)',
-                },
-              }}
-            >
-              Filter op Dienst
-              {isFilterActive && ` (${selectedServiceIds.length})`}
-            </Button>
-
-            {isFilterActive && (
-              <Tooltip title="Filter wissen">
-                <IconButton
-                  size="small"
-                  onClick={handleClearFilter}
-                  sx={{
-                    color: '#FF7700',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 119, 0, 0.08)',
-                    },
-                  }}
-                >
-                  <ClearIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {isFilterActive && (
-              <Typography variant="caption" color="text.secondary">
-                {filteredDays.length} van {days.length} planningen
-              </Typography>
-            )}
-          </Box>
-
-          {/* Expandable Filter Panel */}
-          <Box
-            sx={{
-              maxHeight: filterExpanded ? 600 : 0,
-              overflow: 'hidden',
-              transition: 'max-height 0.3s ease-in-out',
-            }}
-          >
-            {/* Search Input */}
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Zoek dienst of sector..."
-              value={serviceSearchQuery}
-              onChange={(e) => setServiceSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#FF7700', fontSize: '1.2rem' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: serviceSearchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setServiceSearchQuery('')}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <ClearIcon sx={{ fontSize: '1rem' }} />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: 'background.paper',
-                  '&:hover fieldset': {
-                    borderColor: '#FF7700',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#FF7700',
-                  },
-                },
-              }}
-            />
-
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, 1fr)',
-                  md: 'repeat(3, 1fr)',
-                  lg: 'repeat(4, 1fr)',
-                },
-                gap: 2,
-                p: 2,
-                bgcolor: 'rgba(255, 119, 0, 0.03)',
-                border: '1px solid',
-                borderColor: 'rgba(255, 119, 0, 0.15)',
-                borderRadius: 2,
-                maxHeight: 400,
-                overflowY: 'auto',
-              }}
-            >
-              {Object.keys(filteredServicesBySector).length === 0 &&
-                serviceSearchQuery && (
-                  <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Geen diensten gevonden voor "{serviceSearchQuery}"
-                    </Typography>
-                  </Box>
-                )}
-
-              {Object.entries(filteredServicesBySector).map(
-                ([sectorName, sectorServices]) => (
-                  <Box key={sectorName}>
-                    {/* Sector Header */}
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: 'block',
-                        fontWeight: 700,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: '#FF7700',
-                        mb: 1,
-                        pb: 0.5,
-                        borderBottom: '2px solid rgba(255, 119, 0, 0.2)',
-                      }}
-                    >
-                      {sectorName}
-                    </Typography>
-
-                    {/* Services in this sector */}
-                    <Box
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}
-                    >
-                      {sectorServices.map((service) => {
-                        const isSelected = selectedServiceIds.includes(
-                          service.id
-                        );
-                        return (
-                          <Box
-                            key={service.id}
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedServiceIds((prev) =>
-                                  prev.filter((id) => id !== service.id)
-                                );
-                              } else {
-                                setSelectedServiceIds((prev) => [
-                                  ...prev,
-                                  service.id,
-                                ]);
-                              }
-                            }}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                              py: 0.5,
-                              px: 1,
-                              borderRadius: 1,
-                              cursor: 'pointer',
-                              bgcolor: isSelected
-                                ? 'rgba(255, 119, 0, 0.12)'
-                                : 'transparent',
-                              border: '1px solid',
-                              borderColor: isSelected ? '#FF7700' : 'transparent',
-                              '&:hover': {
-                                bgcolor: isSelected
-                                  ? 'rgba(255, 119, 0, 0.18)'
-                                  : 'rgba(255, 119, 0, 0.06)',
-                              },
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            <Checkbox
-                              checked={isSelected}
-                              size="small"
-                              sx={{
-                                p: 0,
-                                color: 'rgba(255, 119, 0, 0.5)',
-                                '&.Mui-checked': {
-                                  color: '#FF7700',
-                                },
-                              }}
-                            />
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontSize: '0.8rem',
-                                fontWeight: isSelected ? 600 : 400,
-                                color: isSelected ? '#FF7700' : 'text.primary',
-                              }}
-                            >
-                              {service.name}
-                            </Typography>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  </Box>
-                )
-              )}
-            </Box>
-          </Box>
-        </Box>
-      )}
 
       {/* Weekday headers */}
       <Box
