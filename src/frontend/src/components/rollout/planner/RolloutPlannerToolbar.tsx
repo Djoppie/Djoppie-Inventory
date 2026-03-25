@@ -741,6 +741,7 @@ export default function RolloutPlannerToolbar({
             border: '1px solid',
             borderColor: isDark ? alpha('#fff', 0.1) : alpha('#000', 0.08),
             borderTop: 'none',
+            overflow: 'hidden',
           }}
         >
           {/* Panel Header */}
@@ -795,6 +796,7 @@ export default function RolloutPlannerToolbar({
                   lg: 'repeat(4, 1fr)',
                 },
                 gap: 1,
+                overflow: 'hidden',
               }}
             >
               {activeBuildings.map((building) => {
@@ -811,6 +813,8 @@ export default function RolloutPlannerToolbar({
                       px: 1.5,
                       borderRadius: 1.5,
                       cursor: 'pointer',
+                      minWidth: 0,
+                      overflow: 'hidden',
                       bgcolor: isSelected
                         ? alpha('#1976d2', 0.12)
                         : (isDark ? alpha('#fff', 0.02) : '#fff'),
@@ -833,6 +837,7 @@ export default function RolloutPlannerToolbar({
                         height: 22,
                         fontSize: '0.7rem',
                         fontWeight: 600,
+                        flexShrink: 0,
                         bgcolor: isSelected
                           ? '#1976d2'
                           : (isDark ? alpha('#1976d2', 0.2) : alpha('#1976d2', 0.1)),
@@ -855,6 +860,7 @@ export default function RolloutPlannerToolbar({
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         flex: 1,
+                        minWidth: 0,
                       }}
                     >
                       {building.name}
@@ -864,6 +870,7 @@ export default function RolloutPlannerToolbar({
                         sx={{
                           fontSize: 18,
                           color: '#1976d2',
+                          flexShrink: 0,
                         }}
                       />
                     )}
