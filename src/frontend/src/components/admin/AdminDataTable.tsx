@@ -61,6 +61,10 @@ interface AdminDataTableProps<T> {
   // Custom actions support
   renderActions?: (item: T) => React.ReactNode;
   actionsColumnWidth?: number;
+  // External search control
+  externalSearchTerm?: string;
+  onSearchTermChange?: (value: string) => void;
+  hideSearch?: boolean;
 }
 
 // Neumorphic shadow utilities
@@ -99,10 +103,23 @@ function AdminDataTable<T extends Record<string, unknown>>({
   onSelectionChange,
   renderActions,
   actionsColumnWidth = 80,
+  externalSearchTerm,
+  onSearchTermChange,
+  hideSearch = false,
 }: AdminDataTableProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const [searchTerm, setSearchTerm] = useState('');
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
+
+  // Use external search term if provided, otherwise use internal
+  const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+  const setSearchTerm = (value: string) => {
+    if (onSearchTermChange) {
+      onSearchTermChange(value);
+    } else {
+      setInternalSearchTerm(value);
+    }
+  };
   const [orderBy, setOrderBy] = useState<keyof T | string>('');
   const [order, setOrder] = useState<Order>('asc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -233,55 +250,57 @@ function AdminDataTable<T extends Record<string, unknown>>({
         }}
       >
         {/* Search */}
-        <TextField
-          size="small"
-          placeholder={searchPlaceholder}
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(0);
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setPage(0);
-                  }}
-                  sx={{ p: 0.25 }}
-                >
-                  <ClearIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            flex: { xs: 1, md: '0 0 280px' },
-            '& .MuiOutlinedInput-root': {
-              bgcolor: bgBase,
-              borderRadius: 1.5,
-              fontSize: '0.85rem',
-              boxShadow: getNeumorphInset(isDark),
-              '& fieldset': { border: 'none' },
-              '&:hover': {
-                boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+        {!hideSearch && (
+          <TextField
+            size="small"
+            placeholder={searchPlaceholder}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(0);
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setPage(0);
+                    }}
+                    sx={{ p: 0.25 }}
+                  >
+                    <ClearIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              flex: { xs: 1, md: '0 0 280px' },
+              '& .MuiOutlinedInput-root': {
+                bgcolor: bgBase,
+                borderRadius: 1.5,
+                fontSize: '0.85rem',
+                boxShadow: getNeumorphInset(isDark),
+                '& fieldset': { border: 'none' },
+                '&:hover': {
+                  boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+                },
+                '&.Mui-focused': {
+                  boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+                },
               },
-              '&.Mui-focused': {
-                boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+              '& .MuiInputBase-input': {
+                py: 0.75,
               },
-            },
-            '& .MuiInputBase-input': {
-              py: 0.75,
-            },
-          }}
-        />
+            }}
+          />
+        )}
 
         {/* Status Filter Pills */}
         {showActiveStatus && (

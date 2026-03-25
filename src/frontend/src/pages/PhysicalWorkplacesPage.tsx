@@ -22,6 +22,8 @@ import {
   Chip,
   alpha,
   Menu,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -41,6 +43,8 @@ import BusinessIcon from '@mui/icons-material/Business';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import TuneIcon from '@mui/icons-material/Tune';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import {
   usePhysicalWorkplaces,
   useDeletePhysicalWorkplace,
@@ -132,6 +136,7 @@ const PhysicalWorkplacesPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [serviceMenuAnchor, setServiceMenuAnchor] = useState<null | HTMLElement>(null);
   const [buildingMenuAnchor, setBuildingMenuAnchor] = useState<null | HTMLElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -668,9 +673,55 @@ const PhysicalWorkplacesPage = () => {
           </Tooltip>
         )}
 
+        {/* Search Field */}
+        <TextField
+          size="small"
+          placeholder="Zoek werkplekken..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton
+                  size="small"
+                  onClick={() => setSearchTerm('')}
+                  sx={{ p: 0.25 }}
+                >
+                  <ClearIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            flex: 1,
+            minWidth: 180,
+            maxWidth: 300,
+            '& .MuiOutlinedInput-root': {
+              bgcolor: isDark ? alpha('#fff', 0.05) : '#fff',
+              borderRadius: 1.5,
+              fontSize: '0.85rem',
+              height: 36,
+              '& fieldset': {
+                borderColor: alpha(tealAccent, 0.3),
+              },
+              '&:hover fieldset': {
+                borderColor: alpha(tealAccent, 0.5),
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: tealAccent,
+              },
+            },
+          }}
+        />
+
         {/* Active Filter Chips */}
         {hasActiveFilters && (
-          <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
+          <Stack direction="row" spacing={0.5}>
             {filters.serviceId && (
               <Chip
                 icon={<BusinessIcon sx={{ fontSize: 14 }} />}
@@ -740,7 +791,7 @@ const PhysicalWorkplacesPage = () => {
           </Stack>
         )}
 
-        <Box sx={{ flex: 1 }} />
+        <Box sx={{ flex: 0 }} />
 
         {/* Bulk Import Button */}
         <Tooltip title="Werkplekken bulk importeren" arrow>
@@ -1090,13 +1141,15 @@ const PhysicalWorkplacesPage = () => {
             <AdminDataTable
               data={workplaces || []}
               columns={columns}
-              searchPlaceholder="Zoek werkplekken (code, naam, gebouw)..."
               emptyMessage="Geen werkplekken gevonden"
               getItemId={(item) => item.id}
               showActiveStatus
               defaultRowsPerPage={15}
               renderActions={renderActions}
               actionsColumnWidth={140}
+              externalSearchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              hideSearch
             />
           )}
         </>
