@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrganizationSyncService, OrganizationSyncService>();
         services.AddScoped<IAssetMovementService, AssetMovementService>();
         services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
+        services.AddScoped<AssetPlanSyncService>();
 
         // Device Deployment Services (Laptop Swap / Onboarding)
         services.AddScoped<IDeploymentService, DeploymentService>();

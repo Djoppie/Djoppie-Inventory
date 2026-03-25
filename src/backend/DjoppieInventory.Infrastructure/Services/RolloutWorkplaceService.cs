@@ -16,6 +16,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly IAssetEventService _assetEventService;
+    private readonly AssetPlanSyncService _syncService;
     private readonly ILogger<RolloutWorkplaceService> _logger;
 
     public RolloutWorkplaceService(
@@ -23,12 +24,14 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         IAssetRepository assetRepository,
         IAssetCodeGenerator assetCodeGenerator,
         IAssetEventService assetEventService,
+        AssetPlanSyncService syncService,
         ILogger<RolloutWorkplaceService> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
         _assetCodeGenerator = assetCodeGenerator;
         _assetEventService = assetEventService;
+        _syncService = syncService;
         _logger = logger;
     }
 
@@ -56,6 +59,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 await UpdatePhysicalWorkplaceAsync(workplace, assetPlans);
                 await _rolloutRepository.SaveChangesAsync();
                 await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+
+                // Sync to relational model
+                await _syncService.SyncWorkplaceAsync(workplace);
             });
 
             return WorkplaceOperationResult.Ok(workplace);
@@ -101,6 +107,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 ResetWorkplaceToInProgress(workplace, assetPlans, reverseAssets);
                 await _rolloutRepository.SaveChangesAsync();
                 await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+
+                // Sync to relational model
+                await _syncService.SyncWorkplaceAsync(workplace);
             });
 
             _logger.LogInformation("Workplace {WorkplaceId} reopened (reverseAssets: {ReverseAssets})",
@@ -174,6 +183,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
         await _rolloutRepository.UpdateWorkplaceAsync(workplace);
 
+        // Sync to relational model
+        await _syncService.SyncWorkplaceAsync(workplace);
+
         return WorkplaceOperationResult.Ok(workplace);
     }
 
@@ -229,6 +241,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         }
 
         await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+
+        // Sync to relational model
+        await _syncService.SyncWorkplaceAsync(workplace);
 
         return WorkplaceOperationResult.Ok(workplace);
     }

@@ -4,6 +4,7 @@ using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
+using DjoppieInventory.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ public class RolloutWorkplacesController : ControllerBase
     private readonly IWorkplaceAssetAssignmentService _assignmentService;
     private readonly IAssetMovementService _movementService;
     private readonly IRolloutWorkplaceService _workplaceService;
+    private readonly AssetPlanSyncService _syncService;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<RolloutWorkplacesController> _logger;
 
@@ -32,6 +34,7 @@ public class RolloutWorkplacesController : ControllerBase
         IWorkplaceAssetAssignmentService assignmentService,
         IAssetMovementService movementService,
         IRolloutWorkplaceService workplaceService,
+        AssetPlanSyncService syncService,
         ApplicationDbContext context,
         ILogger<RolloutWorkplacesController> logger)
     {
@@ -39,6 +42,7 @@ public class RolloutWorkplacesController : ControllerBase
         _assignmentService = assignmentService;
         _movementService = movementService;
         _workplaceService = workplaceService;
+        _syncService = syncService;
         _context = context;
         _logger = logger;
     }
@@ -620,6 +624,71 @@ public class RolloutWorkplacesController : ControllerBase
     }
 
     #endregion
+
+    // ===== MIGRATION ENDPOINTS =====
+
+    /// <summary>
+    /// Migrates all AssetPlansJson data to WorkplaceAssetAssignment relational model.
+    /// This is a one-time operation for existing data migration.
+    /// </summary>
+    [HttpPost("migrate-to-relational")]
+    [ProducesResponseType(typeof(MigrationResult), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MigrationResult>> MigrateToRelational(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Starting migration of AssetPlansJson to relational model");
+
+        var result = await _syncService.MigrateAllAsync(cancellationToken);
+
+        if (result.HasErrors)
+        {
+            _logger.LogWarning(
+                "Migration completed with errors: {Migrated}/{Total} workplaces, {Failed} failed",
+                result.MigratedWorkplaces, result.TotalWorkplaces, result.FailedWorkplaces);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Migration completed successfully: {Migrated}/{Total} workplaces, {Assignments} assignments",
+                result.MigratedWorkplaces, result.TotalWorkplaces, result.TotalAssignments);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Syncs a single workplace's AssetPlansJson to WorkplaceAssetAssignment.
+    /// </summary>
+    [HttpPost("{id}/sync-to-relational")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> SyncWorkplaceToRelational(int id, CancellationToken cancellationToken)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id);
+        if (workplace == null)
+        {
+            return NotFound($"Workplace with ID {id} not found");
+        }
+
+        await _syncService.SyncWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Synced workplace {WorkplaceId} to relational model", id);
+
+        return Ok(new { message = $"Workplace {id} synced successfully" });
+    }
+
+    /// <summary>
+    /// Syncs all workplaces in a session from AssetPlansJson to WorkplaceAssetAssignment.
+    /// </summary>
+    [HttpPost("sync-session/{sessionId}")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<ActionResult> SyncSessionToRelational(int sessionId, CancellationToken cancellationToken)
+    {
+        var syncedCount = await _syncService.SyncSessionAsync(sessionId, cancellationToken);
+
+        _logger.LogInformation("Synced {Count} workplaces for session {SessionId}", syncedCount, sessionId);
+
+        return Ok(new { message = $"Synced {syncedCount} workplaces for session {sessionId}" });
+    }
 }
 
 /// <summary>
