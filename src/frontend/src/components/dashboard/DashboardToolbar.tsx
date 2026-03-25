@@ -132,301 +132,278 @@ export default function DashboardToolbar({
           zIndex: 10,
         }}
       >
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          {/* Left side - View Toggle & Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <ViewToggle value={viewMode} onChange={onViewModeChange} />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* View Toggle */}
+          <ViewToggle value={viewMode} onChange={onViewModeChange} />
 
-            {/* Bulk Actions - shows when assets are selected */}
-            {selectedCount > 0 && (
-              <>
-                {/* Bulk Edit Button */}
-                <Tooltip title={t('bulkEdit.editSelected', { defaultValue: 'Edit Selected' })}>
-                  <Badge badgeContent={selectedCount} color="primary">
-                    <IconButton
-                      onClick={onBulkEditClick}
-                      sx={{
-                        borderRadius: 2,
-                        background: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.9) 0%, rgba(255, 153, 51, 0.8) 100%)'
-                            : 'linear-gradient(135deg, rgba(255, 119, 0, 1) 0%, rgba(255, 153, 51, 0.9) 100%)',
-                        color: '#fff',
-                        boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          boxShadow: '0 6px 16px rgba(255, 119, 0, 0.4)',
-                        },
-                      }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Badge>
-                </Tooltip>
-
-                {/* Bulk Print Button */}
-                <Tooltip title={t('bulkPrintLabel.printSelected')}>
-                  <Badge badgeContent={selectedCount} color="primary">
-                    <IconButton
-                      onClick={onBulkPrintClick}
-                      sx={{
-                        borderRadius: 2,
-                        background: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.9) 0%, rgba(25, 118, 210, 0.8) 100%)'
-                            : 'linear-gradient(135deg, rgba(33, 150, 243, 1) 0%, rgba(25, 118, 210, 0.9) 100%)',
-                        color: '#fff',
-                        boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
-                        },
-                      }}
-                    >
-                      <PrintIcon />
-                    </IconButton>
-                  </Badge>
-                </Tooltip>
-
-                {/* Bulk Delete Button */}
-                <Tooltip title={t('bulkDelete.deleteSelected', { defaultValue: 'Delete Selected' })}>
-                  <Badge badgeContent={selectedCount} color="error">
-                    <IconButton
-                      onClick={onBulkDeleteClick}
-                      sx={{
-                        borderRadius: 2,
-                        background: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(211, 47, 47, 0.8) 100%)'
-                            : 'linear-gradient(135deg, rgba(244, 67, 54, 1) 0%, rgba(211, 47, 47, 0.9) 100%)',
-                        color: '#fff',
-                        boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          boxShadow: '0 6px 16px rgba(244, 67, 54, 0.4)',
-                        },
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Badge>
-                </Tooltip>
-              </>
-            )}
-
-            <Tooltip title={t('export.title')}>
-              <IconButton
-                onClick={onExportClick}
-                sx={{
-                  borderRadius: 2,
-                  background: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'linear-gradient(135deg, rgba(255, 119, 0, 0.9) 0%, rgba(204, 0, 0, 0.8) 100%)'
-                      : 'linear-gradient(135deg, rgba(255, 119, 0, 1) 0%, rgba(204, 0, 0, 0.9) 100%)',
-                  color: '#fff',
-                  boxShadow: '0 4px 12px rgba(255, 119, 0, 0.3)',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    boxShadow: '0 6px 16px rgba(255, 119, 0, 0.4)',
-                  },
-                }}
-              >
-                <DownloadIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          {/* Center - Search */}
-          <Box sx={{ flex: '1 1 300px', maxWidth: 500 }}>
-            <TextField
-              fullWidth
+          {/* Sort Button */}
+          <Tooltip title="Sort assets">
+            <IconButton
               size="small"
-              placeholder="Search assets..."
-              value={searchInputValue}
-              onChange={(e) => onSearchChange(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
-                  </InputAdornment>
-                ),
-                endAdornment: searchInputValue && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={onSearchClear} edge="end" sx={{ p: 0.25 }}>
-                      <ClearIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+              onClick={handleSortMenuOpen}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: bgBase,
-                  borderRadius: 1.5,
-                  fontSize: '0.85rem',
-                  boxShadow: getNeumorphInset(isDark),
-                  '& fieldset': { border: 'none' },
-                  '&:hover': {
-                    boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
-                  },
-                  '&.Mui-focused': {
-                    boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  py: 0.75,
+                width: 32,
+                height: 32,
+                bgcolor: bgBase,
+                color: 'text.secondary',
+                boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: accentColor,
+                  color: '#fff',
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
                 },
               }}
-            />
-          </Box>
+            >
+              <SortIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
 
-          {/* Right side - Sort and Filter */}
-          <Box sx={{ display: 'flex', gap: 0.75 }}>
-            {/* Sort Button */}
-            <Tooltip title="Sort assets">
-              <IconButton
-                size="small"
-                onClick={handleSortMenuOpen}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: bgBase,
-                  color: 'text.secondary',
-                  boxShadow: getNeumorph(isDark, 'soft'),
-                  transition: 'all 0.15s ease',
-                  '&:hover': {
-                    bgcolor: accentColor,
-                    color: '#fff',
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                  },
-                }}
-              >
-                <SortIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Tooltip>
+          {/* Category Filter Button */}
+          <Tooltip title="Filter by category">
+            <IconButton
+              size="small"
+              onClick={handleCategoryMenuOpen}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: categoryFilter ? alpha(accentColor, 0.15) : bgBase,
+                color: categoryFilter ? accentColor : 'text.secondary',
+                boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: accentColor,
+                  color: '#fff',
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
+                },
+              }}
+            >
+              {categoryFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <FilterAltIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
 
-            {/* Category Filter Button */}
-            <Tooltip title="Filter by category">
-              <IconButton
-                size="small"
-                onClick={handleCategoryMenuOpen}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: categoryFilter ? alpha(accentColor, 0.15) : bgBase,
-                  color: categoryFilter ? accentColor : 'text.secondary',
-                  boxShadow: getNeumorph(isDark, 'soft'),
-                  transition: 'all 0.15s ease',
-                  '&:hover': {
-                    bgcolor: accentColor,
-                    color: '#fff',
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                  },
-                }}
-              >
-                {categoryFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <FilterAltIcon sx={{ fontSize: 18 }} />}
-              </IconButton>
-            </Tooltip>
+          {/* Service Filter Button */}
+          <Tooltip title="Filter by service">
+            <IconButton
+              size="small"
+              onClick={handleServiceMenuOpen}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: serviceFilter ? alpha('#388e3c', 0.15) : bgBase,
+                color: serviceFilter ? '#388e3c' : 'text.secondary',
+                boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: '#388e3c',
+                  color: '#fff',
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 4px 12px ${alpha('#388e3c', 0.4)}`,
+                },
+              }}
+            >
+              {serviceFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <BusinessIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
 
-            {/* Service Filter Button */}
-            <Tooltip title="Filter by service">
-              <IconButton
-                size="small"
-                onClick={handleServiceMenuOpen}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: serviceFilter ? alpha('#388e3c', 0.15) : bgBase,
-                  color: serviceFilter ? '#388e3c' : 'text.secondary',
-                  boxShadow: getNeumorph(isDark, 'soft'),
-                  transition: 'all 0.15s ease',
-                  '&:hover': {
-                    bgcolor: '#388e3c',
-                    color: '#fff',
-                    transform: 'translateY(-1px)',
-                    boxShadow: `0 4px 12px ${alpha('#388e3c', 0.4)}`,
-                  },
-                }}
-              >
-                {serviceFilter ? <CheckIcon sx={{ fontSize: 18 }} /> : <BusinessIcon sx={{ fontSize: 18 }} />}
-              </IconButton>
-            </Tooltip>
-          </Box>
+          {/* Compact Search Field */}
+          <TextField
+            size="small"
+            placeholder="Search assets..."
+            value={searchInputValue}
+            onChange={(e) => onSearchChange(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchInputValue && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={onSearchClear} edge="end" sx={{ p: 0.25 }}>
+                    <ClearIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              flex: 1,
+              minWidth: 180,
+              maxWidth: 280,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: bgBase,
+                borderRadius: 1.5,
+                fontSize: '0.85rem',
+                height: 32,
+                boxShadow: getNeumorphInset(isDark),
+                '& fieldset': { border: 'none' },
+                '&:hover': {
+                  boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+                },
+                '&.Mui-focused': {
+                  boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+                },
+              },
+              '& .MuiInputBase-input': {
+                py: 0.5,
+              },
+            }}
+          />
+
+          {/* Active Filter Chips */}
+          {(categoryFilter || serviceFilter) && (
+            <>
+              {categoryFilter && (
+                <Chip
+                  label={categoryFilter}
+                  onDelete={() => onCategoryChange('')}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    bgcolor: alpha(accentColor, 0.1),
+                    color: accentColor,
+                    border: 'none',
+                    '& .MuiChip-deleteIcon': {
+                      color: accentColor,
+                      fontSize: 14,
+                    },
+                  }}
+                />
+              )}
+              {serviceFilter && (
+                <Chip
+                  icon={<BusinessIcon sx={{ fontSize: 14 }} />}
+                  label="Dienst"
+                  onDelete={() => onServiceChange('')}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    bgcolor: alpha('#388e3c', 0.1),
+                    color: '#388e3c',
+                    border: 'none',
+                    '& .MuiChip-icon': { color: '#388e3c' },
+                    '& .MuiChip-deleteIcon': { color: '#388e3c', fontSize: 14 },
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          {/* Spacer */}
+          <Box sx={{ flex: 1 }} />
+
+          {/* Bulk Actions - shows when assets are selected */}
+          {selectedCount > 0 && (
+            <>
+              {/* Bulk Edit Button */}
+              <Tooltip title={t('bulkEdit.editSelected', { defaultValue: 'Edit Selected' })}>
+                <Badge badgeContent={selectedCount} color="primary">
+                  <IconButton
+                    onClick={onBulkEditClick}
+                    size="small"
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1.5,
+                      bgcolor: accentColor,
+                      color: '#fff',
+                      boxShadow: `0 2px 8px ${alpha(accentColor, 0.3)}`,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
+                  >
+                    <EditIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Badge>
+              </Tooltip>
+
+              {/* Bulk Print Button */}
+              <Tooltip title={t('bulkPrintLabel.printSelected')}>
+                <Badge badgeContent={selectedCount} color="primary">
+                  <IconButton
+                    onClick={onBulkPrintClick}
+                    size="small"
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1.5,
+                      bgcolor: '#2196F3',
+                      color: '#fff',
+                      boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
+                  >
+                    <PrintIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Badge>
+              </Tooltip>
+
+              {/* Bulk Delete Button */}
+              <Tooltip title={t('bulkDelete.deleteSelected', { defaultValue: 'Delete Selected' })}>
+                <Badge badgeContent={selectedCount} color="error">
+                  <IconButton
+                    onClick={onBulkDeleteClick}
+                    size="small"
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1.5,
+                      bgcolor: '#F44336',
+                      color: '#fff',
+                      boxShadow: '0 2px 8px rgba(244, 67, 54, 0.3)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
+                  >
+                    <DeleteIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Badge>
+              </Tooltip>
+            </>
+          )}
+
+          {/* Export Button */}
+          <Tooltip title={t('export.title')}>
+            <IconButton
+              onClick={onExportClick}
+              size="small"
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1.5,
+                bgcolor: bgBase,
+                color: accentColor,
+                boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: accentColor,
+                  color: '#fff',
+                  boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              <DownloadIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
         </Box>
 
-        {/* Active Filters Display */}
-        {(searchInputValue || categoryFilter || serviceFilter) && (
-          <Box sx={{ mt: 1.5, display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-              Active filters:
-            </Typography>
-            {searchInputValue && (
-              <Chip
-                label={`Search: "${searchInputValue}"`}
-                onDelete={onSearchClear}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha(accentColor, 0.1),
-                  color: accentColor,
-                  border: 'none',
-                  '& .MuiChip-deleteIcon': {
-                    color: accentColor,
-                    fontSize: 14,
-                    '&:hover': { color: alpha(accentColor, 0.7) },
-                  },
-                }}
-              />
-            )}
-            {categoryFilter && (
-              <Chip
-                label={`Category: ${categoryFilter}`}
-                onDelete={() => onCategoryChange('')}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha(accentColor, 0.1),
-                  color: accentColor,
-                  border: 'none',
-                  '& .MuiChip-deleteIcon': {
-                    color: accentColor,
-                    fontSize: 14,
-                    '&:hover': { color: alpha(accentColor, 0.7) },
-                  },
-                }}
-              />
-            )}
-            {serviceFilter && (
-              <Chip
-                icon={<BusinessIcon sx={{ fontSize: 14 }} />}
-                label="Service"
-                onDelete={() => onServiceChange('')}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha('#388e3c', 0.1),
-                  color: '#388e3c',
-                  border: 'none',
-                  '& .MuiChip-icon': {
-                    color: '#388e3c',
-                  },
-                  '& .MuiChip-deleteIcon': {
-                    color: '#388e3c',
-                    fontSize: 14,
-                    '&:hover': { color: alpha('#388e3c', 0.7) },
-                  },
-                }}
-              />
-            )}
-          </Box>
-        )}
       </Paper>
 
       {/* Sort Menu */}
