@@ -2,7 +2,7 @@
  * WorkplaceOccupantChip
  *
  * Chip component for displaying workplace occupant status.
- * Uses purple (#9C27B0) for person/occupant to distinguish from workplace equipment.
+ * Uses EMPLOYEE_COLOR (purple) for person/occupant to distinguish from workplace equipment.
  *
  * Design Philosophy:
  * - Purple color scheme for person-related information
@@ -10,10 +10,11 @@
  * - Shows name and email on hover
  */
 
-import { Chip, Tooltip, Box, useTheme } from '@mui/material';
+import { Chip, Tooltip, Box, useTheme, alpha } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import DeskIcon from '@mui/icons-material/Desk';
 import { PhysicalWorkplace } from '../../types/physicalWorkplace.types';
+import { EMPLOYEE_COLOR } from '../../constants/filterColors';
 
 interface WorkplaceOccupantChipProps {
   workplace: PhysicalWorkplace;
@@ -27,9 +28,9 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
   // Check both EntraId and Name - some workplaces may have name but not EntraId (legacy data)
   const isOccupied = !!workplace.currentOccupantEntraId || !!workplace.currentOccupantName;
 
-  // Purple accent for person
-  const purpleColor = '#9C27B0';
-  const purpleLight = '#BA68C8';
+  // Purple accent for person (using centralized EMPLOYEE_COLOR)
+  const purpleColor = EMPLOYEE_COLOR;
+  const purpleLight = alpha(EMPLOYEE_COLOR, 0.7);
 
   if (!isOccupied && !showVacant) {
     return null;
@@ -95,7 +96,7 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
         label={chipLabel}
         size="small"
         sx={{
-          bgcolor: isDark ? purpleColor : 'rgba(156, 39, 176, 0.12)',
+          bgcolor: isDark ? purpleColor : alpha(EMPLOYEE_COLOR, 0.12),
           color: isDark ? '#fff' : purpleColor,
           fontWeight: 700,
           letterSpacing: '0.02em',
@@ -107,17 +108,17 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
           },
           boxShadow: isDark
             ? '0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-            : '0 1px 3px rgba(156, 39, 176, 0.15)',
+            : `0 1px 3px ${alpha(EMPLOYEE_COLOR, 0.15)}`,
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           '& .MuiChip-icon': {
             color: isDark ? '#fff' : purpleColor,
           },
           '&:hover': {
             transform: 'translateY(-1px)',
-            bgcolor: isDark ? purpleColor : 'rgba(156, 39, 176, 0.18)',
+            bgcolor: isDark ? purpleColor : alpha(EMPLOYEE_COLOR, 0.18),
             boxShadow: isDark
-              ? '0 4px 8px rgba(156, 39, 176, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
-              : '0 2px 6px rgba(156, 39, 176, 0.25)',
+              ? `0 4px 8px ${alpha(EMPLOYEE_COLOR, 0.4)}, inset 0 1px 0 rgba(255, 255, 255, 0.15)`
+              : `0 2px 6px ${alpha(EMPLOYEE_COLOR, 0.25)}`,
           },
         }}
       />

@@ -64,7 +64,13 @@ import NeomorphConfirmDialog from '../components/physicalWorkplaces/NeomorphConf
 import EquipmentChip from '../components/physicalWorkplaces/EquipmentChip';
 import WorkplaceOccupantChip from '../components/physicalWorkplaces/WorkplaceOccupantChip';
 import AdminDataTable, { Column } from '../components/admin/AdminDataTable';
-import { SERVICE_COLOR, BUILDING_COLOR } from '../constants/filterColors';
+import {
+  WORKPLACE_COLOR,
+  EMPLOYEE_COLOR,
+  ASSET_COLOR,
+  SERVICE_COLOR,
+  BUILDING_COLOR,
+} from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -98,8 +104,8 @@ const iconButtonSx = {
   },
 };
 
-// Teal accent for workplaces (uses central filter color)
-const tealAccent = SERVICE_COLOR;
+// Workplace accent color (teal - aligned with sector-service-workplace hierarchy)
+const workplaceAccent = WORKPLACE_COLOR;
 
 type SnackbarState = {
   open: boolean;
@@ -273,13 +279,13 @@ const PhysicalWorkplacesPage = () => {
               width: 28,
               height: 28,
               borderRadius: 1.5,
-              bgcolor: isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.1),
-              color: tealAccent,
+              bgcolor: isDark ? alpha(workplaceAccent, 0.15) : alpha(workplaceAccent, 0.1),
+              color: workplaceAccent,
             }}
           >
             {getWorkplaceTypeIcon(item.type)}
           </Box>
-          <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, color: tealAccent, fontSize: '0.85rem' }}>
+          <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, color: workplaceAccent, fontSize: '0.85rem' }}>
             {item.code}
           </Typography>
         </Stack>
@@ -314,10 +320,10 @@ const PhysicalWorkplacesPage = () => {
             height: 22,
             fontSize: '0.7rem',
             fontWeight: 600,
-            bgcolor: isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.08),
-            color: tealAccent,
+            bgcolor: isDark ? alpha(workplaceAccent, 0.15) : alpha(workplaceAccent, 0.08),
+            color: workplaceAccent,
             border: '1px solid',
-            borderColor: alpha(tealAccent, 0.3),
+            borderColor: alpha(workplaceAccent, 0.3),
           }}
         />
       ),
@@ -367,14 +373,14 @@ const PhysicalWorkplacesPage = () => {
           sx={{
             width: 28,
             height: 28,
-            bgcolor: isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.08),
-            color: tealAccent,
+            bgcolor: isDark ? alpha(ASSET_COLOR, 0.15) : alpha(ASSET_COLOR, 0.08),
+            color: ASSET_COLOR,
             transition: 'all 0.15s ease',
             '&:hover': {
-              bgcolor: tealAccent,
+              bgcolor: ASSET_COLOR,
               color: '#fff',
               transform: 'translateY(-1px)',
-              boxShadow: `0 4px 12px ${alpha(tealAccent, 0.4)}`,
+              boxShadow: `0 4px 12px ${alpha(ASSET_COLOR, 0.4)}`,
             },
           }}
         >
@@ -388,14 +394,14 @@ const PhysicalWorkplacesPage = () => {
           sx={{
             width: 28,
             height: 28,
-            bgcolor: isDark ? alpha('#FF7700', 0.15) : alpha('#FF7700', 0.08),
-            color: '#FF7700',
+            bgcolor: isDark ? alpha(ASSET_COLOR, 0.15) : alpha(ASSET_COLOR, 0.08),
+            color: ASSET_COLOR,
             transition: 'all 0.15s ease',
             '&:hover': {
-              bgcolor: '#FF7700',
+              bgcolor: ASSET_COLOR,
               color: '#fff',
               transform: 'translateY(-1px)',
-              boxShadow: `0 4px 12px ${alpha('#FF7700', 0.4)}`,
+              boxShadow: `0 4px 12px ${alpha(ASSET_COLOR, 0.4)}`,
             },
           }}
         >
@@ -510,14 +516,14 @@ const PhysicalWorkplacesPage = () => {
                 borderRadius: 2,
                 border: '1px solid',
                 borderColor: 'divider',
-                bgcolor: isDark ? alpha(tealAccent, 0.08) : alpha(tealAccent, 0.05),
+                bgcolor: isDark ? alpha(workplaceAccent, 0.08) : alpha(workplaceAccent, 0.05),
               }}
             >
               <PlaceIcon
                 sx={{
                   fontSize: 28,
-                  color: tealAccent,
-                  filter: isDark ? `drop-shadow(0 0 4px ${alpha(tealAccent, 0.5)})` : 'none',
+                  color: workplaceAccent,
+                  filter: isDark ? `drop-shadow(0 0 4px ${alpha(workplaceAccent, 0.5)})` : 'none',
                 }}
               />
             </Box>
@@ -538,13 +544,13 @@ const PhysicalWorkplacesPage = () => {
                   height: 32,
                   fontWeight: 700,
                   cursor: 'pointer',
-                  bgcolor: filters.hasOccupant === undefined && filters.isActive === undefined ? tealAccent : 'transparent',
-                  color: filters.hasOccupant === undefined && filters.isActive === undefined ? '#fff' : tealAccent,
+                  bgcolor: filters.hasOccupant === undefined && filters.isActive === undefined ? workplaceAccent : 'transparent',
+                  color: filters.hasOccupant === undefined && filters.isActive === undefined ? '#fff' : workplaceAccent,
                   border: '1px solid',
-                  borderColor: tealAccent,
-                  '& .MuiChip-icon': { color: filters.hasOccupant === undefined && filters.isActive === undefined ? '#fff' : tealAccent },
+                  borderColor: workplaceAccent,
+                  '& .MuiChip-icon': { color: filters.hasOccupant === undefined && filters.isActive === undefined ? '#fff' : workplaceAccent },
                   transition: 'all 0.2s ease',
-                  '&:hover': { bgcolor: filters.hasOccupant === undefined && filters.isActive === undefined ? tealAccent : alpha(tealAccent, 0.15) },
+                  '&:hover': { bgcolor: filters.hasOccupant === undefined && filters.isActive === undefined ? workplaceAccent : alpha(workplaceAccent, 0.15) },
                 }}
               />
               <Chip
@@ -555,13 +561,13 @@ const PhysicalWorkplacesPage = () => {
                   height: 32,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  bgcolor: filters.hasOccupant === true ? '#4CAF50' : 'transparent',
-                  color: filters.hasOccupant === true ? '#fff' : '#4CAF50',
+                  bgcolor: filters.hasOccupant === true ? EMPLOYEE_COLOR : 'transparent',
+                  color: filters.hasOccupant === true ? '#fff' : EMPLOYEE_COLOR,
                   border: '1px solid',
-                  borderColor: '#4CAF50',
-                  '& .MuiChip-icon': { color: filters.hasOccupant === true ? '#fff' : '#4CAF50' },
+                  borderColor: EMPLOYEE_COLOR,
+                  '& .MuiChip-icon': { color: filters.hasOccupant === true ? '#fff' : EMPLOYEE_COLOR },
                   transition: 'all 0.2s ease',
-                  '&:hover': { bgcolor: filters.hasOccupant === true ? '#4CAF50' : alpha('#4CAF50', 0.15) },
+                  '&:hover': { bgcolor: filters.hasOccupant === true ? EMPLOYEE_COLOR : alpha(EMPLOYEE_COLOR, 0.15) },
                 }}
               />
               <Chip
@@ -581,7 +587,7 @@ const PhysicalWorkplacesPage = () => {
                   '&:hover': { bgcolor: filters.hasOccupant === false ? '#2196F3' : alpha('#2196F3', 0.15) },
                 }}
               />
-              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(tealAccent, 0.3), mx: 0.5 }} />
+              <Box sx={{ width: '1px', height: 20, bgcolor: alpha(workplaceAccent, 0.3), mx: 0.5 }} />
               <Chip
                 label={`${stats.active} actief`}
                 onClick={() => setFilters(prev => ({ ...prev, isActive: prev.isActive === true ? undefined : true }))}
@@ -625,10 +631,10 @@ const PhysicalWorkplacesPage = () => {
         sx={{
           mb: 2,
           p: 1.5,
-          bgcolor: isDark ? alpha(tealAccent, 0.08) : alpha(tealAccent, 0.05),
+          bgcolor: isDark ? alpha(workplaceAccent, 0.08) : alpha(workplaceAccent, 0.05),
           borderRadius: 2,
           border: '1px solid',
-          borderColor: isDark ? alpha(tealAccent, 0.2) : alpha(tealAccent, 0.15),
+          borderColor: isDark ? alpha(workplaceAccent, 0.2) : alpha(workplaceAccent, 0.15),
         }}
       >
         {/* Toggle Advanced Filters */}
@@ -639,11 +645,11 @@ const PhysicalWorkplacesPage = () => {
             sx={{
               width: 36,
               height: 36,
-              bgcolor: showFilters ? tealAccent : (isDark ? alpha(tealAccent, 0.15) : alpha(tealAccent, 0.1)),
-              color: showFilters ? '#fff' : tealAccent,
+              bgcolor: showFilters ? workplaceAccent : (isDark ? alpha(workplaceAccent, 0.15) : alpha(workplaceAccent, 0.1)),
+              color: showFilters ? '#fff' : workplaceAccent,
               transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: showFilters ? '#00796b' : alpha(tealAccent, 0.2),
+                bgcolor: showFilters ? '#00796b' : alpha(workplaceAccent, 0.2),
                 transform: 'translateY(-1px)',
               },
             }}
@@ -752,13 +758,13 @@ const PhysicalWorkplacesPage = () => {
               fontSize: '0.85rem',
               height: 36,
               '& fieldset': {
-                borderColor: alpha(tealAccent, 0.3),
+                borderColor: alpha(workplaceAccent, 0.3),
               },
               '&:hover fieldset': {
-                borderColor: alpha(tealAccent, 0.5),
+                borderColor: alpha(workplaceAccent, 0.5),
               },
               '&.Mui-focused fieldset': {
-                borderColor: tealAccent,
+                borderColor: workplaceAccent,
               },
             },
           }}
@@ -826,10 +832,10 @@ const PhysicalWorkplacesPage = () => {
                   height: 24,
                   fontSize: '0.7rem',
                   fontWeight: 600,
-                  bgcolor: alpha('#ff9800', 0.1),
-                  color: '#ff9800',
-                  '& .MuiChip-icon': { color: '#ff9800' },
-                  '& .MuiChip-deleteIcon': { color: '#ff9800', fontSize: 14 },
+                  bgcolor: alpha(EMPLOYEE_COLOR, 0.1),
+                  color: EMPLOYEE_COLOR,
+                  '& .MuiChip-icon': { color: EMPLOYEE_COLOR },
+                  '& .MuiChip-deleteIcon': { color: EMPLOYEE_COLOR, fontSize: 14 },
                 }}
               />
             )}
@@ -846,13 +852,13 @@ const PhysicalWorkplacesPage = () => {
             sx={{
               width: 36,
               height: 36,
-              bgcolor: tealAccent,
+              bgcolor: workplaceAccent,
               color: '#fff',
               transition: 'all 0.2s ease',
               '&:hover': {
                 bgcolor: '#00796b',
                 transform: 'translateY(-1px)',
-                boxShadow: `0 4px 12px ${alpha(tealAccent, 0.4)}`,
+                boxShadow: `0 4px 12px ${alpha(workplaceAccent, 0.4)}`,
               },
             }}
           >
@@ -976,7 +982,7 @@ const PhysicalWorkplacesPage = () => {
             onClick={() => handleOpenDialog()}
             size="large"
             sx={{
-              bgcolor: tealAccent,
+              bgcolor: workplaceAccent,
               '&:hover': { bgcolor: '#00796b' },
             }}
           >
@@ -1001,8 +1007,8 @@ const PhysicalWorkplacesPage = () => {
                     overflow: 'hidden',
                     bgcolor: isDark ? '#232936' : '#ffffff',
                     '&:hover': {
-                      boxShadow: `0 8px 32px ${alpha(tealAccent, 0.25)}`,
-                      borderColor: tealAccent,
+                      boxShadow: `0 8px 32px ${alpha(workplaceAccent, 0.25)}`,
+                      borderColor: workplaceAccent,
                       transform: 'translateY(-2px)',
                     },
                   }}
@@ -1019,8 +1025,8 @@ const PhysicalWorkplacesPage = () => {
                             width: 40,
                             height: 40,
                             borderRadius: 2,
-                            bgcolor: alpha(tealAccent, isDark ? 0.15 : 0.1),
-                            color: tealAccent,
+                            bgcolor: alpha(workplaceAccent, isDark ? 0.15 : 0.1),
+                            color: workplaceAccent,
                           }}
                         >
                           {getWorkplaceTypeIcon(workplace.type)}
@@ -1030,7 +1036,7 @@ const PhysicalWorkplacesPage = () => {
                             variant="h6"
                             sx={{
                               fontWeight: 800,
-                              color: tealAccent,
+                              color: workplaceAccent,
                               fontSize: '1rem',
                               letterSpacing: '0.03em',
                             }}
@@ -1096,9 +1102,9 @@ const PhysicalWorkplacesPage = () => {
                         size="small"
                         onClick={() => handleOpenAssetsDialog(workplace)}
                         sx={{
-                          bgcolor: alpha(tealAccent, isDark ? 0.12 : 0.08),
-                          color: tealAccent,
-                          '&:hover': { bgcolor: alpha(tealAccent, 0.2) },
+                          bgcolor: alpha(workplaceAccent, isDark ? 0.12 : 0.08),
+                          color: workplaceAccent,
+                          '&:hover': { bgcolor: alpha(workplaceAccent, 0.2) },
                         }}
                       >
                         <InventoryIcon fontSize="small" />
@@ -1107,9 +1113,9 @@ const PhysicalWorkplacesPage = () => {
                         size="small"
                         onClick={() => handleOpenDialog(workplace)}
                         sx={{
-                          bgcolor: alpha('#FF7700', isDark ? 0.12 : 0.08),
-                          color: '#FF7700',
-                          '&:hover': { bgcolor: alpha('#FF7700', 0.2) },
+                          bgcolor: alpha(ASSET_COLOR, isDark ? 0.12 : 0.08),
+                          color: ASSET_COLOR,
+                          '&:hover': { bgcolor: alpha(ASSET_COLOR, 0.2) },
                         }}
                       >
                         <EditIcon fontSize="small" />
@@ -1173,9 +1179,9 @@ const PhysicalWorkplacesPage = () => {
             bottom: 80,
             right: 24,
             zIndex: 1100,
-            bgcolor: tealAccent,
+            bgcolor: workplaceAccent,
             color: '#fff',
-            boxShadow: `0 4px 20px ${alpha(tealAccent, 0.4)}`,
+            boxShadow: `0 4px 20px ${alpha(workplaceAccent, 0.4)}`,
             '&:hover': {
               bgcolor: '#00796b',
               transform: 'scale(1.1)',
