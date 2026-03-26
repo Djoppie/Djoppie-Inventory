@@ -21,6 +21,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import type { RolloutDay } from '../../types/rollout';
+import { ASSET_COLOR, SECTOR_COLOR } from '../../constants/filterColors';
 
 interface RolloutDayCardProps {
   day: RolloutDay;
@@ -109,7 +110,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
     return {
       borderColor: 'rgba(255, 119, 0, 0.2)',
       bgGradient: 'linear-gradient(135deg, rgba(255, 119, 0, 0.02) 0%, transparent 100%)',
-      statusColor: '#FF7700',
+      statusColor: ASSET_COLOR,
       statusBg: 'rgba(255, 119, 0, 0.08)',
       statusLabel: 'Planning',
       glow: 'none',
@@ -256,7 +257,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                     sx={{
                       width: `${completionPercentage}%`,
                       height: '100%',
-                      bgcolor: completionPercentage === 100 ? '#16a34a' : '#FF7700',
+                      bgcolor: completionPercentage === 100 ? '#16a34a' : ASSET_COLOR,
                       transition: 'width 0.5s ease',
                       borderRadius: 2.5,
                     }}
@@ -295,9 +296,9 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                   fontSize: '0.65rem',
                   fontWeight: 600,
                   bgcolor: 'rgba(33, 150, 243, 0.08)',
-                  color: '#1976d2',
+                  color: SECTOR_COLOR,
                   border: '1px dashed rgba(33, 150, 243, 0.3)',
-                  '& .MuiChip-icon': { color: '#1976d2' },
+                  '& .MuiChip-icon': { color: SECTOR_COLOR },
                   '& .MuiChip-label': { px: 0.75 },
                 }}
               />
@@ -408,7 +409,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                   sx={{
                     color: 'rgba(255, 119, 0, 0.6)',
                     '&:hover:not(:disabled)': {
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                       bgcolor: 'rgba(255, 119, 0, 0.08)',
                       transform: 'scale(1.1)',
                     },

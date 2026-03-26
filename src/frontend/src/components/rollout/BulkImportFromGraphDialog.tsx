@@ -56,6 +56,8 @@ import type { StandardAssetPlanConfig, BulkCreateFromGraphResult, GraphGroup } f
 import type { AssetTemplate } from '../../types/asset.types';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
 import { TemplateSelector } from './TemplateSelector';
+import { ASSET_COLOR, SECTOR_COLOR } from '../../constants/filterColors';
+import { alpha } from '@mui/material';
 
 interface BulkImportFromGraphDialogProps {
   open: boolean;
@@ -80,8 +82,8 @@ function getRoleBadge(jobTitle?: string): { icon: React.ReactNode; color: string
 
   if (title.includes('teamcoördinator') || title.includes('team coördinator') || title.includes('teamcoordinator')) {
     return {
-      icon: <SupervisorAccountIcon sx={{ fontSize: 12, color: '#1976d2' }} />,
-      color: '#1976d2', // Blue
+      icon: <SupervisorAccountIcon sx={{ fontSize: 12, color: SECTOR_COLOR }} />,
+      color: SECTOR_COLOR, // Blue
       tooltip: 'Teamcoördinator',
     };
   }
@@ -134,12 +136,12 @@ function SectorServices({
           variant={selectedGroup?.id === service.id ? 'filled' : 'outlined'}
           sx={{
             cursor: 'pointer',
-            borderColor: selectedGroup?.id === service.id ? '#FF7700' : 'divider',
-            bgcolor: selectedGroup?.id === service.id ? '#FF7700' : 'transparent',
+            borderColor: selectedGroup?.id === service.id ? ASSET_COLOR : 'divider',
+            bgcolor: selectedGroup?.id === service.id ? ASSET_COLOR : 'transparent',
             color: selectedGroup?.id === service.id ? 'white' : 'text.primary',
             '&:hover': {
-              borderColor: '#FF7700',
-              bgcolor: selectedGroup?.id === service.id ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
+              borderColor: ASSET_COLOR,
+              bgcolor: selectedGroup?.id === service.id ? alpha(ASSET_COLOR, 0.85) : alpha(ASSET_COLOR, 0.08),
             },
             '& .MuiChip-icon': {
               color: selectedGroup?.id === service.id ? 'white' : 'inherit',
@@ -455,7 +457,7 @@ export default function BulkImportFromGraphDialog({
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <GroupIcon sx={{ color: '#FF7700' }} />
+                  <GroupIcon sx={{ color: ASSET_COLOR }} />
                   <Typography variant="subtitle1" fontWeight={600}>
                     {t('rollout.bulkImport.selectGroup', 'Selecteer groep')}
                   </Typography>
@@ -463,7 +465,7 @@ export default function BulkImportFromGraphDialog({
                     <Chip
                       label={selectedGroup.serviceName}
                       size="small"
-                      sx={{ bgcolor: '#FF7700', color: 'white' }}
+                      sx={{ bgcolor: ASSET_COLOR, color: 'white' }}
                     />
                   )}
                 </Box>
@@ -479,7 +481,7 @@ export default function BulkImportFromGraphDialog({
                 <Box sx={{ pt: 2 }}>
                   {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                      <CircularProgress size={40} sx={{ color: '#FF7700' }} />
+                      <CircularProgress size={40} sx={{ color: ASSET_COLOR }} />
                     </Box>
                   ) : (
                     <>
@@ -493,8 +495,8 @@ export default function BulkImportFromGraphDialog({
                               onChange={() => handleToggleSector(sector.id)}
                               sx={{
                                 border: '1px solid',
-                                borderColor: selectedGroup?.id === sector.id ? '#FF7700' : 'divider',
-                                bgcolor: selectedGroup?.id === sector.id ? 'rgba(255, 119, 0, 0.05)' : 'background.paper',
+                                borderColor: selectedGroup?.id === sector.id ? ASSET_COLOR : 'divider',
+                                bgcolor: selectedGroup?.id === sector.id ? alpha(ASSET_COLOR, 0.05) : 'background.paper',
                                 '&:before': { display: 'none' },
                                 mb: 1,
                               }}
@@ -509,7 +511,7 @@ export default function BulkImportFromGraphDialog({
                                   },
                                 }}
                               >
-                                <FolderIcon sx={{ color: '#FF7700' }} fontSize="small" />
+                                <FolderIcon sx={{ color: ASSET_COLOR }} fontSize="small" />
                                 <Typography fontWeight={600}>{sector.serviceName}</Typography>
                                 <Tooltip title={t('rollout.bulkImport.selectSector', 'Selecteer deze sector')}>
                                   <Chip
@@ -523,12 +525,12 @@ export default function BulkImportFromGraphDialog({
                                     sx={{
                                       ml: 'auto',
                                       mr: 1,
-                                      borderColor: selectedGroup?.id === sector.id ? '#FF7700' : 'divider',
-                                      bgcolor: selectedGroup?.id === sector.id ? '#FF7700' : 'transparent',
+                                      borderColor: selectedGroup?.id === sector.id ? ASSET_COLOR : 'divider',
+                                      bgcolor: selectedGroup?.id === sector.id ? ASSET_COLOR : 'transparent',
                                       color: selectedGroup?.id === sector.id ? 'white' : 'text.secondary',
                                       '&:hover': {
-                                        borderColor: '#FF7700',
-                                        bgcolor: selectedGroup?.id === sector.id ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
+                                        borderColor: ASSET_COLOR,
+                                        bgcolor: selectedGroup?.id === sector.id ? alpha(ASSET_COLOR, 0.85) : alpha(ASSET_COLOR, 0.08),
                                       },
                                     }}
                                   />
@@ -590,12 +592,12 @@ export default function BulkImportFromGraphDialog({
                                 variant={selectedGroup?.id === service.id ? 'filled' : 'outlined'}
                                 sx={{
                                   cursor: 'pointer',
-                                  borderColor: selectedGroup?.id === service.id ? '#FF7700' : 'divider',
-                                  bgcolor: selectedGroup?.id === service.id ? '#FF7700' : 'transparent',
+                                  borderColor: selectedGroup?.id === service.id ? ASSET_COLOR : 'divider',
+                                  bgcolor: selectedGroup?.id === service.id ? ASSET_COLOR : 'transparent',
                                   color: selectedGroup?.id === service.id ? 'white' : 'text.primary',
                                   '&:hover': {
-                                    borderColor: '#FF7700',
-                                    bgcolor: selectedGroup?.id === service.id ? '#e66a00' : 'rgba(255, 119, 0, 0.08)',
+                                    borderColor: ASSET_COLOR,
+                                    bgcolor: selectedGroup?.id === service.id ? alpha(ASSET_COLOR, 0.85) : alpha(ASSET_COLOR, 0.08),
                                   },
                                   '& .MuiChip-icon': {
                                     color: selectedGroup?.id === service.id ? 'white' : 'inherit',
@@ -642,7 +644,7 @@ export default function BulkImportFromGraphDialog({
                           '&:disabled': { opacity: 0.5 },
                         }}
                       >
-                        {allSelected ? <CheckBoxIcon sx={{ color: '#FF7700' }} /> : <CheckBoxOutlineBlankIcon />}
+                        {allSelected ? <CheckBoxIcon sx={{ color: ASSET_COLOR }} /> : <CheckBoxOutlineBlankIcon />}
                       </IconButton>
                     </span>
                   </Tooltip>
@@ -654,7 +656,7 @@ export default function BulkImportFromGraphDialog({
                 {/* Users list */}
                 {loadingUsers ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress size={40} sx={{ color: '#FF7700' }} />
+                    <CircularProgress size={40} sx={{ color: ASSET_COLOR }} />
                   </Box>
                 ) : usersError ? (
                   <Alert severity="error">
@@ -684,9 +686,9 @@ export default function BulkImportFromGraphDialog({
                         onClick={() => handleToggleUser(user.id)}
                         sx={{
                           cursor: 'pointer',
-                          bgcolor: selectedUserIds.has(user.id) ? 'rgba(255, 119, 0, 0.08)' : 'transparent',
+                          bgcolor: selectedUserIds.has(user.id) ? alpha(ASSET_COLOR, 0.08) : 'transparent',
                           '&:hover': {
-                            bgcolor: selectedUserIds.has(user.id) ? 'rgba(255, 119, 0, 0.12)' : 'action.hover',
+                            bgcolor: selectedUserIds.has(user.id) ? alpha(ASSET_COLOR, 0.12) : 'action.hover',
                           },
                         }}
                       >
@@ -697,8 +699,8 @@ export default function BulkImportFromGraphDialog({
                             tabIndex={-1}
                             disableRipple
                             sx={{
-                              color: 'rgba(255, 119, 0, 0.5)',
-                              '&.Mui-checked': { color: '#FF7700' },
+                              color: alpha(ASSET_COLOR, 0.5),
+                              '&.Mui-checked': { color: ASSET_COLOR },
                             }}
                           />
                         </ListItemIcon>
@@ -772,8 +774,8 @@ export default function BulkImportFromGraphDialog({
                           }
                         }}
                         sx={{
-                          '& .Mui-checked': { color: '#FF7700' },
-                          '& .Mui-checked + .MuiSwitch-track': { backgroundColor: '#FF7700' },
+                          '& .Mui-checked': { color: ASSET_COLOR },
+                          '& .Mui-checked + .MuiSwitch-track': { backgroundColor: ASSET_COLOR },
                         }}
                       />
                     }
@@ -854,9 +856,9 @@ export default function BulkImportFromGraphDialog({
                     step={1}
                     marks
                     sx={{
-                      color: '#FF7700',
-                      '& .MuiSlider-thumb': { bgcolor: '#FF7700' },
-                      '& .MuiSlider-track': { bgcolor: '#FF7700' },
+                      color: ASSET_COLOR,
+                      '& .MuiSlider-thumb': { bgcolor: ASSET_COLOR },
+                      '& .MuiSlider-track': { bgcolor: ASSET_COLOR },
                     }}
                   />
                 </Box>
@@ -888,8 +890,8 @@ export default function BulkImportFromGraphDialog({
             disabled={!selectedGroup || filteredUsers.length === 0 || createMutation.isPending}
             startIcon={createMutation.isPending ? <CircularProgress size={16} /> : <CloudDownloadIcon />}
             sx={{
-              bgcolor: '#FF7700',
-              '&:hover': { bgcolor: '#e66a00' },
+              bgcolor: ASSET_COLOR,
+              '&:hover': { bgcolor: alpha(ASSET_COLOR, 0.85) },
             }}
           >
             {t('rollout.bulkImport.import', 'Importeren')}

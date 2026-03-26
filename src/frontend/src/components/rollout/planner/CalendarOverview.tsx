@@ -6,6 +6,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PlanningCalendar, { type RescheduledWorkplace } from '../PlanningCalendar';
 import { buildRoute } from '../../../constants/routes';
 import type { RolloutSession, RolloutDay } from '../../../types/rollout';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface CalendarOverviewProps {
   session: RolloutSession;
@@ -80,7 +81,7 @@ export default function CalendarOverview({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <CalendarTodayIcon sx={{ color: '#FF7700', fontSize: 24 }} />
+          <CalendarTodayIcon sx={{ color: ASSET_COLOR, fontSize: 24 }} />
           <Typography variant="h6" fontWeight={700}>
             Kalender Overzicht
           </Typography>
@@ -89,7 +90,7 @@ export default function CalendarOverview({
             size="small"
             sx={{
               bgcolor: 'rgba(255, 119, 0, 0.1)',
-              color: '#FF7700',
+              color: ASSET_COLOR,
               fontWeight: 600,
               fontSize: '0.75rem',
             }}

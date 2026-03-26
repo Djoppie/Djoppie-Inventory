@@ -18,6 +18,8 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { RolloutDay } from '../../types/rollout';
 import { getServiceColor } from './serviceColors';
+import { ASSET_COLOR } from '../../constants/filterColors';
+import { alpha } from '@mui/material';
 
 const WEEKDAYS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
 
@@ -236,19 +238,19 @@ const PlanningCalendar = ({
                 borderRadius: 1,
                 border: '1px solid',
                 borderColor: isToday
-                  ? '#FF7700'
+                  ? ASSET_COLOR
                   : hasContent
-                    ? 'rgba(255, 119, 0, 0.3)'
+                    ? alpha(ASSET_COLOR, 0.3)
                     : inPeriod
-                      ? 'rgba(255, 119, 0, 0.2)'
+                      ? alpha(ASSET_COLOR, 0.2)
                       : 'divider',
                 bgcolor:
                   cell.date === null
                     ? 'action.hover'
                     : hasContent
-                      ? 'rgba(255, 119, 0, 0.08)'
+                      ? alpha(ASSET_COLOR, 0.08)
                       : inPeriod
-                        ? 'rgba(255, 119, 0, 0.03)'
+                        ? alpha(ASSET_COLOR, 0.03)
                         : 'background.paper',
                 cursor: cell.date !== null ? 'pointer' : 'default',
                 p: 0.5,
@@ -256,16 +258,16 @@ const PlanningCalendar = ({
                 minWidth: 0,
                 opacity: cell.date === null ? 0.4 : 1,
                 ...(isToday && {
-                  boxShadow: '0 0 0 2px #FF7700',
+                  boxShadow: `0 0 0 2px ${ASSET_COLOR}`,
                 }),
                 ...(inPeriod &&
                   !hasContent && {
-                    borderLeft: '3px solid rgba(255, 119, 0, 0.25)',
+                    borderLeft: `3px solid ${alpha(ASSET_COLOR, 0.25)}`,
                   }),
                 '&:hover':
                   cell.date !== null
                     ? {
-                        bgcolor: 'rgba(255, 119, 0, 0.06)',
+                        bgcolor: alpha(ASSET_COLOR, 0.06),
                       }
                     : {},
               }}
@@ -279,7 +281,7 @@ const PlanningCalendar = ({
                     variant="caption"
                     sx={{
                       fontWeight: isToday ? 700 : 500,
-                      color: isToday ? '#FF7700' : 'text.primary',
+                      color: isToday ? ASSET_COLOR : 'text.primary',
                       display: 'block',
                       textAlign: 'right',
                       lineHeight: 1,

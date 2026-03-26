@@ -11,6 +11,7 @@ import type { RolloutSession, RolloutDay, RolloutWorkplace } from '../../../type
 import type { RescheduledByDate } from '../../../hooks/rollout-planner';
 import React from 'react';
 import type { PlanningStatusFilterValue } from '../PlanningStatusFilter';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 /**
  * Memoized component for rendering rescheduled workplaces grouped by their source planning
@@ -244,7 +245,7 @@ export default function PlanningDaysList({
           disabled={!isEditable}
           onClick={onAddPlanning}
           sx={{
-            bgcolor: '#FF7700',
+            bgcolor: ASSET_COLOR,
             fontWeight: 600,
             px: 3,
             '&:hover': { bgcolor: '#e66a00' },
@@ -281,7 +282,7 @@ export default function PlanningDaysList({
           <Button
             variant="text"
             onClick={() => onStatusFilterChange('all')}
-            sx={{ mt: 2, color: '#FF7700' }}
+            sx={{ mt: 2, color: ASSET_COLOR }}
           >
             Toon alle planningen
           </Button>

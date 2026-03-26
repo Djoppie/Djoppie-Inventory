@@ -31,6 +31,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useMoveRolloutWorkplace } from '../../hooks/useRollout';
 import type { RolloutWorkplace } from '../../types/rollout';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 interface RescheduleWorkplaceDialogProps {
   open: boolean;
@@ -290,7 +291,7 @@ const RescheduleWorkplaceDialog = ({
                       : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
                   }}
                 >
-                  <PersonIcon sx={{ color: '#FF7700', fontSize: '1.2rem' }} />
+                  <PersonIcon sx={{ color: ASSET_COLOR, fontSize: '1.2rem' }} />
                 </Box>
                 <Box>
                   <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
@@ -310,7 +311,7 @@ const RescheduleWorkplaceDialog = ({
                   sx={{
                     mt: 1,
                     bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                    color: '#FF7700',
+                    color: ASSET_COLOR,
                     fontWeight: 600,
                     boxShadow: isDark
                       ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
@@ -493,7 +494,7 @@ const RescheduleWorkplaceDialog = ({
                       py: 1,
                       borderRadius: 2,
                       bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                       fontWeight: 600,
                       boxShadow: isDark
                         ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'

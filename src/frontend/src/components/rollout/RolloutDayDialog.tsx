@@ -23,6 +23,7 @@ import { useCreateRolloutDay, useUpdateRolloutDay } from '../../hooks/useRollout
 import { servicesApi } from '../../api/admin.api';
 import type { Service } from '../../types/admin.types';
 import type { RolloutDay, CreateRolloutDay, UpdateRolloutDay } from '../../types/rollout';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 interface RolloutDayDialogProps {
   open: boolean;
@@ -192,10 +193,10 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
             sx={{
               '& .MuiOutlinedInput-root': {
                 '&:hover fieldset': {
-                  borderColor: '#FF7700',
+                  borderColor: ASSET_COLOR,
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: '#FF7700',
+                  borderColor: ASSET_COLOR,
                 },
               },
             }}
@@ -266,7 +267,7 @@ const RolloutDayDialog = ({ open, onClose, sessionId, day, dayNumber, defaultDat
               sx={{
                 mt: 2,
                 '& .MuiAlert-icon': {
-                  color: '#FF7700',
+                  color: ASSET_COLOR,
                 },
               }}
             >

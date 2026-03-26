@@ -20,6 +20,7 @@ import {
 } from '../../../hooks/useRollout';
 import { WORKPLACE_STATUS_SORT_ORDER } from '../../../constants/rollout.constants';
 import type { RolloutWorkplace } from '../../../types/rollout';
+import { ASSET_COLOR, SERVICE_COLOR, SECTOR_COLOR } from '../../../constants/filterColors';
 
 interface WorkplaceListProps {
   dayId: number;
@@ -276,9 +277,9 @@ export default function WorkplaceList({
                             fontSize: '0.7rem',
                             fontWeight: 600,
                             bgcolor: 'rgba(33, 150, 243, 0.1)',
-                            color: '#1976d2',
+                            color: SECTOR_COLOR,
                             border: '1px solid rgba(33, 150, 243, 0.3)',
-                            '& .MuiChip-icon': { color: '#1976d2' },
+                            '& .MuiChip-icon': { color: SECTOR_COLOR },
                           }}
                           component="span"
                         />
@@ -301,10 +302,10 @@ export default function WorkplaceList({
                             fontSize: '0.65rem',
                             fontWeight: 600,
                             bgcolor: 'rgba(0, 150, 136, 0.12)',
-                            color: '#009688',
+                            color: SERVICE_COLOR,
                             border: '1px solid rgba(0, 150, 136, 0.3)',
                             '& .MuiChip-icon': {
-                              color: '#009688',
+                              color: SERVICE_COLOR,
                               marginLeft: '4px',
                             },
                             '& .MuiChip-label': {
@@ -394,11 +395,11 @@ export default function WorkplaceList({
                           size="small"
                           onClick={() => navigate(`/rollouts/${sessionId}/execute?workplaceId=${workplace.id}`)}
                           sx={{
-                            color: '#FF7700',
+                            color: ASSET_COLOR,
                             bgcolor: 'rgba(255, 119, 0, 0.1)',
                             '&:hover': {
                               bgcolor: 'rgba(255, 119, 0, 0.2)',
-                              color: '#FF7700',
+                              color: ASSET_COLOR,
                             },
                           }}
                         >

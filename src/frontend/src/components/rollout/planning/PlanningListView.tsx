@@ -40,6 +40,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import type { RolloutDay, RolloutDayStatus, PlanningListFilters, PlanningListSort } from '../../../types/rollout';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface PlanningListViewProps {
   days: RolloutDay[];
@@ -215,9 +216,9 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
             variant="outlined"
             size="small"
             sx={{
-              borderColor: '#FF7700',
-              color: '#FF7700',
-              '& .MuiChip-icon': { color: '#FF7700' },
+              borderColor: ASSET_COLOR,
+              color: ASSET_COLOR,
+              '& .MuiChip-icon': { color: ASSET_COLOR },
             }}
           />
           <Chip
@@ -240,7 +241,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                 stats.completionPercentage === 100
                   ? 'rgba(34, 197, 94, 0.15)'
                   : 'rgba(255, 119, 0, 0.15)',
-              color: stats.completionPercentage === 100 ? '#16a34a' : '#FF7700',
+              color: stats.completionPercentage === 100 ? '#16a34a' : ASSET_COLOR,
               fontWeight: 600,
               border: `1px solid ${stats.completionPercentage === 100 ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 119, 0, 0.4)'}`,
             }}
@@ -385,7 +386,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                         <CalendarTodayIcon
                           sx={{
                             fontSize: '1rem',
-                            color: isComplete ? '#16a34a' : '#FF7700',
+                            color: isComplete ? '#16a34a' : ASSET_COLOR,
                           }}
                         />
                         <Typography variant="body2" fontWeight="medium">
@@ -447,7 +448,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                             bgcolor: 'rgba(0, 0, 0, 0.08)',
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 3,
-                              bgcolor: isComplete ? '#16a34a' : '#FF7700',
+                              bgcolor: isComplete ? '#16a34a' : ASSET_COLOR,
                             },
                           }}
                         />
@@ -456,7 +457,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                           fontWeight={600}
                           sx={{
                             minWidth: 35,
-                            color: isComplete ? '#16a34a' : '#FF7700',
+                            color: isComplete ? '#16a34a' : ASSET_COLOR,
                           }}
                         >
                           {completionPercentage}%

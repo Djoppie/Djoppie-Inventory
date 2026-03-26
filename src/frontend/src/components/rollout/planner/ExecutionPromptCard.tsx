@@ -2,6 +2,7 @@ import { Box, Card, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import type { RolloutSession, RolloutDay } from '../../../types/rollout';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface ExecutionPromptCardProps {
   session: RolloutSession;
@@ -36,7 +37,7 @@ export default function ExecutionPromptCard({ session, days }: ExecutionPromptCa
       sx={{
         mb: 3,
         p: 3,
-        border: '2px solid #FF7700',
+        border: '2px solid ${ASSET_COLOR}',
         borderRadius: 3,
         background: 'linear-gradient(135deg, rgba(255, 119, 0, 0.08) 0%, rgba(255, 119, 0, 0.02) 100%)',
         display: 'flex',
@@ -46,7 +47,7 @@ export default function ExecutionPromptCard({ session, days }: ExecutionPromptCa
       }}
     >
       <Box sx={{ flexGrow: 1 }}>
-        <Typography variant="h6" fontWeight={700} sx={{ color: '#FF7700', mb: 0.5 }}>
+        <Typography variant="h6" fontWeight={700} sx={{ color: ASSET_COLOR, mb: 0.5 }}>
           Klaar om te starten?
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -59,7 +60,7 @@ export default function ExecutionPromptCard({ session, days }: ExecutionPromptCa
         startIcon={<PlayArrowIcon />}
         onClick={() => navigate(`/rollouts/${session.id}/execute`)}
         sx={{
-          bgcolor: '#FF7700',
+          bgcolor: ASSET_COLOR,
           px: 4,
           py: 1.5,
           fontSize: '1rem',

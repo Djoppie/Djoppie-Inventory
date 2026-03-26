@@ -27,6 +27,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import QRScanner from '../../scanner/QRScanner';
 import type { AssetScanMode } from './types';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -136,7 +137,7 @@ export function ScanDialog({
           >
             <QrCodeScannerIcon
               sx={{
-                color: '#FF7700',
+                color: ASSET_COLOR,
                 fontSize: '1.4rem',
                 filter: 'drop-shadow(0 2px 4px rgba(255, 119, 0, 0.3))',
               }}
@@ -147,7 +148,7 @@ export function ScanDialog({
               variant="h6"
               fontWeight={700}
               sx={{
-                color: '#FF7700',
+                color: ASSET_COLOR,
                 textShadow: isDark ? '0 2px 8px rgba(255, 119, 0, 0.3)' : 'none',
               }}
             >
@@ -209,7 +210,7 @@ export function ScanDialog({
                 transition: 'all 0.3s ease',
               },
               '& .Mui-selected': {
-                color: '#FF7700',
+                color: ASSET_COLOR,
                 bgcolor: isDark ? '#1e2328' : '#e8eef3',
                 boxShadow: isDark
                   ? '3px 3px 6px #161a1d, -3px -3px 6px #262c33'
@@ -272,7 +273,7 @@ export function ScanDialog({
                       {isLoadingAsset ? (
                         <CircularProgress size={20} />
                       ) : (
-                        <SearchIcon sx={{ color: '#FF7700' }} />
+                        <SearchIcon sx={{ color: ASSET_COLOR }} />
                       )}
                     </IconButton>
                   </InputAdornment>
@@ -294,7 +295,7 @@ export function ScanDialog({
                 },
                 '& .MuiInputLabel-root': {
                   color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-                  '&.Mui-focused': { color: '#FF7700' },
+                  '&.Mui-focused': { color: ASSET_COLOR },
                 },
               }}
             />
@@ -307,7 +308,7 @@ export function ScanDialog({
                 py: 1.5,
                 borderRadius: 2,
                 bgcolor: isDark ? '#1e2328' : '#e8eef3',
-                color: '#FF7700',
+                color: ASSET_COLOR,
                 fontWeight: 700,
                 boxShadow: isDark
                   ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.3)'

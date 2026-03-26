@@ -16,6 +16,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface CollapsibleDateSectionProps {
   dateKey: string;
@@ -98,7 +99,7 @@ const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
           bgcolor: isDark ? 'var(--dark-bg-elevated)' : '#f8f9fa',
           border: '1px solid',
           borderColor: isToday
-            ? '#FF7700'
+            ? ASSET_COLOR
             : (isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'),
           boxShadow: isDark
             ? '3px 3px 6px #141719, -3px -3px 6px #282e33'
@@ -106,7 +107,7 @@ const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
           transition: 'all 0.2s ease',
           '&:hover': {
             borderColor: isToday
-              ? '#FF7700'
+              ? ASSET_COLOR
               : (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)'),
             boxShadow: isDark
               ? '4px 4px 8px #141719, -4px -4px 8px #282e33'
@@ -131,7 +132,7 @@ const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
             <CalendarTodayIcon
               sx={{
                 fontSize: { xs: 18, sm: 22 },
-                color: isToday ? '#FF7700' : 'rgba(255, 119, 0, 0.6)',
+                color: isToday ? ASSET_COLOR : 'rgba(255, 119, 0, 0.6)',
               }}
             />
           </Box>
@@ -142,7 +143,7 @@ const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
               sx={{
                 fontWeight: 700,
                 fontSize: { xs: '0.875rem', sm: '1rem' },
-                color: isToday ? '#FF7700' : (isDark ? '#fff' : '#333'),
+                color: isToday ? ASSET_COLOR : (isDark ? '#fff' : '#333'),
                 textTransform: 'capitalize',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -196,7 +197,7 @@ const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
               bgcolor: isComplete
                 ? 'rgba(22, 163, 74, 0.1)'
                 : 'rgba(255, 119, 0, 0.1)',
-              color: isComplete ? '#16a34a' : '#FF7700',
+              color: isComplete ? '#16a34a' : ASSET_COLOR,
               border: `1px solid ${isComplete ? 'rgba(22, 163, 74, 0.4)' : 'rgba(255, 119, 0, 0.4)'}`,
               '& .MuiChip-icon': { color: 'inherit', ml: 0.5 },
               '& .MuiChip-label': { px: 0.5 },
@@ -237,7 +238,7 @@ const CollapsibleDateSection = React.memo(function CollapsibleDateSection({
               bgcolor: isComplete
                 ? 'rgba(22, 163, 74, 0.1)'
                 : 'rgba(255, 119, 0, 0.1)',
-              color: isComplete ? '#16a34a' : '#FF7700',
+              color: isComplete ? '#16a34a' : ASSET_COLOR,
               border: `1px solid ${isComplete ? 'rgba(22, 163, 74, 0.4)' : 'rgba(255, 119, 0, 0.4)'}`,
               '& .MuiChip-icon': {
                 color: 'inherit',

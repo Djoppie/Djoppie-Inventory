@@ -57,6 +57,7 @@ import {
   getEquipmentTypeLabel,
   getMovementStatusColor,
 } from '../../../hooks/rollout';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface AssetMovementTableProps {
   movements: AssetMovement[];
@@ -369,10 +370,10 @@ const AssetMovementTable = ({
             disabled={isExporting}
             size="small"
             sx={{
-              borderColor: '#FF7700',
-              color: '#FF7700',
+              borderColor: ASSET_COLOR,
+              color: ASSET_COLOR,
               '&:hover': {
-                borderColor: '#FF7700',
+                borderColor: ASSET_COLOR,
                 bgcolor: 'rgba(255, 119, 0, 0.08)',
               },
             }}

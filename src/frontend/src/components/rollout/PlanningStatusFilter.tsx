@@ -4,6 +4,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ListIcon from '@mui/icons-material/List';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 export type PlanningStatusFilterValue = 'all' | 'Planning' | 'Ready' | 'Completed';
 
@@ -40,7 +41,7 @@ const PlanningStatusFilter: React.FC<PlanningStatusFilterProps> = ({
 
   const filterOptions: { value: PlanningStatusFilterValue; label: string; icon: React.ReactNode; color: string }[] = [
     { value: 'all', label: 'Alle', icon: <ListIcon fontSize="small" />, color: '#6C757D' },
-    { value: 'Planning', label: 'Gepland', icon: <CalendarTodayIcon fontSize="small" />, color: '#FF7700' },
+    { value: 'Planning', label: 'Gepland', icon: <CalendarTodayIcon fontSize="small" />, color: ASSET_COLOR },
     { value: 'Ready', label: 'In Uitvoering', icon: <PlayCircleOutlineIcon fontSize="small" />, color: '#3B82F6' },
     { value: 'Completed', label: 'Voltooid', icon: <CheckCircleIcon fontSize="small" />, color: '#16a34a' },
   ];
