@@ -367,21 +367,26 @@ function AdminDataTable<T extends Record<string, unknown>>({
         sx={{
           bgcolor: bgSurface,
           borderRadius: 2,
-          boxShadow: getNeumorph(isDark, 'soft'),
+          border: '1px solid',
+          borderColor: 'divider',
           overflow: 'hidden',
         }}
       >
         <Table size="small">
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={{
+                bgcolor: isDark ? alpha(ASSET_COLOR, 0.08) : alpha(ASSET_COLOR, 0.04),
+                borderBottom: '2px solid',
+                borderColor: ASSET_COLOR,
+              }}
+            >
               {selectable && (
                 <TableCell
                   padding="checkbox"
                   sx={{
-                    py: 1,
+                    py: 1.5,
                     px: 0.5,
-                    bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
                     width: 42,
                   }}
                 >
@@ -403,15 +408,12 @@ function AdminDataTable<T extends Record<string, unknown>>({
                   key={String(column.id)}
                   align={column.align || 'left'}
                   sx={{
-                    py: 1,
+                    py: 1.5,
                     px: 1.5,
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
                     whiteSpace: 'nowrap',
                     minWidth: column.minWidth,
                   }}
@@ -438,15 +440,12 @@ function AdminDataTable<T extends Record<string, unknown>>({
                 <TableCell
                   align="center"
                   sx={{
-                    py: 1,
+                    py: 1.5,
                     px: 1,
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
                     width: 70,
                   }}
                 >
@@ -456,15 +455,12 @@ function AdminDataTable<T extends Record<string, unknown>>({
               <TableCell
                 align="center"
                 sx={{
-                  py: 1,
+                  py: 1.5,
                   px: 1,
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
-                  color: 'text.secondary',
-                  bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                  borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
                   width: actionsColumnWidth,
                 }}
               >
@@ -494,16 +490,19 @@ function AdminDataTable<T extends Record<string, unknown>>({
                   <TableRow
                     key={itemId}
                     selected={isSelected}
+                    hover
                     sx={{
                       bgcolor: isSelected
                         ? alpha(accentColor, isDark ? 0.15 : 0.08)
-                        : idx % 2 === 0
-                        ? 'transparent'
-                        : alpha(bgBase, 0.3),
+                        : idx % 2 === 1
+                        ? isDark
+                          ? 'rgba(255, 255, 255, 0.02)'
+                          : 'rgba(0, 0, 0, 0.02)'
+                        : 'transparent',
                       opacity: isInactive ? 0.5 : 1,
-                      transition: 'all 0.12s ease',
+                      transition: 'all 0.15s ease',
                       '&:hover': {
-                        bgcolor: alpha(accentColor, isDark ? 0.08 : 0.04),
+                        bgcolor: isDark ? alpha(ASSET_COLOR, 0.08) : alpha(ASSET_COLOR, 0.04),
                       },
                     }}
                   >
@@ -511,9 +510,8 @@ function AdminDataTable<T extends Record<string, unknown>>({
                       <TableCell
                         padding="checkbox"
                         sx={{
-                          py: 0.5,
+                          py: 1,
                           px: 0.5,
-                          borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
                         }}
                       >
                         <Checkbox
@@ -533,10 +531,9 @@ function AdminDataTable<T extends Record<string, unknown>>({
                         key={String(column.id)}
                         align={column.align || 'left'}
                         sx={{
-                          py: 0.75,
+                          py: 1,
                           px: 1.5,
-                          fontSize: '0.8rem',
-                          borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          fontSize: '0.85rem',
                         }}
                       >
                         {column.format
@@ -548,9 +545,8 @@ function AdminDataTable<T extends Record<string, unknown>>({
                       <TableCell
                         align="center"
                         sx={{
-                          py: 0.75,
+                          py: 1,
                           px: 1,
-                          borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
                         }}
                       >
                         {item.isActive ? (
@@ -571,9 +567,8 @@ function AdminDataTable<T extends Record<string, unknown>>({
                     <TableCell
                       align="center"
                       sx={{
-                        py: 0.5,
+                        py: 1,
                         px: 0.5,
-                        borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
                       }}
                     >
                       {renderActions ? (
@@ -588,23 +583,19 @@ function AdminDataTable<T extends Record<string, unknown>>({
                                 sx={{
                                   width: 28,
                                   height: 28,
-                                  bgcolor: bgBase,
+                                  borderRadius: 0.75,
+                                  bgcolor: 'transparent',
                                   color: accentColor,
-                                  boxShadow: getNeumorph(isDark, 'soft'),
+                                  border: '1px solid',
+                                  borderColor: alpha(accentColor, 0.35),
                                   transition: 'all 0.15s ease',
                                   '&:hover': {
-                                    bgcolor: accentColor,
-                                    color: '#fff',
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                                  },
-                                  '&:active': {
-                                    transform: 'translateY(0)',
-                                    boxShadow: getNeumorphInset(isDark),
+                                    bgcolor: alpha(accentColor, 0.08),
+                                    borderColor: accentColor,
                                   },
                                 }}
                               >
-                                <EditIcon sx={{ fontSize: 15 }} />
+                                <EditIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -616,23 +607,19 @@ function AdminDataTable<T extends Record<string, unknown>>({
                                 sx={{
                                   width: 28,
                                   height: 28,
-                                  bgcolor: bgBase,
+                                  borderRadius: 0.75,
+                                  bgcolor: 'transparent',
                                   color: '#EF5350',
-                                  boxShadow: getNeumorph(isDark, 'soft'),
+                                  border: '1px solid',
+                                  borderColor: alpha('#EF5350', 0.35),
                                   transition: 'all 0.15s ease',
                                   '&:hover': {
-                                    bgcolor: '#EF5350',
-                                    color: '#fff',
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: `0 4px 12px ${alpha('#EF5350', 0.4)}`,
-                                  },
-                                  '&:active': {
-                                    transform: 'translateY(0)',
-                                    boxShadow: getNeumorphInset(isDark),
+                                    bgcolor: alpha('#EF5350', 0.08),
+                                    borderColor: '#EF5350',
                                   },
                                 }}
                               >
-                                <DeleteIcon sx={{ fontSize: 15 }} />
+                                <DeleteIcon sx={{ fontSize: 16 }} />
                               </IconButton>
                             </Tooltip>
                           )}
