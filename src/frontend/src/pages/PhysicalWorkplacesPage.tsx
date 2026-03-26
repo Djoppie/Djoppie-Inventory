@@ -482,14 +482,15 @@ const PhysicalWorkplacesPage = () => {
           sx={{
             width: 28,
             height: 28,
-            bgcolor: isDark ? alpha(ASSET_COLOR, 0.15) : alpha(ASSET_COLOR, 0.08),
+            borderRadius: 0.75,
             color: ASSET_COLOR,
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: alpha(ASSET_COLOR, 0.35),
             transition: 'all 0.15s ease',
             '&:hover': {
-              bgcolor: ASSET_COLOR,
-              color: '#fff',
-              transform: 'translateY(-1px)',
-              boxShadow: `0 4px 12px ${alpha(ASSET_COLOR, 0.4)}`,
+              bgcolor: alpha(ASSET_COLOR, 0.08),
+              borderColor: ASSET_COLOR,
             },
           }}
         >
@@ -503,14 +504,15 @@ const PhysicalWorkplacesPage = () => {
           sx={{
             width: 28,
             height: 28,
-            bgcolor: isDark ? alpha(ASSET_COLOR, 0.15) : alpha(ASSET_COLOR, 0.08),
+            borderRadius: 0.75,
             color: ASSET_COLOR,
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: alpha(ASSET_COLOR, 0.35),
             transition: 'all 0.15s ease',
             '&:hover': {
-              bgcolor: ASSET_COLOR,
-              color: '#fff',
-              transform: 'translateY(-1px)',
-              boxShadow: `0 4px 12px ${alpha(ASSET_COLOR, 0.4)}`,
+              bgcolor: alpha(ASSET_COLOR, 0.08),
+              borderColor: ASSET_COLOR,
             },
           }}
         >
@@ -525,14 +527,15 @@ const PhysicalWorkplacesPage = () => {
             sx={{
               width: 28,
               height: 28,
-              bgcolor: isDark ? alpha('#9C27B0', 0.15) : alpha('#9C27B0', 0.08),
+              borderRadius: 0.75,
               color: '#9C27B0',
+              bgcolor: 'transparent',
+              border: '1px solid',
+              borderColor: alpha('#9C27B0', 0.35),
               transition: 'all 0.15s ease',
               '&:hover': {
-                bgcolor: '#9C27B0',
-                color: '#fff',
-                transform: 'translateY(-1px)',
-                boxShadow: `0 4px 12px ${alpha('#9C27B0', 0.4)}`,
+                bgcolor: alpha('#9C27B0', 0.08),
+                borderColor: '#9C27B0',
               },
             }}
           >
@@ -547,14 +550,15 @@ const PhysicalWorkplacesPage = () => {
           sx={{
             width: 28,
             height: 28,
-            bgcolor: isDark ? alpha('#EF5350', 0.15) : alpha('#EF5350', 0.08),
+            borderRadius: 0.75,
             color: '#EF5350',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: alpha('#EF5350', 0.35),
             transition: 'all 0.15s ease',
             '&:hover': {
-              bgcolor: '#EF5350',
-              color: '#fff',
-              transform: 'translateY(-1px)',
-              boxShadow: `0 4px 12px ${alpha('#EF5350', 0.4)}`,
+              bgcolor: alpha('#EF5350', 0.08),
+              borderColor: '#EF5350',
             },
           }}
         >
@@ -1330,9 +1334,18 @@ const PhysicalWorkplacesPage = () => {
                         size="small"
                         onClick={() => handleOpenAssetsDialog(workplace)}
                         sx={{
-                          bgcolor: alpha(workplaceAccent, isDark ? 0.12 : 0.08),
+                          width: 32,
+                          height: 32,
+                          borderRadius: 0.75,
                           color: workplaceAccent,
-                          '&:hover': { bgcolor: alpha(workplaceAccent, 0.2) },
+                          bgcolor: 'transparent',
+                          border: '1px solid',
+                          borderColor: alpha(workplaceAccent, 0.35),
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            bgcolor: alpha(workplaceAccent, 0.08),
+                            borderColor: workplaceAccent,
+                          },
                         }}
                       >
                         <InventoryIcon fontSize="small" />
@@ -1341,9 +1354,18 @@ const PhysicalWorkplacesPage = () => {
                         size="small"
                         onClick={() => handleOpenDialog(workplace)}
                         sx={{
-                          bgcolor: alpha(ASSET_COLOR, isDark ? 0.12 : 0.08),
+                          width: 32,
+                          height: 32,
+                          borderRadius: 0.75,
                           color: ASSET_COLOR,
-                          '&:hover': { bgcolor: alpha(ASSET_COLOR, 0.2) },
+                          bgcolor: 'transparent',
+                          border: '1px solid',
+                          borderColor: alpha(ASSET_COLOR, 0.35),
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            bgcolor: alpha(ASSET_COLOR, 0.08),
+                            borderColor: ASSET_COLOR,
+                          },
                         }}
                       >
                         <EditIcon fontSize="small" />
@@ -1353,9 +1375,18 @@ const PhysicalWorkplacesPage = () => {
                           size="small"
                           onClick={() => handleOpenClearOccupantDialog(workplace)}
                           sx={{
-                            bgcolor: alpha('#9C27B0', isDark ? 0.12 : 0.08),
+                            width: 32,
+                            height: 32,
+                            borderRadius: 0.75,
                             color: '#9C27B0',
-                            '&:hover': { bgcolor: alpha('#9C27B0', 0.2) },
+                            bgcolor: 'transparent',
+                            border: '1px solid',
+                            borderColor: alpha('#9C27B0', 0.35),
+                            transition: 'all 0.15s ease',
+                            '&:hover': {
+                              bgcolor: alpha('#9C27B0', 0.08),
+                              borderColor: '#9C27B0',
+                            },
                           }}
                         >
                           <PersonOffIcon fontSize="small" />
@@ -1365,9 +1396,18 @@ const PhysicalWorkplacesPage = () => {
                         size="small"
                         onClick={() => handleOpenDeleteDialog(workplace)}
                         sx={{
-                          bgcolor: alpha('#F44336', isDark ? 0.12 : 0.08),
+                          width: 32,
+                          height: 32,
+                          borderRadius: 0.75,
                           color: '#F44336',
-                          '&:hover': { bgcolor: alpha('#F44336', 0.15) },
+                          bgcolor: 'transparent',
+                          border: '1px solid',
+                          borderColor: alpha('#F44336', 0.35),
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            bgcolor: alpha('#F44336', 0.08),
+                            borderColor: '#F44336',
+                          },
                         }}
                       >
                         <DeleteIcon fontSize="small" />
