@@ -21,6 +21,7 @@ import {
   TextField,
   InputAdornment,
   CircularProgress,
+  alpha,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -32,6 +33,7 @@ import { intuneApi } from '../api/intune.api';
 import { AutopilotDevice } from '../types/graph.types';
 import Loading from '../components/common/Loading';
 import { buildRoute } from '../constants/routes';
+import { ASSET_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -50,18 +52,20 @@ const scannerCardSx = {
   },
 };
 
-// Consistent icon button style
-const iconButtonSx = {
+// Outlined icon button style
+const outlinedIconButtonSx = {
+  width: 36,
+  height: 36,
+  borderRadius: 1,
+  color: 'text.secondary',
+  bgcolor: 'transparent',
   border: '1px solid',
   borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  transition: 'all 0.15s ease',
   '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+    color: ASSET_COLOR,
+    bgcolor: alpha(ASSET_COLOR, 0.08),
+    borderColor: ASSET_COLOR,
   },
 };
 
@@ -140,12 +144,14 @@ const AutopilotDevicesPage = () => {
         >
           {error instanceof Error ? error.message : t('common.error', 'Failed to load Autopilot devices')}
         </Alert>
-        <IconButton
-          onClick={() => navigate('/')}
-          sx={{ ...iconButtonSx, mt: 2 }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
+        <Tooltip title={t('common.back', 'Back')} arrow>
+          <IconButton
+            onClick={() => navigate('/')}
+            sx={{ ...outlinedIconButtonSx, mt: 2 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
     );
   }
@@ -153,18 +159,10 @@ const AutopilotDevicesPage = () => {
   return (
     <Box>
       {/* Back Button */}
-      <Tooltip title={t('common.back', 'Back')}>
+      <Tooltip title={t('common.back', 'Back')} arrow>
         <IconButton
           onClick={() => navigate(-1)}
-          sx={{
-            ...iconButtonSx,
-            mb: 2,
-            color: 'text.secondary',
-            '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
-            },
-          }}
+          sx={{ ...outlinedIconButtonSx, mb: 2 }}
         >
           <ArrowBackIcon />
         </IconButton>
@@ -211,7 +209,7 @@ const AutopilotDevicesPage = () => {
                 <IconButton
                   onClick={() => refetch()}
                   disabled={isFetching}
-                  sx={iconButtonSx}
+                  sx={outlinedIconButtonSx}
                 >
                   {isFetching ? <CircularProgress size={20} /> : <RefreshIcon />}
                 </IconButton>

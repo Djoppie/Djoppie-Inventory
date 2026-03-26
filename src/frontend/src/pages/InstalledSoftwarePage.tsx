@@ -56,6 +56,7 @@ import {
 } from '../types/software.types';
 import { softwareApi } from '../api/software.api';
 import { logger } from '../utils/logger';
+import { ASSET_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage and AssetDetailPage
 const scannerCardSx = {
@@ -74,20 +75,6 @@ const scannerCardSx = {
   },
 };
 
-// Consistent icon button style
-const iconButtonSx = {
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
-  },
-};
 
 // Category color mapping for visual distinction
 const getCategoryColor = (category?: SoftwareCategory): string => {
@@ -332,9 +319,29 @@ const InstalledSoftwarePage = () => {
         <Alert severity="error" sx={{ border: '1px solid', borderColor: 'error.main', fontWeight: 600 }}>
           Asset not found
         </Alert>
-        <IconButton onClick={() => navigate('/')} sx={{ ...iconButtonSx, mt: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
+        <Tooltip title="Back to Dashboard" arrow>
+          <IconButton
+            onClick={() => navigate('/')}
+            sx={{
+              mt: 2,
+              width: 36,
+              height: 36,
+              borderRadius: 1,
+              color: 'text.secondary',
+              bgcolor: 'transparent',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                color: ASSET_COLOR,
+                bgcolor: alpha(ASSET_COLOR, 0.08),
+                borderColor: ASSET_COLOR,
+              },
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
     );
   }
@@ -342,16 +349,23 @@ const InstalledSoftwarePage = () => {
   return (
     <Box>
       {/* Back Button */}
-      <Tooltip title="Back to Asset Details">
+      <Tooltip title="Back to Asset Details" arrow>
         <IconButton
           onClick={() => navigate(`/assets/${id}`)}
           sx={{
-            ...iconButtonSx,
             mb: 2,
+            width: 36,
+            height: 36,
+            borderRadius: 1,
             color: 'text.secondary',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: 'divider',
+            transition: 'all 0.15s ease',
             '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
+              color: ASSET_COLOR,
+              bgcolor: alpha(ASSET_COLOR, 0.08),
+              borderColor: ASSET_COLOR,
             },
           }}
         >
@@ -397,13 +411,27 @@ const InstalledSoftwarePage = () => {
               </Box>
             </Box>
 
-            <Tooltip title="Export to CSV">
+            <Tooltip title="Export to CSV" arrow>
               <IconButton
                 onClick={handleExport}
                 disabled={software.length === 0}
                 sx={{
-                  ...iconButtonSx,
-                  color: 'primary.main',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 1,
+                  color: ASSET_COLOR,
+                  bgcolor: 'transparent',
+                  border: '1px solid',
+                  borderColor: alpha(ASSET_COLOR, 0.35),
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    bgcolor: alpha(ASSET_COLOR, 0.08),
+                    borderColor: ASSET_COLOR,
+                  },
+                  '&.Mui-disabled': {
+                    color: 'text.disabled',
+                    borderColor: 'divider',
+                  },
                 }}
               >
                 <DownloadIcon />

@@ -27,7 +27,8 @@ import ServicesTab from '../components/admin/ServicesTab';
 import PhysicalWorkplacesTab from '../components/admin/PhysicalWorkplacesTab';
 import OrganizationTab from '../components/admin/OrganizationTab';
 import SchemaIcon from '@mui/icons-material/Schema';
-import { WORKPLACE_COLOR, EMPLOYEE_COLOR } from '../constants/filterColors';
+import { alpha } from '@mui/material';
+import { WORKPLACE_COLOR, EMPLOYEE_COLOR, ASSET_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -46,20 +47,6 @@ const scannerCardSx = {
   },
 };
 
-// Consistent icon button style
-const iconButtonSx = {
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
-  },
-};
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -91,16 +78,23 @@ const AdminPage = () => {
   return (
     <Box sx={{ pb: 10 }}>
       {/* Back Button - Outside card */}
-      <Tooltip title="Back to Dashboard">
+      <Tooltip title="Back to Dashboard" arrow>
         <IconButton
           onClick={() => navigate('/')}
           sx={{
-            ...iconButtonSx,
             mb: 2,
+            width: 36,
+            height: 36,
+            borderRadius: 1,
             color: 'text.secondary',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: 'divider',
+            transition: 'all 0.15s ease',
             '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
+              color: ASSET_COLOR,
+              bgcolor: alpha(ASSET_COLOR, 0.08),
+              borderColor: ASSET_COLOR,
             },
           }}
         >
