@@ -183,23 +183,6 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Spacer to push controls to the right */}
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Version Badge */}
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              px: 1.5,
-              py: 0.5,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1,
-              fontWeight: 600,
-              fontSize: '0.7rem',
-            }}
-          >
-            v1.0.0
-          </Typography>
-
           {/* Language Switcher */}
           <LanguageSwitcher />
 
