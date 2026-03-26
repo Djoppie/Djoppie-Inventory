@@ -47,6 +47,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import { ROUTES } from '../constants/routes';
+import { ASSET_COLOR } from '../constants/filterColors';
 import { DeploymentMode, DeploymentHistoryItem, DeploymentHistoryParams } from '../types/deployment.types';
 import { useDeploymentHistory } from '../hooks/useDeployment';
 import Loading from '../components/common/Loading';
@@ -90,19 +91,6 @@ const scannerCardSx = {
   },
 };
 
-const iconButtonSx = {
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (thm: { palette: { mode: string } }) =>
-      thm.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
-  },
-};
 
 const DeploymentHistoryPage = () => {
   const { t, i18n } = useTranslation();
@@ -279,15 +267,22 @@ const DeploymentHistoryPage = () => {
     <Box sx={{ pb: 10 }}>
       {/* Back Button & New Deployment Link */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Tooltip title={t('common.back')}>
+        <Tooltip title={t('common.back')} arrow>
           <IconButton
             onClick={() => navigate(ROUTES.LAPTOP_SWAP)}
             sx={{
-              ...iconButtonSx,
+              width: 36,
+              height: 36,
+              borderRadius: 1,
               color: 'text.secondary',
+              bgcolor: 'transparent',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.15s ease',
               '&:hover': {
-                ...iconButtonSx['&:hover'],
-                color: 'primary.main',
+                color: ASSET_COLOR,
+                bgcolor: alpha(ASSET_COLOR, 0.08),
+                borderColor: ASSET_COLOR,
               },
             }}
           >
