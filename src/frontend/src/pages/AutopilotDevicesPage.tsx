@@ -245,18 +245,52 @@ const AutopilotDevicesPage = () => {
       </Card>
 
       {/* Devices Table */}
-      <TableContainer component={Paper} elevation={0} sx={{ ...scannerCardSx, p: 0 }}>
-        <Table size="small">
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
+        <Table size="small" sx={{ minWidth: 900 }}>
           <TableHead>
-            <TableRow sx={{ bgcolor: 'action.hover' }}>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.serialNumber', 'Serial Number')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.model', 'Model')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.manufacturer', 'Manufacturer')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.assignedUser', 'Assigned User')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.groupTag', 'Group Tag')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.enrollmentState', 'Enrollment')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.profileStatus', 'Profile')}</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700 }}>{t('common.actions', 'Actions')}</TableCell>
+            <TableRow
+              sx={{
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? alpha(ASSET_COLOR, 0.08)
+                    : alpha(ASSET_COLOR, 0.04),
+                borderBottom: '2px solid',
+                borderColor: ASSET_COLOR,
+              }}
+            >
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.serialNumber', 'Serial Number')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.model', 'Model')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.manufacturer', 'Manufacturer')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.assignedUser', 'Assigned User')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.groupTag', 'Group Tag')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.enrollmentState', 'Enrollment')}
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('autopilot.profileStatus', 'Profile')}
+              </TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                {t('common.actions', 'Actions')}
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -271,74 +305,100 @@ const AutopilotDevicesPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredDevices?.map((device: AutopilotDevice) => (
+              filteredDevices?.map((device: AutopilotDevice, index: number) => (
                 <TableRow
                   key={device.id}
                   hover
                   sx={{
+                    bgcolor: (theme) =>
+                      index % 2 === 1
+                        ? theme.palette.mode === 'dark'
+                          ? 'rgba(255, 255, 255, 0.02)'
+                          : 'rgba(0, 0, 0, 0.02)'
+                        : 'transparent',
                     '&:hover': {
-                      bgcolor: 'action.selected',
+                      bgcolor: (theme) =>
+                        theme.palette.mode === 'dark'
+                          ? alpha(ASSET_COLOR, 0.08)
+                          : alpha(ASSET_COLOR, 0.04),
                     },
                   }}
                 >
-                  <TableCell>
-                    <Typography fontFamily="monospace" fontWeight={600}>
+                  <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                    <Typography
+                      fontFamily="monospace"
+                      fontWeight={600}
+                      sx={{ fontSize: '0.8rem', color: ASSET_COLOR }}
+                    >
                       {device.serialNumber || '-'}
                     </Typography>
                   </TableCell>
-                  <TableCell>{device.model || '-'}</TableCell>
-                  <TableCell>{device.manufacturer || '-'}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>{device.model || '-'}</TableCell>
+                  <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>{device.manufacturer || '-'}</TableCell>
+                  <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                     {device.userPrincipalName ? (
                       <Tooltip title={device.userPrincipalName}>
-                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 200, fontSize: '0.85rem' }}>
                           {device.displayName || device.userPrincipalName}
                         </Typography>
                       </Tooltip>
                     ) : (
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
                         {t('autopilot.notAssigned', 'Not assigned')}
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     {device.groupTag ? (
-                      <Chip label={device.groupTag} size="small" variant="outlined" />
+                      <Chip label={device.groupTag} size="small" variant="outlined" sx={{ height: 22 }} />
                     ) : (
-                      '-'
+                      <Typography sx={{ fontSize: '0.85rem' }}>-</Typography>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Chip
                       label={device.enrollmentState || 'Unknown'}
                       size="small"
                       color={getEnrollmentStateColor(device.enrollmentState)}
                       variant="outlined"
+                      sx={{ height: 22 }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ py: 1 }}>
                     <Chip
                       label={device.deploymentProfileAssignmentStatus || 'Unknown'}
                       size="small"
                       color={getProfileStatusColor(device.deploymentProfileAssignmentStatus)}
                       variant="outlined"
+                      sx={{ height: 22 }}
                     />
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" sx={{ py: 1 }}>
                     <Tooltip title={t('autopilot.viewTimeline', 'View Provisioning Timeline')}>
                       <IconButton
                         size="small"
                         onClick={() => device.serialNumber && handleViewTimeline(device.serialNumber)}
                         disabled={!device.serialNumber}
                         sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 0.75,
                           color: 'info.main',
+                          bgcolor: 'transparent',
+                          border: '1px solid',
+                          borderColor: (theme) => alpha(theme.palette.info.main, 0.35),
+                          transition: 'all 0.15s ease',
                           '&:hover': {
-                            bgcolor: 'info.main',
-                            color: 'white',
+                            bgcolor: (theme) => alpha(theme.palette.info.main, 0.08),
+                            borderColor: 'info.main',
+                          },
+                          '&.Mui-disabled': {
+                            borderColor: 'divider',
+                            color: 'text.disabled',
                           },
                         }}
                       >
-                        <TimelineIcon fontSize="small" />
+                        <TimelineIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
