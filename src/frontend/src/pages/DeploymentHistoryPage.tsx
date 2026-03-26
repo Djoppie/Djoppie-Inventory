@@ -612,123 +612,39 @@ const DeploymentHistoryPage = () => {
               sx={{
                 bgcolor: bgSurface,
                 borderRadius: 2,
-                boxShadow: getNeumorph(isDark, 'soft'),
+                border: '1px solid',
+                borderColor: 'divider',
                 overflow: 'hidden',
               }}
             >
               <Table size="small">
                 <TableHead>
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                  <TableRow
+                    sx={{
+                      bgcolor: isDark ? alpha(ASSET_COLOR, 0.08) : alpha(ASSET_COLOR, 0.04),
+                      borderBottom: '2px solid',
+                      borderColor: ASSET_COLOR,
+                    }}
+                  >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.date')}
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.mode')}
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.user')}
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.oldDevice')}
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.newDevice')}
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.workplace')}
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                        px: 1.5,
-                        fontWeight: 600,
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        color: 'text.secondary',
-                        bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                        borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5, whiteSpace: 'nowrap' }}>
                       {t('deployment.history.columns.performedBy')}
                     </TableCell>
                   </TableRow>
@@ -747,69 +663,45 @@ const DeploymentHistoryPage = () => {
                     filteredItems.map((item: DeploymentHistoryItem, idx: number) => (
                       <TableRow
                         key={item.id}
+                        hover
                         sx={{
-                          bgcolor: idx % 2 === 0 ? 'transparent' : alpha(bgBase, 0.3),
-                          transition: 'all 0.12s ease',
+                          bgcolor: idx % 2 === 1
+                            ? isDark
+                              ? 'rgba(255, 255, 255, 0.02)'
+                              : 'rgba(0, 0, 0, 0.02)'
+                            : 'transparent',
+                          transition: 'all 0.15s ease',
                           '&:hover': {
-                            bgcolor: alpha(accentColor, isDark ? 0.08 : 0.04),
+                            bgcolor: isDark ? alpha(ASSET_COLOR, 0.08) : alpha(ASSET_COLOR, 0.04),
                           },
                         }}
                       >
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
-                          <Typography variant="body2" fontWeight={500}>
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                          <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.85rem' }}>
                             {format(new Date(item.deploymentDate), 'dd MMM yyyy', { locale: dateLocale })}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {format(new Date(item.deploymentDate), 'HH:mm')}
                           </Typography>
                         </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                           <Stack direction="row" spacing={1} alignItems="center">
                             {getModeIcon(item.mode)}
-                            <Typography variant="body2">{getModeLabel(item.mode)}</Typography>
+                            <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>{getModeLabel(item.mode)}</Typography>
                           </Stack>
                         </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
-                          <Typography fontWeight={500}>{item.owner.name || '-'}</Typography>
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                          <Typography fontWeight={500} sx={{ fontSize: '0.85rem' }}>{item.owner.name || '-'}</Typography>
                           {item.owner.email && (
                             <Typography variant="caption" color="text.secondary">
                               {item.owner.email}
                             </Typography>
                           )}
                         </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                           {item.oldLaptop ? (
                             <Stack>
                               <Typography
-                                variant="body2"
                                 sx={{ color: '#FF9800', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.8rem' }}
                               >
                                 {item.oldLaptop.assetCode}
@@ -819,21 +711,13 @@ const DeploymentHistoryPage = () => {
                               </Typography>
                             </Stack>
                           ) : (
-                            <Typography variant="body2" color="text.disabled">-</Typography>
+                            <Typography sx={{ fontSize: '0.85rem' }} color="text.disabled">-</Typography>
                           )}
                         </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                           {item.newLaptop ? (
                             <Stack>
                               <Typography
-                                variant="body2"
                                 sx={{ color: '#4CAF50', fontWeight: 600, fontFamily: 'monospace', fontSize: '0.8rem' }}
                               >
                                 {item.newLaptop.assetCode}
@@ -845,35 +729,21 @@ const DeploymentHistoryPage = () => {
                               )}
                             </Stack>
                           ) : (
-                            <Typography variant="body2" color="text.disabled">-</Typography>
+                            <Typography sx={{ fontSize: '0.85rem' }} color="text.disabled">-</Typography>
                           )}
                         </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                           {item.physicalWorkplace ? (
                             <Stack direction="row" spacing={0.5} alignItems="center">
                               <PlaceIcon fontSize="small" sx={{ color: '#2196F3' }} />
-                              <Typography variant="body2">{item.physicalWorkplace.code}</Typography>
+                              <Typography sx={{ fontSize: '0.85rem' }}>{item.physicalWorkplace.code}</Typography>
                             </Stack>
                           ) : (
-                            <Typography variant="body2" color="text.disabled">-</Typography>
+                            <Typography sx={{ fontSize: '0.85rem' }} color="text.disabled">-</Typography>
                           )}
                         </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.75,
-                            px: 1.5,
-                            fontSize: '0.8rem',
-                            borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          }}
-                        >
-                          <Typography variant="body2">
+                        <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                          <Typography sx={{ fontSize: '0.85rem' }}>
                             {item.performedBy || '-'}
                           </Typography>
                         </TableCell>
