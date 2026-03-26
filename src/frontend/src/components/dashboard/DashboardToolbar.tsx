@@ -6,7 +6,6 @@ import {
   InputAdornment,
   IconButton,
   Tooltip,
-  Badge,
   Chip,
   Typography,
   Menu,
@@ -447,82 +446,106 @@ export default function DashboardToolbar({
 
           {/* Bulk Actions - shows when assets are selected */}
           {selectedCount > 0 && (
-            <>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1,
+                py: 0.5,
+                borderRadius: 2,
+                bgcolor: isDark ? alpha('#fff', 0.03) : alpha('#000', 0.02),
+                border: '1px solid',
+                borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.06),
+              }}
+            >
+              {/* Selection count badge */}
+              <Chip
+                label={selectedCount}
+                size="small"
+                sx={{
+                  height: 22,
+                  minWidth: 22,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  bgcolor: accentColor,
+                  color: '#fff',
+                  '& .MuiChip-label': { px: 0.75 },
+                }}
+              />
+
               {/* Bulk Edit Button */}
               <Tooltip title={t('bulkEdit.editSelected', { defaultValue: 'Edit Selected' })}>
-                <Badge badgeContent={selectedCount} color="primary">
-                  <IconButton
-                    onClick={onBulkEditClick}
-                    size="small"
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 1.5,
-                      bgcolor: accentColor,
-                      color: '#fff',
-                      boxShadow: `0 2px 8px ${alpha(accentColor, 0.3)}`,
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                        transform: 'translateY(-1px)',
-                      },
-                    }}
-                  >
-                    <EditIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Badge>
+                <IconButton
+                  onClick={onBulkEditClick}
+                  size="small"
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 1,
+                    color: accentColor,
+                    bgcolor: 'transparent',
+                    border: '1px solid',
+                    borderColor: alpha(accentColor, 0.3),
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      bgcolor: alpha(accentColor, 0.1),
+                      borderColor: accentColor,
+                    },
+                  }}
+                >
+                  <EditIcon sx={{ fontSize: 16 }} />
+                </IconButton>
               </Tooltip>
 
               {/* Bulk Print Button */}
               <Tooltip title={t('bulkPrintLabel.printSelected')}>
-                <Badge badgeContent={selectedCount} color="primary">
-                  <IconButton
-                    onClick={onBulkPrintClick}
-                    size="small"
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 1.5,
-                      bgcolor: '#2196F3',
-                      color: '#fff',
-                      boxShadow: '0 2px 8px rgba(33, 150, 243, 0.3)',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
-                        transform: 'translateY(-1px)',
-                      },
-                    }}
-                  >
-                    <PrintIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Badge>
+                <IconButton
+                  onClick={onBulkPrintClick}
+                  size="small"
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 1,
+                    color: '#2196F3',
+                    bgcolor: 'transparent',
+                    border: '1px solid',
+                    borderColor: alpha('#2196F3', 0.3),
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      bgcolor: alpha('#2196F3', 0.1),
+                      borderColor: '#2196F3',
+                    },
+                  }}
+                >
+                  <PrintIcon sx={{ fontSize: 16 }} />
+                </IconButton>
               </Tooltip>
 
               {/* Bulk Delete Button */}
               <Tooltip title={t('bulkDelete.deleteSelected', { defaultValue: 'Delete Selected' })}>
-                <Badge badgeContent={selectedCount} color="error">
-                  <IconButton
-                    onClick={onBulkDeleteClick}
-                    size="small"
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 1.5,
-                      bgcolor: '#F44336',
-                      color: '#fff',
-                      boxShadow: '0 2px 8px rgba(244, 67, 54, 0.3)',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)',
-                        transform: 'translateY(-1px)',
-                      },
-                    }}
-                  >
-                    <DeleteIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Badge>
+                <IconButton
+                  onClick={onBulkDeleteClick}
+                  size="small"
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 1,
+                    color: '#F44336',
+                    bgcolor: 'transparent',
+                    border: '1px solid',
+                    borderColor: alpha('#F44336', 0.3),
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      bgcolor: alpha('#F44336', 0.1),
+                      borderColor: '#F44336',
+                    },
+                  }}
+                >
+                  <DeleteIcon sx={{ fontSize: 16 }} />
+                </IconButton>
               </Tooltip>
-            </>
+            </Box>
           )}
 
           {/* Export Button */}
@@ -531,22 +554,21 @@ export default function DashboardToolbar({
               onClick={onExportClick}
               size="small"
               sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                bgcolor: bgBase,
+                width: 30,
+                height: 30,
+                borderRadius: 1,
                 color: accentColor,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                transition: 'all 0.2s ease',
+                bgcolor: 'transparent',
+                border: '1px solid',
+                borderColor: alpha(accentColor, 0.3),
+                transition: 'all 0.15s ease',
                 '&:hover': {
-                  bgcolor: accentColor,
-                  color: '#fff',
-                  boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                  transform: 'translateY(-1px)',
+                  bgcolor: alpha(accentColor, 0.1),
+                  borderColor: accentColor,
                 },
               }}
             >
-              <DownloadIcon sx={{ fontSize: 18 }} />
+              <DownloadIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
         </Box>

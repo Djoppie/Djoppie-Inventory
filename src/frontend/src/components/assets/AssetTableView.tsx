@@ -751,22 +751,22 @@ const AssetTableView = ({
                             navigate(`/assets/${asset.id}/software`);
                           }}
                           sx={{
-                            width: { xs: 28, sm: 32 },
-                            height: { xs: 28, sm: 32 },
+                            width: { xs: 26, sm: 28 },
+                            height: { xs: 26, sm: 28 },
+                            borderRadius: 0.75,
                             padding: 0,
-                            color: (theme) => theme.palette.mode === 'dark' ? '#64B5F6' : '#1976D2',
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.08)' : 'rgba(25, 118, 210, 0.06)',
+                            color: '#1976D2',
+                            bgcolor: 'transparent',
                             border: '1px solid',
-                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.2)' : 'rgba(25, 118, 210, 0.15)',
-                            transition: 'all 0.2s ease',
+                            borderColor: 'rgba(25, 118, 210, 0.35)',
+                            transition: 'all 0.15s ease',
                             '&:hover': {
-                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.15)' : 'rgba(25, 118, 210, 0.12)',
-                              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.4)' : 'rgba(25, 118, 210, 0.3)',
-                              transform: isMobile ? 'none' : 'scale(1.05)',
+                              bgcolor: 'rgba(25, 118, 210, 0.08)',
+                              borderColor: '#1976D2',
                             },
                           }}
                         >
-                          <AppsIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                          <AppsIcon sx={{ fontSize: 15 }} />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -781,22 +781,22 @@ const AssetTableView = ({
                             navigate(`/assets/${asset.id}/intune`);
                           }}
                           sx={{
-                            width: { xs: 28, sm: 32 },
-                            height: { xs: 28, sm: 32 },
+                            width: { xs: 26, sm: 28 },
+                            height: { xs: 26, sm: 28 },
+                            borderRadius: 0.75,
                             padding: 0,
-                            color: (theme) => theme.palette.mode === 'dark' ? '#81C784' : '#388E3C',
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.08)' : 'rgba(56, 142, 60, 0.06)',
+                            color: '#388E3C',
+                            bgcolor: 'transparent',
                             border: '1px solid',
-                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.2)' : 'rgba(56, 142, 60, 0.15)',
-                            transition: 'all 0.2s ease',
+                            borderColor: 'rgba(56, 142, 60, 0.35)',
+                            transition: 'all 0.15s ease',
                             '&:hover': {
-                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.15)' : 'rgba(56, 142, 60, 0.12)',
-                              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.4)' : 'rgba(56, 142, 60, 0.3)',
-                              transform: isMobile ? 'none' : 'scale(1.05)',
+                              bgcolor: 'rgba(56, 142, 60, 0.08)',
+                              borderColor: '#388E3C',
                             },
                           }}
                         >
-                          <DevicesIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                          <DevicesIcon sx={{ fontSize: 15 }} />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -810,22 +810,22 @@ const AssetTableView = ({
                           handleRowClick(asset.id);
                         }}
                         sx={{
-                          width: { xs: 28, sm: 32 },
-                          height: { xs: 28, sm: 32 },
+                          width: { xs: 26, sm: 28 },
+                          height: { xs: 26, sm: 28 },
+                          borderRadius: 0.75,
                           padding: 0,
                           color: ASSET_COLOR,
-                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.1)' : 'rgba(255, 119, 0, 0.08)',
+                          bgcolor: 'transparent',
                           border: '1px solid',
-                          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.25)' : 'rgba(255, 119, 0, 0.2)',
-                          transition: 'all 0.2s ease',
+                          borderColor: 'rgba(255, 119, 0, 0.35)',
+                          transition: 'all 0.15s ease',
                           '&:hover': {
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.18)' : 'rgba(255, 119, 0, 0.15)',
-                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.4)' : 'rgba(255, 119, 0, 0.35)',
-                            transform: isMobile ? 'none' : 'scale(1.05)',
+                            bgcolor: 'rgba(255, 119, 0, 0.08)',
+                            borderColor: ASSET_COLOR,
                           },
                         }}
                       >
-                        <VisibilityIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                        <VisibilityIcon sx={{ fontSize: 15 }} />
                       </IconButton>
                     </Tooltip>
                   </Box>
