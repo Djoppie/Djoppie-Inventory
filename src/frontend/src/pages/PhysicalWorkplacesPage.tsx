@@ -17,11 +17,13 @@ import {
   Collapse,
   Chip,
   alpha,
-  Menu,
+  Paper,
   TextField,
   InputAdornment,
+  Skeleton,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -38,9 +40,10 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import BusinessIcon from '@mui/icons-material/Business';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
-import TuneIcon from '@mui/icons-material/Tune';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckIcon from '@mui/icons-material/Check';
 import {
   usePhysicalWorkplaces,
   useDeletePhysicalWorkplace,
@@ -55,8 +58,8 @@ import {
 } from '../types/physicalWorkplace.types';
 import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
-import BuildingSelect from '../components/common/BuildingSelect';
-import ServiceSelect from '../components/common/ServiceSelect';
+import { useServicesBySector } from '../hooks/useOrganization';
+import { buildingsApi } from '../api/admin.api';
 import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
 import BulkImportWorkplacesDialog from '../components/physicalWorkplaces/BulkImportWorkplacesDialog';
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
@@ -70,6 +73,7 @@ import {
   ASSET_COLOR,
   SERVICE_COLOR,
   BUILDING_COLOR,
+  SECTOR_COLOR,
 } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with other pages
@@ -137,10 +141,13 @@ const PhysicalWorkplacesPage = () => {
 
   // Filter state
   const [filters, setFilters] = useState<PhysicalWorkplaceFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
-  const [serviceMenuAnchor, setServiceMenuAnchor] = useState<null | HTMLElement>(null);
-  const [buildingMenuAnchor, setBuildingMenuAnchor] = useState<null | HTMLElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Multiselect filter state (comma-separated IDs)
+  const [serviceFilter, setServiceFilter] = useState('');
+  const [buildingFilter, setBuildingFilter] = useState('');
+  const [serviceFilterExpanded, setServiceFilterExpanded] = useState(false);
+  const [buildingFilterExpanded, setBuildingFilterExpanded] = useState(false);
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -162,6 +169,58 @@ const PhysicalWorkplacesPage = () => {
   const { data: statisticsData } = useWorkplaceStatistics();
   const deleteMutation = useDeletePhysicalWorkplace();
   const clearOccupantMutation = useClearOccupant();
+
+  // Fetch services for the expandable panel
+  const { data: sectors, isLoading: servicesLoading } = useServicesBySector(false);
+
+  // Fetch buildings for the expandable panel
+  const { data: buildings, isLoading: buildingsLoading } = useQuery({
+    queryKey: ['buildings'],
+    queryFn: () => buildingsApi.getAll(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Filter only active buildings and sort by sortOrder
+  const activeBuildings = (buildings || [])
+    .filter(building => building.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Parse selected service IDs from comma-separated string
+  const selectedServiceIds = serviceFilter
+    ? serviceFilter.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id))
+    : [];
+
+  // Get selected service names for chip display
+  const selectedServices = sectors
+    ?.flatMap(s => s.services)
+    .filter(s => selectedServiceIds.includes(s.id)) || [];
+
+  // Parse selected building IDs from comma-separated string
+  const selectedBuildingIds = buildingFilter
+    ? buildingFilter.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id))
+    : [];
+
+  // Get selected building names for chip display
+  const selectedBuildings = activeBuildings.filter(b => selectedBuildingIds.includes(b.id));
+
+  // Apply client-side filtering by service and building IDs
+  const filteredWorkplaces = useMemo(() => {
+    if (!workplaces) return [];
+
+    let result = [...workplaces];
+
+    // Filter by selected services
+    if (selectedServiceIds.length > 0) {
+      result = result.filter(wp => wp.serviceId && selectedServiceIds.includes(wp.serviceId));
+    }
+
+    // Filter by selected buildings
+    if (selectedBuildingIds.length > 0) {
+      result = result.filter(wp => wp.buildingId && selectedBuildingIds.includes(wp.buildingId));
+    }
+
+    return result;
+  }, [workplaces, selectedServiceIds, selectedBuildingIds]);
 
   // Real statistics from dedicated endpoint (unfiltered)
   const stats = useMemo(() => {
@@ -259,9 +318,59 @@ const PhysicalWorkplacesPage = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  // Service filter handlers
+  const handleServiceToggle = () => {
+    setServiceFilterExpanded(!serviceFilterExpanded);
+    if (buildingFilterExpanded) setBuildingFilterExpanded(false);
+  };
+
+  const handleServiceSelect = (serviceId: number) => {
+    const isCurrentlySelected = selectedServiceIds.includes(serviceId);
+    if (isCurrentlySelected) {
+      const newIds = selectedServiceIds.filter(id => id !== serviceId);
+      setServiceFilter(newIds.length > 0 ? newIds.join(',') : '');
+    } else {
+      const newIds = [...selectedServiceIds, serviceId];
+      setServiceFilter(newIds.join(','));
+    }
+  };
+
+  const handleClearServiceFilter = () => {
+    setServiceFilter('');
+    setServiceFilterExpanded(false);
+  };
+
+  // Building filter handlers
+  const handleBuildingToggle = () => {
+    setBuildingFilterExpanded(!buildingFilterExpanded);
+    if (serviceFilterExpanded) setServiceFilterExpanded(false);
+  };
+
+  const handleBuildingSelect = (buildingId: number) => {
+    const isCurrentlySelected = selectedBuildingIds.includes(buildingId);
+    if (isCurrentlySelected) {
+      const newIds = selectedBuildingIds.filter(id => id !== buildingId);
+      setBuildingFilter(newIds.length > 0 ? newIds.join(',') : '');
+    } else {
+      const newIds = [...selectedBuildingIds, buildingId];
+      setBuildingFilter(newIds.join(','));
+    }
+  };
+
+  const handleClearBuildingFilter = () => {
+    setBuildingFilter('');
+    setBuildingFilterExpanded(false);
+  };
+
   const clearFilters = () => {
     setFilters({});
+    setServiceFilter('');
+    setBuildingFilter('');
+    setServiceFilterExpanded(false);
+    setBuildingFilterExpanded(false);
   };
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== undefined) || serviceFilter || buildingFilter;
 
   // Define columns for AdminDataTable
   const columns: Column<PhysicalWorkplace>[] = useMemo(() => [
@@ -480,8 +589,6 @@ const PhysicalWorkplacesPage = () => {
     );
   }
 
-  const hasActiveFilters = Object.values(filters).some(v => v !== undefined);
-
   return (
     <Box sx={{ pb: 10 }}>
       {/* Back Button */}
@@ -623,337 +730,458 @@ const PhysicalWorkplacesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Advanced Filters - Teal themed toolbar */}
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="center"
+      {/* Filter Toolbar - Teal themed with expandable panels */}
+      <Paper
+        elevation={0}
         sx={{
-          mb: 2,
+          mb: (serviceFilterExpanded || buildingFilterExpanded) ? 0 : 2,
           p: 1.5,
+          borderRadius: (serviceFilterExpanded || buildingFilterExpanded) ? '8px 8px 0 0' : 2,
           bgcolor: isDark ? alpha(workplaceAccent, 0.08) : alpha(workplaceAccent, 0.05),
-          borderRadius: 2,
           border: '1px solid',
           borderColor: isDark ? alpha(workplaceAccent, 0.2) : alpha(workplaceAccent, 0.15),
+          borderBottom: (serviceFilterExpanded || buildingFilterExpanded) ? 'none' : undefined,
         }}
       >
-        {/* Toggle Advanced Filters */}
-        <Tooltip title={showFilters ? 'Verberg geavanceerde filters' : 'Toon geavanceerde filters'} arrow>
-          <IconButton
-            onClick={() => setShowFilters(!showFilters)}
-            size="small"
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: showFilters ? workplaceAccent : (isDark ? alpha(workplaceAccent, 0.15) : alpha(workplaceAccent, 0.1)),
-              color: showFilters ? '#fff' : workplaceAccent,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                bgcolor: showFilters ? '#00796b' : alpha(workplaceAccent, 0.2),
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            <TuneIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Tooltip>
-
-        {/* Quick Service Filter */}
-        <Tooltip title="Filter op dienst" arrow>
-          <IconButton
-            onClick={(e) => setServiceMenuAnchor(e.currentTarget)}
-            size="small"
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: filters.serviceId ? SERVICE_COLOR : (isDark ? alpha(SERVICE_COLOR, 0.15) : alpha(SERVICE_COLOR, 0.1)),
-              color: filters.serviceId ? '#fff' : SERVICE_COLOR,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                bgcolor: filters.serviceId ? '#2e7d32' : alpha(SERVICE_COLOR, 0.2),
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            <BusinessIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Tooltip>
-
-        {/* Quick Building Filter */}
-        <Tooltip title="Filter op gebouw" arrow>
-          <IconButton
-            onClick={(e) => setBuildingMenuAnchor(e.currentTarget)}
-            size="small"
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: filters.buildingId ? BUILDING_COLOR : (isDark ? alpha(BUILDING_COLOR, 0.15) : alpha(BUILDING_COLOR, 0.1)),
-              color: filters.buildingId ? '#fff' : BUILDING_COLOR,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                bgcolor: filters.buildingId ? '#d97706' : alpha(BUILDING_COLOR, 0.2),
-                transform: 'translateY(-1px)',
-              },
-            }}
-          >
-            <ApartmentIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Tooltip>
-
-        {/* Clear All Filters */}
-        {hasActiveFilters && (
-          <Tooltip title="Wis alle filters" arrow>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+          {/* Service Filter Toggle Button */}
+          <Tooltip title={serviceFilterExpanded ? 'Sluit filter' : 'Filter op dienst'}>
             <IconButton
-              onClick={clearFilters}
               size="small"
+              onClick={handleServiceToggle}
               sx={{
-                width: 36,
-                height: 36,
-                bgcolor: isDark ? alpha('#f44336', 0.15) : alpha('#f44336', 0.1),
-                color: '#f44336',
-                transition: 'all 0.2s ease',
+                width: 32,
+                height: 32,
+                bgcolor: (serviceFilter || serviceFilterExpanded) ? SERVICE_COLOR : 'transparent',
+                color: (serviceFilter || serviceFilterExpanded) ? '#fff' : SERVICE_COLOR,
+                border: '1px solid',
+                borderColor: alpha(SERVICE_COLOR, 0.3),
+                transition: 'all 0.15s ease',
+                '& .expand-icon': {
+                  transition: 'transform 0.2s ease',
+                  transform: serviceFilterExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                },
                 '&:hover': {
-                  bgcolor: '#f44336',
-                  color: '#fff',
-                  transform: 'translateY(-1px)',
+                  bgcolor: (serviceFilter || serviceFilterExpanded) ? SERVICE_COLOR : alpha(SERVICE_COLOR, 0.1),
+                  borderColor: SERVICE_COLOR,
                 },
               }}
             >
-              <ClearAllIcon sx={{ fontSize: 20 }} />
+              {serviceFilter ? (
+                <CheckIcon sx={{ fontSize: 18 }} />
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <BusinessIcon sx={{ fontSize: 16 }} />
+                  <ExpandMoreIcon className="expand-icon" sx={{ fontSize: 14, ml: -0.25 }} />
+                </Box>
+              )}
             </IconButton>
           </Tooltip>
-        )}
 
-        {/* Search Field */}
-        <TextField
-          size="small"
-          placeholder="Zoek werkplekken..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchTerm('')}
-                  sx={{ p: 0.25 }}
-                >
-                  <ClearIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            flex: 1,
-            minWidth: 180,
-            maxWidth: 300,
-            '& .MuiOutlinedInput-root': {
-              bgcolor: isDark ? alpha('#fff', 0.05) : '#fff',
-              borderRadius: 1.5,
-              fontSize: '0.85rem',
-              height: 36,
-              '& fieldset': {
-                borderColor: alpha(workplaceAccent, 0.3),
-              },
-              '&:hover fieldset': {
-                borderColor: alpha(workplaceAccent, 0.5),
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: workplaceAccent,
-              },
-            },
-          }}
-        />
+          {/* Building Filter Toggle Button */}
+          <Tooltip title={buildingFilterExpanded ? 'Sluit filter' : 'Filter op gebouw'}>
+            <IconButton
+              size="small"
+              onClick={handleBuildingToggle}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: (buildingFilter || buildingFilterExpanded) ? BUILDING_COLOR : 'transparent',
+                color: (buildingFilter || buildingFilterExpanded) ? '#fff' : BUILDING_COLOR,
+                border: '1px solid',
+                borderColor: alpha(BUILDING_COLOR, 0.3),
+                transition: 'all 0.15s ease',
+                '& .expand-icon': {
+                  transition: 'transform 0.2s ease',
+                  transform: buildingFilterExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                },
+                '&:hover': {
+                  bgcolor: (buildingFilter || buildingFilterExpanded) ? BUILDING_COLOR : alpha(BUILDING_COLOR, 0.1),
+                  borderColor: BUILDING_COLOR,
+                },
+              }}
+            >
+              {buildingFilter ? (
+                <CheckIcon sx={{ fontSize: 18 }} />
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <ApartmentIcon sx={{ fontSize: 16 }} />
+                  <ExpandMoreIcon className="expand-icon" sx={{ fontSize: 14, ml: -0.25 }} />
+                </Box>
+              )}
+            </IconButton>
+          </Tooltip>
 
-        {/* Active Filter Chips */}
-        {hasActiveFilters && (
-          <Stack direction="row" spacing={0.5}>
-            {filters.serviceId && (
-              <Chip
-                icon={<BusinessIcon sx={{ fontSize: 14 }} />}
-                label="Dienst"
+          {/* Clear All Filters */}
+          {hasActiveFilters && (
+            <Tooltip title="Wis alle filters">
+              <IconButton
                 size="small"
-                onDelete={() => setFilters(prev => ({ ...prev, serviceId: undefined }))}
+                onClick={clearFilters}
                 sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha(SERVICE_COLOR, 0.1),
-                  color: SERVICE_COLOR,
-                  '& .MuiChip-icon': { color: SERVICE_COLOR },
-                  '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
+                  width: 32,
+                  height: 32,
+                  color: '#f44336',
+                  bgcolor: 'transparent',
+                  border: '1px solid',
+                  borderColor: alpha('#f44336', 0.3),
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    bgcolor: alpha('#f44336', 0.1),
+                    borderColor: '#f44336',
+                  },
                 }}
-              />
-            )}
-            {filters.buildingId && (
-              <Chip
-                icon={<ApartmentIcon sx={{ fontSize: 14 }} />}
-                label="Gebouw"
-                size="small"
-                onDelete={() => setFilters(prev => ({ ...prev, buildingId: undefined }))}
-                sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha(BUILDING_COLOR, 0.1),
-                  color: BUILDING_COLOR,
-                  '& .MuiChip-icon': { color: BUILDING_COLOR },
-                  '& .MuiChip-deleteIcon': { color: BUILDING_COLOR, fontSize: 14 },
-                }}
-              />
-            )}
-            {filters.isActive !== undefined && (
-              <Chip
-                label={filters.isActive ? 'Actief' : 'Inactief'}
-                size="small"
-                onDelete={() => setFilters(prev => ({ ...prev, isActive: undefined }))}
-                sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha('#9c27b0', 0.1),
-                  color: '#9c27b0',
-                  '& .MuiChip-deleteIcon': { color: '#9c27b0', fontSize: 14 },
-                }}
-              />
-            )}
-            {filters.hasOccupant !== undefined && (
-              <Chip
-                icon={<PersonIcon sx={{ fontSize: 14 }} />}
-                label={filters.hasOccupant ? 'Bezet' : 'Vrij'}
-                size="small"
-                onDelete={() => setFilters(prev => ({ ...prev, hasOccupant: undefined }))}
-                sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha(EMPLOYEE_COLOR, 0.1),
-                  color: EMPLOYEE_COLOR,
-                  '& .MuiChip-icon': { color: EMPLOYEE_COLOR },
-                  '& .MuiChip-deleteIcon': { color: EMPLOYEE_COLOR, fontSize: 14 },
-                }}
-              />
-            )}
-          </Stack>
-        )}
+              >
+                <ClearAllIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
 
-        <Box sx={{ flex: 0 }} />
-
-        {/* Bulk Import Button */}
-        <Tooltip title="Werkplekken bulk importeren" arrow>
-          <IconButton
-            onClick={() => setBulkImportDialogOpen(true)}
+          {/* Search Field */}
+          <TextField
             size="small"
+            placeholder="Zoek werkplekken..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setSearchTerm('')} sx={{ p: 0.25 }}>
+                    <ClearIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
             sx={{
-              width: 36,
-              height: 36,
-              bgcolor: workplaceAccent,
-              color: '#fff',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                bgcolor: '#00796b',
-                transform: 'translateY(-1px)',
-                boxShadow: `0 4px 12px ${alpha(workplaceAccent, 0.4)}`,
+              flex: 1,
+              minWidth: 180,
+              maxWidth: 280,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: isDark ? alpha('#fff', 0.05) : '#fff',
+                borderRadius: 1.5,
+                fontSize: '0.85rem',
+                height: 32,
+                '& fieldset': { borderColor: alpha(workplaceAccent, 0.3) },
+                '&:hover fieldset': { borderColor: alpha(workplaceAccent, 0.5) },
+                '&.Mui-focused fieldset': { borderColor: workplaceAccent },
               },
             }}
-          >
-            <UploadFileIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Tooltip>
-      </Stack>
+          />
 
-      {/* Service Filter Menu */}
-      <Menu
-        anchorEl={serviceMenuAnchor}
-        open={Boolean(serviceMenuAnchor)}
-        onClose={() => setServiceMenuAnchor(null)}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            minWidth: 280,
-            maxWidth: 350,
-            borderRadius: 2,
-            p: 1,
-          },
-        }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ px: 1, mb: 1, display: 'block' }}>
-          Filter op dienst
-        </Typography>
-        <ServiceSelect
-          value={filters.serviceId ?? null}
-          onChange={(value) => {
-            setFilters(prev => ({ ...prev, serviceId: value ?? undefined }));
-            setServiceMenuAnchor(null);
-          }}
-          label="Dienst"
-          size="small"
-          required={false}
-        />
-      </Menu>
+          {/* Active Filter Chips */}
+          {serviceFilter && selectedServices.length > 0 && (
+            <Chip
+              icon={<BusinessIcon sx={{ fontSize: 14 }} />}
+              label={selectedServices.length === 1 ? selectedServices[0].name : `${selectedServices.length} diensten`}
+              onDelete={handleClearServiceFilter}
+              size="small"
+              sx={{
+                height: 24,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                bgcolor: alpha(SERVICE_COLOR, 0.15),
+                color: SERVICE_COLOR,
+                border: `1px solid ${alpha(SERVICE_COLOR, 0.3)}`,
+                '& .MuiChip-icon': { color: SERVICE_COLOR },
+                '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
+              }}
+            />
+          )}
+          {buildingFilter && selectedBuildings.length > 0 && (
+            <Chip
+              icon={<ApartmentIcon sx={{ fontSize: 14 }} />}
+              label={selectedBuildings.length === 1 ? selectedBuildings[0].name : `${selectedBuildings.length} gebouwen`}
+              onDelete={handleClearBuildingFilter}
+              size="small"
+              sx={{
+                height: 24,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                bgcolor: alpha(BUILDING_COLOR, 0.15),
+                color: BUILDING_COLOR,
+                border: `1px solid ${alpha(BUILDING_COLOR, 0.3)}`,
+                '& .MuiChip-icon': { color: BUILDING_COLOR },
+                '& .MuiChip-deleteIcon': { color: BUILDING_COLOR, fontSize: 14 },
+              }}
+            />
+          )}
+          {filters.isActive !== undefined && (
+            <Chip
+              label={filters.isActive ? 'Actief' : 'Inactief'}
+              size="small"
+              onDelete={() => setFilters(prev => ({ ...prev, isActive: undefined }))}
+              sx={{
+                height: 24,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                bgcolor: alpha('#9c27b0', 0.1),
+                color: '#9c27b0',
+                '& .MuiChip-deleteIcon': { color: '#9c27b0', fontSize: 14 },
+              }}
+            />
+          )}
+          {filters.hasOccupant !== undefined && (
+            <Chip
+              icon={<PersonIcon sx={{ fontSize: 14 }} />}
+              label={filters.hasOccupant ? 'Bezet' : 'Vrij'}
+              size="small"
+              onDelete={() => setFilters(prev => ({ ...prev, hasOccupant: undefined }))}
+              sx={{
+                height: 24,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                bgcolor: alpha(EMPLOYEE_COLOR, 0.1),
+                color: EMPLOYEE_COLOR,
+                '& .MuiChip-icon': { color: EMPLOYEE_COLOR },
+                '& .MuiChip-deleteIcon': { color: EMPLOYEE_COLOR, fontSize: 14 },
+              }}
+            />
+          )}
 
-      {/* Building Filter Menu */}
-      <Menu
-        anchorEl={buildingMenuAnchor}
-        open={Boolean(buildingMenuAnchor)}
-        onClose={() => setBuildingMenuAnchor(null)}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            minWidth: 250,
-            borderRadius: 2,
-            p: 1,
-          },
-        }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ px: 1, mb: 1, display: 'block' }}>
-          Filter op gebouw
-        </Typography>
-        <BuildingSelect
-          value={filters.buildingId ?? null}
-          onChange={(value) => {
-            setFilters(prev => ({ ...prev, buildingId: value ?? undefined }));
-            setBuildingMenuAnchor(null);
-          }}
-          label="Gebouw"
-        />
-      </Menu>
+          <Box sx={{ flex: 1 }} />
 
-      {/* Collapsible Filter Panel */}
-      <Collapse in={showFilters}>
-        <Box
+          {/* Bulk Import Button */}
+          <Tooltip title="Werkplekken bulk importeren">
+            <IconButton
+              onClick={() => setBulkImportDialogOpen(true)}
+              size="small"
+              sx={{
+                width: 32,
+                height: 32,
+                color: workplaceAccent,
+                bgcolor: 'transparent',
+                border: '1px solid',
+                borderColor: alpha(workplaceAccent, 0.3),
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: alpha(workplaceAccent, 0.1),
+                  borderColor: workplaceAccent,
+                },
+              }}
+            >
+              <UploadFileIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Paper>
+
+      {/* Expandable Service Filter Panel */}
+      <Collapse in={serviceFilterExpanded} timeout={250}>
+        <Paper
+          elevation={0}
           sx={{
             mb: 2,
-            p: 2.5,
-            borderRadius: 2,
-            bgcolor: isDark ? '#1a1f2e' : '#f0f2f5',
-            boxShadow: isDark
-              ? 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03)'
-              : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)',
+            p: 2,
+            pt: 1.5,
+            borderRadius: '0 0 8px 8px',
+            bgcolor: isDark ? alpha('#000', 0.2) : alpha('#f5f5f5', 0.5),
+            border: '1px solid',
+            borderColor: isDark ? alpha('#fff', 0.1) : alpha('#000', 0.08),
+            borderTop: 'none',
           }}
         >
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <Box sx={{ minWidth: 200 }}>
-              <BuildingSelect
-                value={filters.buildingId ?? null}
-                onChange={(value) => setFilters(prev => ({ ...prev, buildingId: value ?? undefined }))}
-                label={t('physicalWorkplaces.building')}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BusinessIcon sx={{ fontSize: 18, color: SECTOR_COLOR }} />
+              Filter op Dienst
+            </Typography>
+            {serviceFilter && (
+              <Chip
+                label="Wis selectie"
+                size="small"
+                onClick={handleClearServiceFilter}
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  bgcolor: alpha('#f44336', 0.1),
+                  color: '#f44336',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: alpha('#f44336', 0.2) },
+                }}
               />
+            )}
+          </Box>
+          {servicesLoading ? (
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {[1, 2, 3].map((i) => <Skeleton key={i} variant="rounded" width={280} height={120} />)}
             </Box>
-            <Box sx={{ minWidth: 200 }}>
-              <ServiceSelect
-                value={filters.serviceId ?? null}
-                onChange={(value) => setFilters(prev => ({ ...prev, serviceId: value ?? undefined }))}
-                label={t('physicalWorkplaces.service')}
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+              {sectors?.filter(s => s.services.some(svc => svc.isActive)).map((sector) => (
+                <Box
+                  key={sector.id}
+                  sx={{
+                    bgcolor: isDark ? alpha('#fff', 0.02) : '#fff',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1.5,
+                      py: 1,
+                      bgcolor: isDark ? alpha(SECTOR_COLOR, 0.15) : alpha(SECTOR_COLOR, 0.08),
+                      borderBottom: '2px solid',
+                      borderColor: SECTOR_COLOR,
+                    }}
+                  >
+                    <BusinessIcon sx={{ fontSize: 16, color: SECTOR_COLOR }} />
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: SECTOR_COLOR, textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>
+                      {sector.name}
+                    </Typography>
+                    <Chip
+                      label={sector.services.filter(s => s.isActive).length}
+                      size="small"
+                      sx={{ height: 20, minWidth: 28, fontSize: '0.7rem', fontWeight: 700, bgcolor: isDark ? alpha(SECTOR_COLOR, 0.3) : alpha(SECTOR_COLOR, 0.15), color: SECTOR_COLOR }}
+                    />
+                  </Box>
+                  <Box sx={{ p: 1 }}>
+                    {sector.services.filter(s => s.isActive).map((service) => {
+                      const isSelected = selectedServiceIds.includes(service.id);
+                      return (
+                        <Box
+                          key={service.id}
+                          onClick={() => handleServiceSelect(service.id)}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            py: 0.75,
+                            px: 1,
+                            borderRadius: 1,
+                            cursor: 'pointer',
+                            bgcolor: isSelected ? alpha(SERVICE_COLOR, 0.12) : 'transparent',
+                            border: '1px solid',
+                            borderColor: isSelected ? SERVICE_COLOR : 'transparent',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { bgcolor: isSelected ? alpha(SERVICE_COLOR, 0.18) : (isDark ? alpha('#fff', 0.05) : alpha('#000', 0.04)) },
+                          }}
+                        >
+                          <Chip
+                            label={service.code}
+                            size="small"
+                            sx={{
+                              height: 22,
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              bgcolor: isSelected ? SERVICE_COLOR : (isDark ? alpha(SERVICE_COLOR, 0.2) : alpha(SERVICE_COLOR, 0.1)),
+                              color: isSelected ? '#fff' : SERVICE_COLOR,
+                              minWidth: 50,
+                              '& .MuiChip-label': { px: 1 },
+                            }}
+                          />
+                          <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? SERVICE_COLOR : 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            {service.name}
+                          </Typography>
+                          {isSelected && <CheckIcon sx={{ fontSize: 18, color: SERVICE_COLOR }} />}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Paper>
+      </Collapse>
+
+      {/* Expandable Building Filter Panel */}
+      <Collapse in={buildingFilterExpanded} timeout={250}>
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 2,
+            p: 2,
+            pt: 1.5,
+            borderRadius: '0 0 8px 8px',
+            bgcolor: isDark ? alpha('#000', 0.2) : alpha('#f5f5f5', 0.5),
+            border: '1px solid',
+            borderColor: isDark ? alpha('#fff', 0.1) : alpha('#000', 0.08),
+            borderTop: 'none',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ApartmentIcon sx={{ fontSize: 18, color: BUILDING_COLOR }} />
+              Filter op Gebouw
+            </Typography>
+            {buildingFilter && (
+              <Chip
+                label="Wis selectie"
+                size="small"
+                onClick={handleClearBuildingFilter}
+                sx={{
+                  height: 22,
+                  fontSize: '0.7rem',
+                  bgcolor: alpha('#f44336', 0.1),
+                  color: '#f44336',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: alpha('#f44336', 0.2) },
+                }}
               />
+            )}
+          </Box>
+          {buildingsLoading ? (
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {[1, 2, 3].map((i) => <Skeleton key={i} variant="rounded" width={200} height={40} />)}
             </Box>
-          </Stack>
-        </Box>
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 1 }}>
+              {activeBuildings.map((building) => {
+                const isSelected = selectedBuildingIds.includes(building.id);
+                return (
+                  <Box
+                    key={building.id}
+                    onClick={() => handleBuildingSelect(building.id)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      py: 0.75,
+                      px: 1.5,
+                      borderRadius: 1.5,
+                      cursor: 'pointer',
+                      bgcolor: isSelected ? alpha(BUILDING_COLOR, 0.12) : (isDark ? alpha('#fff', 0.02) : '#fff'),
+                      border: '1px solid',
+                      borderColor: isSelected ? BUILDING_COLOR : (isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08)),
+                      transition: 'all 0.15s ease',
+                      '&:hover': { bgcolor: isSelected ? alpha(BUILDING_COLOR, 0.18) : (isDark ? alpha('#fff', 0.05) : alpha('#000', 0.04)) },
+                    }}
+                  >
+                    <Chip
+                      label={building.code}
+                      size="small"
+                      sx={{
+                        height: 22,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        bgcolor: isSelected ? BUILDING_COLOR : (isDark ? alpha(BUILDING_COLOR, 0.2) : alpha(BUILDING_COLOR, 0.1)),
+                        color: isSelected ? '#fff' : BUILDING_COLOR,
+                        minWidth: 40,
+                        '& .MuiChip-label': { px: 1 },
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? BUILDING_COLOR : 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {building.name}
+                    </Typography>
+                    {isSelected && <CheckIcon sx={{ fontSize: 18, color: BUILDING_COLOR, flexShrink: 0 }} />}
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+        </Paper>
       </Collapse>
 
       {/* Workplace List */}
@@ -994,7 +1222,7 @@ const PhysicalWorkplacesPage = () => {
           {/* Mobile/Tablet: Card View */}
           {isTablet && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {workplaces?.map((workplace) => (
+              {filteredWorkplaces.map((workplace) => (
                 <Card
                   key={workplace.id}
                   elevation={0}
@@ -1154,7 +1382,7 @@ const PhysicalWorkplacesPage = () => {
           {/* Desktop: AdminDataTable */}
           {!isTablet && (
             <AdminDataTable
-              data={workplaces || []}
+              data={filteredWorkplaces}
               columns={columns}
               emptyMessage="Geen werkplekken gevonden"
               getItemId={(item) => item.id}
