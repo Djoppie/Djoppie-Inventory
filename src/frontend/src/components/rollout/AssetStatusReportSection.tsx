@@ -28,7 +28,9 @@ import {
   Alert,
   Tooltip,
   TableSortLabel,
+  alpha,
 } from '@mui/material';
+import { ASSET_COLOR } from '../../constants/filterColors';
 import DownloadIcon from '@mui/icons-material/Download';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
@@ -259,15 +261,43 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
       </Box>
 
       {/* Changes Table */}
-      <TableContainer sx={{ maxHeight: 400 }}>
+      <TableContainer
+        sx={{
+          maxHeight: 400,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
         <Table stickyHeader size="small">
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={{
+                '& th': {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? alpha(ASSET_COLOR, 0.08)
+                      : alpha(ASSET_COLOR, 0.04),
+                  borderBottom: '2px solid',
+                  borderColor: ASSET_COLOR,
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  py: 1.5,
+                },
+              }}
+            >
               <TableCell>
                 <TableSortLabel
                   active={sortField === 'assetCode'}
                   direction={sortField === 'assetCode' ? sortOrder : 'asc'}
                   onClick={() => handleSort('assetCode')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Asset
                 </TableSortLabel>
@@ -277,6 +307,10 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   active={sortField === 'equipmentType'}
                   direction={sortField === 'equipmentType' ? sortOrder : 'asc'}
                   onClick={() => handleSort('equipmentType')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Type
                 </TableSortLabel>
@@ -287,6 +321,10 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   active={sortField === 'userName'}
                   direction={sortField === 'userName' ? sortOrder : 'asc'}
                   onClick={() => handleSort('userName')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Gebruiker
                 </TableSortLabel>
@@ -297,6 +335,10 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   active={sortField === 'completedBy'}
                   direction={sortField === 'completedBy' ? sortOrder : 'asc'}
                   onClick={() => handleSort('completedBy')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Uitgevoerd door
                 </TableSortLabel>
@@ -306,6 +348,10 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   active={sortField === 'date'}
                   direction={sortField === 'date' ? sortOrder : 'asc'}
                   onClick={() => handleSort('date')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Datum
                 </TableSortLabel>
@@ -314,7 +360,24 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
           </TableHead>
           <TableBody>
             {filteredChanges.map((change, index) => (
-              <TableRow key={`${change.assetId}-${change.workplaceId}-${index}`} hover>
+              <TableRow
+                key={`${change.assetId}-${change.workplaceId}-${index}`}
+                hover
+                sx={{
+                  bgcolor: (theme) =>
+                    index % 2 === 1
+                      ? theme.palette.mode === 'dark'
+                        ? 'rgba(255, 255, 255, 0.02)'
+                        : 'rgba(0, 0, 0, 0.02)'
+                      : 'transparent',
+                  '&:hover': {
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? alpha(ASSET_COLOR, 0.08)
+                        : alpha(ASSET_COLOR, 0.04),
+                  },
+                }}
+              >
                 <TableCell>
                   <Tooltip title={change.assetName || change.assetCode}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

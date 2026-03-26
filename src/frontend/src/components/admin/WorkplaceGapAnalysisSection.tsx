@@ -240,10 +240,35 @@ const WorkplaceGapAnalysisSection = () => {
                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
                   Laptop eigenaren zonder werkplek ({gapAnalysis.orphanOwners.length})
                 </Typography>
-                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 300 }}>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  sx={{
+                    maxHeight: 300,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                  }}
+                >
                   <Table size="small" stickyHeader>
                     <TableHead>
-                      <TableRow>
+                      <TableRow
+                        sx={{
+                          '& th': {
+                            bgcolor: (theme) =>
+                              theme.palette.mode === 'dark'
+                                ? alpha('#009688', 0.15)
+                                : alpha('#009688', 0.08),
+                            borderBottom: '2px solid #009688',
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            py: 1.5,
+                          },
+                        }}
+                      >
                         <TableCell>Eigenaar</TableCell>
                         <TableCell>Dienst</TableCell>
                         <TableCell>Laptop</TableCell>
@@ -251,13 +276,29 @@ const WorkplaceGapAnalysisSection = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {gapAnalysis.orphanOwners.map((orphan) => (
-                        <TableRow key={orphan.laptopAssetId}>
-                          <TableCell>
+                      {gapAnalysis.orphanOwners.map((orphan, index) => (
+                        <TableRow
+                          key={orphan.laptopAssetId}
+                          sx={{
+                            bgcolor: (theme) =>
+                              index % 2 === 1
+                                ? theme.palette.mode === 'dark'
+                                  ? 'rgba(255, 255, 255, 0.02)'
+                                  : 'rgba(0, 0, 0, 0.02)'
+                                : 'transparent',
+                            '&:hover': {
+                              bgcolor: (theme) =>
+                                theme.palette.mode === 'dark'
+                                  ? alpha('#009688', 0.08)
+                                  : alpha('#009688', 0.04),
+                            },
+                          }}
+                        >
+                          <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                             <Stack direction="row" spacing={1} alignItems="center">
                               <LaptopIcon fontSize="small" color="action" />
                               <Box>
-                                <Typography variant="body2" fontWeight={500}>
+                                <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.85rem' }}>
                                   {orphan.ownerName || orphan.ownerEmail}
                                 </Typography>
                                 {orphan.ownerName && (
@@ -268,16 +309,16 @@ const WorkplaceGapAnalysisSection = () => {
                               </Box>
                             </Stack>
                           </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">{orphan.serviceName || '-'}</Typography>
+                          <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                            <Typography sx={{ fontSize: '0.85rem' }}>{orphan.serviceName || '-'}</Typography>
                           </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" fontFamily="monospace" color="#009688">
+                          <TableCell sx={{ py: 1 }}>
+                            <Typography fontFamily="monospace" sx={{ fontSize: '0.8rem', color: '#009688', fontWeight: 600 }}>
                               {orphan.laptopAssetCode}
                             </Typography>
                           </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
+                          <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                            <Typography sx={{ fontSize: '0.85rem' }}>
                               {orphan.laptopBrand} {orphan.laptopModel}
                             </Typography>
                           </TableCell>
