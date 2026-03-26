@@ -57,6 +57,18 @@ const isUserAssignedAsset = (asset: Asset): boolean => {
     assetTypeCode.includes(keyword)
   );
 };
+
+// Helper to shorten asset code for compact display
+// Format: DOCK-26-DELL-00004 → D-00004 (first letter + last segment)
+const shortenAssetCode = (code: string): string => {
+  if (!code) return '-';
+  const parts = code.split('-');
+  if (parts.length < 2) return code;
+  // Get first letter of type and last number segment
+  const prefix = parts[0]?.[0] || '';
+  const number = parts[parts.length - 1] || '';
+  return `${prefix}-${number}`;
+};
 type SortOrder = 'asc' | 'desc';
 
 // Responsive display styles for columns
@@ -212,7 +224,7 @@ const AssetTableView = ({
           },
         }}
       >
-        <Table sx={{ minWidth: { xs: 500, sm: 700, md: 900, lg: 1100 } }}>
+        <Table sx={{ minWidth: { xs: 380, sm: 550, md: 750, lg: 950 } }}>
           <TableHead>
             <TableRow>
               {/* Selection Checkbox Column */}
@@ -343,8 +355,8 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Model */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
+              {/* Model - Hidden on smaller screens to make room for Assignment */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
                 <TableSortLabel
                   active={sortField === 'model'}
                   direction={sortField === 'model' ? sortOrder : 'asc'}
@@ -362,8 +374,8 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Toewijzing (Owner for laptops, Workplace for fixed assets) */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
+              {/* Toewijzing (Owner for laptops, Workplace for fixed assets) - Always visible */}
+              <TableCell sx={{ ...headerCellSx }}>
                 <TableSortLabel
                   active={sortField === 'assignment'}
                   direction={sortField === 'assignment' ? sortOrder : 'asc'}
@@ -377,7 +389,7 @@ const AssetTableView = ({
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Toewijzing
+                  {isMobile ? 'Toew.' : 'Toewijzing'}
                 </TableSortLabel>
               </TableCell>
 
@@ -455,7 +467,7 @@ const AssetTableView = ({
                   </TableCell>
                 )}
 
-                {/* Asset Code */}
+                {/* Asset Code - Shortened with tooltip for full code */}
                 <TableCell
                   sx={{
                     fontFamily: '"SF Mono", "Monaco", "Consolas", monospace',
@@ -465,9 +477,14 @@ const AssetTableView = ({
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
                     letterSpacing: '0.01em',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {asset.assetCode}
+                  <Tooltip title={asset.assetCode} arrow placement="top">
+                    <Box component="span" sx={{ cursor: 'default' }}>
+                      {shortenAssetCode(asset.assetCode)}
+                    </Box>
+                  </Tooltip>
                 </TableCell>
 
                 {/* Status */}
@@ -556,7 +573,7 @@ const AssetTableView = ({
                   {asset.serialNumber || '-'}
                 </TableCell>
 
-                {/* Model */}
+                {/* Model - Hidden on smaller screens */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -566,23 +583,22 @@ const AssetTableView = ({
                     whiteSpace: 'nowrap',
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.mdUp,
+                    ...columnVisibility.lgUp,
                   }}
                 >
                   {asset.model || '-'}
                 </TableCell>
 
-                {/* Toewijzing: Owner (purple) for laptops, Workplace (teal) for fixed assets */}
+                {/* Toewijzing: Owner (purple) for laptops, Workplace (teal) for fixed assets - Always visible */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.lgUp,
                   }}
                 >
                   {isUserAssignedAsset(asset) ? (
-                    // Laptop/Notebook: Show owner with purple accent
+                    // Laptop/Notebook: Show owner with purple accent + installation date
                     asset.owner ? (
                       <Tooltip
                         title={
@@ -591,6 +607,12 @@ const AssetTableView = ({
                               <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
                               <Typography variant="caption">{asset.owner}</Typography>
                             </Box>
+                            {asset.installationDate && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
+                                <Typography variant="caption">{new Date(asset.installationDate).toLocaleDateString()}</Typography>
+                              </Box>
+                            )}
                             {asset.jobTitle && (
                               <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
                                 <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
@@ -613,15 +635,30 @@ const AssetTableView = ({
                             color: '#7B1FA2',
                             fontWeight: 500,
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
+                            flexDirection: 'column',
+                            gap: 0.25,
                             cursor: 'default',
                           }}
                         >
-                          <PersonIcon sx={{ fontSize: 14 }} />
-                          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {asset.owner}
-                          </span>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <PersonIcon sx={{ fontSize: 14 }} />
+                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {asset.owner}
+                            </span>
+                          </Box>
+                          {asset.installationDate && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                fontWeight: 400,
+                                pl: 2.25,
+                              }}
+                            >
+                              sinds {new Date(asset.installationDate).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: '2-digit' })}
+                            </Typography>
+                          )}
                         </Box>
                       </Tooltip>
                     ) : (

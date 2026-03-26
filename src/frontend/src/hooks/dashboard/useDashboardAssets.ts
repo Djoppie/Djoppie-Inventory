@@ -113,16 +113,26 @@ export function useDashboardAssets({
       result = result.filter(a => a.category === categoryFilter);
     }
 
-    // Apply service filter
+    // Apply service filter (supports comma-separated IDs for multiselect)
     if (serviceFilter) {
-      const serviceId = parseInt(serviceFilter, 10);
-      result = result.filter(a => a.serviceId === serviceId);
+      const serviceIds = serviceFilter
+        .split(',')
+        .map(id => parseInt(id, 10))
+        .filter(id => !isNaN(id));
+      if (serviceIds.length > 0) {
+        result = result.filter(a => a.serviceId && serviceIds.includes(a.serviceId));
+      }
     }
 
-    // Apply building filter
+    // Apply building filter (supports comma-separated IDs for multiselect)
     if (buildingFilter) {
-      const buildingId = parseInt(buildingFilter, 10);
-      result = result.filter(a => a.buildingId === buildingId);
+      const buildingIds = buildingFilter
+        .split(',')
+        .map(id => parseInt(id, 10))
+        .filter(id => !isNaN(id));
+      if (buildingIds.length > 0) {
+        result = result.filter(a => a.buildingId && buildingIds.includes(a.buildingId));
+      }
     }
 
     return result;
