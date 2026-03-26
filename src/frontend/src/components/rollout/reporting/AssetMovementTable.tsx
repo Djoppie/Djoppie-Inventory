@@ -34,6 +34,7 @@ import {
   CircularProgress,
   Alert,
   SelectChangeEvent,
+  alpha,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -468,61 +469,106 @@ const AssetMovementTable = ({
       )}
 
       {/* Table */}
-      <TableContainer sx={{ maxHeight }}>
+      <TableContainer
+        sx={{
+          maxHeight,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
         <Table stickyHeader size="small">
           <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>
+            <TableRow
+              sx={{
+                '& th': {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? alpha(ASSET_COLOR, 0.08)
+                      : alpha(ASSET_COLOR, 0.04),
+                  borderBottom: '2px solid',
+                  borderColor: ASSET_COLOR,
+                },
+              }}
+            >
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'assetCode'}
                   direction={sort.field === 'assetCode' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('assetCode')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Asset
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'equipmentType'}
                   direction={sort.field === 'equipmentType' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('equipmentType')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Type
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Status Wijziging</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                Status Wijziging
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'userName'}
                   direction={sort.field === 'userName' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('userName')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Gebruiker
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'serviceName'}
                   direction={sort.field === 'serviceName' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('serviceName')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Dienst/Locatie
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'executedBy'}
                   direction={sort.field === 'executedBy' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('executedBy')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Uitgevoerd door
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'date'}
                   direction={sort.field === 'date' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('date')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Datum
                 </TableSortLabel>
@@ -547,8 +593,18 @@ const AssetMovementTable = ({
                     key={`${movement.assetId}-${movement.workplaceId}-${index}`}
                     hover
                     sx={{
+                      bgcolor: (theme) =>
+                        index % 2 === 1
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.02)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                          : 'transparent',
+                      transition: 'all 0.15s ease',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 119, 0, 0.04)',
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? alpha(ASSET_COLOR, 0.08)
+                            : alpha(ASSET_COLOR, 0.04),
                       },
                     }}
                   >
