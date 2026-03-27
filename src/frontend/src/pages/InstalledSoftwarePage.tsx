@@ -24,6 +24,8 @@ import {
   Stack,
   Paper,
   alpha,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { useAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
@@ -130,6 +132,8 @@ const formatBytes = (bytes?: number): string => {
 const InstalledSoftwarePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { data: asset, isLoading: isLoadingAsset } = useAsset(Number(id));
 
   const [software, setSoftware] = useState<InstalledSoftware[]>([]);
@@ -1181,7 +1185,88 @@ const InstalledSoftwarePage = () => {
                   : 'No installed software data available for this asset'}
               </Typography>
             </Box>
+          ) : isTablet ? (
+            /* Mobile/Tablet: Card View */
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, p: 2 }}>
+              {filteredAndSortedSoftware.map((app) => (
+                <Paper
+                  key={app.id}
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: ASSET_COLOR,
+                      bgcolor: (thm) =>
+                        thm.palette.mode === 'dark'
+                          ? alpha(ASSET_COLOR, 0.04)
+                          : alpha(ASSET_COLOR, 0.02),
+                    },
+                  }}
+                >
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Typography fontWeight={600} sx={{ color: ASSET_COLOR, fontSize: '0.9rem' }}>
+                      {app.name}
+                    </Typography>
+                    {app.category && (
+                      <Chip
+                        label={app.category}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          bgcolor: alpha(getCategoryColor(app.category), 0.15),
+                          color: getCategoryColor(app.category),
+                          border: '1px solid',
+                          borderColor: alpha(getCategoryColor(app.category), 0.3),
+                          fontWeight: 600,
+                          fontSize: '0.65rem',
+                        }}
+                      />
+                    )}
+                  </Stack>
+
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    {app.publisher}
+                  </Typography>
+
+                  <Stack direction="row" spacing={2} mt={1.5} flexWrap="wrap" gap={1}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Version
+                      </Typography>
+                      <Typography variant="body2" fontFamily="monospace" fontSize="0.8rem">
+                        {app.version}
+                      </Typography>
+                    </Box>
+                    {app.installDate && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Installed
+                        </Typography>
+                        <Typography variant="body2" fontSize="0.8rem">
+                          {formatDate(app.installDate)}
+                        </Typography>
+                      </Box>
+                    )}
+                    {app.size && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Size
+                        </Typography>
+                        <Typography variant="body2" fontFamily="monospace" fontSize="0.8rem">
+                          {formatSize(app.size)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Paper>
+              ))}
+            </Box>
           ) : (
+            /* Desktop: Table View */
             <TableContainer
               component={Paper}
               elevation={0}
@@ -1192,12 +1277,12 @@ const InstalledSoftwarePage = () => {
                 overflow: 'hidden',
               }}
             >
-              <Table size="small" sx={{ minWidth: 650 }}>
+              <Table size="small">
                 <TableHead>
                   <TableRow
                     sx={{
-                      bgcolor: (theme) =>
-                        theme.palette.mode === 'dark'
+                      bgcolor: (thm) =>
+                        thm.palette.mode === 'dark'
                           ? alpha(ASSET_COLOR, 0.08)
                           : alpha(ASSET_COLOR, 0.04),
                       borderBottom: '2px solid',
@@ -1263,15 +1348,15 @@ const InstalledSoftwarePage = () => {
                     <TableRow
                       key={app.id}
                       sx={{
-                        bgcolor: (theme) =>
+                        bgcolor: (thm) =>
                           index % 2 === 0
                             ? 'transparent'
-                            : theme.palette.mode === 'dark'
+                            : thm.palette.mode === 'dark'
                               ? 'rgba(255, 255, 255, 0.02)'
                               : 'rgba(0, 0, 0, 0.02)',
                         '&:hover': {
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark'
+                          bgcolor: (thm) =>
+                            thm.palette.mode === 'dark'
                               ? alpha(ASSET_COLOR, 0.08)
                               : alpha(ASSET_COLOR, 0.04),
                         },
