@@ -352,6 +352,25 @@ public class AssetRepository : IAssetRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task UpdateIntuneFieldsAsync(
+        int assetId,
+        DateTime? enrollmentDate,
+        DateTime? lastCheckIn,
+        DateTime? certificateExpiry,
+        DateTime syncedAt,
+        CancellationToken cancellationToken = default)
+    {
+        await _context.Assets
+            .Where(a => a.Id == assetId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(a => a.IntuneEnrollmentDate, enrollmentDate)
+                .SetProperty(a => a.IntuneLastCheckIn, lastCheckIn)
+                .SetProperty(a => a.IntuneCertificateExpiry, certificateExpiry)
+                .SetProperty(a => a.IntuneSyncedAt, syncedAt)
+                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
+                cancellationToken);
+    }
+
     /// <summary>
     /// Populates PhysicalWorkplace for assets that are assigned via equipment slots.
     /// This handles assets where PhysicalWorkplaceId is null but the asset is assigned

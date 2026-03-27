@@ -183,7 +183,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose, assets }) =>
         icon: <CalendarTodayIcon fontSize="small" />,
         description: 'Belangrijke datums en tijdslijnen',
         columns: columns.filter(col =>
-          ['purchaseDate', 'warrantyExpiry', 'installationDate', 'createdAt', 'updatedAt'].includes(col.key)
+          ['purchaseDate', 'warrantyExpiry', 'installationDate', 'intuneEnrollmentDate', 'intuneLastCheckIn', 'intuneCertificateExpiry', 'createdAt', 'updatedAt'].includes(col.key)
         ),
       },
     ];

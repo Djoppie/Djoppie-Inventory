@@ -317,25 +317,6 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Purchase Date */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
-                <TableSortLabel
-                  active={sortField === 'purchaseDate'}
-                  direction={sortField === 'purchaseDate' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('purchaseDate')}
-                  IconComponent={UnfoldMoreIcon}
-                  sx={{
-                    fontSize: 'inherit',
-                    fontWeight: 'inherit',
-                    '&:hover': { color: ASSET_COLOR },
-                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
-                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
-                  }}
-                >
-                  Aankoop
-                </TableSortLabel>
-              </TableCell>
-
               {/* Serial Number */}
               <TableCell sx={{ ...headerCellSx, ...columnVisibility.smUp }}>
                 <TableSortLabel
@@ -390,6 +371,25 @@ const AssetTableView = ({
                   }}
                 >
                   {isMobile ? 'Toew.' : 'Toewijzing'}
+                </TableSortLabel>
+              </TableCell>
+
+              {/* Purchase Date (Aankoop) - Moved after Toewijzing */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
+                <TableSortLabel
+                  active={sortField === 'purchaseDate'}
+                  direction={sortField === 'purchaseDate' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('purchaseDate')}
+                  IconComponent={UnfoldMoreIcon}
+                  sx={{
+                    fontSize: 'inherit',
+                    fontWeight: 'inherit',
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
+                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
+                  }}
+                >
+                  Aankoop
                 </TableSortLabel>
               </TableCell>
 
@@ -508,51 +508,6 @@ const AssetTableView = ({
                   }}
                 >
                   {asset.assetType?.name || '-'}
-                </TableCell>
-
-                {/* Purchase Date */}
-                <TableCell
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    py: { xs: 0.75, sm: 1 },
-                    px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.mdUp,
-                  }}
-                >
-                  {asset.purchaseDate ? (() => {
-                    const purchaseDate = new Date(asset.purchaseDate);
-                    const ageInYears = (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-                    const isMonitor = asset.category === 'Monitor';
-                    // Different thresholds for monitors vs other assets
-                    const color = isMonitor
-                      ? (ageInYears < 4
-                          ? '#4CAF50' // green: 0-4 years
-                          : ageInYears < 7
-                            ? '#FFA726' // yellow/orange: 4-7 years
-                            : '#EF5350') // light red: 7+ years
-                      : (ageInYears < 3
-                          ? '#4CAF50' // green: 0-3 years
-                          : ageInYears < 4
-                            ? '#FFA726' // yellow/orange: 3-4 years
-                            : '#EF5350'); // light red: 4+ years
-                    const ageDisplay = ageInYears < 1
-                      ? `${Math.round(ageInYears * 12)} maanden`
-                      : `${ageInYears.toFixed(1)} jaar`;
-                    return (
-                      <Tooltip title={ageDisplay} arrow placement="top">
-                        <Box
-                          component="span"
-                          sx={{
-                            color,
-                            fontWeight: 500,
-                            cursor: 'default',
-                          }}
-                        >
-                          {purchaseDate.toLocaleDateString()}
-                        </Box>
-                      </Tooltip>
-                    );
-                  })() : '-'}
                 </TableCell>
 
                 {/* Serial Number */}
@@ -722,6 +677,99 @@ const AssetTableView = ({
                       <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
                     )
                   )}
+                </TableCell>
+
+                {/* Purchase Date (Aankoop) - Moved after Toewijzing */}
+                <TableCell
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 1.5 },
+                    ...columnVisibility.mdUp,
+                  }}
+                >
+                  {asset.purchaseDate ? (() => {
+                    const purchaseDate = new Date(asset.purchaseDate);
+                    const ageInYears = (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+                    const isMonitor = asset.category === 'Monitor';
+                    const isLaptopOrDesktop = asset.category === 'Laptop' || asset.category === 'Desktop';
+                    // Different thresholds for monitors vs other assets
+                    const color = isMonitor
+                      ? (ageInYears < 4
+                          ? '#4CAF50' // green: 0-4 years
+                          : ageInYears < 7
+                            ? '#FFA726' // yellow/orange: 4-7 years
+                            : '#EF5350') // light red: 7+ years
+                      : (ageInYears < 3
+                          ? '#4CAF50' // green: 0-3 years
+                          : ageInYears < 4
+                            ? '#FFA726' // yellow/orange: 3-4 years
+                            : '#EF5350'); // light red: 4+ years
+                    const ageDisplay = ageInYears < 1
+                      ? `${Math.round(ageInYears * 12)} maanden`
+                      : `${ageInYears.toFixed(1)} jaar`;
+
+                    // Build enhanced tooltip content
+                    const tooltipContent = (
+                      <Box sx={{ p: 0.5, minWidth: 180 }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>Aankoopdatum:</Typography>
+                          <Typography variant="caption">{purchaseDate.toLocaleDateString()}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>Ouderdom:</Typography>
+                          <Typography variant="caption" sx={{ color }}>{ageDisplay}</Typography>
+                        </Box>
+                        {isLaptopOrDesktop && (
+                          <>
+                            <Box sx={{ borderTop: '1px solid rgba(255,255,255,0.2)', my: 0.5 }} />
+                            <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.3 }}>
+                              Intune Data:
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Enrollment:</Typography>
+                              <Typography variant="caption">
+                                {asset.intuneEnrollmentDate
+                                  ? new Date(asset.intuneEnrollmentDate).toLocaleDateString()
+                                  : '-'}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Laatste check-in:</Typography>
+                              <Typography variant="caption">
+                                {asset.intuneLastCheckIn
+                                  ? new Date(asset.intuneLastCheckIn).toLocaleDateString()
+                                  : '-'}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Certificaat vervalt:</Typography>
+                              <Typography variant="caption">
+                                {asset.intuneCertificateExpiry
+                                  ? new Date(asset.intuneCertificateExpiry).toLocaleDateString()
+                                  : '-'}
+                              </Typography>
+                            </Box>
+                          </>
+                        )}
+                      </Box>
+                    );
+
+                    return (
+                      <Tooltip title={tooltipContent} arrow placement="top">
+                        <Box
+                          component="span"
+                          sx={{
+                            color,
+                            fontWeight: 500,
+                            cursor: 'default',
+                          }}
+                        >
+                          {purchaseDate.toLocaleDateString()}
+                        </Box>
+                      </Tooltip>
+                    );
+                  })() : '-'}
                 </TableCell>
 
                 {/* Actions - Always Visible */}

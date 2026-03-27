@@ -20,11 +20,16 @@ namespace DjoppieInventory.API.Controllers;
 public class IntuneController : ControllerBase
 {
     private readonly IIntuneService _intuneService;
+    private readonly IIntuneSyncService _intuneSyncService;
     private readonly ILogger<IntuneController> _logger;
 
-    public IntuneController(IIntuneService intuneService, ILogger<IntuneController> logger)
+    public IntuneController(
+        IIntuneService intuneService,
+        IIntuneSyncService intuneSyncService,
+        ILogger<IntuneController> logger)
     {
         _intuneService = intuneService ?? throw new ArgumentNullException(nameof(intuneService));
+        _intuneSyncService = intuneSyncService ?? throw new ArgumentNullException(nameof(intuneSyncService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -699,6 +704,57 @@ public class IntuneController : ControllerBase
         {
             _logger.LogError(ex, "Unexpected error retrieving Autopilot devices");
             return StatusCode(500, new { error = "An unexpected error occurred while retrieving Autopilot devices" });
+        }
+    }
+
+    /// <summary>
+    /// Syncs Intune data (enrollment date, last check-in, certificate expiry) to Asset entities.
+    /// Matches assets by serial number and updates their Intune fields.
+    /// </summary>
+    /// <param name="assetIds">Optional: specific asset IDs to sync. If not provided, syncs all laptops/desktops with serial numbers.</param>
+    /// <returns>Sync result with statistics</returns>
+    /// <response code="200">Returns the sync result with statistics</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample requests:
+    ///
+    ///     POST /api/intune/sync-to-assets
+    ///
+    ///     POST /api/intune/sync-to-assets?assetIds=1&amp;assetIds=2&amp;assetIds=3
+    ///
+    /// This endpoint syncs Intune data to the Asset entities in the inventory database.
+    /// For each laptop/desktop with a serial number:
+    /// - Looks up the device in Intune by serial number
+    /// - Updates IntuneEnrollmentDate, IntuneLastCheckIn, and IntuneCertificateExpiry on the Asset
+    /// - Records IntuneSyncedAt timestamp
+    ///
+    /// The sync can be run for all applicable assets or for specific asset IDs.
+    /// </remarks>
+    [HttpPost("sync-to-assets")]
+    [ProducesResponseType(typeof(IntuneSyncResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IntuneSyncResultDto>> SyncIntuneDataToAssets([FromQuery] int[]? assetIds = null)
+    {
+        try
+        {
+            _logger.LogInformation("API request to sync Intune data to assets. Asset IDs: {AssetIds}",
+                assetIds != null ? string.Join(", ", assetIds) : "all");
+
+            var result = await _intuneSyncService.SyncIntuneDataToAssetsAsync(assetIds);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to sync Intune data to assets");
+            return StatusCode(500, new { error = "Failed to sync Intune data", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error syncing Intune data to assets");
+            return StatusCode(500, new { error = "An unexpected error occurred while syncing Intune data" });
         }
     }
 }

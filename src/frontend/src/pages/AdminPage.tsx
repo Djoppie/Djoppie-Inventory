@@ -26,7 +26,9 @@ import SectorsTab from '../components/admin/SectorsTab';
 import ServicesTab from '../components/admin/ServicesTab';
 import PhysicalWorkplacesTab from '../components/admin/PhysicalWorkplacesTab';
 import OrganizationTab from '../components/admin/OrganizationTab';
+import IntuneSyncTab from '../components/admin/IntuneSyncTab';
 import SchemaIcon from '@mui/icons-material/Schema';
+import SyncIcon from '@mui/icons-material/Sync';
 import { alpha } from '@mui/material';
 import { WORKPLACE_COLOR, EMPLOYEE_COLOR, ASSET_COLOR } from '../constants/filterColors';
 
@@ -223,6 +225,13 @@ const AdminPage = () => {
             aria-controls="admin-tabpanel-6"
             sx={{ color: EMPLOYEE_COLOR, '&.Mui-selected': { color: EMPLOYEE_COLOR } }}
           />
+          <Tab
+            icon={<SyncIcon />}
+            iconPosition="start"
+            label="Intune Sync"
+            id="admin-tab-7"
+            aria-controls="admin-tabpanel-7"
+          />
         </Tabs>
 
         <CardContent sx={{ p: 3 }}>
@@ -246,6 +255,9 @@ const AdminPage = () => {
           </TabPanel>
           <TabPanel value={currentTab} index={6}>
             <OrganizationTab />
+          </TabPanel>
+          <TabPanel value={currentTab} index={7}>
+            <IntuneSyncTab />
           </TabPanel>
         </CardContent>
       </Card>

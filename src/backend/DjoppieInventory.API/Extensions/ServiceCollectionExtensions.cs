@@ -33,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetEventService, AssetEventService>();
         services.AddScoped<ICsvImportService, CsvImportService>();
         services.AddScoped<IIntuneService, IntuneService>();
+        services.AddScoped<IIntuneSyncService, IntuneSyncService>();
         services.AddScoped<IGraphUserService, GraphUserService>();
         services.AddScoped<IAssetCodeGenerator, AssetCodeGeneratorService>();
         services.AddScoped<IRolloutWorkplaceService, RolloutWorkplaceService>();

@@ -55,6 +55,13 @@ export interface Asset {
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
+
+  // Intune integration fields (synced from Microsoft Intune for laptops/desktops)
+  intuneEnrollmentDate?: string;
+  intuneLastCheckIn?: string;
+  intuneCertificateExpiry?: string;
+  intuneSyncedAt?: string;
+
   createdAt: string;
   updatedAt: string;
 }

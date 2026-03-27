@@ -59,6 +59,8 @@ const prepareExportData = (assets: Asset[], columns: ExportColumn[]): Record<str
         row[column.label] = formatStatus(value as AssetStatus);
       } else if (column.key === 'purchaseDate' || column.key === 'warrantyExpiry' || column.key === 'installationDate') {
         row[column.label] = formatDate(value as string);
+      } else if (column.key === 'intuneEnrollmentDate' || column.key === 'intuneLastCheckIn' || column.key === 'intuneCertificateExpiry' || column.key === 'intuneSyncedAt') {
+        row[column.label] = formatDate(value as string);
       } else if (column.key === 'createdAt' || column.key === 'updatedAt') {
         row[column.label] = formatDate(value as string);
       } else {
@@ -243,6 +245,9 @@ export const getDefaultExportColumns = (): ExportColumn[] => [
   { key: 'purchaseDate', label: 'Purchase Date', enabled: false },
   { key: 'warrantyExpiry', label: 'Warranty Expiry', enabled: false },
   { key: 'installationDate', label: 'Installation Date', enabled: false },
+  { key: 'intuneEnrollmentDate', label: 'Intune Enrollment Date', enabled: false },
+  { key: 'intuneLastCheckIn', label: 'Intune Last Check-in', enabled: false },
+  { key: 'intuneCertificateExpiry', label: 'Intune Certificate Expiry', enabled: false },
   { key: 'createdAt', label: 'Created At', enabled: false },
   { key: 'updatedAt', label: 'Updated At', enabled: false },
 ];

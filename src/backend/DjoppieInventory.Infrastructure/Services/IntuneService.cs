@@ -11,13 +11,16 @@ namespace DjoppieInventory.Infrastructure.Services;
 /// <summary>
 /// Service implementation for Microsoft Intune device management operations.
 /// Uses Microsoft Graph API to interact with Intune managed devices.
+/// Focuses purely on Intune API operations - sync orchestration is handled by IntuneSyncService.
 /// </summary>
 public class IntuneService : IIntuneService
 {
     private readonly GraphServiceClient _graphClient;
     private readonly ILogger<IntuneService> _logger;
 
-    public IntuneService(GraphServiceClient graphClient, ILogger<IntuneService> logger)
+    public IntuneService(
+        GraphServiceClient graphClient,
+        ILogger<IntuneService> logger)
     {
         _graphClient = graphClient ?? throw new ArgumentNullException(nameof(graphClient));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -138,7 +141,8 @@ public class IntuneService : IIntuneService
                     {
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
                         "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
-                        "enrolledDateTime", "userPrincipalName", "managementAgent"
+                        "enrolledDateTime", "userPrincipalName", "managementAgent",
+                        "managementCertificateExpirationDate"
                     };
                 });
 

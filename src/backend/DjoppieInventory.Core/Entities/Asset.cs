@@ -111,6 +111,29 @@ public class Asset
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // ===== Intune Integration Fields =====
+    // These fields are synced from Microsoft Intune for laptops/desktops
+
+    /// <summary>
+    /// Date when the device was enrolled in Intune (synced from Intune)
+    /// </summary>
+    public DateTime? IntuneEnrollmentDate { get; set; }
+
+    /// <summary>
+    /// Last check-in/sync time with Intune (synced from Intune)
+    /// </summary>
+    public DateTime? IntuneLastCheckIn { get; set; }
+
+    /// <summary>
+    /// Management certificate expiry date (synced from Intune)
+    /// </summary>
+    public DateTime? IntuneCertificateExpiry { get; set; }
+
+    /// <summary>
+    /// Timestamp when Intune data was last synced
+    /// </summary>
+    public DateTime? IntuneSyncedAt { get; set; }
+
     // ===== New Relational Properties =====
 
     /// <summary>

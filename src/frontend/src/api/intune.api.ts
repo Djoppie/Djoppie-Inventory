@@ -97,5 +97,45 @@ export const intuneApi = {
   getProvisioningTimeline: async (serialNumber: string): Promise<ProvisioningTimeline> => {
     const response = await apiClient.get<ProvisioningTimeline>(`/intune/devices/serial/${serialNumber}/provisioning-timeline`);
     return response.data;
+  },
+
+  /**
+   * Sync Intune data (enrollment date, last check-in, certificate expiry) to Asset entities
+   * @param assetIds - Optional array of asset IDs to sync. If not provided, syncs all laptops/desktops.
+   */
+  syncIntuneDataToAssets: async (assetIds?: number[]): Promise<IntuneSyncResult> => {
+    const params = assetIds?.length ? { assetIds } : undefined;
+    const response = await apiClient.post<IntuneSyncResult>('/intune/sync-to-assets', null, { params });
+    return response.data;
   }
 };
+
+/**
+ * Result of syncing Intune data to Asset entities
+ */
+export interface IntuneSyncResult {
+  totalProcessed: number;
+  successCount: number;
+  notFoundCount: number;
+  errorCount: number;
+  skippedCount: number;
+  startedAt: string;
+  completedAt: string;
+  duration: string;
+  items: IntuneSyncItemResult[];
+  errors: string[];
+}
+
+/**
+ * Result for a single asset sync operation
+ */
+export interface IntuneSyncItemResult {
+  assetId: number;
+  assetCode: string;
+  serialNumber?: string;
+  status: 'Success' | 'NotFound' | 'Error' | 'Skipped';
+  errorMessage?: string;
+  intuneEnrollmentDate?: string;
+  intuneLastCheckIn?: string;
+  intuneCertificateExpiry?: string;
+}

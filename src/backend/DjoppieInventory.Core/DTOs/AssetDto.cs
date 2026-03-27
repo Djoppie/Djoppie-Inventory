@@ -42,6 +42,13 @@ public class AssetDto
     public DateTime? PurchaseDate { get; set; }
     public DateTime? WarrantyExpiry { get; set; }
     public DateTime? InstallationDate { get; set; }
+
+    // Intune integration fields (synced from Microsoft Intune for laptops/desktops)
+    public DateTime? IntuneEnrollmentDate { get; set; }
+    public DateTime? IntuneLastCheckIn { get; set; }
+    public DateTime? IntuneCertificateExpiry { get; set; }
+    public DateTime? IntuneSyncedAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
