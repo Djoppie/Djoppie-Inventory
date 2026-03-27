@@ -53,6 +53,17 @@ public class CreateAssetDto
     public string? InstallationLocation { get; set; }
 
     /// <summary>
+    /// Building ID where the asset is located (optional)
+    /// </summary>
+    public int? BuildingId { get; set; }
+
+    /// <summary>
+    /// Physical workplace ID where this asset is fixed (optional).
+    /// Set for workplace-fixed assets (monitors, docking stations, desktops).
+    /// </summary>
+    public int? PhysicalWorkplaceId { get; set; }
+
+    /// <summary>
     /// Primary user (optional - can be assigned later)
     /// </summary>
     public string? Owner { get; set; }

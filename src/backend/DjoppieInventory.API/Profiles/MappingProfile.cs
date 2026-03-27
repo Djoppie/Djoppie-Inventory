@@ -27,6 +27,14 @@ public class MappingProfile : Profile
                         ? src.PhysicalWorkplace.Service.Sector.Name : null,
                     BuildingName = src.PhysicalWorkplace.Building != null ? src.PhysicalWorkplace.Building.Name : null,
                     Floor = src.PhysicalWorkplace.Floor
+                } : null))
+            .ForMember(dest => dest.Building, opt => opt.MapFrom(src =>
+                src.Building != null ? new BuildingInfo
+                {
+                    Id = src.Building.Id,
+                    Code = src.Building.Code,
+                    Name = src.Building.Name,
+                    Address = src.Building.Address
                 } : null));
 
         CreateMap<CreateAssetDto, Asset>()

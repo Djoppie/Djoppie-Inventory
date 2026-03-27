@@ -41,6 +41,8 @@ import AssetEventHistory from '../components/assets/AssetEventHistory';
 import LeaseContractCard from '../components/assets/LeaseContractCard';
 import LeaseContractDialog from '../components/assets/LeaseContractDialog';
 import DevicesIcon from '@mui/icons-material/Devices';
+import PlaceIcon from '@mui/icons-material/Place';
+import BusinessIcon from '@mui/icons-material/Business';
 import {
   getActiveLeaseContract,
   createLeaseContract,
@@ -427,25 +429,9 @@ const AssetDetailPage = () => {
                     {t('assetDetail.primaryUser')}
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
-                    {asset.owner}
+                    {asset.owner || '-'}
                   </Typography>
                 </Box>
-                <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetForm.service')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {asset.service ? `${asset.service.code} - ${asset.service.name}` : '-'}
-                  </Typography>
-                </Box>
-                {asset.installationLocation && (
-                  <Box sx={{ flex: '1 1 200px' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('assetForm.installationLocation')}
-                    </Typography>
-                    <Typography variant="body1">{asset.installationLocation}</Typography>
-                  </Box>
-                )}
                 {asset.jobTitle && (
                   <Box sx={{ flex: '1 1 200px' }}>
                     <Typography variant="caption" color="text.secondary">
@@ -460,6 +446,84 @@ const AssetDetailPage = () => {
                       {t('assetDetail.officeLocation')}
                     </Typography>
                     <Typography variant="body1">{asset.officeLocation}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Location Information */}
+          <Card elevation={0} sx={scannerCardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader
+                icon={<PlaceIcon />}
+                title={t('assetForm.locationSection')}
+              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                {/* Physical Workplace - prominently displayed if present */}
+                {asset.physicalWorkplace && (
+                  <Box sx={{ flex: '1 1 100%' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetForm.physicalWorkplace')}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                      <PlaceIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                      <Typography variant="body1" fontWeight="medium">
+                        {asset.physicalWorkplace.code} - {asset.physicalWorkplace.name}
+                      </Typography>
+                      {asset.physicalWorkplace.currentOccupantName && (
+                        <Chip
+                          label={asset.physicalWorkplace.currentOccupantName}
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                          sx={{ ml: 1 }}
+                        />
+                      )}
+                    </Box>
+                    {/* Show floor/room if available */}
+                    {(asset.physicalWorkplace.floor || asset.physicalWorkplace.buildingName) && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, ml: 3.5 }}>
+                        {[
+                          asset.physicalWorkplace.buildingName,
+                          asset.physicalWorkplace.floor,
+                        ].filter(Boolean).join(' • ')}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+
+                {/* Building */}
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetForm.building')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <BusinessIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                    <Typography variant="body1">
+                      {asset.physicalWorkplace?.buildingName || asset.building?.name || '-'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Service/Department */}
+                <Box sx={{ flex: '1 1 200px' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('assetForm.service')}
+                  </Typography>
+                  <Typography variant="body1">
+                    {asset.service ? `${asset.service.code} - ${asset.service.name}` :
+                     asset.physicalWorkplace?.serviceName || '-'}
+                  </Typography>
+                </Box>
+
+                {/* Installation Location (legacy/additional info) */}
+                {asset.installationLocation && (
+                  <Box sx={{ flex: '1 1 200px' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {t('assetForm.installationLocation')}
+                    </Typography>
+                    <Typography variant="body1">{asset.installationLocation}</Typography>
                   </Box>
                 )}
               </Box>

@@ -22,6 +22,12 @@ export interface Asset {
   service?: { id: number; code: string; name: string }; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
   buildingId?: number;
+  building?: {
+    id: number;
+    code: string;
+    name: string;
+    address?: string;
+  };
   physicalWorkplaceId?: number; // Physical workplace this asset is assigned to
   physicalWorkplace?: {
     id: number;
@@ -64,6 +70,8 @@ export interface CreateAssetDto {
   // Relational fields
   serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
+  buildingId?: number; // Building where the asset is located
+  physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
 
   // User assignment fields
   owner?: string; // Primary user (optional)
@@ -86,6 +94,8 @@ export interface UpdateAssetDto {
   assetTypeId?: number;
   serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
+  buildingId?: number; // Building where the asset is located
+  physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
 
   // User assignment fields
   owner?: string; // Primary user (optional)

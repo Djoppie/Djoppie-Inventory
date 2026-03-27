@@ -20,6 +20,8 @@ public class AssetDto
     public string? InstallationLocation { get; set; }
     public int? PhysicalWorkplaceId { get; set; }
     public PhysicalWorkplaceInfo? PhysicalWorkplace { get; set; }
+    public int? BuildingId { get; set; }
+    public BuildingInfo? Building { get; set; }
 
     // Legacy fields (for historical data)
     public string? LegacyBuilding { get; set; }

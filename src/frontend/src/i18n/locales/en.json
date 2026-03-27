@@ -182,6 +182,8 @@
     "dummyAsset": "Dummy asset (test)",
     "installationLocation": "Installation Location",
     "installationLocationHint": "Specific location details (e.g., room number, floor)",
+    "physicalWorkplace": "Physical Workplace",
+    "physicalWorkplaceHint": "Select the workplace where this asset is fixed",
     "deviceLinkedToUser": "Device linked to selected user",
     "deviceLinkedToOther": "Device linked to another user",
     "deviceNotLinked": "Device not linked to any user in Intune",

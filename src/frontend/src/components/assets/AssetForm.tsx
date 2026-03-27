@@ -45,6 +45,8 @@ import { GraphUser, IntuneDevice } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
 import AssetTypeSelect from '../common/AssetTypeSelect';
 import ServiceSelect from '../common/ServiceSelect';
+import BuildingSelect from '../common/BuildingSelect';
+import PhysicalWorkplaceSelect from '../common/PhysicalWorkplaceSelect';
 import { intuneApi } from '../../api/intune.api';
 import { serialNumberExists } from '../../api/assets.api';
 
@@ -167,6 +169,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     assetTypeId: initialData?.assetTypeId ?? 0,
     serviceId: initialData?.serviceId,
     installationLocation: initialData?.installationLocation || '',
+    buildingId: initialData?.buildingId,
+    physicalWorkplaceId: initialData?.physicalWorkplaceId,
 
     // User assignment fields
     owner: initialData?.owner || '',
@@ -583,14 +587,56 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         description={t('assetForm.locationSectionDesc')}
       >
         <Stack spacing={2.5}>
-          <ServiceSelect
-            value={formData.serviceId ?? null}
-            onChange={(value) => {
-              setFormData(prev => ({ ...prev, serviceId: value ?? undefined }));
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ flex: '1 1 300px' }}>
+              <BuildingSelect
+                value={formData.buildingId ?? null}
+                onChange={(value) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    buildingId: value ?? undefined,
+                    // Reset physical workplace when building changes
+                    physicalWorkplaceId: undefined,
+                  }));
+                }}
+                label={t('assetForm.building')}
+                helperText={t('assetForm.buildingHint')}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 300px' }}>
+              <ServiceSelect
+                value={formData.serviceId ?? null}
+                onChange={(value) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    serviceId: value ?? undefined,
+                    // Reset physical workplace when service changes
+                    physicalWorkplaceId: undefined,
+                  }));
+                }}
+                label={t('assetForm.service')}
+                helperText={t('assetForm.serviceHint')}
+              />
+            </Box>
+          </Box>
+
+          <PhysicalWorkplaceSelect
+            value={formData.physicalWorkplaceId ?? null}
+            onChange={(value, workplace) => {
+              setFormData(prev => ({
+                ...prev,
+                physicalWorkplaceId: value ?? undefined,
+                // Auto-fill building and service from selected workplace
+                buildingId: workplace?.id ? (prev.buildingId || undefined) : prev.buildingId,
+                serviceId: workplace?.serviceId ?? prev.serviceId,
+              }));
             }}
-            label={t('assetForm.service')}
-            helperText={t('assetForm.serviceHint')}
+            label={t('assetForm.physicalWorkplace')}
+            helperText={t('assetForm.physicalWorkplaceHint')}
+            buildingId={formData.buildingId}
+            serviceId={formData.serviceId}
           />
+
           <TextField
             fullWidth
             label={t('assetForm.installationLocation')}

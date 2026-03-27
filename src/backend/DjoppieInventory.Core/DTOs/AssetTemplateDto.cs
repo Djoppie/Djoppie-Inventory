@@ -57,3 +57,14 @@ public class PhysicalWorkplaceInfo
     public string? BuildingName { get; set; }
     public string? Floor { get; set; }
 }
+
+/// <summary>
+/// Lightweight building info for asset responses
+/// </summary>
+public class BuildingInfo
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Address { get; set; }
+}

@@ -153,6 +153,8 @@ public class AssetService : IAssetService
         existingAsset.Alias = updateAssetDto.Alias;
         existingAsset.InstallationLocation = updateAssetDto.InstallationLocation;
         existingAsset.ServiceId = updateAssetDto.ServiceId;
+        existingAsset.BuildingId = updateAssetDto.BuildingId;
+        existingAsset.PhysicalWorkplaceId = updateAssetDto.PhysicalWorkplaceId;
         existingAsset.PurchaseDate = updateAssetDto.PurchaseDate;
         existingAsset.WarrantyExpiry = updateAssetDto.WarrantyExpiry;
         existingAsset.InstallationDate = updateAssetDto.InstallationDate;
