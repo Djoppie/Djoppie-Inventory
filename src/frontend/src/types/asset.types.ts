@@ -17,7 +17,7 @@ export interface Asset {
 
   // Relational fields
   assetTypeId?: number;
-  assetType?: { id: number; code: string; name: string };
+  assetType?: { id: number; code: string; name: string; categoryId?: number };
   serviceId?: number;
   service?: { id: number; code: string; name: string }; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
@@ -120,7 +120,7 @@ export interface AssetTemplate {
 
   // Relational fields
   assetTypeId?: number;
-  assetType?: { id: number; code: string; name: string };
+  assetType?: { id: number; code: string; name: string; categoryId?: number };
   serviceId?: number;
   service?: { id: number; code: string; name: string };
   installationLocation?: string;

@@ -94,6 +94,9 @@ public class PhysicalWorkplacesController : ControllerBase
         var query = _context.PhysicalWorkplaces
             .Include(pw => pw.Building)
             .Include(pw => pw.Service)
+            .Include(pw => pw.DockingStationAsset)
+            .Include(pw => pw.Monitor1Asset)
+            .Include(pw => pw.Monitor2Asset)
             .AsNoTracking();
 
         if (buildingId.HasValue)
@@ -112,11 +115,26 @@ public class PhysicalWorkplacesController : ControllerBase
                 pw.Id,
                 pw.Code,
                 pw.Name,
+                pw.BuildingId,
                 pw.Building.Name,
                 pw.ServiceId,
                 pw.Service != null ? pw.Service.Name : null,
+                pw.Floor,
                 pw.CurrentOccupantName,
-                pw.IsActive
+                pw.CurrentOccupantEmail,
+                pw.IsActive,
+                // Equipment summary - count filled slots
+                (pw.DockingStationAssetId.HasValue ? 1 : 0) +
+                (pw.Monitor1AssetId.HasValue ? 1 : 0) +
+                (pw.Monitor2AssetId.HasValue ? 1 : 0) +
+                (pw.Monitor3AssetId.HasValue ? 1 : 0) +
+                (pw.KeyboardAssetId.HasValue ? 1 : 0) +
+                (pw.MouseAssetId.HasValue ? 1 : 0),
+                pw.HasDockingStation,
+                pw.MonitorCount,
+                pw.DockingStationAsset != null ? pw.DockingStationAsset.AssetCode : null,
+                pw.Monitor1Asset != null ? pw.Monitor1Asset.AssetCode : null,
+                pw.Monitor2Asset != null ? pw.Monitor2Asset.AssetCode : null
             ))
             .ToListAsync(cancellationToken);
 

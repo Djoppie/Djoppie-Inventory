@@ -195,7 +195,11 @@
     "lookupDeviceBySerial": "Look up device by serial number",
     "deviceNotFoundBySerial": "No device found with this serial number in Intune",
     "deviceFound": "Device found",
-    "assetNameAutoFetched": "DeviceName from Intune - auto-fetched by serial number"
+    "assetNameAutoFetched": "DeviceName from Intune - auto-fetched by serial number",
+    "category": "Category",
+    "categoryHint": "Filter asset types by category",
+    "assetType": "Asset Type",
+    "assetTypeHint": "Select the type of asset"
   },
   "bulkCreate": {
     "title": "Bulk Create Assets",

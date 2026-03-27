@@ -12,7 +12,7 @@ public class MappingProfile : Profile
         CreateMap<Asset, AssetDto>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
-                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name, CategoryId = src.AssetType.CategoryId } : null))
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
                 src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null))
             .ForMember(dest => dest.PhysicalWorkplace, opt => opt.MapFrom(src =>
@@ -66,7 +66,7 @@ public class MappingProfile : Profile
         // AssetTemplate mappings
         CreateMap<AssetTemplate, AssetTemplateDto>()
             .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
-                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name, CategoryId = src.AssetType.CategoryId } : null))
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
                 src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
 

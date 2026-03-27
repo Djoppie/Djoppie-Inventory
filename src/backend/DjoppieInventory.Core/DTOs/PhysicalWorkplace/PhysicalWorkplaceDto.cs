@@ -62,11 +62,21 @@ public record PhysicalWorkplaceSummaryDto(
     int Id,
     string Code,
     string Name,
+    int? BuildingId,
     string? BuildingName,
     int? ServiceId,
     string? ServiceName,
+    string? Floor,
     string? CurrentOccupantName,
-    bool IsActive
+    string? CurrentOccupantEmail,
+    bool IsActive,
+    // Equipment summary
+    int FixedAssetCount,
+    bool HasDockingStation,
+    int MonitorCount,
+    string? DockingStationAssetCode,
+    string? Monitor1AssetCode,
+    string? Monitor2AssetCode
 );
 
 // ============================================================

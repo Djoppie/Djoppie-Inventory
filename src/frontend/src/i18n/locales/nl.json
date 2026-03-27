@@ -195,7 +195,11 @@
     "lookupDeviceBySerial": "Apparaat opzoeken via serienummer",
     "deviceNotFoundBySerial": "Geen apparaat gevonden met dit serienummer in Intune",
     "deviceFound": "Apparaat gevonden",
-    "assetNameAutoFetched": "DeviceName uit Intune - automatisch opgehaald via serienummer"
+    "assetNameAutoFetched": "DeviceName uit Intune - automatisch opgehaald via serienummer",
+    "category": "Categorie",
+    "categoryHint": "Filter asset types op categorie",
+    "assetType": "Asset type",
+    "assetTypeHint": "Selecteer het type asset"
   },
   "bulkCreate": {
     "title": "Bulk aanmaken",

@@ -31,6 +31,7 @@ public class AssetTypeInfo
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public int? CategoryId { get; set; }
 }
 
 /// <summary>

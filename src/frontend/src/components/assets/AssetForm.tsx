@@ -43,6 +43,7 @@ import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
 import { GraphUser, IntuneDevice } from '../../types/graph.types';
 import UserAutocomplete from '../common/UserAutocomplete';
+import CategorySelect from '../common/CategorySelect';
 import AssetTypeSelect from '../common/AssetTypeSelect';
 import ServiceSelect from '../common/ServiceSelect';
 import BuildingSelect from '../common/BuildingSelect';
@@ -188,6 +189,11 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
 
   // Alias is stored separately (optional readable name)
   const [alias, setAlias] = useState(initialData?.alias || '');
+
+  // Selected category for filtering asset types
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    initialData?.assetType?.categoryId ?? null
+  );
 
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -544,24 +550,43 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             helperText={t('assetForm.aliasHint')}
           />
 
-          {/* Asset Type and Status */}
+          {/* Category, Asset Type and Status */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: '1 1 300px' }}>
+            <Box sx={{ flex: '1 1 200px' }}>
+              <CategorySelect
+                value={selectedCategoryId}
+                onChange={(value) => {
+                  setSelectedCategoryId(value);
+                  // Reset asset type when category changes
+                  if (value !== selectedCategoryId) {
+                    setFormData(prev => ({ ...prev, assetTypeId: 0 }));
+                  }
+                }}
+                label={t('assetForm.category')}
+                helperText={t('assetForm.categoryHint')}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 250px' }}>
               <AssetTypeSelect
                 value={formData.assetTypeId ?? null}
-                onChange={(value) => {
+                onChange={(value, assetType) => {
                   setFormData(prev => ({ ...prev, assetTypeId: value ?? 0 }));
+                  // Auto-fill category from selected asset type
+                  if (assetType?.categoryId) {
+                    setSelectedCategoryId(assetType.categoryId);
+                  }
                   if (errors.assetTypeId) {
                     setErrors(prev => ({ ...prev, assetTypeId: '' }));
                   }
                 }}
-                label={t('assetDetail.category')}
+                label={t('assetForm.assetType')}
                 helperText={errors.assetTypeId}
                 error={!!errors.assetTypeId}
                 required
+                categoryId={selectedCategoryId ?? undefined}
               />
             </Box>
-            <FormControl sx={{ flex: '1 1 200px' }} required>
+            <FormControl sx={{ flex: '1 1 180px' }} required>
               <InputLabel>{t('assetDetail.status')}</InputLabel>
               <Select
                 value={formData.status}
@@ -627,7 +652,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 ...prev,
                 physicalWorkplaceId: value ?? undefined,
                 // Auto-fill building and service from selected workplace
-                buildingId: workplace?.id ? (prev.buildingId || undefined) : prev.buildingId,
+                buildingId: workplace?.buildingId ?? prev.buildingId,
                 serviceId: workplace?.serviceId ?? prev.serviceId,
               }));
             }}

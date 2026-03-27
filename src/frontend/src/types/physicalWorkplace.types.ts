@@ -80,11 +80,21 @@ export interface PhysicalWorkplaceSummary {
   id: number;
   code: string;
   name: string;
+  buildingId?: number;
   buildingName?: string;
   serviceId?: number;
   serviceName?: string;
+  floor?: string;
   currentOccupantName?: string;
+  currentOccupantEmail?: string;
   isActive: boolean;
+  // Equipment summary
+  fixedAssetCount?: number;
+  hasDockingStation?: boolean;
+  monitorCount?: number;
+  dockingStationAssetCode?: string;
+  monitor1AssetCode?: string;
+  monitor2AssetCode?: string;
 }
 
 // ============================================================
