@@ -369,7 +369,21 @@ function AdminDataTable<T extends Record<string, unknown>>({
           borderRadius: 2,
           border: '1px solid',
           borderColor: 'divider',
-          overflow: 'hidden',
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': {
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb': {
+            bgcolor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            borderRadius: 4,
+            '&:hover': {
+              bgcolor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+            },
+          },
         }}
       >
         <Table size="small">

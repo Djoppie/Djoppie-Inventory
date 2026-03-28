@@ -298,7 +298,7 @@ const AdminNavigation = ({ activeSection, onSectionChange, sections }: AdminNavi
           onClick={handleDrawerToggle}
           sx={{
             position: 'fixed',
-            top: 80,
+            top: 100,
             left: 16,
             zIndex: 1300,
             bgcolor: isDark ? 'rgba(255, 215, 0, 0.12)' : 'rgba(255, 119, 0, 0.12)',
