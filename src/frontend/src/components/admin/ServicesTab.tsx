@@ -326,7 +326,7 @@ const ServicesTab = () => {
         code: item.code,
         name: item.name,
         description: item.description || '',
-        sectorId: String(item.sectorId),
+        sectorId: item.sectorId ? String(item.sectorId) : '',
         sortOrder: String(item.sortOrder),
         isActive: item.isActive,
       });

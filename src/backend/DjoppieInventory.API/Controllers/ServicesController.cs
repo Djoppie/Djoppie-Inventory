@@ -165,6 +165,7 @@ public class ServicesController : ControllerBase
 
         service.Name = dto.Name;
         service.SectorId = dto.SectorId;
+        service.Sector = null; // Clear navigation property to avoid EF tracking conflicts
         service.IsActive = dto.IsActive;
         service.SortOrder = dto.SortOrder;
 
