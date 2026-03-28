@@ -258,7 +258,7 @@ const AdminPage = () => {
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   color: 'primary.main',
-                  bgcolor: alpha('primary.main', 0.08),
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
                   borderColor: 'primary.main',
                   transform: 'translateX(-4px)',
                 },
