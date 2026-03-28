@@ -48,8 +48,11 @@ public static class AuthenticationExtensions
             options.FallbackPolicy = options.DefaultPolicy;
 
             // Custom policy for admin operations
+            // DEV: Temporarily allow any authenticated user
+            // TODO: For production, configure app roles in Entra ID and use:
+            // policy.RequireRole("Admin", "Global Administrator", "InventoryAdmin")
             options.AddPolicy("RequireAdminRole", policy =>
-                policy.RequireRole("Admin", "Global Administrator"));
+                policy.RequireAuthenticatedUser());
         });
 
         return services;
