@@ -9,6 +9,7 @@
 ## Executive Summary
 
 Dit document analyseert de huidige architectuur van de rollout workflow in Djoppie Inventory, met focus op de relaties tussen:
+
 - **PhysicalWorkplace** (permanente fysieke werkplekken)
 - **RolloutSession/Day/Workplace** (tijdelijke rollout configuratie)
 - **Asset** (IT-assets)
@@ -233,6 +234,7 @@ Step 5: SaveChangesAsync() + UpdateDayTotalsAsync()
 De codebase heeft **twee manieren** om asset assignments te tracken:
 
 #### Legacy: AssetPlansJson (USED)
+
 ```json
 // RolloutWorkplace.AssetPlansJson
 [
@@ -254,6 +256,7 @@ De codebase heeft **twee manieren** om asset assignments te tracken:
 ```
 
 #### New: WorkplaceAssetAssignment (NOT USED)
+
 ```csharp
 // WorkplaceAssetAssignment entity - proper relational model
 public class WorkplaceAssetAssignment
@@ -278,15 +281,18 @@ public class WorkplaceAssetAssignment
 ### 4.1 Critical Issues
 
 #### Issue 1: Dual Data Model (JSON vs Relational)
+
 **Severity:** HIGH
 **Location:** `RolloutWorkplace.AssetPlansJson` vs `WorkplaceAssetAssignment`
 
 **Problem:**
+
 - Nieuwe relational model is gedefinieerd maar niet geïmplementeerd
 - Alle business logic gebruikt nog JSON
 - Data integriteit niet afdwingbaar
 
 **Impact:**
+
 - Queries zijn inefficiënt (JSON parsing)
 - Geen foreign key constraints
 - Geen referential integrity
@@ -294,10 +300,12 @@ public class WorkplaceAssetAssignment
 ---
 
 #### Issue 2: Missing Asset-PhysicalWorkplace Link
+
 **Severity:** HIGH
 **Location:** `RolloutWorkplaceService.TransitionAssetsForCompletion()`
 
 **Problem:**
+
 ```csharp
 // Current code - MISSING:
 asset.Status = AssetStatus.InGebruik;
@@ -308,6 +316,7 @@ asset.ServiceId = workplace.ServiceId;
 ```
 
 **Impact:**
+
 - Assets weten niet bij welke physical workplace ze horen
 - Queries om assets per werkplek te vinden werken niet
 - `PhysicalWorkplace.FixedAssets` navigation property geeft lege resultaten
@@ -315,15 +324,18 @@ asset.ServiceId = workplace.ServiceId;
 ---
 
 #### Issue 3: No User/Employee Entity
+
 **Severity:** HIGH
 **Location:** Entire codebase
 
 **Problem:**
+
 - Gebruikers zijn strings, niet entities
 - Geen centrale user management
 - Geen user history tracking
 
 **Current State:**
+
 ```csharp
 // Asset.cs
 public string? Owner { get; set; }  // Just a string!
@@ -340,6 +352,7 @@ public string? CurrentOccupantEntraId { get; set; }
 ```
 
 **Impact:**
+
 - Kan niet queryen: "Welke assets heeft Jan Janssen?"
 - Kan niet queryen: "Wat is de geschiedenis van deze gebruiker?"
 - Data inconsistentie mogelijk (zelfde user, andere spelling)
@@ -347,10 +360,12 @@ public string? CurrentOccupantEntraId { get; set; }
 ---
 
 #### Issue 4: Incomplete Decommission Flow
+
 **Severity:** MEDIUM
 **Location:** `RolloutWorkplaceService.TransitionAssetsForCompletion()`
 
 **Problem:**
+
 ```csharp
 // Old asset decommission - INCOMPLETE:
 oldAsset.Status = AssetStatus.UitDienst;
@@ -361,6 +376,7 @@ oldAsset.UpdatedAt = DateTime.UtcNow;
 ```
 
 **Impact:**
+
 - Decommissioned assets tonen nog steeds oude owner
 - Kan verwarrend zijn in rapporten
 
@@ -369,20 +385,24 @@ oldAsset.UpdatedAt = DateTime.UtcNow;
 ### 4.2 Medium Issues
 
 #### Issue 5: Duplicate Equipment Slot Storage
+
 **Location:** `PhysicalWorkplace` + `Asset.PhysicalWorkplaceId`
 
 **Problem:**
+
 - `PhysicalWorkplace` heeft dedicated slots: `Monitor1AssetId`, `DockingStationAssetId`, etc.
 - `Asset` heeft ook `PhysicalWorkplaceId`
 - Beide moeten in sync blijven
 
 **Current State:**
+
 - `PhysicalWorkplace.*AssetId` slots worden gevuld bij completion
 - `Asset.PhysicalWorkplaceId` wordt NIET gevuld
 
 ---
 
 #### Issue 6: Legacy Fields Still Present
+
 **Location:** `Asset.cs`
 
 ```csharp
@@ -391,21 +411,25 @@ public string? LegacyDepartment { get; set; } // Still present
 ```
 
 **Impact:**
+
 - Onduidelijk welk veld te gebruiken
 - Data migratie niet afgerond
 
 ---
 
 #### Issue 7: Metadata Type Safety
+
 **Location:** `AssetPlanDto.Metadata`, `WorkplaceAssetAssignment.MetadataJson`
 
 **Problem:**
+
 ```csharp
 public Dictionary<string, string>? Metadata { get; set; }
 // Keys: "serialNumber", "oldSerial", "position", "hasCamera", "isOldDevice", "returnStatus"
 ```
 
 **Impact:**
+
 - Geen compile-time validation
 - Typos in keys niet gedetecteerd
 - Inconsistent gebruik
@@ -415,6 +439,7 @@ public Dictionary<string, string>? Metadata { get; set; }
 ### 4.3 Low Issues
 
 #### Issue 8: Dual API Routes
+
 **Location:** Controllers
 
 | New Route | Legacy Route |
@@ -424,6 +449,7 @@ public Dictionary<string, string>? Metadata { get; set; }
 | `api/rollout/workplaces` | `api/rollouts/workplaces/{id}` |
 
 **Impact:**
+
 - Maintenance overhead
 - Verwarrend voor developers
 
@@ -701,6 +727,7 @@ oldAsset.UpdatedAt = DateTime.UtcNow;
 ### 7.3 Priority 3: Migrate to Relational Asset Assignments
 
 **Phase 1: Write to both models**
+
 ```csharp
 // In RolloutWorkplaceService - write to BOTH:
 workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);  // Keep for backward compat

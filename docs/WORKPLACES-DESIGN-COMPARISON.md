@@ -9,6 +9,7 @@ This document provides a detailed comparison between the original and redesigned
 ## 1. Statistics Header
 
 ### Before
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  [Icon]  Werkplekken                                    │
@@ -17,11 +18,13 @@ This document provides a detailed comparison between the original and redesigned
 │  [Chip: Totaal 45]  [Chip: Bezet 32]  [Chip: Vacant 13]│
 └─────────────────────────────────────────────────────────┘
 ```
+
 - Static chips with no visual hierarchy
 - No animation on value changes
 - Uniform color scheme (no distinction)
 
 ### After
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  [Neumorph                                              │
@@ -33,12 +36,14 @@ This document provides a detailed comparison between the original and redesigned
 │  (animated)        (animated)         (animated)        │
 └─────────────────────────────────────────────────────────┘
 ```
+
 - **Orange primary chip** (Djoppie brand)
 - **Color-coded success/info** for occupied/vacant
 - **Animated counters** on value changes
 - **Neumorph depth** with shadows
 
 **Improvements:**
+
 - ✅ Clear visual hierarchy (primary → secondary stats)
 - ✅ Animated feedback on data updates
 - ✅ Color psychology (orange = total, green = occupied, blue = available)
@@ -49,6 +54,7 @@ This document provides a detailed comparison between the original and redesigned
 ## 2. Filter Panel
 
 ### Before
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  [Button: Filters]  [Button: Clear]  [Button: Import]  │
@@ -57,11 +63,13 @@ This document provides a detailed comparison between the original and redesigned
 │  [Occupancy Select]                                     │
 └─────────────────────────────────────────────────────────┘
 ```
+
 - Flat design
 - No visual feedback on active filters
 - Uniform button styling
 
 ### After
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  [Neumorph Orange   [Purple Outlined]   [Teal Outlined] │
@@ -74,12 +82,14 @@ This document provides a detailed comparison between the original and redesigned
 │  └────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
+
 - **Neumorph orange** filter button with shadow
 - **Color-coded** action buttons (purple for clear, teal for import)
 - **Inset shadow** for expanded filter area (depth perception)
 - **Active indicator** (orange border when filters applied)
 
 **Improvements:**
+
 - ✅ Visual feedback on active filters
 - ✅ Color coding for different actions
 - ✅ Depth perception with neumorph shadows
@@ -104,6 +114,7 @@ This document provides a detailed comparison between the original and redesigned
 ```
 
 **Issues:**
+
 - ❌ Must click asset chip to see equipment details
 - ❌ Type column takes up space unnecessarily
 - ❌ No visual distinction between person and workplace info
@@ -187,6 +198,7 @@ Hover State:
 ```
 
 **Improvements:**
+
 - ✅ **60% more information density** - see all equipment at a glance
 - ✅ **Color-coded hierarchy** - purple for person, teal for equipment, orange for workplace
 - ✅ **Inline equipment visualization** - no clicks needed to see status
@@ -200,12 +212,15 @@ Hover State:
 ## 4. Equipment Visualization Detail
 
 ### Before: Generic Asset Count
+
 ```
 ┌──────────────┐
 │ [Icon] 5     │  ← Must click to see what these 5 assets are
 └──────────────┘
 ```
+
 **Problems:**
+
 - ❌ No information about equipment type
 - ❌ No indication if equipment is complete
 - ❌ Requires extra click to view details
@@ -238,12 +253,14 @@ Hover on Monitor Chip (tooltip):
 ```
 
 **Equipment Status Legend:**
+
 - **Teal filled chip**: Equipment assigned (with asset code)
 - **Gray transparent chip**: Equipment slot empty
 - **MON×2/3**: 2 monitors assigned out of 3 total slots
 - **Hover tooltip**: Shows asset codes and serial numbers
 
 **Improvements:**
+
 - ✅ **Instant visibility** - see equipment status without clicking
 - ✅ **Visual completion indicator** - filled vs empty chips
 - ✅ **Quick comparison** - scan down equipment column
@@ -255,9 +272,11 @@ Hover on Monitor Chip (tooltip):
 ## 5. Occupant Display
 
 ### Before: Generic Chip or Text
+
 ```
 [Chip: John Doe]  or  "Vacant"
 ```
+
 - No visual distinction from other data
 - Green color regardless of context
 
@@ -286,11 +305,13 @@ Vacant Workplace:
 ```
 
 **Color Psychology:**
+
 - **Purple** = Royalty, dignity → represents people/occupants
 - **Gray** = Neutral → represents vacancy/availability
 - Clear visual separation from teal equipment
 
 **Improvements:**
+
 - ✅ **Instant recognition** - purple = person
 - ✅ **Visual hierarchy** - person info stands out
 - ✅ **Consistent color language** - purple throughout app for people
@@ -301,6 +322,7 @@ Vacant Workplace:
 ## 6. Mobile/Tablet Card View
 
 ### Before: Basic Card Layout
+
 ```
 ┌─────────────────────────────────────────┐
 │ [Icon] WP01 [Inactive Badge]            │
@@ -316,6 +338,7 @@ Vacant Workplace:
 ```
 
 ### After: Enhanced Card with Equipment
+
 ```
 ┌───────────────────────────────────────────────────┐
 │ ┌──────┐                                          │
@@ -337,6 +360,7 @@ Vacant Workplace:
 ```
 
 **Improvements:**
+
 - ✅ **Equipment inline** - no need to open dialogs
 - ✅ **Color-coded actions** - sidebar with background colors
 - ✅ **Better hierarchy** - orange code, purple occupant, teal equipment
@@ -350,12 +374,14 @@ Vacant Workplace:
 ### Statistics Counter Animation
 
 **Before:**
+
 ```
 Static number → Instant change to new number
 45 ────→ 47 (no transition)
 ```
 
 **After:**
+
 ```
 Animated counter → Smooth increment animation
 45 ─→ 46 ─→ 47 (300ms total)
@@ -365,6 +391,7 @@ Animated counter → Smooth increment animation
 ### Table Row Hover
 
 **Before:**
+
 ```
 ┌────────────────────────────┐
 │ Row content                │ → Slight background color change
@@ -372,6 +399,7 @@ Animated counter → Smooth increment animation
 ```
 
 **After:**
+
 ```
 ┌────────────────────────────┐
 │ Row content                │
@@ -387,11 +415,13 @@ Animated counter → Smooth increment animation
 ### Equipment Chip Hover
 
 **Before:**
+
 ```
 No hover effect
 ```
 
 **After:**
+
 ```
 [DOCK] → [DOCK] (lifted)
           ↓
@@ -409,6 +439,7 @@ No hover effect
 ### Screen Real Estate Efficiency
 
 **Before (6 visible workplaces):**
+
 ```
 ┌───────────────────────────────────────────┐
 │ Header                                    │ ← 120px
@@ -426,6 +457,7 @@ Total: ~520px vertical space
 ```
 
 **After (10 visible workplaces):**
+
 ```
 ┌───────────────────────────────────────────┐
 │ Header (compact)                          │ ← 100px
@@ -453,12 +485,14 @@ Total: ~640px vertical space
 ## Summary of Improvements
 
 ### Visual Design
+
 - ✅ **Color-coded information hierarchy** (Orange/Purple/Teal)
 - ✅ **Neumorph depth** with soft shadows
 - ✅ **Consistent design language** across all components
 - ✅ **Professional aesthetics** with modern styling
 
 ### User Experience
+
 - ✅ **60% more information density** in table view
 - ✅ **Inline equipment visualization** - no extra clicks
 - ✅ **Instant status recognition** via filled/empty chips
@@ -466,17 +500,20 @@ Total: ~640px vertical space
 - ✅ **Hover tooltips** with detailed information
 
 ### Interaction Design
+
 - ✅ **Smooth transitions** for all hover states
 - ✅ **Clear action buttons** with color coding
 - ✅ **Responsive touch targets** on mobile
 - ✅ **Keyboard navigation** support
 
 ### Performance
+
 - ✅ **Hardware-accelerated animations** (transform, opacity)
 - ✅ **Optimized rendering** with React memoization
 - ✅ **Lazy tooltip loading** on hover only
 
 ### Accessibility
+
 - ✅ **WCAG AA compliant** color contrast
 - ✅ **Semantic HTML** structure (table, headers)
 - ✅ **Screen reader support** with ARIA labels
@@ -513,21 +550,25 @@ Total: ~640px vertical space
 ## Technical Implementation
 
 ### New Components Created
+
 1. **EquipmentChip.tsx** (185 lines) - Equipment visualization
 2. **WorkplaceOccupantChip.tsx** (95 lines) - Occupant display
 3. **AnimatedStatChip.tsx** (145 lines) - Animated statistics
 
 ### Modified Files
+
 1. **PhysicalWorkplacesPage.tsx** - Enhanced table and card views
    - Table: 250 lines of compact layout code
    - Mobile: 195 lines of enhanced card code
    - Filter panel: 145 lines of neumorph styling
 
 ### Total Code Added
+
 - **~820 lines** of production-ready React/TypeScript
 - **~3,200 lines** of documentation (this file + design guide)
 
 ### Dependencies
+
 - No new dependencies required
 - Uses existing MUI components and icons
 - Pure CSS animations (no animation libraries)
