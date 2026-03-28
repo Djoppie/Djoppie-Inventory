@@ -41,7 +41,8 @@ public class IntuneService : IIntuneService
                     {
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
                         "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
-                        "enrolledDateTime", "userPrincipalName", "managementAgent"
+                        "enrolledDateTime", "userPrincipalName", "managementAgent",
+                        "managementCertificateExpirationDate"
                     };
                 });
 
