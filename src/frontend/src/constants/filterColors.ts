@@ -32,7 +32,7 @@ export const SECTOR_COLOR = '#1976d2';
  * Service color (Teal)
  * Used for: diensten and related organizational filters
  */
-export const SERVICE_COLOR = '#009688';
+export const SERVICE_COLOR = '#26A69A';
 
 /**
  * Workplace color (Teal - same as service, part of hierarchy)
@@ -57,10 +57,10 @@ export const EMPLOYEE_COLOR = '#7b1fa2';
 export const ASSET_COLOR = '#FF7700';
 
 /**
- * Building/Location filter color (Amber/Yellow)
+ * Building/Location filter color (Purple)
  * Used for: gebouwen, locaties, and physical location filters
  */
-export const BUILDING_COLOR = '#F59E0B';
+export const BUILDING_COLOR = '#7E57C2';
 
 // =============================================================================
 // STATUS COLORS
