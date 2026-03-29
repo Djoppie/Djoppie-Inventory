@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -135,6 +135,7 @@ const getWorkplaceTypeIcon = (type: WorkplaceType) => {
 const PhysicalWorkplacesPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -144,10 +145,21 @@ const PhysicalWorkplacesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Multiselect filter state (comma-separated IDs)
-  const [serviceFilter, setServiceFilter] = useState('');
-  const [buildingFilter, setBuildingFilter] = useState('');
-  const [serviceFilterExpanded, setServiceFilterExpanded] = useState(false);
+  // Initialize from URL query params if present
+  const initialServiceFilter = searchParams.get('service') || '';
+  const [serviceFilter, setServiceFilter] = useState(initialServiceFilter);
+  const [buildingFilter, setBuildingFilter] = useState(() => searchParams.get('building') || '');
+  const [serviceFilterExpanded, setServiceFilterExpanded] = useState(!!initialServiceFilter);
   const [buildingFilterExpanded, setBuildingFilterExpanded] = useState(false);
+
+  // Sync URL params with filter state (for navigation from other pages)
+  useEffect(() => {
+    const serviceParam = searchParams.get('service');
+    if (serviceParam && serviceParam !== serviceFilter) {
+      setServiceFilter(serviceParam);
+      setServiceFilterExpanded(true); // Auto-expand filter panel when filtering via URL
+    }
+  }, [searchParams]);
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);

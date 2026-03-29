@@ -54,6 +54,8 @@ export interface Asset {
     jobTitle?: string;
     serviceId?: number;
     serviceName?: string;
+    physicalWorkplaceId?: number;
+    physicalWorkplaceCode?: string;
   };
 
   // Legacy user assignment fields (for backwards compatibility)

@@ -544,7 +544,7 @@ const AssetTableView = ({
                   {asset.model || '-'}
                 </TableCell>
 
-                {/* Toewijzing: Owner (purple) for laptops, Workplace (teal) for fixed assets - Always visible */}
+                {/* Toewijzing: Employee name with workplace link, or Workplace code with service */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -553,7 +553,7 @@ const AssetTableView = ({
                   }}
                 >
                   {isUserAssignedAsset(asset) ? (
-                    // Laptop/Notebook: Show employee (preferred) or legacy owner with purple accent + installation date
+                    // Laptop/Notebook: Show employee name, click navigates to workplace
                     asset.employee ? (
                       <Tooltip
                         title={
@@ -566,6 +566,12 @@ const AssetTableView = ({
                               <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
                                 <Typography variant="caption" sx={{ fontWeight: 600 }}>Email:</Typography>
                                 <Typography variant="caption">{asset.employee.email}</Typography>
+                              </Box>
+                            )}
+                            {asset.physicalWorkplace && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
                               </Box>
                             )}
                             {asset.installationDate && (
@@ -600,15 +606,24 @@ const AssetTableView = ({
                           }}
                         >
                           <Link
-                            to={`/admin?section=employees`}
+                            to={
+                              // Priority: 1) Asset's physical workplace, 2) Employee's workplace, 3) Workplaces filtered by service
+                              asset.physicalWorkplace
+                                ? `/workplaces/${asset.physicalWorkplace.id}`
+                                : asset.employee.physicalWorkplaceId
+                                  ? `/workplaces/${asset.employee.physicalWorkplaceId}`
+                                  : `/workplaces${asset.employee.serviceId ? `?service=${asset.employee.serviceId}` : ''}`
+                            }
                             onClick={(e) => e.stopPropagation()}
                             style={{
-                              color: 'inherit',
+                              color: '#7B1FA2',
                               textDecoration: 'none',
                               display: 'flex',
                               alignItems: 'center',
                               gap: 4,
                             }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
                           >
                             <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
                             <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -639,6 +654,12 @@ const AssetTableView = ({
                               <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
                               <Typography variant="caption">{asset.owner}</Typography>
                             </Box>
+                            {asset.physicalWorkplace && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
+                              </Box>
+                            )}
                             {asset.installationDate && (
                               <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
                                 <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
@@ -668,16 +689,29 @@ const AssetTableView = ({
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 0.25,
-                            cursor: 'default',
                           }}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Link
+                            to={asset.physicalWorkplace
+                              ? `/workplaces/${asset.physicalWorkplace.id}`
+                              : `/workplaces${asset.service?.id ? `?service=${asset.service.id}` : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              color: '#7B1FA2',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
                             <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
                             <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {asset.owner}
                             </span>
-                          </Box>
-                          {asset.installationDate && (
+                          </Link>
+                          {asset.service?.name && (
                             <Typography
                               variant="caption"
                               sx={{
@@ -687,7 +721,7 @@ const AssetTableView = ({
                                 pl: 2.25,
                               }}
                             >
-                              sinds {new Date(asset.installationDate).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: '2-digit' })}
+                              {asset.service.name}
                             </Typography>
                           )}
                         </Box>
@@ -696,11 +730,15 @@ const AssetTableView = ({
                       <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
                     )
                   ) : (
-                    // Fixed asset (monitor, docking, etc.): Show workplace with teal accent
+                    // Fixed asset (desktop, monitor, docking, etc.): Show workplace with occupant/service
                     asset.physicalWorkplace ? (
                       <Tooltip
                         title={
                           <Box sx={{ p: 0.5 }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
+                              <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
+                            </Box>
                             {asset.physicalWorkplace.currentOccupantName && (
                               <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
                                 <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebruiker:</Typography>
@@ -733,21 +771,46 @@ const AssetTableView = ({
                         arrow
                         placement="top"
                       >
-                        <Link
-                          to="/workplaces"
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            color: 'inherit',
-                            textDecoration: 'none',
+                        <Box
+                          sx={{
                             fontWeight: 500,
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
+                            flexDirection: 'column',
+                            gap: 0.25,
                           }}
                         >
-                          <BusinessIcon sx={{ fontSize: 14, color: SERVICE_COLOR }} />
-                          {asset.physicalWorkplace.code}
-                        </Link>
+                          <Link
+                            to={`/workplaces/${asset.physicalWorkplace.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              color: SERVICE_COLOR,
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            <BusinessIcon sx={{ fontSize: 14, color: SERVICE_COLOR }} />
+                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {asset.physicalWorkplace.currentOccupantName || asset.physicalWorkplace.code}
+                            </span>
+                          </Link>
+                          {asset.physicalWorkplace.serviceName && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                fontWeight: 400,
+                                pl: 2.25,
+                              }}
+                            >
+                              {asset.physicalWorkplace.serviceName}
+                            </Typography>
+                          )}
+                        </Box>
                       </Tooltip>
                     ) : (
                       <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>

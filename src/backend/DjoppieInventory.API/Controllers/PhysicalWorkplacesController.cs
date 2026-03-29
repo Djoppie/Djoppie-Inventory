@@ -76,7 +76,55 @@ public class PhysicalWorkplacesController : ControllerBase
             .ThenBy(pw => pw.Name)
             .ToListAsync(cancellationToken);
 
-        var dtos = workplaces.Select(MapToDto);
+        // Get occupant identifiers to look up their active laptops
+        var occupantEmails = workplaces
+            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantEmail))
+            .Select(pw => pw.CurrentOccupantEmail!.ToLower())
+            .Distinct()
+            .ToList();
+
+        var occupantEntraIds = workplaces
+            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantEntraId))
+            .Select(pw => pw.CurrentOccupantEntraId!)
+            .Distinct()
+            .ToList();
+
+        var occupantNames = workplaces
+            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantName))
+            .Select(pw => pw.CurrentOccupantName!.ToLower())
+            .Distinct()
+            .ToList();
+
+        // Look up active laptops (InGebruik) for occupants - match by Owner (name or email) OR Employee EntraId
+        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+        var activeLaptops = await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Employee)
+            .Where(a => a.Status == AssetStatus.InGebruik)
+            .Where(a =>
+                (a.Owner != null && (occupantEmails.Contains(a.Owner.ToLower()) || occupantNames.Contains(a.Owner.ToLower()))) ||
+                (a.Employee != null && occupantEntraIds.Contains(a.Employee.EntraId)))
+            .Where(a =>
+                (a.AssetType != null && (
+                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                )) ||
+                (a.Category != null && laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Create lookups by owner (name/email) and employee EntraId (case-insensitive)
+        var laptopByOwner = activeLaptops
+            .Where(a => !string.IsNullOrEmpty(a.Owner))
+            .GroupBy(a => a.Owner!.ToLower())
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var laptopByEntraId = activeLaptops
+            .Where(a => a.Employee != null)
+            .GroupBy(a => a.Employee!.EntraId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var dtos = workplaces.Select(pw => MapToDtoWithActiveLaptop(pw, laptopByOwner, laptopByEntraId));
         return Ok(dtos);
     }
 
@@ -1875,6 +1923,97 @@ public class PhysicalWorkplacesController : ControllerBase
             pw.OccupantDeviceBrand,
             pw.OccupantDeviceModel,
             pw.OccupantDeviceAssetCode,
+            pw.IsActive,
+            totalAssetCount,
+            pw.CreatedAt,
+            pw.UpdatedAt
+        );
+    }
+
+    /// <summary>
+    /// Maps a PhysicalWorkplace to DTO with dynamic active laptop lookup.
+    /// Only shows the occupant's laptop if it has status InGebruik.
+    /// </summary>
+    private static PhysicalWorkplaceDto MapToDtoWithActiveLaptop(
+        PhysicalWorkplace pw,
+        Dictionary<string, Asset> laptopByOwnerEmail,
+        Dictionary<string, Asset> laptopByEntraId)
+    {
+        // Count equipment slots that have assets assigned
+        var equipmentSlotCount = 0;
+        if (pw.DockingStationAssetId.HasValue) equipmentSlotCount++;
+        if (pw.Monitor1AssetId.HasValue) equipmentSlotCount++;
+        if (pw.Monitor2AssetId.HasValue) equipmentSlotCount++;
+        if (pw.Monitor3AssetId.HasValue) equipmentSlotCount++;
+        if (pw.KeyboardAssetId.HasValue) equipmentSlotCount++;
+        if (pw.MouseAssetId.HasValue) equipmentSlotCount++;
+
+        // Total asset count = equipment slots + other fixed assets
+        var totalAssetCount = equipmentSlotCount + (pw.FixedAssets?.Count ?? 0);
+
+        // Look up the occupant's active laptop (only if status = InGebruik)
+        // Try by EntraId first (most reliable), then by email, then by name
+        Asset? activeLaptop = null;
+        if (!string.IsNullOrEmpty(pw.CurrentOccupantEntraId) &&
+            laptopByEntraId.TryGetValue(pw.CurrentOccupantEntraId, out var laptopByEntra))
+        {
+            activeLaptop = laptopByEntra;
+        }
+        else if (!string.IsNullOrEmpty(pw.CurrentOccupantEmail) &&
+            laptopByOwnerEmail.TryGetValue(pw.CurrentOccupantEmail.ToLower(), out var laptopByEmail))
+        {
+            activeLaptop = laptopByEmail;
+        }
+        else if (!string.IsNullOrEmpty(pw.CurrentOccupantName) &&
+            laptopByOwnerEmail.TryGetValue(pw.CurrentOccupantName.ToLower(), out var laptopByName))
+        {
+            activeLaptop = laptopByName;
+        }
+
+        return new PhysicalWorkplaceDto(
+            pw.Id,
+            pw.Code,
+            pw.Name,
+            pw.Description,
+            pw.BuildingId,
+            pw.Building?.Name,
+            pw.Building?.Code,
+            pw.ServiceId,
+            pw.Service?.Name,
+            pw.Floor,
+            pw.Room,
+            pw.Type,
+            pw.MonitorCount,
+            pw.HasDockingStation,
+            // Equipment slots
+            pw.DockingStationAssetId,
+            pw.DockingStationAsset?.AssetCode,
+            pw.DockingStationAsset?.SerialNumber,
+            pw.Monitor1AssetId,
+            pw.Monitor1Asset?.AssetCode,
+            pw.Monitor1Asset?.SerialNumber,
+            pw.Monitor2AssetId,
+            pw.Monitor2Asset?.AssetCode,
+            pw.Monitor2Asset?.SerialNumber,
+            pw.Monitor3AssetId,
+            pw.Monitor3Asset?.AssetCode,
+            pw.Monitor3Asset?.SerialNumber,
+            pw.KeyboardAssetId,
+            pw.KeyboardAsset?.AssetCode,
+            pw.KeyboardAsset?.SerialNumber,
+            pw.MouseAssetId,
+            pw.MouseAsset?.AssetCode,
+            pw.MouseAsset?.SerialNumber,
+            // Occupant info
+            pw.CurrentOccupantEntraId,
+            pw.CurrentOccupantName,
+            pw.CurrentOccupantEmail,
+            pw.OccupiedSince,
+            // Occupant's device info - use active laptop if available, otherwise null
+            activeLaptop?.SerialNumber,
+            activeLaptop?.Brand,
+            activeLaptop?.Model,
+            activeLaptop?.AssetCode,
             pw.IsActive,
             totalAssetCount,
             pw.CreatedAt,
