@@ -240,6 +240,14 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Relationship to PhysicalWorkplace where employee is current occupant
+            // Uses EntraId as the principal key to join with CurrentOccupantEntraId
+            entity.HasOne(e => e.CurrentWorkplace)
+                .WithOne()
+                .HasPrincipalKey<Employee>(e => e.EntraId)
+                .HasForeignKey<PhysicalWorkplace>(pw => pw.CurrentOccupantEntraId)
+                .IsRequired(false);
         });
 
         // AssetEvent configuration

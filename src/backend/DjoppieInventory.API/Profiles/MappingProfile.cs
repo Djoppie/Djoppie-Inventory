@@ -44,7 +44,9 @@ public class MappingProfile : Profile
                     src.Employee.Email,
                     src.Employee.JobTitle,
                     src.Employee.ServiceId,
-                    src.Employee.Service != null ? src.Employee.Service.Name : null
+                    src.Employee.Service != null ? src.Employee.Service.Name : null,
+                    src.Employee.CurrentWorkplace != null ? src.Employee.CurrentWorkplace.Id : (int?)null,
+                    src.Employee.CurrentWorkplace != null ? src.Employee.CurrentWorkplace.Code : null
                 ) : null));
 
         CreateMap<CreateAssetDto, Asset>()

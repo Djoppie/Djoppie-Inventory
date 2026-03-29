@@ -25,6 +25,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -62,6 +64,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -101,6 +105,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -119,6 +125,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -150,6 +158,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -172,6 +182,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .FirstAsync(a => a.Id == asset.Id, cancellationToken);
     }
 
@@ -259,6 +271,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .FirstOrDefaultAsync(a => a.SerialNumber == serialNumber, cancellationToken);
     }
 
@@ -285,6 +299,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Where(a => ids.Contains(a.Id))
             .ToListAsync(cancellationToken);
     }
@@ -329,6 +345,8 @@ public class AssetRepository : IAssetRepository
             .Include(a => a.Service)
             .Include(a => a.Employee)
                 .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Where(a => a.Owner != null && a.Owner.ToLower() == ownerEmail.ToLower());
 
         // Apply asset type filter if provided

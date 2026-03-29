@@ -123,4 +123,10 @@ public class Employee
     /// Assets assigned to this employee
     /// </summary>
     public ICollection<Asset> Assets { get; set; } = new List<Asset>();
+
+    /// <summary>
+    /// The physical workplace where this employee is the current occupant.
+    /// Linked via PhysicalWorkplace.CurrentOccupantEntraId == Employee.EntraId.
+    /// </summary>
+    public PhysicalWorkplace? CurrentWorkplace { get; set; }
 }

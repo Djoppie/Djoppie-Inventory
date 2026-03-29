@@ -2,8 +2,10 @@ using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DjoppieInventory.API.Controllers;
 
@@ -18,17 +20,20 @@ public class EmployeesController : ControllerBase
     private readonly IEmployeeRepository _employeeRepository;
     private readonly IAssetRepository _assetRepository;
     private readonly IOrganizationSyncService _organizationSyncService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<EmployeesController> _logger;
 
     public EmployeesController(
         IEmployeeRepository employeeRepository,
         IAssetRepository assetRepository,
         IOrganizationSyncService organizationSyncService,
+        ApplicationDbContext context,
         ILogger<EmployeesController> logger)
     {
         _employeeRepository = employeeRepository ?? throw new ArgumentNullException(nameof(employeeRepository));
         _assetRepository = assetRepository ?? throw new ArgumentNullException(nameof(assetRepository));
         _organizationSyncService = organizationSyncService ?? throw new ArgumentNullException(nameof(organizationSyncService));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -256,6 +261,270 @@ public class EmployeesController : ControllerBase
         });
 
         return Ok(assetDtos);
+    }
+
+    /// <summary>
+    /// Preview laptop-employee linking (dry run).
+    /// Shows which laptops will be linked to which employees based on Owner name matching.
+    /// </summary>
+    [HttpGet("link-laptops/preview")]
+    [Authorize(Policy = "RequireAdminRole")]
+    [ProducesResponseType(typeof(LaptopLinkPreviewDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<LaptopLinkPreviewDto>> PreviewLaptopLinking(
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Laptop-employee linking preview requested");
+
+        // Get all laptops (filter by asset type or category containing laptop keywords)
+        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+        var laptops = await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Employee)
+            .Where(a =>
+                (a.AssetType != null && (
+                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                )) ||
+                (a.Category != null && laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Get all employees for matching
+        var employees = await _context.Employees
+            .Where(e => e.IsActive)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Create lookup by display name (case-insensitive)
+        var employeeByName = employees
+            .GroupBy(e => e.DisplayName.ToLower().Trim())
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Also create lookup by email for fallback
+        var employeeByEmail = employees
+            .Where(e => !string.IsNullOrEmpty(e.Email))
+            .GroupBy(e => e.Email!.ToLower().Trim())
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var items = new List<LaptopLinkItemDto>();
+
+        foreach (var laptop in laptops)
+        {
+            Employee? matchedEmployee = null;
+            string? matchReason = null;
+
+            // Check if already linked
+            if (laptop.EmployeeId.HasValue)
+            {
+                items.Add(new LaptopLinkItemDto(
+                    laptop.Id,
+                    laptop.AssetCode,
+                    laptop.AssetName,
+                    laptop.SerialNumber,
+                    laptop.Owner,
+                    laptop.Status.ToString(),
+                    laptop.Employee?.Id,
+                    laptop.Employee?.DisplayName,
+                    laptop.Employee?.Email,
+                    IsAlreadyLinked: true,
+                    CanLink: false,
+                    MatchReason: "Already linked to employee"
+                ));
+                continue;
+            }
+
+            // Try to match by Owner field
+            if (!string.IsNullOrEmpty(laptop.Owner))
+            {
+                var ownerLower = laptop.Owner.ToLower().Trim();
+
+                // Try exact name match first
+                if (employeeByName.TryGetValue(ownerLower, out var empByName))
+                {
+                    matchedEmployee = empByName;
+                    matchReason = "Matched by Owner name";
+                }
+                // Try email match
+                else if (employeeByEmail.TryGetValue(ownerLower, out var empByEmail))
+                {
+                    matchedEmployee = empByEmail;
+                    matchReason = "Matched by Owner email";
+                }
+            }
+
+            items.Add(new LaptopLinkItemDto(
+                laptop.Id,
+                laptop.AssetCode,
+                laptop.AssetName,
+                laptop.SerialNumber,
+                laptop.Owner,
+                laptop.Status.ToString(),
+                matchedEmployee?.Id,
+                matchedEmployee?.DisplayName,
+                matchedEmployee?.Email,
+                IsAlreadyLinked: false,
+                CanLink: matchedEmployee != null,
+                MatchReason: matchReason ?? "No matching employee found"
+            ));
+        }
+
+        var alreadyLinked = items.Count(i => i.IsAlreadyLinked);
+        var willBeLinked = items.Count(i => !i.IsAlreadyLinked && i.CanLink);
+        var unmatched = items.Count(i => !i.IsAlreadyLinked && !i.CanLink);
+
+        _logger.LogInformation(
+            "Laptop linking preview: {Total} laptops, {AlreadyLinked} already linked, {WillBeLinked} will be linked, {Unmatched} unmatched",
+            items.Count, alreadyLinked, willBeLinked, unmatched);
+
+        return Ok(new LaptopLinkPreviewDto(
+            items.Count,
+            alreadyLinked,
+            willBeLinked,
+            unmatched,
+            items
+        ));
+    }
+
+    /// <summary>
+    /// Execute laptop-employee linking.
+    /// Links laptops to employees based on Owner name matching.
+    /// </summary>
+    [HttpPost("link-laptops")]
+    [Authorize(Policy = "RequireAdminRole")]
+    [ProducesResponseType(typeof(LaptopLinkResultDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<LaptopLinkResultDto>> ExecuteLaptopLinking(
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Laptop-employee linking execution requested");
+
+        // Get all laptops that are NOT already linked
+        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+        var laptops = await _context.Assets
+            .Include(a => a.AssetType)
+            .Where(a => a.EmployeeId == null) // Only unlinked laptops
+            .Where(a =>
+                (a.AssetType != null && (
+                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                )) ||
+                (a.Category != null && laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))))
+            .ToListAsync(cancellationToken);
+
+        // Get all employees for matching
+        var employees = await _context.Employees
+            .Where(e => e.IsActive)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Create lookup by display name (case-insensitive)
+        var employeeByName = employees
+            .GroupBy(e => e.DisplayName.ToLower().Trim())
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Also create lookup by email for fallback
+        var employeeByEmail = employees
+            .Where(e => !string.IsNullOrEmpty(e.Email))
+            .GroupBy(e => e.Email!.ToLower().Trim())
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var linkedItems = new List<LaptopLinkItemDto>();
+        var unmatchedItems = new List<LaptopLinkItemDto>();
+        var errorMessages = new List<string>();
+        var successfullyLinked = 0;
+        var errors = 0;
+
+        foreach (var laptop in laptops)
+        {
+            Employee? matchedEmployee = null;
+            string? matchReason = null;
+
+            // Try to match by Owner field
+            if (!string.IsNullOrEmpty(laptop.Owner))
+            {
+                var ownerLower = laptop.Owner.ToLower().Trim();
+
+                // Try exact name match first
+                if (employeeByName.TryGetValue(ownerLower, out var empByName))
+                {
+                    matchedEmployee = empByName;
+                    matchReason = "Matched by Owner name";
+                }
+                // Try email match
+                else if (employeeByEmail.TryGetValue(ownerLower, out var empByEmail))
+                {
+                    matchedEmployee = empByEmail;
+                    matchReason = "Matched by Owner email";
+                }
+            }
+
+            if (matchedEmployee != null)
+            {
+                try
+                {
+                    laptop.EmployeeId = matchedEmployee.Id;
+                    laptop.UpdatedAt = DateTime.UtcNow;
+
+                    linkedItems.Add(new LaptopLinkItemDto(
+                        laptop.Id,
+                        laptop.AssetCode,
+                        laptop.AssetName,
+                        laptop.SerialNumber,
+                        laptop.Owner,
+                        laptop.Status.ToString(),
+                        matchedEmployee.Id,
+                        matchedEmployee.DisplayName,
+                        matchedEmployee.Email,
+                        IsAlreadyLinked: false,
+                        CanLink: true,
+                        MatchReason: matchReason
+                    ));
+                    successfullyLinked++;
+                }
+                catch (Exception ex)
+                {
+                    errorMessages.Add($"Error linking asset {laptop.AssetCode}: {ex.Message}");
+                    errors++;
+                }
+            }
+            else
+            {
+                unmatchedItems.Add(new LaptopLinkItemDto(
+                    laptop.Id,
+                    laptop.AssetCode,
+                    laptop.AssetName,
+                    laptop.SerialNumber,
+                    laptop.Owner,
+                    laptop.Status.ToString(),
+                    null,
+                    null,
+                    null,
+                    IsAlreadyLinked: false,
+                    CanLink: false,
+                    MatchReason: "No matching employee found"
+                ));
+            }
+        }
+
+        // Save all changes
+        if (successfullyLinked > 0)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        _logger.LogInformation(
+            "Laptop linking completed: {Linked} linked, {Unmatched} unmatched, {Errors} errors",
+            successfullyLinked, unmatchedItems.Count, errors);
+
+        return Ok(new LaptopLinkResultDto(
+            laptops.Count,
+            successfullyLinked,
+            0, // Already linked ones were excluded from this query
+            unmatchedItems.Count,
+            errors,
+            errorMessages,
+            linkedItems,
+            unmatchedItems
+        ));
     }
 
     private static EmployeeDto MapToDto(Employee employee, int assetCount)

@@ -21,7 +21,9 @@ public record EmployeeInfoDto(
     string? Email,
     string? JobTitle,
     int? ServiceId,
-    string? ServiceName
+    string? ServiceName,
+    int? PhysicalWorkplaceId,
+    string? PhysicalWorkplaceCode
 );
 
 /// <summary>
@@ -91,4 +93,47 @@ public record EmployeeSyncResultDto(
     int Skipped,
     int Failed,
     List<string> Errors
+);
+
+/// <summary>
+/// Individual laptop linking item for preview or result
+/// </summary>
+public record LaptopLinkItemDto(
+    int AssetId,
+    string AssetCode,
+    string? AssetName,
+    string? SerialNumber,
+    string? Owner,
+    string Status,
+    int? MatchedEmployeeId,
+    string? MatchedEmployeeName,
+    string? MatchedEmployeeEmail,
+    bool IsAlreadyLinked,
+    bool CanLink,
+    string? MatchReason
+);
+
+/// <summary>
+/// Result of laptop linking preview (dry run)
+/// </summary>
+public record LaptopLinkPreviewDto(
+    int TotalLaptops,
+    int AlreadyLinked,
+    int WillBeLinked,
+    int UnmatchedLaptops,
+    List<LaptopLinkItemDto> Items
+);
+
+/// <summary>
+/// Result of laptop linking execution
+/// </summary>
+public record LaptopLinkResultDto(
+    int TotalProcessed,
+    int SuccessfullyLinked,
+    int AlreadyLinked,
+    int FailedToMatch,
+    int Errors,
+    List<string> ErrorMessages,
+    List<LaptopLinkItemDto> LinkedItems,
+    List<LaptopLinkItemDto> UnmatchedItems
 );
