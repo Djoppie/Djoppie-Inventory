@@ -23,6 +23,8 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -58,6 +60,8 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -95,6 +99,8 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -111,12 +117,27 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Building)
             .Where(a => idList.Contains(a.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Asset>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Include(a => a.Employee)
+            .Where(a => a.EmployeeId == employeeId)
+            .OrderBy(a => a.Category)
+            .ThenBy(a => a.AssetCode)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -127,6 +148,8 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Include(a => a.PhysicalWorkplace)
                 .ThenInclude(pw => pw!.Service)
                     .ThenInclude(s => s!.Sector)
@@ -147,6 +170,8 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .FirstAsync(a => a.Id == asset.Id, cancellationToken);
     }
 
@@ -232,6 +257,8 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .FirstOrDefaultAsync(a => a.SerialNumber == serialNumber, cancellationToken);
     }
 
@@ -256,6 +283,8 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Where(a => ids.Contains(a.Id))
             .ToListAsync(cancellationToken);
     }
@@ -298,6 +327,8 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
             .Where(a => a.Owner != null && a.Owner.ToLower() == ownerEmail.ToLower());
 
         // Apply asset type filter if provided

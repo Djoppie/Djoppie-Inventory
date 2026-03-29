@@ -41,8 +41,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
-import { GraphUser, IntuneDevice } from '../../types/graph.types';
-import UserAutocomplete from '../common/UserAutocomplete';
+import { IntuneDevice } from '../../types/graph.types';
+import { Employee } from '../../types/admin.types';
+import EmployeeAutocomplete from '../common/EmployeeAutocomplete';
 import CategorySelect from '../common/CategorySelect';
 import AssetTypeSelect from '../common/AssetTypeSelect';
 import ServiceSelect from '../common/ServiceSelect';
@@ -153,7 +154,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
 
   const [isDummy, setIsDummy] = useState(initialData?.isDummy || false);
-  const [selectedUserUpn, setSelectedUserUpn] = useState<string | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
 
   // Serial number lookup states
@@ -173,7 +174,10 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     buildingId: initialData?.buildingId,
     physicalWorkplaceId: initialData?.physicalWorkplaceId,
 
-    // User assignment fields
+    // Employee assignment (preferred)
+    employeeId: initialData?.employeeId,
+
+    // Legacy user assignment fields
     owner: initialData?.owner || '',
     officeLocation: initialData?.officeLocation || '',
     jobTitle: initialData?.jobTitle || '',
@@ -686,21 +690,24 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         description={t('assetForm.assignmentSectionDesc')}
       >
         <Stack spacing={2.5}>
-          <UserAutocomplete
-            value={formData.owner || ''}
-            onChange={(displayName: string, user: GraphUser | null) => {
-              handleChange('owner', displayName);
-              setSelectedUserUpn(user?.userPrincipalName || null);
-              if (user) {
-                if (user.jobTitle) {
-                  handleChange('jobTitle', user.jobTitle);
+          <EmployeeAutocomplete
+            value={formData.employeeId}
+            onChange={(employeeId: number | null, employee: Employee | null) => {
+              setFormData(prev => ({ ...prev, employeeId: employeeId ?? undefined }));
+              setSelectedEmployee(employee);
+              // Auto-fill legacy fields for backwards compatibility
+              if (employee) {
+                handleChange('owner', employee.displayName);
+                if (employee.jobTitle) {
+                  handleChange('jobTitle', employee.jobTitle);
                   markFieldAsAutoFilled('jobTitle');
                 }
-                if (user.officeLocation) {
-                  handleChange('officeLocation', user.officeLocation);
+                if (employee.officeLocation) {
+                  handleChange('officeLocation', employee.officeLocation);
                   markFieldAsAutoFilled('officeLocation');
                 }
               } else {
+                handleChange('owner', '');
                 handleChange('jobTitle', '');
                 handleChange('officeLocation', '');
               }
@@ -710,8 +717,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             disabled={isLoading}
           />
 
-          {/* User info display */}
-          {(formData.jobTitle || formData.officeLocation) && (
+          {/* Employee info display */}
+          {selectedEmployee && (
             <Box
               sx={{
                 display: 'flex',
@@ -724,25 +731,36 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 borderRadius: '0 8px 8px 0',
               }}
             >
-              {formData.jobTitle && (
+              {selectedEmployee.jobTitle && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Work sx={{ fontSize: 18, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
                     {t('assetDetail.jobTitle')}:
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
-                    {formData.jobTitle}
+                    {selectedEmployee.jobTitle}
                   </Typography>
                 </Box>
               )}
-              {formData.officeLocation && (
+              {selectedEmployee.service && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LocationOn sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Business sx={{ fontSize: 18, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
-                    {t('assetDetail.officeLocation')}:
+                    {t('assetForm.service')}:
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
-                    {formData.officeLocation}
+                    {selectedEmployee.service.name}
+                  </Typography>
+                </Box>
+              )}
+              {selectedEmployee.email && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Person sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Email:
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {selectedEmployee.email}
                   </Typography>
                 </Box>
               )}
@@ -750,23 +768,18 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
           )}
 
           {/* Device-User validation indicator */}
-          {selectedDevice && (
+          {selectedDevice && selectedEmployee && (
             <Box>
               {selectedDevice.userPrincipalName ? (
                 (() => {
                   const deviceUpn = selectedDevice.userPrincipalName.toLowerCase();
-                  const ownerName = (formData.owner || '').toLowerCase();
-                  const upnMatch = selectedUserUpn && deviceUpn === selectedUserUpn.toLowerCase();
-                  const upnLocalPart = deviceUpn.split('@')[0].replace(/[._-]/g, ' ');
-                  const nameMatch = ownerName && (
-                    upnLocalPart.includes(ownerName.replace(/\s+/g, ' ')) ||
-                    ownerName.split(' ').every(part => upnLocalPart.includes(part))
-                  );
+                  const employeeUpn = selectedEmployee.userPrincipalName?.toLowerCase() || '';
+                  const upnMatch = deviceUpn === employeeUpn;
 
-                  return upnMatch || nameMatch ? (
+                  return upnMatch ? (
                     <Chip
                       icon={<CheckCircle />}
-                      label={`${formData.owner} — ${selectedDevice.deviceName}`}
+                      label={`${selectedEmployee.displayName} — ${selectedDevice.deviceName}`}
                       color="success"
                       variant="outlined"
                       size="small"

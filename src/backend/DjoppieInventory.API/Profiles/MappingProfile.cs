@@ -35,7 +35,17 @@ public class MappingProfile : Profile
                     Code = src.Building.Code,
                     Name = src.Building.Name,
                     Address = src.Building.Address
-                } : null));
+                } : null))
+            .ForMember(dest => dest.Employee, opt => opt.MapFrom(src =>
+                src.Employee != null ? new EmployeeInfoDto(
+                    src.Employee.Id,
+                    src.Employee.EntraId,
+                    src.Employee.DisplayName,
+                    src.Employee.Email,
+                    src.Employee.JobTitle,
+                    src.Employee.ServiceId,
+                    src.Employee.Service != null ? src.Employee.Service.Name : null
+                ) : null));
 
         CreateMap<CreateAssetDto, Asset>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)))

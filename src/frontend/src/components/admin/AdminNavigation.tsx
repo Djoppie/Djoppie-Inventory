@@ -156,7 +156,7 @@ const AdminNavigation = ({ activeSection, onSectionChange, sections }: AdminNavi
                       fontWeight={700}
                       letterSpacing="0.1em"
                       sx={{
-                        color: section.color,
+                        color: 'text.secondary',
                         fontSize: '0.75rem',
                       }}
                     >
@@ -232,7 +232,7 @@ const AdminNavigation = ({ activeSection, onSectionChange, sections }: AdminNavi
                             primaryTypographyProps={{
                               fontWeight: isActive ? 700 : 500,
                               fontSize: '0.9rem',
-                              color: isActive ? section.color : 'text.primary',
+                              color: 'text.primary',
                             }}
                           />
                           {item.badge !== undefined && item.badge > 0 && (

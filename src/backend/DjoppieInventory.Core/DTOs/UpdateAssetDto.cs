@@ -53,7 +53,13 @@ public class UpdateAssetDto
     public int? PhysicalWorkplaceId { get; set; }
 
     /// <summary>
+    /// Employee ID - reference to an Employee record (optional)
+    /// </summary>
+    public int? EmployeeId { get; set; }
+
+    /// <summary>
     /// Primary user assigned to this asset (optional)
+    /// Legacy field - prefer using EmployeeId for new assignments
     /// </summary>
     [StringLength(200)]
     public string? Owner { get; set; }

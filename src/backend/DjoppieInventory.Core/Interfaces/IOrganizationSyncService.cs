@@ -1,4 +1,5 @@
 using DjoppieInventory.Core.DTOs;
+using DjoppieInventory.Core.Entities;
 
 namespace DjoppieInventory.Core.Interfaces;
 
@@ -68,4 +69,12 @@ public interface IOrganizationSyncService
     /// <param name="entraGroupId">Entra group ID (GUID)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task LinkSectorToEntraGroupAsync(int sectorId, string entraGroupId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Synchronizes employees from Entra ID service groups (MG-*).
+    /// For each service with an EntraGroupId, retrieves group members and creates/updates Employee records.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the sync operation including statistics</returns>
+    Task<EmployeeSyncResultDto> SyncEmployeesAsync(CancellationToken cancellationToken = default);
 }

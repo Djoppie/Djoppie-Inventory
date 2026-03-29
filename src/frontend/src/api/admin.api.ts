@@ -16,8 +16,13 @@ import {
   Service,
   CreateServiceDto,
   UpdateServiceDto,
+  Employee,
+  CreateEmployeeDto,
+  UpdateEmployeeDto,
+  EmployeeSyncResult,
   SyncResult,
 } from '../types/admin.types';
+import { Asset } from '../types/asset.types';
 
 // ============================================================
 // Asset Types API
@@ -272,3 +277,57 @@ export interface ServiceCsvImportResult {
   isFullySuccessful: boolean;
   results: ServiceCsvImportRowResult[];
 }
+
+// ============================================================
+// Employees API
+// ============================================================
+
+export const employeesApi = {
+  getAll: async (includeInactive = true, serviceId?: number): Promise<Employee[]> => {
+    const response = await apiClient.get<Employee[]>('/admin/employees', {
+      params: { includeInactive, serviceId },
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<Employee> => {
+    const response = await apiClient.get<Employee>(`/admin/employees/${id}`);
+    return response.data;
+  },
+
+  getByEntraId: async (entraId: string): Promise<Employee> => {
+    const response = await apiClient.get<Employee>(`/admin/employees/entra/${encodeURIComponent(entraId)}`);
+    return response.data;
+  },
+
+  search: async (query: string, maxResults = 20): Promise<Employee[]> => {
+    const response = await apiClient.get<Employee[]>('/admin/employees/search', {
+      params: { q: query, maxResults },
+    });
+    return response.data;
+  },
+
+  create: async (data: CreateEmployeeDto): Promise<Employee> => {
+    const response = await apiClient.post<Employee>('/admin/employees', data);
+    return response.data;
+  },
+
+  update: async (id: number, data: UpdateEmployeeDto): Promise<Employee> => {
+    const response = await apiClient.put<Employee>(`/admin/employees/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/admin/employees/${id}`);
+  },
+
+  getAssets: async (id: number): Promise<Asset[]> => {
+    const response = await apiClient.get<Asset[]>(`/admin/employees/${id}/assets`);
+    return response.data;
+  },
+
+  syncFromEntra: async (): Promise<EmployeeSyncResult> => {
+    const response = await apiClient.post<EmployeeSyncResult>('/admin/employees/sync');
+    return response.data;
+  },
+};

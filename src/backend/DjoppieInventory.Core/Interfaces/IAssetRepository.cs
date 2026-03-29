@@ -25,6 +25,12 @@ public interface IAssetRepository
     /// Gets multiple assets by their IDs in a single query.
     /// </summary>
     Task<IEnumerable<Asset>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all assets assigned to a specific employee.
+    /// </summary>
+    Task<IEnumerable<Asset>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default);
+
     Task<Asset> CreateAsync(Asset asset, CancellationToken cancellationToken = default);
     Task<Asset> UpdateAsync(Asset asset, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);

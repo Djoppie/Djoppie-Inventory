@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, IconButton, Tooltip, alpha, useTheme, useMediaQuery } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useQuery } from '@tanstack/react-query';
@@ -30,15 +30,24 @@ import IntuneSyncTab from '../components/admin/IntuneSyncTab';
 import { categoriesApi, assetTypesApi, sectorsApi, servicesApi, buildingsApi } from '../api/admin.api';
 
 // Admin-specific colors (matching design requirements)
-const ADMIN_ASSET_COLOR = '#FDB931'; // Gold
+const ADMIN_ASSET_COLOR = '#FF7700'; // Djoppie Orange
 const ADMIN_ORGANIZATION_COLOR = '#26A69A'; // Teal
 const ADMIN_LOCATION_COLOR = '#7E57C2'; // Purple
 
 const AdminPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [activeSection, setActiveSection] = useState('categories');
+
+  // Handle URL section parameter (e.g., /admin?section=employees)
+  useEffect(() => {
+    const sectionParam = searchParams.get('section');
+    if (sectionParam) {
+      setActiveSection(sectionParam);
+    }
+  }, [searchParams]);
 
   // Fetch data for quick stats
   const { data: categories = [] } = useQuery({

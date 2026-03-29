@@ -223,6 +223,85 @@ export interface UpdateLeaseContractDto {
 }
 
 // ============================================================
+// Employee - Users synced from Entra ID
+// ============================================================
+
+export type EntraSyncStatus = 'None' | 'Success' | 'Failed';
+
+export interface Employee {
+  [key: string]: unknown;
+  id: number;
+  entraId: string;
+  userPrincipalName: string;
+  displayName: string;
+  email?: string;
+  department?: string;
+  jobTitle?: string;
+  officeLocation?: string;
+  mobilePhone?: string;
+  companyName?: string;
+  serviceId?: number;
+  service?: ServiceInfo;
+  isActive: boolean;
+  sortOrder: number;
+  assetCount: number;
+  entraLastSyncAt?: string;
+  entraSyncStatus: EntraSyncStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ServiceInfo {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export interface EmployeeInfo {
+  id: number;
+  entraId: string;
+  displayName: string;
+  email?: string;
+  jobTitle?: string;
+  serviceId?: number;
+  serviceName?: string;
+}
+
+export interface CreateEmployeeDto {
+  entraId: string;
+  userPrincipalName: string;
+  displayName: string;
+  email?: string;
+  department?: string;
+  jobTitle?: string;
+  officeLocation?: string;
+  mobilePhone?: string;
+  companyName?: string;
+  serviceId?: number;
+}
+
+export interface UpdateEmployeeDto {
+  displayName: string;
+  email?: string;
+  department?: string;
+  jobTitle?: string;
+  officeLocation?: string;
+  mobilePhone?: string;
+  companyName?: string;
+  serviceId?: number;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface EmployeeSyncResult {
+  created: number;
+  updated: number;
+  deactivated: number;
+  errors: number;
+  errorMessages: string[];
+}
+
+// ============================================================
 // Sync Result - Response from Entra sync operations
 // ============================================================
 

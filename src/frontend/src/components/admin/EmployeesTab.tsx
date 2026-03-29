@@ -1,204 +1,616 @@
-import { Box, Typography, Card, CardContent, Stack, Chip, alpha, useTheme } from '@mui/material';
-import PeopleIcon from '@mui/icons-material/People';
-import SecurityIcon from '@mui/icons-material/Security';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import GroupIcon from '@mui/icons-material/Group';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import { useState } from 'react';
+import {
+  Box,
+  Button,
+  TextField,
+  Fab,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  FormControlLabel,
+  Switch,
+  Divider,
+  Chip,
+  Autocomplete,
+} from '@mui/material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import AddIcon from '@mui/icons-material/Add';
+import SyncIcon from '@mui/icons-material/Sync';
+import PersonIcon from '@mui/icons-material/Person';
+import DevicesIcon from '@mui/icons-material/Devices';
+import AdminDataTable, { Column } from './AdminDataTable';
+import AdminFormDialog from './AdminFormDialog';
+import { Employee, UpdateEmployeeDto, Service } from '../../types/admin.types';
+import { employeesApi, servicesApi } from '../../api/admin.api';
+import Loading from '../common/Loading';
 import { EMPLOYEE_COLOR } from '../../constants/filterColors';
 
-const EmployeesTab = () => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+interface FormData {
+  entraId: string;
+  userPrincipalName: string;
+  displayName: string;
+  email: string;
+  department: string;
+  jobTitle: string;
+  officeLocation: string;
+  mobilePhone: string;
+  companyName: string;
+  serviceId: number | null;
+  sortOrder: string;
+  isActive: boolean;
+}
 
-  const upcomingFeatures = [
+const initialFormData: FormData = {
+  entraId: '',
+  userPrincipalName: '',
+  displayName: '',
+  email: '',
+  department: '',
+  jobTitle: '',
+  officeLocation: '',
+  mobilePhone: '',
+  companyName: '',
+  serviceId: null,
+  sortOrder: '0',
+  isActive: true,
+};
+
+const EmployeesTab = () => {
+  const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assetsDialogOpen, setAssetsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Employee | null>(null);
+  const [deletingItem, setDeletingItem] = useState<Employee | null>(null);
+  const [viewingAssetsFor, setViewingAssetsFor] = useState<Employee | null>(null);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error',
+  });
+
+  const { data: employees = [], isLoading } = useQuery({
+    queryKey: ['admin', 'employees', 'all'],
+    queryFn: () => employeesApi.getAll(true),
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ['admin', 'services', 'all'],
+    queryFn: () => servicesApi.getAll(false),
+  });
+
+  const { data: employeeAssets = [], isLoading: isLoadingAssets } = useQuery({
+    queryKey: ['admin', 'employees', viewingAssetsFor?.id, 'assets'],
+    queryFn: () => (viewingAssetsFor ? employeesApi.getAssets(viewingAssetsFor.id) : Promise.resolve([])),
+    enabled: !!viewingAssetsFor,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: employeesApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      setSnackbar({ open: true, message: 'Employee created', severity: 'success' });
+      handleCloseDialog();
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Failed to create employee', severity: 'error' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateEmployeeDto }) => employeesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      setSnackbar({ open: true, message: 'Employee updated', severity: 'success' });
+      handleCloseDialog();
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Failed to update employee', severity: 'error' });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: employeesApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      setSnackbar({ open: true, message: 'Employee deactivated', severity: 'success' });
+      handleCloseDeleteDialog();
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Failed to deactivate employee', severity: 'error' });
+    },
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: employeesApi.syncFromEntra,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      setSnackbar({
+        open: true,
+        message: `Sync: ${result.created} created, ${result.updated} updated, ${result.deactivated} deactivated`,
+        severity: result.errors > 0 ? 'error' : 'success',
+      });
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Failed to sync from Entra', severity: 'error' });
+    },
+  });
+
+  const handleOpenDialog = (item?: Employee) => {
+    if (item) {
+      setEditingItem(item);
+      setFormData({
+        entraId: item.entraId,
+        userPrincipalName: item.userPrincipalName,
+        displayName: item.displayName,
+        email: item.email || '',
+        department: item.department || '',
+        jobTitle: item.jobTitle || '',
+        officeLocation: item.officeLocation || '',
+        mobilePhone: item.mobilePhone || '',
+        companyName: item.companyName || '',
+        serviceId: item.serviceId || null,
+        sortOrder: String(item.sortOrder),
+        isActive: item.isActive,
+      });
+    } else {
+      setEditingItem(null);
+      setFormData(initialFormData);
+    }
+    setFormErrors({});
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingItem(null);
+    setFormData(initialFormData);
+    setFormErrors({});
+  };
+
+  const handleOpenDeleteDialog = (item: Employee) => {
+    setDeletingItem(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setDeletingItem(null);
+  };
+
+  const handleOpenAssetsDialog = (item: Employee) => {
+    setViewingAssetsFor(item);
+    setAssetsDialogOpen(true);
+  };
+
+  const handleCloseAssetsDialog = () => {
+    setAssetsDialogOpen(false);
+    setViewingAssetsFor(null);
+  };
+
+  const handleInputChange =
+    (field: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value =
+        field === 'isActive' ? (event.target as HTMLInputElement).checked : event.target.value;
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      if (formErrors[field]) {
+        setFormErrors((prev) => ({ ...prev, [field]: '' }));
+      }
+    };
+
+  const validateForm = (): boolean => {
+    const errors: Partial<Record<keyof FormData, string>> = {};
+    if (!editingItem) {
+      if (!formData.entraId.trim()) errors.entraId = 'Entra ID is required';
+      if (!formData.userPrincipalName.trim()) errors.userPrincipalName = 'UPN is required';
+    }
+    if (!formData.displayName.trim()) errors.displayName = 'Display name is required';
+    if (!formData.sortOrder || isNaN(Number(formData.sortOrder)))
+      errors.sortOrder = 'Sort order must be a number';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    const sortOrder = Number(formData.sortOrder);
+
+    try {
+      if (editingItem) {
+        await updateMutation.mutateAsync({
+          id: editingItem.id,
+          data: {
+            displayName: formData.displayName.trim(),
+            email: formData.email.trim() || undefined,
+            department: formData.department.trim() || undefined,
+            jobTitle: formData.jobTitle.trim() || undefined,
+            officeLocation: formData.officeLocation.trim() || undefined,
+            mobilePhone: formData.mobilePhone.trim() || undefined,
+            companyName: formData.companyName.trim() || undefined,
+            serviceId: formData.serviceId || undefined,
+            isActive: formData.isActive,
+            sortOrder,
+          },
+        });
+      } else {
+        await createMutation.mutateAsync({
+          entraId: formData.entraId.trim(),
+          userPrincipalName: formData.userPrincipalName.trim(),
+          displayName: formData.displayName.trim(),
+          email: formData.email.trim() || undefined,
+          department: formData.department.trim() || undefined,
+          jobTitle: formData.jobTitle.trim() || undefined,
+          officeLocation: formData.officeLocation.trim() || undefined,
+          mobilePhone: formData.mobilePhone.trim() || undefined,
+          companyName: formData.companyName.trim() || undefined,
+          serviceId: formData.serviceId || undefined,
+        });
+      }
+    } catch {
+      // Error handled by mutation callbacks
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingItem) return;
+    await deleteMutation.mutateAsync(deletingItem.id);
+  };
+
+  const columns: Column<Employee>[] = [
     {
-      title: 'User Management',
-      description: 'Manage user accounts and profiles',
-      icon: <PeopleIcon />,
+      id: 'displayName',
+      label: 'Name',
+      minWidth: 180,
+      format: (item) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PersonIcon sx={{ fontSize: 18, color: EMPLOYEE_COLOR }} />
+          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+            {item.displayName}
+          </Typography>
+        </Box>
+      ),
     },
     {
-      title: 'Role-Based Access Control',
-      description: 'Configure roles and permissions',
-      icon: <SecurityIcon />,
+      id: 'email',
+      label: 'Email',
+      minWidth: 200,
+      format: (item) => (
+        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+          {item.email || '-'}
+        </Typography>
+      ),
     },
     {
-      title: 'Authentication Settings',
-      description: 'Configure Entra ID and authentication policies',
-      icon: <VpnKeyIcon />,
+      id: 'service',
+      label: 'Service',
+      minWidth: 120,
+      format: (item) =>
+        item.service ? (
+          <Chip
+            label={item.service.code}
+            size="small"
+            sx={{
+              bgcolor: 'rgba(255, 119, 0, 0.1)',
+              color: '#FF7700',
+              fontWeight: 600,
+              fontSize: '0.7rem',
+            }}
+          />
+        ) : (
+          <Typography sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>-</Typography>
+        ),
     },
     {
-      title: 'Team Management',
-      description: 'Organize users into teams and departments',
-      icon: <GroupIcon />,
+      id: 'jobTitle',
+      label: 'Job Title',
+      minWidth: 150,
+      format: (item) => (
+        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+          {item.jobTitle || '-'}
+        </Typography>
+      ),
     },
     {
-      title: 'Admin Permissions',
-      description: 'Manage administrative privileges and audit logs',
-      icon: <AdminPanelSettingsIcon />,
+      id: 'assetCount',
+      label: 'Assets',
+      minWidth: 80,
+      align: 'center',
+      format: (item) => (
+        <Chip
+          icon={<DevicesIcon sx={{ fontSize: 14 }} />}
+          label={item.assetCount}
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (item.assetCount > 0) handleOpenAssetsDialog(item);
+          }}
+          sx={{
+            cursor: item.assetCount > 0 ? 'pointer' : 'default',
+            bgcolor: item.assetCount > 0 ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
+            color: item.assetCount > 0 ? '#2196F3' : 'text.disabled',
+            fontWeight: 600,
+            '&:hover': item.assetCount > 0 ? { bgcolor: 'rgba(33, 150, 243, 0.2)' } : {},
+          }}
+        />
+      ),
     },
+    { id: 'sortOrder', label: 'Order', minWidth: 60, align: 'center' },
   ];
+
+  if (isLoading) return <Loading message="Loading employees..." />;
 
   return (
     <Box>
-      {/* Main Placeholder Card */}
-      <Card
-        elevation={0}
+      <AdminDataTable
+        data={employees}
+        columns={columns}
+        onEdit={handleOpenDialog}
+        onDelete={handleOpenDeleteDialog}
+        searchPlaceholder="Search employees..."
+        emptyMessage="No employees found. Use the sync button to import from Entra ID."
+        getItemId={(item) => item.id}
+        showActiveStatus
+      />
+
+      {/* Sync FAB */}
+      <Fab
+        size="medium"
+        color="secondary"
+        onClick={() => syncMutation.mutate()}
+        disabled={syncMutation.isPending}
         sx={{
-          borderRadius: 2,
-          border: '2px dashed',
-          borderColor: alpha(EMPLOYEE_COLOR, 0.3),
-          bgcolor: alpha(EMPLOYEE_COLOR, 0.03),
-          textAlign: 'center',
-          mb: 4,
+          position: 'fixed',
+          bottom: 80,
+          right: 80,
+          zIndex: 1100,
         }}
+        title="Sync from Entra ID"
       >
-        <CardContent sx={{ py: 6, px: 4 }}>
-          <Box
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              bgcolor: alpha(EMPLOYEE_COLOR, 0.1),
-              border: '3px solid',
-              borderColor: alpha(EMPLOYEE_COLOR, 0.3),
-              mb: 3,
-            }}
-          >
-            <PeopleIcon
-              sx={{
-                fontSize: 48,
-                color: EMPLOYEE_COLOR,
-                filter: isDark ? `drop-shadow(0 0 8px ${alpha(EMPLOYEE_COLOR, 0.5)})` : 'none',
-              }}
-            />
-          </Box>
+        <SyncIcon
+          sx={{
+            animation: syncMutation.isPending ? 'spin 1s linear infinite' : 'none',
+            '@keyframes spin': {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            },
+          }}
+        />
+      </Fab>
 
-          <Typography
-            variant="h4"
-            fontWeight={700}
-            sx={{
-              color: EMPLOYEE_COLOR,
-              mb: 2,
-            }}
-          >
-            Employee Management
-          </Typography>
+      {/* Add FAB */}
+      <Fab
+        size="medium"
+        color="primary"
+        onClick={() => handleOpenDialog()}
+        sx={{ position: 'fixed', bottom: 80, right: 24, zIndex: 1100 }}
+        title="Add employee manually"
+      >
+        <AddIcon />
+      </Fab>
 
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto', mb: 3 }}>
-            This section is currently under development. It will provide comprehensive employee and user
-            management features including role-based access control, team organization, and permission
-            management.
-          </Typography>
-
-          <Chip
-            label="Coming Soon"
-            sx={{
-              bgcolor: alpha(EMPLOYEE_COLOR, 0.15),
-              color: EMPLOYEE_COLOR,
-              fontWeight: 700,
-              fontSize: '0.875rem',
-              px: 2,
-              py: 2.5,
-              height: 'auto',
-              borderRadius: 2,
-              border: '2px solid',
-              borderColor: alpha(EMPLOYEE_COLOR, 0.3),
-            }}
+      {/* Form Dialog */}
+      <AdminFormDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        onSubmit={handleSubmit}
+        title={editingItem ? 'Edit Employee' : 'Add Employee'}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {!editingItem && (
+            <>
+              <TextField
+                label="Entra ID (Object ID)"
+                size="small"
+                value={formData.entraId}
+                onChange={handleInputChange('entraId')}
+                error={!!formErrors.entraId}
+                helperText={formErrors.entraId}
+                required
+                fullWidth
+              />
+              <TextField
+                label="User Principal Name (Email)"
+                size="small"
+                value={formData.userPrincipalName}
+                onChange={handleInputChange('userPrincipalName')}
+                error={!!formErrors.userPrincipalName}
+                helperText={formErrors.userPrincipalName}
+                required
+                fullWidth
+              />
+            </>
+          )}
+          <TextField
+            label="Display Name"
+            size="small"
+            value={formData.displayName}
+            onChange={handleInputChange('displayName')}
+            error={!!formErrors.displayName}
+            helperText={formErrors.displayName}
+            required
+            fullWidth
           />
-        </CardContent>
-      </Card>
+          <TextField
+            label="Email"
+            size="small"
+            value={formData.email}
+            onChange={handleInputChange('email')}
+            fullWidth
+          />
+          <Divider />
+          <Autocomplete
+            size="small"
+            options={services}
+            getOptionLabel={(option: Service) => `${option.code} - ${option.name}`}
+            value={services.find((s) => s.id === formData.serviceId) || null}
+            onChange={(_, value) => setFormData((prev) => ({ ...prev, serviceId: value?.id || null }))}
+            renderInput={(params) => <TextField {...params} label="Service" />}
+            fullWidth
+          />
+          <TextField
+            label="Department"
+            size="small"
+            value={formData.department}
+            onChange={handleInputChange('department')}
+            fullWidth
+          />
+          <TextField
+            label="Job Title"
+            size="small"
+            value={formData.jobTitle}
+            onChange={handleInputChange('jobTitle')}
+            fullWidth
+          />
+          <TextField
+            label="Office Location"
+            size="small"
+            value={formData.officeLocation}
+            onChange={handleInputChange('officeLocation')}
+            fullWidth
+          />
+          <TextField
+            label="Mobile Phone"
+            size="small"
+            value={formData.mobilePhone}
+            onChange={handleInputChange('mobilePhone')}
+            fullWidth
+          />
+          <TextField
+            label="Company Name"
+            size="small"
+            value={formData.companyName}
+            onChange={handleInputChange('companyName')}
+            fullWidth
+          />
+          <Divider />
+          <TextField
+            label="Sort Order"
+            size="small"
+            type="number"
+            value={formData.sortOrder}
+            onChange={handleInputChange('sortOrder')}
+            error={!!formErrors.sortOrder}
+            helperText={formErrors.sortOrder}
+            required
+            fullWidth
+          />
+          {editingItem && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isActive}
+                  onChange={handleInputChange('isActive')}
+                  color="primary"
+                  size="small"
+                />
+              }
+              label="Active"
+            />
+          )}
+        </Box>
+      </AdminFormDialog>
 
-      {/* Upcoming Features Grid */}
-      <Typography variant="h6" fontWeight={700} sx={{ mb: 3 }}>
-        Planned Features
-      </Typography>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-          },
-          gap: 2,
-        }}
-      >
-        {upcomingFeatures.map((feature, index) => (
-          <Card
-            key={index}
-            elevation={0}
-            sx={{
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                borderColor: EMPLOYEE_COLOR,
-                transform: 'translateY(-4px)',
-                boxShadow: isDark
-                  ? `0 8px 24px ${alpha(EMPLOYEE_COLOR, 0.2)}`
-                  : `0 8px 24px ${alpha(EMPLOYEE_COLOR, 0.15)}`,
-              },
-            }}
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ bgcolor: 'rgba(244, 67, 54, 0.1)', color: '#F44336', fontWeight: 600 }}>
+          Deactivate Employee
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body2">
+            Deactivate <strong>{deletingItem?.displayName}</strong>? This will mark the employee as inactive.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseDeleteDialog} size="small">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDelete}
+            variant="contained"
+            color="error"
+            size="small"
+            disabled={deleteMutation.isPending}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Stack spacing={2}>
+            {deleteMutation.isPending ? 'Deactivating...' : 'Deactivate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assets Dialog */}
+      <Dialog open={assetsDialogOpen} onClose={handleCloseAssetsDialog} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ bgcolor: 'rgba(33, 150, 243, 0.1)', color: '#2196F3', fontWeight: 600 }}>
+          Assets for {viewingAssetsFor?.displayName}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {isLoadingAssets ? (
+            <Loading message="Loading assets..." />
+          ) : employeeAssets.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No assets assigned to this employee.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {employeeAssets.map((asset) => (
                 <Box
+                  key={asset.id}
                   sx={{
+                    p: 1.5,
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
                     display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 48,
-                    height: 48,
-                    borderRadius: 1.5,
-                    bgcolor: alpha(EMPLOYEE_COLOR, 0.1),
-                    color: EMPLOYEE_COLOR,
-                    '& > *': {
-                      fontSize: 28,
-                    },
                   }}
                 >
-                  {feature.icon}
+                  <Box>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                      {asset.assetCode}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                      {asset.brand} {asset.model}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={asset.status}
+                    size="small"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
                 </Box>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseAssetsDialog} size="small">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {feature.description}
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
-
-      {/* Additional Info */}
-      <Card
-        elevation={0}
-        sx={{
-          mt: 4,
-          borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          bgcolor: alpha(theme.palette.info.main, 0.03),
-        }}
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="body2" color="text.secondary">
-            <strong>Note:</strong> Employee management features are being designed to integrate seamlessly
-            with Microsoft Entra ID for authentication, role synchronization, and team structure. These
-            features will provide IT administrators with fine-grained control over user permissions and
-            access to inventory resources.
-          </Typography>
-        </CardContent>
-      </Card>
+        <Alert
+          onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ fontSize: '0.85rem' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

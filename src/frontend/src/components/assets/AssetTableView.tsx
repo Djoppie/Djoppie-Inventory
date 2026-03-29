@@ -133,9 +133,9 @@ const AssetTableView = ({
       aValue = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
       bValue = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
     } else if (sortField === 'assignment') {
-      // Sort by owner for laptops, workplace code for fixed assets
-      aValue = isUserAssignedAsset(a) ? (a.owner ?? '') : (a.physicalWorkplace?.code ?? '');
-      bValue = isUserAssignedAsset(b) ? (b.owner ?? '') : (b.physicalWorkplace?.code ?? '');
+      // Sort by employee displayName for laptops (fallback to owner), workplace code for fixed assets
+      aValue = isUserAssignedAsset(a) ? (a.employee?.displayName ?? a.owner ?? '') : (a.physicalWorkplace?.code ?? '');
+      bValue = isUserAssignedAsset(b) ? (b.employee?.displayName ?? b.owner ?? '') : (b.physicalWorkplace?.code ?? '');
     } else {
       aValue = (a[sortField as keyof typeof a] as string) ?? '';
       bValue = (b[sortField as keyof typeof b] as string) ?? '';
@@ -553,8 +553,85 @@ const AssetTableView = ({
                   }}
                 >
                   {isUserAssignedAsset(asset) ? (
-                    // Laptop/Notebook: Show owner with purple accent + installation date
-                    asset.owner ? (
+                    // Laptop/Notebook: Show employee (preferred) or legacy owner with purple accent + installation date
+                    asset.employee ? (
+                      <Tooltip
+                        title={
+                          <Box sx={{ p: 0.5 }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
+                              <Typography variant="caption">{asset.employee.displayName}</Typography>
+                            </Box>
+                            {asset.employee.email && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Email:</Typography>
+                                <Typography variant="caption">{asset.employee.email}</Typography>
+                              </Box>
+                            )}
+                            {asset.installationDate && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
+                                <Typography variant="caption">{new Date(asset.installationDate).toLocaleDateString()}</Typography>
+                              </Box>
+                            )}
+                            {asset.employee.jobTitle && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
+                                <Typography variant="caption">{asset.employee.jobTitle}</Typography>
+                              </Box>
+                            )}
+                            {asset.employee.serviceName && (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Dienst:</Typography>
+                                <Typography variant="caption">{asset.employee.serviceName}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Box
+                          sx={{
+                            fontWeight: 500,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.25,
+                          }}
+                        >
+                          <Link
+                            to={`/admin?section=employees`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              color: 'inherit',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
+                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {asset.employee.displayName}
+                            </span>
+                          </Link>
+                          {asset.employee.serviceName && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                fontWeight: 400,
+                                pl: 2.25,
+                              }}
+                            >
+                              {asset.employee.serviceName}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    ) : asset.owner ? (
+                      // Fallback: Legacy owner field (for backwards compatibility)
                       <Tooltip
                         title={
                           <Box sx={{ p: 0.5 }}>
@@ -587,7 +664,6 @@ const AssetTableView = ({
                       >
                         <Box
                           sx={{
-                            color: '#7B1FA2',
                             fontWeight: 500,
                             display: 'flex',
                             flexDirection: 'column',
@@ -596,7 +672,7 @@ const AssetTableView = ({
                           }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <PersonIcon sx={{ fontSize: 14 }} />
+                            <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
                             <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {asset.owner}
                             </span>
@@ -661,7 +737,7 @@ const AssetTableView = ({
                           to="/workplaces"
                           onClick={(e) => e.stopPropagation()}
                           style={{
-                            color: SERVICE_COLOR,
+                            color: 'inherit',
                             textDecoration: 'none',
                             fontWeight: 500,
                             display: 'flex',
@@ -669,7 +745,7 @@ const AssetTableView = ({
                             gap: 4,
                           }}
                         >
-                          <BusinessIcon sx={{ fontSize: 14 }} />
+                          <BusinessIcon sx={{ fontSize: 14, color: SERVICE_COLOR }} />
                           {asset.physicalWorkplace.code}
                         </Link>
                       </Tooltip>

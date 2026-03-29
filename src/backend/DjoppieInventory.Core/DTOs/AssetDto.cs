@@ -28,7 +28,9 @@ public class AssetDto
     public string? LegacyDepartment { get; set; }
 
     // User assignment fields
-    public string? Owner { get; set; }
+    public int? EmployeeId { get; set; }
+    public EmployeeInfoDto? Employee { get; set; }
+    public string? Owner { get; set; } // Legacy field - kept for backwards compatibility
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
 

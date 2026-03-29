@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Building> Buildings { get; set; }
     public DbSet<Sector> Sectors { get; set; }
     public DbSet<Service> Services { get; set; }
+    public DbSet<Employee> Employees { get; set; }
     public DbSet<AssetEvent> AssetEvents { get; set; }
     public DbSet<LeaseContract> LeaseContracts { get; set; }
 
@@ -68,6 +69,12 @@ public class ApplicationDbContext : DbContext
                 .WithMany(s => s.Assets)
                 .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull); // If service deleted, set FK to null
+
+            // Employee FK - for user-assigned assets
+            entity.HasOne(e => e.Employee)
+                .WithMany(emp => emp.Assets)
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.SetNull); // If employee deleted, set FK to null
 
             // Rollout integration - Building FK
             entity.HasOne(e => e.Building)
@@ -204,6 +211,34 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Building)
                 .WithMany()
                 .HasForeignKey(e => e.BuildingId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Employee configuration
+        modelBuilder.Entity<Employee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.EntraId).IsUnique();
+            entity.HasIndex(e => e.UserPrincipalName);
+            entity.HasIndex(e => e.DisplayName);
+            entity.HasIndex(e => e.ServiceId);
+
+            entity.Property(e => e.EntraId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.UserPrincipalName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Email).HasMaxLength(200);
+            entity.Property(e => e.Department).HasMaxLength(200);
+            entity.Property(e => e.JobTitle).HasMaxLength(200);
+            entity.Property(e => e.OfficeLocation).HasMaxLength(200);
+            entity.Property(e => e.MobilePhone).HasMaxLength(50);
+            entity.Property(e => e.CompanyName).HasMaxLength(200);
+            entity.Property(e => e.EntraSyncError).HasMaxLength(2000);
+            entity.Property(e => e.EntraSyncStatus).HasConversion<int>();
+
+            // Foreign key to Service (optional)
+            entity.HasOne(e => e.Service)
+                .WithMany()
+                .HasForeignKey(e => e.ServiceId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

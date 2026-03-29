@@ -147,6 +147,12 @@ public class Asset
     public int? ServiceId { get; set; }
 
     /// <summary>
+    /// Foreign key to the employee this asset is assigned to (optional).
+    /// For user-assigned assets (laptops), replaces the free-text Owner field.
+    /// </summary>
+    public int? EmployeeId { get; set; }
+
+    /// <summary>
     /// Specific location within the building (e.g., "Room 201", "2nd Floor IT Office").
     /// Free text field for detailed location information beyond the building level.
     /// </summary>
@@ -190,6 +196,12 @@ public class Asset
     /// The service/department this asset is assigned to
     /// </summary>
     public Service? Service { get; set; }
+
+    /// <summary>
+    /// The employee this asset is assigned to (optional).
+    /// For user-assigned assets (laptops), provides a proper FK relationship.
+    /// </summary>
+    public Employee? Employee { get; set; }
 
     /// <summary>
     /// Historical events and changes for this asset

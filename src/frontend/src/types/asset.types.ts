@@ -44,8 +44,20 @@ export interface Asset {
   legacyBuilding?: string;
   legacyDepartment?: string;
 
-  // Existing fields
-  owner?: string; // Primary user (optional)
+  // Employee assignment (new - foreign key relationship)
+  employeeId?: number;
+  employee?: {
+    id: number;
+    entraId: string;
+    displayName: string;
+    email?: string;
+    jobTitle?: string;
+    serviceId?: number;
+    serviceName?: string;
+  };
+
+  // Legacy user assignment fields (for backwards compatibility)
+  owner?: string; // Legacy field - prefer using employeeId
   officeLocation?: string;
   jobTitle?: string;
   status: AssetStatus;
@@ -80,8 +92,11 @@ export interface CreateAssetDto {
   buildingId?: number; // Building where the asset is located
   physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
 
-  // User assignment fields
-  owner?: string; // Primary user (optional)
+  // Employee assignment
+  employeeId?: number; // Reference to Employee record (preferred)
+
+  // Legacy user assignment fields
+  owner?: string; // Legacy field - prefer using employeeId
   officeLocation?: string;
   jobTitle?: string;
 
@@ -104,8 +119,11 @@ export interface UpdateAssetDto {
   buildingId?: number; // Building where the asset is located
   physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
 
-  // User assignment fields
-  owner?: string; // Primary user (optional)
+  // Employee assignment
+  employeeId?: number; // Reference to Employee record (preferred)
+
+  // Legacy user assignment fields
+  owner?: string; // Legacy field - prefer using employeeId
   officeLocation?: string;
   jobTitle?: string;
 

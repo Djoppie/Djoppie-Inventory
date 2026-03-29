@@ -64,7 +64,13 @@ public class CreateAssetDto
     public int? PhysicalWorkplaceId { get; set; }
 
     /// <summary>
+    /// Employee ID - reference to an Employee record (optional)
+    /// </summary>
+    public int? EmployeeId { get; set; }
+
+    /// <summary>
     /// Primary user (optional - can be assigned later)
+    /// Legacy field - prefer using EmployeeId for new assets
     /// </summary>
     public string? Owner { get; set; }
 
