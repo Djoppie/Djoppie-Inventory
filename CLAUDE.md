@@ -293,7 +293,7 @@ Alternative one-liner (if logged into Azure CLI):
 cd src/frontend && npm run build && npx @azure/static-web-apps-cli deploy ./dist --deployment-token "$(az staticwebapp secrets list --name swa-djoppie-inventory-dev --query 'properties.apiKey' -o tsv)" --env production
 ```
 
-Frontend URL: https://blue-cliff-031d65b03.1.azurestaticapps.net
+Frontend URL: <https://blue-cliff-031d65b03.1.azurestaticapps.net>
 
 ### > Backend Manual Deployment
 
@@ -320,7 +320,7 @@ Alternative one-liner (if logged into Azure CLI):
 cd src/backend/DjoppieInventory.API && dotnet publish -c Release -o ./publish && powershell -Command "Compress-Archive -Path './publish/*' -DestinationPath './deploy.zip' -Force" && az webapp deployment source config-zip --resource-group rg-djoppie-inventory-dev --name app-djoppie-inventory-dev-api-k5xdqp --src deploy.zip
 ```
 
-Backend URL: https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net
+Backend URL: <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net>
 
 ## Environment Configuration
 

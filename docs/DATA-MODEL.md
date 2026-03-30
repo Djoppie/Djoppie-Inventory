@@ -95,6 +95,7 @@ The central entity representing IT equipment in the inventory system.
 | BuildingId | int | No | FK to Building |
 
 **Navigation Properties:**
+
 - `AssetType` - The asset type classification
 - `Service` - Assigned department
 - `Building` - Physical location
@@ -125,6 +126,7 @@ Defines types/categories of assets for classification and code generation.
 | UpdatedAt | DateTime | No | Last update timestamp |
 
 **Code Examples:**
+
 - `LAP` - Laptop
 - `DESK` - Desktop
 - `MON` - Monitor
@@ -294,6 +296,7 @@ Physical location where assets are installed.
 | UpdatedAt | DateTime | No | Last update timestamp |
 
 **Code Examples:**
+
 - `DBK` - Gemeentehuis Diepenbeek
 - `WZC` - WZC De Visserij
 - `GBS` - Gemeentelijke Basisschool
@@ -325,6 +328,7 @@ Container for a rollout campaign spanning multiple days.
 | UpdatedAt | DateTime | Yes | Last update timestamp |
 
 **Navigation Properties:**
+
 - `Days` - Collection of RolloutDay
 - `AssetMovements` - All movements in this session
 
@@ -352,6 +356,7 @@ A specific day within a rollout session.
 | UpdatedAt | DateTime | Yes | Last update timestamp |
 
 **Navigation Properties:**
+
 - `RolloutSession` - Parent session
 - `Workplaces` - Collection of RolloutWorkplace
 - `ScheduledServices` - Collection of RolloutDayService
@@ -404,6 +409,7 @@ Individual user workplace setup within a rollout day.
 | UpdatedAt | DateTime | Yes | Last update timestamp |
 
 **Navigation Properties:**
+
 - `RolloutDay` - Parent day
 - `Service` - Associated service
 - `Building` - Physical location
@@ -442,6 +448,7 @@ Individual asset assignment within a workplace (replaces JSON-based AssetPlansJs
 | UpdatedAt | DateTime | Yes | Last update timestamp |
 
 **Navigation Properties:**
+
 - `RolloutWorkplace` - Parent workplace
 - `AssetType` - Equipment type
 - `NewAsset` - Deployed asset
@@ -499,6 +506,7 @@ Operational status of an asset.
 | Nieuw | 5 | New - in inventory but not deployed |
 
 **Status Transitions:**
+
 ```
 Nieuw → InGebruik (deployment)
 Stock → InGebruik (deployment)
@@ -671,12 +679,14 @@ Status of Microsoft Entra synchronization.
 Asset codes follow a structured format: `{TYPE}-{YY}-{BUILDING}-{SEQUENCE}`
 
 **Components:**
+
 - `TYPE`: 2-4 character asset type code (e.g., LAP, MON)
 - `YY`: 2-digit year (e.g., 25 for 2025)
 - `BUILDING`: 2-10 character building code (e.g., DBK)
 - `SEQUENCE`: 5-digit sequence number (00001-08999 normal, 09000+ test)
 
 **Examples:**
+
 - `LAP-25-DBK-00001` - First laptop of 2025 at Gemeentehuis
 - `MON-25-WZC-00042` - 42nd monitor of 2025 at WZC De Visserij
 - `DESK-25-TST-09001` - Test desktop (dummy asset)

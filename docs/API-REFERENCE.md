@@ -19,6 +19,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### Required Scope
+
 ```
 api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user
 ```
@@ -30,11 +31,13 @@ api://eb5bcf06-8032-494f-a363-92b6802c44bf/access_as_user
 ### Assets
 
 #### List Assets
+
 ```http
 GET /api/assets
 ```
 
 **Query Parameters:**
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | page | int | 1 | Page number |
@@ -45,6 +48,7 @@ GET /api/assets
 | sortDesc | bool | true | Sort descending |
 
 **Response:** `PagedResultDto<AssetDto>`
+
 ```json
 {
   "items": [...],
@@ -56,6 +60,7 @@ GET /api/assets
 ```
 
 #### Get Asset by ID
+
 ```http
 GET /api/assets/{id}
 ```
@@ -63,6 +68,7 @@ GET /api/assets/{id}
 **Response:** `AssetDto`
 
 #### Get Asset by Code
+
 ```http
 GET /api/assets/by-code/{code}
 ```
@@ -70,6 +76,7 @@ GET /api/assets/by-code/{code}
 **Response:** `AssetDto`
 
 #### Get Asset by Serial Number
+
 ```http
 GET /api/assets/by-serial/{serialNumber}
 ```
@@ -77,6 +84,7 @@ GET /api/assets/by-serial/{serialNumber}
 **Response:** `AssetDto`
 
 #### Get Assets by Owner
+
 ```http
 GET /api/assets/by-owner/{email}
 ```
@@ -84,11 +92,13 @@ GET /api/assets/by-owner/{email}
 **Response:** `AssetDto[]`
 
 #### Create Asset
+
 ```http
 POST /api/assets
 ```
 
 **Request Body:** `CreateAssetDto`
+
 ```json
 {
   "assetName": "Dell Latitude 5420",
@@ -106,6 +116,7 @@ POST /api/assets
 **Response:** `AssetDto`
 
 #### Update Asset
+
 ```http
 PUT /api/assets/{id}
 ```
@@ -115,6 +126,7 @@ PUT /api/assets/{id}
 **Response:** `AssetDto`
 
 #### Delete Asset
+
 ```http
 DELETE /api/assets/{id}
 ```
@@ -122,11 +134,13 @@ DELETE /api/assets/{id}
 **Response:** `204 No Content`
 
 #### Bulk Create Assets
+
 ```http
 POST /api/assets/bulk
 ```
 
 **Request Body:** `BulkCreateAssetDto`
+
 ```json
 {
   "assets": [...],
@@ -137,6 +151,7 @@ POST /api/assets/bulk
 **Response:** `BulkCreateAssetResultDto`
 
 #### Bulk Update Assets
+
 ```http
 PUT /api/assets/bulk
 ```
@@ -146,6 +161,7 @@ PUT /api/assets/bulk
 **Response:** `BulkUpdateAssetsResultDto`
 
 #### Bulk Delete Assets
+
 ```http
 DELETE /api/assets/bulk
 ```
@@ -159,6 +175,7 @@ DELETE /api/assets/bulk
 ### Asset Events (Audit Trail)
 
 #### Get Events for Asset
+
 ```http
 GET /api/assetevents/by-asset/{assetId}
 ```
@@ -166,6 +183,7 @@ GET /api/assetevents/by-asset/{assetId}
 **Response:** `AssetEventDto[]`
 
 #### Get Event by ID
+
 ```http
 GET /api/assetevents/{id}
 ```
@@ -177,6 +195,7 @@ GET /api/assetevents/{id}
 ### Asset Templates
 
 #### List Templates
+
 ```http
 GET /api/assettemplates
 ```
@@ -184,6 +203,7 @@ GET /api/assettemplates
 **Response:** `AssetTemplateDto[]`
 
 #### Get Template
+
 ```http
 GET /api/assettemplates/{id}
 ```
@@ -191,6 +211,7 @@ GET /api/assettemplates/{id}
 **Response:** `AssetTemplateDto`
 
 #### Create Template
+
 ```http
 POST /api/assettemplates
 ```
@@ -200,6 +221,7 @@ POST /api/assettemplates
 **Response:** `AssetTemplateDto`
 
 #### Update Template
+
 ```http
 PUT /api/assettemplates/{id}
 ```
@@ -209,6 +231,7 @@ PUT /api/assettemplates/{id}
 **Response:** `AssetTemplateDto`
 
 #### Delete Template
+
 ```http
 DELETE /api/assettemplates/{id}
 ```
@@ -220,11 +243,13 @@ DELETE /api/assettemplates/{id}
 ### Rollout Sessions
 
 #### List Sessions
+
 ```http
 GET /api/rollout/sessions
 ```
 
 **Query Parameters:**
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | status | string | Filter by status (Planning, Ready, InProgress, Completed, Cancelled) |
@@ -232,11 +257,13 @@ GET /api/rollout/sessions
 **Response:** `RolloutSessionDto[]`
 
 #### Get Session
+
 ```http
 GET /api/rollout/sessions/{id}
 ```
 
 **Query Parameters:**
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | includeDays | bool | false | Include days in response |
@@ -245,11 +272,13 @@ GET /api/rollout/sessions/{id}
 **Response:** `RolloutSessionDto`
 
 #### Create Session
+
 ```http
 POST /api/rollout/sessions
 ```
 
 **Request Body:** `CreateRolloutSessionDto`
+
 ```json
 {
   "sessionName": "Q1 2026 Rollout",
@@ -262,6 +291,7 @@ POST /api/rollout/sessions
 **Response:** `RolloutSessionDto`
 
 #### Update Session
+
 ```http
 PUT /api/rollout/sessions/{id}
 ```
@@ -271,6 +301,7 @@ PUT /api/rollout/sessions/{id}
 **Response:** `RolloutSessionDto`
 
 #### Delete Session
+
 ```http
 DELETE /api/rollout/sessions/{id}
 ```
@@ -278,6 +309,7 @@ DELETE /api/rollout/sessions/{id}
 **Response:** `204 No Content`
 
 #### Start Session
+
 ```http
 POST /api/rollout/sessions/{id}/start
 ```
@@ -285,6 +317,7 @@ POST /api/rollout/sessions/{id}/start
 **Response:** `RolloutSessionDto`
 
 #### Complete Session
+
 ```http
 POST /api/rollout/sessions/{id}/complete
 ```
@@ -296,6 +329,7 @@ POST /api/rollout/sessions/{id}/complete
 ### Rollout Days
 
 #### Get Days for Session
+
 ```http
 GET /api/rollout/days/by-session/{sessionId}
 ```
@@ -303,6 +337,7 @@ GET /api/rollout/days/by-session/{sessionId}
 **Response:** `RolloutDayDto[]`
 
 #### Get Day
+
 ```http
 GET /api/rollout/days/{id}
 ```
@@ -310,11 +345,13 @@ GET /api/rollout/days/{id}
 **Response:** `RolloutDayDto`
 
 #### Create Day
+
 ```http
 POST /api/rollout/days/for-session/{sessionId}
 ```
 
 **Request Body:** `CreateRolloutDayDto`
+
 ```json
 {
   "date": "2026-04-01",
@@ -326,6 +363,7 @@ POST /api/rollout/days/for-session/{sessionId}
 **Response:** `RolloutDayDto`
 
 #### Update Day
+
 ```http
 PUT /api/rollout/days/{id}
 ```
@@ -335,6 +373,7 @@ PUT /api/rollout/days/{id}
 **Response:** `RolloutDayDto`
 
 #### Delete Day
+
 ```http
 DELETE /api/rollout/days/{id}
 ```
@@ -342,11 +381,13 @@ DELETE /api/rollout/days/{id}
 **Response:** `204 No Content`
 
 #### Update Services for Day
+
 ```http
 PUT /api/rollout/days/{id}/services
 ```
 
 **Request Body:**
+
 ```json
 {
   "serviceIds": [1, 2, 3]
@@ -360,6 +401,7 @@ PUT /api/rollout/days/{id}/services
 ### Rollout Workplaces
 
 #### Get Workplaces for Day
+
 ```http
 GET /api/rollout/workplaces/by-day/{dayId}
 ```
@@ -367,11 +409,13 @@ GET /api/rollout/workplaces/by-day/{dayId}
 **Response:** `RolloutWorkplaceDto[]`
 
 #### Get Workplace
+
 ```http
 GET /api/rollout/workplaces/{id}
 ```
 
 **Query Parameters:**
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | includeAssetAssignments | bool | false | Include asset assignments |
@@ -379,11 +423,13 @@ GET /api/rollout/workplaces/{id}
 **Response:** `RolloutWorkplaceDto`
 
 #### Create Workplace
+
 ```http
 POST /api/rollout/workplaces/for-day/{dayId}
 ```
 
 **Request Body:** `CreateRolloutWorkplaceDto`
+
 ```json
 {
   "userName": "John Doe",
@@ -397,6 +443,7 @@ POST /api/rollout/workplaces/for-day/{dayId}
 **Response:** `RolloutWorkplaceDto`
 
 #### Update Workplace
+
 ```http
 PUT /api/rollout/workplaces/{id}
 ```
@@ -406,6 +453,7 @@ PUT /api/rollout/workplaces/{id}
 **Response:** `RolloutWorkplaceDto`
 
 #### Delete Workplace
+
 ```http
 DELETE /api/rollout/workplaces/{id}
 ```
@@ -413,6 +461,7 @@ DELETE /api/rollout/workplaces/{id}
 **Response:** `204 No Content`
 
 #### Complete Workplace
+
 ```http
 POST /api/rollout/workplaces/{id}/complete
 ```
@@ -422,11 +471,13 @@ POST /api/rollout/workplaces/{id}/complete
 **Response:** `RolloutWorkplaceDto`
 
 #### Move Workplace
+
 ```http
 POST /api/rollout/workplaces/{id}/move
 ```
 
 **Request Body:** `MoveWorkplaceDto`
+
 ```json
 {
   "targetDayId": 5,
@@ -437,11 +488,13 @@ POST /api/rollout/workplaces/{id}/move
 **Response:** `RolloutWorkplaceDto`
 
 #### Bulk Import from Entra Groups
+
 ```http
 POST /api/rollout/workplaces/{dayId}/bulk-import
 ```
 
 **Request Body:** `BulkCreateFromGraphDto`
+
 ```json
 {
   "groupIds": ["group-guid-1", "group-guid-2"],
@@ -456,11 +509,13 @@ POST /api/rollout/workplaces/{dayId}/bulk-import
 ### Rollout Reports
 
 #### Get Session Progress
+
 ```http
 GET /api/rollout/reports/sessions/{sessionId}/progress
 ```
 
 **Response:** `RolloutProgressDto`
+
 ```json
 {
   "sessionId": 1,
@@ -474,6 +529,7 @@ GET /api/rollout/reports/sessions/{sessionId}/progress
 ```
 
 #### Get Asset Movement Summary
+
 ```http
 GET /api/rollout/reports/sessions/{sessionId}/movements/summary
 ```
@@ -481,6 +537,7 @@ GET /api/rollout/reports/sessions/{sessionId}/movements/summary
 **Response:** `MovementSummaryDto`
 
 #### Get Asset Movements
+
 ```http
 GET /api/rollout/reports/sessions/{sessionId}/movements
 ```
@@ -488,6 +545,7 @@ GET /api/rollout/reports/sessions/{sessionId}/movements
 **Response:** `AssetMovementDto[]`
 
 #### Get Asset Status Report
+
 ```http
 GET /api/rollout/reports/sessions/{sessionId}/asset-status
 ```
@@ -495,6 +553,7 @@ GET /api/rollout/reports/sessions/{sessionId}/asset-status
 **Response:** `RolloutAssetStatusReportDto`
 
 #### Export Movements to CSV
+
 ```http
 GET /api/rollout/reports/sessions/{sessionId}/movements/export
 ```
@@ -506,6 +565,7 @@ GET /api/rollout/reports/sessions/{sessionId}/movements/export
 ### Intune Integration
 
 #### Get Managed Devices
+
 ```http
 GET /api/intune/devices
 ```
@@ -513,6 +573,7 @@ GET /api/intune/devices
 **Response:** Device list from Microsoft Intune
 
 #### Get Device by ID
+
 ```http
 GET /api/intune/devices/{deviceId}
 ```
@@ -520,6 +581,7 @@ GET /api/intune/devices/{deviceId}
 **Response:** Intune device details
 
 #### Get Device Live Status
+
 ```http
 GET /api/intune/devices/{deviceId}/live-status
 ```
@@ -527,6 +589,7 @@ GET /api/intune/devices/{deviceId}/live-status
 **Response:** `DeviceLiveStatusDto`
 
 #### Get Device Health
+
 ```http
 GET /api/intune/devices/{deviceId}/health
 ```
@@ -534,6 +597,7 @@ GET /api/intune/devices/{deviceId}/health
 **Response:** `DeviceHealthDto`
 
 #### Get Autopilot Devices
+
 ```http
 GET /api/intune/autopilot/devices
 ```
@@ -545,6 +609,7 @@ GET /api/intune/autopilot/devices
 ### Microsoft Graph Integration
 
 #### Search Users
+
 ```http
 GET /api/graph/users/search?query={searchTerm}
 ```
@@ -552,6 +617,7 @@ GET /api/graph/users/search?query={searchTerm}
 **Response:** `UserDto[]`
 
 #### Search Groups
+
 ```http
 GET /api/graph/groups/search?query={searchTerm}
 ```
@@ -559,6 +625,7 @@ GET /api/graph/groups/search?query={searchTerm}
 **Response:** Group list
 
 #### Get Group Members
+
 ```http
 GET /api/graph/groups/{groupId}/members
 ```
@@ -570,6 +637,7 @@ GET /api/graph/groups/{groupId}/members
 ### Admin Endpoints
 
 #### Categories
+
 ```http
 GET /api/admin/categories
 GET /api/admin/categories/{id}
@@ -579,6 +647,7 @@ DELETE /api/admin/categories/{id}
 ```
 
 #### Asset Types
+
 ```http
 GET /api/admin/assettypes
 GET /api/admin/assettypes/{id}
@@ -588,6 +657,7 @@ DELETE /api/admin/assettypes/{id}
 ```
 
 #### Buildings
+
 ```http
 GET /api/admin/buildings
 GET /api/admin/buildings/{id}
@@ -597,6 +667,7 @@ DELETE /api/admin/buildings/{id}
 ```
 
 #### Sectors
+
 ```http
 GET /api/admin/sectors
 GET /api/admin/sectors/{id}
@@ -606,6 +677,7 @@ DELETE /api/admin/sectors/{id}
 ```
 
 #### Services
+
 ```http
 GET /api/admin/services
 GET /api/admin/services/{id}
@@ -619,6 +691,7 @@ DELETE /api/admin/services/{id}
 ### Lease Contracts
 
 #### Get Contracts for Asset
+
 ```http
 GET /api/leasecontracts/by-asset/{assetId}
 ```
@@ -626,6 +699,7 @@ GET /api/leasecontracts/by-asset/{assetId}
 **Response:** `LeaseContractDto[]`
 
 #### Get Active Contract
+
 ```http
 GET /api/leasecontracts/active/{assetId}
 ```
@@ -633,6 +707,7 @@ GET /api/leasecontracts/active/{assetId}
 **Response:** `LeaseContractDto`
 
 #### Create Contract
+
 ```http
 POST /api/leasecontracts
 ```
@@ -642,6 +717,7 @@ POST /api/leasecontracts
 **Response:** `LeaseContractDto`
 
 #### Update Contract
+
 ```http
 PUT /api/leasecontracts/{id}
 ```
@@ -649,6 +725,7 @@ PUT /api/leasecontracts/{id}
 **Response:** `LeaseContractDto`
 
 #### Delete Contract
+
 ```http
 DELETE /api/leasecontracts/{id}
 ```
@@ -660,15 +737,18 @@ DELETE /api/leasecontracts/{id}
 ### CSV Import
 
 #### Import Assets
+
 ```http
 POST /api/csvimport/import
 Content-Type: multipart/form-data
 ```
 
 **Form Data:**
+
 - `file`: CSV file (max 5MB)
 
 **Response:** `CsvImportResultDto`
+
 ```json
 {
   "totalRows": 100,
@@ -689,6 +769,7 @@ Content-Type: multipart/form-data
 ### QR Code
 
 #### Generate QR Code
+
 ```http
 GET /api/qrcode/generate/{assetCode}
 ```
@@ -700,6 +781,7 @@ GET /api/qrcode/generate/{assetCode}
 ### User
 
 #### Test Authentication
+
 ```http
 GET /api/user/test-auth
 ```
@@ -707,6 +789,7 @@ GET /api/user/test-auth
 **Response:** Authentication status
 
 #### Get Current User
+
 ```http
 GET /api/user/me
 ```
@@ -718,6 +801,7 @@ GET /api/user/me
 ## Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
@@ -730,6 +814,7 @@ GET /api/user/me
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc7235#section-3.1",
@@ -739,6 +824,7 @@ GET /api/user/me
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.4",
@@ -749,6 +835,7 @@ GET /api/user/me
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc7231#section-6.6.1",
@@ -785,4 +872,5 @@ GET /health/live
 ## Swagger Documentation
 
 Interactive API documentation is available at:
+
 - Development: `http://localhost:5052/swagger`
