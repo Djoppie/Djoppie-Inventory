@@ -23,6 +23,15 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(statusFilter))
@@ -33,10 +42,15 @@ public class AssetRepository : IAssetRepository
             }
         }
 
-        return await query
+        var assets = await query
             .OrderByDescending(a => a.CreatedAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        // Populate PhysicalWorkplace for assets assigned via equipment slots
+        await PopulatePhysicalWorkplaceFromEquipmentSlots(assets, cancellationToken);
+
+        return assets;
     }
 
     public async Task<(IEnumerable<Asset> Items, int TotalCount)> GetPagedAsync(
@@ -48,6 +62,15 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(statusFilter))
@@ -69,6 +92,9 @@ public class AssetRepository : IAssetRepository
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
+        // Populate PhysicalWorkplace for assets assigned via equipment slots
+        await PopulatePhysicalWorkplaceFromEquipmentSlots(items, cancellationToken);
+
         return (items, totalCount);
     }
 
@@ -77,6 +103,15 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
     }
 
@@ -88,7 +123,29 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .Where(a => idList.Contains(a.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Asset>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Service)
+            .Include(a => a.Employee)
+            .Where(a => a.EmployeeId == employeeId)
+            .OrderBy(a => a.Category)
+            .ThenBy(a => a.AssetCode)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -99,6 +156,15 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw!.Building)
             .FirstOrDefaultAsync(a => a.AssetCode == assetCode, cancellationToken);
     }
 
@@ -114,6 +180,10 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .FirstAsync(a => a.Id == asset.Id, cancellationToken);
     }
 
@@ -199,6 +269,10 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .FirstOrDefaultAsync(a => a.SerialNumber == serialNumber, cancellationToken);
     }
 
@@ -223,6 +297,10 @@ public class AssetRepository : IAssetRepository
         return await _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Where(a => ids.Contains(a.Id))
             .ToListAsync(cancellationToken);
     }
@@ -265,6 +343,10 @@ public class AssetRepository : IAssetRepository
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.Service)
+            .Include(a => a.Employee)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Where(a => a.Owner != null && a.Owner.ToLower() == ownerEmail.ToLower());
 
         // Apply asset type filter if provided
@@ -292,32 +374,106 @@ public class AssetRepository : IAssetRepository
         string? search = null,
         CancellationToken cancellationToken = default)
     {
-        // Laptop type codes to filter by
-        var laptopTypeCodes = new[] { "LAP", "LAPTOP", "NOTEBOOK", "NOT" };
-
         var query = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
-            .Where(a => (a.Status == AssetStatus.Stock || a.Status == AssetStatus.Nieuw))
+            .Where(a => a.Status == AssetStatus.Stock || a.Status == AssetStatus.Nieuw)
             .Where(a => a.AssetType != null &&
-                laptopTypeCodes.Any(code =>
-                    a.AssetType.Code.ToUpper().Contains(code) ||
-                    a.AssetType.Name.ToUpper().Contains(code)));
+                (EF.Functions.Like(a.AssetType.Code.ToUpper(), "%LAP%") ||
+                 EF.Functions.Like(a.AssetType.Code.ToUpper(), "%NOTEBOOK%") ||
+                 EF.Functions.Like(a.AssetType.Name.ToUpper(), "%LAP%") ||
+                 EF.Functions.Like(a.AssetType.Name.ToUpper(), "%NOTEBOOK%")));
 
         // Apply search filter if provided
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var searchLower = search.ToLower();
+            var searchPattern = $"%{search}%";
             query = query.Where(a =>
-                (a.Brand != null && a.Brand.ToLower().Contains(searchLower)) ||
-                (a.Model != null && a.Model.ToLower().Contains(searchLower)) ||
-                (a.SerialNumber != null && a.SerialNumber.ToLower().Contains(searchLower)) ||
-                a.AssetCode.ToLower().Contains(searchLower));
+                EF.Functions.Like(a.Brand ?? "", searchPattern) ||
+                EF.Functions.Like(a.Model ?? "", searchPattern) ||
+                EF.Functions.Like(a.SerialNumber ?? "", searchPattern) ||
+                EF.Functions.Like(a.AssetCode, searchPattern));
         }
 
         return await query
             .OrderBy(a => a.AssetCode)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task UpdateIntuneFieldsAsync(
+        int assetId,
+        DateTime? enrollmentDate,
+        DateTime? lastCheckIn,
+        DateTime? certificateExpiry,
+        DateTime syncedAt,
+        CancellationToken cancellationToken = default)
+    {
+        await _context.Assets
+            .Where(a => a.Id == assetId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(a => a.IntuneEnrollmentDate, enrollmentDate)
+                .SetProperty(a => a.IntuneLastCheckIn, lastCheckIn)
+                .SetProperty(a => a.IntuneCertificateExpiry, certificateExpiry)
+                .SetProperty(a => a.IntuneSyncedAt, syncedAt)
+                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
+                cancellationToken);
+    }
+
+    /// <summary>
+    /// Populates PhysicalWorkplace for assets that are assigned via equipment slots.
+    /// This handles assets where PhysicalWorkplaceId is null but the asset is assigned
+    /// to a workplace via DockingStationAssetId, Monitor1AssetId, etc.
+    /// </summary>
+    private async Task PopulatePhysicalWorkplaceFromEquipmentSlots(IEnumerable<Asset> assets, CancellationToken cancellationToken)
+    {
+        var assetList = assets.ToList();
+        if (!assetList.Any()) return;
+
+        // Get asset IDs that don't have a PhysicalWorkplace already
+        var assetIdsWithoutWorkplace = assetList
+            .Where(a => a.PhysicalWorkplace == null)
+            .Select(a => a.Id)
+            .ToList();
+
+        if (!assetIdsWithoutWorkplace.Any()) return;
+
+        // Find PhysicalWorkplaces that have these assets in equipment slots
+        var workplacesWithAssets = await _context.PhysicalWorkplaces
+            .Include(pw => pw.Service)
+                .ThenInclude(s => s!.Sector)
+            .Include(pw => pw.Building)
+            .Where(pw => pw.IsActive && (
+                (pw.DockingStationAssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.DockingStationAssetId.Value)) ||
+                (pw.Monitor1AssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.Monitor1AssetId.Value)) ||
+                (pw.Monitor2AssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.Monitor2AssetId.Value)) ||
+                (pw.Monitor3AssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.Monitor3AssetId.Value)) ||
+                (pw.KeyboardAssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.KeyboardAssetId.Value)) ||
+                (pw.MouseAssetId.HasValue && assetIdsWithoutWorkplace.Contains(pw.MouseAssetId.Value))
+            ))
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        // Build a lookup from asset ID to PhysicalWorkplace
+        var assetToWorkplace = new Dictionary<int, PhysicalWorkplace>();
+        foreach (var wp in workplacesWithAssets)
+        {
+            if (wp.DockingStationAssetId.HasValue) assetToWorkplace.TryAdd(wp.DockingStationAssetId.Value, wp);
+            if (wp.Monitor1AssetId.HasValue) assetToWorkplace.TryAdd(wp.Monitor1AssetId.Value, wp);
+            if (wp.Monitor2AssetId.HasValue) assetToWorkplace.TryAdd(wp.Monitor2AssetId.Value, wp);
+            if (wp.Monitor3AssetId.HasValue) assetToWorkplace.TryAdd(wp.Monitor3AssetId.Value, wp);
+            if (wp.KeyboardAssetId.HasValue) assetToWorkplace.TryAdd(wp.KeyboardAssetId.Value, wp);
+            if (wp.MouseAssetId.HasValue) assetToWorkplace.TryAdd(wp.MouseAssetId.Value, wp);
+        }
+
+        // Populate the PhysicalWorkplace property on the assets
+        foreach (var asset in assetList)
+        {
+            if (asset.PhysicalWorkplace == null && assetToWorkplace.TryGetValue(asset.Id, out var workplace))
+            {
+                asset.PhysicalWorkplace = workplace;
+                asset.PhysicalWorkplaceId = workplace.Id;
+            }
+        }
     }
 }

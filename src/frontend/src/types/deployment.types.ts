@@ -8,18 +8,20 @@ export enum DeploymentMode {
   Onboarding = 0,
   /** Swap - Replace old device with new device */
   Swap = 1,
+  /** Offboarding - User leaves, device is returned (no new device assigned) */
+  Offboarding = 2,
 }
 
 /**
  * Request DTO for executing a laptop swap or onboarding operation
  */
 export interface ExecuteDeploymentRequest {
-  /** Mode: Onboarding (no old laptop) or Swap (replace old laptop) */
+  /** Mode: Onboarding (no old laptop), Swap (replace old laptop), or Offboarding (return device) */
   mode: DeploymentMode;
-  /** Old laptop asset ID (required for Swap mode, null for Onboarding) */
+  /** Old laptop asset ID (required for Swap and Offboarding modes, null for Onboarding) */
   oldLaptopAssetId?: number | null;
-  /** New laptop asset ID to assign to user */
-  newLaptopAssetId: number;
+  /** New laptop asset ID to assign to user (required for Onboarding and Swap, null for Offboarding) */
+  newLaptopAssetId?: number | null;
   /** Entra ID (Azure AD) of the user receiving the laptop */
   newOwnerEntraId: string;
   /** Display name of the user */
@@ -38,6 +40,10 @@ export interface ExecuteDeploymentRequest {
   equipmentSlots?: UpdateEquipmentSlotsDto | null;
   /** Optional notes about the deployment */
   notes?: string;
+  /** New status for old laptop (for Swap and Offboarding modes): Stock, Defect, or UitDienst */
+  oldAssetNewStatus?: string;
+  /** Whether to clear the workplace occupant (for Offboarding mode) */
+  clearWorkplaceOccupant?: boolean;
 }
 
 /**
@@ -48,7 +54,7 @@ export interface DeploymentResult {
   deploymentId: string;
   mode: DeploymentMode;
   oldLaptop?: AssetDeploymentSummary | null;
-  newLaptop: AssetDeploymentSummary;
+  newLaptop?: AssetDeploymentSummary | null;
   physicalWorkplace?: WorkplaceDeploymentSummary | null;
   assetEventsCreated: AssetEventSummary[];
   timestamp: string;
@@ -127,7 +133,7 @@ export interface DeploymentHistoryItem {
   deploymentDate: string;
   mode: DeploymentMode;
   oldLaptop?: DeploymentAssetInfo | null;
-  newLaptop: DeploymentAssetInfo;
+  newLaptop?: DeploymentAssetInfo | null;
   owner: DeploymentOwnerInfo;
   physicalWorkplace?: DeploymentWorkplaceInfo | null;
   performedBy?: string;

@@ -59,6 +59,7 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BusinessIcon from '@mui/icons-material/Business';
+import { ASSET_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -494,37 +495,51 @@ const AssetTemplatesPage = () => {
                       )}
                     </CardContent>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 1.5 }}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(template)}
-                        sx={{
-                          color: 'primary.main',
-                          '&:hover': {
-                            backgroundColor: (theme) =>
-                              theme.palette.mode === 'dark'
-                                ? 'rgba(255, 119, 0, 0.1)'
-                                : 'rgba(255, 119, 0, 0.05)',
-                          },
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDeleteDialog(template)}
-                        sx={{
-                          color: 'error.main',
-                          '&:hover': {
-                            backgroundColor: (theme) =>
-                              theme.palette.mode === 'dark'
-                                ? 'rgba(244, 67, 54, 0.1)'
-                                : 'rgba(244, 67, 54, 0.05)',
-                          },
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pr: 1.5, pt: 1.5 }}>
+                      <Tooltip title={t('common.edit')} arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDialog(template)}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 0.75,
+                            color: ASSET_COLOR,
+                            bgcolor: 'transparent',
+                            border: '1px solid',
+                            borderColor: alpha(ASSET_COLOR, 0.35),
+                            transition: 'all 0.15s ease',
+                            '&:hover': {
+                              bgcolor: alpha(ASSET_COLOR, 0.08),
+                              borderColor: ASSET_COLOR,
+                            },
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={t('common.delete')} arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDeleteDialog(template)}
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 0.75,
+                            color: '#EF5350',
+                            bgcolor: 'transparent',
+                            border: '1px solid',
+                            borderColor: alpha('#EF5350', 0.35),
+                            transition: 'all 0.15s ease',
+                            '&:hover': {
+                              bgcolor: alpha('#EF5350', 0.08),
+                              borderColor: '#EF5350',
+                            },
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </Box>
                 </Card>
@@ -541,92 +556,117 @@ const AssetTemplatesPage = () => {
                 border: '1px solid',
                 borderColor: 'divider',
                 borderRadius: 2,
+                overflow: 'hidden',
               }}
             >
-              <Table>
+              <Table size="small">
                 <TableHead>
                   <TableRow
                     sx={{
                       backgroundColor: (theme) =>
                         theme.palette.mode === 'dark'
-                          ? 'rgba(255, 119, 0, 0.05)'
-                          : 'rgba(255, 119, 0, 0.02)',
+                          ? alpha(ASSET_COLOR, 0.08)
+                          : alpha(ASSET_COLOR, 0.04),
+                      borderBottom: '2px solid',
+                      borderColor: ASSET_COLOR,
                     }}
                   >
-                    <TableCell sx={{ fontWeight: 700 }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>
                       {t('templates.templateName')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>
                       {t('templates.assetName')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>
                       {t('templates.assetType')}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.brand')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.model')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.owner')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700 }}>{t('templates.installationLocation')}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700 }}>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.brand')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.model')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.owner')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.service')}</TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.installationLocation')}</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5, width: 100 }}>
                       {t('common.actions')}
                     </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {templates?.map((template) => (
+                  {templates?.map((template, index) => (
                     <TableRow
                       key={template.id}
                       sx={{
+                        backgroundColor: (theme) =>
+                          index % 2 === 0
+                            ? 'transparent'
+                            : theme.palette.mode === 'dark'
+                              ? 'rgba(255, 255, 255, 0.02)'
+                              : 'rgba(0, 0, 0, 0.02)',
                         '&:hover': {
                           backgroundColor: (theme) =>
                             theme.palette.mode === 'dark'
-                              ? 'rgba(255, 119, 0, 0.05)'
-                              : 'rgba(255, 119, 0, 0.02)',
+                              ? alpha(ASSET_COLOR, 0.08)
+                              : alpha(ASSET_COLOR, 0.04),
                         },
+                        transition: 'background-color 0.15s ease',
                       }}
                     >
-                      <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
+                      <TableCell sx={{ fontWeight: 600, color: ASSET_COLOR, fontSize: '0.85rem', py: 1 }}>
                         {template.templateName}
                       </TableCell>
-                      <TableCell>{template.assetName || '-'}</TableCell>
-                      <TableCell>{template.assetType?.name || '-'}</TableCell>
-                      <TableCell>{template.brand || '-'}</TableCell>
-                      <TableCell>{template.model || '-'}</TableCell>
-                      <TableCell>{template.owner || '-'}</TableCell>
-                      <TableCell>{template.service?.name || '-'}</TableCell>
-                      <TableCell>{template.installationLocation || '-'}</TableCell>
-                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(template)}
-                          sx={{
-                            color: 'primary.main',
-                            mr: 0.5,
-                            '&:hover': {
-                              backgroundColor: (theme) =>
-                                theme.palette.mode === 'dark'
-                                  ? 'rgba(255, 119, 0, 0.1)'
-                                  : 'rgba(255, 119, 0, 0.05)',
-                            },
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDeleteDialog(template)}
-                          sx={{
-                            color: 'error.main',
-                            '&:hover': {
-                              backgroundColor: (theme) =>
-                                theme.palette.mode === 'dark'
-                                  ? 'rgba(244, 67, 54, 0.1)'
-                                  : 'rgba(244, 67, 54, 0.05)',
-                            },
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.assetName || '-'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.assetType?.name || '-'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.brand || '-'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.model || '-'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.owner || '-'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.service?.name || '-'}</TableCell>
+                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.installationLocation || '-'}</TableCell>
+                      <TableCell align="center" sx={{ py: 1 }}>
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <Tooltip title={t('common.edit')} arrow>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDialog(template)}
+                              sx={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 0.75,
+                                color: ASSET_COLOR,
+                                bgcolor: 'transparent',
+                                border: '1px solid',
+                                borderColor: alpha(ASSET_COLOR, 0.35),
+                                transition: 'all 0.15s ease',
+                                '&:hover': {
+                                  bgcolor: alpha(ASSET_COLOR, 0.08),
+                                  borderColor: ASSET_COLOR,
+                                },
+                              }}
+                            >
+                              <EditIcon sx={{ fontSize: 15 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t('common.delete')} arrow>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenDeleteDialog(template)}
+                              sx={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 0.75,
+                                color: '#EF5350',
+                                bgcolor: 'transparent',
+                                border: '1px solid',
+                                borderColor: alpha('#EF5350', 0.35),
+                                transition: 'all 0.15s ease',
+                                '&:hover': {
+                                  bgcolor: alpha('#EF5350', 0.08),
+                                  borderColor: '#EF5350',
+                                },
+                              }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 15 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -25,6 +25,12 @@ import {
   InputAdornment,
   alpha,
   useTheme,
+  Checkbox,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
@@ -38,9 +44,15 @@ import FolderIcon from '@mui/icons-material/Folder';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import AdminFormDialog from './AdminFormDialog';
 import { Service, UpdateServiceDto, Sector } from '../../types/admin.types';
-import { servicesApi, sectorsApi } from '../../api/admin.api';
+import { servicesApi, sectorsApi, ServiceCsvImportResult } from '../../api/admin.api';
 import Loading from '../common/Loading';
 
 interface FormData {
@@ -88,8 +100,12 @@ const ServicesTab = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [importResultDialogOpen, setImportResultDialogOpen] = useState(false);
+  const [importResult, setImportResult] = useState<ServiceCsvImportResult | null>(null);
   const [editingItem, setEditingItem] = useState<Service | null>(null);
   const [deletingItem, setDeletingItem] = useState<Service | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<FormData>>({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +115,7 @@ const ServicesTab = () => {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Theme colors
   const bgBase = isDark ? '#1a1f2e' : '#f0f2f5';
@@ -218,6 +235,75 @@ const ServicesTab = () => {
     },
   });
 
+  const downloadTemplateMutation = useMutation({
+    mutationFn: servicesApi.downloadTemplate,
+    onSuccess: () => {
+      setSnackbar({ open: true, message: 'Template gedownload', severity: 'success' });
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Fout bij downloaden template', severity: 'error' });
+    },
+  });
+
+  const exportCsvMutation = useMutation({
+    mutationFn: servicesApi.exportCsv,
+    onSuccess: () => {
+      setSnackbar({ open: true, message: 'Diensten geëxporteerd', severity: 'success' });
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Fout bij exporteren diensten', severity: 'error' });
+    },
+  });
+
+  const importCsvMutation = useMutation({
+    mutationFn: servicesApi.importCsv,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'services'] });
+      setImportResult(result);
+      setImportResultDialogOpen(true);
+      if (result.isFullySuccessful) {
+        setSnackbar({ open: true, message: `${result.successCount} diensten geïmporteerd`, severity: 'success' });
+      } else if (result.successCount > 0) {
+        setSnackbar({ open: true, message: `${result.successCount} van ${result.totalRows} diensten geïmporteerd`, severity: 'success' });
+      } else {
+        setSnackbar({ open: true, message: 'Geen diensten geïmporteerd', severity: 'error' });
+      }
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Fout bij importeren diensten', severity: 'error' });
+    },
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: servicesApi.deleteAll,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'services'] });
+      setSnackbar({ open: true, message: result.message, severity: 'success' });
+      setSelectedIds(new Set());
+      setBulkDeleteDialogOpen(false);
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Fout bij verwijderen alle diensten', severity: 'error' });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: servicesApi.deleteMany,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'services'] });
+      setSnackbar({
+        open: true,
+        message: `${result.deleted} diensten verwijderd${result.errors.length > 0 ? `, ${result.errors.length} fouten` : ''}`,
+        severity: result.errors.length > 0 ? 'error' : 'success',
+      });
+      setSelectedIds(new Set());
+      setBulkDeleteDialogOpen(false);
+    },
+    onError: () => {
+      setSnackbar({ open: true, message: 'Fout bij verwijderen diensten', severity: 'error' });
+    },
+  });
+
   const handleToggleSector = (sectorId: number) => {
     setExpandedSectors((prev) => {
       const next = new Set(prev);
@@ -240,7 +326,7 @@ const ServicesTab = () => {
         code: item.code,
         name: item.name,
         description: item.description || '',
-        sectorId: String(item.sectorId),
+        sectorId: item.sectorId ? String(item.sectorId) : '',
         sortOrder: String(item.sortOrder),
         isActive: item.isActive,
       });
@@ -301,6 +387,7 @@ const ServicesTab = () => {
         await updateMutation.mutateAsync({
           id: editingItem.id,
           data: {
+            code: formData.code.trim().toUpperCase(),
             name: formData.name.trim(),
             description: formData.description.trim() || undefined,
             sectorId,
@@ -327,7 +414,68 @@ const ServicesTab = () => {
     await deleteMutation.mutateAsync(deletingItem.id);
   };
 
+  // Checkbox handlers
+  const handleToggleService = (serviceId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) {
+        next.delete(serviceId);
+      } else {
+        next.add(serviceId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allIds = services.map((s) => s.id);
+    setSelectedIds(new Set(allIds));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  // CSV handlers
+  const handleDownloadTemplate = () => {
+    downloadTemplateMutation.mutate();
+  };
+
+  const handleExportCsv = () => {
+    exportCsvMutation.mutate();
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    importCsvMutation.mutate(file);
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
+  };
+
+  const handleDeleteAll = () => {
+    deleteAllMutation.mutate();
+  };
+
   if (isLoading) return <Loading message="Loading services..." />;
+
+  const isAnyMutationPending =
+    downloadTemplateMutation.isPending ||
+    exportCsvMutation.isPending ||
+    importCsvMutation.isPending ||
+    deleteAllMutation.isPending ||
+    bulkDeleteMutation.isPending;
 
   const totalServices = services.length;
   const activeServices = services.filter((s) => s.isActive).length;
@@ -341,7 +489,130 @@ const ServicesTab = () => {
         boxShadow: getNeumorph(isDark, 'medium'),
       }}
     >
-      {/* Toolbar */}
+      {/* CSV Toolbar */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          mb: 2,
+          p: 1.5,
+          bgcolor: alpha(accentColor, isDark ? 0.08 : 0.05),
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: alpha(accentColor, isDark ? 0.2 : 0.15),
+        }}
+      >
+        <Tooltip title="Download CSV template voor import">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={downloadTemplateMutation.isPending ? <CircularProgress size={16} /> : <FileDownloadIcon />}
+            onClick={handleDownloadTemplate}
+            disabled={isAnyMutationPending}
+            sx={{
+              borderColor: accentColor,
+              color: accentColor,
+              '&:hover': {
+                borderColor: '#e65c00',
+                bgcolor: alpha(accentColor, 0.08),
+              },
+            }}
+          >
+            Template
+          </Button>
+        </Tooltip>
+
+        <Tooltip title="Exporteer alle diensten naar CSV">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={exportCsvMutation.isPending ? <CircularProgress size={16} /> : <DownloadIcon />}
+            onClick={handleExportCsv}
+            disabled={isAnyMutationPending || services.length === 0}
+            sx={{
+              borderColor: accentColor,
+              color: accentColor,
+              '&:hover': {
+                borderColor: '#e65c00',
+                bgcolor: alpha(accentColor, 0.08),
+              },
+            }}
+          >
+            Exporteer ({services.length})
+          </Button>
+        </Tooltip>
+
+        <Tooltip title="Importeer diensten vanuit CSV">
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={importCsvMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />}
+            onClick={handleImportClick}
+            disabled={isAnyMutationPending}
+            sx={{
+              bgcolor: accentColor,
+              '&:hover': {
+                bgcolor: '#e65c00',
+              },
+            }}
+          >
+            Importeer CSV
+          </Button>
+        </Tooltip>
+
+        {/* Selection buttons */}
+        {selectedIds.size > 0 ? (
+          <Tooltip title={`${selectedIds.size} geselecteerd - klik om te deselecteren`}>
+            <Button
+              variant="text"
+              size="small"
+              onClick={handleDeselectAll}
+              sx={{ color: 'text.secondary' }}
+            >
+              Deselecteer ({selectedIds.size})
+            </Button>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Selecteer alle diensten">
+            <Button
+              variant="text"
+              size="small"
+              onClick={handleSelectAll}
+              disabled={services.length === 0}
+              sx={{ color: 'text.secondary' }}
+            >
+              Selecteer alles
+            </Button>
+          </Tooltip>
+        )}
+
+        {/* Delete Selected Button */}
+        {selectedIds.size > 0 && (
+          <Tooltip title={`Verwijder ${selectedIds.size} geselecteerde diensten`}>
+            <Button
+              variant="contained"
+              size="small"
+              color="error"
+              startIcon={bulkDeleteMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <DeleteSweepIcon />}
+              onClick={() => setBulkDeleteDialogOpen(true)}
+              disabled={isAnyMutationPending}
+            >
+              Verwijder ({selectedIds.size})
+            </Button>
+          </Tooltip>
+        )}
+
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".csv"
+          style={{ display: 'none' }}
+        />
+      </Stack>
+
+      {/* Search Toolbar */}
       <Box
         sx={{
           display: 'flex',
@@ -530,24 +801,42 @@ const ServicesTab = () => {
                 <Box>
                   {sectorServices.map((service, idx) => {
                     const isInactive = !service.isActive;
+                    const isSelected = selectedIds.has(service.id);
                     return (
                       <Box
                         key={service.id}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 1.5,
-                          px: 2,
-                          py: 0.75,
+                          gap: 1,
+                          px: 1,
+                          py: 0.5,
                           borderTop: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                          bgcolor: idx % 2 === 0 ? 'transparent' : alpha(bgBase, 0.3),
+                          bgcolor: isSelected
+                            ? alpha(accentColor, isDark ? 0.15 : 0.1)
+                            : idx % 2 === 0
+                              ? 'transparent'
+                              : alpha(bgBase, 0.3),
                           opacity: isInactive ? 0.5 : 1,
                           transition: 'all 0.1s ease',
                           '&:hover': {
-                            bgcolor: alpha(accentColor, isDark ? 0.06 : 0.03),
+                            bgcolor: alpha(accentColor, isDark ? 0.1 : 0.06),
                           },
                         }}
                       >
+                        <Checkbox
+                          size="small"
+                          checked={isSelected}
+                          onChange={() => handleToggleService(service.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            p: 0.5,
+                            color: alpha(accentColor, 0.5),
+                            '&.Mui-checked': {
+                              color: accentColor,
+                            },
+                          }}
+                        />
                         <Typography
                           variant="caption"
                           sx={{
@@ -672,38 +961,57 @@ const ServicesTab = () => {
             </AccordionSummary>
             <AccordionDetails sx={{ p: 0 }}>
               <Box>
-                {ungroupedServices.map((service, idx) => (
-                  <Box
-                    key={service.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      px: 2,
-                      py: 0.75,
-                      borderTop: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
-                      bgcolor: idx % 2 === 0 ? 'transparent' : alpha(bgBase, 0.3),
-                      transition: 'all 0.1s ease',
-                      '&:hover': {
-                        bgcolor: alpha(accentColor, isDark ? 0.06 : 0.03),
-                      },
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
+                {ungroupedServices.map((service, idx) => {
+                  const isSelected = selectedIds.has(service.id);
+                  return (
+                    <Box
+                      key={service.id}
                       sx={{
-                        fontFamily: 'monospace',
-                        fontWeight: 600,
-                        color: accentColor,
-                        minWidth: 70,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 1,
+                        py: 0.5,
+                        borderTop: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                        bgcolor: isSelected
+                          ? alpha(accentColor, isDark ? 0.15 : 0.1)
+                          : idx % 2 === 0
+                            ? 'transparent'
+                            : alpha(bgBase, 0.3),
+                        transition: 'all 0.1s ease',
+                        '&:hover': {
+                          bgcolor: alpha(accentColor, isDark ? 0.1 : 0.06),
+                        },
                       }}
                     >
-                      {service.code}
-                    </Typography>
-                    <Typography variant="body2" sx={{ flex: 1, fontSize: '0.8rem' }}>
-                      {service.name}
-                    </Typography>
-                    <Tooltip title="Edit" arrow>
+                      <Checkbox
+                        size="small"
+                        checked={isSelected}
+                        onChange={() => handleToggleService(service.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          p: 0.5,
+                          color: alpha(accentColor, 0.5),
+                          '&.Mui-checked': {
+                            color: accentColor,
+                          },
+                        }}
+                      />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontFamily: 'monospace',
+                          fontWeight: 600,
+                          color: accentColor,
+                          minWidth: 70,
+                        }}
+                      >
+                        {service.code}
+                      </Typography>
+                      <Typography variant="body2" sx={{ flex: 1, fontSize: '0.8rem' }}>
+                        {service.name}
+                      </Typography>
+                      <Tooltip title="Edit" arrow>
                       <IconButton
                         size="small"
                         onClick={(e) => {
@@ -747,8 +1055,9 @@ const ServicesTab = () => {
                         <DeleteIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Tooltip>
-                  </Box>
-                ))}
+                    </Box>
+                  );
+                })}
               </Box>
             </AccordionDetails>
           </Accordion>
@@ -826,10 +1135,9 @@ const ServicesTab = () => {
             value={formData.code}
             onChange={handleInputChange('code')}
             error={!!formErrors.code}
-            helperText={formErrors.code}
+            helperText={formErrors.code || (editingItem ? 'Code kan aangepast worden' : '')}
             required
             fullWidth
-            disabled={!!editingItem}
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
           <TextField
@@ -918,6 +1226,182 @@ const ServicesTab = () => {
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog
+        open={bulkDeleteDialogOpen}
+        onClose={() => setBulkDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            border: '2px solid',
+            borderColor: 'error.main',
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: alpha('#F44336', isDark ? 0.1 : 0.05),
+            color: '#F44336',
+            fontWeight: 700,
+            borderBottom: '1px solid',
+            borderColor: 'error.main',
+          }}
+        >
+          Diensten Verwijderen
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1">
+            Weet je zeker dat je <strong>{selectedIds.size} diensten</strong> wilt verwijderen?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Deze actie kan niet ongedaan worden gemaakt.
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2" color="text.secondary">
+            Of wil je <strong>alle {services.length} diensten</strong> in één keer verwijderen?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}>
+          <Button onClick={() => setBulkDeleteDialogOpen(false)} color="inherit">
+            Annuleren
+          </Button>
+          <Button
+            onClick={handleDeleteAll}
+            variant="outlined"
+            color="error"
+            disabled={deleteAllMutation.isPending || bulkDeleteMutation.isPending}
+          >
+            {deleteAllMutation.isPending ? 'Verwijderen...' : `Verwijder Alles (${services.length})`}
+          </Button>
+          <Button
+            onClick={handleBulkDelete}
+            variant="contained"
+            color="error"
+            disabled={bulkDeleteMutation.isPending || deleteAllMutation.isPending}
+          >
+            {bulkDeleteMutation.isPending ? 'Verwijderen...' : `Verwijder (${selectedIds.size})`}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Import Result Dialog */}
+      <Dialog
+        open={importResultDialogOpen}
+        onClose={() => setImportResultDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            border: '2px solid',
+            borderColor: importResult?.isFullySuccessful ? 'success.main' : 'warning.main',
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: importResult?.isFullySuccessful
+              ? alpha('#4CAF50', isDark ? 0.1 : 0.05)
+              : alpha('#FF9800', isDark ? 0.1 : 0.05),
+            color: importResult?.isFullySuccessful ? 'success.main' : 'warning.main',
+            fontWeight: 700,
+            borderBottom: '1px solid',
+            borderColor: importResult?.isFullySuccessful ? 'success.main' : 'warning.main',
+          }}
+        >
+          Import Resultaat
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {importResult && (
+            <>
+              <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="success.main" fontWeight={700}>
+                    {importResult.successCount}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Geslaagd
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="error.main" fontWeight={700}>
+                    {importResult.errorCount}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Fouten
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="h4" color="text.primary" fontWeight={700}>
+                    {importResult.totalRows}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Totaal
+                  </Typography>
+                </Box>
+              </Stack>
+
+              {importResult.errorCount > 0 && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" color="error.main" sx={{ mb: 1 }}>
+                    Fouten:
+                  </Typography>
+                  <List dense sx={{ maxHeight: 200, overflow: 'auto' }}>
+                    {importResult.results
+                      .filter((r) => !r.success)
+                      .map((r) => (
+                        <ListItem key={r.rowNumber} sx={{ py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <ErrorIcon color="error" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={`Rij ${r.rowNumber}: ${r.code || 'onbekend'}`}
+                            secondary={r.error}
+                            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                            secondaryTypographyProps={{ variant: 'caption' }}
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                </>
+              )}
+
+              {importResult.successCount > 0 && importResult.successCount <= 10 && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle2" color="success.main" sx={{ mb: 1 }}>
+                    Aangemaakt:
+                  </Typography>
+                  <List dense sx={{ maxHeight: 150, overflow: 'auto' }}>
+                    {importResult.results
+                      .filter((r) => r.success)
+                      .map((r) => (
+                        <ListItem key={r.rowNumber} sx={{ py: 0.5 }}>
+                          <ListItemIcon sx={{ minWidth: 32 }}>
+                            <CheckCircleIcon color="success" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={`${r.code} - ${r.name}`}
+                            primaryTypographyProps={{ variant: 'body2' }}
+                          />
+                        </ListItem>
+                      ))}
+                  </List>
+                </>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Button onClick={() => setImportResultDialogOpen(false)} variant="contained" color="primary">
+            Sluiten
           </Button>
         </DialogActions>
       </Dialog>

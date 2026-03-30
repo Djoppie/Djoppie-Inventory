@@ -12,9 +12,42 @@ public class MappingProfile : Profile
         CreateMap<Asset, AssetDto>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
-                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name, CategoryId = src.AssetType.CategoryId } : null))
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
-                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
+                src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null))
+            .ForMember(dest => dest.PhysicalWorkplace, opt => opt.MapFrom(src =>
+                src.PhysicalWorkplace != null ? new PhysicalWorkplaceInfo
+                {
+                    Id = src.PhysicalWorkplace.Id,
+                    Code = src.PhysicalWorkplace.Code,
+                    Name = src.PhysicalWorkplace.Name,
+                    CurrentOccupantName = src.PhysicalWorkplace.CurrentOccupantName,
+                    ServiceName = src.PhysicalWorkplace.Service != null ? src.PhysicalWorkplace.Service.Name : null,
+                    SectorName = src.PhysicalWorkplace.Service != null && src.PhysicalWorkplace.Service.Sector != null
+                        ? src.PhysicalWorkplace.Service.Sector.Name : null,
+                    BuildingName = src.PhysicalWorkplace.Building != null ? src.PhysicalWorkplace.Building.Name : null,
+                    Floor = src.PhysicalWorkplace.Floor
+                } : null))
+            .ForMember(dest => dest.Building, opt => opt.MapFrom(src =>
+                src.Building != null ? new BuildingInfo
+                {
+                    Id = src.Building.Id,
+                    Code = src.Building.Code,
+                    Name = src.Building.Name,
+                    Address = src.Building.Address
+                } : null))
+            .ForMember(dest => dest.Employee, opt => opt.MapFrom(src =>
+                src.Employee != null ? new EmployeeInfoDto(
+                    src.Employee.Id,
+                    src.Employee.EntraId,
+                    src.Employee.DisplayName,
+                    src.Employee.Email,
+                    src.Employee.JobTitle,
+                    src.Employee.ServiceId,
+                    src.Employee.Service != null ? src.Employee.Service.Name : null,
+                    src.Employee.CurrentWorkplace != null ? src.Employee.CurrentWorkplace.Id : (int?)null,
+                    src.Employee.CurrentWorkplace != null ? src.Employee.CurrentWorkplace.Code : null
+                ) : null));
 
         CreateMap<CreateAssetDto, Asset>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ParseAssetStatus(src.Status)))
@@ -45,7 +78,7 @@ public class MappingProfile : Profile
         // AssetTemplate mappings
         CreateMap<AssetTemplate, AssetTemplateDto>()
             .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src =>
-                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name } : null))
+                src.AssetType != null ? new AssetTypeInfo { Id = src.AssetType.Id, Code = src.AssetType.Code, Name = src.AssetType.Name, CategoryId = src.AssetType.CategoryId } : null))
             .ForMember(dest => dest.Service, opt => opt.MapFrom(src =>
                 src.Service != null ? new ServiceInfo { Id = src.Service.Id, Code = src.Service.Code, Name = src.Service.Name } : null));
 

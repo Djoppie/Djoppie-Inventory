@@ -16,6 +16,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly IAssetEventService _assetEventService;
+    private readonly AssetPlanSyncService _syncService;
     private readonly ILogger<RolloutWorkplaceService> _logger;
 
     public RolloutWorkplaceService(
@@ -23,12 +24,14 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         IAssetRepository assetRepository,
         IAssetCodeGenerator assetCodeGenerator,
         IAssetEventService assetEventService,
+        AssetPlanSyncService syncService,
         ILogger<RolloutWorkplaceService> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
         _assetCodeGenerator = assetCodeGenerator;
         _assetEventService = assetEventService;
+        _syncService = syncService;
         _logger = logger;
     }
 
@@ -56,6 +59,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 await UpdatePhysicalWorkplaceAsync(workplace, assetPlans);
                 await _rolloutRepository.SaveChangesAsync();
                 await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+
+                // Sync to relational model
+                await _syncService.SyncWorkplaceAsync(workplace);
             });
 
             return WorkplaceOperationResult.Ok(workplace);
@@ -101,6 +107,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 ResetWorkplaceToInProgress(workplace, assetPlans, reverseAssets);
                 await _rolloutRepository.SaveChangesAsync();
                 await _rolloutRepository.UpdateDayTotalsAsync(workplace.RolloutDayId);
+
+                // Sync to relational model
+                await _syncService.SyncWorkplaceAsync(workplace);
             });
 
             _logger.LogInformation("Workplace {WorkplaceId} reopened (reverseAssets: {ReverseAssets})",
@@ -174,6 +183,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
         await _rolloutRepository.UpdateWorkplaceAsync(workplace);
 
+        // Sync to relational model
+        await _syncService.SyncWorkplaceAsync(workplace);
+
         return WorkplaceOperationResult.Ok(workplace);
     }
 
@@ -229,6 +241,9 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         }
 
         await _rolloutRepository.UpdateWorkplaceAsync(workplace);
+
+        // Sync to relational model
+        await _syncService.SyncWorkplaceAsync(workplace);
 
         return WorkplaceOperationResult.Ok(workplace);
     }
@@ -375,6 +390,27 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                     asset.ServiceId = workplace.ServiceId;
                     asset.InstallationLocation = workplace.Location;
                     asset.UpdatedAt = DateTime.UtcNow;
+
+                    // Link asset to physical workplace and building
+                    var equipmentType = plan.EquipmentType?.ToLowerInvariant() ?? "";
+                    var isWorkplaceFixed = IsWorkplaceFixedEquipment(equipmentType);
+
+                    if (isWorkplaceFixed && workplace.PhysicalWorkplaceId.HasValue)
+                    {
+                        // Workplace-fixed assets (docking, monitor, keyboard, mouse) stay at the physical workplace
+                        asset.PhysicalWorkplaceId = workplace.PhysicalWorkplaceId;
+                        asset.BuildingId = workplace.BuildingId ?? workplace.PhysicalWorkplace?.BuildingId;
+
+                        _logger.LogInformation(
+                            "Asset {AssetCode} ({EquipmentType}) linked to PhysicalWorkplace {WorkplaceId}",
+                            asset.AssetCode, equipmentType, workplace.PhysicalWorkplaceId);
+                    }
+                    else if (workplace.BuildingId.HasValue)
+                    {
+                        // User-assigned assets (laptop, desktop) get building but not physical workplace
+                        asset.BuildingId = workplace.BuildingId;
+                    }
+
                     await _assetRepository.UpdateAsync(asset);
 
                     // Create audit event for status change
@@ -391,15 +427,21 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 }
             }
 
-            // Old asset -> UitDienst
+            // Old asset -> UitDienst (full cleanup)
             if (plan.OldAssetId.HasValue)
             {
                 var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
                 if (oldAsset != null)
                 {
                     var oldStatus = oldAsset.Status;
+                    var previousOwner = oldAsset.Owner;
 
+                    // Full decommission: clear all assignment data
                     oldAsset.Status = AssetStatus.UitDienst;
+                    oldAsset.Owner = null;
+                    oldAsset.ServiceId = null;
+                    oldAsset.PhysicalWorkplaceId = null;
+                    oldAsset.InstallationLocation = null;
                     oldAsset.UpdatedAt = DateTime.UtcNow;
                     await _assetRepository.UpdateAsync(oldAsset);
 
@@ -410,10 +452,11 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                         AssetStatus.UitDienst,
                         completedBy,
                         completedByEmail,
-                        $"Rollout werkplek: {workplace.UserName} (vervangen)");
+                        $"Rollout werkplek: {workplace.UserName} (vervangen, vorige eigenaar: {previousOwner ?? "onbekend"})");
 
-                    _logger.LogInformation("Old asset {AssetCode} decommissioned (UitDienst)",
-                        oldAsset.AssetCode);
+                    _logger.LogInformation(
+                        "Old asset {AssetCode} decommissioned (UitDienst), cleared owner: {PreviousOwner}",
+                        oldAsset.AssetCode, previousOwner ?? "none");
                 }
             }
 
@@ -423,6 +466,15 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 plan.Status = "installed";
             }
         }
+    }
+
+    /// <summary>
+    /// Determines if equipment type is workplace-fixed (stays at physical location)
+    /// vs user-assigned (follows the user).
+    /// </summary>
+    private static bool IsWorkplaceFixedEquipment(string equipmentType)
+    {
+        return equipmentType is "docking" or "monitor" or "keyboard" or "mouse";
     }
 
     private static void UpdateWorkplaceAsCompleted(

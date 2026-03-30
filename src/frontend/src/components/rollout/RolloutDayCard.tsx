@@ -20,7 +20,9 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import type { RolloutDay } from '../../types/rollout';
+import { ASSET_COLOR, SECTOR_COLOR } from '../../constants/filterColors';
 
 interface RolloutDayCardProps {
   day: RolloutDay;
@@ -41,6 +43,7 @@ interface RolloutDayCardProps {
   onDelete: () => void;
   onPrint: () => void;
   onImport?: () => void;
+  onAddWorkplace?: () => void;
   onExecute?: () => void;
   onSetPlanning: () => void;
   children: React.ReactNode;
@@ -64,6 +67,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
   onDelete,
   onPrint,
   onImport,
+  onAddWorkplace,
   onExecute,
   onSetPlanning,
   children,
@@ -109,7 +113,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
     return {
       borderColor: 'rgba(255, 119, 0, 0.2)',
       bgGradient: 'linear-gradient(135deg, rgba(255, 119, 0, 0.02) 0%, transparent 100%)',
-      statusColor: '#FF7700',
+      statusColor: ASSET_COLOR,
       statusBg: 'rgba(255, 119, 0, 0.08)',
       statusLabel: 'Planning',
       glow: 'none',
@@ -256,7 +260,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                     sx={{
                       width: `${completionPercentage}%`,
                       height: '100%',
-                      bgcolor: completionPercentage === 100 ? '#16a34a' : '#FF7700',
+                      bgcolor: completionPercentage === 100 ? '#16a34a' : ASSET_COLOR,
                       transition: 'width 0.5s ease',
                       borderRadius: 2.5,
                     }}
@@ -295,9 +299,9 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                   fontSize: '0.65rem',
                   fontWeight: 600,
                   bgcolor: 'rgba(33, 150, 243, 0.08)',
-                  color: '#1976d2',
+                  color: SECTOR_COLOR,
                   border: '1px dashed rgba(33, 150, 243, 0.3)',
-                  '& .MuiChip-icon': { color: '#1976d2' },
+                  '& .MuiChip-icon': { color: SECTOR_COLOR },
                   '& .MuiChip-label': { px: 0.75 },
                 }}
               />
@@ -370,6 +374,35 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
             </Tooltip>
           )}
 
+          {/* Add Workplace - Hide for rescheduled cards */}
+          {!isRescheduledCard && onAddWorkplace && (
+            <Tooltip title="Werkplek toevoegen">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onAddWorkplace}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(255, 119, 0, 0.7)',
+                    bgcolor: 'rgba(255, 119, 0, 0.1)',
+                    border: '1px solid rgba(255, 119, 0, 0.3)',
+                    '&:hover:not(:disabled)': {
+                      color: ASSET_COLOR,
+                      bgcolor: 'rgba(255, 119, 0, 0.15)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <PersonAddIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
           {/* Import from Azure AD - Hide for rescheduled cards */}
           {!isRescheduledCard && onImport && (
             <Tooltip title="Importeren uit Azure AD">
@@ -408,7 +441,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                   sx={{
                     color: 'rgba(255, 119, 0, 0.6)',
                     '&:hover:not(:disabled)': {
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                       bgcolor: 'rgba(255, 119, 0, 0.08)',
                       transform: 'scale(1.1)',
                     },

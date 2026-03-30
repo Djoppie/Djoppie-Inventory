@@ -26,6 +26,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
 import type { GraphUser } from '../../../types/graph.types';
 import type { PhysicalWorkplaceSummary } from '../../../types/physicalWorkplace.types';
+import { ASSET_COLOR, SERVICE_COLOR } from '../../../constants/filterColors';
 
 interface UserInfoSectionProps {
   userName: string;
@@ -159,7 +160,7 @@ export function UserInfoSection({
     },
     '& .MuiInputLabel-root': {
       color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-      '&.Mui-focused': { color: '#009688' },
+      '&.Mui-focused': { color: SERVICE_COLOR },
     },
   };
 
@@ -180,7 +181,7 @@ export function UserInfoSection({
     },
     '& .MuiInputLabel-root': {
       color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)',
-      '&.Mui-focused': { color: '#FF7700' },
+      '&.Mui-focused': { color: ASSET_COLOR },
     },
   };
 
@@ -219,7 +220,7 @@ export function UserInfoSection({
               : '3px 3px 6px #c5cad0, -3px -3px 6px #ffffff',
           }}
         >
-          <PersonIcon sx={{ color: '#FF7700', fontSize: '1.2rem' }} />
+          <PersonIcon sx={{ color: ASSET_COLOR, fontSize: '1.2rem' }} />
         </Box>
         <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
           Gebruiker Informatie
@@ -361,8 +362,8 @@ export function UserInfoSection({
                   onChange={(e) => setShowOnlyAvailable(e.target.checked)}
                   size="small"
                   sx={{
-                    color: '#009688',
-                    '&.Mui-checked': { color: '#009688' },
+                    color: SERVICE_COLOR,
+                    '&.Mui-checked': { color: SERVICE_COLOR },
                     p: 0.5,
                   }}
                 />
@@ -382,8 +383,8 @@ export function UserInfoSection({
                     onChange={(e) => setShowOnlyFromService(e.target.checked)}
                     size="small"
                     sx={{
-                      color: '#009688',
-                      '&.Mui-checked': { color: '#009688' },
+                      color: SERVICE_COLOR,
+                      '&.Mui-checked': { color: SERVICE_COLOR },
                       p: 0.5,
                     }}
                   />
@@ -412,7 +413,7 @@ export function UserInfoSection({
                     },
                     '&[aria-selected="true"]': {
                       bgcolor: 'rgba(0, 150, 136, 0.15) !important',
-                      borderLeft: '3px solid #009688',
+                      borderLeft: '3px solid ${SERVICE_COLOR}',
                     },
                     '&[aria-selected="true"]:hover': {
                       bgcolor: 'rgba(0, 150, 136, 0.2) !important',
@@ -430,7 +431,7 @@ export function UserInfoSection({
               return (
                 <li {...otherProps} key={key}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, width: '100%' }}>
-                    <PlaceIcon sx={{ color: occupied ? '#ef4444' : '#009688', fontSize: '1.1rem' }} />
+                    <PlaceIcon sx={{ color: occupied ? '#ef4444' : SERVICE_COLOR, fontSize: '1.1rem' }} />
                     <Box sx={{ flex: 1 }}>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Typography variant="body2" fontWeight={600}>
@@ -482,7 +483,7 @@ export function UserInfoSection({
                       <PlaceIcon
                         sx={{
                           fontSize: '1.1rem',
-                          color: selectedPhysicalWorkplace ? '#009688' : (isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'),
+                          color: selectedPhysicalWorkplace ? SERVICE_COLOR : (isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)'),
                         }}
                       />
                     </InputAdornment>
@@ -530,9 +531,9 @@ export function UserInfoSection({
                   fontSize: '0.7rem',
                   fontWeight: 700,
                   bgcolor: isSelectedWorkplaceOccupied ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 150, 136, 0.15)',
-                  color: isSelectedWorkplaceOccupied ? '#dc2626' : '#009688',
+                  color: isSelectedWorkplaceOccupied ? '#dc2626' : SERVICE_COLOR,
                   border: `1px solid ${isSelectedWorkplaceOccupied ? 'rgba(239, 68, 68, 0.4)' : 'rgba(0, 150, 136, 0.4)'}`,
-                  '& .MuiChip-icon': { color: isSelectedWorkplaceOccupied ? '#dc2626' : '#009688' },
+                  '& .MuiChip-icon': { color: isSelectedWorkplaceOccupied ? '#dc2626' : SERVICE_COLOR },
                 }}
               />
               {/* Availability status badge */}

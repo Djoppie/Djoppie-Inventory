@@ -32,6 +32,7 @@ import {
   MenuItem,
   InputLabel,
   SelectChangeEvent,
+  alpha,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -40,6 +41,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import type { RolloutDay, RolloutDayStatus, PlanningListFilters, PlanningListSort } from '../../../types/rollout';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface PlanningListViewProps {
   days: RolloutDay[];
@@ -215,9 +217,9 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
             variant="outlined"
             size="small"
             sx={{
-              borderColor: '#FF7700',
-              color: '#FF7700',
-              '& .MuiChip-icon': { color: '#FF7700' },
+              borderColor: ASSET_COLOR,
+              color: ASSET_COLOR,
+              '& .MuiChip-icon': { color: ASSET_COLOR },
             }}
           />
           <Chip
@@ -240,7 +242,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                 stats.completionPercentage === 100
                   ? 'rgba(34, 197, 94, 0.15)'
                   : 'rgba(255, 119, 0, 0.15)',
-              color: stats.completionPercentage === 100 ? '#16a34a' : '#FF7700',
+              color: stats.completionPercentage === 100 ? '#16a34a' : ASSET_COLOR,
               fontWeight: 600,
               border: `1px solid ${stats.completionPercentage === 100 ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 119, 0, 0.4)'}`,
             }}
@@ -293,51 +295,94 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
       </Box>
 
       {/* Table */}
-      <TableContainer sx={{ maxHeight: 500 }}>
+      <TableContainer
+        sx={{
+          maxHeight: 500,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
         <Table stickyHeader size="small">
           <TableHead>
-            <TableRow>
-              <TableCell>
+            <TableRow
+              sx={{
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? alpha(ASSET_COLOR, 0.08)
+                    : alpha(ASSET_COLOR, 0.04),
+                '& th': {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? alpha(ASSET_COLOR, 0.08)
+                      : alpha(ASSET_COLOR, 0.04),
+                  borderBottom: '2px solid',
+                  borderColor: ASSET_COLOR,
+                },
+              }}
+            >
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'date'}
                   direction={sort.field === 'date' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('date')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Datum
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'name'}
                   direction={sort.field === 'name' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('name')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Naam
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'status'}
                   direction={sort.field === 'status' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('status')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Status
                 </TableSortLabel>
               </TableCell>
-              <TableCell align="center">
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'workplaces'}
                   direction={sort.field === 'workplaces' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('workplaces')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Werkplekken
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
+              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
                 <TableSortLabel
                   active={sort.field === 'completion'}
                   direction={sort.field === 'completion' ? sort.direction : 'asc'}
                   onClick={() => handleSortChange('completion')}
+                  sx={{
+                    '&.Mui-active': { color: ASSET_COLOR },
+                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                  }}
                 >
                   Voortgang
                 </TableSortLabel>
@@ -356,7 +401,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                 </TableCell>
               </TableRow>
             ) : (
-              filteredDays.map((day) => {
+              filteredDays.map((day, index) => {
                 const completionPercentage =
                   day.totalWorkplaces > 0
                     ? Math.round((day.completedWorkplaces / day.totalWorkplaces) * 100)
@@ -374,9 +419,18 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                     }}
                     sx={{
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.15s ease',
+                      bgcolor: (theme) =>
+                        index % 2 === 1
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.02)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                          : 'transparent',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 119, 0, 0.04)',
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? alpha(ASSET_COLOR, 0.08)
+                            : alpha(ASSET_COLOR, 0.04),
                       },
                     }}
                   >
@@ -385,7 +439,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                         <CalendarTodayIcon
                           sx={{
                             fontSize: '1rem',
-                            color: isComplete ? '#16a34a' : '#FF7700',
+                            color: isComplete ? '#16a34a' : ASSET_COLOR,
                           }}
                         />
                         <Typography variant="body2" fontWeight="medium">
@@ -447,7 +501,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                             bgcolor: 'rgba(0, 0, 0, 0.08)',
                             '& .MuiLinearProgress-bar': {
                               borderRadius: 3,
-                              bgcolor: isComplete ? '#16a34a' : '#FF7700',
+                              bgcolor: isComplete ? '#16a34a' : ASSET_COLOR,
                             },
                           }}
                         />
@@ -456,7 +510,7 @@ const PlanningListView = ({ days, onDayClick, onDateClick }: PlanningListViewPro
                           fontWeight={600}
                           sx={{
                             minWidth: 35,
-                            color: isComplete ? '#16a34a' : '#FF7700',
+                            color: isComplete ? '#16a34a' : ASSET_COLOR,
                           }}
                         >
                           {completionPercentage}%

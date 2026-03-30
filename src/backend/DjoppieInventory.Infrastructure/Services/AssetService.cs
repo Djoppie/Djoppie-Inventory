@@ -141,6 +141,12 @@ public class AssetService : IAssetService
         var oldOwner = existingAsset.Owner;
         var oldBuilding = existingAsset.LegacyBuilding;
 
+        // Capture Intune data before mapping (for snapshot if owner changes)
+        var oldIntuneEnrollmentDate = existingAsset.IntuneEnrollmentDate;
+        var oldIntuneLastCheckIn = existingAsset.IntuneLastCheckIn;
+        var oldIntuneCertificateExpiry = existingAsset.IntuneCertificateExpiry;
+        var oldIntuneSyncedAt = existingAsset.IntuneSyncedAt;
+
         _mapper.Map(updateAssetDto, existingAsset);
 
         // Explicitly handle nullable fields to allow clearing them (AutoMapper ignores null by default)
@@ -153,6 +159,8 @@ public class AssetService : IAssetService
         existingAsset.Alias = updateAssetDto.Alias;
         existingAsset.InstallationLocation = updateAssetDto.InstallationLocation;
         existingAsset.ServiceId = updateAssetDto.ServiceId;
+        existingAsset.BuildingId = updateAssetDto.BuildingId;
+        existingAsset.PhysicalWorkplaceId = updateAssetDto.PhysicalWorkplaceId;
         existingAsset.PurchaseDate = updateAssetDto.PurchaseDate;
         existingAsset.WarrantyExpiry = updateAssetDto.WarrantyExpiry;
         existingAsset.InstallationDate = updateAssetDto.InstallationDate;
@@ -187,6 +195,28 @@ public class AssetService : IAssetService
             // Owner changed
             if (oldOwner != updatedAsset.Owner)
             {
+                // Create Intune snapshot BEFORE owner change event (preserve data from previous owner)
+                // We need to temporarily restore the old Intune data to create the snapshot
+                var snapshotAsset = new Core.Entities.Asset
+                {
+                    Id = updatedAsset.Id,
+                    AssetCode = updatedAsset.AssetCode,
+                    Owner = oldOwner,
+                    Status = oldStatus,
+                    IntuneEnrollmentDate = oldIntuneEnrollmentDate,
+                    IntuneLastCheckIn = oldIntuneLastCheckIn,
+                    IntuneCertificateExpiry = oldIntuneCertificateExpiry,
+                    IntuneSyncedAt = oldIntuneSyncedAt
+                };
+
+                await _assetEventService.CreateIntuneSnapshotEventAsync(
+                    snapshotAsset,
+                    $"Before owner change from {oldOwner ?? "(unassigned)"} to {updatedAsset.Owner ?? "(unassigned)"}",
+                    performedBy,
+                    performedByEmail,
+                    cancellationToken: default);
+
+                // Now create the owner changed event
                 await _assetEventService.CreateOwnerChangedEventAsync(
                     updatedAsset.Id,
                     oldOwner,

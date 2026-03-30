@@ -67,6 +67,9 @@ export const ROUTES = {
   /** Physical workplaces management page */
   PHYSICAL_WORKPLACES: '/workplaces',
 
+  /** Physical workplace detail page (requires :id parameter) */
+  WORKPLACE_DETAIL: '/workplaces/:id',
+
   /** Laptop swap / Device deployment page */
   LAPTOP_SWAP: '/laptop-swap',
 
@@ -149,4 +152,11 @@ export const buildRoute = {
    * @returns The full route path
    */
   autopilotTimeline: (serialNumber: string) => `/devices/autopilot/timeline/${serialNumber}`,
+
+  /**
+   * Builds the workplace detail route with the specified workplace ID.
+   * @param id - The workplace ID
+   * @returns The full route path
+   */
+  workplaceDetail: (id: number | string) => `/workplaces/${id}`,
 } as const;

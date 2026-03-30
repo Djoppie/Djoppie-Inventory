@@ -53,6 +53,7 @@ import type { EquipmentType, AssetPlanStatus } from '../../types/rollout';
 import { getAssets } from '../../api/assets.api';
 import { EQUIPMENT_LABELS } from '../../constants/rollout.constants';
 import { TemplateSelector } from './TemplateSelector';
+import { ASSET_COLOR, SERVICE_COLOR, BUILDING_COLOR } from '../../constants/filterColors';
 
 // Configuration mode for each item
 type ConfigMode = 'link' | 'create';
@@ -191,14 +192,14 @@ const AssignmentBadge = ({
       // Warning state - no workplace selected
       return {
         bg: 'rgba(255, 152, 0, 0.12)',
-        color: '#f59e0b',
+        color: BUILDING_COLOR,
         border: 'rgba(255, 152, 0, 0.3)',
       };
     }
     // Normal workplace state
     return {
       bg: 'rgba(0, 150, 136, 0.12)',
-      color: '#009688',
+      color: SERVICE_COLOR,
       border: 'rgba(0, 150, 136, 0.3)',
     };
   };
@@ -322,7 +323,7 @@ const AssetConfigItemCard = ({
         // Border based on assignment type
         border: `2px solid ${assignmentBorderColor}`,
         // Left accent border for assignment type (thicker)
-        borderLeft: `4px solid ${isUserAssigned ? '#9c27b0' : '#009688'}`,
+        borderLeft: `4px solid ${isUserAssigned ? '#9c27b0' : SERVICE_COLOR}`,
       }}
     >
       {/* Header: Type + Status + Delete */}
@@ -338,7 +339,7 @@ const AssetConfigItemCard = ({
               justifyContent: 'center',
               bgcolor: neuBg,
               boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
-              color: '#FF7700',
+              color: ASSET_COLOR,
               '& svg': { fontSize: '1.1rem' },
             }}
           >
@@ -468,7 +469,7 @@ const AssetConfigItemCard = ({
                 sx={{
                   borderRadius: 2,
                   bgcolor: neuBg,
-                  color: '#FF7700',
+                  color: ASSET_COLOR,
                   fontWeight: 600,
                   fontSize: '0.8rem',
                   py: 1,
@@ -636,7 +637,7 @@ export const WorkplaceConfigSection = ({
               boxShadow: `3px 3px 6px ${neuShadowDark}, -3px -3px 6px ${neuShadowLight}`,
             }}
           >
-            <InventoryIcon sx={{ color: '#FF7700', fontSize: '1.2rem' }} />
+            <InventoryIcon sx={{ color: ASSET_COLOR, fontSize: '1.2rem' }} />
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
@@ -655,7 +656,7 @@ export const WorkplaceConfigSection = ({
           sx={{
             borderRadius: 2,
             bgcolor: neuBg,
-            color: '#FF7700',
+            color: ASSET_COLOR,
             fontWeight: 600,
             boxShadow: `3px 3px 6px ${neuShadowDark}, -3px -3px 6px ${neuShadowLight}`,
             '&:hover': {
@@ -694,7 +695,7 @@ export const WorkplaceConfigSection = ({
                   '&:hover': {
                     boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
                   },
-                  '& .MuiChip-icon': { color: '#FF7700' },
+                  '& .MuiChip-icon': { color: ASSET_COLOR },
                 }}
               />
             ))}

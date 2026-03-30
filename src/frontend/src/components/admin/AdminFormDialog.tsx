@@ -81,6 +81,7 @@ const AdminFormDialog = ({
           }}
         >
           <Typography
+            component="span"
             variant="h6"
             sx={{
               fontWeight: 700,

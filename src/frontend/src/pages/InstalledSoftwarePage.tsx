@@ -24,6 +24,8 @@ import {
   Stack,
   Paper,
   alpha,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { useAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
@@ -56,6 +58,7 @@ import {
 } from '../types/software.types';
 import { softwareApi } from '../api/software.api';
 import { logger } from '../utils/logger';
+import { ASSET_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage and AssetDetailPage
 const scannerCardSx = {
@@ -74,20 +77,6 @@ const scannerCardSx = {
   },
 };
 
-// Consistent icon button style
-const iconButtonSx = {
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
-  },
-};
 
 // Category color mapping for visual distinction
 const getCategoryColor = (category?: SoftwareCategory): string => {
@@ -143,6 +132,8 @@ const formatBytes = (bytes?: number): string => {
 const InstalledSoftwarePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { data: asset, isLoading: isLoadingAsset } = useAsset(Number(id));
 
   const [software, setSoftware] = useState<InstalledSoftware[]>([]);
@@ -332,9 +323,29 @@ const InstalledSoftwarePage = () => {
         <Alert severity="error" sx={{ border: '1px solid', borderColor: 'error.main', fontWeight: 600 }}>
           Asset not found
         </Alert>
-        <IconButton onClick={() => navigate('/')} sx={{ ...iconButtonSx, mt: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
+        <Tooltip title="Back to Dashboard" arrow>
+          <IconButton
+            onClick={() => navigate('/')}
+            sx={{
+              mt: 2,
+              width: 36,
+              height: 36,
+              borderRadius: 1,
+              color: 'text.secondary',
+              bgcolor: 'transparent',
+              border: '1px solid',
+              borderColor: 'divider',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                color: ASSET_COLOR,
+                bgcolor: alpha(ASSET_COLOR, 0.08),
+                borderColor: ASSET_COLOR,
+              },
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
     );
   }
@@ -342,16 +353,23 @@ const InstalledSoftwarePage = () => {
   return (
     <Box>
       {/* Back Button */}
-      <Tooltip title="Back to Asset Details">
+      <Tooltip title="Back to Asset Details" arrow>
         <IconButton
           onClick={() => navigate(`/assets/${id}`)}
           sx={{
-            ...iconButtonSx,
             mb: 2,
+            width: 36,
+            height: 36,
+            borderRadius: 1,
             color: 'text.secondary',
+            bgcolor: 'transparent',
+            border: '1px solid',
+            borderColor: 'divider',
+            transition: 'all 0.15s ease',
             '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
+              color: ASSET_COLOR,
+              bgcolor: alpha(ASSET_COLOR, 0.08),
+              borderColor: ASSET_COLOR,
             },
           }}
         >
@@ -397,13 +415,27 @@ const InstalledSoftwarePage = () => {
               </Box>
             </Box>
 
-            <Tooltip title="Export to CSV">
+            <Tooltip title="Export to CSV" arrow>
               <IconButton
                 onClick={handleExport}
                 disabled={software.length === 0}
                 sx={{
-                  ...iconButtonSx,
-                  color: 'primary.main',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 1,
+                  color: ASSET_COLOR,
+                  bgcolor: 'transparent',
+                  border: '1px solid',
+                  borderColor: alpha(ASSET_COLOR, 0.35),
+                  transition: 'all 0.15s ease',
+                  '&:hover': {
+                    bgcolor: alpha(ASSET_COLOR, 0.08),
+                    borderColor: ASSET_COLOR,
+                  },
+                  '&.Mui-disabled': {
+                    color: 'text.disabled',
+                    borderColor: 'divider',
+                  },
                 }}
               >
                 <DownloadIcon />
@@ -1153,19 +1185,111 @@ const InstalledSoftwarePage = () => {
                   : 'No installed software data available for this asset'}
               </Typography>
             </Box>
+          ) : isTablet ? (
+            /* Mobile/Tablet: Card View */
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, p: 2 }}>
+              {filteredAndSortedSoftware.map((app) => (
+                <Paper
+                  key={app.id}
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: ASSET_COLOR,
+                      bgcolor: (thm) =>
+                        thm.palette.mode === 'dark'
+                          ? alpha(ASSET_COLOR, 0.04)
+                          : alpha(ASSET_COLOR, 0.02),
+                    },
+                  }}
+                >
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Typography fontWeight={600} sx={{ color: ASSET_COLOR, fontSize: '0.9rem' }}>
+                      {app.name}
+                    </Typography>
+                    {app.category && (
+                      <Chip
+                        label={app.category}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          bgcolor: alpha(getCategoryColor(app.category), 0.15),
+                          color: getCategoryColor(app.category),
+                          border: '1px solid',
+                          borderColor: alpha(getCategoryColor(app.category), 0.3),
+                          fontWeight: 600,
+                          fontSize: '0.65rem',
+                        }}
+                      />
+                    )}
+                  </Stack>
+
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    {app.publisher}
+                  </Typography>
+
+                  <Stack direction="row" spacing={2} mt={1.5} flexWrap="wrap" gap={1}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Version
+                      </Typography>
+                      <Typography variant="body2" fontFamily="monospace" fontSize="0.8rem">
+                        {app.version}
+                      </Typography>
+                    </Box>
+                    {app.installDate && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Installed
+                        </Typography>
+                        <Typography variant="body2" fontSize="0.8rem">
+                          {formatDate(app.installDate)}
+                        </Typography>
+                      </Box>
+                    )}
+                    {app.size && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Size
+                        </Typography>
+                        <Typography variant="body2" fontFamily="monospace" fontSize="0.8rem">
+                          {formatSize(app.size)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Paper>
+              ))}
+            </Box>
           ) : (
-            <TableContainer>
-              <Table sx={{ minWidth: 650 }}>
+            /* Desktop: Table View */
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              <Table size="small">
                 <TableHead>
                   <TableRow
                     sx={{
-                      bgcolor: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255, 215, 0, 0.05)'
-                          : 'rgba(253, 185, 49, 0.05)',
+                      bgcolor: (thm) =>
+                        thm.palette.mode === 'dark'
+                          ? alpha(ASSET_COLOR, 0.08)
+                          : alpha(ASSET_COLOR, 0.04),
+                      borderBottom: '2px solid',
+                      borderColor: ASSET_COLOR,
                     }}
                   >
-                    <TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <TableSortLabel
                         active={sortBy === 'name-asc' || sortBy === 'name-desc'}
                         direction={sortBy === 'name-asc' ? 'asc' : 'desc'}
@@ -1173,17 +1297,13 @@ const InstalledSoftwarePage = () => {
                           handleSortChange(sortBy === 'name-asc' ? 'name-desc' : 'name-asc')
                         }
                       >
-                        <Typography variant="caption" fontWeight={700}>
-                          APPLICATION NAME
-                        </Typography>
+                        Application Name
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="caption" fontWeight={700}>
-                        VERSION
-                      </Typography>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Version
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <TableSortLabel
                         active={sortBy === 'publisher-asc' || sortBy === 'publisher-desc'}
                         direction={sortBy === 'publisher-asc' ? 'asc' : 'desc'}
@@ -1193,17 +1313,13 @@ const InstalledSoftwarePage = () => {
                           )
                         }
                       >
-                        <Typography variant="caption" fontWeight={700}>
-                          PUBLISHER
-                        </Typography>
+                        Publisher
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell>
-                      <Typography variant="caption" fontWeight={700}>
-                        CATEGORY
-                      </Typography>
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Category
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <TableSortLabel
                         active={sortBy === 'date-newest' || sortBy === 'date-oldest'}
                         direction={sortBy === 'date-newest' ? 'desc' : 'asc'}
@@ -1211,12 +1327,10 @@ const InstalledSoftwarePage = () => {
                           handleSortChange(sortBy === 'date-newest' ? 'date-oldest' : 'date-newest')
                         }
                       >
-                        <Typography variant="caption" fontWeight={700}>
-                          INSTALL DATE
-                        </Typography>
+                        Install Date
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <TableSortLabel
                         active={sortBy === 'size-asc' || sortBy === 'size-desc'}
                         direction={sortBy === 'size-asc' ? 'asc' : 'desc'}
@@ -1224,9 +1338,7 @@ const InstalledSoftwarePage = () => {
                           handleSortChange(sortBy === 'size-asc' ? 'size-desc' : 'size-asc')
                         }
                       >
-                        <Typography variant="caption" fontWeight={700}>
-                          SIZE
-                        </Typography>
+                        Size
                       </TableSortLabel>
                     </TableCell>
                   </TableRow>
@@ -1236,51 +1348,37 @@ const InstalledSoftwarePage = () => {
                     <TableRow
                       key={app.id}
                       sx={{
+                        bgcolor: (thm) =>
+                          index % 2 === 0
+                            ? 'transparent'
+                            : thm.palette.mode === 'dark'
+                              ? 'rgba(255, 255, 255, 0.02)'
+                              : 'rgba(0, 0, 0, 0.02)',
                         '&:hover': {
-                          bgcolor: (theme) =>
-                            theme.palette.mode === 'dark'
-                              ? 'rgba(255, 215, 0, 0.08)'
-                              : 'rgba(253, 185, 49, 0.08)',
+                          bgcolor: (thm) =>
+                            thm.palette.mode === 'dark'
+                              ? alpha(ASSET_COLOR, 0.08)
+                              : alpha(ASSET_COLOR, 0.04),
                         },
-                        transition: 'background-color 0.2s ease',
-                        animation: `fadeIn 0.3s ease ${index * 0.02}s both`,
-                        '@keyframes fadeIn': {
-                          from: {
-                            opacity: 0,
-                            transform: 'translateY(10px)',
-                          },
-                          to: {
-                            opacity: 1,
-                            transform: 'translateY(0)',
-                          },
-                        },
+                        transition: 'background-color 0.15s ease',
                       }}
                     >
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={600}>
-                          {app.name}
-                        </Typography>
+                      <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600, color: ASSET_COLOR }}>
+                        {app.name}
                       </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
-                        >
-                          {app.version}
-                        </Typography>
+                      <TableCell sx={{ py: 1, fontSize: '0.8rem', fontFamily: 'monospace', color: 'text.secondary' }}>
+                        {app.version}
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {app.publisher}
-                        </Typography>
+                      <TableCell sx={{ py: 1, fontSize: '0.85rem', color: 'text.secondary' }}>
+                        {app.publisher}
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ py: 1 }}>
                         {app.category && (
                           <Chip
                             label={app.category}
                             size="small"
                             sx={{
+                              height: 22,
                               bgcolor: alpha(getCategoryColor(app.category), 0.15),
                               color: getCategoryColor(app.category),
                               border: '1px solid',
@@ -1291,19 +1389,11 @@ const InstalledSoftwarePage = () => {
                           />
                         )}
                       </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(app.installDate)}
-                        </Typography>
+                      <TableCell align="right" sx={{ py: 1, fontSize: '0.85rem', color: 'text.secondary' }}>
+                        {formatDate(app.installDate)}
                       </TableCell>
-                      <TableCell align="right">
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
-                        >
-                          {formatSize(app.size)}
-                        </Typography>
+                      <TableCell align="right" sx={{ py: 1, fontSize: '0.8rem', fontFamily: 'monospace', color: 'text.secondary' }}>
+                        {formatSize(app.size)}
                       </TableCell>
                     </TableRow>
                   ))}

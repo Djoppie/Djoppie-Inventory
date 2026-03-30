@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
@@ -96,7 +98,7 @@ public class ServicesController : ControllerBase
     /// <param name="dto">The service creation data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(ServiceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -139,9 +141,10 @@ public class ServicesController : ControllerBase
     /// <param name="dto">The updated service data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPut("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(ServiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<ServiceDto>> Update(
         int id,
         UpdateServiceDto dto,
@@ -151,8 +154,18 @@ public class ServicesController : ControllerBase
         if (service == null)
             return NotFound($"Service with ID {id} not found");
 
+        // If code is being changed, validate uniqueness
+        if (!string.IsNullOrWhiteSpace(dto.Code) && !dto.Code.Equals(service.Code, StringComparison.OrdinalIgnoreCase))
+        {
+            var newCode = dto.Code.Trim().ToUpperInvariant();
+            if (await _serviceRepository.CodeExistsAsync(newCode, id, cancellationToken))
+                return Conflict($"Service code '{newCode}' already exists");
+            service.Code = newCode;
+        }
+
         service.Name = dto.Name;
         service.SectorId = dto.SectorId;
+        service.Sector = null; // Clear navigation property to avoid EF tracking conflicts
         service.IsActive = dto.IsActive;
         service.SortOrder = dto.SortOrder;
 
@@ -177,7 +190,7 @@ public class ServicesController : ControllerBase
     /// <param name="id">The service ID to delete</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpDelete("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)
@@ -198,7 +211,7 @@ public class ServicesController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Sync result with counts of created and updated services</returns>
     [HttpPost("sync-from-entra")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(SyncResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SyncResultDto>> SyncFromEntra(CancellationToken cancellationToken = default)
@@ -208,11 +221,11 @@ public class ServicesController : ControllerBase
             _logger.LogInformation("Starting service sync from Entra mail groups");
 
             var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
-            var existingCodes = existingServices.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+            var existingCodes = existingServices.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
 
             // Get all sectors for linking services
             var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-            var sectorsByCode = sectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+            var sectorsByCode = sectors.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
 
             // Get sector groups to find nested service groups
             var sectorGroups = await _graphUserService.GetSectorGroupsAsync();
@@ -230,9 +243,10 @@ public class ServicesController : ControllerBase
             {
                 if (string.IsNullOrEmpty(sectorGroup.Id) || string.IsNullOrEmpty(sectorGroup.DisplayName)) continue;
 
-                var sectorCode = sectorGroup.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
-                    ? sectorGroup.DisplayName.Substring("MG-SECTOR-".Length).ToUpperInvariant()
-                    : sectorGroup.DisplayName.ToUpperInvariant();
+                var rawSectorCode = sectorGroup.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
+                    ? sectorGroup.DisplayName.Substring("MG-SECTOR-".Length)
+                    : sectorGroup.DisplayName;
+                var sectorCode = RemoveDiacritics(rawSectorCode).ToUpperInvariant();
 
                 if (!sectorsByCode.TryGetValue(sectorCode, out var sector))
                 {
@@ -251,9 +265,10 @@ public class ServicesController : ControllerBase
 
                     // Extract service code and name from group name (MG-XXX -> XXX)
                     var groupName = serviceGroup.DisplayName;
-                    var code = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
-                        ? groupName.Substring("MG-".Length).ToUpperInvariant()
-                        : groupName.ToUpperInvariant();
+                    var rawCode = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
+                        ? groupName.Substring("MG-".Length)
+                        : groupName;
+                    var code = RemoveDiacritics(rawCode).ToUpperInvariant();
 
                     // Use clean name without MG- prefix
                     var name = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
@@ -264,13 +279,15 @@ public class ServicesController : ControllerBase
 
                     if (existingCodes.TryGetValue(code, out var existingService))
                     {
-                        // Service exists - update if needed
-                        if (existingService.IsActive && (existingService.Name != name || existingService.SectorId != sector.Id))
+                        // Service exists - only update EntraGroupId and SectorId, preserve custom Name
+                        var needsUpdate = existingService.EntraGroupId != serviceGroup.Id || existingService.SectorId != sector.Id;
+                        if (existingService.IsActive && needsUpdate)
                         {
                             await _context.Services
                                 .Where(s => s.Id == existingService.Id)
                                 .ExecuteUpdateAsync(setters => setters
-                                    .SetProperty(s => s.Name, name)
+                                    .SetProperty(s => s.EntraGroupId, serviceGroup.Id)
+                                    .SetProperty(s => s.EntraMailNickname, serviceGroup.MailNickname)
                                     .SetProperty(s => s.SectorId, sector.Id)
                                     .SetProperty(s => s.UpdatedAt, DateTime.UtcNow),
                                     cancellationToken);
@@ -283,14 +300,16 @@ public class ServicesController : ControllerBase
                     }
                     else
                     {
-                        // Create new service with sector
+                        // Create new service with sector and Entra link
                         var newService = new Service
                         {
                             Code = code,
                             Name = name,
                             SectorId = sector.Id,
                             SortOrder = 0,
-                            IsActive = true
+                            IsActive = true,
+                            EntraGroupId = serviceGroup.Id,
+                            EntraMailNickname = serviceGroup.MailNickname
                         };
                         await _serviceRepository.CreateAsync(newService, cancellationToken);
                         existingCodes[code] = newService; // Add to tracking
@@ -308,9 +327,10 @@ public class ServicesController : ControllerBase
                 if (string.IsNullOrEmpty(serviceGroup.DisplayName) || string.IsNullOrEmpty(serviceGroup.Id)) continue;
 
                 var groupName = serviceGroup.DisplayName;
-                var code = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
-                    ? groupName.Substring("MG-".Length).ToUpperInvariant()
-                    : groupName.ToUpperInvariant();
+                var rawCode = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
+                    ? groupName.Substring("MG-".Length)
+                    : groupName;
+                var code = RemoveDiacritics(rawCode).ToUpperInvariant();
 
                 // Skip if already processed in phase 1
                 if (processedCodes.Contains(code)) continue;
@@ -323,13 +343,14 @@ public class ServicesController : ControllerBase
 
                 if (existingCodes.TryGetValue(code, out var existingService))
                 {
-                    // Service exists - update name if needed (keep existing sector)
-                    if (existingService.IsActive && existingService.Name != name)
+                    // Service exists - only update EntraGroupId if missing, preserve custom Name and Sector
+                    if (existingService.IsActive && existingService.EntraGroupId != serviceGroup.Id)
                     {
                         await _context.Services
                             .Where(s => s.Id == existingService.Id)
                             .ExecuteUpdateAsync(setters => setters
-                                .SetProperty(s => s.Name, name)
+                                .SetProperty(s => s.EntraGroupId, serviceGroup.Id)
+                                .SetProperty(s => s.EntraMailNickname, serviceGroup.MailNickname)
                                 .SetProperty(s => s.UpdatedAt, DateTime.UtcNow),
                                 cancellationToken);
                         updated++;
@@ -341,14 +362,16 @@ public class ServicesController : ControllerBase
                 }
                 else
                 {
-                    // Create new service without sector
+                    // Create new service without sector but with Entra link
                     var newService = new Service
                     {
                         Code = code,
                         Name = name,
                         SectorId = null, // No sector for non-nested services
                         SortOrder = 0,
-                        IsActive = true
+                        IsActive = true,
+                        EntraGroupId = serviceGroup.Id,
+                        EntraMailNickname = serviceGroup.MailNickname
                     };
                     await _serviceRepository.CreateAsync(newService, cancellationToken);
                     created++;
@@ -366,4 +389,263 @@ public class ServicesController : ControllerBase
             return StatusCode(500, new { error = "Failed to sync services from Entra", details = ex.Message });
         }
     }
+
+    // ============================================================
+    // CSV Import/Export Endpoints
+    // ============================================================
+
+    /// <summary>
+    /// Downloads a CSV template for bulk service import.
+    /// </summary>
+    [HttpGet("template")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public IActionResult DownloadTemplate()
+    {
+        var template = "Code,Name,SectorCode,SortOrder\nDIENST-001,Voorbeeld Dienst,SECTOR-A,0";
+        var bytes = Encoding.UTF8.GetBytes(template);
+        return File(bytes, "text/csv", $"services-template_{DateTime.Now:yyyy-MM-dd}.csv");
+    }
+
+    /// <summary>
+    /// Exports all services to a CSV file.
+    /// </summary>
+    [HttpGet("export")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ExportCsv(CancellationToken cancellationToken = default)
+    {
+        var services = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Code,Name,SectorCode,SortOrder,IsActive");
+
+        foreach (var service in services)
+        {
+            var sectorCode = service.Sector?.Code ?? "";
+            sb.AppendLine($"\"{service.Code}\",\"{service.Name}\",\"{sectorCode}\",{service.SortOrder},{service.IsActive}");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"services-export_{DateTime.Now:yyyy-MM-dd}.csv");
+    }
+
+    /// <summary>
+    /// Imports services from a CSV file.
+    /// </summary>
+    [HttpPost("import")]
+    [Authorize]
+    [ProducesResponseType(typeof(ServiceImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ServiceImportResultDto>> ImportCsv(
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+
+        var results = new List<ServiceImportRowResult>();
+
+        // Build lookup dictionaries - only store IDs, not tracked entities
+        // Normalize codes to remove diacritics for consistent matching
+        var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
+        var sectorIdsByCode = sectors.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
+        var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
+        var existingServicesByCode = existingServices.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        var headerLine = await reader.ReadLineAsync(cancellationToken);
+        if (string.IsNullOrEmpty(headerLine))
+            return BadRequest("CSV file is empty");
+
+        // Detect delimiter from header line (supports comma, semicolon, tab)
+        var delimiter = DetectDelimiter(headerLine);
+
+        int rowNumber = 1;
+        int created = 0;
+        int updated = 0;
+        int errors = 0;
+
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            try
+            {
+                var values = ParseCsvLine(line, delimiter);
+                if (values.Length < 2)
+                {
+                    results.Add(new ServiceImportRowResult(rowNumber, null, null, false, "Onvoldoende kolommen"));
+                    errors++;
+                    continue;
+                }
+
+                var code = RemoveDiacritics(values[0].Trim()).ToUpperInvariant();
+                var name = values[1].Trim();
+                var sectorCode = values.Length > 2 ? RemoveDiacritics(values[2].Trim()).ToUpperInvariant() : "";
+                var sortOrder = values.Length > 3 && int.TryParse(values[3].Trim(), out var so) ? so : 0;
+
+                if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
+                {
+                    results.Add(new ServiceImportRowResult(rowNumber, code, name, false, "Code en Naam zijn verplicht"));
+                    errors++;
+                    continue;
+                }
+
+                int? sectorId = null;
+                if (!string.IsNullOrEmpty(sectorCode) && sectorIdsByCode.TryGetValue(sectorCode, out var foundSectorId))
+                {
+                    sectorId = foundSectorId;
+                }
+
+                if (existingServicesByCode.TryGetValue(code, out var existingId))
+                {
+                    // Update existing - fetch fresh to avoid tracking issues
+                    var existing = await _serviceRepository.GetByIdAsync(existingId, cancellationToken);
+                    if (existing != null)
+                    {
+                        existing.Name = name;
+                        existing.SectorId = sectorId;
+                        existing.SortOrder = sortOrder;
+                        existing.Sector = null; // Clear navigation property to avoid tracking issues
+                        await _serviceRepository.UpdateAsync(existing, cancellationToken);
+                        results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, existing.Id, true));
+                        updated++;
+                    }
+                }
+                else
+                {
+                    // Create new
+                    var newService = new Service
+                    {
+                        Code = code,
+                        Name = name,
+                        SectorId = sectorId,
+                        SortOrder = sortOrder,
+                        IsActive = true
+                    };
+                    var createdService = await _serviceRepository.CreateAsync(newService, cancellationToken);
+                    existingServicesByCode[code] = createdService.Id;
+                    results.Add(new ServiceImportRowResult(rowNumber, code, name, true, null, createdService.Id, false));
+                    created++;
+                }
+            }
+            catch (Exception ex)
+            {
+                results.Add(new ServiceImportRowResult(rowNumber, null, null, false, ex.Message));
+                errors++;
+            }
+        }
+
+        return Ok(new ServiceImportResultDto(rowNumber - 1, created, updated, errors, errors == 0, results));
+    }
+
+    /// <summary>
+    /// Deletes ALL services. Use with caution!
+    /// </summary>
+    [HttpDelete("all")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteAll(
+        [FromQuery] bool confirm = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (!confirm)
+            return BadRequest("You must pass ?confirm=true to delete all services");
+
+        var allServices = await _context.Services.ToListAsync(cancellationToken);
+        var count = allServices.Count;
+
+        _context.Services.RemoveRange(allServices);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogWarning("Deleted ALL {Count} services", count);
+
+        return Ok(new { message = $"Deleted {count} services", count });
+    }
+
+    private static string[] ParseCsvLine(string line, char delimiter = ',')
+    {
+        var result = new List<string>();
+        var inQuotes = false;
+        var current = new StringBuilder();
+
+        foreach (var c in line)
+        {
+            if (c == '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (c == delimiter && !inQuotes)
+            {
+                result.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
+        }
+        result.Add(current.ToString());
+
+        return result.ToArray();
+    }
+
+    private static char DetectDelimiter(string headerLine)
+    {
+        // Count occurrences of common delimiters
+        var commaCount = headerLine.Count(c => c == ',');
+        var semicolonCount = headerLine.Count(c => c == ';');
+        var tabCount = headerLine.Count(c => c == '\t');
+
+        // Return the most common one (prefer semicolon for European locales)
+        if (semicolonCount >= commaCount && semicolonCount >= tabCount)
+            return ';';
+        if (tabCount > commaCount)
+            return '\t';
+        return ',';
+    }
+
+    /// <summary>
+    /// Removes diacritics/accents from a string (e.g., "financiën" → "financien")
+    /// </summary>
+    private static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(normalizedString.Length);
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+    }
 }
+
+public record ServiceImportResultDto(
+    int TotalRows,
+    int CreatedCount,
+    int UpdatedCount,
+    int ErrorCount,
+    bool IsFullySuccessful,
+    List<ServiceImportRowResult> Results
+);
+
+public record ServiceImportRowResult(
+    int RowNumber,
+    string? Code,
+    string? Name,
+    bool Success,
+    string? Error,
+    int? ServiceId = null,
+    bool WasUpdated = false
+);

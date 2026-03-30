@@ -42,31 +42,50 @@ public class DeploymentService : IDeploymentService
 
         try
         {
-            // Validate and fetch new laptop
-            var newLaptop = await _context.Assets
-                .Include(a => a.AssetType)
-                .FirstOrDefaultAsync(a => a.Id == request.NewLaptopAssetId, cancellationToken);
+            Asset? newLaptop = null;
+            AssetDeploymentSummaryDto? newLaptopSummary = null;
 
-            if (newLaptop == null)
+            // For Onboarding and Swap modes, validate and fetch new laptop
+            if (request.Mode != DeploymentMode.Offboarding)
             {
-                throw new ArgumentException($"New laptop with ID {request.NewLaptopAssetId} not found");
-            }
+                if (!request.NewLaptopAssetId.HasValue)
+                {
+                    throw new ArgumentException("New laptop ID is required for onboarding and swap modes");
+                }
 
-            if (newLaptop.Status != AssetStatus.Stock && newLaptop.Status != AssetStatus.Nieuw)
-            {
-                throw new ArgumentException(
-                    $"New laptop {newLaptop.AssetCode} is not available (current status: {newLaptop.Status}). Must be Stock or Nieuw.");
+                newLaptop = await _context.Assets
+                    .Include(a => a.AssetType)
+                    .FirstOrDefaultAsync(a => a.Id == request.NewLaptopAssetId.Value, cancellationToken);
+
+                if (newLaptop == null)
+                {
+                    throw new ArgumentException($"New laptop with ID {request.NewLaptopAssetId} not found");
+                }
+
+                if (newLaptop.Status != AssetStatus.Stock && newLaptop.Status != AssetStatus.Nieuw)
+                {
+                    throw new ArgumentException(
+                        $"New laptop {newLaptop.AssetCode} is not available (current status: {newLaptop.Status}). Must be Stock or Nieuw.");
+                }
             }
 
             Asset? oldLaptop = null;
             AssetDeploymentSummaryDto? oldLaptopSummary = null;
 
-            // For swap mode, validate and process old laptop
-            if (request.Mode == DeploymentMode.Swap)
+            // Parse the target status for old laptop
+            var oldLaptopTargetStatus = request.OldAssetNewStatus?.ToLower() switch
+            {
+                "stock" => AssetStatus.Stock,
+                "defect" => AssetStatus.Defect,
+                _ => AssetStatus.UitDienst
+            };
+
+            // For Swap and Offboarding modes, validate and process old laptop
+            if (request.Mode == DeploymentMode.Swap || request.Mode == DeploymentMode.Offboarding)
             {
                 if (!request.OldLaptopAssetId.HasValue)
                 {
-                    throw new ArgumentException("Old laptop ID is required for swap mode");
+                    throw new ArgumentException("Old laptop ID is required for swap and offboarding modes");
                 }
 
                 oldLaptop = await _context.Assets
@@ -82,21 +101,30 @@ public class DeploymentService : IDeploymentService
                 var oldLaptopOldStatus = oldLaptop.Status.ToString();
                 var oldLaptopOldOwner = oldLaptop.Owner;
 
-                // Update old laptop - decommission it
-                oldLaptop.Status = AssetStatus.UitDienst;
+                // Update old laptop - set to target status and clear owner
+                oldLaptop.Status = oldLaptopTargetStatus;
                 oldLaptop.Owner = null;
                 oldLaptop.JobTitle = null;
                 oldLaptop.OfficeLocation = null;
                 oldLaptop.UpdatedAt = timestamp;
 
+                // Determine event type and description based on mode
+                var oldLaptopEventType = request.Mode == DeploymentMode.Offboarding
+                    ? AssetEventType.DeviceOffboarded
+                    : AssetEventType.LaptopSwapped;
+
+                var oldLaptopEventDescription = request.Mode == DeploymentMode.Offboarding
+                    ? $"Device offboarded - Status: {oldLaptopOldStatus} → {oldLaptopTargetStatus}, Owner: {oldLaptopOldOwner ?? "none"} → cleared"
+                    : $"Laptop swapped out - Status: {oldLaptopOldStatus} → {oldLaptopTargetStatus}, Owner: {oldLaptopOldOwner ?? "none"} → cleared";
+
                 // Create asset event for old laptop
                 var oldLaptopEvent = new AssetEvent
                 {
                     AssetId = oldLaptop.Id,
-                    EventType = AssetEventType.LaptopSwapped,
-                    Description = $"Laptop swapped out - Status: {oldLaptopOldStatus} → UitDienst, Owner: {oldLaptopOldOwner ?? "none"} → cleared",
+                    EventType = oldLaptopEventType,
+                    Description = oldLaptopEventDescription,
                     OldValue = $"Status: {oldLaptopOldStatus}, Owner: {oldLaptopOldOwner}",
-                    NewValue = $"Status: UitDienst, Owner: null",
+                    NewValue = $"Status: {oldLaptopTargetStatus}, Owner: null",
                     PerformedBy = performedBy,
                     PerformedByEmail = performedByEmail,
                     Notes = $"Part of deployment {deploymentId}. {request.Notes}",
@@ -110,7 +138,7 @@ public class DeploymentService : IDeploymentService
                     oldLaptop.AssetCode,
                     oldLaptop.SerialNumber,
                     oldLaptopOldStatus,
-                    "UitDienst",
+                    oldLaptopTargetStatus.ToString(),
                     oldLaptopOldOwner,
                     null,
                     null
@@ -119,64 +147,68 @@ public class DeploymentService : IDeploymentService
                 assetEvents.Add(new AssetEventSummaryDto(
                     oldLaptopEvent.Id,
                     oldLaptop.Id,
-                    "LaptopSwapped",
+                    oldLaptopEventType.ToString(),
                     oldLaptopEvent.Description
                 ));
             }
 
-            // Store new laptop old values for summary
-            var newLaptopOldStatus = newLaptop.Status.ToString();
-            var newLaptopOldOwner = newLaptop.Owner;
-
-            // Update new laptop - assign to user
-            newLaptop.Status = AssetStatus.InGebruik;
-            newLaptop.Owner = request.NewOwnerEmail;
-            newLaptop.JobTitle = request.NewOwnerJobTitle;
-            newLaptop.OfficeLocation = request.NewOwnerOfficeLocation;
-            newLaptop.InstallationDate = timestamp;
-            newLaptop.UpdatedAt = timestamp;
-
-            // Create asset event for new laptop
-            var eventType = request.Mode == DeploymentMode.Onboarding
-                ? AssetEventType.DeviceOnboarded
-                : AssetEventType.LaptopSwapped;
-
-            var eventDescription = request.Mode == DeploymentMode.Onboarding
-                ? $"Device onboarded - Status: {newLaptopOldStatus} → InGebruik, Owner: → {request.NewOwnerName}"
-                : $"Laptop swapped in - Status: {newLaptopOldStatus} → InGebruik, Owner: → {request.NewOwnerName}";
-
-            var newLaptopEvent = new AssetEvent
+            // For Onboarding and Swap modes, process new laptop assignment
+            if (request.Mode != DeploymentMode.Offboarding && newLaptop != null)
             {
-                AssetId = newLaptop.Id,
-                EventType = eventType,
-                Description = eventDescription,
-                OldValue = $"Status: {newLaptopOldStatus}, Owner: {newLaptopOldOwner}",
-                NewValue = $"Status: InGebruik, Owner: {request.NewOwnerEmail}",
-                PerformedBy = performedBy,
-                PerformedByEmail = performedByEmail,
-                Notes = $"Part of deployment {deploymentId}. {request.Notes}",
-                EventDate = timestamp,
-                CreatedAt = timestamp
-            };
-            _context.AssetEvents.Add(newLaptopEvent);
+                // Store new laptop old values for summary
+                var newLaptopOldStatus = newLaptop.Status.ToString();
+                var newLaptopOldOwner = newLaptop.Owner;
 
-            assetEvents.Add(new AssetEventSummaryDto(
-                newLaptopEvent.Id,
-                newLaptop.Id,
-                eventType.ToString(),
-                newLaptopEvent.Description
-            ));
+                // Update new laptop - assign to user
+                newLaptop.Status = AssetStatus.InGebruik;
+                newLaptop.Owner = request.NewOwnerEmail;
+                newLaptop.JobTitle = request.NewOwnerJobTitle;
+                newLaptop.OfficeLocation = request.NewOwnerOfficeLocation;
+                newLaptop.InstallationDate = timestamp;
+                newLaptop.UpdatedAt = timestamp;
 
-            var newLaptopSummary = new AssetDeploymentSummaryDto(
-                newLaptop.Id,
-                newLaptop.AssetCode,
-                newLaptop.SerialNumber,
-                newLaptopOldStatus,
-                "InGebruik",
-                newLaptopOldOwner,
-                request.NewOwnerName,
-                timestamp
-            );
+                // Create asset event for new laptop
+                var eventType = request.Mode == DeploymentMode.Onboarding
+                    ? AssetEventType.DeviceOnboarded
+                    : AssetEventType.LaptopSwapped;
+
+                var eventDescription = request.Mode == DeploymentMode.Onboarding
+                    ? $"Device onboarded - Status: {newLaptopOldStatus} → InGebruik, Owner: → {request.NewOwnerName}"
+                    : $"Laptop swapped in - Status: {newLaptopOldStatus} → InGebruik, Owner: → {request.NewOwnerName}";
+
+                var newLaptopEvent = new AssetEvent
+                {
+                    AssetId = newLaptop.Id,
+                    EventType = eventType,
+                    Description = eventDescription,
+                    OldValue = $"Status: {newLaptopOldStatus}, Owner: {newLaptopOldOwner}",
+                    NewValue = $"Status: InGebruik, Owner: {request.NewOwnerEmail}",
+                    PerformedBy = performedBy,
+                    PerformedByEmail = performedByEmail,
+                    Notes = $"Part of deployment {deploymentId}. {request.Notes}",
+                    EventDate = timestamp,
+                    CreatedAt = timestamp
+                };
+                _context.AssetEvents.Add(newLaptopEvent);
+
+                assetEvents.Add(new AssetEventSummaryDto(
+                    newLaptopEvent.Id,
+                    newLaptop.Id,
+                    eventType.ToString(),
+                    newLaptopEvent.Description
+                ));
+
+                newLaptopSummary = new AssetDeploymentSummaryDto(
+                    newLaptop.Id,
+                    newLaptop.AssetCode,
+                    newLaptop.SerialNumber,
+                    newLaptopOldStatus,
+                    "InGebruik",
+                    newLaptopOldOwner,
+                    request.NewOwnerName,
+                    timestamp
+                );
+            }
 
             // Handle physical workplace update if requested
             WorkplaceDeploymentSummaryDto? workplaceSummary = null;
@@ -196,8 +228,20 @@ public class DeploymentService : IDeploymentService
                 var occupantUpdated = false;
                 var equipmentUpdated = false;
 
-                // Update occupant
-                if (workplace.CurrentOccupantEntraId != request.NewOwnerEntraId)
+                // For Offboarding mode, clear the occupant if requested
+                if (request.Mode == DeploymentMode.Offboarding && request.ClearWorkplaceOccupant)
+                {
+                    if (!string.IsNullOrEmpty(workplace.CurrentOccupantEntraId))
+                    {
+                        workplace.CurrentOccupantEntraId = null;
+                        workplace.CurrentOccupantName = null;
+                        workplace.CurrentOccupantEmail = null;
+                        workplace.OccupiedSince = null;
+                        occupantUpdated = true;
+                    }
+                }
+                // For Onboarding and Swap modes, update occupant to new owner
+                else if (request.Mode != DeploymentMode.Offboarding && workplace.CurrentOccupantEntraId != request.NewOwnerEntraId)
                 {
                     workplace.CurrentOccupantEntraId = request.NewOwnerEntraId;
                     workplace.CurrentOccupantName = request.NewOwnerName;
@@ -210,6 +254,55 @@ public class DeploymentService : IDeploymentService
                 if (request.UpdateEquipmentSlots && request.EquipmentSlots != null)
                 {
                     var slots = request.EquipmentSlots;
+
+                    // Collect old and new asset IDs to update PhysicalWorkplaceId
+                    var oldAssetIds = new List<int?>
+                    {
+                        workplace.DockingStationAssetId,
+                        workplace.Monitor1AssetId,
+                        workplace.Monitor2AssetId,
+                        workplace.Monitor3AssetId,
+                        workplace.KeyboardAssetId,
+                        workplace.MouseAssetId
+                    }.Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+                    var newAssetIds = new List<int?>
+                    {
+                        slots.DockingStationAssetId,
+                        slots.Monitor1AssetId,
+                        slots.Monitor2AssetId,
+                        slots.Monitor3AssetId,
+                        slots.KeyboardAssetId,
+                        slots.MouseAssetId
+                    }.Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+                    // Assets removed from workplace - clear PhysicalWorkplaceId
+                    var removedAssetIds = oldAssetIds.Except(newAssetIds).ToList();
+                    if (removedAssetIds.Any())
+                    {
+                        var removedAssets = await _context.Assets
+                            .Where(a => removedAssetIds.Contains(a.Id))
+                            .ToListAsync(cancellationToken);
+                        foreach (var asset in removedAssets)
+                        {
+                            asset.PhysicalWorkplaceId = null;
+                            asset.BuildingId = null;
+                        }
+                    }
+
+                    // Assets added to workplace - set PhysicalWorkplaceId and BuildingId
+                    var addedAssetIds = newAssetIds.Except(oldAssetIds).ToList();
+                    if (addedAssetIds.Any())
+                    {
+                        var addedAssets = await _context.Assets
+                            .Where(a => addedAssetIds.Contains(a.Id))
+                            .ToListAsync(cancellationToken);
+                        foreach (var asset in addedAssets)
+                        {
+                            asset.PhysicalWorkplaceId = workplace.Id;
+                            asset.BuildingId = workplace.BuildingId;
+                        }
+                    }
 
                     // Track which slots changed
                     if (workplace.DockingStationAssetId != slots.DockingStationAssetId)
@@ -246,6 +339,11 @@ public class DeploymentService : IDeploymentService
 
                 workplace.UpdatedAt = timestamp;
 
+                // For offboarding with clear occupant, new occupant should be null
+                var newOccupantName = request.Mode == DeploymentMode.Offboarding && request.ClearWorkplaceOccupant
+                    ? null
+                    : request.NewOwnerName;
+
                 workplaceSummary = new WorkplaceDeploymentSummaryDto(
                     workplace.Id,
                     workplace.Code,
@@ -253,7 +351,7 @@ public class DeploymentService : IDeploymentService
                     equipmentUpdated,
                     occupantUpdated,
                     previousOccupant,
-                    request.NewOwnerName
+                    newOccupantName
                 );
             }
 
@@ -265,7 +363,7 @@ public class DeploymentService : IDeploymentService
 
             _logger.LogInformation(
                 "Deployment {DeploymentId} completed successfully. Mode={Mode}, NewLaptop={NewLaptop}, OldLaptop={OldLaptop}",
-                deploymentId, request.Mode, newLaptop.AssetCode, oldLaptop?.AssetCode ?? "N/A");
+                deploymentId, request.Mode, newLaptop?.AssetCode ?? "N/A", oldLaptop?.AssetCode ?? "N/A");
 
             return new DeploymentResultDto(
                 true,
@@ -346,23 +444,27 @@ public class DeploymentService : IDeploymentService
         {
             eventTypes.Add(AssetEventType.LaptopSwapped);
             eventTypes.Add(AssetEventType.DeviceOnboarded);
+            eventTypes.Add(AssetEventType.DeviceOffboarded);
         }
         else if (mode == DeploymentMode.Swap)
         {
             eventTypes.Add(AssetEventType.LaptopSwapped);
+        }
+        else if (mode == DeploymentMode.Offboarding)
+        {
+            eventTypes.Add(AssetEventType.DeviceOffboarded);
         }
         else
         {
             eventTypes.Add(AssetEventType.DeviceOnboarded);
         }
 
-        // Build query for deployment events (new laptop events only - they have the owner info)
+        // Build query for deployment events
         var query = _context.AssetEvents
             .AsNoTracking()
             .Include(e => e.Asset)
                 .ThenInclude(a => a.AssetType)
-            .Where(e => eventTypes.Contains(e.EventType))
-            .Where(e => e.NewValue != null && e.NewValue.Contains("InGebruik")); // Filter for new laptop events
+            .Where(e => eventTypes.Contains(e.EventType));
 
         // Apply date filters
         if (fromDate.HasValue)
@@ -405,12 +507,11 @@ public class DeploymentService : IDeploymentService
 
     private static DeploymentHistoryItemDto MapToHistoryItem(AssetEvent evt)
     {
-        // Parse the new value to extract owner info
+        // Parse the new value to extract owner email
+        // NewValue format: "Status: InGebruik, Owner: email@example.com"
         var ownerEmail = "";
-        var ownerName = "";
         if (!string.IsNullOrEmpty(evt.NewValue))
         {
-            // NewValue format: "Status: InGebruik, Owner: email@example.com"
             var ownerMatch = evt.NewValue.Split("Owner: ");
             if (ownerMatch.Length > 1)
             {
@@ -418,35 +519,75 @@ public class DeploymentService : IDeploymentService
             }
         }
 
-        // Get owner name from description if possible
+        // Get owner name from description
+        // Description formats:
+        // - Onboarding: "Device onboarded - Status: Stock → InGebruik, Owner: → Jo Wijnen"
+        // - Swap: "Laptop swapped in - Status: Nieuw → InGebruik, Owner: → Jo Wijnen"
+        // - Offboarding: "Device offboarded - Status: InGebruik → Stock, Owner: jo@email.com → cleared"
+        var ownerName = "";
         if (!string.IsNullOrEmpty(evt.Description))
         {
-            // Description format: "... Owner: → Name" or "... Owner: OldOwner → Name"
-            var descParts = evt.Description.Split(" → ");
-            if (descParts.Length > 1)
+            // Split by "Owner: " first, then get after the last " → "
+            var ownerParts = evt.Description.Split("Owner: ");
+            if (ownerParts.Length > 1)
             {
-                ownerName = descParts[1].Trim();
+                var afterOwner = ownerParts[1]; // e.g., "→ Jo Wijnen" or "jo@email.com → cleared"
+                var arrowParts = afterOwner.Split(" → ");
+                if (arrowParts.Length > 1)
+                {
+                    ownerName = arrowParts[^1].Trim(); // Last part after arrow
+                    // For offboarding, "cleared" is not a name
+                    if (ownerName.Equals("cleared", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // For offboarding, get the previous owner from before the arrow
+                        ownerName = arrowParts[0].Trim();
+                        ownerEmail = arrowParts[0].Trim(); // Often the email for offboarding
+                    }
+                }
+                else
+                {
+                    ownerName = afterOwner.Trim();
+                }
             }
         }
 
-        var deploymentMode = evt.EventType == AssetEventType.DeviceOnboarded
-            ? DeploymentMode.Onboarding
-            : DeploymentMode.Swap;
+        var deploymentMode = evt.EventType switch
+        {
+            AssetEventType.DeviceOnboarded => DeploymentMode.Onboarding,
+            AssetEventType.DeviceOffboarded => DeploymentMode.Offboarding,
+            _ => DeploymentMode.Swap
+        };
+
+        // For the new laptop field, show the asset being processed
+        // For offboarding, this is actually the "old" device being returned
+        var assetInfo = new DeploymentAssetInfoDto(
+            evt.AssetId,
+            evt.Asset?.AssetCode ?? "",
+            evt.Asset?.SerialNumber,
+            evt.Asset?.Brand,
+            evt.Asset?.Model,
+            ParseStatusFromValue(evt.OldValue),
+            ParseStatusFromValue(evt.NewValue)
+        );
+
+        // For offboarding, the asset shown is actually the old device (being returned)
+        // For onboarding/swap, this is the new device being assigned
+        DeploymentAssetInfoDto? oldLaptopInfo = null;
+        DeploymentAssetInfoDto? newLaptopInfo = assetInfo;
+
+        if (deploymentMode == DeploymentMode.Offboarding)
+        {
+            // For offboarding, the recorded asset is the OLD device being returned
+            oldLaptopInfo = assetInfo;
+            newLaptopInfo = null;
+        }
 
         return new DeploymentHistoryItemDto(
             evt.Id,
             evt.EventDate,
             deploymentMode,
-            null, // Old laptop info would need to be fetched separately via deployment ID
-            new DeploymentAssetInfoDto(
-                evt.AssetId,
-                evt.Asset?.AssetCode ?? "",
-                evt.Asset?.SerialNumber,
-                evt.Asset?.Brand,
-                evt.Asset?.Model,
-                ParseStatusFromValue(evt.OldValue),
-                ParseStatusFromValue(evt.NewValue)
-            ),
+            oldLaptopInfo,
+            newLaptopInfo,
             new DeploymentOwnerInfoDto(ownerName, ownerEmail, null),
             null, // Workplace info would need separate tracking
             evt.PerformedBy,

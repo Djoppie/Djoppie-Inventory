@@ -108,7 +108,11 @@
       "Bash(dotnet ef migrations script:*)",
       "Bash(az webapp show:*)",
       "Bash(az group list:*)",
-      "Bash(AZURE_SQL_CONNECTION=\"Server=tcp:sql-djoppie-inventory-dev-k5xdqp.database.windows.net,1433;Initial Catalog=sqldb-djoppie-inventory-dev;Persist Security Info=False;User ID=sqladmin;Password=Dj0ppenbeek026;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;\" dotnet ef:*)"
+      "Bash(AZURE_SQL_CONNECTION=\"Server=tcp:sql-djoppie-inventory-dev-k5xdqp.database.windows.net,1433;Initial Catalog=sqldb-djoppie-inventory-dev;Persist Security Info=False;User ID=sqladmin;Password=Dj0ppenbeek026;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;\" dotnet ef:*)",
+      "Bash(dotnet publish:*)",
+      "Bash(powershell:*)",
+      "Bash(az webapp deployment source config-zip:*)",
+      "Bash(dotnet script:*)"
     ]
   }
 }

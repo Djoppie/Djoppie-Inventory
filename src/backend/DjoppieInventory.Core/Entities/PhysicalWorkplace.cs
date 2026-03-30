@@ -140,6 +140,29 @@ public class PhysicalWorkplace
     /// </summary>
     public DateTime? OccupiedSince { get; set; }
 
+    // ===== Occupant's Device (Laptop/Desktop they use) =====
+
+    /// <summary>
+    /// Serial number of the occupant's primary device (laptop/desktop).
+    /// Cached from Assets table or Intune when occupant is assigned.
+    /// </summary>
+    public string? OccupantDeviceSerial { get; set; }
+
+    /// <summary>
+    /// Brand of the occupant's primary device.
+    /// </summary>
+    public string? OccupantDeviceBrand { get; set; }
+
+    /// <summary>
+    /// Model of the occupant's primary device.
+    /// </summary>
+    public string? OccupantDeviceModel { get; set; }
+
+    /// <summary>
+    /// Asset code of the occupant's device (if tracked in our inventory).
+    /// </summary>
+    public string? OccupantDeviceAssetCode { get; set; }
+
     // ===== Status =====
 
     /// <summary>

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
@@ -84,7 +86,7 @@ public class SectorsController : ControllerBase
     /// <param name="dto">The sector creation data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(SectorDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -125,7 +127,7 @@ public class SectorsController : ControllerBase
     /// <param name="dto">The updated sector data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPut("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(SectorDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SectorDto>> Update(
@@ -161,7 +163,7 @@ public class SectorsController : ControllerBase
     /// <param name="id">The sector ID to delete</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpDelete("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)
@@ -180,7 +182,7 @@ public class SectorsController : ControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Sync result with counts of created and updated sectors</returns>
     [HttpPost("sync-from-entra")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(SyncResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<SyncResultDto>> SyncFromEntra(CancellationToken cancellationToken = default)
@@ -191,7 +193,12 @@ public class SectorsController : ControllerBase
 
             var groups = await _graphUserService.GetSectorGroupsAsync();
             var existingSectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-            var existingCodes = existingSectors.ToDictionary(s => s.Code.ToUpperInvariant(), s => s);
+
+            // Store only IDs and essential data to avoid EF Core tracking conflicts
+            // Normalize codes to remove diacritics for consistent matching
+            var existingCodes = existingSectors.ToDictionary(
+                s => RemoveDiacritics(s.Code).ToUpperInvariant(),
+                s => new { s.Id, s.Name, s.IsActive, s.SortOrder });
 
             int created = 0;
             int updated = 0;
@@ -202,27 +209,21 @@ public class SectorsController : ControllerBase
                 if (string.IsNullOrEmpty(group.DisplayName)) continue;
 
                 // Extract sector code from group name (MG-SECTOR-XXX -> XXX)
+                // Normalize to remove diacritics (e.g., "financiën" -> "FINANCIEN")
                 var groupName = group.DisplayName;
-                var code = groupName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
-                    ? groupName.Substring("MG-SECTOR-".Length).ToUpperInvariant()
-                    : groupName.ToUpperInvariant();
+                var rawCode = groupName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
+                    ? groupName.Substring("MG-SECTOR-".Length)
+                    : groupName;
+                var code = RemoveDiacritics(rawCode).ToUpperInvariant();
 
                 // Use display name or mail nickname as the sector name
                 var name = group.DisplayName;
 
-                if (existingCodes.TryGetValue(code, out var existingSector))
+                if (existingCodes.TryGetValue(code, out var existingSectorInfo))
                 {
-                    // Sector exists - update if name changed and sector is still active
-                    if (existingSector.IsActive && existingSector.Name != name)
-                    {
-                        existingSector.Name = name;
-                        await _sectorRepository.UpdateAsync(existingSector, cancellationToken);
-                        updated++;
-                    }
-                    else
-                    {
-                        skipped++;
-                    }
+                    // Sector exists - skip (don't overwrite custom names like we do for services)
+                    // The sync is primarily to create new sectors from Entra
+                    skipped++;
                 }
                 else
                 {
@@ -249,5 +250,28 @@ public class SectorsController : ControllerBase
             _logger.LogError(ex, "Failed to sync sectors from Entra");
             return StatusCode(500, new { error = "Failed to sync sectors from Entra", details = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Removes diacritics/accents from a string (e.g., "financiën" → "financien")
+    /// </summary>
+    private static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        var normalizedString = text.Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(normalizedString.Length);
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 }

@@ -61,9 +61,11 @@ import {
   useReopenRolloutWorkplace,
   rolloutKeys,
 } from '../hooks/useRollout';
+import { useRolloutExecutionFilters } from '../hooks/rollout/useRolloutFilters';
 import { getAssetBySerialNumber } from '../api/assets.api';
 import { TemplateSelector } from '../components/rollout/TemplateSelector';
 import WorkplaceCompletionDialog from '../components/rollout/WorkplaceCompletionDialog';
+import { RolloutExecutionToolbar } from '../components/rollout/execution';
 import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../types/rollout';
@@ -130,6 +132,9 @@ const RolloutExecutionPage = () => {
   const sessionId = Number(id);
   const initialDayId = searchParams.get('dayId') ? Number(searchParams.get('dayId')) : null;
 
+  // Filter state from URL
+  const filters = useRolloutExecutionFilters();
+
   // Neumorphic styling for page-level cards
   const neumorphicCardSx = {
     bgcolor: isDark ? '#1e2328' : '#e8eef3',
@@ -170,12 +175,58 @@ const RolloutExecutionPage = () => {
     selectedDay?.id || 0
   );
 
+  // Filter workplaces based on search, service, building, and status filters
+  const filteredWorkplaces = useMemo(() => {
+    if (!workplaces) return [];
+    let filtered = [...workplaces];
+
+    // Filter by search query
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(wp =>
+        wp.userName.toLowerCase().includes(query) ||
+        wp.userEmail?.toLowerCase().includes(query) ||
+        wp.location?.toLowerCase().includes(query) ||
+        wp.physicalWorkplaceCode?.toLowerCase().includes(query) ||
+        wp.physicalWorkplaceName?.toLowerCase().includes(query) ||
+        wp.serviceName?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by service
+    if (filters.serviceFilter) {
+      const serviceId = parseInt(filters.serviceFilter, 10);
+      filtered = filtered.filter(wp => wp.serviceId === serviceId);
+    }
+
+    // Filter by workplace status
+    if (filters.workplaceStatusFilter !== 'all') {
+      filtered = filtered.filter(wp => wp.status === filters.workplaceStatusFilter);
+    }
+
+    return filtered;
+  }, [workplaces, filters.searchQuery, filters.serviceFilter, filters.workplaceStatusFilter]);
+
+  // Calculate status counts for the toolbar badges
+  const workplaceStatusCounts = useMemo(() => {
+    if (!workplaces) return { all: 0, Pending: 0, Ready: 0, InProgress: 0, Completed: 0, Skipped: 0, Failed: 0 };
+    return {
+      all: workplaces.length,
+      Pending: workplaces.filter(wp => wp.status === 'Pending').length,
+      Ready: workplaces.filter(wp => wp.status === 'Ready').length,
+      InProgress: workplaces.filter(wp => wp.status === 'InProgress').length,
+      Completed: workplaces.filter(wp => wp.status === 'Completed').length,
+      Skipped: workplaces.filter(wp => wp.status === 'Skipped').length,
+      Failed: workplaces.filter(wp => wp.status === 'Failed').length,
+    };
+  }, [workplaces]);
+
   // Compute the effective expanded workplace: auto-expand first active if none selected
   const effectiveExpanded = useMemo(() => {
     if (expandedWorkplace !== null) return expandedWorkplace;
-    if (!workplaces || workplaces.length === 0) return null;
-    return workplaces.find(w => w.status !== 'Completed')?.id ?? null;
-  }, [expandedWorkplace, workplaces]);
+    if (!filteredWorkplaces || filteredWorkplaces.length === 0) return null;
+    return filteredWorkplaces.find(w => w.status !== 'Completed')?.id ?? null;
+  }, [expandedWorkplace, filteredWorkplaces]);
 
   const handleBack = () => {
     navigate(ROUTES.ROLLOUTS);
@@ -349,6 +400,24 @@ const RolloutExecutionPage = () => {
             </Tabs>
           </Card>
 
+          {/* Filter Toolbar */}
+          {selectedDay && workplaces && workplaces.length > 0 && (
+            <RolloutExecutionToolbar
+              searchInputValue={filters.searchInputValue}
+              workplaceStatusFilter={filters.workplaceStatusFilter}
+              serviceFilter={filters.serviceFilter}
+              buildingFilter={filters.buildingFilter}
+              hasActiveFilters={filters.hasActiveFilters}
+              onSearchChange={filters.setSearchInputValue}
+              onSearchClear={filters.clearSearch}
+              onWorkplaceStatusChange={filters.setWorkplaceStatusFilter}
+              onServiceChange={filters.setServiceFilter}
+              onBuildingChange={filters.setBuildingFilter}
+              onClearAllFilters={filters.clearAllFilters}
+              statusCounts={workplaceStatusCounts}
+            />
+          )}
+
           {/* Workplace List */}
           {selectedDay && (
             <>
@@ -358,9 +427,20 @@ const RolloutExecutionPage = () => {
                 <Alert severity="info" sx={{ border: '1px solid', borderColor: 'info.main', fontWeight: 600 }}>
                   Geen werkplekken gevonden voor deze planning.
                 </Alert>
+              ) : filteredWorkplaces.length === 0 ? (
+                <Alert severity="info" sx={{ border: '1px solid', borderColor: 'info.main', fontWeight: 600 }}>
+                  Geen werkplekken gevonden met de huidige filters.
+                  <Button
+                    size="small"
+                    onClick={filters.clearAllFilters}
+                    sx={{ ml: 1, color: 'info.main', textDecoration: 'underline' }}
+                  >
+                    Wis filters
+                  </Button>
+                </Alert>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {workplaces.map((workplace) => (
+                  {filteredWorkplaces.map((workplace) => (
                     <WorkplaceCard
                       key={workplace.id}
                       workplace={workplace}

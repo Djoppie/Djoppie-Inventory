@@ -5,6 +5,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { getStatusColor } from '../../../api/rollout.api';
 import type { RolloutSession, RolloutDay, RolloutSessionStatus } from '../../../types/rollout';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 /**
  * Convert status to translation key (handles camelCase properly)
@@ -78,7 +79,7 @@ export default function SessionHeader({
               onClick={() => onSetStatus('InProgress')}
               disabled={isPending || !days || days.length === 0}
               sx={{
-                bgcolor: '#FF7700',
+                bgcolor: ASSET_COLOR,
                 '&:hover': { bgcolor: '#e66a00' },
               }}
             >

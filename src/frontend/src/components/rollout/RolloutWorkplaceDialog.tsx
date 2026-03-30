@@ -37,6 +37,7 @@ import type { RolloutWorkplace, CreateRolloutWorkplace, UpdateRolloutWorkplace }
 import type { Asset } from '../../types/asset.types';
 import type { IntuneDevice } from '../../types/graph.types';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
+import { ASSET_COLOR, SERVICE_COLOR } from '../../constants/filterColors';
 
 // Import extracted components and hooks
 import {
@@ -125,10 +126,12 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
   }, [open]);
 
   // Handle user selection from autocomplete
-  const handleUserSelect = useCallback((user: { displayName?: string; mail?: string; userPrincipalName?: string; officeLocation?: string }) => {
+  const handleUserSelect = useCallback((user: { id?: string; displayName?: string; mail?: string; userPrincipalName?: string; officeLocation?: string }) => {
     form.setUserName(user.displayName || '');
     const upn = user.mail || user.userPrincipalName || '';
     form.setUserEmail(upn);
+    // Set the Entra ID (Azure AD Object ID)
+    if (user.id) form.setUserEntraId(user.id);
     if (user.officeLocation) form.setLocation(user.officeLocation);
 
     if (upn) {
@@ -312,6 +315,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
       const updateData: UpdateRolloutWorkplace = {
         userName: form.state.userName,
         userEmail: form.state.userEmail || null,
+        userEntraId: form.state.userEntraId || null,
         location: form.state.location || null,
         scheduledDate: form.state.scheduledDate || null,
         serviceId: form.state.serviceId || null,
@@ -327,6 +331,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
         rolloutDayId: dayId,
         userName: form.state.userName,
         userEmail: form.state.userEmail || undefined,
+        userEntraId: form.state.userEntraId || undefined,
         location: form.state.location || undefined,
         scheduledDate: form.state.scheduledDate || undefined,
         serviceId: form.state.serviceId,
@@ -394,11 +399,11 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                 transform: 'translateZ(10px)',
               }}
             >
-              <ComputerIcon sx={{ fontSize: '1.6rem', color: '#FF7700', filter: 'drop-shadow(0 2px 4px rgba(255, 119, 0, 0.3))' }} />
+              <ComputerIcon sx={{ fontSize: '1.6rem', color: ASSET_COLOR, filter: 'drop-shadow(0 2px 4px rgba(255, 119, 0, 0.3))' }} />
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h5" fontWeight={800} sx={{
-                color: '#FF7700',
+                color: ASSET_COLOR,
                 letterSpacing: '-0.02em',
                 textShadow: isDark ? '0 2px 10px rgba(255, 119, 0, 0.3)' : 'none',
               }}>
@@ -645,7 +650,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
                   : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
                 border: 'none',
                 '& .MuiAlert-icon': {
-                  color: '#009688',
+                  color: SERVICE_COLOR,
                 },
               }}
             >
@@ -713,7 +718,7 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
               py: 1,
               borderRadius: 2,
               bgcolor: isDark ? '#1e2328' : '#e8eef3',
-              color: '#FF7700',
+              color: ASSET_COLOR,
               boxShadow: isDark
                 ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33, inset 0 0 0 2px rgba(255, 119, 0, 0.3)'
                 : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, inset 0 0 0 2px rgba(255, 119, 0, 0.2)',

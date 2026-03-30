@@ -1,6 +1,7 @@
 import { Box, Paper, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 interface EmptyPlanningStateProps {
   onAddPlanning: () => void;
@@ -66,7 +67,7 @@ const EmptyPlanningState = ({ onAddPlanning, disabled }: EmptyPlanningStateProps
         <CalendarTodayIcon
           sx={{
             fontSize: 40,
-            color: '#FF7700',
+            color: ASSET_COLOR,
           }}
         />
       </Box>
@@ -103,7 +104,7 @@ const EmptyPlanningState = ({ onAddPlanning, disabled }: EmptyPlanningStateProps
         onClick={onAddPlanning}
         disabled={disabled}
         sx={{
-          bgcolor: '#FF7700',
+          bgcolor: ASSET_COLOR,
           px: 4,
           py: 1.5,
           fontSize: '1rem',

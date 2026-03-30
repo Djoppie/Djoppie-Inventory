@@ -3,6 +3,7 @@ import {
   physicalWorkplacesApi,
   physicalWorkplacesBulkApi,
   physicalWorkplacesStatisticsApi,
+  workplaceGapAnalysisApi,
   BulkCreateWorkplacesDto,
   ExportWorkplacesParams,
 } from '../api/physicalWorkplaces.api';
@@ -12,6 +13,7 @@ import {
   UpdateOccupantDto,
   UpdateEquipmentSlotsDto,
   PhysicalWorkplaceFilters,
+  AutoCreateMissingWorkplacesDto,
 } from '../types/physicalWorkplace.types';
 
 /**
@@ -281,6 +283,34 @@ export const useBulkCreateWorkplaces = () => {
   });
 };
 
+/**
+ * Hook to delete all workplaces (use with caution!)
+ */
+export const useDeleteAllWorkplaces = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => physicalWorkplacesBulkApi.deleteAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to delete multiple workplaces by IDs
+ */
+export const useBulkDeleteWorkplaces = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: number[]) => physicalWorkplacesBulkApi.deleteMany(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+    },
+  });
+};
+
 // ============================================================
 // Statistics Hooks for Dashboard Widgets
 // ============================================================
@@ -355,5 +385,46 @@ export const useWorkplaceRecentChanges = (limit = 10, buildingId?: number) => {
     queryKey: workplaceStatisticsKeys.recentChanges(limit, buildingId),
     queryFn: () => physicalWorkplacesStatisticsApi.getRecentChanges(limit, buildingId),
     staleTime: 10 * 1000, // 10 seconds - recent changes should refresh more often
+  });
+};
+
+// ============================================================
+// Workplace Gap Analysis Hooks
+// ============================================================
+
+/**
+ * Query key factory for workplace gap analysis
+ */
+export const workplaceGapAnalysisKeys = {
+  all: ['workplaceGapAnalysis'] as const,
+  analysis: (serviceId?: number) => [...workplaceGapAnalysisKeys.all, { serviceId }] as const,
+};
+
+/**
+ * Hook to fetch workplace gap analysis
+ * Finds laptop owners (InGebruik) who don't have a corresponding PhysicalWorkplace
+ */
+export const useWorkplaceGapAnalysis = (serviceId?: number, limit = 100) => {
+  return useQuery({
+    queryKey: workplaceGapAnalysisKeys.analysis(serviceId),
+    queryFn: () => workplaceGapAnalysisApi.getGapAnalysis(serviceId, limit),
+    staleTime: 60 * 1000, // 1 minute - gap analysis is expensive
+  });
+};
+
+/**
+ * Hook to auto-create missing workplaces for orphan laptop owners
+ */
+export const useAutoCreateMissingWorkplaces = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dto: AutoCreateMissingWorkplacesDto) => workplaceGapAnalysisApi.autoCreateMissing(dto),
+    onSuccess: () => {
+      // Invalidate all related queries
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+      queryClient.invalidateQueries({ queryKey: workplaceGapAnalysisKeys.all });
+      queryClient.invalidateQueries({ queryKey: workplaceStatisticsKeys.all });
+    },
   });
 };

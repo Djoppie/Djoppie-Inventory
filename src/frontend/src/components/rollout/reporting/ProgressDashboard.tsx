@@ -28,6 +28,7 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import type { RolloutProgress, RolloutSession } from '../../../types/rollout';
 import type { SessionProgressStats, DayProgressStats } from '../../../types/report.types';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface ProgressDashboardProps {
   // Support both existing RolloutProgress and new SessionProgressStats
@@ -324,7 +325,7 @@ const ProgressDashboard = ({
               stats.status === 'Completed'
                 ? '#16a34a'
                 : stats.status === 'InProgress'
-                  ? '#FF7700'
+                  ? ASSET_COLOR
                   : stats.status === 'Ready'
                     ? '#3B82F6'
                     : '#6b7280',
@@ -351,11 +352,11 @@ const ProgressDashboard = ({
         {/* Days Progress */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
-            icon={<CalendarTodayIcon sx={{ fontSize: 24, color: '#FF7700' }} />}
+            icon={<CalendarTodayIcon sx={{ fontSize: 24, color: ASSET_COLOR }} />}
             label="Planningen"
             value={`${stats.completedDays}/${stats.totalDays}`}
             subValue={daysRemaining > 0 ? `${daysRemaining} dagen resterend` : undefined}
-            color="#FF7700"
+            color="{ASSET_COLOR}"
             bgColor="rgba(255, 119, 0, 0.08)"
           />
         </Grid>
@@ -409,7 +410,7 @@ const ProgressDashboard = ({
             <Typography
               variant="caption"
               sx={{
-                color: isComplete ? '#16a34a' : '#FF7700',
+                color: isComplete ? '#16a34a' : ASSET_COLOR,
                 fontWeight: 700,
               }}
             >
@@ -433,7 +434,7 @@ const ProgressDashboard = ({
               sx={{
                 width: `${stats.completionPercentage}%`,
                 height: '100%',
-                bgcolor: isComplete ? '#16a34a' : '#FF7700',
+                bgcolor: isComplete ? '#16a34a' : ASSET_COLOR,
                 transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
                 borderRadius: 5,
                 position: 'relative',
@@ -490,7 +491,7 @@ const ProgressDashboard = ({
                       borderColor: dayComplete
                         ? '#16a34a'
                         : hasProgress
-                          ? '#FF7700'
+                          ? ASSET_COLOR
                           : 'divider',
                       bgcolor: dayComplete
                         ? 'rgba(22, 163, 74, 0.15)'
@@ -500,7 +501,7 @@ const ProgressDashboard = ({
                       color: dayComplete
                         ? '#16a34a'
                         : hasProgress
-                          ? '#FF7700'
+                          ? ASSET_COLOR
                           : 'text.secondary',
                     }}
                   >

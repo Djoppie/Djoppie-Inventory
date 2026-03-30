@@ -32,7 +32,9 @@
     "all": "Alle",
     "processing": "Verwerken...",
     "confirm": "Bevestigen",
-    "clear": "Wissen"
+    "clear": "Wissen",
+    "none": "Geen",
+    "noResults": "Geen resultaten gevonden"
   },
   "validation": {
     "required": "Verplicht veld"
@@ -180,6 +182,8 @@
     "dummyAsset": "Dummy asset (test)",
     "installationLocation": "Installatielocatie",
     "installationLocationHint": "Specifieke locatie details (bijv. kamernummer, verdieping)",
+    "physicalWorkplace": "Fysieke werkplek",
+    "physicalWorkplaceHint": "Selecteer de werkplek waar dit asset vast is geplaatst",
     "deviceLinkedToUser": "Apparaat gekoppeld aan geselecteerde gebruiker",
     "deviceLinkedToOther": "Apparaat gekoppeld aan andere gebruiker",
     "deviceNotLinked": "Apparaat niet gekoppeld aan een gebruiker in Intune",
@@ -191,7 +195,11 @@
     "lookupDeviceBySerial": "Apparaat opzoeken via serienummer",
     "deviceNotFoundBySerial": "Geen apparaat gevonden met dit serienummer in Intune",
     "deviceFound": "Apparaat gevonden",
-    "assetNameAutoFetched": "DeviceName uit Intune - automatisch opgehaald via serienummer"
+    "assetNameAutoFetched": "DeviceName uit Intune - automatisch opgehaald via serienummer",
+    "category": "Categorie",
+    "categoryHint": "Filter asset types op categorie",
+    "assetType": "Asset type",
+    "assetTypeHint": "Selecteer het type asset"
   },
   "bulkCreate": {
     "title": "Bulk aanmaken",
@@ -1059,7 +1067,9 @@
       "onboarding": "Onboarding",
       "onboardingDesc": "Nieuwe medewerker krijgt laptop (zonder oud apparaat)",
       "swap": "Swap",
-      "swapDesc": "Vervang oude laptop door nieuwe"
+      "swapDesc": "Vervang oude laptop door nieuwe",
+      "offboarding": "Offboarding",
+      "offboardingDesc": "Medewerker vertrekt, apparaat wordt teruggenomen"
     },
     "user": {
       "title": "Gebruiker",
@@ -1094,7 +1104,8 @@
       "noWorkplace": "Geen werkplek",
       "updateEquipment": "Werkplek apparatuur bijwerken",
       "currentOccupant": "Huidige bezetter",
-      "willUpdateOccupant": "Bezetter wordt bijgewerkt naar nieuwe gebruiker"
+      "willUpdateOccupant": "Bezetter wordt bijgewerkt naar nieuwe gebruiker",
+      "clearOccupant": "Bezetter vrijgeven van werkplek"
     },
     "equipment": {
       "title": "Werkplek Apparatuur",
@@ -1114,15 +1125,28 @@
       "confirmTitle": "Deployment Bevestigen",
       "confirmSwap": "U staat op het punt om de laptop van {{userName}} te verwisselen.",
       "confirmOnboarding": "U staat op het punt om {{userName}} te onboarden met een nieuwe laptop.",
+      "confirmOffboarding": "U staat op het punt om {{userName}} te offboarden en het apparaat terug te nemen.",
       "oldDevice": "Oud apparaat: {{device}} → {{status}}",
       "newDevice": "Nieuw apparaat: {{device}}",
-      "workplaceUpdate": "Werkplek: {{workplace}}"
+      "workplaceUpdate": "Werkplek: {{workplace}}",
+      "workplaceClearOccupant": "Werkplek {{workplace}}: bezetter wordt vrijgegeven"
     },
     "success": {
       "title": "Deployment Succesvol",
       "swapComplete": "Laptop swap succesvol voltooid voor {{userName}}",
       "onboardingComplete": "Onboarding succesvol voltooid voor {{userName}}",
+      "offboardingComplete": "Offboarding succesvol voltooid voor {{userName}}",
       "viewHistory": "Bekijk geschiedenis"
+    },
+    "result": {
+      "oldDevice": "Oud apparaat",
+      "newDevice": "Nieuw apparaat",
+      "workplace": "Werkplek",
+      "ownerCleared": "Eigenaar {{owner}} verwijderd",
+      "assignedTo": "Toegewezen aan {{owner}}",
+      "occupantUpdated": "Bezetter gewijzigd van {{from}} naar {{to}}",
+      "occupantCleared": "Bezetter {{from}} verwijderd",
+      "completedAt": "Voltooid op {{time}}"
     },
     "error": {
       "title": "Deployment Mislukt",
@@ -1135,6 +1159,7 @@
     "history": {
       "title": "Deployment Geschiedenis",
       "subtitle": "Overzicht van alle laptop swaps en onboardings",
+      "items": "items",
       "filters": "Filters",
       "dateRange": "Datumbereik",
       "startDate": "Startdatum",

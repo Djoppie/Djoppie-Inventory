@@ -56,6 +56,21 @@ public enum AssetEventType
     DeviceOnboarded = 9,
 
     /// <summary>
+    /// Device offboarded - user left, device returned to inventory
+    /// </summary>
+    DeviceOffboarded = 10,
+
+    /// <summary>
+    /// Intune data was synced from Microsoft Intune
+    /// </summary>
+    IntuneSynced = 11,
+
+    /// <summary>
+    /// Intune data snapshot taken (e.g., before owner change)
+    /// </summary>
+    IntuneSnapshot = 12,
+
+    /// <summary>
     /// Other type of event
     /// </summary>
     Other = 99

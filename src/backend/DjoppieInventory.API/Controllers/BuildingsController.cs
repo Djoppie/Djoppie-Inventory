@@ -77,7 +77,7 @@ public class BuildingsController : ControllerBase
     /// <param name="dto">The building creation data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(BuildingDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -119,7 +119,7 @@ public class BuildingsController : ControllerBase
     /// <param name="dto">The updated building data</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPut("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(typeof(BuildingDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BuildingDto>> Update(
@@ -156,7 +156,7 @@ public class BuildingsController : ControllerBase
     /// <param name="id">The building ID to delete</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpDelete("{id}")]
-    [Authorize] // TODO: Restore Policy = "RequireAdminRole" for production
+    [Authorize(Policy = "RequireAdminRole")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)

@@ -13,6 +13,9 @@ import {
   ServiceOccupancy,
   EquipmentTypeStatus,
   WorkplaceChange,
+  WorkplaceGapAnalysis,
+  AutoCreateMissingWorkplacesDto,
+  AutoCreateWorkplacesResult,
 } from '../types/physicalWorkplace.types';
 
 // ============================================================
@@ -203,7 +206,38 @@ export interface ExportWorkplacesParams {
   isActive?: boolean;
 }
 
+export interface DeleteAllResult {
+  message: string;
+  count: number;
+}
+
 export const physicalWorkplacesBulkApi = {
+  /**
+   * Delete all physical workplaces (requires confirm=true)
+   */
+  deleteAll: async (): Promise<DeleteAllResult> => {
+    const response = await apiClient.delete<DeleteAllResult>('/physicalworkplaces/all', {
+      params: { confirm: true },
+    });
+    return response.data;
+  },
+
+  /**
+   * Delete multiple workplaces by IDs
+   */
+  deleteMany: async (ids: number[]): Promise<{ deleted: number; errors: string[] }> => {
+    const results = { deleted: 0, errors: [] as string[] };
+    for (const id of ids) {
+      try {
+        await apiClient.delete(`/physicalworkplaces/${id}`, { params: { hardDelete: true } });
+        results.deleted++;
+      } catch (error) {
+        results.errors.push(`ID ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+    return results;
+  },
+
   /**
    * Download CSV template for bulk workplace import
    */
@@ -304,6 +338,35 @@ export const physicalWorkplacesStatisticsApi = {
     const response = await apiClient.get<WorkplaceChange[]>('/physicalworkplaces/recent-changes', {
       params: { limit, buildingId },
     });
+    return response.data;
+  },
+};
+
+// ============================================================
+// Workplace Gap Analysis API
+// ============================================================
+
+export const workplaceGapAnalysisApi = {
+  /**
+   * Analyzes the gap between laptop owners and physical workplaces.
+   * Finds laptop owners (InGebruik) who don't have a corresponding PhysicalWorkplace.
+   */
+  getGapAnalysis: async (serviceId?: number, limit = 100): Promise<WorkplaceGapAnalysis> => {
+    const response = await apiClient.get<WorkplaceGapAnalysis>('/physicalworkplaces/workplace-gap-analysis', {
+      params: { serviceId, limit },
+    });
+    return response.data;
+  },
+
+  /**
+   * Auto-creates missing workplaces for laptop owners who don't have one.
+   * Creates a PhysicalWorkplace for each orphan owner with their laptop info.
+   */
+  autoCreateMissing: async (dto: AutoCreateMissingWorkplacesDto): Promise<AutoCreateWorkplacesResult> => {
+    const response = await apiClient.post<AutoCreateWorkplacesResult>(
+      '/physicalworkplaces/auto-create-missing',
+      dto
+    );
     return response.data;
   },
 };

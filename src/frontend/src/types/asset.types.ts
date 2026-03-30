@@ -17,19 +17,49 @@ export interface Asset {
 
   // Relational fields
   assetTypeId?: number;
-  assetType?: { id: number; code: string; name: string };
+  assetType?: { id: number; code: string; name: string; categoryId?: number };
   serviceId?: number;
   service?: { id: number; code: string; name: string }; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
   buildingId?: number;
+  building?: {
+    id: number;
+    code: string;
+    name: string;
+    address?: string;
+  };
   physicalWorkplaceId?: number; // Physical workplace this asset is assigned to
+  physicalWorkplace?: {
+    id: number;
+    code: string;
+    name: string;
+    currentOccupantName?: string;
+    serviceName?: string;
+    sectorName?: string;
+    buildingName?: string;
+    floor?: string;
+  };
 
   // Legacy fields (for historical data)
   legacyBuilding?: string;
   legacyDepartment?: string;
 
-  // Existing fields
-  owner?: string; // Primary user (optional)
+  // Employee assignment (new - foreign key relationship)
+  employeeId?: number;
+  employee?: {
+    id: number;
+    entraId: string;
+    displayName: string;
+    email?: string;
+    jobTitle?: string;
+    serviceId?: number;
+    serviceName?: string;
+    physicalWorkplaceId?: number;
+    physicalWorkplaceCode?: string;
+  };
+
+  // Legacy user assignment fields (for backwards compatibility)
+  owner?: string; // Legacy field - prefer using employeeId
   officeLocation?: string;
   jobTitle?: string;
   status: AssetStatus;
@@ -39,6 +69,13 @@ export interface Asset {
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
+
+  // Intune integration fields (synced from Microsoft Intune for laptops/desktops)
+  intuneEnrollmentDate?: string;
+  intuneLastCheckIn?: string;
+  intuneCertificateExpiry?: string;
+  intuneSyncedAt?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -54,9 +91,14 @@ export interface CreateAssetDto {
   // Relational fields
   serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
+  buildingId?: number; // Building where the asset is located
+  physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
 
-  // User assignment fields
-  owner?: string; // Primary user (optional)
+  // Employee assignment
+  employeeId?: number; // Reference to Employee record (preferred)
+
+  // Legacy user assignment fields
+  owner?: string; // Legacy field - prefer using employeeId
   officeLocation?: string;
   jobTitle?: string;
 
@@ -76,9 +118,14 @@ export interface UpdateAssetDto {
   assetTypeId?: number;
   serviceId?: number; // Service is used as location
   installationLocation?: string; // Specific location details (e.g., room number)
+  buildingId?: number; // Building where the asset is located
+  physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
 
-  // User assignment fields
-  owner?: string; // Primary user (optional)
+  // Employee assignment
+  employeeId?: number; // Reference to Employee record (preferred)
+
+  // Legacy user assignment fields
+  owner?: string; // Legacy field - prefer using employeeId
   officeLocation?: string;
   jobTitle?: string;
 
@@ -100,7 +147,7 @@ export interface AssetTemplate {
 
   // Relational fields
   assetTypeId?: number;
-  assetType?: { id: number; code: string; name: string };
+  assetType?: { id: number; code: string; name: string; categoryId?: number };
   serviceId?: number;
   service?: { id: number; code: string; name: string };
   installationLocation?: string;

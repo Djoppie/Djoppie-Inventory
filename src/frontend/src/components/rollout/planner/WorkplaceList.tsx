@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Chip, IconButton, Tooltip, useTheme } from '@mui/material';
+import { Box, Typography, Chip, IconButton, Tooltip, useTheme, Button, Stack } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -13,6 +13,8 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import PlaceIcon from '@mui/icons-material/Place';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import {
   useRolloutWorkplaces,
   useDeleteRolloutWorkplace,
@@ -20,6 +22,7 @@ import {
 } from '../../../hooks/useRollout';
 import { WORKPLACE_STATUS_SORT_ORDER } from '../../../constants/rollout.constants';
 import type { RolloutWorkplace } from '../../../types/rollout';
+import { ASSET_COLOR, SERVICE_COLOR, SECTOR_COLOR } from '../../../constants/filterColors';
 
 interface WorkplaceListProps {
   dayId: number;
@@ -35,6 +38,10 @@ interface WorkplaceListProps {
   onEditWorkplace: (workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace) => void;
   onRescheduleWorkplace: (workplace: RolloutWorkplace, dayId: number, originalDate: string) => void;
+  /** Handler to add a new workplace manually */
+  onAddWorkplace?: () => void;
+  /** Handler to import workplaces from Azure AD */
+  onImport?: () => void;
 }
 
 const getStatusChip = (status: string) => {
@@ -106,6 +113,8 @@ export default function WorkplaceList({
   onEditWorkplace,
   onPrintWorkplace,
   onRescheduleWorkplace,
+  onAddWorkplace,
+  onImport,
 }: WorkplaceListProps) {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -166,9 +175,51 @@ export default function WorkplaceList({
           borderColor: 'divider',
           borderRadius: 1,
         }}>
-          <Typography variant="body2">
-            Nog geen werkplekken. Klik op "Importeren" om gebruikers uit Azure AD te importeren.
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Nog geen werkplekken toegevoegd aan deze planning.
           </Typography>
+          {isEditable && (onAddWorkplace || onImport) && (
+            <Stack direction="row" spacing={1.5} justifyContent="center">
+              {onAddWorkplace && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<PersonAddIcon />}
+                  onClick={onAddWorkplace}
+                  sx={{
+                    borderColor: ASSET_COLOR,
+                    color: ASSET_COLOR,
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: ASSET_COLOR,
+                      bgcolor: 'rgba(255, 119, 0, 0.08)',
+                    },
+                  }}
+                >
+                  Werkplek toevoegen
+                </Button>
+              )}
+              {onImport && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<CloudDownloadIcon />}
+                  onClick={onImport}
+                  sx={{
+                    borderColor: '#2196F3',
+                    color: '#2196F3',
+                    fontWeight: 600,
+                    '&:hover': {
+                      borderColor: '#2196F3',
+                      bgcolor: 'rgba(33, 150, 243, 0.08)',
+                    },
+                  }}
+                >
+                  Importeren uit Azure AD
+                </Button>
+              )}
+            </Stack>
+          )}
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -276,9 +327,9 @@ export default function WorkplaceList({
                             fontSize: '0.7rem',
                             fontWeight: 600,
                             bgcolor: 'rgba(33, 150, 243, 0.1)',
-                            color: '#1976d2',
+                            color: SECTOR_COLOR,
                             border: '1px solid rgba(33, 150, 243, 0.3)',
-                            '& .MuiChip-icon': { color: '#1976d2' },
+                            '& .MuiChip-icon': { color: SECTOR_COLOR },
                           }}
                           component="span"
                         />
@@ -301,10 +352,10 @@ export default function WorkplaceList({
                             fontSize: '0.65rem',
                             fontWeight: 600,
                             bgcolor: 'rgba(0, 150, 136, 0.12)',
-                            color: '#009688',
+                            color: SERVICE_COLOR,
                             border: '1px solid rgba(0, 150, 136, 0.3)',
                             '& .MuiChip-icon': {
-                              color: '#009688',
+                              color: SERVICE_COLOR,
                               marginLeft: '4px',
                             },
                             '& .MuiChip-label': {
@@ -394,11 +445,11 @@ export default function WorkplaceList({
                           size="small"
                           onClick={() => navigate(`/rollouts/${sessionId}/execute?workplaceId=${workplace.id}`)}
                           sx={{
-                            color: '#FF7700',
+                            color: ASSET_COLOR,
                             bgcolor: 'rgba(255, 119, 0, 0.1)',
                             '&:hover': {
                               bgcolor: 'rgba(255, 119, 0, 0.2)',
-                              color: '#FF7700',
+                              color: ASSET_COLOR,
                             },
                           }}
                         >

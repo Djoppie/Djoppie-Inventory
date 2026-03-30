@@ -65,6 +65,8 @@ export interface UseDashboardAssetsResult {
 interface UseDashboardAssetsParams {
   searchQuery: string;
   categoryFilter: string;
+  serviceFilter: string;
+  buildingFilter: string;
   statusFilter: string;
   sortBy: SortOption;
   selectedAssetIds: Set<number>;
@@ -73,6 +75,8 @@ interface UseDashboardAssetsParams {
 export function useDashboardAssets({
   searchQuery,
   categoryFilter,
+  serviceFilter,
+  buildingFilter,
   statusFilter,
   sortBy,
   selectedAssetIds,
@@ -109,8 +113,30 @@ export function useDashboardAssets({
       result = result.filter(a => a.category === categoryFilter);
     }
 
+    // Apply service filter (supports comma-separated IDs for multiselect)
+    if (serviceFilter) {
+      const serviceIds = serviceFilter
+        .split(',')
+        .map(id => parseInt(id, 10))
+        .filter(id => !isNaN(id));
+      if (serviceIds.length > 0) {
+        result = result.filter(a => a.serviceId && serviceIds.includes(a.serviceId));
+      }
+    }
+
+    // Apply building filter (supports comma-separated IDs for multiselect)
+    if (buildingFilter) {
+      const buildingIds = buildingFilter
+        .split(',')
+        .map(id => parseInt(id, 10))
+        .filter(id => !isNaN(id));
+      if (buildingIds.length > 0) {
+        result = result.filter(a => a.buildingId && buildingIds.includes(a.buildingId));
+      }
+    }
+
     return result;
-  }, [assets, searchQuery, categoryFilter]);
+  }, [assets, searchQuery, categoryFilter, serviceFilter, buildingFilter]);
 
   // Split into real assets and dummy assets (code number >= 9000)
   const realAssets = useMemo(() =>

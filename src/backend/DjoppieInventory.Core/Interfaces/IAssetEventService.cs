@@ -107,4 +107,21 @@ public interface IAssetEventService
         string? performedByEmail,
         string? notes = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates an "IntuneSnapshot" event to preserve Intune data before owner changes.
+    /// Captures enrollment date, last check-in, and certificate expiry as a JSON snapshot.
+    /// </summary>
+    /// <param name="asset">The asset to create a snapshot for</param>
+    /// <param name="reason">Reason for the snapshot (e.g., "Before owner change")</param>
+    /// <param name="performedBy">Display name of the user who triggered the snapshot</param>
+    /// <param name="performedByEmail">Email address of the user</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The created asset event, or null if the asset has no Intune data</returns>
+    Task<AssetEvent?> CreateIntuneSnapshotEventAsync(
+        Asset asset,
+        string reason,
+        string performedBy,
+        string? performedByEmail,
+        CancellationToken cancellationToken = default);
 }

@@ -49,16 +49,25 @@ public class DeploymentController : ControllerBase
                                User.FindFirst("preferred_username")?.Value ?? "";
 
         // Validate request
-        if (request.Mode == DeploymentMode.Swap && !request.OldLaptopAssetId.HasValue)
+        if (request.Mode != DeploymentMode.Offboarding && !request.NewLaptopAssetId.HasValue)
         {
             return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
             {
-                { "oldLaptopAssetId", new[] { "Old laptop ID is required for swap mode" } }
+                { "newLaptopAssetId", new[] { "New laptop ID is required for onboarding and swap modes" } }
+            }));
+        }
+
+        if ((request.Mode == DeploymentMode.Swap || request.Mode == DeploymentMode.Offboarding) && !request.OldLaptopAssetId.HasValue)
+        {
+            return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                { "oldLaptopAssetId", new[] { "Old laptop ID is required for swap and offboarding modes" } }
             }));
         }
 
         // Check for occupant conflict if physical workplace is provided and not forcing
-        if (request.PhysicalWorkplaceId.HasValue && !forceOccupantUpdate)
+        // Skip for offboarding mode since we're clearing the occupant, not adding one
+        if (request.PhysicalWorkplaceId.HasValue && !forceOccupantUpdate && request.Mode != DeploymentMode.Offboarding)
         {
             var conflict = await _deploymentService.CheckOccupantConflictAsync(
                 request.PhysicalWorkplaceId.Value,

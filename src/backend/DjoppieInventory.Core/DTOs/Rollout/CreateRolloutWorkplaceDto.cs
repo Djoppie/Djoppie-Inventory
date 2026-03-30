@@ -18,6 +18,12 @@ public class CreateRolloutWorkplaceDto
     [StringLength(200, ErrorMessage = "Email cannot exceed 200 characters")]
     public string? UserEmail { get; set; }
 
+    /// <summary>
+    /// Entra ID (Azure AD Object ID) of the user
+    /// </summary>
+    [StringLength(100, ErrorMessage = "User Entra ID cannot exceed 100 characters")]
+    public string? UserEntraId { get; set; }
+
     [StringLength(200, ErrorMessage = "Location cannot exceed 200 characters")]
     public string? Location { get; set; }
 
@@ -36,10 +42,8 @@ public class CreateRolloutWorkplaceDto
     public bool IsLaptopSetup { get; set; } = true;
 
     /// <summary>
-    /// List of assets to be installed at this workplace
+    /// List of assets to be installed at this workplace (can be empty initially)
     /// </summary>
-    [Required(ErrorMessage = "At least one asset plan is required")]
-    [MinLength(1, ErrorMessage = "At least one asset plan is required")]
     public List<AssetPlanDto> AssetPlans { get; set; } = new();
 
     [StringLength(2000, ErrorMessage = "Notes cannot exceed 2000 characters")]

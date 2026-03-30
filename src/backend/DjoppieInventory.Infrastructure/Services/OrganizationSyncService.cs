@@ -337,6 +337,143 @@ public class OrganizationSyncService : IOrganizationSyncService
         _logger.LogInformation("Linked sector {SectorName} to Entra group {GroupId}", sector.Name, entraGroupId);
     }
 
+    /// <inheritdoc/>
+    public async Task<EmployeeSyncResultDto> SyncEmployeesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = new EmployeeSyncResultDto(0, 0, 0, 0, 0, new List<string>());
+        var totalProcessed = 0;
+        var created = 0;
+        var updated = 0;
+        var skipped = 0;
+        var failed = 0;
+        var errors = new List<string>();
+
+        try
+        {
+            _logger.LogInformation("Starting employee sync from Entra ID service groups");
+
+            // Get all services with Entra group links
+            var services = await _context.Services
+                .Where(s => !string.IsNullOrEmpty(s.EntraGroupId) && s.IsActive)
+                .ToListAsync(cancellationToken);
+
+            _logger.LogInformation("Found {ServiceCount} services with Entra group links", services.Count);
+
+            // Track processed Entra IDs to avoid duplicates across services
+            var processedEntraIds = new HashSet<string>();
+
+            foreach (var service in services)
+            {
+                try
+                {
+                    var members = await _graphUserService.GetGroupMembersAsync(service.EntraGroupId!, 500);
+
+                    foreach (var user in members)
+                    {
+                        if (string.IsNullOrEmpty(user.Id))
+                        {
+                            skipped++;
+                            continue;
+                        }
+
+                        // Skip if already processed in another service group
+                        if (processedEntraIds.Contains(user.Id))
+                        {
+                            continue;
+                        }
+                        processedEntraIds.Add(user.Id);
+
+                        totalProcessed++;
+
+                        try
+                        {
+                            // Check if employee exists
+                            var existingEmployee = await _context.Employees
+                                .FirstOrDefaultAsync(e => e.EntraId == user.Id, cancellationToken);
+
+                            if (existingEmployee != null)
+                            {
+                                // Update existing employee
+                                existingEmployee.UserPrincipalName = user.UserPrincipalName ?? existingEmployee.UserPrincipalName;
+                                existingEmployee.DisplayName = user.DisplayName ?? existingEmployee.DisplayName;
+                                existingEmployee.Email = user.Mail ?? existingEmployee.Email;
+                                existingEmployee.Department = user.Department ?? existingEmployee.Department;
+                                existingEmployee.JobTitle = user.JobTitle ?? existingEmployee.JobTitle;
+                                existingEmployee.OfficeLocation = user.OfficeLocation ?? existingEmployee.OfficeLocation;
+                                existingEmployee.MobilePhone = user.MobilePhone ?? existingEmployee.MobilePhone;
+                                existingEmployee.CompanyName = user.CompanyName ?? existingEmployee.CompanyName;
+                                existingEmployee.ServiceId = service.Id;
+                                existingEmployee.IsActive = true;
+                                existingEmployee.EntraLastSyncAt = DateTime.UtcNow;
+                                existingEmployee.EntraSyncStatus = EntraSyncStatus.Success;
+                                existingEmployee.EntraSyncError = null;
+                                existingEmployee.UpdatedAt = DateTime.UtcNow;
+
+                                updated++;
+                            }
+                            else
+                            {
+                                // Create new employee
+                                var employee = new Employee
+                                {
+                                    EntraId = user.Id,
+                                    UserPrincipalName = user.UserPrincipalName ?? string.Empty,
+                                    DisplayName = user.DisplayName ?? "Unknown",
+                                    Email = user.Mail,
+                                    Department = user.Department,
+                                    JobTitle = user.JobTitle,
+                                    OfficeLocation = user.OfficeLocation,
+                                    MobilePhone = user.MobilePhone,
+                                    CompanyName = user.CompanyName,
+                                    ServiceId = service.Id,
+                                    IsActive = true,
+                                    SortOrder = 0,
+                                    EntraLastSyncAt = DateTime.UtcNow,
+                                    EntraSyncStatus = EntraSyncStatus.Success,
+                                    CreatedAt = DateTime.UtcNow
+                                };
+
+                                _context.Employees.Add(employee);
+                                created++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to sync employee {DisplayName} ({EntraId})",
+                                user.DisplayName, user.Id);
+                            failed++;
+                            errors.Add($"Failed to sync {user.DisplayName}: {ex.Message}");
+                        }
+                    }
+
+                    // Update service sync status
+                    service.EntraLastSyncAt = DateTime.UtcNow;
+                    service.EntraSyncStatus = EntraSyncStatus.Success;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get members for service {ServiceName} (group: {GroupId})",
+                        service.Name, service.EntraGroupId);
+                    errors.Add($"Failed to sync service '{service.Name}': {ex.Message}");
+                }
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Employee sync completed: {TotalProcessed} processed, {Created} created, {Updated} updated, {Skipped} skipped, {Failed} failed",
+                totalProcessed, created, updated, skipped, failed);
+
+            return new EmployeeSyncResultDto(totalProcessed, created, updated, skipped, failed, errors);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during employee sync");
+            errors.Add($"Sync failed: {ex.Message}");
+            return new EmployeeSyncResultDto(totalProcessed, created, updated, skipped, failed + 1, errors);
+        }
+    }
+
     #region Private Methods
 
     private async Task SyncSectorsInternalAsync(OrganizationSyncResultDto result, CancellationToken cancellationToken)

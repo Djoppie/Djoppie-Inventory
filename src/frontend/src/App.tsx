@@ -26,6 +26,7 @@ const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
 const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
 const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
+const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
 const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
 const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage'));
 
@@ -68,6 +69,7 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
+                  <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />

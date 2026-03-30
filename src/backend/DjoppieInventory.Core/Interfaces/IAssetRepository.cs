@@ -25,6 +25,12 @@ public interface IAssetRepository
     /// Gets multiple assets by their IDs in a single query.
     /// </summary>
     Task<IEnumerable<Asset>> GetByIdsAsync(IEnumerable<int> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all assets assigned to a specific employee.
+    /// </summary>
+    Task<IEnumerable<Asset>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default);
+
     Task<Asset> CreateAsync(Asset asset, CancellationToken cancellationToken = default);
     Task<Asset> UpdateAsync(Asset asset, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
@@ -92,5 +98,23 @@ public interface IAssetRepository
     /// <returns>List of available laptop assets</returns>
     Task<IEnumerable<Asset>> GetAvailableLaptopsAsync(
         string? search = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates only the Intune-related fields on an asset.
+    /// Uses direct SQL update to avoid EF tracking conflicts.
+    /// </summary>
+    /// <param name="assetId">The asset ID to update</param>
+    /// <param name="enrollmentDate">Intune enrollment date</param>
+    /// <param name="lastCheckIn">Last Intune check-in date</param>
+    /// <param name="certificateExpiry">Management certificate expiry date</param>
+    /// <param name="syncedAt">Timestamp of this sync</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task UpdateIntuneFieldsAsync(
+        int assetId,
+        DateTime? enrollmentDate,
+        DateTime? lastCheckIn,
+        DateTime? certificateExpiry,
+        DateTime syncedAt,
         CancellationToken cancellationToken = default);
 }

@@ -58,11 +58,26 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<int?>("CurrentWorkplaceAssignmentId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("InstallationDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("InstallationLocation")
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("IntuneCertificateExpiry")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("IntuneEnrollmentDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("IntuneLastCheckIn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("IntuneSyncedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDummy")
@@ -126,6 +141,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.HasIndex("BuildingId");
 
                     b.HasIndex("CurrentWorkplaceAssignmentId");
+
+                    b.HasIndex("EmployeeId");
 
                     b.HasIndex("LastRolloutSessionId");
 
@@ -764,6 +781,90 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Employee", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CompanyName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntraId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EntraLastSyncAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntraSyncError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EntraSyncStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MobilePhone")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OfficeLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserPrincipalName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayName");
+
+                    b.HasIndex("EntraId")
+                        .IsUnique();
+
+                    b.HasIndex("ServiceId");
+
+                    b.HasIndex("UserPrincipalName");
+
+                    b.ToTable("Employees");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.LeaseContract", b =>
                 {
                     b.Property<int>("Id")
@@ -884,6 +985,18 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OccupantDeviceAssetCode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OccupantDeviceBrand")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OccupantDeviceModel")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OccupantDeviceSerial")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("OccupiedSince")
@@ -1381,7 +1494,7 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(10)
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1957,6 +2070,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("CurrentWorkplaceAssignmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("DjoppieInventory.Core.Entities.Employee", "Employee")
+                        .WithMany("Assets")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DjoppieInventory.Core.Entities.RolloutSession", "LastRolloutSession")
                         .WithMany()
                         .HasForeignKey("LastRolloutSessionId")
@@ -1977,6 +2095,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Building");
 
                     b.Navigation("CurrentWorkplaceAssignment");
+
+                    b.Navigation("Employee");
 
                     b.Navigation("LastRolloutSession");
 
@@ -2021,6 +2141,16 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Employee", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.LeaseContract", b =>
@@ -2279,6 +2409,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Category", b =>
                 {
                     b.Navigation("AssetTypes");
+                });
+
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.Employee", b =>
+                {
+                    b.Navigation("Assets");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.PhysicalWorkplace", b =>

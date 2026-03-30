@@ -37,6 +37,8 @@ export interface RolloutWorkplaceDialogProps {
 export interface WorkplaceFormState {
   userName: string;
   userEmail: string;
+  /** Entra ID (Azure AD Object ID) of the user */
+  userEntraId: string;
   location: string;
   serviceId: number | undefined;
   scheduledDate: string | undefined;

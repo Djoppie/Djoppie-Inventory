@@ -20,6 +20,7 @@ import {
   ToggleButton,
   Tooltip,
   alpha,
+  Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,6 +29,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import TableRowsIcon from '@mui/icons-material/TableRows';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 type Order = 'asc' | 'desc';
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -53,6 +55,17 @@ interface AdminDataTableProps<T> {
   showActiveStatus?: boolean;
   title?: string;
   defaultRowsPerPage?: number;
+  // Selection support
+  selectable?: boolean;
+  selectedIds?: Set<number | string>;
+  onSelectionChange?: (selectedIds: Set<number | string>) => void;
+  // Custom actions support
+  renderActions?: (item: T) => React.ReactNode;
+  actionsColumnWidth?: number;
+  // External search control
+  externalSearchTerm?: string;
+  onSearchTermChange?: (value: string) => void;
+  hideSearch?: boolean;
 }
 
 // Neumorphic shadow utilities
@@ -86,10 +99,28 @@ function AdminDataTable<T extends Record<string, unknown>>({
   getItemId,
   showActiveStatus = false,
   defaultRowsPerPage = 15,
+  selectable = false,
+  selectedIds = new Set(),
+  onSelectionChange,
+  renderActions,
+  actionsColumnWidth = 80,
+  externalSearchTerm,
+  onSearchTermChange,
+  hideSearch = false,
 }: AdminDataTableProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const [searchTerm, setSearchTerm] = useState('');
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
+
+  // Use external search term if provided, otherwise use internal
+  const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+  const setSearchTerm = (value: string) => {
+    if (onSearchTermChange) {
+      onSearchTermChange(value);
+    } else {
+      setInternalSearchTerm(value);
+    }
+  };
   const [orderBy, setOrderBy] = useState<keyof T | string>('');
   const [order, setOrder] = useState<Order>('asc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -99,7 +130,7 @@ function AdminDataTable<T extends Record<string, unknown>>({
   // Theme colors
   const bgBase = isDark ? '#1a1f2e' : '#f0f2f5';
   const bgSurface = isDark ? '#232936' : '#ffffff';
-  const accentColor = '#FF7700';
+  const accentColor = ASSET_COLOR;
 
   const handleRequestSort = (property: keyof T | string) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -124,6 +155,28 @@ function AdminDataTable<T extends Record<string, unknown>>({
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  // Selection handlers
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onSelectionChange) return;
+    if (event.target.checked) {
+      const allIds = new Set(filteredAndSortedData.map((item) => getItemId(item)));
+      onSelectionChange(allIds);
+    } else {
+      onSelectionChange(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: number | string) => {
+    if (!onSelectionChange) return;
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    onSelectionChange(newSelected);
   };
 
   const filteredAndSortedData = useMemo(() => {
@@ -198,55 +251,57 @@ function AdminDataTable<T extends Record<string, unknown>>({
         }}
       >
         {/* Search */}
-        <TextField
-          size="small"
-          placeholder={searchPlaceholder}
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(0);
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setPage(0);
-                  }}
-                  sx={{ p: 0.25 }}
-                >
-                  <ClearIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            flex: { xs: 1, md: '0 0 280px' },
-            '& .MuiOutlinedInput-root': {
-              bgcolor: bgBase,
-              borderRadius: 1.5,
-              fontSize: '0.85rem',
-              boxShadow: getNeumorphInset(isDark),
-              '& fieldset': { border: 'none' },
-              '&:hover': {
-                boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+        {!hideSearch && (
+          <TextField
+            size="small"
+            placeholder={searchPlaceholder}
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(0);
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.disabled', fontSize: 18 }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setPage(0);
+                    }}
+                    sx={{ p: 0.25 }}
+                  >
+                    <ClearIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              flex: { xs: 1, md: '0 0 280px' },
+              '& .MuiOutlinedInput-root': {
+                bgcolor: bgBase,
+                borderRadius: 1.5,
+                fontSize: '0.85rem',
+                boxShadow: getNeumorphInset(isDark),
+                '& fieldset': { border: 'none' },
+                '&:hover': {
+                  boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+                },
+                '&.Mui-focused': {
+                  boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+                },
               },
-              '&.Mui-focused': {
-                boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+              '& .MuiInputBase-input': {
+                py: 0.75,
               },
-            },
-            '& .MuiInputBase-input': {
-              py: 0.75,
-            },
-          }}
-        />
+            }}
+          />
+        )}
 
         {/* Status Filter Pills */}
         {showActiveStatus && (
@@ -312,27 +367,67 @@ function AdminDataTable<T extends Record<string, unknown>>({
         sx={{
           bgcolor: bgSurface,
           borderRadius: 2,
-          boxShadow: getNeumorph(isDark, 'soft'),
-          overflow: 'hidden',
+          border: '1px solid',
+          borderColor: 'divider',
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': {
+            height: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+            borderRadius: 4,
+          },
+          '&::-webkit-scrollbar-thumb': {
+            bgcolor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+            borderRadius: 4,
+            '&:hover': {
+              bgcolor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+            },
+          },
         }}
       >
         <Table size="small">
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={{
+                bgcolor: isDark ? alpha(ASSET_COLOR, 0.08) : alpha(ASSET_COLOR, 0.04),
+                borderBottom: '2px solid',
+                borderColor: ASSET_COLOR,
+              }}
+            >
+              {selectable && (
+                <TableCell
+                  padding="checkbox"
+                  sx={{
+                    py: 1.5,
+                    px: 0.5,
+                    width: 42,
+                  }}
+                >
+                  <Checkbox
+                    indeterminate={selectedIds.size > 0 && selectedIds.size < filteredAndSortedData.length}
+                    checked={filteredAndSortedData.length > 0 && selectedIds.size === filteredAndSortedData.length}
+                    onChange={handleSelectAll}
+                    sx={{
+                      color: alpha(accentColor, 0.5),
+                      '&.Mui-checked, &.MuiCheckbox-indeterminate': {
+                        color: accentColor,
+                      },
+                    }}
+                  />
+                </TableCell>
+              )}
               {columns.map((column) => (
                 <TableCell
                   key={String(column.id)}
                   align={column.align || 'left'}
                   sx={{
-                    py: 1,
+                    py: 1.5,
                     px: 1.5,
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
                     whiteSpace: 'nowrap',
                     minWidth: column.minWidth,
                   }}
@@ -359,15 +454,12 @@ function AdminDataTable<T extends Record<string, unknown>>({
                 <TableCell
                   align="center"
                   sx={{
-                    py: 1,
+                    py: 1.5,
                     px: 1,
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    color: 'text.secondary',
-                    bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                    borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
                     width: 70,
                   }}
                 >
@@ -377,16 +469,13 @@ function AdminDataTable<T extends Record<string, unknown>>({
               <TableCell
                 align="center"
                 sx={{
-                  py: 1,
+                  py: 1.5,
                   px: 1,
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
-                  color: 'text.secondary',
-                  bgcolor: isDark ? alpha('#000', 0.2) : alpha('#000', 0.02),
-                  borderBottom: `1px solid ${alpha(accentColor, 0.15)}`,
-                  width: 80,
+                  width: actionsColumnWidth,
                 }}
               >
                 Actions
@@ -397,7 +486,7 @@ function AdminDataTable<T extends Record<string, unknown>>({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (showActiveStatus ? 1 : 0) + 1}
+                  colSpan={columns.length + (showActiveStatus ? 1 : 0) + 1 + (selectable ? 1 : 0)}
                   sx={{ py: 4, textAlign: 'center' }}
                 >
                   <TableRowsIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
@@ -409,27 +498,56 @@ function AdminDataTable<T extends Record<string, unknown>>({
             ) : (
               paginatedData.map((item, idx) => {
                 const isInactive = showActiveStatus && !item.isActive;
+                const itemId = getItemId(item);
+                const isSelected = selectedIds.has(itemId);
                 return (
                   <TableRow
-                    key={getItemId(item)}
+                    key={itemId}
+                    selected={isSelected}
+                    hover
                     sx={{
-                      bgcolor: idx % 2 === 0 ? 'transparent' : alpha(bgBase, 0.3),
+                      bgcolor: isSelected
+                        ? alpha(accentColor, isDark ? 0.15 : 0.08)
+                        : idx % 2 === 1
+                        ? isDark
+                          ? 'rgba(255, 255, 255, 0.02)'
+                          : 'rgba(0, 0, 0, 0.02)'
+                        : 'transparent',
                       opacity: isInactive ? 0.5 : 1,
-                      transition: 'all 0.12s ease',
+                      transition: 'all 0.15s ease',
                       '&:hover': {
-                        bgcolor: alpha(accentColor, isDark ? 0.08 : 0.04),
+                        bgcolor: isDark ? alpha(ASSET_COLOR, 0.08) : alpha(ASSET_COLOR, 0.04),
                       },
                     }}
                   >
+                    {selectable && (
+                      <TableCell
+                        padding="checkbox"
+                        sx={{
+                          py: 1,
+                          px: 0.5,
+                        }}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => handleSelectOne(itemId)}
+                          sx={{
+                            color: alpha(accentColor, 0.5),
+                            '&.Mui-checked': {
+                              color: accentColor,
+                            },
+                          }}
+                        />
+                      </TableCell>
+                    )}
                     {columns.map((column) => (
                       <TableCell
                         key={String(column.id)}
                         align={column.align || 'left'}
                         sx={{
-                          py: 0.75,
+                          py: 1,
                           px: 1.5,
-                          fontSize: '0.8rem',
-                          borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
+                          fontSize: '0.85rem',
                         }}
                       >
                         {column.format
@@ -441,9 +559,8 @@ function AdminDataTable<T extends Record<string, unknown>>({
                       <TableCell
                         align="center"
                         sx={{
-                          py: 0.75,
+                          py: 1,
                           px: 1,
-                          borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
                         }}
                       >
                         {item.isActive ? (
@@ -464,69 +581,64 @@ function AdminDataTable<T extends Record<string, unknown>>({
                     <TableCell
                       align="center"
                       sx={{
-                        py: 0.5,
+                        py: 1,
                         px: 0.5,
-                        borderBottom: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.04)}`,
                       }}
                     >
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
-                        {onEdit && (
-                          <Tooltip title="Edit" arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => onEdit(item)}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                bgcolor: bgBase,
-                                color: accentColor,
-                                boxShadow: getNeumorph(isDark, 'soft'),
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  bgcolor: accentColor,
-                                  color: '#fff',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: `0 4px 12px ${alpha(accentColor, 0.4)}`,
-                                },
-                                '&:active': {
-                                  transform: 'translateY(0)',
-                                  boxShadow: getNeumorphInset(isDark),
-                                },
-                              }}
-                            >
-                              <EditIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        {onDelete && (
-                          <Tooltip title="Delete" arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => onDelete(item)}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                bgcolor: bgBase,
-                                color: '#EF5350',
-                                boxShadow: getNeumorph(isDark, 'soft'),
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  bgcolor: '#EF5350',
-                                  color: '#fff',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: `0 4px 12px ${alpha('#EF5350', 0.4)}`,
-                                },
-                                '&:active': {
-                                  transform: 'translateY(0)',
-                                  boxShadow: getNeumorphInset(isDark),
-                                },
-                              }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
+                      {renderActions ? (
+                        renderActions(item)
+                      ) : (
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          {onEdit && (
+                            <Tooltip title="Edit" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => onEdit(item)}
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 0.75,
+                                  bgcolor: 'transparent',
+                                  color: accentColor,
+                                  border: '1px solid',
+                                  borderColor: alpha(accentColor, 0.35),
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    bgcolor: alpha(accentColor, 0.08),
+                                    borderColor: accentColor,
+                                  },
+                                }}
+                              >
+                                <EditIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {onDelete && (
+                            <Tooltip title="Delete" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => onDelete(item)}
+                                sx={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 0.75,
+                                  bgcolor: 'transparent',
+                                  color: '#EF5350',
+                                  border: '1px solid',
+                                  borderColor: alpha('#EF5350', 0.35),
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    bgcolor: alpha('#EF5350', 0.08),
+                                    borderColor: '#EF5350',
+                                  },
+                                }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

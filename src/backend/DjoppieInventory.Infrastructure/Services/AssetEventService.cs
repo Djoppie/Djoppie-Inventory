@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -146,5 +147,68 @@ public class AssetEventService : IAssetEventService
             performedByEmail,
             notes,
             cancellationToken);
+    }
+
+    public async Task<AssetEvent?> CreateIntuneSnapshotEventAsync(
+        Asset asset,
+        string reason,
+        string performedBy,
+        string? performedByEmail,
+        CancellationToken cancellationToken = default)
+    {
+        // Only create snapshot if there's Intune data to preserve
+        if (!asset.IntuneEnrollmentDate.HasValue &&
+            !asset.IntuneLastCheckIn.HasValue &&
+            !asset.IntuneCertificateExpiry.HasValue)
+        {
+            _logger.LogDebug(
+                "No Intune data to snapshot for asset {AssetId} ({AssetCode})",
+                asset.Id, asset.AssetCode);
+            return null;
+        }
+
+        // Create a snapshot object with all relevant data
+        var snapshot = new
+        {
+            Owner = asset.Owner,
+            Status = asset.Status.ToString(),
+            IntuneEnrollmentDate = asset.IntuneEnrollmentDate,
+            IntuneLastCheckIn = asset.IntuneLastCheckIn,
+            IntuneCertificateExpiry = asset.IntuneCertificateExpiry,
+            IntuneSyncedAt = asset.IntuneSyncedAt,
+            SnapshotReason = reason,
+            SnapshotTakenAt = DateTime.UtcNow
+        };
+
+        var snapshotJson = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+        var description = $"Intune data snapshot: {reason}";
+        if (!string.IsNullOrWhiteSpace(asset.Owner))
+        {
+            description += $" (Owner: {asset.Owner})";
+        }
+
+        var assetEvent = await CreateEventAsync(
+            asset.Id,
+            AssetEventType.IntuneSnapshot,
+            description,
+            oldValue: snapshotJson,
+            newValue: null,
+            performedBy,
+            performedByEmail,
+            notes: $"Enrollment: {asset.IntuneEnrollmentDate?.ToString("yyyy-MM-dd") ?? "N/A"}, " +
+                   $"Last Check-in: {asset.IntuneLastCheckIn?.ToString("yyyy-MM-dd HH:mm") ?? "N/A"}, " +
+                   $"Certificate Expiry: {asset.IntuneCertificateExpiry?.ToString("yyyy-MM-dd") ?? "N/A"}",
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Created Intune snapshot for asset {AssetId} ({AssetCode}): {Reason}",
+            asset.Id, asset.AssetCode, reason);
+
+        return assetEvent;
     }
 }

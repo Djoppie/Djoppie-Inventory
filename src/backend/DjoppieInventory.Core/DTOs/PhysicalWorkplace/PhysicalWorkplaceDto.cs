@@ -44,6 +44,11 @@ public record PhysicalWorkplaceDto(
     string? CurrentOccupantName,
     string? CurrentOccupantEmail,
     DateTime? OccupiedSince,
+    // Occupant's device info
+    string? OccupantDeviceSerial,
+    string? OccupantDeviceBrand,
+    string? OccupantDeviceModel,
+    string? OccupantDeviceAssetCode,
     bool IsActive,
     int FixedAssetCount,
     DateTime CreatedAt,
@@ -57,11 +62,21 @@ public record PhysicalWorkplaceSummaryDto(
     int Id,
     string Code,
     string Name,
+    int? BuildingId,
     string? BuildingName,
     int? ServiceId,
     string? ServiceName,
+    string? Floor,
     string? CurrentOccupantName,
-    bool IsActive
+    string? CurrentOccupantEmail,
+    bool IsActive,
+    // Equipment summary
+    int FixedAssetCount,
+    bool HasDockingStation,
+    int MonitorCount,
+    string? DockingStationAssetCode,
+    string? Monitor1AssetCode,
+    string? Monitor2AssetCode
 );
 
 // ============================================================
@@ -145,4 +160,113 @@ public record EquipmentTypeStatusDto(
     int FilledSlots,
     int EmptySlots,
     decimal FillRate
+);
+
+// ============================================================
+// Workplace Gap Analysis DTOs
+// ============================================================
+
+/// <summary>
+/// Summary statistics for workplace gap analysis
+/// </summary>
+public record WorkplaceGapAnalysisDto(
+    /// <summary>Total laptops with status InGebruik that have an owner</summary>
+    int TotalLaptopsInUse,
+    /// <summary>Laptop owners who have a matching PhysicalWorkplace</summary>
+    int OwnersWithWorkplace,
+    /// <summary>Laptop owners who don't have a PhysicalWorkplace</summary>
+    int OwnersWithoutWorkplace,
+    /// <summary>Percentage of owners without workplace</summary>
+    decimal GapPercentage,
+    /// <summary>List of owners without workplaces, grouped by service</summary>
+    IEnumerable<WorkplaceGapByServiceDto> GapsByService,
+    /// <summary>Detailed list of orphan owners (limited)</summary>
+    IEnumerable<OrphanLaptopOwnerDto> OrphanOwners,
+    /// <summary>Debug info for troubleshooting</summary>
+    WorkplaceGapDebugDto? Debug = null
+);
+
+/// <summary>
+/// Debug information for troubleshooting gap analysis
+/// </summary>
+public record WorkplaceGapDebugDto(
+    /// <summary>Total active workplaces</summary>
+    int TotalActiveWorkplaces,
+    /// <summary>Workplaces with CurrentOccupantEmail set</summary>
+    int WorkplacesWithOccupant,
+    /// <summary>Workplaces without CurrentOccupantEmail</summary>
+    int WorkplacesWithoutOccupant,
+    /// <summary>Sample laptop owner emails (first 3)</summary>
+    IEnumerable<string> SampleLaptopOwners,
+    /// <summary>Sample occupant emails (first 3)</summary>
+    IEnumerable<string> SampleOccupantEmails
+);
+
+/// <summary>
+/// Workplace gap statistics grouped by service/department
+/// </summary>
+public record WorkplaceGapByServiceDto(
+    int? ServiceId,
+    string? ServiceName,
+    string? ServiceCode,
+    int OwnersWithoutWorkplace,
+    int TotalLaptopOwners
+);
+
+/// <summary>
+/// Details about a laptop owner who doesn't have a PhysicalWorkplace
+/// </summary>
+public record OrphanLaptopOwnerDto(
+    string OwnerEmail,
+    string? OwnerName,
+    string? JobTitle,
+    string? OfficeLocation,
+    int? ServiceId,
+    string? ServiceName,
+    int LaptopAssetId,
+    string LaptopAssetCode,
+    string? LaptopBrand,
+    string? LaptopModel,
+    string? LaptopSerialNumber
+);
+
+/// <summary>
+/// Request DTO for auto-creating missing workplaces
+/// </summary>
+public record AutoCreateMissingWorkplacesDto(
+    /// <summary>Default building ID for new workplaces (required)</summary>
+    int DefaultBuildingId,
+    /// <summary>Optional: only create for specific service IDs</summary>
+    int[]? ServiceIds = null,
+    /// <summary>Optional: limit number to create (default: 100)</summary>
+    int MaxToCreate = 100,
+    /// <summary>Workplace type for new workplaces (default: Laptop)</summary>
+    WorkplaceType WorkplaceType = WorkplaceType.Laptop,
+    /// <summary>Number of monitors for new workplaces (default: 2)</summary>
+    int MonitorCount = 2,
+    /// <summary>Whether new workplaces have docking stations (default: true)</summary>
+    bool HasDockingStation = true
+);
+
+/// <summary>
+/// Result of auto-creating missing workplaces
+/// </summary>
+public record AutoCreateWorkplacesResultDto(
+    int TotalProcessed,
+    int SuccessCount,
+    int ErrorCount,
+    IEnumerable<AutoCreateWorkplaceItemResult> Results
+);
+
+/// <summary>
+/// Result for a single auto-created workplace
+/// </summary>
+public record AutoCreateWorkplaceItemResult(
+    int? WorkplaceId,
+    string WorkplaceCode,
+    string WorkplaceName,
+    string OwnerEmail,
+    string? OwnerName,
+    bool Success,
+    string? ErrorMessage
 );

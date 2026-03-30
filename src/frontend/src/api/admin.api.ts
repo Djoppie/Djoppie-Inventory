@@ -16,8 +16,13 @@ import {
   Service,
   CreateServiceDto,
   UpdateServiceDto,
+  Employee,
+  CreateEmployeeDto,
+  UpdateEmployeeDto,
+  EmployeeSyncResult,
   SyncResult,
 } from '../types/admin.types';
+import { Asset } from '../types/asset.types';
 
 // ============================================================
 // Asset Types API
@@ -190,6 +195,139 @@ export const servicesApi = {
 
   syncFromEntra: async (): Promise<SyncResult> => {
     const response = await apiClient.post<SyncResult>('/admin/services/sync-from-entra');
+    return response.data;
+  },
+
+  downloadTemplate: async (): Promise<void> => {
+    const response = await apiClient.get('/admin/services/template', {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'services-template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
+  exportCsv: async (): Promise<void> => {
+    const response = await apiClient.get('/admin/services/export', {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `services-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
+  importCsv: async (file: File): Promise<ServiceCsvImportResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ServiceCsvImportResult>(
+      '/admin/services/import',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+    return response.data;
+  },
+
+  deleteAll: async (): Promise<{ message: string; deletedCount: number }> => {
+    const response = await apiClient.delete<{ message: string; deletedCount: number }>(
+      '/admin/services/all',
+      { params: { confirm: true } }
+    );
+    return response.data;
+  },
+
+  deleteMany: async (ids: number[]): Promise<{ deleted: number; errors: string[] }> => {
+    const results = await Promise.allSettled(
+      ids.map((id) => apiClient.delete(`/admin/services/${id}`))
+    );
+    const deleted = results.filter((r) => r.status === 'fulfilled').length;
+    const errors = results
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r) => r.reason?.message || 'Unknown error');
+    return { deleted, errors };
+  },
+};
+
+// Service CSV Import Result types
+export interface ServiceCsvImportRowResult {
+  rowNumber: number;
+  code: string;
+  name: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface ServiceCsvImportResult {
+  totalRows: number;
+  successCount: number;
+  errorCount: number;
+  isFullySuccessful: boolean;
+  results: ServiceCsvImportRowResult[];
+}
+
+// ============================================================
+// Employees API
+// ============================================================
+
+export const employeesApi = {
+  getAll: async (includeInactive = true, serviceId?: number): Promise<Employee[]> => {
+    const response = await apiClient.get<Employee[]>('/admin/employees', {
+      params: { includeInactive, serviceId },
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<Employee> => {
+    const response = await apiClient.get<Employee>(`/admin/employees/${id}`);
+    return response.data;
+  },
+
+  getByEntraId: async (entraId: string): Promise<Employee> => {
+    const response = await apiClient.get<Employee>(`/admin/employees/entra/${encodeURIComponent(entraId)}`);
+    return response.data;
+  },
+
+  search: async (query: string, maxResults = 20): Promise<Employee[]> => {
+    const response = await apiClient.get<Employee[]>('/admin/employees/search', {
+      params: { q: query, maxResults },
+    });
+    return response.data;
+  },
+
+  create: async (data: CreateEmployeeDto): Promise<Employee> => {
+    const response = await apiClient.post<Employee>('/admin/employees', data);
+    return response.data;
+  },
+
+  update: async (id: number, data: UpdateEmployeeDto): Promise<Employee> => {
+    const response = await apiClient.put<Employee>(`/admin/employees/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/admin/employees/${id}`);
+  },
+
+  getAssets: async (id: number): Promise<Asset[]> => {
+    const response = await apiClient.get<Asset[]>(`/admin/employees/${id}/assets`);
+    return response.data;
+  },
+
+  syncFromEntra: async (): Promise<EmployeeSyncResult> => {
+    const response = await apiClient.post<EmployeeSyncResult>('/admin/employees/sync');
     return response.data;
   },
 };

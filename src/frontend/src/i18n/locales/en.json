@@ -32,7 +32,9 @@
     "all": "All",
     "processing": "Processing...",
     "confirm": "Confirm",
-    "clear": "Clear"
+    "clear": "Clear",
+    "none": "None",
+    "noResults": "No results found"
   },
   "validation": {
     "required": "Required field"
@@ -180,6 +182,8 @@
     "dummyAsset": "Dummy asset (test)",
     "installationLocation": "Installation Location",
     "installationLocationHint": "Specific location details (e.g., room number, floor)",
+    "physicalWorkplace": "Physical Workplace",
+    "physicalWorkplaceHint": "Select the workplace where this asset is fixed",
     "deviceLinkedToUser": "Device linked to selected user",
     "deviceLinkedToOther": "Device linked to another user",
     "deviceNotLinked": "Device not linked to any user in Intune",
@@ -191,7 +195,11 @@
     "lookupDeviceBySerial": "Look up device by serial number",
     "deviceNotFoundBySerial": "No device found with this serial number in Intune",
     "deviceFound": "Device found",
-    "assetNameAutoFetched": "DeviceName from Intune - auto-fetched by serial number"
+    "assetNameAutoFetched": "DeviceName from Intune - auto-fetched by serial number",
+    "category": "Category",
+    "categoryHint": "Filter asset types by category",
+    "assetType": "Asset Type",
+    "assetTypeHint": "Select the type of asset"
   },
   "bulkCreate": {
     "title": "Bulk Create Assets",
@@ -1059,7 +1067,9 @@
       "onboarding": "Onboarding",
       "onboardingDesc": "New employee gets laptop (no old device)",
       "swap": "Swap",
-      "swapDesc": "Replace old laptop with new one"
+      "swapDesc": "Replace old laptop with new one",
+      "offboarding": "Offboarding",
+      "offboardingDesc": "Employee leaves, device is returned"
     },
     "user": {
       "title": "User",
@@ -1094,7 +1104,8 @@
       "noWorkplace": "No workplace",
       "updateEquipment": "Update workplace equipment",
       "currentOccupant": "Current occupant",
-      "willUpdateOccupant": "Occupant will be updated to new user"
+      "willUpdateOccupant": "Occupant will be updated to new user",
+      "clearOccupant": "Clear occupant from workplace"
     },
     "equipment": {
       "title": "Workplace Equipment",
@@ -1114,15 +1125,28 @@
       "confirmTitle": "Confirm Deployment",
       "confirmSwap": "You are about to swap the laptop for {{userName}}.",
       "confirmOnboarding": "You are about to onboard {{userName}} with a new laptop.",
+      "confirmOffboarding": "You are about to offboard {{userName}} and return their device.",
       "oldDevice": "Old device: {{device}} → {{status}}",
       "newDevice": "New device: {{device}}",
-      "workplaceUpdate": "Workplace: {{workplace}}"
+      "workplaceUpdate": "Workplace: {{workplace}}",
+      "workplaceClearOccupant": "Workplace {{workplace}}: occupant will be cleared"
     },
     "success": {
       "title": "Deployment Successful",
       "swapComplete": "Laptop swap completed successfully for {{userName}}",
       "onboardingComplete": "Onboarding completed successfully for {{userName}}",
+      "offboardingComplete": "Offboarding completed successfully for {{userName}}",
       "viewHistory": "View history"
+    },
+    "result": {
+      "oldDevice": "Old device",
+      "newDevice": "New device",
+      "workplace": "Workplace",
+      "ownerCleared": "Owner {{owner}} cleared",
+      "assignedTo": "Assigned to {{owner}}",
+      "occupantUpdated": "Occupant changed from {{from}} to {{to}}",
+      "occupantCleared": "Occupant {{from}} cleared",
+      "completedAt": "Completed at {{time}}"
     },
     "error": {
       "title": "Deployment Failed",
@@ -1135,6 +1159,7 @@
     "history": {
       "title": "Deployment History",
       "subtitle": "Overview of all laptop swaps and onboardings",
+      "items": "items",
       "filters": "Filters",
       "dateRange": "Date range",
       "startDate": "Start date",

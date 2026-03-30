@@ -18,13 +18,19 @@ public class AssetDto
     public int? ServiceId { get; set; }
     public ServiceInfo? Service { get; set; }
     public string? InstallationLocation { get; set; }
+    public int? PhysicalWorkplaceId { get; set; }
+    public PhysicalWorkplaceInfo? PhysicalWorkplace { get; set; }
+    public int? BuildingId { get; set; }
+    public BuildingInfo? Building { get; set; }
 
     // Legacy fields (for historical data)
     public string? LegacyBuilding { get; set; }
     public string? LegacyDepartment { get; set; }
 
     // User assignment fields
-    public string? Owner { get; set; }
+    public int? EmployeeId { get; set; }
+    public EmployeeInfoDto? Employee { get; set; }
+    public string? Owner { get; set; } // Legacy field - kept for backwards compatibility
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
 
@@ -38,6 +44,13 @@ public class AssetDto
     public DateTime? PurchaseDate { get; set; }
     public DateTime? WarrantyExpiry { get; set; }
     public DateTime? InstallationDate { get; set; }
+
+    // Intune integration fields (synced from Microsoft Intune for laptops/desktops)
+    public DateTime? IntuneEnrollmentDate { get; set; }
+    public DateTime? IntuneLastCheckIn { get; set; }
+    public DateTime? IntuneCertificateExpiry { get; set; }
+    public DateTime? IntuneSyncedAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

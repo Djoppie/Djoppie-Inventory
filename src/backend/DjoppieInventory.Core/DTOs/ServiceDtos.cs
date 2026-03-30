@@ -36,6 +36,7 @@ public record CreateServiceDto(
 /// DTO for updating an existing service
 /// </summary>
 public record UpdateServiceDto(
+    string? Code,
     string Name,
     int? SectorId,
     bool IsActive,

@@ -27,6 +27,7 @@ import LaptopIcon from '@mui/icons-material/Laptop';
 import DeskIcon from '@mui/icons-material/Desk';
 import type { RolloutWorkplace } from '../../types/rollout';
 import { ROLLOUT_TIMING } from '../../constants/rollout.constants';
+import { SERVICE_COLOR } from '../../constants/filterColors';
 
 interface WorkplaceCompletionDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop', 'desktop'];
 // Assignment colors
 const ASSIGNMENT_COLORS = {
   user: '#9c27b0',      // Purple - assigned to user
-  workplace: '#009688', // Teal - assigned to physical workplace
+  workplace: SERVICE_COLOR, // Teal - assigned to physical workplace
 };
 
 /**

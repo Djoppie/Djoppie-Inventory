@@ -111,6 +111,29 @@ public class Asset
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    // ===== Intune Integration Fields =====
+    // These fields are synced from Microsoft Intune for laptops/desktops
+
+    /// <summary>
+    /// Date when the device was enrolled in Intune (synced from Intune)
+    /// </summary>
+    public DateTime? IntuneEnrollmentDate { get; set; }
+
+    /// <summary>
+    /// Last check-in/sync time with Intune (synced from Intune)
+    /// </summary>
+    public DateTime? IntuneLastCheckIn { get; set; }
+
+    /// <summary>
+    /// Management certificate expiry date (synced from Intune)
+    /// </summary>
+    public DateTime? IntuneCertificateExpiry { get; set; }
+
+    /// <summary>
+    /// Timestamp when Intune data was last synced
+    /// </summary>
+    public DateTime? IntuneSyncedAt { get; set; }
+
     // ===== New Relational Properties =====
 
     /// <summary>
@@ -122,6 +145,12 @@ public class Asset
     /// Foreign key to the service/department (optional)
     /// </summary>
     public int? ServiceId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the employee this asset is assigned to (optional).
+    /// For user-assigned assets (laptops), replaces the free-text Owner field.
+    /// </summary>
+    public int? EmployeeId { get; set; }
 
     /// <summary>
     /// Specific location within the building (e.g., "Room 201", "2nd Floor IT Office").
@@ -167,6 +196,12 @@ public class Asset
     /// The service/department this asset is assigned to
     /// </summary>
     public Service? Service { get; set; }
+
+    /// <summary>
+    /// The employee this asset is assigned to (optional).
+    /// For user-assigned assets (laptops), provides a proper FK relationship.
+    /// </summary>
+    public Employee? Employee { get; set; }
 
     /// <summary>
     /// Historical events and changes for this asset

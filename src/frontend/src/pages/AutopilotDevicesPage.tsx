@@ -21,6 +21,9 @@ import {
   TextField,
   InputAdornment,
   CircularProgress,
+  alpha,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -32,6 +35,7 @@ import { intuneApi } from '../api/intune.api';
 import { AutopilotDevice } from '../types/graph.types';
 import Loading from '../components/common/Loading';
 import { buildRoute } from '../constants/routes';
+import { ASSET_COLOR } from '../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {
@@ -50,18 +54,20 @@ const scannerCardSx = {
   },
 };
 
-// Consistent icon button style
-const iconButtonSx = {
+// Outlined icon button style
+const outlinedIconButtonSx = {
+  width: 36,
+  height: 36,
+  borderRadius: 1,
+  color: 'text.secondary',
+  bgcolor: 'transparent',
   border: '1px solid',
   borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  transition: 'all 0.15s ease',
   '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+    color: ASSET_COLOR,
+    bgcolor: alpha(ASSET_COLOR, 0.08),
+    borderColor: ASSET_COLOR,
   },
 };
 
@@ -100,6 +106,8 @@ const getProfileStatusColor = (status?: string): 'success' | 'warning' | 'error'
 const AutopilotDevicesPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: devices, isLoading, error, refetch, isFetching } = useQuery({
@@ -140,12 +148,14 @@ const AutopilotDevicesPage = () => {
         >
           {error instanceof Error ? error.message : t('common.error', 'Failed to load Autopilot devices')}
         </Alert>
-        <IconButton
-          onClick={() => navigate('/')}
-          sx={{ ...iconButtonSx, mt: 2 }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
+        <Tooltip title={t('common.back', 'Back')} arrow>
+          <IconButton
+            onClick={() => navigate('/')}
+            sx={{ ...outlinedIconButtonSx, mt: 2 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
     );
   }
@@ -153,18 +163,10 @@ const AutopilotDevicesPage = () => {
   return (
     <Box>
       {/* Back Button */}
-      <Tooltip title={t('common.back', 'Back')}>
+      <Tooltip title={t('common.back', 'Back')} arrow>
         <IconButton
           onClick={() => navigate(-1)}
-          sx={{
-            ...iconButtonSx,
-            mb: 2,
-            color: 'text.secondary',
-            '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
-            },
-          }}
+          sx={{ ...outlinedIconButtonSx, mb: 2 }}
         >
           <ArrowBackIcon />
         </IconButton>
@@ -211,7 +213,7 @@ const AutopilotDevicesPage = () => {
                 <IconButton
                   onClick={() => refetch()}
                   disabled={isFetching}
-                  sx={iconButtonSx}
+                  sx={outlinedIconButtonSx}
                 >
                   {isFetching ? <CircularProgress size={20} /> : <RefreshIcon />}
                 </IconButton>
@@ -246,110 +248,261 @@ const AutopilotDevicesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Devices Table */}
-      <TableContainer component={Paper} elevation={0} sx={{ ...scannerCardSx, p: 0 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ bgcolor: 'action.hover' }}>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.serialNumber', 'Serial Number')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.model', 'Model')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.manufacturer', 'Manufacturer')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.assignedUser', 'Assigned User')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.groupTag', 'Group Tag')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.enrollmentState', 'Enrollment')}</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>{t('autopilot.profileStatus', 'Profile')}</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700 }}>{t('common.actions', 'Actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredDevices?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">
-                    {searchTerm
-                      ? t('autopilot.noResults', 'No devices match your search')
-                      : t('autopilot.noDevices', 'No Autopilot devices found')}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredDevices?.map((device: AutopilotDevice) => (
-                <TableRow
-                  key={device.id}
-                  hover
-                  sx={{
-                    '&:hover': {
-                      bgcolor: 'action.selected',
-                    },
-                  }}
-                >
-                  <TableCell>
-                    <Typography fontFamily="monospace" fontWeight={600}>
+      {/* Mobile/Tablet: Card View */}
+      {isTablet && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filteredDevices?.length === 0 ? (
+            <Card elevation={0} sx={scannerCardSx}>
+              <CardContent sx={{ py: 4, textAlign: 'center' }}>
+                <RocketLaunchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+                <Typography color="text.secondary">
+                  {searchTerm
+                    ? t('autopilot.noResults', 'No devices match your search')
+                    : t('autopilot.noDevices', 'No Autopilot devices found')}
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredDevices?.map((device: AutopilotDevice) => (
+              <Card
+                key={device.id}
+                elevation={0}
+                sx={{
+                  ...scannerCardSx,
+                  mb: 0,
+                }}
+              >
+                <CardContent sx={{ p: 2 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+                    <Typography
+                      fontFamily="monospace"
+                      fontWeight={700}
+                      sx={{ fontSize: '0.9rem', color: ASSET_COLOR }}
+                    >
                       {device.serialNumber || '-'}
                     </Typography>
-                  </TableCell>
-                  <TableCell>{device.model || '-'}</TableCell>
-                  <TableCell>{device.manufacturer || '-'}</TableCell>
-                  <TableCell>
-                    {device.userPrincipalName ? (
-                      <Tooltip title={device.userPrincipalName}>
-                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                          {device.displayName || device.userPrincipalName}
-                        </Typography>
-                      </Tooltip>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        {t('autopilot.notAssigned', 'Not assigned')}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {device.groupTag ? (
-                      <Chip label={device.groupTag} size="small" variant="outlined" />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={device.enrollmentState || 'Unknown'}
-                      size="small"
-                      color={getEnrollmentStateColor(device.enrollmentState)}
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={device.deploymentProfileAssignmentStatus || 'Unknown'}
-                      size="small"
-                      color={getProfileStatusColor(device.deploymentProfileAssignmentStatus)}
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
                     <Tooltip title={t('autopilot.viewTimeline', 'View Provisioning Timeline')}>
                       <IconButton
                         size="small"
                         onClick={() => device.serialNumber && handleViewTimeline(device.serialNumber)}
                         disabled={!device.serialNumber}
-                        sx={{
-                          color: 'info.main',
-                          '&:hover': {
-                            bgcolor: 'info.main',
-                            color: 'white',
-                          },
-                        }}
+                        sx={outlinedIconButtonSx}
                       >
-                        <TimelineIcon fontSize="small" />
+                        <TimelineIcon sx={{ fontSize: 18 }} />
                       </IconButton>
                     </Tooltip>
+                  </Stack>
+
+                  <Typography variant="body2" fontWeight={500} sx={{ mb: 0.5 }}>
+                    {device.model || '-'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                    {device.manufacturer || '-'}
+                  </Typography>
+
+                  {device.userPrincipalName && (
+                    <Box sx={{ mb: 1.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('autopilot.assignedUser', 'Assigned User')}:
+                      </Typography>
+                      <Typography variant="body2">
+                        {device.displayName || device.userPrincipalName}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
+                    {device.groupTag && (
+                      <Chip label={device.groupTag} size="small" variant="outlined" sx={{ height: 22 }} />
+                    )}
+                    <Chip
+                      label={device.enrollmentState || 'Unknown'}
+                      size="small"
+                      color={getEnrollmentStateColor(device.enrollmentState)}
+                      variant="outlined"
+                      sx={{ height: 22 }}
+                    />
+                    <Chip
+                      label={device.deploymentProfileAssignmentStatus || 'Unknown'}
+                      size="small"
+                      color={getProfileStatusColor(device.deploymentProfileAssignmentStatus)}
+                      variant="outlined"
+                      sx={{ height: 22 }}
+                    />
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      )}
+
+      {/* Desktop: Table View */}
+      {!isTablet && (
+        <TableContainer
+          component={Paper}
+          elevation={0}
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Table size="small">
+            <TableHead>
+              <TableRow
+                sx={{
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? alpha(ASSET_COLOR, 0.08)
+                      : alpha(ASSET_COLOR, 0.04),
+                  borderBottom: '2px solid',
+                  borderColor: ASSET_COLOR,
+                }}
+              >
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.serialNumber', 'Serial Number')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.model', 'Model')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.manufacturer', 'Manufacturer')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.assignedUser', 'Assigned User')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.groupTag', 'Group Tag')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.enrollmentState', 'Enrollment')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('autopilot.profileStatus', 'Profile')}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
+                  {t('common.actions', 'Actions')}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredDevices?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">
+                      {searchTerm
+                        ? t('autopilot.noResults', 'No devices match your search')
+                        : t('autopilot.noDevices', 'No Autopilot devices found')}
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : (
+                filteredDevices?.map((device: AutopilotDevice, index: number) => (
+                  <TableRow
+                    key={device.id}
+                    hover
+                    sx={{
+                      bgcolor: (theme) =>
+                        index % 2 === 1
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.02)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                          : 'transparent',
+                      '&:hover': {
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? alpha(ASSET_COLOR, 0.08)
+                            : alpha(ASSET_COLOR, 0.04),
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                      <Typography
+                        fontFamily="monospace"
+                        fontWeight={600}
+                        sx={{ fontSize: '0.8rem', color: ASSET_COLOR }}
+                      >
+                        {device.serialNumber || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>{device.model || '-'}</TableCell>
+                    <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>{device.manufacturer || '-'}</TableCell>
+                    <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
+                      {device.userPrincipalName ? (
+                        <Tooltip title={device.userPrincipalName}>
+                          <Typography variant="body2" noWrap sx={{ maxWidth: 200, fontSize: '0.85rem' }}>
+                            {device.displayName || device.userPrincipalName}
+                          </Typography>
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                          {t('autopilot.notAssigned', 'Not assigned')}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ py: 1 }}>
+                      {device.groupTag ? (
+                        <Chip label={device.groupTag} size="small" variant="outlined" sx={{ height: 22 }} />
+                      ) : (
+                        <Typography sx={{ fontSize: '0.85rem' }}>-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell sx={{ py: 1 }}>
+                      <Chip
+                        label={device.enrollmentState || 'Unknown'}
+                        size="small"
+                        color={getEnrollmentStateColor(device.enrollmentState)}
+                        variant="outlined"
+                        sx={{ height: 22 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ py: 1 }}>
+                      <Chip
+                        label={device.deploymentProfileAssignmentStatus || 'Unknown'}
+                        size="small"
+                        color={getProfileStatusColor(device.deploymentProfileAssignmentStatus)}
+                        variant="outlined"
+                        sx={{ height: 22 }}
+                      />
+                    </TableCell>
+                    <TableCell align="center" sx={{ py: 1 }}>
+                      <Tooltip title={t('autopilot.viewTimeline', 'View Provisioning Timeline')}>
+                        <IconButton
+                          size="small"
+                          onClick={() => device.serialNumber && handleViewTimeline(device.serialNumber)}
+                          disabled={!device.serialNumber}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 0.75,
+                            color: 'info.main',
+                            bgcolor: 'transparent',
+                            border: '1px solid',
+                            borderColor: (theme) => alpha(theme.palette.info.main, 0.35),
+                            transition: 'all 0.15s ease',
+                            '&:hover': {
+                              bgcolor: (theme) => alpha(theme.palette.info.main, 0.08),
+                              borderColor: 'info.main',
+                            },
+                            '&.Mui-disabled': {
+                              borderColor: 'divider',
+                              color: 'text.disabled',
+                            },
+                          }}
+                        >
+                          <TimelineIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
 };

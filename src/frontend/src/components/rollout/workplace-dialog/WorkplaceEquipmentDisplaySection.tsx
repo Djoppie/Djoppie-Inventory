@@ -27,6 +27,7 @@ import PlaceIcon from '@mui/icons-material/Place';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import type { PhysicalWorkplace } from '../../../types/physicalWorkplace.types';
+import { SERVICE_COLOR, BUILDING_COLOR } from '../../../constants/filterColors';
 
 interface EquipmentSlot {
   type: 'docking' | 'monitor1' | 'monitor2' | 'monitor3' | 'keyboard' | 'mouse';
@@ -151,12 +152,12 @@ export function WorkplaceEquipmentDisplaySection({
     fontWeight: 600,
     border: 'none',
     cursor: onEquipmentClick ? 'pointer' : 'default',
-    color: '#009688',
+    color: SERVICE_COLOR,
     boxShadow: isDark
       ? '2px 2px 4px #161a1d, -2px -2px 4px #262c33'
       : '2px 2px 4px #c5cad0, -2px -2px 4px #ffffff',
     transition: 'all 0.2s ease',
-    '& .MuiChip-icon': { color: '#009688' },
+    '& .MuiChip-icon': { color: SERVICE_COLOR },
     ...(onEquipmentClick && {
       '&:hover': {
         transform: 'translateY(-2px)',
@@ -190,12 +191,12 @@ export function WorkplaceEquipmentDisplaySection({
   return (
     <Box sx={containerSx}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-        <PlaceIcon sx={{ color: '#009688', fontSize: '1rem' }} />
+        <PlaceIcon sx={{ color: SERVICE_COLOR, fontSize: '1rem' }} />
         <Typography
           variant="caption"
           fontWeight={700}
           sx={{
-            color: '#009688',
+            color: SERVICE_COLOR,
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
           }}
@@ -228,9 +229,9 @@ export function WorkplaceEquipmentDisplaySection({
               fontSize: '0.6rem',
               fontWeight: 600,
               bgcolor: 'rgba(255, 152, 0, 0.12)',
-              color: '#f59e0b',
+              color: BUILDING_COLOR,
               border: '1px solid rgba(255, 152, 0, 0.3)',
-              '& .MuiChip-icon': { color: '#f59e0b', marginLeft: '4px' },
+              '& .MuiChip-icon': { color: BUILDING_COLOR, marginLeft: '4px' },
             }}
           />
         )}
@@ -238,7 +239,7 @@ export function WorkplaceEquipmentDisplaySection({
 
       {isLoading ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CircularProgress size={16} sx={{ color: '#009688' }} />
+          <CircularProgress size={16} sx={{ color: SERVICE_COLOR }} />
           <Typography variant="caption" color="text.secondary">
             Werkplek apparatuur laden...
           </Typography>

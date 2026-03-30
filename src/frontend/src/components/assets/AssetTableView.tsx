@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -26,10 +26,13 @@ import {
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
+import { ASSET_COLOR, SERVICE_COLOR } from '../../constants/filterColors';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import AppsIcon from '@mui/icons-material/Apps';
 import DevicesIcon from '@mui/icons-material/Devices';
+import BusinessIcon from '@mui/icons-material/Business';
+import PersonIcon from '@mui/icons-material/Person';
 
 interface AssetTableViewProps {
   assets: Asset[];
@@ -39,7 +42,33 @@ interface AssetTableViewProps {
   onSelectAll?: (selected: boolean) => void;
 }
 
-type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'purchaseDate' | 'model' | 'installationLocation' | 'owner' | 'status';
+type SortField = 'assetCode' | 'serialNumber' | 'assetType' | 'purchaseDate' | 'model' | 'assignment' | 'owner' | 'status';
+
+// Helper to check if asset is a laptop/notebook (user-assigned)
+const isUserAssignedAsset = (asset: Asset): boolean => {
+  const category = asset.category?.toLowerCase() || '';
+  const assetTypeName = asset.assetType?.name?.toLowerCase() || '';
+  const assetTypeCode = asset.assetType?.code?.toLowerCase() || '';
+
+  const laptopKeywords = ['laptop', 'notebook', 'not', 'lap'];
+  return laptopKeywords.some(keyword =>
+    category.includes(keyword) ||
+    assetTypeName.includes(keyword) ||
+    assetTypeCode.includes(keyword)
+  );
+};
+
+// Helper to shorten asset code for compact display
+// Format: DOCK-26-DELL-00004 → D-00004 (first letter + last segment)
+const shortenAssetCode = (code: string): string => {
+  if (!code) return '-';
+  const parts = code.split('-');
+  if (parts.length < 2) return code;
+  // Get first letter of type and last number segment
+  const prefix = parts[0]?.[0] || '';
+  const number = parts[parts.length - 1] || '';
+  return `${prefix}-${number}`;
+};
 type SortOrder = 'asc' | 'desc';
 
 // Responsive display styles for columns
@@ -103,6 +132,10 @@ const AssetTableView = ({
     } else if (sortField === 'purchaseDate') {
       aValue = a.purchaseDate ? new Date(a.purchaseDate).getTime() : 0;
       bValue = b.purchaseDate ? new Date(b.purchaseDate).getTime() : 0;
+    } else if (sortField === 'assignment') {
+      // Sort by employee displayName for laptops (fallback to owner), workplace code for fixed assets
+      aValue = isUserAssignedAsset(a) ? (a.employee?.displayName ?? a.owner ?? '') : (a.physicalWorkplace?.code ?? '');
+      bValue = isUserAssignedAsset(b) ? (b.employee?.displayName ?? b.owner ?? '') : (b.physicalWorkplace?.code ?? '');
     } else {
       aValue = (a[sortField as keyof typeof a] as string) ?? '';
       bValue = (b[sortField as keyof typeof b] as string) ?? '';
@@ -191,7 +224,7 @@ const AssetTableView = ({
           },
         }}
       >
-        <Table sx={{ minWidth: { xs: 500, sm: 700, md: 900, lg: 1100 } }}>
+        <Table sx={{ minWidth: { xs: 380, sm: 550, md: 750, lg: 950 } }}>
           <TableHead>
             <TableRow>
               {/* Selection Checkbox Column */}
@@ -212,7 +245,7 @@ const AssetTableView = ({
                     size="small"
                     sx={{
                       '&.Mui-checked': {
-                        color: '#FF7700',
+                        color: ASSET_COLOR,
                       },
                     }}
                   />
@@ -230,10 +263,10 @@ const AssetTableView = ({
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
                     '&:hover': {
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                     },
                     '&.Mui-active': {
-                      color: '#FF7700',
+                      color: ASSET_COLOR,
                       fontWeight: 700,
                     },
                     '& .MuiTableSortLabel-icon': {
@@ -256,8 +289,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -275,31 +308,12 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
                   Type
-                </TableSortLabel>
-              </TableCell>
-
-              {/* Purchase Date */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
-                <TableSortLabel
-                  active={sortField === 'purchaseDate'}
-                  direction={sortField === 'purchaseDate' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('purchaseDate')}
-                  IconComponent={UnfoldMoreIcon}
-                  sx={{
-                    fontSize: 'inherit',
-                    fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
-                    '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
-                  }}
-                >
-                  Aankoop
                 </TableSortLabel>
               </TableCell>
 
@@ -313,8 +327,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -322,8 +336,8 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Model */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
+              {/* Model - Hidden on smaller screens to make room for Assignment */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
                 <TableSortLabel
                   active={sortField === 'model'}
                   direction={sortField === 'model' ? sortOrder : 'asc'}
@@ -332,8 +346,8 @@ const AssetTableView = ({
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
@@ -341,41 +355,41 @@ const AssetTableView = ({
                 </TableSortLabel>
               </TableCell>
 
-              {/* Location */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
+              {/* Toewijzing (Owner for laptops, Workplace for fixed assets) - Always visible */}
+              <TableCell sx={{ ...headerCellSx }}>
                 <TableSortLabel
-                  active={sortField === 'installationLocation'}
-                  direction={sortField === 'installationLocation' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('installationLocation')}
+                  active={sortField === 'assignment'}
+                  direction={sortField === 'assignment' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('assignment')}
                   IconComponent={UnfoldMoreIcon}
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Location
+                  {isMobile ? 'Toew.' : 'Toewijzing'}
                 </TableSortLabel>
               </TableCell>
 
-              {/* Owner */}
-              <TableCell sx={{ ...headerCellSx, ...columnVisibility.lgUp }}>
+              {/* Purchase Date (Aankoop) - Moved after Toewijzing */}
+              <TableCell sx={{ ...headerCellSx, ...columnVisibility.mdUp }}>
                 <TableSortLabel
-                  active={sortField === 'owner'}
-                  direction={sortField === 'owner' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('owner')}
+                  active={sortField === 'purchaseDate'}
+                  direction={sortField === 'purchaseDate' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('purchaseDate')}
                   IconComponent={UnfoldMoreIcon}
                   sx={{
                     fontSize: 'inherit',
                     fontWeight: 'inherit',
-                    '&:hover': { color: '#FF7700' },
-                    '&.Mui-active': { color: '#FF7700', fontWeight: 700 },
+                    '&:hover': { color: ASSET_COLOR },
+                    '&.Mui-active': { color: ASSET_COLOR, fontWeight: 700 },
                     '& .MuiTableSortLabel-icon': { fontSize: '1rem', opacity: 0.5 },
                   }}
                 >
-                  Owner
+                  Aankoop
                 </TableSortLabel>
               </TableCell>
 
@@ -446,26 +460,31 @@ const AssetTableView = ({
                       size="small"
                       sx={{
                         '&.Mui-checked': {
-                          color: '#FF7700',
+                          color: ASSET_COLOR,
                         },
                       }}
                     />
                   </TableCell>
                 )}
 
-                {/* Asset Code */}
+                {/* Asset Code - Shortened with tooltip for full code */}
                 <TableCell
                   sx={{
                     fontFamily: '"SF Mono", "Monaco", "Consolas", monospace',
                     fontWeight: 600,
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    color: '#FF7700',
+                    color: ASSET_COLOR,
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
                     letterSpacing: '0.01em',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {asset.assetCode}
+                  <Tooltip title={asset.assetCode} arrow placement="top">
+                    <Box component="span" sx={{ cursor: 'default' }}>
+                      {shortenAssetCode(asset.assetCode)}
+                    </Box>
+                  </Tooltip>
                 </TableCell>
 
                 {/* Status */}
@@ -491,51 +510,6 @@ const AssetTableView = ({
                   {asset.assetType?.name || '-'}
                 </TableCell>
 
-                {/* Purchase Date */}
-                <TableCell
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    py: { xs: 0.75, sm: 1 },
-                    px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.mdUp,
-                  }}
-                >
-                  {asset.purchaseDate ? (() => {
-                    const purchaseDate = new Date(asset.purchaseDate);
-                    const ageInYears = (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-                    const isMonitor = asset.category === 'Monitor';
-                    // Different thresholds for monitors vs other assets
-                    const color = isMonitor
-                      ? (ageInYears < 4
-                          ? '#4CAF50' // green: 0-4 years
-                          : ageInYears < 7
-                            ? '#FFA726' // yellow/orange: 4-7 years
-                            : '#EF5350') // light red: 7+ years
-                      : (ageInYears < 3
-                          ? '#4CAF50' // green: 0-3 years
-                          : ageInYears < 4
-                            ? '#FFA726' // yellow/orange: 3-4 years
-                            : '#EF5350'); // light red: 4+ years
-                    const ageDisplay = ageInYears < 1
-                      ? `${Math.round(ageInYears * 12)} maanden`
-                      : `${ageInYears.toFixed(1)} jaar`;
-                    return (
-                      <Tooltip title={ageDisplay} arrow placement="top">
-                        <Box
-                          component="span"
-                          sx={{
-                            color,
-                            fontWeight: 500,
-                            cursor: 'default',
-                          }}
-                        >
-                          {purchaseDate.toLocaleDateString()}
-                        </Box>
-                      </Tooltip>
-                    );
-                  })() : '-'}
-                </TableCell>
-
                 {/* Serial Number */}
                 <TableCell
                   sx={{
@@ -554,7 +528,7 @@ const AssetTableView = ({
                   {asset.serialNumber || '-'}
                 </TableCell>
 
-                {/* Model */}
+                {/* Model - Hidden on smaller screens */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
@@ -564,38 +538,377 @@ const AssetTableView = ({
                     whiteSpace: 'nowrap',
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.mdUp,
+                    ...columnVisibility.lgUp,
                   }}
                 >
                   {asset.model || '-'}
                 </TableCell>
 
-                {/* Install Location */}
+                {/* Toewijzing: Employee name with workplace link, or Workplace code with service */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.lgUp,
                   }}
                 >
-                  {asset.installationLocation || '-'}
+                  {isUserAssignedAsset(asset) ? (
+                    // Laptop/Notebook: Show employee name, click navigates to workplace
+                    asset.employee ? (
+                      <Tooltip
+                        title={
+                          <Box sx={{ p: 0.5 }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
+                              <Typography variant="caption">{asset.employee.displayName}</Typography>
+                            </Box>
+                            {asset.employee.email && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Email:</Typography>
+                                <Typography variant="caption">{asset.employee.email}</Typography>
+                              </Box>
+                            )}
+                            {asset.physicalWorkplace && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
+                              </Box>
+                            )}
+                            {asset.installationDate && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
+                                <Typography variant="caption">{new Date(asset.installationDate).toLocaleDateString()}</Typography>
+                              </Box>
+                            )}
+                            {asset.employee.jobTitle && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
+                                <Typography variant="caption">{asset.employee.jobTitle}</Typography>
+                              </Box>
+                            )}
+                            {asset.employee.serviceName && (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Dienst:</Typography>
+                                <Typography variant="caption">{asset.employee.serviceName}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Box
+                          sx={{
+                            fontWeight: 500,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.25,
+                          }}
+                        >
+                          <Link
+                            to={
+                              // Priority: 1) Asset's physical workplace, 2) Employee's workplace, 3) Workplaces filtered by service
+                              asset.physicalWorkplace
+                                ? `/workplaces/${asset.physicalWorkplace.id}`
+                                : asset.employee.physicalWorkplaceId
+                                  ? `/workplaces/${asset.employee.physicalWorkplaceId}`
+                                  : `/workplaces${asset.employee.serviceId ? `?service=${asset.employee.serviceId}` : ''}`
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              color: '#7B1FA2',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
+                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {asset.employee.displayName}
+                            </span>
+                          </Link>
+                          {asset.employee.serviceName && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                fontWeight: 400,
+                                pl: 2.25,
+                              }}
+                            >
+                              {asset.employee.serviceName}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    ) : asset.owner ? (
+                      // Fallback: Legacy owner field (for backwards compatibility)
+                      <Tooltip
+                        title={
+                          <Box sx={{ p: 0.5 }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
+                              <Typography variant="caption">{asset.owner}</Typography>
+                            </Box>
+                            {asset.physicalWorkplace && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
+                              </Box>
+                            )}
+                            {asset.installationDate && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
+                                <Typography variant="caption">{new Date(asset.installationDate).toLocaleDateString()}</Typography>
+                              </Box>
+                            )}
+                            {asset.jobTitle && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
+                                <Typography variant="caption">{asset.jobTitle}</Typography>
+                              </Box>
+                            )}
+                            {asset.officeLocation && (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Locatie:</Typography>
+                                <Typography variant="caption">{asset.officeLocation}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Box
+                          sx={{
+                            fontWeight: 500,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.25,
+                          }}
+                        >
+                          <Link
+                            to={asset.physicalWorkplace
+                              ? `/workplaces/${asset.physicalWorkplace.id}`
+                              : `/workplaces${asset.service?.id ? `?service=${asset.service.id}` : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              color: '#7B1FA2',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
+                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {asset.owner}
+                            </span>
+                          </Link>
+                          {asset.service?.name && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                fontWeight: 400,
+                                pl: 2.25,
+                              }}
+                            >
+                              {asset.service.name}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
+                    )
+                  ) : (
+                    // Fixed asset (desktop, monitor, docking, etc.): Show workplace with occupant/service
+                    asset.physicalWorkplace ? (
+                      <Tooltip
+                        title={
+                          <Box sx={{ p: 0.5 }}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
+                              <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
+                            </Box>
+                            {asset.physicalWorkplace.currentOccupantName && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebruiker:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.currentOccupantName}</Typography>
+                              </Box>
+                            )}
+                            {(asset.physicalWorkplace.serviceName || asset.physicalWorkplace.sectorName) && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Dienst:</Typography>
+                                <Typography variant="caption">
+                                  {asset.physicalWorkplace.serviceName}
+                                  {asset.physicalWorkplace.sectorName && ` (${asset.physicalWorkplace.sectorName})`}
+                                </Typography>
+                              </Box>
+                            )}
+                            {asset.physicalWorkplace.buildingName && (
+                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebouw:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.buildingName}</Typography>
+                              </Box>
+                            )}
+                            {asset.physicalWorkplace.floor && (
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Verdieping:</Typography>
+                                <Typography variant="caption">{asset.physicalWorkplace.floor}</Typography>
+                              </Box>
+                            )}
+                          </Box>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <Box
+                          sx={{
+                            fontWeight: 500,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.25,
+                          }}
+                        >
+                          <Link
+                            to={`/workplaces/${asset.physicalWorkplace.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              color: SERVICE_COLOR,
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            <BusinessIcon sx={{ fontSize: 14, color: SERVICE_COLOR }} />
+                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {asset.physicalWorkplace.currentOccupantName || asset.physicalWorkplace.code}
+                            </span>
+                          </Link>
+                          {asset.physicalWorkplace.serviceName && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.65rem',
+                                fontWeight: 400,
+                                pl: 2.25,
+                              }}
+                            >
+                              {asset.physicalWorkplace.serviceName}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
+                    )
+                  )}
                 </TableCell>
 
-                {/* Owner */}
+                {/* Purchase Date (Aankoop) - Moved after Toewijzing */}
                 <TableCell
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    maxWidth: 160,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
-                    ...columnVisibility.lgUp,
+                    ...columnVisibility.mdUp,
                   }}
                 >
-                  {asset.owner || '-'}
+                  {asset.purchaseDate ? (() => {
+                    const purchaseDate = new Date(asset.purchaseDate);
+                    const ageInYears = (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+                    const isMonitor = asset.category === 'Monitor';
+                    const isLaptopOrDesktop = asset.category === 'Laptop' || asset.category === 'Desktop';
+                    // Different thresholds for monitors vs other assets
+                    const color = isMonitor
+                      ? (ageInYears < 4
+                          ? '#4CAF50' // green: 0-4 years
+                          : ageInYears < 7
+                            ? '#FFA726' // yellow/orange: 4-7 years
+                            : '#EF5350') // light red: 7+ years
+                      : (ageInYears < 3
+                          ? '#4CAF50' // green: 0-3 years
+                          : ageInYears < 4
+                            ? '#FFA726' // yellow/orange: 3-4 years
+                            : '#EF5350'); // light red: 4+ years
+                    const ageDisplay = ageInYears < 1
+                      ? `${Math.round(ageInYears * 12)} maanden`
+                      : `${ageInYears.toFixed(1)} jaar`;
+
+                    // Build enhanced tooltip content
+                    const tooltipContent = (
+                      <Box sx={{ p: 0.5, minWidth: 180 }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>Aankoopdatum:</Typography>
+                          <Typography variant="caption">{purchaseDate.toLocaleDateString()}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>Ouderdom:</Typography>
+                          <Typography variant="caption" sx={{ color }}>{ageDisplay}</Typography>
+                        </Box>
+                        {isLaptopOrDesktop && (
+                          <>
+                            <Box sx={{ borderTop: '1px solid rgba(255,255,255,0.2)', my: 0.5 }} />
+                            <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.3 }}>
+                              Intune Data:
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Enrollment:</Typography>
+                              <Typography variant="caption">
+                                {asset.intuneEnrollmentDate
+                                  ? new Date(asset.intuneEnrollmentDate).toLocaleDateString()
+                                  : '-'}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Laatste check-in:</Typography>
+                              <Typography variant="caption">
+                                {asset.intuneLastCheckIn
+                                  ? new Date(asset.intuneLastCheckIn).toLocaleDateString()
+                                  : '-'}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Certificaat vervalt:</Typography>
+                              <Typography variant="caption">
+                                {asset.intuneCertificateExpiry
+                                  ? new Date(asset.intuneCertificateExpiry).toLocaleDateString()
+                                  : '-'}
+                              </Typography>
+                            </Box>
+                          </>
+                        )}
+                      </Box>
+                    );
+
+                    return (
+                      <Tooltip title={tooltipContent} arrow placement="top">
+                        <Box
+                          component="span"
+                          sx={{
+                            color,
+                            fontWeight: 500,
+                            cursor: 'default',
+                          }}
+                        >
+                          {purchaseDate.toLocaleDateString()}
+                        </Box>
+                      </Tooltip>
+                    );
+                  })() : '-'}
                 </TableCell>
 
                 {/* Actions - Always Visible */}
@@ -625,22 +938,22 @@ const AssetTableView = ({
                             navigate(`/assets/${asset.id}/software`);
                           }}
                           sx={{
-                            width: { xs: 28, sm: 32 },
-                            height: { xs: 28, sm: 32 },
+                            width: { xs: 26, sm: 28 },
+                            height: { xs: 26, sm: 28 },
+                            borderRadius: 0.75,
                             padding: 0,
-                            color: (theme) => theme.palette.mode === 'dark' ? '#64B5F6' : '#1976D2',
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.08)' : 'rgba(25, 118, 210, 0.06)',
+                            color: '#1976D2',
+                            bgcolor: 'transparent',
                             border: '1px solid',
-                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.2)' : 'rgba(25, 118, 210, 0.15)',
-                            transition: 'all 0.2s ease',
+                            borderColor: 'rgba(25, 118, 210, 0.35)',
+                            transition: 'all 0.15s ease',
                             '&:hover': {
-                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.15)' : 'rgba(25, 118, 210, 0.12)',
-                              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(100, 181, 246, 0.4)' : 'rgba(25, 118, 210, 0.3)',
-                              transform: isMobile ? 'none' : 'scale(1.05)',
+                              bgcolor: 'rgba(25, 118, 210, 0.08)',
+                              borderColor: '#1976D2',
                             },
                           }}
                         >
-                          <AppsIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                          <AppsIcon sx={{ fontSize: 15 }} />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -655,22 +968,22 @@ const AssetTableView = ({
                             navigate(`/assets/${asset.id}/intune`);
                           }}
                           sx={{
-                            width: { xs: 28, sm: 32 },
-                            height: { xs: 28, sm: 32 },
+                            width: { xs: 26, sm: 28 },
+                            height: { xs: 26, sm: 28 },
+                            borderRadius: 0.75,
                             padding: 0,
-                            color: (theme) => theme.palette.mode === 'dark' ? '#81C784' : '#388E3C',
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.08)' : 'rgba(56, 142, 60, 0.06)',
+                            color: '#388E3C',
+                            bgcolor: 'transparent',
                             border: '1px solid',
-                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.2)' : 'rgba(56, 142, 60, 0.15)',
-                            transition: 'all 0.2s ease',
+                            borderColor: 'rgba(56, 142, 60, 0.35)',
+                            transition: 'all 0.15s ease',
                             '&:hover': {
-                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.15)' : 'rgba(56, 142, 60, 0.12)',
-                              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.4)' : 'rgba(56, 142, 60, 0.3)',
-                              transform: isMobile ? 'none' : 'scale(1.05)',
+                              bgcolor: 'rgba(56, 142, 60, 0.08)',
+                              borderColor: '#388E3C',
                             },
                           }}
                         >
-                          <DevicesIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                          <DevicesIcon sx={{ fontSize: 15 }} />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -684,22 +997,22 @@ const AssetTableView = ({
                           handleRowClick(asset.id);
                         }}
                         sx={{
-                          width: { xs: 28, sm: 32 },
-                          height: { xs: 28, sm: 32 },
+                          width: { xs: 26, sm: 28 },
+                          height: { xs: 26, sm: 28 },
+                          borderRadius: 0.75,
                           padding: 0,
-                          color: '#FF7700',
-                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.1)' : 'rgba(255, 119, 0, 0.08)',
+                          color: ASSET_COLOR,
+                          bgcolor: 'transparent',
                           border: '1px solid',
-                          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.25)' : 'rgba(255, 119, 0, 0.2)',
-                          transition: 'all 0.2s ease',
+                          borderColor: 'rgba(255, 119, 0, 0.35)',
+                          transition: 'all 0.15s ease',
                           '&:hover': {
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.18)' : 'rgba(255, 119, 0, 0.15)',
-                            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.4)' : 'rgba(255, 119, 0, 0.35)',
-                            transform: isMobile ? 'none' : 'scale(1.05)',
+                            bgcolor: 'rgba(255, 119, 0, 0.08)',
+                            borderColor: ASSET_COLOR,
                           },
                         }}
                       >
-                        <VisibilityIcon sx={{ fontSize: { xs: 16, sm: 18 } }} />
+                        <VisibilityIcon sx={{ fontSize: 15 }} />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -756,10 +1069,10 @@ const AssetTableView = ({
                     borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#FF7700',
+                    borderColor: ASSET_COLOR,
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#FF7700',
+                    borderColor: ASSET_COLOR,
                     borderWidth: 1.5,
                   },
                 }}
@@ -809,15 +1122,15 @@ const AssetTableView = ({
                 borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: '#FF7700',
+                  borderColor: ASSET_COLOR,
                   backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.08)' : 'rgba(255, 119, 0, 0.05)',
                 },
               },
               '& .Mui-selected': {
-                backgroundColor: '#FF7700',
+                backgroundColor: ASSET_COLOR,
                 color: '#fff',
                 fontWeight: 600,
-                borderColor: '#FF7700',
+                borderColor: ASSET_COLOR,
                 '&:hover': {
                   backgroundColor: '#E66A00',
                   borderColor: '#E66A00',

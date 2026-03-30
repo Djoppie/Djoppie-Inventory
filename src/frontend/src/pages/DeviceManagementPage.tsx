@@ -17,6 +17,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import BusinessIcon from '@mui/icons-material/Business';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import { ROUTES } from '../constants/routes';
+import { WORKPLACE_COLOR } from '../constants/filterColors';
 import { useAssets } from '../hooks/useAssets';
 import {
   WorkplaceOccupancyWidget,
@@ -200,10 +201,10 @@ const DeviceManagementPage = () => {
       title: t('navigation.workplaces', { defaultValue: 'Physical Workplaces' }),
       description: t('deviceManagement.workplacesDesc', { defaultValue: 'Manage physical workstations, equipment slots, and workplace assignments' }),
       icon: <BusinessIcon sx={{ fontSize: 28 }} />,
-      color: '#009688',
-      shadowColor: 'rgba(0, 150, 136, 0.3)',
-      gradientLight: 'linear-gradient(135deg, rgba(0,150,136,0.12) 0%, rgba(77,182,172,0.06) 100%)',
-      gradientDark: 'linear-gradient(135deg, rgba(0,150,136,0.2) 0%, rgba(0,121,107,0.1) 100%)',
+      color: WORKPLACE_COLOR,
+      shadowColor: `${alpha(WORKPLACE_COLOR, 0.3)}`,
+      gradientLight: `linear-gradient(135deg, ${alpha(WORKPLACE_COLOR, 0.12)} 0%, ${alpha(WORKPLACE_COLOR, 0.06)} 100%)`,
+      gradientDark: `linear-gradient(135deg, ${alpha(WORKPLACE_COLOR, 0.2)} 0%, ${alpha(WORKPLACE_COLOR, 0.1)} 100%)`,
       route: ROUTES.PHYSICAL_WORKPLACES,
     },
   ];

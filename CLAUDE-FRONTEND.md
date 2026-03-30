@@ -9,9 +9,11 @@ This document defines how Claude Code agents should collaborate on frontend deve
 ## Agent Roles & Responsibilities
 
 ### 1. Frontend Specialist (`frontend-developer`)
+
 **Primary Role:** Build React components, implement features, handle state management
 
 **Responsibilities:**
+
 - Implement React 19 components with TypeScript
 - Manage client-side state with TanStack Query
 - Handle routing with React Router
@@ -20,6 +22,7 @@ This document defines how Claude Code agents should collaborate on frontend deve
 - Ensure accessibility (WCAG 2.1 AA)
 
 **When to Use:**
+
 - Creating new page components
 - Implementing CRUD operations
 - Adding form handling and validation
@@ -27,6 +30,7 @@ This document defines how Claude Code agents should collaborate on frontend deve
 - Fixing frontend bugs
 
 **Skills to Invoke:**
+
 - `/frontend-design` - For creating distinctive UI components
 - `javascript-typescript:typescript-advanced-types` - For complex type definitions
 - `javascript-typescript:modern-javascript-patterns` - For ES6+ patterns
@@ -34,9 +38,11 @@ This document defines how Claude Code agents should collaborate on frontend deve
 ---
 
 ### 2. UI Design Expert (`ui-design-expert`)
+
 **Primary Role:** Visual design, styling, user experience optimization
 
 **Responsibilities:**
+
 - Create modern, professional layouts
 - Implement neumorphic design elements
 - Design color schemes and typography
@@ -45,6 +51,7 @@ This document defines how Claude Code agents should collaborate on frontend deve
 - Optimize for different screen sizes
 
 **When to Use:**
+
 - Designing new page layouts
 - Improving visual appearance
 - Creating custom components with advanced CSS
@@ -52,15 +59,18 @@ This document defines how Claude Code agents should collaborate on frontend deve
 - Reviewing UI/UX decisions
 
 **Skills to Invoke:**
+
 - `/frontend-design` - Primary skill for all design work
 - `documentation-generation:mermaid-expert` - For UI flow diagrams
 
 ---
 
 ### 3. Frontend Architect (`code-review-ai:architect-review`)
+
 **Primary Role:** Architecture decisions, code quality, performance optimization
 
 **Responsibilities:**
+
 - Define component architecture patterns
 - Review code for best practices
 - Optimize bundle size and performance
@@ -69,6 +79,7 @@ This document defines how Claude Code agents should collaborate on frontend deve
 - Plan feature implementations
 
 **When to Use:**
+
 - Planning new features
 - Reviewing PRs
 - Performance optimization
@@ -76,6 +87,7 @@ This document defines how Claude Code agents should collaborate on frontend deve
 - Establishing patterns
 
 **Skills to Invoke:**
+
 - `comprehensive-review:full-review` - For thorough code review
 - `code-refactoring:legacy-modernizer` - For modernization tasks
 
@@ -126,6 +138,7 @@ This document defines how Claude Code agents should collaborate on frontend deve
 ## Best Practices
 
 ### Component Structure
+
 ```
 src/frontend/src/
 ├── components/
@@ -146,6 +159,7 @@ src/frontend/src/
 ```
 
 ### Naming Conventions
+
 - **Components:** PascalCase (`AssetCard.tsx`)
 - **Hooks:** camelCase with `use` prefix (`useAssets.ts`)
 - **API files:** camelCase with `.api.ts` suffix (`assets.api.ts`)
@@ -153,6 +167,7 @@ src/frontend/src/
 - **Constants:** SCREAMING_SNAKE_CASE
 
 ### Performance Guidelines
+
 1. **Code Splitting:** Use `React.lazy()` for route-level components
 2. **Memoization:** Use `useMemo` and `useCallback` appropriately
 3. **Query Caching:** Leverage TanStack Query's caching
@@ -160,6 +175,7 @@ src/frontend/src/
 5. **Images:** Use optimized formats (WebP) and lazy loading
 
 ### TypeScript Standards
+
 ```typescript
 // Always define explicit return types for functions
 function getAsset(id: number): Promise<Asset> { ... }
@@ -185,6 +201,7 @@ interface TableProps<T> {
 ## Current TODO Tasks
 
 ### High Priority
+
 - [ ] **Implement skeleton loading states** for all data-heavy pages
   - Agent: Frontend Specialist
   - Files: `src/components/rollout/skeletons/`
@@ -198,6 +215,7 @@ interface TableProps<T> {
   - Action: Consider lazy loading or alternatives
 
 ### Medium Priority
+
 - [ ] **Create consistent form components** with validation
   - Agent: Frontend Specialist + UI Design Expert
   - Pattern: Use react-hook-form with MUI integration
@@ -211,6 +229,7 @@ interface TableProps<T> {
   - Pattern: Use TanStack Query's `isLoading` state
 
 ### Low Priority
+
 - [ ] **Add keyboard shortcuts** for power users
   - Agent: Frontend Specialist
   - Scope: Navigation, common actions
@@ -253,11 +272,13 @@ Before completing any frontend task, verify:
 ## Integration Points
 
 ### With Backend Team
+
 - API contracts defined in `src/frontend/src/types/`
 - DTOs must match backend `DjoppieInventory.Core/DTOs/`
 - Use OpenAPI spec when available
 
 ### With DevOps
+
 - Environment variables in `.env.development` and `.env.production`
 - Build output in `dist/` folder
 - Static Web App configuration in `staticwebapp.config.json`
@@ -287,4 +308,4 @@ When handing off between agents:
 
 ---
 
-**Contact:** jo.wijnen@diepenbeek.be
+**Contact:** <jo.wijnen@diepenbeek.be>

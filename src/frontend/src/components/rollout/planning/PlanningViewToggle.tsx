@@ -13,6 +13,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import type { PlanningViewMode } from '../../../types/rollout';
 import { usePlanningViewMode, savePreference } from '../../../hooks/usePlanningViewMode';
+import { ASSET_COLOR } from '../../../constants/filterColors';
 
 interface PlanningViewToggleProps {
   value?: PlanningViewMode;
@@ -93,14 +94,14 @@ const PlanningViewToggle = ({
                 theme.palette.mode === 'dark'
                   ? 'rgba(255, 119, 0, 0.12)'
                   : 'rgba(255, 119, 0, 0.08)',
-              color: '#FF7700',
+              color: ASSET_COLOR,
             },
             '&.Mui-selected': {
               bgcolor: (theme) =>
                 theme.palette.mode === 'dark'
                   ? 'rgba(255, 119, 0, 0.2)'
                   : 'rgba(255, 119, 0, 0.15)',
-              color: '#FF7700',
+              color: ASSET_COLOR,
               fontWeight: 700,
               boxShadow: (theme) =>
                 theme.palette.mode === 'dark'

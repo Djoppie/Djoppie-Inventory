@@ -6,6 +6,8 @@ import { ViewMode } from '../../components/common/ViewToggle';
 export interface DashboardFiltersState {
   statusFilter: string;
   categoryFilter: string;
+  serviceFilter: string;
+  buildingFilter: string;
   searchQuery: string;
   sortBy: SortOption;
   viewMode: ViewMode;
@@ -15,6 +17,8 @@ export interface DashboardFiltersState {
 export interface DashboardFiltersActions {
   setStatusFilter: (value: string) => void;
   setCategoryFilter: (value: string) => void;
+  setServiceFilter: (value: string) => void;
+  setBuildingFilter: (value: string) => void;
   setSearchQuery: (value: string) => void;
   setSortBy: (value: SortOption) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -29,6 +33,8 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
   // Read filters from URL parameters (persisted across navigation)
   const statusFilter = searchParams.get('status') || '';
   const categoryFilter = searchParams.get('category') || '';
+  const serviceFilter = searchParams.get('service') || '';
+  const buildingFilter = searchParams.get('building') || '';
   const searchQuery = searchParams.get('search') || '';
   const sortBy = (searchParams.get('sort') as SortOption) || 'date-newest';
 
@@ -63,6 +69,14 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
 
   const setCategoryFilter = useCallback((value: string) => {
     updateFilters({ category: value || null });
+  }, [updateFilters]);
+
+  const setServiceFilter = useCallback((value: string) => {
+    updateFilters({ service: value || null });
+  }, [updateFilters]);
+
+  const setBuildingFilter = useCallback((value: string) => {
+    updateFilters({ building: value || null });
   }, [updateFilters]);
 
   const setSearchQuery = useCallback((value: string) => {
@@ -113,6 +127,8 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
     // State
     statusFilter,
     categoryFilter,
+    serviceFilter,
+    buildingFilter,
     searchQuery,
     sortBy,
     viewMode,
@@ -120,6 +136,8 @@ export function useDashboardFilters(): DashboardFiltersState & DashboardFiltersA
     // Actions
     setStatusFilter,
     setCategoryFilter,
+    setServiceFilter,
+    setBuildingFilter,
     setSearchQuery,
     setSortBy,
     setViewMode,

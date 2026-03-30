@@ -127,7 +127,8 @@ const OccupierSection = ({
 
   const bgColor = isDark ? '#1e2328' : '#e8eef3';
 
-  const hasOccupier = Boolean(currentOccupier.id);
+  // Check both id and name - some occupants may have name but not EntraId (set via rollout)
+  const hasOccupier = Boolean(currentOccupier.id) || Boolean(currentOccupier.name);
 
   // Format occupied since date
   const formatOccupiedSince = (dateStr?: string) => {

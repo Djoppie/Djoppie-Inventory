@@ -41,10 +41,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
-import { GraphUser, IntuneDevice } from '../../types/graph.types';
-import UserAutocomplete from '../common/UserAutocomplete';
+import { IntuneDevice } from '../../types/graph.types';
+import { Employee } from '../../types/admin.types';
+import EmployeeAutocomplete from '../common/EmployeeAutocomplete';
+import CategorySelect from '../common/CategorySelect';
 import AssetTypeSelect from '../common/AssetTypeSelect';
 import ServiceSelect from '../common/ServiceSelect';
+import BuildingSelect from '../common/BuildingSelect';
+import PhysicalWorkplaceSelect from '../common/PhysicalWorkplaceSelect';
 import { intuneApi } from '../../api/intune.api';
 import { serialNumberExists } from '../../api/assets.api';
 
@@ -150,7 +154,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
 
   const [isDummy, setIsDummy] = useState(initialData?.isDummy || false);
-  const [selectedUserUpn, setSelectedUserUpn] = useState<string | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
 
   // Serial number lookup states
@@ -167,8 +171,13 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
     assetTypeId: initialData?.assetTypeId ?? 0,
     serviceId: initialData?.serviceId,
     installationLocation: initialData?.installationLocation || '',
+    buildingId: initialData?.buildingId,
+    physicalWorkplaceId: initialData?.physicalWorkplaceId,
 
-    // User assignment fields
+    // Employee assignment (preferred)
+    employeeId: initialData?.employeeId,
+
+    // Legacy user assignment fields
     owner: initialData?.owner || '',
     officeLocation: initialData?.officeLocation || '',
     jobTitle: initialData?.jobTitle || '',
@@ -184,6 +193,11 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
 
   // Alias is stored separately (optional readable name)
   const [alias, setAlias] = useState(initialData?.alias || '');
+
+  // Selected category for filtering asset types
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    initialData?.assetType?.categoryId ?? null
+  );
 
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -540,24 +554,43 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             helperText={t('assetForm.aliasHint')}
           />
 
-          {/* Asset Type and Status */}
+          {/* Category, Asset Type and Status */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: '1 1 300px' }}>
+            <Box sx={{ flex: '1 1 200px' }}>
+              <CategorySelect
+                value={selectedCategoryId}
+                onChange={(value) => {
+                  setSelectedCategoryId(value);
+                  // Reset asset type when category changes
+                  if (value !== selectedCategoryId) {
+                    setFormData(prev => ({ ...prev, assetTypeId: 0 }));
+                  }
+                }}
+                label={t('assetForm.category')}
+                helperText={t('assetForm.categoryHint')}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 250px' }}>
               <AssetTypeSelect
                 value={formData.assetTypeId ?? null}
-                onChange={(value) => {
+                onChange={(value, assetType) => {
                   setFormData(prev => ({ ...prev, assetTypeId: value ?? 0 }));
+                  // Auto-fill category from selected asset type
+                  if (assetType?.categoryId) {
+                    setSelectedCategoryId(assetType.categoryId);
+                  }
                   if (errors.assetTypeId) {
                     setErrors(prev => ({ ...prev, assetTypeId: '' }));
                   }
                 }}
-                label={t('assetDetail.category')}
+                label={t('assetForm.assetType')}
                 helperText={errors.assetTypeId}
                 error={!!errors.assetTypeId}
                 required
+                categoryId={selectedCategoryId ?? undefined}
               />
             </Box>
-            <FormControl sx={{ flex: '1 1 200px' }} required>
+            <FormControl sx={{ flex: '1 1 180px' }} required>
               <InputLabel>{t('assetDetail.status')}</InputLabel>
               <Select
                 value={formData.status}
@@ -583,14 +616,56 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         description={t('assetForm.locationSectionDesc')}
       >
         <Stack spacing={2.5}>
-          <ServiceSelect
-            value={formData.serviceId ?? null}
-            onChange={(value) => {
-              setFormData(prev => ({ ...prev, serviceId: value ?? undefined }));
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ flex: '1 1 300px' }}>
+              <BuildingSelect
+                value={formData.buildingId ?? null}
+                onChange={(value) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    buildingId: value ?? undefined,
+                    // Reset physical workplace when building changes
+                    physicalWorkplaceId: undefined,
+                  }));
+                }}
+                label={t('assetForm.building')}
+                helperText={t('assetForm.buildingHint')}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 300px' }}>
+              <ServiceSelect
+                value={formData.serviceId ?? null}
+                onChange={(value) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    serviceId: value ?? undefined,
+                    // Reset physical workplace when service changes
+                    physicalWorkplaceId: undefined,
+                  }));
+                }}
+                label={t('assetForm.service')}
+                helperText={t('assetForm.serviceHint')}
+              />
+            </Box>
+          </Box>
+
+          <PhysicalWorkplaceSelect
+            value={formData.physicalWorkplaceId ?? null}
+            onChange={(value, workplace) => {
+              setFormData(prev => ({
+                ...prev,
+                physicalWorkplaceId: value ?? undefined,
+                // Auto-fill building and service from selected workplace
+                buildingId: workplace?.buildingId ?? prev.buildingId,
+                serviceId: workplace?.serviceId ?? prev.serviceId,
+              }));
             }}
-            label={t('assetForm.service')}
-            helperText={t('assetForm.serviceHint')}
+            label={t('assetForm.physicalWorkplace')}
+            helperText={t('assetForm.physicalWorkplaceHint')}
+            buildingId={formData.buildingId}
+            serviceId={formData.serviceId}
           />
+
           <TextField
             fullWidth
             label={t('assetForm.installationLocation')}
@@ -615,21 +690,24 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
         description={t('assetForm.assignmentSectionDesc')}
       >
         <Stack spacing={2.5}>
-          <UserAutocomplete
-            value={formData.owner || ''}
-            onChange={(displayName: string, user: GraphUser | null) => {
-              handleChange('owner', displayName);
-              setSelectedUserUpn(user?.userPrincipalName || null);
-              if (user) {
-                if (user.jobTitle) {
-                  handleChange('jobTitle', user.jobTitle);
+          <EmployeeAutocomplete
+            value={formData.employeeId}
+            onChange={(employeeId: number | null, employee: Employee | null) => {
+              setFormData(prev => ({ ...prev, employeeId: employeeId ?? undefined }));
+              setSelectedEmployee(employee);
+              // Auto-fill legacy fields for backwards compatibility
+              if (employee) {
+                handleChange('owner', employee.displayName);
+                if (employee.jobTitle) {
+                  handleChange('jobTitle', employee.jobTitle);
                   markFieldAsAutoFilled('jobTitle');
                 }
-                if (user.officeLocation) {
-                  handleChange('officeLocation', user.officeLocation);
+                if (employee.officeLocation) {
+                  handleChange('officeLocation', employee.officeLocation);
                   markFieldAsAutoFilled('officeLocation');
                 }
               } else {
+                handleChange('owner', '');
                 handleChange('jobTitle', '');
                 handleChange('officeLocation', '');
               }
@@ -639,8 +717,8 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
             disabled={isLoading}
           />
 
-          {/* User info display */}
-          {(formData.jobTitle || formData.officeLocation) && (
+          {/* Employee info display */}
+          {selectedEmployee && (
             <Box
               sx={{
                 display: 'flex',
@@ -653,25 +731,36 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 borderRadius: '0 8px 8px 0',
               }}
             >
-              {formData.jobTitle && (
+              {selectedEmployee.jobTitle && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Work sx={{ fontSize: 18, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
                     {t('assetDetail.jobTitle')}:
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
-                    {formData.jobTitle}
+                    {selectedEmployee.jobTitle}
                   </Typography>
                 </Box>
               )}
-              {formData.officeLocation && (
+              {selectedEmployee.service && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LocationOn sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Business sx={{ fontSize: 18, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
-                    {t('assetDetail.officeLocation')}:
+                    {t('assetForm.service')}:
                   </Typography>
                   <Typography variant="body2" fontWeight={600}>
-                    {formData.officeLocation}
+                    {selectedEmployee.service.name}
+                  </Typography>
+                </Box>
+              )}
+              {selectedEmployee.email && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Person sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Email:
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    {selectedEmployee.email}
                   </Typography>
                 </Box>
               )}
@@ -679,23 +768,18 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
           )}
 
           {/* Device-User validation indicator */}
-          {selectedDevice && (
+          {selectedDevice && selectedEmployee && (
             <Box>
               {selectedDevice.userPrincipalName ? (
                 (() => {
                   const deviceUpn = selectedDevice.userPrincipalName.toLowerCase();
-                  const ownerName = (formData.owner || '').toLowerCase();
-                  const upnMatch = selectedUserUpn && deviceUpn === selectedUserUpn.toLowerCase();
-                  const upnLocalPart = deviceUpn.split('@')[0].replace(/[._-]/g, ' ');
-                  const nameMatch = ownerName && (
-                    upnLocalPart.includes(ownerName.replace(/\s+/g, ' ')) ||
-                    ownerName.split(' ').every(part => upnLocalPart.includes(part))
-                  );
+                  const employeeUpn = selectedEmployee.userPrincipalName?.toLowerCase() || '';
+                  const upnMatch = deviceUpn === employeeUpn;
 
-                  return upnMatch || nameMatch ? (
+                  return upnMatch ? (
                     <Chip
                       icon={<CheckCircle />}
-                      label={`${formData.owner} — ${selectedDevice.deviceName}`}
+                      label={`${selectedEmployee.displayName} — ${selectedDevice.deviceName}`}
                       color="success"
                       variant="outlined"
                       size="small"

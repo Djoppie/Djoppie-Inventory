@@ -15,7 +15,12 @@ public enum DeploymentMode
     /// <summary>
     /// Swap - Replace old device with new device
     /// </summary>
-    Swap = 1
+    Swap = 1,
+
+    /// <summary>
+    /// Offboarding - User leaves, device is returned (no new device assigned)
+    /// </summary>
+    Offboarding = 2
 }
 
 /// <summary>
@@ -23,19 +28,19 @@ public enum DeploymentMode
 /// </summary>
 public record ExecuteDeploymentDto(
     /// <summary>
-    /// Mode: Onboarding (no old laptop) or Swap (replace old laptop)
+    /// Mode: Onboarding (no old laptop), Swap (replace old laptop), or Offboarding (return device)
     /// </summary>
     DeploymentMode Mode,
 
     /// <summary>
-    /// Old laptop asset ID (required for Swap mode, null for Onboarding)
+    /// Old laptop asset ID (required for Swap and Offboarding modes, null for Onboarding)
     /// </summary>
     int? OldLaptopAssetId,
 
     /// <summary>
-    /// New laptop asset ID to assign to user
+    /// New laptop asset ID to assign to user (required for Onboarding and Swap, null for Offboarding)
     /// </summary>
-    int NewLaptopAssetId,
+    int? NewLaptopAssetId,
 
     /// <summary>
     /// Entra ID (Azure AD) of the user receiving the laptop
@@ -80,7 +85,17 @@ public record ExecuteDeploymentDto(
     /// <summary>
     /// Optional notes about the deployment
     /// </summary>
-    string? Notes
+    string? Notes,
+
+    /// <summary>
+    /// New status for the old laptop (for Swap and Offboarding modes): Stock, Defect, or UitDienst
+    /// </summary>
+    string? OldAssetNewStatus = "UitDienst",
+
+    /// <summary>
+    /// Whether to clear the workplace occupant (for Offboarding mode)
+    /// </summary>
+    bool ClearWorkplaceOccupant = false
 );
 
 /// <summary>
@@ -91,7 +106,7 @@ public record DeploymentResultDto(
     string DeploymentId,
     DeploymentMode Mode,
     AssetDeploymentSummaryDto? OldLaptop,
-    AssetDeploymentSummaryDto NewLaptop,
+    AssetDeploymentSummaryDto? NewLaptop,
     WorkplaceDeploymentSummaryDto? PhysicalWorkplace,
     List<AssetEventSummaryDto> AssetEventsCreated,
     DateTime Timestamp
@@ -153,7 +168,7 @@ public record DeploymentHistoryItemDto(
     DateTime DeploymentDate,
     DeploymentMode Mode,
     DeploymentAssetInfoDto? OldLaptop,
-    DeploymentAssetInfoDto NewLaptop,
+    DeploymentAssetInfoDto? NewLaptop,
     DeploymentOwnerInfoDto Owner,
     DeploymentWorkplaceInfoDto? PhysicalWorkplace,
     string? PerformedBy,
