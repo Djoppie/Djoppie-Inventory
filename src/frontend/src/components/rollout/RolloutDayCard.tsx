@@ -20,6 +20,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import type { RolloutDay } from '../../types/rollout';
 import { ASSET_COLOR, SECTOR_COLOR } from '../../constants/filterColors';
 
@@ -42,6 +43,7 @@ interface RolloutDayCardProps {
   onDelete: () => void;
   onPrint: () => void;
   onImport?: () => void;
+  onAddWorkplace?: () => void;
   onExecute?: () => void;
   onSetPlanning: () => void;
   children: React.ReactNode;
@@ -65,6 +67,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
   onDelete,
   onPrint,
   onImport,
+  onAddWorkplace,
   onExecute,
   onSetPlanning,
   children,
@@ -366,6 +369,35 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                   }}
                 >
                   <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
+
+          {/* Add Workplace - Hide for rescheduled cards */}
+          {!isRescheduledCard && onAddWorkplace && (
+            <Tooltip title="Werkplek toevoegen">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onAddWorkplace}
+                  disabled={!isEditable}
+                  sx={{
+                    color: 'rgba(255, 119, 0, 0.7)',
+                    bgcolor: 'rgba(255, 119, 0, 0.1)',
+                    border: '1px solid rgba(255, 119, 0, 0.3)',
+                    '&:hover:not(:disabled)': {
+                      color: ASSET_COLOR,
+                      bgcolor: 'rgba(255, 119, 0, 0.15)',
+                      transform: 'scale(1.1)',
+                    },
+                    '&:disabled': {
+                      opacity: 0.5,
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <PersonAddIcon fontSize="small" />
                 </IconButton>
               </span>
             </Tooltip>

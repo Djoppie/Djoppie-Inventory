@@ -131,6 +131,7 @@ interface PlanningDaysListProps {
   onDayStatus: (day: RolloutDay, status: string) => void;
   onBulkPrint: (dayId: number) => void;
   onImportWorkplaces: (dayId: number, serviceId: number | undefined, serviceName: string | undefined) => void;
+  onAddWorkplace: (dayId: number) => void;
   onEditWorkplace: (dayId: number, workplace: RolloutWorkplace) => void;
   onPrintWorkplace: (workplace: RolloutWorkplace, dayId: number) => void;
   onRescheduleWorkplace: (workplace: RolloutWorkplace, dayId: number, originalDate: string) => void;
@@ -154,6 +155,7 @@ export default function PlanningDaysList({
   onDayStatus,
   onBulkPrint,
   onImportWorkplaces,
+  onAddWorkplace,
   onEditWorkplace,
   onPrintWorkplace,
   onRescheduleWorkplace,
@@ -345,6 +347,7 @@ export default function PlanningDaysList({
                           const svcName = svcId ? services.find(s => s.id === svcId)?.name : undefined;
                           onImportWorkplaces(day.id, svcId, svcName);
                         }}
+                        onAddWorkplace={() => onAddWorkplace(day.id)}
                         onExecute={() => handleExecute(day.id)}
                         onSetPlanning={() => onDayStatus(day, 'Planning')}
                       >
@@ -356,6 +359,12 @@ export default function PlanningDaysList({
                           onEditWorkplace={(workplace) => onEditWorkplace(day.id, workplace)}
                           onPrintWorkplace={(workplace) => onPrintWorkplace(workplace, day.id)}
                           onRescheduleWorkplace={onRescheduleWorkplace}
+                          onAddWorkplace={() => onAddWorkplace(day.id)}
+                          onImport={() => {
+                            const svcId = day.scheduledServiceIds?.[0];
+                            const svcName = svcId ? services.find(s => s.id === svcId)?.name : undefined;
+                            onImportWorkplaces(day.id, svcId, svcName);
+                          }}
                         />
                       </RolloutDayCard>
                     );

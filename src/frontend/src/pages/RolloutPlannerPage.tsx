@@ -299,6 +299,7 @@ const RolloutPlannerPage = () => {
             onDayStatus={data.updateDayStatus}
             onBulkPrint={handleBulkPrint}
             onImportWorkplaces={state.openImportGraphDialog}
+            onAddWorkplace={(dayId) => state.openWorkplaceDialog(dayId)}
             onEditWorkplace={(dayId, workplace) => state.openWorkplaceDialog(dayId, workplace)}
             onPrintWorkplace={handlePrintWorkplace}
             onRescheduleWorkplace={state.openRescheduleDialog}
