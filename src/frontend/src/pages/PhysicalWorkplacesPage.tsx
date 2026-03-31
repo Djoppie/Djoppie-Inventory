@@ -75,38 +75,7 @@ import {
   BUILDING_COLOR,
   SECTOR_COLOR,
 } from '../constants/filterColors';
-
-// Scanner-style card wrapper - consistent with other pages
-const scannerCardSx = {
-  mb: 3,
-  borderRadius: 2,
-  border: '1px solid',
-  borderColor: 'divider',
-  overflow: 'hidden',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (thm: { palette: { mode: string } }) =>
-      thm.palette.mode === 'dark'
-        ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-        : '0 4px 20px rgba(253, 185, 49, 0.3)',
-  },
-};
-
-// Consistent icon button style
-const iconButtonSx = {
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (thm: { palette: { mode: string } }) =>
-      thm.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
-  },
-};
+import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
 
 // Workplace accent color (teal - aligned with sector-service-workplace hierarchy)
 const workplaceAccent = WORKPLACE_COLOR;
@@ -138,6 +107,7 @@ const PhysicalWorkplacesPage = () => {
   const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const neumorphColors = getNeumorphColors(isDark);
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   // Filter state
@@ -632,18 +602,29 @@ const PhysicalWorkplacesPage = () => {
   }
 
   return (
-    <Box sx={{ pb: 10 }}>
+    <Box sx={{ pb: 10, minHeight: '100vh' }}>
       {/* Back Button */}
       <Tooltip title={t('common.backToDashboard')}>
         <IconButton
           onClick={() => navigate('/')}
           sx={{
-            ...iconButtonSx,
             mb: 2,
+            width: 40,
+            height: 40,
+            borderRadius: 2,
             color: 'text.secondary',
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'soft'),
+            transition: 'all 0.2s ease',
             '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
+              color: workplaceAccent,
+              bgcolor: neumorphColors.bgSurface,
+              transform: 'translateX(-2px)',
+              boxShadow: `0 4px 12px ${alpha(workplaceAccent, 0.3)}`,
+            },
+            '&:active': {
+              boxShadow: getNeumorphInset(isDark),
+              transform: 'translateX(0)',
             },
           }}
         >
@@ -652,32 +633,48 @@ const PhysicalWorkplacesPage = () => {
       </Tooltip>
 
       {/* Header */}
-      <Card elevation={0} sx={scannerCardSx}>
-        <CardContent sx={{ p: 3 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 3,
+          borderRadius: 3,
+          bgcolor: neumorphColors.bgSurface,
+          boxShadow: getNeumorph(isDark, 'medium'),
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ p: 3 }}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: isDark ? alpha(workplaceAccent, 0.08) : alpha(workplaceAccent, 0.05),
+                width: 56,
+                height: 56,
+                borderRadius: 2.5,
+                bgcolor: alpha(workplaceAccent, 0.12),
+                boxShadow: getNeumorphInset(isDark),
               }}
             >
               <PlaceIcon
                 sx={{
-                  fontSize: 28,
+                  fontSize: 32,
                   color: workplaceAccent,
-                  filter: isDark ? `drop-shadow(0 0 4px ${alpha(workplaceAccent, 0.5)})` : 'none',
+                  filter: isDark ? `drop-shadow(0 0 6px ${alpha(workplaceAccent, 0.6)})` : 'none',
                 }}
               />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="h4" component="h1" fontWeight={700}>
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontWeight: 700,
+                  color: workplaceAccent,
+                  textShadow: isDark ? `0 0 20px ${alpha(workplaceAccent, 0.3)}` : 'none',
+                }}
+              >
                 {t('physicalWorkplaces.title')}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -769,20 +766,19 @@ const PhysicalWorkplacesPage = () => {
               />
             </Stack>
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
+      </Paper>
 
-      {/* Filter Toolbar - Teal themed with expandable panels */}
+      {/* Filter Toolbar - Neumorphic style */}
       <Paper
         elevation={0}
         sx={{
           mb: (serviceFilterExpanded || buildingFilterExpanded) ? 0 : 2,
           p: 1.5,
-          borderRadius: (serviceFilterExpanded || buildingFilterExpanded) ? '8px 8px 0 0' : 2,
-          bgcolor: isDark ? alpha(workplaceAccent, 0.08) : alpha(workplaceAccent, 0.05),
-          border: '1px solid',
-          borderColor: isDark ? alpha(workplaceAccent, 0.2) : alpha(workplaceAccent, 0.15),
-          borderBottom: (serviceFilterExpanded || buildingFilterExpanded) ? 'none' : undefined,
+          borderRadius: (serviceFilterExpanded || buildingFilterExpanded) ? '12px 12px 0 0' : 3,
+          bgcolor: neumorphColors.bgSurface,
+          boxShadow: (serviceFilterExpanded || buildingFilterExpanded) ? 'none' : getNeumorph(isDark, 'soft'),
+          borderLeft: `3px solid ${workplaceAccent}`,
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
@@ -1020,11 +1016,10 @@ const PhysicalWorkplacesPage = () => {
             mb: 2,
             p: 2,
             pt: 1.5,
-            borderRadius: '0 0 8px 8px',
-            bgcolor: isDark ? alpha('#000', 0.2) : alpha('#f5f5f5', 0.5),
-            border: '1px solid',
-            borderColor: isDark ? alpha('#fff', 0.1) : alpha('#000', 0.08),
-            borderTop: 'none',
+            borderRadius: '0 0 12px 12px',
+            bgcolor: neumorphColors.bgBase,
+            boxShadow: getNeumorphInset(isDark),
+            borderLeft: `3px solid ${SERVICE_COLOR}`,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -1145,11 +1140,10 @@ const PhysicalWorkplacesPage = () => {
             mb: 2,
             p: 2,
             pt: 1.5,
-            borderRadius: '0 0 8px 8px',
-            bgcolor: isDark ? alpha('#000', 0.2) : alpha('#f5f5f5', 0.5),
-            border: '1px solid',
-            borderColor: isDark ? alpha('#fff', 0.1) : alpha('#000', 0.08),
-            borderTop: 'none',
+            borderRadius: '0 0 12px 12px',
+            bgcolor: neumorphColors.bgBase,
+            boxShadow: getNeumorphInset(isDark),
+            borderLeft: `3px solid ${BUILDING_COLOR}`,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -1269,16 +1263,15 @@ const PhysicalWorkplacesPage = () => {
                   key={workplace.id}
                   elevation={0}
                   sx={{
-                    border: '2px solid',
-                    borderColor: workplace.isActive ? 'divider' : 'error.light',
-                    borderRadius: 2.5,
+                    borderRadius: 3,
                     opacity: workplace.isActive ? 1 : 0.6,
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     overflow: 'hidden',
-                    bgcolor: isDark ? '#232936' : '#ffffff',
+                    bgcolor: neumorphColors.bgSurface,
+                    boxShadow: getNeumorph(isDark, 'medium'),
+                    borderLeft: workplace.isActive ? `3px solid ${workplaceAccent}` : `3px solid ${alpha('#FF5722', 0.5)}`,
                     '&:hover': {
-                      boxShadow: `0 8px 32px ${alpha(workplaceAccent, 0.25)}`,
-                      borderColor: workplaceAccent,
+                      boxShadow: getNeumorph(isDark, 'strong'),
                       transform: 'translateY(-2px)',
                     },
                   }}
