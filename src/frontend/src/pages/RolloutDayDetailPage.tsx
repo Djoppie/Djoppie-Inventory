@@ -25,6 +25,8 @@ import {
   Divider,
   Alert,
   LinearProgress,
+  Snackbar,
+  CircularProgress,
   alpha,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -49,6 +51,7 @@ import RolloutWorkplaceDialog from '../components/rollout/RolloutWorkplaceDialog
 import RolloutDayDialog from '../components/rollout/RolloutDayDialog';
 import BulkImportFromGraphDialog from '../components/rollout/BulkImportFromGraphDialog';
 import type { RolloutWorkplace } from '../types/rollout';
+import { exportDaySwapChecklist } from '../utils/swapChecklistExport';
 
 const RolloutDayDetailPage = () => {
   const { id: sessionIdParam, dayId: dayIdParam } = useParams<{ id: string; dayId: string }>();
@@ -64,6 +67,14 @@ const RolloutDayDetailPage = () => {
   const [selectedWorkplace, setSelectedWorkplace] = useState<RolloutWorkplace | null>(null);
   const [dayDialogOpen, setDayDialogOpen] = useState(isEditMode);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+
+  // Export states
+  const [isExporting, setIsExporting] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   // Fetch session data
   const {
@@ -125,6 +136,29 @@ const RolloutDayDetailPage = () => {
       navigate(buildRoute.rolloutDayDetail(sessionId, dayId));
     }
   }, [isEditMode, navigate, sessionId, dayId]);
+
+  const handleExportSwapChecklist = useCallback(async () => {
+    if (!day || !session) return;
+
+    setIsExporting(true);
+    try {
+      await exportDaySwapChecklist(day, session.sessionName);
+      setSnackbar({
+        open: true,
+        message: 'Swap checklist succesvol gedownload!',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Fout bij exporteren van checklist',
+        severity: 'error',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [day, session]);
 
   // Loading state
   if (sessionLoading || dayLoading) {
@@ -292,9 +326,12 @@ const RolloutDayDetailPage = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip title="QR Codes printen">
-                <IconButton>
-                  <PrintIcon />
+              <Tooltip title="Swap Checklist Downloaden">
+                <IconButton
+                  onClick={handleExportSwapChecklist}
+                  disabled={isExporting || day.totalWorkplaces === 0}
+                >
+                  {isExporting ? <CircularProgress size={20} /> : <PrintIcon />}
                 </IconButton>
               </Tooltip>
               <Button
@@ -527,6 +564,23 @@ const RolloutDayDetailPage = () => {
           serviceName={day.name || undefined}
         />
       )}
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

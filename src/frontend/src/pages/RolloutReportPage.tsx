@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,6 +22,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Alert,
+  Snackbar,
+  CircularProgress,
+  Button,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -38,6 +42,7 @@ import { ROUTES } from '../constants/routes';
 import Loading from '../components/common/Loading';
 import type { EquipmentType } from '../types/rollout';
 import AssetStatusReportSection from '../components/rollout/AssetStatusReportSection';
+import { exportSessionSwapChecklist } from '../utils/swapChecklistExport';
 
 /**
  * Convert status to translation key (handles camelCase properly)
@@ -61,6 +66,14 @@ const RolloutReportPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const sessionId = Number(id);
+
+  // Export states
+  const [isExporting, setIsExporting] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   const { data: session, isLoading: sessionLoading } = useRolloutSession(sessionId, {
     includeDays: true,
@@ -97,6 +110,29 @@ const RolloutReportPage = () => {
     }
     return `${diffHours} uur`;
   };
+
+  const handleExportSwapChecklist = useCallback(async () => {
+    if (!session || !days) return;
+
+    setIsExporting(true);
+    try {
+      await exportSessionSwapChecklist(session, days);
+      setSnackbar({
+        open: true,
+        message: 'Swap checklist succesvol gedownload!',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Fout bij exporteren van checklist',
+        severity: 'error',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [session, days]);
 
   if (sessionLoading || daysLoading || progressLoading) {
     return <Loading />;
@@ -297,15 +333,42 @@ const RolloutReportPage = () => {
         </Box>
       </Paper>
 
+      {/* Swap Checklist Export */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography variant="h6">
+              Swap Checklist
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Download een overzicht met serienummers en QR code checkboxes
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={isExporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+            onClick={handleExportSwapChecklist}
+            disabled={isExporting || totalWorkplaces === 0}
+            sx={{
+              bgcolor: '#FF7700',
+              '&:hover': { bgcolor: '#E65100' },
+            }}
+          >
+            {isExporting ? 'Exporteren...' : 'Exporteer Checklist'}
+          </Button>
+        </Box>
+        <Typography variant="body2" color="text.secondary">
+          De checklist bevat per dag en per werkplek: laptop serienummer, docking serienummer, en een checkbox voor QR codes.
+          Serienummers die nog ingevuld moeten worden zijn geel gemarkeerd.
+        </Typography>
+      </Paper>
+
       {/* Equipment Summary */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">
             Materiaal Overzicht
           </Typography>
-          <IconButton size="small">
-            <DownloadIcon />
-          </IconButton>
         </Box>
         <Box
           sx={{
@@ -358,6 +421,23 @@ const RolloutReportPage = () => {
           )}
         </Box>
       </Paper>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
