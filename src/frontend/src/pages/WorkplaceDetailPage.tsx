@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Box,
@@ -20,7 +20,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
+import { QRCodeSVG } from 'qrcode.react';
 
 // Icons
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -46,6 +53,10 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 // Hooks
 import { usePhysicalWorkplace, usePhysicalWorkplaceAssets } from '../hooks/usePhysicalWorkplaces';
+
+// Dialogs
+import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
+import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
 
 // Neumorphic utilities
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
@@ -102,6 +113,22 @@ const WorkplaceDetailPage = () => {
   const workplaceId = parseInt(id || '0', 10);
   const { data: workplace, isLoading, error } = usePhysicalWorkplace(workplaceId);
   const { data: allFixedAssets = [] } = usePhysicalWorkplaceAssets(workplaceId);
+
+  // Dialog states
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [assetsDialogOpen, setAssetsDialogOpen] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const handleSnackbarClose = () => setSnackbar((prev) => ({ ...prev, open: false }));
+  const showSuccess = (message: string) => setSnackbar({ open: true, message, severity: 'success' });
+  const showError = (message: string) => setSnackbar({ open: true, message, severity: 'error' });
 
   // Filter out assets already shown in equipment slots
   const fixedAssets = useMemo(() => {
@@ -309,6 +336,7 @@ const WorkplaceDetailPage = () => {
             <Box sx={{ display: 'flex', gap: 1.5 }}>
               <Tooltip title="Equipment beheren" arrow>
                 <IconButton
+                  onClick={() => setAssetsDialogOpen(true)}
                   sx={{
                     color: EQUIPMENT_COLOR,
                     bgcolor: neumorphColors.bgSurface,
@@ -331,6 +359,7 @@ const WorkplaceDetailPage = () => {
               </Tooltip>
               <Tooltip title="Bewerken" arrow>
                 <IconButton
+                  onClick={() => setEditDialogOpen(true)}
                   sx={{
                     color: WORKPLACE_COLOR,
                     bgcolor: neumorphColors.bgSurface,
@@ -353,6 +382,7 @@ const WorkplaceDetailPage = () => {
               </Tooltip>
               <Tooltip title="QR Code" arrow>
                 <IconButton
+                  onClick={() => setQrDialogOpen(true)}
                   sx={{
                     color: 'text.secondary',
                     bgcolor: neumorphColors.bgSurface,
@@ -546,6 +576,7 @@ const WorkplaceDetailPage = () => {
             <Button
               size="small"
               startIcon={<SettingsIcon />}
+              onClick={() => setAssetsDialogOpen(true)}
               sx={{
                 color: EQUIPMENT_COLOR,
                 bgcolor: neumorphColors.bgSurface,
@@ -910,6 +941,104 @@ const WorkplaceDetailPage = () => {
           </Typography>
         </Box>
       </Box>
+
+      {/* Edit Workplace Dialog */}
+      <EditPhysicalWorkplaceDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        workplace={workplace}
+        onSuccess={showSuccess}
+        onError={showError}
+      />
+
+      {/* Assets Management Dialog */}
+      <WorkplaceAssetsDialog
+        open={assetsDialogOpen}
+        onClose={() => setAssetsDialogOpen(false)}
+        workplace={workplace}
+        onSuccess={showSuccess}
+        onError={showError}
+      />
+
+      {/* QR Code Dialog */}
+      <Dialog
+        open={qrDialogOpen}
+        onClose={() => setQrDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'strong'),
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 700, color: WORKPLACE_COLOR }}>
+          QR Code - {workplace.code}
+        </DialogTitle>
+        <DialogContent id="qr-dialog-content" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 3 }}>
+          <Box
+            sx={{
+              p: 3,
+              bgcolor: '#fff',
+              borderRadius: 2,
+              boxShadow: getNeumorph(isDark, 'medium'),
+            }}
+          >
+            <QRCodeSVG
+              value={workplace.code}
+              size={200}
+              level="H"
+              includeMargin
+            />
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+            Scan deze QR code om werkplek <strong>{workplace.code}</strong> te identificeren
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              // Download QR code as SVG
+              const svg = document.querySelector('#qr-dialog-content svg');
+              if (svg) {
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const blob = new Blob([svgData], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${workplace.code}-QR.svg`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }
+              setQrDialogOpen(false);
+            }}
+            sx={{
+              bgcolor: WORKPLACE_COLOR,
+              '&:hover': { bgcolor: alpha(WORKPLACE_COLOR, 0.85) },
+            }}
+          >
+            Download QR Code
+          </Button>
+          <Button onClick={() => setQrDialogOpen(false)}>
+            Sluiten
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
