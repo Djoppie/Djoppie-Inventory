@@ -212,6 +212,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       <Container
         component="main"
+        maxWidth="xl"
         sx={{
           flex: 1,
           pt: 5,

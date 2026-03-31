@@ -607,12 +607,12 @@ const AssetTableView = ({
                         >
                           <Link
                             to={
-                              // Priority: 1) Asset's physical workplace, 2) Employee's workplace, 3) Workplaces filtered by service
+                              // Priority: 1) Asset's physical workplace, 2) Employee's workplace, 3) Workplaces list
                               asset.physicalWorkplace
                                 ? `/workplaces/${asset.physicalWorkplace.id}`
                                 : asset.employee.physicalWorkplaceId
                                   ? `/workplaces/${asset.employee.physicalWorkplaceId}`
-                                  : `/workplaces${asset.employee.serviceId ? `?service=${asset.employee.serviceId}` : ''}`
+                                  : '/workplaces'
                             }
                             onClick={(e) => e.stopPropagation()}
                             style={{
@@ -694,7 +694,7 @@ const AssetTableView = ({
                           <Link
                             to={asset.physicalWorkplace
                               ? `/workplaces/${asset.physicalWorkplace.id}`
-                              : `/workplaces${asset.service?.id ? `?service=${asset.service.id}` : ''}`}
+                              : '/workplaces'}
                             onClick={(e) => e.stopPropagation()}
                             style={{
                               color: '#7B1FA2',

@@ -28,12 +28,15 @@ import WarningIcon from '@mui/icons-material/Warning';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DevicesIcon from '@mui/icons-material/Devices';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { useMutation } from '@tanstack/react-query';
 import { intuneApi, IntuneSyncResult } from '../../api/intune.api';
+import IntuneImportDialog from '../intune/IntuneImportDialog';
 
 const IntuneSyncTab = () => {
   const [syncResult, setSyncResult] = useState<IntuneSyncResult | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const syncMutation = useMutation({
     mutationFn: () => intuneApi.syncIntuneDataToAssets(),
@@ -119,7 +122,7 @@ const IntuneSyncTab = () => {
 
           <Divider sx={{ my: 2 }} />
 
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Button
               variant="contained"
               color="primary"
@@ -142,6 +145,23 @@ const IntuneSyncTab = () => {
               }}
             >
               {syncMutation.isPending ? 'Synchroniseren...' : 'Start Intune Sync'}
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="secondary"
+              size="large"
+              startIcon={<CloudDownloadIcon />}
+              onClick={() => setImportDialogOpen(true)}
+              sx={{
+                px: 4,
+                py: 1.5,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '1rem',
+              }}
+            >
+              Apparaten Importeren
             </Button>
 
             {syncResult && (
@@ -353,8 +373,19 @@ const IntuneSyncTab = () => {
           <Typography variant="body2" color="text.secondary">
             Alleen laptops en desktops met een serienummer worden gesynchroniseerd.
           </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2">
+            <strong>Apparaten Importeren:</strong> Gebruik de knop "Apparaten Importeren" om nieuwe
+            Intune apparaten toe te voegen aan de inventaris als assets.
+          </Typography>
         </Alert>
       )}
+
+      {/* Import Dialog */}
+      <IntuneImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+      />
     </Box>
   );
 };

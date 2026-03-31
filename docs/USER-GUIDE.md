@@ -18,6 +18,7 @@ Djoppie Inventory is an enterprise IT asset management system designed for IT-su
 ### Language Selection
 
 The application supports Dutch (NL) and English (EN). To change the language:
+
 1. Click the language selector in the top navigation bar
 2. Select your preferred language
 
@@ -131,6 +132,7 @@ The system automatically generates a unique asset code.
 ### Supported Codes
 
 The scanner recognizes:
+
 - Djoppie Inventory QR codes (containing asset codes)
 - Asset codes typed manually
 
@@ -175,6 +177,7 @@ Planning → Configuration → Execution → Reporting
 #### Add Workplaces
 
 **Manual Entry:**
+
 1. Select a day
 2. Click **Add Workplace**
 3. Enter user details:
@@ -185,6 +188,7 @@ Planning → Configuration → Execution → Reporting
 4. Click **Add**
 
 **Bulk Import from Entra Groups:**
+
 1. Select a day
 2. Click **Import from Group**
 3. Search and select Entra mail groups
@@ -240,6 +244,7 @@ For each workplace, configure the asset plan:
 #### Asset Status Changes
 
 When completing a workplace:
+
 - **New assets**: Status changes from Nieuw/Stock to InGebruik
 - **Old assets**: Status changes from InGebruik to UitDienst or Defect
 - Owner, department, and location are automatically updated
@@ -249,6 +254,7 @@ When completing a workplace:
 #### Progress Dashboard
 
 View real-time progress:
+
 - Total workplaces vs completed
 - Percentage completion
 - Per-day breakdown
@@ -256,6 +262,7 @@ View real-time progress:
 #### Asset Movement Report
 
 Track all asset changes:
+
 1. Navigate to **Rollout** > **Reports**
 2. Select a session
 3. View movement summary:
@@ -323,6 +330,7 @@ Track all asset changes:
 ### Viewing Intune Data
 
 When viewing an asset linked to Intune:
+
 1. Navigate to the asset detail page
 2. Click the **Intune** tab
 3. View device information:
@@ -334,6 +342,7 @@ When viewing an asset linked to Intune:
 ### Device Health
 
 The system displays:
+
 - Encryption status
 - Compliance state
 - Last sync time
@@ -342,6 +351,7 @@ The system displays:
 ### Autopilot Devices
 
 View Autopilot-registered devices:
+
 1. Navigate to **Intune** > **Autopilot**
 2. Browse registered devices
 3. Link devices to inventory assets
@@ -427,7 +437,8 @@ View Autopilot-registered devices:
 ## Support
 
 For technical issues or questions:
-- Contact: jo.wijnen@diepenbeek.be
+
+- Contact: <jo.wijnen@diepenbeek.be>
 - Report issues: GitHub repository
 
 ---

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -391,7 +391,25 @@ const PhysicalWorkplacesPage = () => {
       label: 'Code',
       minWidth: 120,
       format: (item) => (
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack
+          component={Link}
+          to={`/workplaces/${item.id}`}
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          sx={{
+            textDecoration: 'none',
+            transition: 'all 0.15s ease',
+            py: 0.5,
+            px: 0.75,
+            mx: -0.75,
+            borderRadius: 1,
+            '&:hover': {
+              bgcolor: alpha(workplaceAccent, 0.08),
+              transform: 'translateX(2px)',
+            },
+          }}
+        >
           <Box
             sx={{
               display: 'flex',
@@ -406,7 +424,15 @@ const PhysicalWorkplacesPage = () => {
           >
             {getWorkplaceTypeIcon(item.type)}
           </Box>
-          <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, color: workplaceAccent, fontSize: '0.85rem' }}>
+          <Typography
+            sx={{
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              color: workplaceAccent,
+              fontSize: '0.85rem',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
             {item.code}
           </Typography>
         </Stack>
@@ -1277,12 +1303,19 @@ const PhysicalWorkplacesPage = () => {
                         </Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography
+                            component={Link}
+                            to={`/workplaces/${workplace.id}`}
                             variant="h6"
                             sx={{
                               fontWeight: 800,
                               color: workplaceAccent,
                               fontSize: '1rem',
                               letterSpacing: '0.03em',
+                              textDecoration: 'none',
+                              transition: 'all 0.15s ease',
+                              '&:hover': {
+                                textDecoration: 'underline',
+                              },
                             }}
                           >
                             {workplace.code}

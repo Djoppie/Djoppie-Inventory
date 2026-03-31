@@ -28,4 +28,14 @@ public interface IIntuneSyncService
     Task<IntuneSyncItemResult> SyncSingleAssetAsync(
         int assetId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Imports Intune devices as new assets in the inventory.
+    /// </summary>
+    /// <param name="request">Import request with device IDs and asset type</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Import result with statistics and details</returns>
+    Task<ImportIntuneDevicesResultDto> ImportIntuneDevicesAsync(
+        ImportIntuneDevicesDto request,
+        CancellationToken cancellationToken = default);
 }

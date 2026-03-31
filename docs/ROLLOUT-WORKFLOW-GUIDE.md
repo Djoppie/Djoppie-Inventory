@@ -43,6 +43,7 @@ RolloutSession (Rollout Project)
 **Doel**: Een nieuwe rollout sessie starten
 
 **Acties**:
+
 1. Navigeer naar "Rollouts" in het hoofdmenu
 2. Klik op "+ Nieuwe Rollout"
 3. Vul in:
@@ -61,6 +62,7 @@ RolloutSession (Rollout Project)
 **Doel**: Rollout opdelen in uitvoerbare dagen
 
 **Acties**:
+
 1. Open de sessie (klik op naam in lijst)
 2. Klik "+ Nieuwe Dag"
 3. Vul in:
@@ -82,6 +84,7 @@ RolloutSession (Rollout Project)
 Werkplekken kunnen op drie manieren worden toegevoegd:
 
 #### Optie A: Handmatig Toevoegen
+
 1. Open een dag (klik op de dag in de lijst)
 2. Klik "+ Nieuwe Werkplek"
 3. Vul gebruikersinformatie in:
@@ -93,6 +96,7 @@ Werkplekken kunnen op drie manieren worden toegevoegd:
 5. Klik "Opslaan"
 
 #### Optie B: Bulk Import vanuit Azure AD
+
 1. Klik "Bulk Import"
 2. Selecteer bron:
    - **Dienst**: Kies een MG-* groep
@@ -105,6 +109,7 @@ Werkplekken kunnen op drie manieren worden toegevoegd:
 **Resultaat**: Meerdere werkplekken aangemaakt met standaard configuratie
 
 #### Optie C: Bulk Aanmaak (Lege Werkplekken)
+
 1. Klik "Bulk Toevoegen"
 2. Vul in:
    - Aantal werkplekken
@@ -125,11 +130,13 @@ Elke werkplek heeft een **Asset Plan** met drie functionele regio's:
 **Gebruik**: Wanneer een gebruiker al assets heeft in het systeem
 
 **Functionaliteit**:
+
 - Zoek bestaande assets op serienummer
 - Koppel assets aan deze werkplek
 - Update asset informatie (eigenaar, locatie)
 
 **Voorbeeld Flow**:
+
 1. Scan serienummer van laptop (bv. ABC123456)
 2. Systeem zoekt asset in database
 3. Als gevonden: asset wordt gekoppeld
@@ -144,17 +151,20 @@ Elke werkplek heeft een **Asset Plan** met drie functionele regio's:
 **Gebruik**: Wanneer oude apparatuur wordt vervangen
 
 **Functionaliteit**:
+
 - Registreer oude asset die wordt ingeleverd
 - Koppel oude asset aan werkplek
 - Bij voltooien: oude asset → status "UitDienst"
 
 **Voorbeeld Flow**:
+
 1. Gebruiker levert oude laptop in (serienummer XYZ789)
 2. Scan serienummer
 3. Systeem markeert asset als "oude asset"
 4. Bij completion: XYZ789 → UitDienst
 
 **Asset Status Transitie**:
+
 ```
 InGebruik → UitDienst (bij workplace completion)
 ```
@@ -166,12 +176,14 @@ InGebruik → UitDienst (bij workplace completion)
 **Gebruik**: Wanneer nieuwe apparatuur wordt uitgeleverd
 
 **Functionaliteit**:
+
 - Maak nieuwe assets aan voor deze werkplek
 - Selecteer templates (laptop, docking, monitor, keyboard, mouse)
 - Genereer QR codes voor nieuwe assets
 - Bij voltooien: nieuwe asset → status "InGebruik"
 
 **Voorbeeld Flow**:
+
 1. Selecteer template "Standaard Kantoorwerkplek":
    - 1x Laptop
    - 1x Docking Station
@@ -183,11 +195,13 @@ InGebruik → UitDienst (bij workplace completion)
 4. Systeem maakt assets aan met QR codes
 
 **Asset Status Transitie**:
+
 ```
 Nieuw (aangemaakt) → InGebruik (bij workplace completion)
 ```
 
 **QR Code Generatie**:
+
 - Automatisch voor nieuwe assets
 - Download beschikbaar via "QR Codes Afdrukken"
 - Formaat: `{AssetCode}-QR.svg`
@@ -236,6 +250,7 @@ Als één stap faalt, wordt **alles teruggedraaid** (rollback).
 **Doel**: Werkplekken één voor één installeren
 
 **Acties**:
+
 1. Navigeer naar de dag
 2. Klik "Start Uitvoering"
 3. Voor elke werkplek:
@@ -246,11 +261,13 @@ Als één stap faalt, wordt **alles teruggedraaid** (rollback).
 4. Herhaal voor alle werkplekken
 
 **Real-Time Updates**:
+
 - Status badges kleuren mee (grijs → blauw → groen)
 - Progress bar per werkplek (0/5 → 5/5)
 - Day progress (0/10 → 10/10 workplaces)
 
 **Foutafhandeling**:
+
 - Als serienummer niet gevonden: optie om nieuw asset aan te maken
 - Als item overgeslagen: status blijft "skipped" (wordt niet meegeteld)
 - Als voltooien faalt: error melding + rollback
@@ -262,6 +279,7 @@ Als één stap faalt, wordt **alles teruggedraaid** (rollback).
 **Doel**: Overzicht en statistieken van voltooide sessie
 
 **Beschikbare Informatie**:
+
 - Totaal aantal dagen en werkplekken
 - Completion percentage per dag
 - Asset type breakdown (hoeveel laptops, monitors, etc.)
@@ -269,6 +287,7 @@ Als één stap faalt, wordt **alles teruggedraaid** (rollback).
 - Export naar CSV/Excel (optioneel)
 
 **Acties**:
+
 1. Open voltooide sessie
 2. Klik "Rapportage"
 3. Bekijk statistieken
@@ -292,6 +311,7 @@ Pending → Ready → InProgress → Completed
 | **Completed** | Alle items geïnstalleerd | Heropenen (optioneel) |
 
 **Status Transitie Regels**:
+
 - Pending → Ready: handmatige actie "Markeer als Klaar"
 - Ready → InProgress: automatisch bij eerste item scan
 - InProgress → Completed: handmatige actie "Werkplek Voltooien"
@@ -324,6 +344,7 @@ Je kunt alleen heropenen en opnieuw voltooien met correcte data.
 ### Wat gebeurt er met QR codes voor nieuwe assets?
 
 **Antwoord**:
+
 - QR codes worden automatisch gegenereerd bij asset aanmaak
 - Download via "QR Codes Afdrukken" in planning overzicht
 - Formaat: SVG (schaalbaar voor printen)
@@ -336,6 +357,7 @@ Je kunt alleen heropenen en opnieuw voltooien met correcte data.
 ### Kan ik een dag verwijderen als er werkplekken in zitten?
 
 **Antwoord**: Ja, maar alleen als:
+
 1. De dag status is "Planning" (niet Ready of Completed)
 2. Alle werkplekken status is "Pending" (niet InProgress of Completed)
 
@@ -346,6 +368,7 @@ Je kunt alleen heropenen en opnieuw voltooien met correcte data.
 ### Hoe werkt de serienummer scan functie?
 
 **Antwoord**:
+
 1. Focus op het serienummer veld
 2. Scan met barcode scanner (of typ handmatig)
 3. Systeem zoekt automatisch na 500ms (debounce)
@@ -359,6 +382,7 @@ Je kunt alleen heropenen en opnieuw voltooien met correcte data.
 ### Wat is het verschil tussen "Overgeslagen" en "Niet Geïnstalleerd"?
 
 **Antwoord**:
+
 - **Overgeslagen**: Bewuste keuze om item niet te installeren (telt mee als voltooid)
 - **Niet Geïnstalleerd**: Status "pending", werkplek kan nog niet worden voltooid
 
@@ -369,6 +393,7 @@ Je kunt alleen heropenen en opnieuw voltooien met correcte data.
 ### Kan ik de volgorde van dagen wijzigen?
 
 **Antwoord**: Nee, dagen worden automatisch gesorteerd op:
+
 1. Datum (oplopend)
 2. DayNumber (oplopend)
 
@@ -379,12 +404,14 @@ Je kunt alleen heropenen en opnieuw voltooien met correcte data.
 ### Hoe weet ik welke werkplekken al voltoo zijn?
 
 **Antwoord**: Gebruik de status filter in planning overzicht:
+
 - **Alle**: Toon alle werkplekken
 - **Voltooid**: Alleen completed workplaces
 - **In Uitvoering**: Alleen InProgress workplaces
 - **Nog Te Doen**: Pending + Ready workplaces
 
 **Visuele Indicatoren**:
+
 - 🟢 Groen badge: Completed
 - 🔵 Blauw badge: InProgress
 - ⚪ Grijs badge: Pending/Ready
@@ -519,10 +546,12 @@ const rolloutKeys = {
 ## Support & Contact
 
 Voor technische vragen of bugs:
-- **Email**: jo.wijnen@diepenbeek.be
-- **GitHub**: https://github.com/Djoppie/Djoppie-Inventory
+
+- **Email**: <jo.wijnen@diepenbeek.be>
+- **GitHub**: <https://github.com/Djoppie/Djoppie-Inventory>
 
 Voor feature requests:
+
 - Maak een issue aan in de GitHub repository
 
 ---

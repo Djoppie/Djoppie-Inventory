@@ -10,11 +10,16 @@ import {
   Avatar,
   Grid,
   Skeleton,
-  Divider,
   Button,
   alpha,
   useTheme,
   useMediaQuery,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 
 // Icons
@@ -30,23 +35,20 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import MouseIcon from '@mui/icons-material/Mouse';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import EventSeatIcon from '@mui/icons-material/EventSeat';
-import EmailIcon from '@mui/icons-material/Email';
-import ScheduleIcon from '@mui/icons-material/Schedule';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import DevicesIcon from '@mui/icons-material/Devices';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import ApartmentIcon from '@mui/icons-material/Apartment';
-import GroupsIcon from '@mui/icons-material/Groups';
-import LayersIcon from '@mui/icons-material/Layers';
-import RoomIcon from '@mui/icons-material/Room';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 // Hooks
 import { usePhysicalWorkplace, usePhysicalWorkplaceAssets } from '../hooks/usePhysicalWorkplaces';
+
+// Neumorphic utilities
+import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
 
 // Types
 import { WorkplaceType, WorkplaceTypeLabels, PhysicalWorkplace } from '../types/physicalWorkplace.types';
@@ -55,25 +57,6 @@ import { WorkplaceType, WorkplaceTypeLabels, PhysicalWorkplace } from '../types/
 const WORKPLACE_COLOR = '#009688'; // Teal - consistent with workplaces
 const OCCUPANT_COLOR = '#7B1FA2'; // Purple - consistent with employees
 const EQUIPMENT_COLOR = '#FF7700'; // Orange - consistent with assets
-
-// Helper to format date difference
-const formatTimeSince = (dateString?: string): string => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 1) return 'Vandaag';
-  if (diffDays === 1) return '1 dag';
-  if (diffDays < 30) return `${diffDays} dagen`;
-  if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
-    return `${months} ${months === 1 ? 'maand' : 'maanden'}`;
-  }
-  const years = Math.floor(diffDays / 365);
-  return `${years} ${years === 1 ? 'jaar' : 'jaar'}`;
-};
 
 // Get icon for workplace type
 const getWorkplaceTypeIcon = (type: WorkplaceType) => {
@@ -90,245 +73,6 @@ const getWorkplaceTypeIcon = (type: WorkplaceType) => {
       return <PlaceIcon />;
   }
 };
-
-// Equipment Slot Component
-interface EquipmentSlotProps {
-  label: string;
-  icon: React.ReactNode;
-  assetId?: number;
-  assetCode?: string;
-  serialNumber?: string;
-  isExpected?: boolean;
-  color?: string;
-}
-
-const EquipmentSlot = ({ label, icon, assetId, assetCode, serialNumber, isExpected = true, color = EQUIPMENT_COLOR }: EquipmentSlotProps) => {
-  const theme = useTheme();
-  const isAssigned = !!assetId;
-  const isEmpty = isExpected && !isAssigned;
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: isEmpty
-          ? alpha(theme.palette.warning.main, 0.3)
-          : isAssigned
-            ? alpha(color, 0.2)
-            : alpha(theme.palette.divider, 0.5),
-        bgcolor: isEmpty
-          ? alpha(theme.palette.warning.main, 0.03)
-          : isAssigned
-            ? alpha(color, 0.02)
-            : 'transparent',
-        transition: 'all 0.2s ease',
-        cursor: assetId ? 'pointer' : 'default',
-        '&:hover': assetId ? {
-          borderColor: color,
-          bgcolor: alpha(color, 0.05),
-          transform: 'translateY(-2px)',
-          boxShadow: `0 4px 12px ${alpha(color, 0.15)}`,
-        } : {},
-      }}
-      component={assetId ? Link : 'div'}
-      {...(assetId && { to: `/assets/${assetId}` })}
-      style={assetId ? { textDecoration: 'none', color: 'inherit' } : undefined}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-        <Avatar
-          sx={{
-            width: 40,
-            height: 40,
-            bgcolor: isEmpty
-              ? alpha(theme.palette.warning.main, 0.1)
-              : isAssigned
-                ? alpha(color, 0.1)
-                : alpha(theme.palette.action.disabled, 0.1),
-            color: isEmpty
-              ? theme.palette.warning.main
-              : isAssigned
-                ? color
-                : theme.palette.text.disabled,
-          }}
-        >
-          {icon}
-        </Avatar>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              fontWeight: 600,
-              fontSize: '0.65rem',
-            }}
-          >
-            {label}
-          </Typography>
-          {isAssigned ? (
-            <>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: color,
-                  fontFamily: 'monospace',
-                  fontSize: '0.8rem',
-                }}
-              >
-                {assetCode}
-              </Typography>
-              {serialNumber && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem',
-                    display: 'block',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  S/N: {serialNumber}
-                </Typography>
-              )}
-            </>
-          ) : (
-            <Typography
-              variant="body2"
-              sx={{
-                color: isEmpty ? 'warning.main' : 'text.disabled',
-                fontStyle: 'italic',
-                fontSize: '0.8rem',
-              }}
-            >
-              {isEmpty ? 'Niet toegewezen' : 'Niet vereist'}
-            </Typography>
-          )}
-        </Box>
-        {isAssigned && (
-          <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main', opacity: 0.8 }} />
-        )}
-        {isEmpty && (
-          <WarningIcon sx={{ fontSize: 18, color: 'warning.main', opacity: 0.8 }} />
-        )}
-      </Box>
-    </Paper>
-  );
-};
-
-// Info Card Component
-interface InfoCardProps {
-  title: string;
-  icon: React.ReactNode;
-  color: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-}
-
-const InfoCard = ({ title, icon, color, children, action }: InfoCardProps) => {
-  const theme = useTheme();
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        border: '1px solid',
-        borderColor: alpha(color, 0.15),
-        overflow: 'hidden',
-      }}
-    >
-      <Box
-        sx={{
-          px: 2.5,
-          py: 1.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: `linear-gradient(135deg, ${alpha(color, 0.08)} 0%, ${alpha(color, 0.03)} 100%)`,
-          borderBottom: '1px solid',
-          borderColor: alpha(color, 0.1),
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              bgcolor: alpha(color, 0.15),
-              color: color,
-            }}
-          >
-            {icon}
-          </Avatar>
-          <Typography
-            variant="subtitle2"
-            sx={{
-              fontWeight: 700,
-              color: theme.palette.mode === 'dark' ? '#fff' : color,
-              letterSpacing: '0.02em',
-            }}
-          >
-            {title}
-          </Typography>
-        </Box>
-        {action}
-      </Box>
-      <Box sx={{ p: 2.5 }}>
-        {children}
-      </Box>
-    </Paper>
-  );
-};
-
-// Info Row Component
-interface InfoRowProps {
-  icon: React.ReactNode;
-  label: string;
-  value?: string | React.ReactNode;
-  color?: string;
-  monospace?: boolean;
-}
-
-const InfoRow = ({ icon, label, value, color, monospace }: InfoRowProps) => (
-  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5, '&:last-child': { mb: 0 } }}>
-    <Box sx={{ color: color || 'text.secondary', mt: 0.25 }}>
-      {icon}
-    </Box>
-    <Box sx={{ flex: 1 }}>
-      <Typography
-        variant="caption"
-        sx={{
-          color: 'text.secondary',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          fontWeight: 600,
-          fontSize: '0.6rem',
-          display: 'block',
-        }}
-      >
-        {label}
-      </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          fontWeight: 500,
-          fontFamily: monospace ? 'monospace' : 'inherit',
-          color: value ? 'text.primary' : 'text.disabled',
-        }}
-      >
-        {value || '-'}
-      </Typography>
-    </Box>
-  </Box>
-);
 
 // Loading Skeleton
 const WorkplaceDetailSkeleton = () => (
@@ -352,10 +96,28 @@ const WorkplaceDetailPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDark = theme.palette.mode === 'dark';
+  const neumorphColors = getNeumorphColors(isDark);
 
   const workplaceId = parseInt(id || '0', 10);
   const { data: workplace, isLoading, error } = usePhysicalWorkplace(workplaceId);
-  const { data: fixedAssets = [] } = usePhysicalWorkplaceAssets(workplaceId);
+  const { data: allFixedAssets = [] } = usePhysicalWorkplaceAssets(workplaceId);
+
+  // Filter out assets already shown in equipment slots
+  const fixedAssets = useMemo(() => {
+    if (!workplace) return allFixedAssets;
+
+    const equipmentAssetIds = new Set([
+      workplace.dockingStationAssetId,
+      workplace.monitor1AssetId,
+      workplace.monitor2AssetId,
+      workplace.monitor3AssetId,
+      workplace.keyboardAssetId,
+      workplace.mouseAssetId,
+    ].filter(Boolean));
+
+    return allFixedAssets.filter((asset: any) => !equipmentAssetIds.has(asset.id));
+  }, [workplace, allFixedAssets]);
 
   // Calculate equipment status
   const equipmentStatus = useMemo(() => {
@@ -413,7 +175,7 @@ const WorkplaceDetailPage = () => {
   const isOccupied = !!workplace.currentOccupantName;
 
   return (
-    <Box sx={{ minHeight: '100vh', pb: 8 }}>
+    <Box sx={{ minHeight: '100vh', pb: 8, bgcolor: neumorphColors.bgBase }}>
       {/* Header */}
       <Box
         sx={{
@@ -432,16 +194,20 @@ const WorkplaceDetailPage = () => {
                   mt: 0.5,
                   width: 40,
                   height: 40,
-                  borderRadius: 1.5,
+                  borderRadius: 2,
                   color: 'text.secondary',
-                  border: '1px solid',
-                  borderColor: 'divider',
+                  bgcolor: neumorphColors.bgSurface,
+                  boxShadow: getNeumorph(isDark, 'soft'),
                   transition: 'all 0.2s ease',
                   '&:hover': {
                     color: WORKPLACE_COLOR,
-                    borderColor: WORKPLACE_COLOR,
-                    bgcolor: alpha(WORKPLACE_COLOR, 0.08),
+                    bgcolor: neumorphColors.bgSurface,
                     transform: 'translateX(-2px)',
+                    boxShadow: `0 4px 12px ${alpha(WORKPLACE_COLOR, 0.3)}`,
+                  },
+                  '&:active': {
+                    boxShadow: getNeumorphInset(isDark),
+                    transform: 'translateX(0)',
                   },
                 }}
               >
@@ -540,16 +306,23 @@ const WorkplaceDetailPage = () => {
 
           {/* Right: Actions */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
               <Tooltip title="Equipment beheren" arrow>
                 <IconButton
                   sx={{
                     color: EQUIPMENT_COLOR,
-                    border: '1px solid',
-                    borderColor: alpha(EQUIPMENT_COLOR, 0.3),
+                    bgcolor: neumorphColors.bgSurface,
+                    boxShadow: getNeumorph(isDark, 'soft'),
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
-                      borderColor: EQUIPMENT_COLOR,
+                      bgcolor: EQUIPMENT_COLOR,
+                      color: '#fff',
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 4px 12px ${alpha(EQUIPMENT_COLOR, 0.4)}`,
+                    },
+                    '&:active': {
+                      boxShadow: getNeumorphInset(isDark),
+                      transform: 'translateY(0)',
                     },
                   }}
                 >
@@ -560,11 +333,18 @@ const WorkplaceDetailPage = () => {
                 <IconButton
                   sx={{
                     color: WORKPLACE_COLOR,
-                    border: '1px solid',
-                    borderColor: alpha(WORKPLACE_COLOR, 0.3),
+                    bgcolor: neumorphColors.bgSurface,
+                    boxShadow: getNeumorph(isDark, 'soft'),
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      bgcolor: alpha(WORKPLACE_COLOR, 0.08),
-                      borderColor: WORKPLACE_COLOR,
+                      bgcolor: WORKPLACE_COLOR,
+                      color: '#fff',
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 4px 12px ${alpha(WORKPLACE_COLOR, 0.4)}`,
+                    },
+                    '&:active': {
+                      boxShadow: getNeumorphInset(isDark),
+                      transform: 'translateY(0)',
                     },
                   }}
                 >
@@ -575,12 +355,18 @@ const WorkplaceDetailPage = () => {
                 <IconButton
                   sx={{
                     color: 'text.secondary',
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    bgcolor: neumorphColors.bgSurface,
+                    boxShadow: getNeumorph(isDark, 'soft'),
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.08),
-                      borderColor: theme.palette.primary.main,
-                      color: theme.palette.primary.main,
+                      bgcolor: theme.palette.primary.main,
+                      color: '#fff',
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.4)}`,
+                    },
+                    '&:active': {
+                      boxShadow: getNeumorphInset(isDark),
+                      transform: 'translateY(0)',
                     },
                   }}
                 >
@@ -594,423 +380,526 @@ const WorkplaceDetailPage = () => {
 
       {/* Main Content */}
       <Box sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-        <Grid container spacing={3}>
-          {/* Left Column: Occupant + Location */}
-          <Grid size={{ xs: 12, lg: 5 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {/* Occupant Hero Card */}
-              <Paper
-                elevation={0}
-                sx={{
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: isOccupied ? alpha(OCCUPANT_COLOR, 0.2) : 'divider',
-                  overflow: 'hidden',
-                  background: isOccupied
-                    ? `linear-gradient(135deg, ${alpha(OCCUPANT_COLOR, 0.05)} 0%, ${alpha(OCCUPANT_COLOR, 0.02)} 100%)`
-                    : undefined,
-                }}
-              >
-                <Box
+        {/* Top Row: Bezetter + Locatie side by side */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {/* Occupant Card */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                p: 2.5,
+                height: '100%',
+                bgcolor: neumorphColors.bgSurface,
+                boxShadow: getNeumorph(isDark, 'medium'),
+                borderLeft: isOccupied ? `3px solid ${OCCUPANT_COLOR}` : `3px solid ${alpha(theme.palette.text.disabled, 0.3)}`,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  boxShadow: getNeumorph(isDark, 'strong'),
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <PersonIcon sx={{ fontSize: 18, color: OCCUPANT_COLOR }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: OCCUPANT_COLOR }}>
+                  Bezetter
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar
                   sx={{
-                    p: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
+                    width: 40,
+                    height: 40,
+                    bgcolor: isOccupied ? alpha(OCCUPANT_COLOR, 0.15) : alpha(theme.palette.action.disabled, 0.1),
+                    color: isOccupied ? OCCUPANT_COLOR : 'text.disabled',
+                    fontSize: '1rem',
                   }}
                 >
-                  <Avatar
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      bgcolor: isOccupied ? alpha(OCCUPANT_COLOR, 0.15) : alpha(theme.palette.action.disabled, 0.1),
-                      color: isOccupied ? OCCUPANT_COLOR : 'text.disabled',
-                      fontSize: '2rem',
-                      mb: 2,
-                    }}
-                  >
-                    {isOccupied ? workplace.currentOccupantName?.charAt(0).toUpperCase() : <PersonIcon sx={{ fontSize: 40 }} />}
-                  </Avatar>
-
-                  {isOccupied ? (
-                    <>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                        {workplace.currentOccupantName}
-                      </Typography>
-                      {workplace.currentOccupantEmail && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary', mb: 1 }}>
-                          <EmailIcon sx={{ fontSize: 16 }} />
-                          <Typography variant="body2">
-                            {workplace.currentOccupantEmail}
-                          </Typography>
-                        </Box>
-                      )}
-                      {workplace.occupiedSince && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
-                          <ScheduleIcon sx={{ fontSize: 16 }} />
-                          <Typography variant="body2">
-                            Op deze werkplek sinds {formatTimeSince(workplace.occupiedSince)}
-                          </Typography>
-                        </Box>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
-                        Geen bezetter
-                      </Typography>
-                      <Typography variant="body2" color="text.disabled">
-                        Deze werkplek is momenteel niet toegewezen
-                      </Typography>
-                    </>
-                  )}
+                  {isOccupied ? workplace.currentOccupantName?.charAt(0).toUpperCase() : <PersonIcon />}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {isOccupied ? workplace.currentOccupantName : 'Geen bezetter'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {isOccupied ? workplace.currentOccupantEmail : 'Niet toegewezen'}
+                  </Typography>
                 </Box>
-
-                {/* Occupant's Device */}
-                {isOccupied && workplace.occupantDeviceAssetCode && (
-                  <>
-                    <Divider />
-                    <Box sx={{ p: 2 }}>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: 'text.secondary',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.1em',
-                          fontWeight: 600,
-                          display: 'block',
-                          mb: 1,
-                        }}
-                      >
-                        Apparaat van bezetter
-                      </Typography>
-                      <Box
-                        component={Link}
-                        to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1.5,
-                          p: 1.5,
-                          borderRadius: 2,
-                          bgcolor: alpha(EQUIPMENT_COLOR, 0.05),
-                          border: '1px solid',
-                          borderColor: alpha(EQUIPMENT_COLOR, 0.1),
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            bgcolor: alpha(EQUIPMENT_COLOR, 0.1),
-                            borderColor: EQUIPMENT_COLOR,
-                          },
-                        }}
-                      >
-                        <Avatar
-                          sx={{
-                            width: 36,
-                            height: 36,
-                            bgcolor: alpha(EQUIPMENT_COLOR, 0.1),
-                            color: EQUIPMENT_COLOR,
-                          }}
-                        >
-                          <LaptopIcon sx={{ fontSize: 20 }} />
-                        </Avatar>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, fontFamily: 'monospace', color: EQUIPMENT_COLOR }}
-                          >
-                            {workplace.occupantDeviceAssetCode}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {[workplace.occupantDeviceBrand, workplace.occupantDeviceModel].filter(Boolean).join(' ') || 'Geen details'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </>
+                {isOccupied ? (
+                  <IconButton size="small" sx={{ color: 'error.main' }}>
+                    <PersonRemoveIcon fontSize="small" />
+                  </IconButton>
+                ) : (
+                  <Button size="small" variant="outlined" sx={{ color: OCCUPANT_COLOR, borderColor: alpha(OCCUPANT_COLOR, 0.3) }}>
+                    Toewijzen
+                  </Button>
                 )}
-
-                {/* Actions */}
-                <Divider />
-                <Box sx={{ p: 2, display: 'flex', gap: 1, justifyContent: 'center' }}>
-                  {isOccupied ? (
-                    <Button
-                      size="small"
-                      startIcon={<PersonRemoveIcon />}
-                      sx={{ color: 'error.main' }}
-                    >
-                      Bezetter verwijderen
-                    </Button>
-                  ) : (
-                    <Button
-                      size="small"
-                      startIcon={<PersonIcon />}
-                      sx={{ color: OCCUPANT_COLOR }}
-                    >
-                      Bezetter toewijzen
-                    </Button>
-                  )}
-                </Box>
-              </Paper>
-
-              {/* Location Card */}
-              <InfoCard
-                title="Locatie"
-                icon={<LocationOnIcon sx={{ fontSize: 18 }} />}
-                color={WORKPLACE_COLOR}
-              >
-                <InfoRow
-                  icon={<ApartmentIcon sx={{ fontSize: 18 }} />}
-                  label="Gebouw"
-                  value={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <span>{workplace.buildingName}</span>
-                      {workplace.buildingCode && (
-                        <Chip
-                          size="small"
-                          label={workplace.buildingCode}
-                          sx={{
-                            height: 20,
-                            fontSize: '0.65rem',
-                            fontFamily: 'monospace',
-                            bgcolor: alpha(WORKPLACE_COLOR, 0.1),
-                            color: WORKPLACE_COLOR,
-                          }}
-                        />
-                      )}
-                    </Box>
-                  }
-                  color={WORKPLACE_COLOR}
-                />
-                <InfoRow
-                  icon={<GroupsIcon sx={{ fontSize: 18 }} />}
-                  label="Dienst"
-                  value={workplace.serviceName}
-                  color={WORKPLACE_COLOR}
-                />
-                <InfoRow
-                  icon={<LayersIcon sx={{ fontSize: 18 }} />}
-                  label="Verdieping"
-                  value={workplace.floor}
-                  color={WORKPLACE_COLOR}
-                />
-                <InfoRow
-                  icon={<RoomIcon sx={{ fontSize: 18 }} />}
-                  label="Kamer / Zone"
-                  value={workplace.room}
-                  color={WORKPLACE_COLOR}
-                />
-                {workplace.description && (
-                  <>
-                    <Divider sx={{ my: 1.5 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      {workplace.description}
-                    </Typography>
-                  </>
-                )}
-              </InfoCard>
-            </Box>
+              </Box>
+            </Paper>
           </Grid>
 
-          {/* Right Column: Equipment */}
-          <Grid size={{ xs: 12, lg: 7 }}>
-            <InfoCard
-              title={`Equipment (${equipmentStatus.filled}/${equipmentStatus.expected})`}
-              icon={<DevicesIcon sx={{ fontSize: 18 }} />}
-              color={EQUIPMENT_COLOR}
-              action={
-                <Button
-                  size="small"
-                  startIcon={<SettingsIcon />}
-                  sx={{ color: EQUIPMENT_COLOR }}
-                >
-                  Beheren
-                </Button>
-              }
+          {/* Location Card */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                p: 2.5,
+                height: '100%',
+                bgcolor: neumorphColors.bgSurface,
+                boxShadow: getNeumorph(isDark, 'medium'),
+                borderLeft: `3px solid ${WORKPLACE_COLOR}`,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  boxShadow: getNeumorph(isDark, 'strong'),
+                  transform: 'translateY(-2px)',
+                },
+              }}
             >
-              {/* Equipment Configuration Summary */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                  Configuratie: {workplace.monitorCount} monitor{workplace.monitorCount !== 1 ? 's' : ''},
-                  {workplace.hasDockingStation ? ' docking station, ' : ' geen docking, '}
-                  keyboard, muis
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <LocationOnIcon sx={{ fontSize: 18, color: WORKPLACE_COLOR }} />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: WORKPLACE_COLOR }}>
+                  Locatie
                 </Typography>
-                {/* Progress bar */}
-                <Box
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: alpha(EQUIPMENT_COLOR, 0.1),
-                    overflow: 'hidden',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      height: '100%',
-                      width: `${equipmentStatus.percentage}%`,
-                      borderRadius: 4,
-                      bgcolor: equipmentStatus.percentage === 100
-                        ? '#4CAF50'
-                        : equipmentStatus.percentage >= 50
-                          ? '#FFA726'
-                          : '#EF5350',
-                      transition: 'width 0.5s ease',
-                    }}
-                  />
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                <Box sx={{ minWidth: 120 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                    Gebouw
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {workplace.buildingName || '-'}
+                  </Typography>
+                </Box>
+                <Box sx={{ minWidth: 100 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                    Dienst
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {workplace.serviceName || '-'}
+                  </Typography>
+                </Box>
+                <Box sx={{ minWidth: 60 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                    Verdieping
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {workplace.floor || '-'}
+                  </Typography>
+                </Box>
+                <Box sx={{ minWidth: 80 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                    Kamer
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {workplace.room || '-'}
+                  </Typography>
                 </Box>
               </Box>
+            </Paper>
+          </Grid>
+        </Grid>
 
-              {/* Equipment Grid */}
-              <Grid container spacing={2}>
+        {/* Equipment Table */}
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            overflow: 'hidden',
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'medium'),
+          }}
+        >
+          {/* Table Header Bar */}
+          <Box
+            sx={{
+              px: 2.5,
+              py: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              bgcolor: neumorphColors.bgBase,
+              boxShadow: getNeumorphInset(isDark),
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  bgcolor: alpha(EQUIPMENT_COLOR, 0.15),
+                  color: EQUIPMENT_COLOR,
+                }}
+              >
+                <DevicesIcon sx={{ fontSize: 18 }} />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: EQUIPMENT_COLOR }}>
+                  Equipment
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {equipmentStatus.filled} van {equipmentStatus.expected} ingevuld
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              size="small"
+              startIcon={<SettingsIcon />}
+              sx={{
+                color: EQUIPMENT_COLOR,
+                bgcolor: neumorphColors.bgSurface,
+                boxShadow: getNeumorph(isDark, 'soft'),
+                px: 2,
+                '&:hover': {
+                  bgcolor: EQUIPMENT_COLOR,
+                  color: '#fff',
+                  boxShadow: `0 4px 12px ${alpha(EQUIPMENT_COLOR, 0.4)}`,
+                },
+              }}
+            >
+              Beheren
+            </Button>
+          </Box>
+
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow
+                  sx={{
+                    bgcolor: isDark ? alpha(EQUIPMENT_COLOR, 0.08) : alpha(EQUIPMENT_COLOR, 0.04),
+                    '& th': {
+                      borderBottom: `2px solid ${EQUIPMENT_COLOR}`,
+                      color: EQUIPMENT_COLOR,
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    },
+                  }}
+                >
+                  <TableCell sx={{ width: 160, py: 1.5 }}>Type</TableCell>
+                  <TableCell sx={{ py: 1.5 }}>Asset Code</TableCell>
+                  <TableCell sx={{ width: 80, py: 1.5, textAlign: 'center' }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody
+                sx={{
+                  '& tr': {
+                    transition: 'all 0.15s ease',
+                  },
+                  '& tr:nth-of-type(odd)': {
+                    bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
+                  },
+                  '& tr:nth-of-type(even)': {
+                    bgcolor: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.025)',
+                  },
+                  '& tr:hover': {
+                    bgcolor: isDark ? alpha(EQUIPMENT_COLOR, 0.08) : alpha(EQUIPMENT_COLOR, 0.04),
+                  },
+                  '& td': {
+                    borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                    py: 1.25,
+                  },
+                }}
+              >
+                {/* Desktop (only for Desktop workplaces) */}
+                {workplace.type === WorkplaceType.Desktop && (
+                  <TableRow>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <DesktopWindowsIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                        Desktop
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {workplace.occupantDeviceAssetCode ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.occupantDeviceAssetCode}
+                        </Typography>
+                      ) : (
+                        <Typography color="text.disabled">-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workplace.occupantDeviceAssetCode ? (
+                        <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                      ) : (
+                        <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
+
                 {/* Docking Station */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <EquipmentSlot
-                    label="Docking Station"
-                    icon={<DockIcon sx={{ fontSize: 20 }} />}
-                    assetId={workplace.dockingStationAssetId}
-                    assetCode={workplace.dockingStationAssetCode}
-                    serialNumber={workplace.dockingStationSerialNumber}
-                    isExpected={workplace.hasDockingStation}
-                  />
-                </Grid>
+                {workplace.hasDockingStation && (
+                  <TableRow>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <DockIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                        Docking Station
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {workplace.dockingStationAssetId ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${workplace.dockingStationAssetId}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.dockingStationAssetCode}
+                        </Typography>
+                      ) : (
+                        <Typography color="text.disabled">-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workplace.dockingStationAssetId ? (
+                        <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                      ) : (
+                        <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
 
                 {/* Monitor 1 */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <EquipmentSlot
-                    label="Monitor 1"
-                    icon={<MonitorIcon sx={{ fontSize: 20 }} />}
-                    assetId={workplace.monitor1AssetId}
-                    assetCode={workplace.monitor1AssetCode}
-                    serialNumber={workplace.monitor1SerialNumber}
-                    isExpected={workplace.monitorCount >= 1}
-                  />
-                </Grid>
+                {workplace.monitorCount >= 1 && (
+                  <TableRow>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <MonitorIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                        Monitor 1
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {workplace.monitor1AssetId ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${workplace.monitor1AssetId}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.monitor1AssetCode}
+                        </Typography>
+                      ) : (
+                        <Typography color="text.disabled">-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workplace.monitor1AssetId ? (
+                        <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                      ) : (
+                        <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
 
                 {/* Monitor 2 */}
                 {workplace.monitorCount >= 2 && (
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <EquipmentSlot
-                      label="Monitor 2"
-                      icon={<MonitorIcon sx={{ fontSize: 20 }} />}
-                      assetId={workplace.monitor2AssetId}
-                      assetCode={workplace.monitor2AssetCode}
-                      serialNumber={workplace.monitor2SerialNumber}
-                      isExpected={true}
-                    />
-                  </Grid>
+                  <TableRow>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <MonitorIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                        Monitor 2
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {workplace.monitor2AssetId ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${workplace.monitor2AssetId}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.monitor2AssetCode}
+                        </Typography>
+                      ) : (
+                        <Typography color="text.disabled">-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workplace.monitor2AssetId ? (
+                        <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                      ) : (
+                        <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      )}
+                    </TableCell>
+                  </TableRow>
                 )}
 
                 {/* Monitor 3 */}
                 {workplace.monitorCount >= 3 && (
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <EquipmentSlot
-                      label="Monitor 3"
-                      icon={<MonitorIcon sx={{ fontSize: 20 }} />}
-                      assetId={workplace.monitor3AssetId}
-                      assetCode={workplace.monitor3AssetCode}
-                      serialNumber={workplace.monitor3SerialNumber}
-                      isExpected={true}
-                    />
-                  </Grid>
+                  <TableRow>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <MonitorIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                        Monitor 3
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {workplace.monitor3AssetId ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${workplace.monitor3AssetId}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.monitor3AssetCode}
+                        </Typography>
+                      ) : (
+                        <Typography color="text.disabled">-</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {workplace.monitor3AssetId ? (
+                        <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                      ) : (
+                        <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                      )}
+                    </TableCell>
+                  </TableRow>
                 )}
 
                 {/* Keyboard */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <EquipmentSlot
-                    label="Toetsenbord"
-                    icon={<KeyboardIcon sx={{ fontSize: 20 }} />}
-                    assetId={workplace.keyboardAssetId}
-                    assetCode={workplace.keyboardAssetCode}
-                    serialNumber={workplace.keyboardSerialNumber}
-                    isExpected={true}
-                  />
-                </Grid>
+                <TableRow>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <KeyboardIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                      Toetsenbord
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    {workplace.keyboardAssetId ? (
+                      <Typography
+                        component={Link}
+                        to={`/assets/${workplace.keyboardAssetId}`}
+                        sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        {workplace.keyboardAssetCode}
+                      </Typography>
+                    ) : (
+                      <Typography color="text.disabled">-</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {workplace.keyboardAssetId ? (
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                    ) : (
+                      <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                    )}
+                  </TableCell>
+                </TableRow>
 
                 {/* Mouse */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <EquipmentSlot
-                    label="Muis"
-                    icon={<MouseIcon sx={{ fontSize: 20 }} />}
-                    assetId={workplace.mouseAssetId}
-                    assetCode={workplace.mouseAssetCode}
-                    serialNumber={workplace.mouseSerialNumber}
-                    isExpected={true}
-                  />
-                </Grid>
-              </Grid>
+                <TableRow>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <MouseIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
+                      Muis
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    {workplace.mouseAssetId ? (
+                      <Typography
+                        component={Link}
+                        to={`/assets/${workplace.mouseAssetId}`}
+                        sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        {workplace.mouseAssetCode}
+                      </Typography>
+                    ) : (
+                      <Typography color="text.disabled">-</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {workplace.mouseAssetId ? (
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                    ) : (
+                      <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                    )}
+                  </TableCell>
+                </TableRow>
 
-              {/* Additional Fixed Assets */}
-              {fixedAssets.length > 0 && (
-                <Box sx={{ mt: 3 }}>
-                  <Divider sx={{ mb: 2 }} />
-                  <Typography
-                    variant="subtitle2"
+                {/* Occupant's Laptop (for non-desktop workplaces) */}
+                {workplace.type !== WorkplaceType.Desktop && isOccupied && workplace.occupantDeviceAssetCode && (
+                  <TableRow
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 2,
-                      color: 'text.secondary',
+                      borderLeft: `3px solid ${OCCUPANT_COLOR}`,
+                      '&:hover': {
+                        bgcolor: `${alpha(OCCUPANT_COLOR, 0.08)} !important`,
+                      },
                     }}
                   >
-                    <InventoryIcon sx={{ fontSize: 18 }} />
-                    Overige Vaste Assets ({fixedAssets.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {fixedAssets.slice(0, 5).map((asset: any) => (
-                      <Box
-                        key={asset.id}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LaptopIcon sx={{ fontSize: 18, color: OCCUPANT_COLOR }} />
+                        <Typography sx={{ fontWeight: 500 }}>Laptop (bezetter)</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        component={Link}
+                        to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
+                        sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        {workplace.occupantDeviceAssetCode}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                    </TableCell>
+                  </TableRow>
+                )}
+
+                {/* Additional Fixed Assets */}
+                {fixedAssets.map((asset: any) => (
+                  <TableRow key={asset.id} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <InventoryIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        {asset.assetType?.name || 'Overig'}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
                         component={Link}
                         to={`/assets/${asset.id}`}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1.5,
-                          p: 1,
-                          borderRadius: 1,
-                          bgcolor: alpha(EQUIPMENT_COLOR, 0.03),
-                          border: '1px solid',
-                          borderColor: alpha(EQUIPMENT_COLOR, 0.1),
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          '&:hover': {
-                            bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
-                          },
-                        }}
+                        sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                       >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontFamily: 'monospace', fontWeight: 600, color: EQUIPMENT_COLOR }}
-                        >
-                          {asset.assetCode}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {asset.assetType?.name || asset.category}
-                        </Typography>
-                      </Box>
-                    ))}
-                    {fixedAssets.length > 5 && (
-                      <Button size="small" sx={{ alignSelf: 'flex-start' }}>
-                        + {fixedAssets.length - 5} meer assets bekijken
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              )}
-            </InfoCard>
-          </Grid>
-        </Grid>
+                        {asset.assetCode}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
 
         {/* Metadata Footer */}
-        <Box sx={{ mt: 4, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.disabled">
+        <Box
+          sx={{
+            mt: 4,
+            pt: 2.5,
+            pb: 1,
+            px: 2,
+            bgcolor: neumorphColors.bgBase,
+            borderRadius: 2,
+            boxShadow: getNeumorphInset(isDark),
+          }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.02em' }}>
             Aangemaakt: {new Date(workplace.createdAt).toLocaleDateString('nl-NL', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
-            })} |
+            })} &nbsp;&bull;&nbsp;
             Laatst bijgewerkt: {new Date(workplace.updatedAt).toLocaleDateString('nl-NL', {
               day: 'numeric',
               month: 'long',
