@@ -708,6 +708,77 @@ public class IntuneController : ControllerBase
     }
 
     /// <summary>
+    /// Imports selected Intune devices as new assets in the inventory.
+    /// Creates Asset entities from Intune device data with automatic asset code generation.
+    /// </summary>
+    /// <param name="request">Import request with device IDs and asset type</param>
+    /// <returns>Import result with statistics and details</returns>
+    /// <response code="200">Returns the import result with statistics</response>
+    /// <response code="400">Invalid request parameters</response>
+    /// <response code="401">Unauthorized - authentication required</response>
+    /// <response code="500">Internal server error</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST /api/intune/import-devices
+    ///     {
+    ///         "deviceIds": ["guid1", "guid2", "guid3"],
+    ///         "assetTypeId": 1,
+    ///         "status": "Stock"
+    ///     }
+    ///
+    /// This endpoint imports Intune devices as new assets in the inventory:
+    /// - Fetches device details from Intune (name, serial, manufacturer, model)
+    /// - Generates unique asset codes (LAP0001, LAP0002, etc.)
+    /// - Creates Asset entities with Intune data pre-populated
+    /// - Skips devices that already exist in inventory (by serial number)
+    /// - Returns detailed results including imported, skipped, and failed devices
+    ///
+    /// Status can be: Stock, Nieuw, InGebruik, Herstelling, Defect, UitDienst
+    /// </remarks>
+    [HttpPost("import-devices")]
+    [ProducesResponseType(typeof(ImportIntuneDevicesResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ImportIntuneDevicesResultDto>> ImportIntuneDevices([FromBody] ImportIntuneDevicesDto request)
+    {
+        try
+        {
+            if (request == null)
+            {
+                return BadRequest(new { error = "Request body is required" });
+            }
+
+            if (request.DeviceIds == null || request.DeviceIds.Count == 0)
+            {
+                return BadRequest(new { error = "At least one device ID is required" });
+            }
+
+            if (request.AssetTypeId <= 0)
+            {
+                return BadRequest(new { error = "Valid asset type ID is required" });
+            }
+
+            _logger.LogInformation("API request to import {Count} Intune devices", request.DeviceIds.Count);
+
+            var result = await _intuneSyncService.ImportIntuneDevicesAsync(request);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to import Intune devices");
+            return StatusCode(500, new { error = "Failed to import Intune devices", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error importing Intune devices");
+            return StatusCode(500, new { error = "An unexpected error occurred while importing devices" });
+        }
+    }
+
+    /// <summary>
     /// Syncs Intune data (enrollment date, last check-in, certificate expiry) to Asset entities.
     /// Matches assets by serial number and updates their Intune fields.
     /// </summary>

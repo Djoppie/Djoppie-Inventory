@@ -107,6 +107,15 @@ export const intuneApi = {
     const params = assetIds?.length ? { assetIds } : undefined;
     const response = await apiClient.post<IntuneSyncResult>('/intune/sync-to-assets', null, { params });
     return response.data;
+  },
+
+  /**
+   * Import selected Intune devices as new assets in the inventory
+   * @param request - Import request with device IDs and asset type
+   */
+  importDevicesAsAssets: async (request: ImportIntuneDevicesRequest): Promise<ImportIntuneDevicesResult> => {
+    const response = await apiClient.post<ImportIntuneDevicesResult>('/intune/import-devices', request);
+    return response.data;
   }
 };
 
@@ -138,4 +147,47 @@ export interface IntuneSyncItemResult {
   intuneEnrollmentDate?: string;
   intuneLastCheckIn?: string;
   intuneCertificateExpiry?: string;
+}
+
+/**
+ * Request to import Intune devices as assets
+ */
+export interface ImportIntuneDevicesRequest {
+  deviceIds: string[];
+  assetTypeId: number;
+  status?: string;
+}
+
+/**
+ * Result of importing Intune devices as assets
+ */
+export interface ImportIntuneDevicesResult {
+  totalRequested: number;
+  imported: number;
+  skipped: number;
+  failed: number;
+  importedDevices: ImportedDeviceInfo[];
+  skippedDevices: SkippedDeviceInfo[];
+  failedDevices: FailedDeviceInfo[];
+}
+
+export interface ImportedDeviceInfo {
+  deviceId: string;
+  deviceName: string;
+  serialNumber: string;
+  assetCode: string;
+  assetId: number;
+}
+
+export interface SkippedDeviceInfo {
+  deviceId: string;
+  deviceName: string;
+  serialNumber: string;
+  reason: string;
+}
+
+export interface FailedDeviceInfo {
+  deviceId: string;
+  deviceName: string;
+  error: string;
 }

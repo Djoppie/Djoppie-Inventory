@@ -175,6 +175,179 @@ public class IntuneSyncService : IIntuneSyncService
         }
     }
 
+    /// <inheritdoc/>
+    public async Task<ImportIntuneDevicesResultDto> ImportIntuneDevicesAsync(
+        ImportIntuneDevicesDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new ImportIntuneDevicesResultDto
+        {
+            TotalRequested = request.DeviceIds.Count
+        };
+
+        if (request.DeviceIds.Count == 0)
+        {
+            _logger.LogInformation("No devices to import");
+            return result;
+        }
+
+        _logger.LogInformation("Starting import of {Count} Intune devices", request.DeviceIds.Count);
+
+        // Fetch all Intune devices once
+        var allDevices = await FetchAllIntuneDevicesAsync();
+        var deviceLookup = allDevices.ToDictionary(d => d.Id ?? "", d => d);
+
+        // Get existing serial numbers to avoid duplicates
+        var existingSerialNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var allAssets = await _assetRepository.GetAllAsync(cancellationToken: cancellationToken);
+        foreach (var asset in allAssets.Where(a => !string.IsNullOrWhiteSpace(a.SerialNumber)))
+        {
+            existingSerialNumbers.Add(asset.SerialNumber!);
+        }
+
+        // Get asset prefix for generating asset codes
+        var assetPrefix = "LAP"; // Default for laptops
+        var existingAssetCodes = await _assetRepository.GetExistingAssetCodesAsync(assetPrefix, cancellationToken);
+        var nextAssetNumber = await _assetRepository.GetNextAssetNumberAsync(assetPrefix, false, cancellationToken);
+
+        var assetsToCreate = new List<Asset>();
+
+        foreach (var deviceId in request.DeviceIds)
+        {
+            // Check if device exists in Intune
+            if (!deviceLookup.TryGetValue(deviceId, out var device))
+            {
+                result.FailedDevices.Add(new FailedDeviceInfo
+                {
+                    DeviceId = deviceId,
+                    DeviceName = "Unknown",
+                    Error = "Device not found in Intune"
+                });
+                result.Failed++;
+                continue;
+            }
+
+            var deviceName = device.DeviceName ?? "Unknown";
+            var serialNumber = device.SerialNumber?.Trim() ?? "";
+
+            // Skip devices without serial numbers - they can't be uniquely identified
+            if (string.IsNullOrWhiteSpace(serialNumber))
+            {
+                result.SkippedDevices.Add(new SkippedDeviceInfo
+                {
+                    DeviceId = deviceId,
+                    DeviceName = deviceName,
+                    SerialNumber = "",
+                    Reason = "Device has no serial number"
+                });
+                result.Skipped++;
+                continue;
+            }
+
+            // Check if serial number already exists in inventory or in current batch
+            if (existingSerialNumbers.Contains(serialNumber))
+            {
+                result.SkippedDevices.Add(new SkippedDeviceInfo
+                {
+                    DeviceId = deviceId,
+                    DeviceName = deviceName,
+                    SerialNumber = serialNumber,
+                    Reason = "Serial number already exists in inventory"
+                });
+                result.Skipped++;
+                continue;
+            }
+
+            // Generate asset code
+            var assetCode = $"{assetPrefix}{nextAssetNumber:D4}";
+            while (existingAssetCodes.Contains(assetCode))
+            {
+                nextAssetNumber++;
+                assetCode = $"{assetPrefix}{nextAssetNumber:D4}";
+            }
+            existingAssetCodes.Add(assetCode);
+            nextAssetNumber++;
+
+            // Create the asset
+            var newAsset = new Asset
+            {
+                AssetCode = assetCode,
+                AssetName = deviceName,
+                SerialNumber = serialNumber,
+                Brand = device.Manufacturer ?? "",
+                Model = device.Model ?? "",
+                Category = "Laptop",
+                Status = Enum.TryParse<AssetStatus>(request.Status, true, out var status) ? status : AssetStatus.Stock,
+                AssetTypeId = request.AssetTypeId,
+                IntuneEnrollmentDate = device.EnrolledDateTime?.DateTime,
+                IntuneLastCheckIn = device.LastSyncDateTime?.DateTime,
+                IntuneCertificateExpiry = device.ManagementCertificateExpirationDate?.DateTime,
+                IntuneSyncedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            assetsToCreate.Add(newAsset);
+
+            // Track for result
+            result.ImportedDevices.Add(new ImportedDeviceInfo
+            {
+                DeviceId = deviceId,
+                DeviceName = deviceName,
+                SerialNumber = serialNumber,
+                AssetCode = assetCode,
+                AssetId = 0 // Will be set after creation
+            });
+
+            // Add to existing serials to prevent duplicates within batch
+            if (!string.IsNullOrWhiteSpace(serialNumber))
+            {
+                existingSerialNumbers.Add(serialNumber);
+            }
+        }
+
+        // Bulk create assets
+        if (assetsToCreate.Count > 0)
+        {
+            try
+            {
+                var createdAssets = await _assetRepository.BulkCreateAsync(assetsToCreate, cancellationToken);
+                var createdList = createdAssets.ToList();
+
+                // Update asset IDs in result
+                for (int i = 0; i < result.ImportedDevices.Count && i < createdList.Count; i++)
+                {
+                    result.ImportedDevices[i].AssetId = createdList[i].Id;
+                }
+
+                result.Imported = createdList.Count;
+                _logger.LogInformation("Successfully imported {Count} devices as assets", createdList.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create assets during import");
+                // Move all pending imports to failed
+                foreach (var imported in result.ImportedDevices.ToList())
+                {
+                    result.FailedDevices.Add(new FailedDeviceInfo
+                    {
+                        DeviceId = imported.DeviceId,
+                        DeviceName = imported.DeviceName,
+                        Error = $"Database error: {ex.Message}"
+                    });
+                }
+                result.ImportedDevices.Clear();
+                result.Failed += assetsToCreate.Count;
+            }
+        }
+
+        _logger.LogInformation(
+            "Intune import completed. Requested: {Total}, Imported: {Imported}, Skipped: {Skipped}, Failed: {Failed}",
+            result.TotalRequested, result.Imported, result.Skipped, result.Failed);
+
+        return result;
+    }
+
     #region Private Methods
 
     private async Task<IEnumerable<Asset>> GetAssetsToSyncAsync(
