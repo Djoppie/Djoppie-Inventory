@@ -286,7 +286,7 @@ const Sidebar = ({
             alt="Diepenbeek Skyline"
             sx={{
               position: 'absolute',
-              bottom: 0,
+              bottom: -25,
               left: '50%',
               transform: 'translateX(-50%)',
               width: '110%',
