@@ -257,6 +257,67 @@ const Sidebar = ({
         bgcolor: bgSurface,
       }}
     >
+      {/* Skyline Banner */}
+      {!isCollapsed && (
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
+            height: 100,
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {/* Sunset gradient background */}
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: isDark
+                ? 'linear-gradient(180deg, #1a0a2e 0%, #2d1b4e 20%, #4a2c5a 40%, #8b4a6b 60%, #c66b4a 80%, #f5a962 95%, rgba(10, 14, 39, 0.95) 100%)'
+                : 'linear-gradient(180deg, #87CEEB 0%, #98D8E8 15%, #FFD89B 40%, #FFB366 60%, #FF8C42 80%, #FF6B35 95%, rgba(248, 249, 250, 0.95) 100%)',
+              zIndex: 0,
+            }}
+          />
+          {/* Skyline image */}
+          <Box
+            component="img"
+            src="/diepenbeek-skyline.png"
+            alt="Diepenbeek Skyline"
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '110%',
+              height: 'auto',
+              objectFit: 'contain',
+              opacity: isDark ? 0.6 : 0.7,
+              filter: isDark
+                ? 'invert(1) brightness(1.2) contrast(0.9)'
+                : 'brightness(0.3) contrast(1.2)',
+              mixBlendMode: isDark ? 'screen' : 'multiply',
+              zIndex: 1,
+            }}
+          />
+          {/* Subtle glow overlay */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '40%',
+              background: isDark
+                ? 'linear-gradient(180deg, transparent 0%, rgba(255, 119, 0, 0.15) 100%)'
+                : 'linear-gradient(180deg, transparent 0%, rgba(255, 140, 66, 0.2) 100%)',
+              zIndex: 2,
+              pointerEvents: 'none',
+            }}
+          />
+        </Box>
+      )}
+
       {/* Header */}
       <Box
         sx={{
