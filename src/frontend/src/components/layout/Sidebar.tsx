@@ -33,8 +33,11 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 
 import { ROUTES } from '../../constants/routes';
+import { useThemeMode } from '../../hooks/useThemeMode';
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
 import { ASSET_COLOR } from '../../constants/filterColors';
 import DjoppieLogo from '../common/DjoppieLogo';
@@ -189,6 +192,7 @@ const Sidebar = ({
 }: SidebarProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const { toggleTheme } = useThemeMode();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -315,6 +319,59 @@ const Sidebar = ({
               pointerEvents: 'none',
             }}
           />
+          {/* Sun/Moon Theme Toggle */}
+          <Tooltip title={isDark ? 'Schakel naar licht' : 'Schakel naar donker'} placement="bottom">
+            <IconButton
+              onClick={toggleTheme}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 12,
+                zIndex: 10,
+                width: 36,
+                height: 36,
+                bgcolor: isDark
+                  ? 'rgba(255, 200, 100, 0.2)'
+                  : 'rgba(255, 255, 255, 0.3)',
+                backdropFilter: 'blur(4px)',
+                border: '2px solid',
+                borderColor: isDark
+                  ? 'rgba(255, 200, 100, 0.4)'
+                  : 'rgba(255, 255, 255, 0.5)',
+                boxShadow: isDark
+                  ? '0 0 20px rgba(255, 200, 100, 0.5), 0 0 40px rgba(255, 150, 50, 0.3)'
+                  : '0 0 20px rgba(255, 200, 100, 0.6), 0 0 40px rgba(255, 150, 50, 0.4)',
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'scale(1.15) rotate(15deg)',
+                  bgcolor: isDark
+                    ? 'rgba(255, 200, 100, 0.3)'
+                    : 'rgba(255, 255, 255, 0.5)',
+                  boxShadow: isDark
+                    ? '0 0 30px rgba(255, 200, 100, 0.7), 0 0 60px rgba(255, 150, 50, 0.5)'
+                    : '0 0 30px rgba(255, 200, 100, 0.8), 0 0 60px rgba(255, 150, 50, 0.6)',
+                },
+              }}
+            >
+              {isDark ? (
+                <DarkModeIcon
+                  sx={{
+                    fontSize: 22,
+                    color: '#E8E8F0',
+                    filter: 'drop-shadow(0 0 4px rgba(200, 200, 255, 0.8))',
+                  }}
+                />
+              ) : (
+                <LightModeIcon
+                  sx={{
+                    fontSize: 22,
+                    color: '#FFD700',
+                    filter: 'drop-shadow(0 0 6px rgba(255, 200, 0, 0.8))',
+                  }}
+                />
+              )}
+            </IconButton>
+          </Tooltip>
         </Box>
       )}
 
