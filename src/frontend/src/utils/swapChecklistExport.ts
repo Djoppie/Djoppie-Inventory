@@ -396,11 +396,29 @@ export const exportSessionSwapChecklist = async (
   // Freeze header row
   overviewSheet.views = [{ state: 'frozen', ySplit: 4 }];
 
-  // Add individual day sheets
+  // Add individual day sheets with unique names
+  const usedSheetNames = new Set<string>(['Overzicht']);
+
   daysWithWorkplaces.forEach((day) => {
     const data = prepareChecklistData(day.workplaces || []);
     const formattedDate = format(new Date(day.date), 'dd MMMM yyyy', { locale: nl });
-    const sheetName = (day.name || `Dag ${day.dayNumber}`).substring(0, 31); // Excel sheet name limit
+    const dateShort = format(new Date(day.date), 'dd-MM');
+
+    // Create base sheet name and ensure uniqueness
+    let baseSheetName = (day.name || `Dag ${day.dayNumber}`).substring(0, 25); // Leave room for suffix
+    let sheetName = baseSheetName;
+    let counter = 1;
+
+    // If name already exists, add date or counter suffix
+    while (usedSheetNames.has(sheetName)) {
+      sheetName = `${baseSheetName} (${dateShort})`;
+      if (usedSheetNames.has(sheetName)) {
+        counter++;
+        sheetName = `${baseSheetName} ${counter}`;
+      }
+    }
+    usedSheetNames.add(sheetName);
+
     const title = `Swap Checklist - ${day.name || `Dag ${day.dayNumber}`}`;
     const subtitle = `${formattedDate} | ${(day.workplaces || []).length} werkplekken`;
 
