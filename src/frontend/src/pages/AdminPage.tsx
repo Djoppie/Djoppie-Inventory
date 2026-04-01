@@ -244,9 +244,8 @@ const AdminPage = () => {
       <Box
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 3, md: 4 },
-          ml: { md: 0 },
-          width: { xs: '100%', md: 'calc(100% - 280px)' },
+          minWidth: 0,
+          p: { xs: 2, sm: 2, md: 2.5 },
           pb: 10,
         }}
       >

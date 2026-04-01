@@ -290,15 +290,17 @@ const AdminNavigation = ({ activeSection, onSectionChange, sections }: AdminNavi
     </Box>
   );
 
-  return (
-    <>
-      {/* Mobile Menu Button */}
-      {isMobile && (
+  // Desktop: Regular box sidebar within flex container
+  // Mobile: Temporary drawer
+  if (isMobile) {
+    return (
+      <>
+        {/* Mobile Menu Button */}
         <IconButton
           onClick={handleDrawerToggle}
           sx={{
             position: 'fixed',
-            top: 100,
+            top: 80,
             left: 16,
             zIndex: 1300,
             bgcolor: isDark ? 'rgba(255, 215, 0, 0.12)' : 'rgba(255, 119, 0, 0.12)',
@@ -314,30 +316,8 @@ const AdminNavigation = ({ activeSection, onSectionChange, sections }: AdminNavi
         >
           <MenuIcon sx={{ color: 'primary.main' }} />
         </IconButton>
-      )}
 
-      {/* Desktop Drawer */}
-      {!isMobile && (
-        <Drawer
-          variant="permanent"
-          sx={{
-            width: DRAWER_WIDTH,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: DRAWER_WIDTH,
-              boxSizing: 'border-box',
-              border: 'none',
-              borderRight: '1px solid',
-              borderColor: 'divider',
-            },
-          }}
-        >
-          {drawerContent}
-        </Drawer>
-      )}
-
-      {/* Mobile Drawer */}
-      {isMobile && (
+        {/* Mobile Drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -354,8 +334,22 @@ const AdminNavigation = ({ activeSection, onSectionChange, sections }: AdminNavi
         >
           {drawerContent}
         </Drawer>
-      )}
-    </>
+      </>
+    );
+  }
+
+  // Desktop: Regular sidebar (not a drawer)
+  return (
+    <Box
+      sx={{
+        width: DRAWER_WIDTH,
+        flexShrink: 0,
+        borderRight: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      {drawerContent}
+    </Box>
   );
 };
 
