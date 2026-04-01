@@ -13,6 +13,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { useTranslation } from 'react-i18next';
 import Navigation from './Navigation';
 import Sidebar from './Sidebar';
+import Breadcrumbs from './Breadcrumbs';
 import DjoppieLogo from '../common/DjoppieLogo';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserProfile from '../auth/UserProfile';
@@ -263,7 +264,7 @@ const Layout = ({ children }: LayoutProps) => {
           component="main"
           sx={{
             flex: 1,
-            pt: 3,
+            pt: 2,
             px: { xs: 2, sm: 2, md: 2.5 },
             pb: isMobile ? 10 : 3,
             position: 'relative',
@@ -272,6 +273,7 @@ const Layout = ({ children }: LayoutProps) => {
             overflowX: 'auto',
           }}
         >
+          <Breadcrumbs />
           {children}
         </Box>
 
