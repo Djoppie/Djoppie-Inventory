@@ -7,7 +7,6 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  useTheme,
 } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -29,7 +28,6 @@ const Layout = ({ children }: LayoutProps) => {
   const { mode, toggleTheme } = useThemeMode();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const theme = useTheme();
 
   const {
     isCollapsed,
