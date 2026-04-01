@@ -6,11 +6,8 @@ import {
   Toolbar,
   Typography,
   IconButton,
-  Tooltip,
 } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useTranslation } from 'react-i18next';
 import Navigation from './Navigation';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
@@ -27,8 +24,7 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
-  const { mode, toggleTheme } = useThemeMode();
-  const { t } = useTranslation();
+  const { mode } = useThemeMode();
   const navigate = useNavigate();
   const isDark = mode === 'dark';
   const { bgSurface } = getNeumorphColors(isDark);
@@ -212,25 +208,6 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* User Profile */}
             <UserProfile />
-
-            {/* Theme Toggle */}
-            <Tooltip title={mode === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}>
-              <IconButton
-                onClick={toggleTheme}
-                size="small"
-                sx={{
-                  color: 'secondary.main',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  '&:hover': {
-                    borderColor: 'secondary.main',
-                    boxShadow: '0 0 8px rgba(224, 123, 40, 0.3)',
-                  },
-                }}
-              >
-                {mode === 'dark' ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
-              </IconButton>
-            </Tooltip>
           </Toolbar>
         </AppBar>
 
