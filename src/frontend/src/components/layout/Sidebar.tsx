@@ -13,6 +13,7 @@ import {
   IconButton,
   Divider,
   Tooltip,
+  Avatar,
   alpha,
   useTheme,
 } from '@mui/material';
@@ -38,9 +39,9 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 
 import { ROUTES } from '../../constants/routes';
 import { useThemeMode } from '../../hooks/useThemeMode';
+import { useAuth } from '../../hooks/useAuth';
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
 import { ASSET_COLOR } from '../../constants/filterColors';
-import DjoppieLogo from '../common/DjoppieLogo';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -193,10 +194,24 @@ const Sidebar = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { toggleTheme } = useThemeMode();
+  const { account } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const { bgBase, bgSurface } = getNeumorphColors(isDark);
+
+  // Get user initials for avatar
+  const userInitials = account?.name
+    ? account.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .substring(0, 2)
+    : account?.username?.substring(0, 2).toUpperCase() || '?';
+
+  // Get user's first name for display
+  const userFirstName = account?.name?.split(' ')[0] || account?.username?.split('@')[0] || 'User';
 
   // Check for active rollout sessions
   const { data: rolloutSessions = [] } = useQuery<RolloutSession[]>({
@@ -389,7 +404,20 @@ const Sidebar = ({
       >
         {!isCollapsed && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <DjoppieLogo size={40} animate={false} />
+            <Avatar
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: ASSET_COLOR,
+                fontSize: '1rem',
+                fontWeight: 700,
+                border: '2px solid',
+                borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                boxShadow: getNeumorph(isDark, 'soft'),
+              }}
+            >
+              {userInitials}
+            </Avatar>
             <Typography
               variant="h6"
               sx={{
@@ -403,12 +431,27 @@ const Sidebar = ({
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Djoppie
+              {userFirstName}
             </Typography>
           </Box>
         )}
 
-        {isCollapsed && <DjoppieLogo size={36} animate={false} />}
+        {isCollapsed && (
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: ASSET_COLOR,
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              border: '2px solid',
+              borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+              boxShadow: getNeumorph(isDark, 'soft'),
+            }}
+          >
+            {userInitials}
+          </Avatar>
+        )}
 
         {!isMobile && (
           <IconButton
