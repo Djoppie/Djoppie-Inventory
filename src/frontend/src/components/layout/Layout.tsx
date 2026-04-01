@@ -14,13 +14,13 @@ import { useTranslation } from 'react-i18next';
 import Navigation from './Navigation';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
-import SearchBar from './SearchBar';
 import DjoppieLogo from '../common/DjoppieLogo';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserProfile from '../auth/UserProfile';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { useSidebarState } from '../../hooks/useSidebarState';
 import { ROUTES } from '../../constants/routes';
+import { getNeumorphColors } from '../../utils/neumorphicStyles';
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,6 +30,8 @@ const Layout = ({ children }: LayoutProps) => {
   const { mode, toggleTheme } = useThemeMode();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isDark = mode === 'dark';
+  const { bgSurface } = getNeumorphColors(isDark);
 
   const {
     isCollapsed,
@@ -99,39 +101,11 @@ const Layout = ({ children }: LayoutProps) => {
             sx={{
               gap: 2,
               py: 1,
-              background: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? 'linear-gradient(180deg, rgba(10, 14, 39, 0.98) 0%, rgba(10, 14, 39, 0.95) 100%)'
-                  : 'linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 249, 250, 0.95) 100%)',
+              bgcolor: bgSurface,
               position: 'relative',
               overflow: 'visible',
-              boxShadow: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? '0 8px 32px rgba(255, 119, 0, 0.15), 0 4px 16px rgba(204, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.2)'
-                  : '0 8px 32px rgba(255, 119, 0, 0.12), 0 4px 16px rgba(204, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06)',
               borderBottom: '1px solid',
-              borderBottomColor: 'divider',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                bottom: -1,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? 'linear-gradient(90deg, transparent 0%, rgba(255, 119, 0, 0.6) 30%, rgba(204, 0, 0, 0.4) 70%, transparent 100%)'
-                    : 'linear-gradient(90deg, transparent 0%, rgba(255, 119, 0, 0.5) 30%, rgba(204, 0, 0, 0.3) 70%, transparent 100%)',
-                animation: 'shimmerLine 3s ease-in-out infinite',
-              },
-              '@keyframes shimmerLine': {
-                '0%, 100%': {
-                  opacity: 0.5,
-                },
-                '50%': {
-                  opacity: 1,
-                },
-              },
+              borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
             }}
           >
             {/* Mobile menu button */}
@@ -232,9 +206,6 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Spacer */}
             <Box sx={{ flexGrow: 1 }} />
-
-            {/* Search Bar - Hidden on mobile */}
-            {!isMobile && <SearchBar />}
 
             {/* Language Switcher */}
             <LanguageSwitcher />
