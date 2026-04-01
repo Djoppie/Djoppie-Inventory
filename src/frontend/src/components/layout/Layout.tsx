@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import Navigation from './Navigation';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
+import SearchBar from './SearchBar';
 import DjoppieLogo from '../common/DjoppieLogo';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import UserProfile from '../auth/UserProfile';
@@ -231,6 +232,9 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Spacer */}
             <Box sx={{ flexGrow: 1 }} />
+
+            {/* Search Bar - Hidden on mobile */}
+            {!isMobile && <SearchBar />}
 
             {/* Language Switcher */}
             <LanguageSwitcher />
