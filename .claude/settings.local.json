@@ -12,7 +12,8 @@
       "Bash(sqlite3:*)",
       "Skill(commit-commands:commit)",
       "Skill(frontend-design)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(tasklist:*)"
     ]
   }
 }
