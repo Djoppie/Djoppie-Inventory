@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Drawer,
   Box,
@@ -15,6 +16,8 @@ import {
   alpha,
   useTheme,
 } from '@mui/material';
+import { getRolloutSessions } from '../../api/rollout.api';
+import type { RolloutSession } from '../../types/rollout';
 
 // Icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -55,6 +58,8 @@ interface NavItem {
   icon: React.ReactNode;
   path: string;
   matchPaths?: string[];
+  highlighted?: boolean;
+  highlightId?: string; // For dynamic highlight colors (e.g., 'rollout')
 }
 
 // Navigation structure
@@ -67,6 +72,7 @@ const navSections: NavSection[] = [
         icon: <DashboardIcon />,
         path: ROUTES.DASHBOARD,
         matchPaths: ['/'],
+        highlighted: true,
       },
     ],
   },
@@ -78,6 +84,7 @@ const navSections: NavSection[] = [
         icon: <InventoryIcon />,
         path: ROUTES.DEVICE_MANAGEMENT,
         matchPaths: ['/devices', '/assets'],
+        highlighted: true,
       },
       {
         label: 'Templates',
@@ -101,6 +108,7 @@ const navSections: NavSection[] = [
         icon: <BusinessIcon />,
         path: ROUTES.PHYSICAL_WORKPLACES,
         matchPaths: ['/workplaces'],
+        highlighted: true,
       },
     ],
   },
@@ -112,6 +120,7 @@ const navSections: NavSection[] = [
         icon: <QrCodeScannerIcon />,
         path: ROUTES.SCAN,
         matchPaths: ['/scan'],
+        highlighted: true,
       },
     ],
   },
@@ -123,6 +132,7 @@ const navSections: NavSection[] = [
         icon: <SwapHorizIcon />,
         path: ROUTES.LAPTOP_SWAP,
         matchPaths: ['/laptop-swap'],
+        highlighted: true,
       },
       {
         label: 'Geschiedenis',
@@ -140,6 +150,8 @@ const navSections: NavSection[] = [
         icon: <RocketLaunchIcon />,
         path: ROUTES.ROLLOUTS,
         matchPaths: ['/rollouts'],
+        highlighted: true,
+        highlightId: 'rollout',
       },
       {
         label: 'Autopilot Devices',
@@ -157,10 +169,15 @@ const navSections: NavSection[] = [
         icon: <SettingsIcon />,
         path: ROUTES.ADMIN,
         matchPaths: ['/admin'],
+        highlighted: true,
       },
     ],
   },
 ];
+
+// Highlight colors
+const HIGHLIGHT_COLOR = '#FF7700'; // Djoppie Orange
+const ROLLOUT_ACTIVE_COLOR = '#E53935'; // Red for active rollouts
 
 const Sidebar = ({
   isCollapsed,
@@ -176,6 +193,25 @@ const Sidebar = ({
   const location = useLocation();
 
   const { bgBase, bgSurface } = getNeumorphColors(isDark);
+
+  // Check for active rollout sessions
+  const { data: rolloutSessions = [] } = useQuery<RolloutSession[]>({
+    queryKey: ['rolloutSessions'],
+    queryFn: () => getRolloutSessions(),
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  const hasActiveRollouts = rolloutSessions.some(
+    (session: RolloutSession) => session.status === 'InProgress'
+  );
+
+  // Get icon color based on item properties
+  const getIconColor = (item: NavItem, isItemActive: boolean): string => {
+    if (isItemActive) return ASSET_COLOR;
+    if (item.highlightId === 'rollout' && hasActiveRollouts) return ROLLOUT_ACTIVE_COLOR;
+    if (item.highlighted) return HIGHLIGHT_COLOR;
+    return 'inherit';
+  };
 
   // Check if a nav item is active
   const isActive = useCallback(
@@ -366,7 +402,7 @@ const Sidebar = ({
                       sx={{
                         minWidth: isCollapsed ? 0 : 40,
                         justifyContent: 'center',
-                        color: active ? ASSET_COLOR : 'text.secondary',
+                        color: getIconColor(item, active),
                         transition: 'color 0.2s ease',
                       }}
                     >
