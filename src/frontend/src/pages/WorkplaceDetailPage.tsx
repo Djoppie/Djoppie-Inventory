@@ -53,7 +53,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 // Hooks
-import { usePhysicalWorkplace, usePhysicalWorkplaceAssets } from '../hooks/usePhysicalWorkplaces';
+import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant } from '../hooks/usePhysicalWorkplaces';
 
 // Dialogs
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
@@ -122,6 +122,10 @@ const WorkplaceDetailPage = () => {
   const [assetsDialogOpen, setAssetsDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [deviceAssignmentDialogOpen, setDeviceAssignmentDialogOpen] = useState(false);
+  const [clearOccupantDialogOpen, setClearOccupantDialogOpen] = useState(false);
+
+  // Mutations
+  const clearOccupantMutation = useClearOccupant();
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -484,9 +488,15 @@ const WorkplaceDetailPage = () => {
                   </Typography>
                 </Box>
                 {isOccupied ? (
-                  <IconButton size="small" sx={{ color: 'error.main' }}>
-                    <PersonRemoveIcon fontSize="small" />
-                  </IconButton>
+                  <Tooltip title={t('physicalWorkplaces.clearOccupant')} arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => setClearOccupantDialogOpen(true)}
+                      sx={{ color: 'error.main' }}
+                    >
+                      <PersonRemoveIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 ) : (
                   <Button size="small" variant="outlined" sx={{ color: OCCUPANT_COLOR, borderColor: alpha(OCCUPANT_COLOR, 0.3) }}>
                     Toewijzen
@@ -995,6 +1005,51 @@ const WorkplaceDetailPage = () => {
         onSuccess={showSuccess}
         onError={showError}
       />
+
+      {/* Clear Occupant Confirmation Dialog */}
+      <Dialog
+        open={clearOccupantDialogOpen}
+        onClose={() => setClearOccupantDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'strong'),
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
+          {t('physicalWorkplaces.clearOccupantTitle')}
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t('physicalWorkplaces.clearOccupantConfirm', { name: workplace.currentOccupantName })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearOccupantDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={clearOccupantMutation.isPending}
+            onClick={async () => {
+              try {
+                await clearOccupantMutation.mutateAsync(workplaceId);
+                showSuccess(t('physicalWorkplaces.occupantCleared'));
+                setClearOccupantDialogOpen(false);
+              } catch (error) {
+                showError(t('physicalWorkplaces.occupantClearError'));
+              }
+            }}
+          >
+            {clearOccupantMutation.isPending ? t('common.loading') : t('physicalWorkplaces.clearOccupant')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* QR Code Dialog */}
       <Dialog

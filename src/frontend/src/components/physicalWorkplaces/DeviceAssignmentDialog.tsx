@@ -157,21 +157,22 @@ const DeviceAssignmentDialog = ({
         }));
       } else if (assignmentType === 'workplace' && targetWorkplace) {
         // Assign device to workplace as shared device
-        // Use the standard asset update to set physicalWorkplaceId
+        // Use forceOccupantUpdate to bypass occupant conflict check for shared devices
         await deploymentMutation.mutateAsync({
           request: {
             mode: DeploymentMode.Onboarding,
             newLaptopAssetId: selectedAsset.id,
             oldLaptopAssetId: null,
-            // For shared device, we don't set an owner - just the workplace
+            // For shared device, we set the workplace code as owner indicator
             newOwnerEntraId: '',
-            newOwnerName: `Shared - ${targetWorkplace.code}`,
+            newOwnerName: `Gedeeld - ${targetWorkplace.code}`,
             newOwnerEmail: '',
             physicalWorkplaceId: targetWorkplace.id,
             updateEquipmentSlots: false,
             equipmentSlots: null,
             notes: t('deviceAssignment.assignedToWorkplace'),
           },
+          forceOccupantUpdate: true, // Skip occupant conflict check for shared devices
         });
         onSuccess?.(t('deviceAssignment.successWorkplace', {
           device: selectedAsset.assetCode,
