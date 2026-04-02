@@ -148,7 +148,24 @@ const WorkplaceDetailPage = () => {
   const showSuccess = (message: string) => setSnackbar({ open: true, message, severity: 'success' });
   const showError = (message: string) => setSnackbar({ open: true, message, severity: 'error' });
 
-  // Filter out assets already shown in equipment slots
+  // Find shared device (laptop/desktop) from fixed assets when no occupant device is set
+  const sharedDevice = useMemo(() => {
+    if (!workplace || workplace.occupantDeviceAssetCode) return null;
+
+    // Look for a laptop or desktop type asset assigned to this workplace
+    // Check asset code prefix (LAP0002, DESK-26-XXXX), asset type name, and asset type code
+    const devicePrefixes = ['lap', 'desk', 'laptop', 'desktop', 'pc', 'computer', 'notebook'];
+    return allFixedAssets.find((asset: any) => {
+      const assetCode = asset.assetCode?.toLowerCase() || '';
+      const typeName = asset.assetType?.name?.toLowerCase() || '';
+      const typeCode = asset.assetType?.code?.toLowerCase() || '';
+      return devicePrefixes.some(prefix =>
+        assetCode.startsWith(prefix) || typeName.includes(prefix) || typeCode.includes(prefix)
+      );
+    }) || null;
+  }, [workplace, allFixedAssets]);
+
+  // Filter out assets already shown in equipment slots (including shared device)
   const fixedAssets = useMemo(() => {
     if (!workplace) return allFixedAssets;
 
@@ -159,10 +176,11 @@ const WorkplaceDetailPage = () => {
       workplace.monitor3AssetId,
       workplace.keyboardAssetId,
       workplace.mouseAssetId,
+      sharedDevice?.id, // Also filter out the shared device shown in Desktop/Laptop row
     ].filter(Boolean));
 
     return allFixedAssets.filter((asset: any) => !equipmentAssetIds.has(asset.id));
-  }, [workplace, allFixedAssets]);
+  }, [workplace, allFixedAssets, sharedDevice]);
 
   // Calculate equipment status
   const equipmentStatus = useMemo(() => {
@@ -693,6 +711,9 @@ const WorkplaceDetailPage = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <DesktopWindowsIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
                         Desktop
+                        {sharedDevice && !workplace.occupantDeviceAssetCode && (
+                          <Chip size="small" label="Gedeeld" sx={{ ml: 1, height: 18, fontSize: '0.65rem', bgcolor: alpha(OCCUPANT_COLOR, 0.1), color: OCCUPANT_COLOR }} />
+                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -704,12 +725,20 @@ const WorkplaceDetailPage = () => {
                         >
                           {workplace.occupantDeviceAssetCode}
                         </Typography>
+                      ) : sharedDevice ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${sharedDevice.id}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {sharedDevice.assetCode}
+                        </Typography>
                       ) : (
                         <Typography color="text.disabled">-</Typography>
                       )}
                     </TableCell>
                     <TableCell>
-                      {workplace.occupantDeviceAssetCode ? (
+                      {workplace.occupantDeviceAssetCode || sharedDevice ? (
                         <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
                       ) : (
                         <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
@@ -906,8 +935,8 @@ const WorkplaceDetailPage = () => {
                   </TableCell>
                 </TableRow>
 
-                {/* Occupant's Laptop (for non-desktop workplaces) */}
-                {workplace.type !== WorkplaceType.Desktop && isOccupied && workplace.occupantDeviceAssetCode && (
+                {/* Laptop (for non-desktop workplaces) - shows occupant's laptop or shared device */}
+                {workplace.type !== WorkplaceType.Desktop && (workplace.occupantDeviceAssetCode || sharedDevice) && (
                   <TableRow
                     sx={{
                       borderLeft: `3px solid ${OCCUPANT_COLOR}`,
@@ -919,17 +948,32 @@ const WorkplaceDetailPage = () => {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <LaptopIcon sx={{ fontSize: 18, color: OCCUPANT_COLOR }} />
-                        <Typography sx={{ fontWeight: 500 }}>Laptop (bezetter)</Typography>
+                        <Typography sx={{ fontWeight: 500 }}>
+                          {workplace.occupantDeviceAssetCode ? 'Laptop (bezetter)' : 'Laptop'}
+                        </Typography>
+                        {sharedDevice && !workplace.occupantDeviceAssetCode && (
+                          <Chip size="small" label="Gedeeld" sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha(OCCUPANT_COLOR, 0.1), color: OCCUPANT_COLOR }} />
+                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography
-                        component={Link}
-                        to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
-                        sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                      >
-                        {workplace.occupantDeviceAssetCode}
-                      </Typography>
+                      {workplace.occupantDeviceAssetCode ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
+                          sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.occupantDeviceAssetCode}
+                        </Typography>
+                      ) : sharedDevice ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${sharedDevice.id}`}
+                          sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {sharedDevice.assetCode}
+                        </Typography>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
