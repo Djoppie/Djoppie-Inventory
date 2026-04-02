@@ -34,7 +34,8 @@
     "confirm": "Confirm",
     "clear": "Clear",
     "none": "None",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "unsavedChanges": "You have unsaved changes"
   },
   "validation": {
     "required": "Required field"
@@ -974,6 +975,8 @@
     "assignError": "Error assigning asset",
     "unassignError": "Error unassigning asset",
     "errorLoadingAssets": "Error loading assets",
+    "equipmentUpdated": "Equipment updated successfully",
+    "equipmentUpdateError": "Error updating equipment",
     "equipment": {
       "title": "Equipment",
       "dockingStation": "Docking Station",
@@ -1183,5 +1186,28 @@
       "newLaptopRequired": "New device is required",
       "oldLaptopRequiredForSwap": "Old device is required for swap mode"
     }
+  },
+  "deviceAssignment": {
+    "title": "Assign Device",
+    "subtitle": "Assign a device to a user or workplace",
+    "subtitleWorkplace": "Add a shared device to {{code}}",
+    "subtitleAsset": "Assign {{code}} to a user or workplace",
+    "assignTo": "Assign to",
+    "toUser": "User",
+    "toWorkplace": "Workplace (shared)",
+    "selectDevice": "Select Device",
+    "searchDevice": "Search by code, serial number...",
+    "noDevices": "No available devices found",
+    "selectUser": "Select User",
+    "searchUser": "Search by name or email...",
+    "selectWorkplace": "Select Workplace",
+    "searchWorkplace": "Search workplace...",
+    "noWorkplaces": "No workplaces found",
+    "assign": "Assign",
+    "assignedToUser": "Assigned to user via quick assignment",
+    "assignedToWorkplace": "Assigned to workplace as shared device",
+    "successUser": "{{device}} successfully assigned to {{user}}",
+    "successWorkplace": "{{device}} successfully assigned to workplace {{workplace}}",
+    "error": "Error assigning device"
   }
 }

@@ -34,7 +34,8 @@
     "confirm": "Bevestigen",
     "clear": "Wissen",
     "none": "Geen",
-    "noResults": "Geen resultaten gevonden"
+    "noResults": "Geen resultaten gevonden",
+    "unsavedChanges": "Er zijn niet-opgeslagen wijzigingen"
   },
   "validation": {
     "required": "Verplicht veld"
@@ -974,6 +975,8 @@
     "assignError": "Fout bij toewijzen asset",
     "unassignError": "Fout bij ontkoppelen asset",
     "errorLoadingAssets": "Fout bij laden assets",
+    "equipmentUpdated": "Apparatuur succesvol bijgewerkt",
+    "equipmentUpdateError": "Fout bij bijwerken apparatuur",
     "equipment": {
       "title": "Apparatuur",
       "dockingStation": "Docking Station",
@@ -1183,5 +1186,28 @@
       "newLaptopRequired": "Nieuw apparaat is verplicht",
       "oldLaptopRequiredForSwap": "Oud apparaat is verplicht voor swap modus"
     }
+  },
+  "deviceAssignment": {
+    "title": "Apparaat Toewijzen",
+    "subtitle": "Wijs een apparaat toe aan een gebruiker of werkplek",
+    "subtitleWorkplace": "Voeg een gedeeld apparaat toe aan {{code}}",
+    "subtitleAsset": "Wijs {{code}} toe aan een gebruiker of werkplek",
+    "assignTo": "Toewijzen aan",
+    "toUser": "Gebruiker",
+    "toWorkplace": "Werkplek (gedeeld)",
+    "selectDevice": "Selecteer Apparaat",
+    "searchDevice": "Zoek op code, serienummer...",
+    "noDevices": "Geen beschikbare apparaten gevonden",
+    "selectUser": "Selecteer Gebruiker",
+    "searchUser": "Zoek op naam of e-mail...",
+    "selectWorkplace": "Selecteer Werkplek",
+    "searchWorkplace": "Zoek werkplek...",
+    "noWorkplaces": "Geen werkplekken gevonden",
+    "assign": "Toewijzen",
+    "assignedToUser": "Toegewezen aan gebruiker via snelle toewijzing",
+    "assignedToWorkplace": "Toegewezen aan werkplek als gedeeld apparaat",
+    "successUser": "{{device}} succesvol toegewezen aan {{user}}",
+    "successWorkplace": "{{device}} succesvol toegewezen aan werkplek {{workplace}}",
+    "error": "Fout bij toewijzen apparaat"
   }
 }

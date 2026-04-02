@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -57,6 +58,7 @@ import { usePhysicalWorkplace, usePhysicalWorkplaceAssets } from '../hooks/usePh
 // Dialogs
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
 import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
+import DeviceAssignmentDialog from '../components/physicalWorkplaces/DeviceAssignmentDialog';
 
 // Neumorphic utilities
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
@@ -106,6 +108,7 @@ const WorkplaceDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { t } = useTranslation();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isDark = theme.palette.mode === 'dark';
   const neumorphColors = getNeumorphColors(isDark);
@@ -118,6 +121,7 @@ const WorkplaceDetailPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [assetsDialogOpen, setAssetsDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [deviceAssignmentDialogOpen, setDeviceAssignmentDialogOpen] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -355,6 +359,29 @@ const WorkplaceDetailPage = () => {
                   }}
                 >
                   <SettingsIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t('deviceAssignment.title')} arrow>
+                <IconButton
+                  onClick={() => setDeviceAssignmentDialogOpen(true)}
+                  sx={{
+                    color: '#1976d2',
+                    bgcolor: neumorphColors.bgSurface,
+                    boxShadow: getNeumorph(isDark, 'soft'),
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: '#1976d2',
+                      color: '#fff',
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 4px 12px ${alpha('#1976d2', 0.4)}`,
+                    },
+                    '&:active': {
+                      boxShadow: getNeumorphInset(isDark),
+                      transform: 'translateY(0)',
+                    },
+                  }}
+                >
+                  <LaptopIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Bewerken" arrow>
@@ -955,6 +982,15 @@ const WorkplaceDetailPage = () => {
       <WorkplaceAssetsDialog
         open={assetsDialogOpen}
         onClose={() => setAssetsDialogOpen(false)}
+        workplace={workplace}
+        onSuccess={showSuccess}
+        onError={showError}
+      />
+
+      {/* Device Assignment Dialog */}
+      <DeviceAssignmentDialog
+        open={deviceAssignmentDialogOpen}
+        onClose={() => setDeviceAssignmentDialogOpen(false)}
         workplace={workplace}
         onSuccess={showSuccess}
         onError={showError}
