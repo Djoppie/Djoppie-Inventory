@@ -53,7 +53,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 // Hooks
-import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant } from '../hooks/usePhysicalWorkplaces';
+import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant, useUpdateOccupant } from '../hooks/usePhysicalWorkplaces';
+
+// Common components
+import UserAutocomplete from '../components/common/UserAutocomplete';
+
+// Types
+import { GraphUser } from '../types/graph.types';
 
 // Dialogs
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
@@ -123,9 +129,13 @@ const WorkplaceDetailPage = () => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [deviceAssignmentDialogOpen, setDeviceAssignmentDialogOpen] = useState(false);
   const [clearOccupantDialogOpen, setClearOccupantDialogOpen] = useState(false);
+  const [assignOccupantDialogOpen, setAssignOccupantDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<GraphUser | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState('');
 
   // Mutations
   const clearOccupantMutation = useClearOccupant();
+  const updateOccupantMutation = useUpdateOccupant();
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -498,8 +508,13 @@ const WorkplaceDetailPage = () => {
                     </IconButton>
                   </Tooltip>
                 ) : (
-                  <Button size="small" variant="outlined" sx={{ color: OCCUPANT_COLOR, borderColor: alpha(OCCUPANT_COLOR, 0.3) }}>
-                    Toewijzen
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setAssignOccupantDialogOpen(true)}
+                    sx={{ color: OCCUPANT_COLOR, borderColor: alpha(OCCUPANT_COLOR, 0.3) }}
+                  >
+                    {t('physicalWorkplaces.occupier.assignOccupier')}
                   </Button>
                 )}
               </Box>
@@ -1047,6 +1062,82 @@ const WorkplaceDetailPage = () => {
             }}
           >
             {clearOccupantMutation.isPending ? t('common.loading') : t('physicalWorkplaces.clearOccupant')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assign Occupant Dialog */}
+      <Dialog
+        open={assignOccupantDialogOpen}
+        onClose={() => {
+          setAssignOccupantDialogOpen(false);
+          setSelectedUser(null);
+          setSelectedUserName('');
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'strong'),
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: OCCUPANT_COLOR }}>
+          {t('physicalWorkplaces.occupier.assignOccupier')}
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            {t('physicalWorkplaces.occupier.searchPlaceholder')}
+          </Typography>
+          <UserAutocomplete
+            value={selectedUserName}
+            onChange={(displayName, user) => {
+              setSelectedUserName(displayName);
+              setSelectedUser(user);
+            }}
+            label={t('physicalWorkplaces.occupier.title')}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setAssignOccupantDialogOpen(false);
+              setSelectedUser(null);
+              setSelectedUserName('');
+            }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!selectedUser || updateOccupantMutation.isPending}
+            onClick={async () => {
+              if (!selectedUser) return;
+              try {
+                await updateOccupantMutation.mutateAsync({
+                  id: workplaceId,
+                  data: {
+                    occupantEntraId: selectedUser.id,
+                    occupantName: selectedUser.displayName,
+                    occupantEmail: selectedUser.mail || selectedUser.userPrincipalName,
+                  },
+                });
+                showSuccess(t('physicalWorkplaces.occupier.assignSuccess'));
+                setAssignOccupantDialogOpen(false);
+                setSelectedUser(null);
+                setSelectedUserName('');
+              } catch (error) {
+                showError(t('physicalWorkplaces.occupier.assignError'));
+              }
+            }}
+            sx={{
+              bgcolor: OCCUPANT_COLOR,
+              '&:hover': { bgcolor: alpha(OCCUPANT_COLOR, 0.85) },
+            }}
+          >
+            {updateOccupantMutation.isPending ? t('common.loading') : t('physicalWorkplaces.occupier.assignOccupier')}
           </Button>
         </DialogActions>
       </Dialog>

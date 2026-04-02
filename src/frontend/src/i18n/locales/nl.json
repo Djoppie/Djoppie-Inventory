@@ -998,7 +998,9 @@
       "searchPlaceholder": "Zoek op naam of e-mail...",
       "typeToSearch": "Typ minimaal 2 tekens om te zoeken",
       "noUsersFound": "Geen gebruikers gevonden",
-      "since": "Sinds:"
+      "since": "Sinds:",
+      "assignSuccess": "Bezetter succesvol toegewezen",
+      "assignError": "Fout bij toewijzen bezetter"
     },
     "bulk": {
       "title": "Werkplekken Bulk Importeren",
