@@ -9,7 +9,6 @@
  */
 
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -43,9 +42,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { visuallyHidden } from '@mui/utils';
 
 import { useSwapHistory, useSwapHistorySummary, useExportSwapHistory } from '../../hooks/reports';
-import { buildRoute } from '../../constants/routes';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
-import type { SwapHistoryItem, SwapHistoryFilters } from '../../types/report.types';
+import type { SwapHistoryFilters } from '../../types/report.types';
 
 // Table columns
 type OrderBy = 'swapDate' | 'userName' | 'technicianName' | 'oldAssetCode' | 'newAssetCode' | 'serviceName';
@@ -69,7 +67,6 @@ const headCells: HeadCell[] = [
 const SwapsTab = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const navigate = useNavigate();
 
   const { bgBase } = getNeumorphColors(isDark);
 
@@ -178,15 +175,6 @@ const SwapsTab = () => {
     });
   };
 
-  // Navigate to asset
-  const handleAssetClick = (assetCode: string | undefined, event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (assetCode) {
-      // Would need to look up asset ID by code - for now just show tooltip
-      // This could be enhanced with actual navigation
-    }
-  };
-
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -199,7 +187,7 @@ const SwapsTab = () => {
     <Box>
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -218,7 +206,7 @@ const SwapsTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -237,7 +225,7 @@ const SwapsTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -256,7 +244,7 @@ const SwapsTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -323,7 +311,7 @@ const SwapsTab = () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               fullWidth
               size="small"
@@ -339,7 +327,7 @@ const SwapsTab = () => {
               }}
             />
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <TextField
               fullWidth
               size="small"
@@ -350,7 +338,7 @@ const SwapsTab = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <TextField
               fullWidth
               size="small"
@@ -361,12 +349,12 @@ const SwapsTab = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={10} md={3}>
+          <Grid size={{ xs: 10, md: 3 }}>
             <Typography variant="body2" color="text.secondary">
               {filteredItems.length} resultaten
             </Typography>
           </Grid>
-          <Grid item xs={2} md={1}>
+          <Grid size={{ xs: 2, md: 1 }}>
             <Tooltip title="Exporteer naar Excel">
               <IconButton
                 onClick={handleExport}

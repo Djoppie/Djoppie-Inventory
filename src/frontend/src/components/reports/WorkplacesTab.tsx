@@ -187,7 +187,7 @@ const WorkplacesTab = () => {
     <Box>
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -206,7 +206,7 @@ const WorkplacesTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -228,7 +228,7 @@ const WorkplacesTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -250,7 +250,7 @@ const WorkplacesTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -298,7 +298,7 @@ const WorkplacesTab = () => {
           </Typography>
           <Grid container spacing={2}>
             {Object.entries(summary.byBuilding).map(([building, data]) => (
-              <Grid item xs={6} sm={4} md={3} lg={2} key={building}>
+              <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={building}>
                 <Paper
                   sx={{
                     p: 1.5,
@@ -335,7 +335,7 @@ const WorkplacesTab = () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <TextField
               fullWidth
               size="small"
@@ -351,7 +351,7 @@ const WorkplacesTab = () => {
               }}
             />
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <TextField
               fullWidth
               size="small"
@@ -367,7 +367,7 @@ const WorkplacesTab = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <TextField
               fullWidth
               size="small"
@@ -382,7 +382,7 @@ const WorkplacesTab = () => {
               <option value="available">Beschikbaar</option>
             </TextField>
           </Grid>
-          <Grid item xs={12} md={1}>
+          <Grid size={{ xs: 12, md: 1 }}>
             <Tooltip title="Exporteer naar Excel">
               <IconButton
                 onClick={handleExport}

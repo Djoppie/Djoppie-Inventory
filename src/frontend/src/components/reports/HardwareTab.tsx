@@ -40,7 +40,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarehouseIcon from '@mui/icons-material/Warehouse';
 import BuildIcon from '@mui/icons-material/Build';
 import ErrorIcon from '@mui/icons-material/Error';
-import BlockIcon from '@mui/icons-material/Block';
 import FiberNewIcon from '@mui/icons-material/FiberNew';
 import { visuallyHidden } from '@mui/utils';
 
@@ -205,7 +204,7 @@ const HardwareTab = () => {
             : summary?.byStatus?.[card.key] || 0;
 
           return (
-            <Grid item xs={6} sm={4} md={2} key={card.key}>
+            <Grid size={{ xs: 6, sm: 4, md: 2 }} key={card.key}>
               <Paper
                 sx={{
                   p: 2,
@@ -252,7 +251,7 @@ const HardwareTab = () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
               size="small"
@@ -268,7 +267,7 @@ const HardwareTab = () => {
               }}
             />
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <TextField
               fullWidth
               size="small"
@@ -283,28 +282,25 @@ const HardwareTab = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <AssetTypeSelect
               value={filters.assetTypeId || null}
               onChange={handleAssetTypeChange}
-              size="small"
             />
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <ServiceSelect
               value={filters.serviceId || null}
               onChange={handleServiceChange}
-              size="small"
             />
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <BuildingSelect
               value={filters.buildingId || null}
               onChange={handleBuildingChange}
-              size="small"
             />
           </Grid>
-          <Grid item xs={12} md={1}>
+          <Grid size={{ xs: 12, md: 1 }}>
             <Tooltip title="Exporteer naar Excel">
               <IconButton
                 onClick={handleExport}

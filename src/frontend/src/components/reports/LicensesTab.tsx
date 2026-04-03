@@ -75,7 +75,8 @@ import type {
   InactiveUser,
   DowngradeRecommendation,
 } from '../../types/report.types';
-import { EMPLOYEE_COLOR, SUCCESS_COLOR } from '../../constants/filterColors';
+// Accent colors imported for potential future use in interactive elements
+// import { EMPLOYEE_COLOR, SUCCESS_COLOR } from '../../constants/filterColors';
 
 // License colors aligned with domain color system
 const LICENSE_COLOR = '#1976D2'; // Blue - primary license color
@@ -99,7 +100,7 @@ const LicensesTab = () => {
 
   // Optimization analysis state
   const [showOptimization, setShowOptimization] = useState(false);
-  const [inactiveDaysThreshold, setInactiveDaysThreshold] = useState(90);
+  const [inactiveDaysThreshold] = useState(90);
 
   // Queries
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useLicenseSummary();
@@ -598,7 +599,7 @@ const LicensesTab = () => {
               bgcolor: neumorphColors.bgSurface,
               boxShadow: getNeumorph(isDark, 'soft'),
               borderRadius: 2.5,
-              borderLeft: `3px solid ${SUCCESS_COLOR}`,
+              borderLeft: `3px solid ${LICENSE_COLOR}`,
               transition: 'all 0.2s ease',
               '&:hover': {
                 boxShadow: getNeumorph(isDark, 'medium'),
@@ -615,17 +616,17 @@ const LicensesTab = () => {
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  bgcolor: alpha(SUCCESS_COLOR, isDark ? 0.15 : 0.1),
+                  bgcolor: alpha(LICENSE_COLOR, isDark ? 0.15 : 0.1),
                   boxShadow: getNeumorphInset(isDark),
                 }}
               >
-                <PersonIcon sx={{ fontSize: 22, color: SUCCESS_COLOR }} />
+                <PersonIcon sx={{ fontSize: 22, color: LICENSE_COLOR }} />
               </Box>
               <Box>
                 {summaryLoading ? (
                   <Skeleton variant="text" width={60} height={32} />
                 ) : (
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: SUCCESS_COLOR, lineHeight: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: LICENSE_COLOR, lineHeight: 1 }}>
                     {summary?.totalAssigned || 0}
                   </Typography>
                 )}
@@ -645,7 +646,7 @@ const LicensesTab = () => {
               bgcolor: neumorphColors.bgSurface,
               boxShadow: getNeumorph(isDark, 'soft'),
               borderRadius: 2.5,
-              borderLeft: `3px solid #FF9800`,
+              borderLeft: `3px solid ${LICENSE_COLOR}`,
               transition: 'all 0.2s ease',
               '&:hover': {
                 boxShadow: getNeumorph(isDark, 'medium'),
@@ -662,17 +663,17 @@ const LicensesTab = () => {
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  bgcolor: alpha('#FF9800', isDark ? 0.15 : 0.1),
+                  bgcolor: alpha(LICENSE_COLOR, isDark ? 0.15 : 0.1),
                   boxShadow: getNeumorphInset(isDark),
                 }}
               >
-                <VerifiedIcon sx={{ fontSize: 22, color: '#FF9800' }} />
+                <VerifiedIcon sx={{ fontSize: 22, color: LICENSE_COLOR }} />
               </Box>
               <Box>
                 {summaryLoading ? (
                   <Skeleton variant="text" width={60} height={32} />
                 ) : (
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#FF9800', lineHeight: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: LICENSE_COLOR, lineHeight: 1 }}>
                     {summary?.totalAvailable || 0}
                   </Typography>
                 )}
@@ -692,7 +693,7 @@ const LicensesTab = () => {
               bgcolor: neumorphColors.bgSurface,
               boxShadow: getNeumorph(isDark, 'soft'),
               borderRadius: 2.5,
-              borderLeft: `3px solid ${EMPLOYEE_COLOR}`,
+              borderLeft: `3px solid ${LICENSE_COLOR}`,
               transition: 'all 0.2s ease',
               '&:hover': {
                 boxShadow: getNeumorph(isDark, 'medium'),
@@ -708,7 +709,7 @@ const LicensesTab = () => {
                   size={40}
                   thickness={4}
                   sx={{
-                    color: EMPLOYEE_COLOR,
+                    color: LICENSE_COLOR,
                     '& .MuiCircularProgress-circle': {
                       strokeLinecap: 'round',
                     },
@@ -726,13 +727,13 @@ const LicensesTab = () => {
                     justifyContent: 'center',
                   }}
                 >
-                  <Typography variant="caption" fontWeight={700} color={EMPLOYEE_COLOR} sx={{ fontSize: '0.65rem' }}>
+                  <Typography variant="caption" fontWeight={700} color={LICENSE_COLOR} sx={{ fontSize: '0.65rem' }}>
                     {summary?.utilizationPercentage || 0}%
                   </Typography>
                 </Box>
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: EMPLOYEE_COLOR, lineHeight: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: LICENSE_COLOR, lineHeight: 1 }}>
                   Benutting
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
@@ -884,8 +885,8 @@ const LicensesTab = () => {
               height: 24,
               fontSize: '0.7rem',
               fontWeight: 600,
-              bgcolor: alpha(EMPLOYEE_COLOR, 0.1),
-              color: EMPLOYEE_COLOR,
+              bgcolor: alpha(LICENSE_COLOR, 0.1),
+              color: LICENSE_COLOR,
               border: 'none',
             }}
           />

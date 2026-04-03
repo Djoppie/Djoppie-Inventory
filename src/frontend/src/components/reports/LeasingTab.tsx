@@ -30,10 +30,6 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   alpha,
   useTheme,
 } from '@mui/material';
@@ -44,17 +40,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import EuroIcon from '@mui/icons-material/Euro';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DevicesIcon from '@mui/icons-material/Devices';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { visuallyHidden } from '@mui/utils';
 
 import {
   useLeaseReport,
   useLeaseReportSummary,
   useExportLeaseReport,
-  getLeaseStatusColor,
-  getLeaseStatusLabel,
   formatCurrency,
 } from '../../hooks/reports';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
@@ -204,7 +196,7 @@ const LeasingTab = () => {
     <Box>
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -223,7 +215,7 @@ const LeasingTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             onClick={() => handleStatusFilter('active')}
             sx={{
@@ -247,7 +239,7 @@ const LeasingTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             onClick={() => handleStatusFilter('expiring')}
             sx={{
@@ -271,7 +263,7 @@ const LeasingTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -352,7 +344,7 @@ const LeasingTab = () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <TextField
               fullWidth
               size="small"
@@ -368,7 +360,7 @@ const LeasingTab = () => {
               }}
             />
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <TextField
               fullWidth
               size="small"
@@ -387,12 +379,12 @@ const LeasingTab = () => {
               <option value="expired">Verlopen</option>
             </TextField>
           </Grid>
-          <Grid item xs={4} md={3}>
+          <Grid size={{ xs: 4, md: 3 }}>
             <Typography variant="body2" color="text.secondary">
               {filteredItems.length} contracten
             </Typography>
           </Grid>
-          <Grid item xs={2} md={1}>
+          <Grid size={{ xs: 2, md: 1 }}>
             <Tooltip title="Exporteer naar Excel">
               <IconButton
                 onClick={handleExport}

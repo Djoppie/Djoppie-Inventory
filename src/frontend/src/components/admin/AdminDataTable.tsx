@@ -89,7 +89,7 @@ const getNeumorphInset = (isDark: boolean) =>
     ? 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03)'
     : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)';
 
-function AdminDataTable<T extends Record<string, unknown>>({
+function AdminDataTable<T extends object & { isActive?: boolean }>({
   data,
   columns,
   onEdit,

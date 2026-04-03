@@ -87,7 +87,7 @@ const RolloutTab = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        session.name.toLowerCase().includes(query) ||
+        session.sessionName.toLowerCase().includes(query) ||
         session.description?.toLowerCase().includes(query)
       );
     }
@@ -146,7 +146,7 @@ const RolloutTab = () => {
     <Box>
       {/* Summary Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -165,7 +165,7 @@ const RolloutTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -184,7 +184,7 @@ const RolloutTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -203,7 +203,7 @@ const RolloutTab = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={6} sm={3}>
+        <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             sx={{
               p: 2,
@@ -235,7 +235,7 @@ const RolloutTab = () => {
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               size="small"
@@ -251,7 +251,7 @@ const RolloutTab = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <TextField
               fullWidth
               size="small"
@@ -266,7 +266,7 @@ const RolloutTab = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} md={2}>
+          <Grid size={{ xs: 12, md: 2 }}>
             <Typography variant="body2" color="text.secondary" align="right">
               {filteredSessions.length} sessies
             </Typography>
@@ -303,7 +303,7 @@ const RolloutTab = () => {
             const progress = calculateProgress(session);
 
             return (
-              <Grid item xs={12} md={6} lg={4} key={session.id}>
+              <Grid size={{ xs: 12, md: 6, lg: 4 }} key={session.id}>
                 <Card
                   sx={{
                     bgcolor: bgBase,
@@ -336,7 +336,7 @@ const RolloutTab = () => {
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            {session.name}
+                            {session.sessionName}
                           </Typography>
                           {session.description && (
                             <Typography variant="body2" color="text.secondary" noWrap>
@@ -359,7 +359,7 @@ const RolloutTab = () => {
 
                       {/* Stats */}
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <CalendarTodayIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
@@ -369,7 +369,7 @@ const RolloutTab = () => {
                             </Typography>
                           </Box>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <PeopleIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
