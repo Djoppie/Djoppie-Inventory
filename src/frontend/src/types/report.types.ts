@@ -172,3 +172,265 @@ export interface ReportExportResult {
   filename: string;
   contentType: string;
 }
+
+// ===== HARDWARE REPORT TYPES =====
+
+export interface HardwareReportItem {
+  id: number;
+  assetCode: string;
+  name: string;
+  assetTypeName: string;
+  categoryName?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  status: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  serviceName?: string;
+  buildingName?: string;
+  location?: string;
+  intuneDeviceId?: string;
+  intuneComplianceState?: string;
+  intuneLastSync?: string;
+  purchaseDate?: string;
+  installationDate?: string;
+  warrantyExpiration?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HardwareReportFilters {
+  status?: string;
+  assetTypeId?: number;
+  categoryId?: number;
+  serviceId?: number;
+  buildingId?: number;
+  searchQuery?: string;
+}
+
+export interface HardwareReportSummary {
+  totalAssets: number;
+  byStatus: Record<string, number>;
+  byAssetType: Record<string, number>;
+  byService: Record<string, number>;
+}
+
+// ===== WORKPLACE REPORT TYPES =====
+
+export interface WorkplaceReportItem {
+  id: number;
+  code: string;
+  name: string;
+  buildingName?: string;
+  floor?: string;
+  room?: string;
+  occupantName?: string;
+  occupantEmail?: string;
+  serviceName?: string;
+  isOccupied: boolean;
+  equipmentCount: number;
+  equipment: WorkplaceEquipmentItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkplaceEquipmentItem {
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  equipmentType: string;
+  brand?: string;
+  model?: string;
+}
+
+export interface WorkplaceReportSummary {
+  totalWorkplaces: number;
+  occupiedWorkplaces: number;
+  availableWorkplaces: number;
+  occupancyRate: number;
+  byBuilding: Record<string, { total: number; occupied: number }>;
+}
+
+// ===== SWAP HISTORY REPORT TYPES =====
+
+export interface SwapHistoryItem {
+  id: number;
+  swapDate: string;
+  userName: string;
+  userEmail?: string;
+  serviceName?: string;
+  technicianName?: string;
+  technicianEmail?: string;
+  oldAssetCode?: string;
+  oldAssetName?: string;
+  oldSerialNumber?: string;
+  newAssetCode?: string;
+  newAssetName?: string;
+  newSerialNumber?: string;
+  location?: string;
+  notes?: string;
+  rolloutSessionId?: number;
+  rolloutSessionName?: string;
+}
+
+export interface SwapHistoryFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  technicianId?: number;
+  serviceId?: number;
+  searchQuery?: string;
+}
+
+export interface SwapHistorySummary {
+  totalSwaps: number;
+  byTechnician: Record<string, number>;
+  byService: Record<string, number>;
+  byMonth: Array<{ month: string; count: number }>;
+}
+
+// ===== LICENSE REPORT TYPES =====
+
+export interface LicenseSummary {
+  licenses: LicenseInfo[];
+  totalPurchased: number;
+  totalAssigned: number;
+  totalAvailable: number;
+  utilizationPercentage: number;
+  retrievedAt?: string;
+  errorMessage?: string;
+}
+
+export interface LicenseInfo {
+  skuId: string;
+  skuPartNumber: string;
+  displayName: string;
+  prepaidUnits: number;
+  consumedUnits: number;
+  availableUnits: number;
+  utilizationPercentage: number;
+  isE3: boolean;
+  isE5: boolean;
+  isF1: boolean;
+}
+
+export interface LicenseUser {
+  userId: string;
+  displayName: string;
+  userPrincipalName: string;
+  department?: string;
+  jobTitle?: string;
+  assignedLicenses: AssignedLicense[];
+}
+
+export interface AssignedLicense {
+  skuId: string;
+  skuPartNumber: string;
+  displayName: string;
+}
+
+export interface LicenseReportFilters {
+  skuId?: string;
+  department?: string;
+  searchQuery?: string;
+}
+
+// ===== LICENSE OPTIMIZATION TYPES =====
+
+export interface LicenseOptimization {
+  inactiveUsers: InactiveUser[];
+  downgradeRecommendations: DowngradeRecommendation[];
+  summary: OptimizationSummary;
+  retrievedAt?: string;
+  errorMessage?: string;
+}
+
+export interface InactiveUser {
+  userId: string;
+  displayName: string;
+  userPrincipalName: string;
+  department?: string;
+  jobTitle?: string;
+  lastSignIn?: string;
+  daysSinceLastSignIn: number;
+  currentLicense: string;
+  licenseCategory: string;
+  monthlyCost: number;
+  recommendation: string;
+}
+
+export interface DowngradeRecommendation {
+  userId: string;
+  displayName: string;
+  userPrincipalName: string;
+  department?: string;
+  jobTitle?: string;
+  lastSignIn?: string;
+  currentLicense: string;
+  currentCategory: string;
+  recommendedLicense: string;
+  recommendedCategory: string;
+  reason: string;
+  monthlySavings: number;
+}
+
+export interface OptimizationSummary {
+  totalUsersAnalyzed: number;
+  inactiveUserCount: number;
+  downgradeCandidateCount: number;
+  potentialFreedLicenses: number;
+  estimatedMonthlySavings: number;
+  estimatedYearlySavings: number;
+  inactiveByLicenseType: Record<string, number>;
+  downgradesByLicenseType: Record<string, number>;
+}
+
+// ===== LEASE REPORT TYPES =====
+
+export interface LeaseReportItem {
+  id: number;
+  contractNumber: string;
+  vendorName: string;
+  startDate: string;
+  endDate: string;
+  monthlyAmount?: number;
+  totalValue?: number;
+  assetCount: number;
+  assets: LeaseAssetItem[];
+  status: 'active' | 'expiring' | 'expired';
+  daysUntilExpiration?: number;
+  notes?: string;
+}
+
+export interface LeaseAssetItem {
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  serialNumber?: string;
+}
+
+export interface LeaseReportSummary {
+  totalContracts: number;
+  activeContracts: number;
+  expiringContracts: number;
+  expiredContracts: number;
+  totalMonthlyAmount: number;
+  contractsByVendor: Record<string, number>;
+}
+
+export interface LeaseReportFilters {
+  status?: 'active' | 'expiring' | 'expired' | 'all';
+  vendorId?: number;
+  expiringWithinDays?: number;
+}
+
+// ===== REPORT TAB TYPES =====
+
+export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'licenses' | 'leasing';
+
+export interface ReportTabConfig {
+  id: ReportTab;
+  label: string;
+  icon: string;
+  description: string;
+}

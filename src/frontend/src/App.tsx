@@ -29,6 +29,7 @@ const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage
 const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
 const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
 const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +74,7 @@ function App() {
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
+                  <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
                 </Routes>
               </Suspense>
             </Layout>

@@ -31,6 +31,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import HistoryIcon from '@mui/icons-material/History';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import DevicesIcon from '@mui/icons-material/Devices';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -162,6 +163,18 @@ const navSections: NavSection[] = [
         icon: <DevicesIcon />,
         path: ROUTES.AUTOPILOT_DEVICES,
         matchPaths: ['/devices/autopilot'],
+      },
+    ],
+  },
+  {
+    title: 'Rapportage',
+    items: [
+      {
+        label: 'Rapporten',
+        icon: <AssessmentIcon />,
+        path: ROUTES.REPORTS,
+        matchPaths: ['/reports'],
+        highlighted: true,
       },
     ],
   },

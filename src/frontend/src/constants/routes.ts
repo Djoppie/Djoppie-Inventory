@@ -75,6 +75,9 @@ export const ROUTES = {
 
   /** Deployment history page */
   DEPLOYMENT_HISTORY: '/laptop-swap/history',
+
+  /** Reports hub page */
+  REPORTS: '/reports',
 } as const;
 
 /**

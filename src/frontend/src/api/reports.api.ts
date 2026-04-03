@@ -10,6 +10,21 @@ import type {
   SessionProgressStats,
   DayProgressStats,
   ReportExportOptions,
+  HardwareReportItem,
+  HardwareReportFilters,
+  HardwareReportSummary,
+  WorkplaceReportItem,
+  WorkplaceReportSummary,
+  SwapHistoryItem,
+  SwapHistoryFilters,
+  SwapHistorySummary,
+  LicenseSummary,
+  LicenseUser,
+  LicenseReportFilters,
+  LicenseOptimization,
+  LeaseReportItem,
+  LeaseReportSummary,
+  LeaseReportFilters,
 } from '../types/report.types';
 
 // ===== PROGRESS API CALLS =====
@@ -223,4 +238,283 @@ export const getMovementStatusColor = (
     default:
       return 'warning';
   }
+};
+
+// ===== HARDWARE REPORT API CALLS =====
+
+/**
+ * Get all assets for hardware inventory report
+ */
+export const getHardwareReport = async (
+  filters?: HardwareReportFilters
+): Promise<HardwareReportItem[]> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status) {
+    params.status = filters.status;
+  }
+  if (filters?.assetTypeId) {
+    params.assetTypeId = filters.assetTypeId;
+  }
+  if (filters?.categoryId) {
+    params.categoryId = filters.categoryId;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+  if (filters?.buildingId) {
+    params.buildingId = filters.buildingId;
+  }
+  if (filters?.searchQuery) {
+    params.search = filters.searchQuery;
+  }
+
+  const response = await apiClient.get<HardwareReportItem[]>('/reports/hardware', { params });
+  return response.data;
+};
+
+/**
+ * Get hardware report summary statistics
+ */
+export const getHardwareReportSummary = async (): Promise<HardwareReportSummary> => {
+  const response = await apiClient.get<HardwareReportSummary>('/reports/hardware/summary');
+  return response.data;
+};
+
+/**
+ * Export hardware report as Excel
+ */
+export const exportHardwareReport = async (
+  filters?: HardwareReportFilters
+): Promise<Blob> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status) {
+    params.status = filters.status;
+  }
+  if (filters?.assetTypeId) {
+    params.assetTypeId = filters.assetTypeId;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+  if (filters?.buildingId) {
+    params.buildingId = filters.buildingId;
+  }
+
+  const response = await apiClient.get('/reports/hardware/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== WORKPLACE REPORT API CALLS =====
+
+/**
+ * Get all workplaces for workplace report
+ */
+export const getWorkplaceReport = async (): Promise<WorkplaceReportItem[]> => {
+  const response = await apiClient.get<WorkplaceReportItem[]>('/reports/workplaces');
+  return response.data;
+};
+
+/**
+ * Get workplace report summary (occupancy stats)
+ */
+export const getWorkplaceReportSummary = async (): Promise<WorkplaceReportSummary> => {
+  const response = await apiClient.get<WorkplaceReportSummary>('/reports/workplaces/summary');
+  return response.data;
+};
+
+/**
+ * Export workplace report as Excel
+ */
+export const exportWorkplaceReport = async (): Promise<Blob> => {
+  const response = await apiClient.get('/reports/workplaces/export', {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== SWAP HISTORY REPORT API CALLS =====
+
+/**
+ * Get swap history
+ */
+export const getSwapHistory = async (
+  filters?: SwapHistoryFilters
+): Promise<SwapHistoryItem[]> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.dateFrom) {
+    params.dateFrom = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    params.dateTo = filters.dateTo;
+  }
+  if (filters?.technicianId) {
+    params.technicianId = filters.technicianId;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+  if (filters?.searchQuery) {
+    params.search = filters.searchQuery;
+  }
+
+  const response = await apiClient.get<SwapHistoryItem[]>('/reports/swaps', { params });
+  return response.data;
+};
+
+/**
+ * Get swap history summary
+ */
+export const getSwapHistorySummary = async (
+  filters?: SwapHistoryFilters
+): Promise<SwapHistorySummary> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.dateFrom) {
+    params.dateFrom = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    params.dateTo = filters.dateTo;
+  }
+
+  const response = await apiClient.get<SwapHistorySummary>('/reports/swaps/summary', { params });
+  return response.data;
+};
+
+/**
+ * Export swap history as Excel
+ */
+export const exportSwapHistory = async (
+  filters?: SwapHistoryFilters
+): Promise<Blob> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.dateFrom) {
+    params.dateFrom = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    params.dateTo = filters.dateTo;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+
+  const response = await apiClient.get('/reports/swaps/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== LICENSE REPORT API CALLS =====
+
+/**
+ * Get MS365 license summary
+ */
+export const getLicenseSummary = async (): Promise<LicenseSummary> => {
+  const response = await apiClient.get<LicenseSummary>('/reports/licenses/summary');
+  return response.data;
+};
+
+/**
+ * Get license users (users with assigned licenses)
+ */
+export const getLicenseUsers = async (
+  filters?: LicenseReportFilters
+): Promise<LicenseUser[]> => {
+  const params: Record<string, string> = {};
+
+  if (filters?.skuId) {
+    params.skuId = filters.skuId;
+  }
+  if (filters?.department) {
+    params.department = filters.department;
+  }
+  if (filters?.searchQuery) {
+    params.search = filters.searchQuery;
+  }
+
+  const response = await apiClient.get<LicenseUser[]>('/reports/licenses/users', { params });
+  return response.data;
+};
+
+/**
+ * Export license report as Excel
+ */
+export const exportLicenseReport = async (): Promise<Blob> => {
+  const response = await apiClient.get('/reports/licenses/export', {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+/**
+ * Get license optimization analysis
+ */
+export const getLicenseOptimization = async (
+  inactiveDaysThreshold: number = 90
+): Promise<LicenseOptimization> => {
+  const response = await apiClient.get<LicenseOptimization>('/reports/licenses/optimization', {
+    params: { inactiveDaysThreshold },
+  });
+  return response.data;
+};
+
+// ===== LEASE REPORT API CALLS =====
+
+/**
+ * Get lease contracts for report
+ */
+export const getLeaseReport = async (
+  filters?: LeaseReportFilters
+): Promise<LeaseReportItem[]> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status && filters.status !== 'all') {
+    params.status = filters.status;
+  }
+  if (filters?.vendorId) {
+    params.vendorId = filters.vendorId;
+  }
+  if (filters?.expiringWithinDays) {
+    params.expiringWithinDays = filters.expiringWithinDays;
+  }
+
+  const response = await apiClient.get<LeaseReportItem[]>('/reports/leases', { params });
+  return response.data;
+};
+
+/**
+ * Get lease report summary
+ */
+export const getLeaseReportSummary = async (): Promise<LeaseReportSummary> => {
+  const response = await apiClient.get<LeaseReportSummary>('/reports/leases/summary');
+  return response.data;
+};
+
+/**
+ * Export lease report as Excel
+ */
+export const exportLeaseReport = async (
+  filters?: LeaseReportFilters
+): Promise<Blob> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status && filters.status !== 'all') {
+    params.status = filters.status;
+  }
+  if (filters?.expiringWithinDays) {
+    params.expiringWithinDays = filters.expiringWithinDays;
+  }
+
+  const response = await apiClient.get('/reports/leases/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
 };
