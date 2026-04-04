@@ -388,12 +388,24 @@ public class RolloutWorkplacesController : ControllerBase
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
 
-        // Update day completed count
-        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, false, cancellationToken);
+        // Update day completed count and check if day is fully completed
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, true, cancellationToken);
         if (day != null)
         {
             day.CompletedWorkplaces++;
             day.UpdatedAt = DateTime.UtcNow;
+
+            // Auto-complete day if all workplaces are done (Completed or Skipped)
+            var allWorkplacesDone = day.Workplaces != null && day.Workplaces.All(w =>
+                w.Status == RolloutWorkplaceStatus.Completed ||
+                w.Status == RolloutWorkplaceStatus.Skipped);
+
+            if (allWorkplacesDone && day.Status != RolloutDayStatus.Completed)
+            {
+                day.Status = RolloutDayStatus.Completed;
+                _logger.LogInformation("Auto-completed rollout day {DayId} - all workplaces are done", day.Id);
+            }
+
             await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
         }
 
@@ -432,6 +444,24 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.UpdatedAt = DateTime.UtcNow;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        // Check if day is fully completed after skipping this workplace
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, true, cancellationToken);
+        if (day != null)
+        {
+            // Auto-complete day if all workplaces are done (Completed or Skipped)
+            var allWorkplacesDone = day.Workplaces != null && day.Workplaces.All(w =>
+                w.Status == RolloutWorkplaceStatus.Completed ||
+                w.Status == RolloutWorkplaceStatus.Skipped);
+
+            if (allWorkplacesDone && day.Status != RolloutDayStatus.Completed)
+            {
+                day.Status = RolloutDayStatus.Completed;
+                day.UpdatedAt = DateTime.UtcNow;
+                await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
+                _logger.LogInformation("Auto-completed rollout day {DayId} - all workplaces are done", day.Id);
+            }
+        }
 
         _logger.LogInformation("Skipped workplace {WorkplaceId}: {Reason}", id, dto.Reason);
 
