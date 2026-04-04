@@ -75,6 +75,12 @@ public class WorkplaceAssetAssignment
     public bool QRCodeRequired { get; set; } = false;
 
     /// <summary>
+    /// Indicates whether a QR code sticker has been applied to the asset during rollout.
+    /// Null = not yet checked, True = applied, False = not applied/skipped
+    /// </summary>
+    public bool? QrCodeApplied { get; set; }
+
+    /// <summary>
     /// The serial number captured during rollout execution (optional).
     /// Populated when the technician scans or enters the serial.
     /// </summary>

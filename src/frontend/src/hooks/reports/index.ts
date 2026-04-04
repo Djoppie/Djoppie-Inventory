@@ -51,3 +51,19 @@ export {
   getLeaseStatusLabel,
   formatCurrency,
 } from './useLeaseReports';
+
+// Rollout Report Hooks
+export {
+  useRolloutSessionOverview,
+  useRolloutSessionChecklist,
+  useUnscheduledAssets,
+  useRolloutReportFilterOptions,
+  useExportRolloutReport,
+  getWorkplaceStatusColor,
+  getWorkplaceStatusLabel,
+  getPriorityColor,
+  getPriorityLabel,
+  formatRolloutDate,
+  getEquipmentTypeLabel,
+  hasWorkplaceIssues,
+} from './useRolloutReports';

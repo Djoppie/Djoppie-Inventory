@@ -25,6 +25,12 @@ import type {
   LeaseReportItem,
   LeaseReportSummary,
   LeaseReportFilters,
+  RolloutSessionOverview,
+  RolloutDayChecklist,
+  UnscheduledAsset,
+  RolloutReportFilterOptions,
+  RolloutReportFilters,
+  RolloutExcelExportRequest,
 } from '../types/report.types';
 
 // ===== PROGRESS API CALLS =====
@@ -513,6 +519,118 @@ export const exportLeaseReport = async (
   }
 
   const response = await apiClient.get('/reports/leases/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== ROLLOUT REPORT API CALLS =====
+
+/**
+ * Get rollout session overview with KPIs and breakdowns
+ */
+export const getRolloutSessionOverview = async (
+  sessionId: number,
+  filters?: RolloutReportFilters
+): Promise<RolloutSessionOverview> => {
+  const params: Record<string, string | number | string[]> = {};
+
+  if (filters?.serviceIds && filters.serviceIds.length > 0) {
+    params.serviceIds = filters.serviceIds.join(',');
+  }
+  if (filters?.buildingIds && filters.buildingIds.length > 0) {
+    params.buildingIds = filters.buildingIds.join(',');
+  }
+
+  const response = await apiClient.get<RolloutSessionOverview>(
+    `/reports/rollout/sessions/${sessionId}/overview`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * Get rollout session checklist (all days with workplaces)
+ */
+export const getRolloutSessionChecklist = async (
+  sessionId: number,
+  filters?: RolloutReportFilters
+): Promise<RolloutDayChecklist[]> => {
+  const params: Record<string, string | number | string[]> = {};
+
+  if (filters?.serviceIds && filters.serviceIds.length > 0) {
+    params.serviceIds = filters.serviceIds.join(',');
+  }
+  if (filters?.buildingIds && filters.buildingIds.length > 0) {
+    params.buildingIds = filters.buildingIds.join(',');
+  }
+  if (filters?.statuses && filters.statuses.length > 0) {
+    params.statuses = filters.statuses.join(',');
+  }
+
+  const response = await apiClient.get<RolloutDayChecklist[]>(
+    `/reports/rollout/sessions/${sessionId}/checklist`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * Get unscheduled assets (not yet in any rollout)
+ */
+export const getUnscheduledAssets = async (
+  sessionId: number,
+  limit: number = 100
+): Promise<UnscheduledAsset[]> => {
+  const response = await apiClient.get<UnscheduledAsset[]>(
+    `/reports/rollout/sessions/${sessionId}/unscheduled`,
+    { params: { limit } }
+  );
+  return response.data;
+};
+
+/**
+ * Get filter options for rollout report
+ */
+export const getRolloutReportFilterOptions = async (
+  sessionId: number
+): Promise<RolloutReportFilterOptions> => {
+  const response = await apiClient.get<RolloutReportFilterOptions>(
+    `/reports/rollout/sessions/${sessionId}/filter-options`
+  );
+  return response.data;
+};
+
+/**
+ * Export rollout report as Excel
+ */
+export const exportRolloutReport = async (
+  sessionId: number,
+  options?: RolloutExcelExportRequest
+): Promise<Blob> => {
+  const params: Record<string, string | boolean> = {};
+
+  if (options?.serviceIds && options.serviceIds.length > 0) {
+    params.serviceIds = options.serviceIds.join(',');
+  }
+  if (options?.buildingIds && options.buildingIds.length > 0) {
+    params.buildingIds = options.buildingIds.join(',');
+  }
+  if (options?.includeOverview !== undefined) {
+    params.includeOverview = options.includeOverview;
+  }
+  if (options?.includeSwapChecklist !== undefined) {
+    params.includeSwapChecklist = options.includeSwapChecklist;
+  }
+  if (options?.includeUnscheduledAssets !== undefined) {
+    params.includeUnscheduledAssets = options.includeUnscheduledAssets;
+  }
+  if (options?.includeSectorBreakdown !== undefined) {
+    params.includeSectorBreakdown = options.includeSectorBreakdown;
+  }
+
+  const response = await apiClient.get(`/reports/rollout/sessions/${sessionId}/export`, {
     params,
     responseType: 'blob',
   });

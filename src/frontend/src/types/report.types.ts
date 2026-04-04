@@ -424,6 +424,216 @@ export interface LeaseReportFilters {
   expiringWithinDays?: number;
 }
 
+// ===== COMPREHENSIVE ROLLOUT REPORT TYPES =====
+
+/**
+ * Complete rollout session report with overview, checklist, and unscheduled assets
+ */
+export interface RolloutSessionReport {
+  sessionId: number;
+  sessionName: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  overview: RolloutSessionOverview;
+  dayChecklists: RolloutDayChecklist[];
+  unscheduledAssets: UnscheduledAsset[];
+}
+
+/**
+ * Session overview with KPIs and breakdowns
+ */
+export interface RolloutSessionOverview {
+  // Workplace statistics
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  pendingWorkplaces: number;
+  inProgressWorkplaces: number;
+  completionPercentage: number;
+  // Asset statistics
+  totalNewAssets: number;
+  installedAssets: number;
+  oldAssetsDecommissioned: number;
+  qrCodesApplied: number;
+  missingQrCodes: number;
+  // Breakdowns
+  sectorBreakdown: RolloutSectorBreakdown[];
+  buildingBreakdown: RolloutBuildingBreakdown[];
+  timeline: RolloutProgressTimeline[];
+}
+
+/**
+ * Sector breakdown with services
+ */
+export interface RolloutSectorBreakdown {
+  sectorId: number;
+  sectorName: string;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  completionPercentage: number;
+  services: RolloutServiceBreakdown[];
+}
+
+/**
+ * Service breakdown
+ */
+export interface RolloutServiceBreakdown {
+  serviceId: number;
+  serviceName: string;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  completionPercentage: number;
+}
+
+/**
+ * Building breakdown
+ */
+export interface RolloutBuildingBreakdown {
+  buildingId: number;
+  buildingName: string;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  completionPercentage: number;
+}
+
+/**
+ * Progress timeline point
+ */
+export interface RolloutProgressTimeline {
+  date: string;
+  plannedWorkplaces: number;
+  completedWorkplaces: number;
+  cumulativeCompleted: number;
+}
+
+/**
+ * Day checklist with workplaces
+ */
+export interface RolloutDayChecklist {
+  dayId: number;
+  date: string;
+  notes?: string;
+  totalWorkplaces: number;
+  completedWorkplaces: number;
+  workplaces: RolloutWorkplaceChecklist[];
+}
+
+/**
+ * Workplace checklist item
+ */
+export interface RolloutWorkplaceChecklist {
+  workplaceId: number;
+  workplaceName: string;
+  location?: string;
+  userId?: string;
+  userDisplayName?: string;
+  userJobTitle?: string;
+  serviceName: string;
+  buildingName: string;
+  status: string;
+  completedAt?: string;
+  notes?: string;
+  hasMissingSerialNumbers: boolean;
+  equipmentRows: RolloutEquipmentRow[];
+}
+
+/**
+ * Equipment row for SWAP checklist (Desktop/Laptop, Docking)
+ */
+export interface RolloutEquipmentRow {
+  equipmentType: string; // "Desktop/Laptop", "Docking"
+  category: string; // UserAssigned, WorkplaceFixed
+  // New asset info
+  newAssetId?: number;
+  newAssetCode?: string;
+  newSerialNumber?: string;
+  qrCodeApplied?: boolean;
+  isSharedDevice: boolean;
+  // Old asset info (for swaps)
+  oldAssetId?: number;
+  oldAssetCode?: string;
+  oldSerialNumber?: string;
+  // Status indicators
+  status: string;
+  isMissingSerialNumber: boolean;
+}
+
+/**
+ * Old asset not yet scheduled in any rollout
+ */
+export interface UnscheduledAsset {
+  assetId: number;
+  assetCode: string;
+  serialNumber?: string;
+  assetTypeName: string;
+  primaryUserName?: string;
+  primaryUserId?: string;
+  serviceName?: string;
+  installationDate?: string;
+  ageInDays: number;
+  priority: string; // High, Medium, Low
+}
+
+/**
+ * Future swap/planning item
+ */
+export interface FutureSwap {
+  workplaceId: number;
+  dayId: number;
+  plannedDate: string;
+  workplaceName: string;
+  userId?: string;
+  userDisplayName?: string;
+  serviceName: string;
+  buildingName: string;
+  swapType: string; // Onboarding, Offboarding, Swap
+  newAssetCount: number;
+  oldAssetCount: number;
+}
+
+/**
+ * Filter options for rollout reports
+ */
+export interface RolloutReportFilterOptions {
+  services: FilterOption[];
+  buildings: FilterOption[];
+  statuses: FilterOption[];
+  minDate: string;
+  maxDate: string;
+}
+
+/**
+ * Filter option item
+ */
+export interface FilterOption {
+  id: number;
+  name: string;
+  count: number;
+}
+
+/**
+ * Excel export request
+ */
+export interface RolloutExcelExportRequest {
+  serviceIds?: number[];
+  buildingIds?: number[];
+  includeOverview?: boolean;
+  includeSwapChecklist?: boolean;
+  includeUnscheduledAssets?: boolean;
+  includeSectorBreakdown?: boolean;
+}
+
+/**
+ * Rollout report filters
+ */
+export interface RolloutReportFilters {
+  serviceIds?: number[];
+  buildingIds?: number[];
+  statuses?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 // ===== REPORT TAB TYPES =====
 
 export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'licenses' | 'leasing';

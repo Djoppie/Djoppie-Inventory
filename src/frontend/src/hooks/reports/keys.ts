@@ -39,4 +39,15 @@ export const reportKeys = {
   leasesList: (filters?: object) =>
     [...reportKeys.leases(), 'list', filters] as const,
   leasesSummary: () => [...reportKeys.leases(), 'summary'] as const,
+
+  // Rollout Reports
+  rollout: () => [...reportKeys.all, 'rollout'] as const,
+  rolloutOverview: (sessionId: number, filters?: object) =>
+    [...reportKeys.rollout(), 'overview', sessionId, filters] as const,
+  rolloutChecklist: (sessionId: number, filters?: object) =>
+    [...reportKeys.rollout(), 'checklist', sessionId, filters] as const,
+  rolloutUnscheduled: (sessionId: number, limit?: number) =>
+    [...reportKeys.rollout(), 'unscheduled', sessionId, limit] as const,
+  rolloutFilterOptions: (sessionId: number) =>
+    [...reportKeys.rollout(), 'filter-options', sessionId] as const,
 };
