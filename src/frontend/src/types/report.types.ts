@@ -541,6 +541,7 @@ export interface RolloutWorkplaceChecklist {
  * Equipment row for SWAP checklist (Desktop/Laptop, Docking)
  */
 export interface RolloutEquipmentRow {
+  assignmentId: number; // For updating serial numbers
   equipmentType: string; // "Desktop/Laptop", "Docking"
   category: string; // UserAssigned, WorkplaceFixed
   // New asset info
@@ -636,7 +637,7 @@ export interface RolloutReportFilters {
 
 // ===== REPORT TAB TYPES =====
 
-export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'licenses' | 'leasing';
+export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'licenses' | 'leasing' | 'serialnumbers';
 
 export interface ReportTabConfig {
   id: ReportTab;

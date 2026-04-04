@@ -14,7 +14,8 @@
  * - Excel export functionality
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Typography,
@@ -64,8 +65,15 @@ import LaptopIcon from '@mui/icons-material/Laptop';
 import DockIcon from '@mui/icons-material/Dock';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import EditIcon from '@mui/icons-material/Edit';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 
 import { useRolloutSessions } from '../../hooks/useRollout';
+import { updateAssignmentSerialNumber } from '../../api/rollout.api';
 import {
   useRolloutSessionOverview,
   useRolloutSessionChecklist,
@@ -78,6 +86,7 @@ import {
   getPriorityLabel,
   formatRolloutDate,
 } from '../../hooks/reports';
+import { reportKeys } from '../../hooks/reports/keys';
 import {
   getNeumorph,
   getNeumorphInset,
@@ -103,6 +112,7 @@ const RolloutTab = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const neumorphColors = getNeumorphColors(isDark);
+  const queryClient = useQueryClient();
 
   // State
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
@@ -115,6 +125,12 @@ const RolloutTab = () => {
   const [selectedBuildingIds, setSelectedBuildingIds] = useState<number[]>([]);
   const [serviceFilterExpanded, setServiceFilterExpanded] = useState(false);
   const [buildingFilterExpanded, setBuildingFilterExpanded] = useState(false);
+
+  // Edit serial number dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingAssignmentId, setEditingAssignmentId] = useState<number | null>(null);
+  const [editSerialNumber, setEditSerialNumber] = useState('');
+  const [isSavingSerial, setIsSavingSerial] = useState(false);
 
   // Build filters object
   const filters: RolloutReportFilters = useMemo(() => ({
@@ -201,6 +217,43 @@ const RolloutTab = () => {
   };
 
   const hasActiveFilters = searchQuery || selectedServiceIds.length > 0 || selectedBuildingIds.length > 0;
+
+  // Serial number edit handlers
+  const handleEditSerialNumber = (assignmentId: number, currentSerial: string | undefined) => {
+    setEditingAssignmentId(assignmentId);
+    setEditSerialNumber(currentSerial || '');
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveSerialNumber = useCallback(async () => {
+    if (!editingAssignmentId || !editSerialNumber.trim() || !selectedSessionId) return;
+
+    setIsSavingSerial(true);
+    try {
+      await updateAssignmentSerialNumber(editingAssignmentId, editSerialNumber.trim());
+      setEditDialogOpen(false);
+      setEditingAssignmentId(null);
+      setEditSerialNumber('');
+      // Invalidate the checklist and overview queries to show updated data
+      await queryClient.invalidateQueries({
+        queryKey: reportKeys.rolloutChecklist(selectedSessionId, filters),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: reportKeys.rolloutOverview(selectedSessionId, filters),
+      });
+    } catch (error) {
+      console.error('Failed to update serial number:', error);
+      alert('Kon serienummer niet opslaan. Probeer het opnieuw.');
+    } finally {
+      setIsSavingSerial(false);
+    }
+  }, [editingAssignmentId, editSerialNumber, selectedSessionId, filters, queryClient]);
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingAssignmentId(null);
+    setEditSerialNumber('');
+  };
 
   // Day expansion handlers
   const handleDayExpand = (dayId: number) => {
@@ -926,10 +979,78 @@ const RolloutTab = () => {
               onToggle={() => handleDayExpand(day.dayId)}
               isDark={isDark}
               neumorphColors={neumorphColors}
+              onEditSerialNumber={handleEditSerialNumber}
             />
           ))}
         </Box>
       )}
+
+      {/* Edit Serial Number Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={handleCloseEditDialog}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'medium'),
+            borderRadius: 3,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Serienummer Invullen
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Serienummer"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={editSerialNumber}
+            onChange={(e) => setEditSerialNumber(e.target.value)}
+            disabled={isSavingSerial}
+            sx={{
+              mt: 1,
+              '& .MuiOutlinedInput-root': {
+                fontFamily: 'monospace',
+              },
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && editSerialNumber.trim()) {
+                handleSaveSerialNumber();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleCloseEditDialog}
+            disabled={isSavingSerial}
+            sx={{ color: 'text.secondary' }}
+          >
+            Annuleren
+          </Button>
+          <Button
+            onClick={handleSaveSerialNumber}
+            disabled={isSavingSerial || !editSerialNumber.trim()}
+            variant="contained"
+            sx={{
+              bgcolor: ROLLOUT_COLOR,
+              '&:hover': { bgcolor: alpha(ROLLOUT_COLOR, 0.9) },
+            }}
+          >
+            {isSavingSerial ? (
+              <CircularProgress size={20} sx={{ color: '#fff' }} />
+            ) : (
+              'Opslaan'
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
@@ -1138,6 +1259,7 @@ interface DayChecklistCardProps {
   onToggle: () => void;
   isDark: boolean;
   neumorphColors: ReturnType<typeof getNeumorphColors>;
+  onEditSerialNumber?: (assignmentId: number, currentSerial: string | undefined) => void;
 }
 
 const DayChecklistCard: React.FC<DayChecklistCardProps> = ({
@@ -1146,6 +1268,7 @@ const DayChecklistCard: React.FC<DayChecklistCardProps> = ({
   onToggle,
   isDark,
   neumorphColors,
+  onEditSerialNumber,
 }) => {
   const progress = day.totalWorkplaces > 0
     ? Math.round((day.completedWorkplaces / day.totalWorkplaces) * 100)
@@ -1237,6 +1360,7 @@ const DayChecklistCard: React.FC<DayChecklistCardProps> = ({
                     key={workplace.workplaceId}
                     workplace={workplace}
                     isDark={isDark}
+                    onEditSerialNumber={onEditSerialNumber}
                   />
                 ))}
               </TableBody>
@@ -1251,9 +1375,10 @@ const DayChecklistCard: React.FC<DayChecklistCardProps> = ({
 interface WorkplaceRowProps {
   workplace: RolloutWorkplaceChecklist;
   isDark: boolean;
+  onEditSerialNumber?: (assignmentId: number, currentSerial: string | undefined) => void;
 }
 
-const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark }) => {
+const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark, onEditSerialNumber }) => {
   const statusColor = getWorkplaceStatusColor(workplace.status);
 
   return (
@@ -1297,7 +1422,7 @@ const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark }) => {
       <TableCell>
         <Stack spacing={0.5}>
           {workplace.equipmentRows.map((row, idx) => (
-            <EquipmentRowChip key={idx} row={row} isDark={isDark} />
+            <EquipmentRowChip key={idx} row={row} isDark={isDark} onEditSerialNumber={onEditSerialNumber} />
           ))}
         </Stack>
       </TableCell>
@@ -1321,9 +1446,10 @@ const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark }) => {
 interface EquipmentRowChipProps {
   row: RolloutEquipmentRow;
   isDark: boolean;
+  onEditSerialNumber?: (assignmentId: number, currentSerial: string | undefined) => void;
 }
 
-const EquipmentRowChip: React.FC<EquipmentRowChipProps> = ({ row, isDark }) => {
+const EquipmentRowChip: React.FC<EquipmentRowChipProps> = ({ row, isDark, onEditSerialNumber }) => {
   const isLaptop = row.equipmentType.includes('Desktop') || row.equipmentType.includes('Laptop');
   const icon = isLaptop ? <LaptopIcon sx={{ fontSize: 14 }} /> : <DockIcon sx={{ fontSize: 14 }} />;
 
@@ -1334,6 +1460,13 @@ const EquipmentRowChip: React.FC<EquipmentRowChipProps> = ({ row, isDark }) => {
   const borderColor = row.isMissingSerialNumber
     ? '#FFC107'
     : SUCCESS_COLOR;
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEditSerialNumber) {
+      onEditSerialNumber(row.assignmentId, row.newSerialNumber);
+    }
+  };
 
   return (
     <Box
@@ -1361,6 +1494,22 @@ const EquipmentRowChip: React.FC<EquipmentRowChipProps> = ({ row, isDark }) => {
       >
         {row.newSerialNumber || '???'}
       </Typography>
+      {row.isMissingSerialNumber && onEditSerialNumber && (
+        <Tooltip title="Serienummer invullen">
+          <IconButton
+            size="small"
+            onClick={handleEditClick}
+            sx={{
+              p: 0.25,
+              ml: 0.25,
+              color: WARNING_COLOR,
+              '&:hover': { bgcolor: alpha(WARNING_COLOR, 0.1) },
+            }}
+          >
+            <EditIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
+      )}
       {row.oldSerialNumber && (
         <>
           <SwapHorizIcon sx={{ fontSize: 12, color: 'text.secondary' }} />

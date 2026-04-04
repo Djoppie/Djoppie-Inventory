@@ -618,6 +618,60 @@ public class RolloutWorkplacesController : ControllerBase
         return Ok(movements);
     }
 
+    /// <summary>
+    /// Updates the serial number for an assignment.
+    /// Used to fill in missing serial numbers after rollout completion.
+    /// </summary>
+    /// <param name="assignmentId">Assignment ID</param>
+    /// <param name="dto">Serial number update data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPatch("assignments/{assignmentId}/serial")]
+    [ProducesResponseType(typeof(WorkplaceAssetAssignmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WorkplaceAssetAssignmentDto>> UpdateAssignmentSerial(
+        int assignmentId,
+        [FromBody] UpdateSerialNumberDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dto.SerialNumber))
+        {
+            return BadRequest(new { message = "Serial number is required" });
+        }
+
+        var assignment = await _context.WorkplaceAssetAssignments
+            .Include(a => a.NewAsset)
+            .Include(a => a.AssetType)
+            .FirstOrDefaultAsync(a => a.Id == assignmentId, cancellationToken);
+
+        if (assignment == null)
+        {
+            return NotFound(new { message = $"Assignment with ID {assignmentId} not found" });
+        }
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        // Update the SerialNumberCaptured on the assignment
+        assignment.SerialNumberCaptured = dto.SerialNumber;
+        assignment.UpdatedAt = DateTime.UtcNow;
+
+        // If there's a linked asset, also update its serial number
+        if (assignment.NewAsset != null)
+        {
+            assignment.NewAsset.SerialNumber = dto.SerialNumber;
+            assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated serial number for assignment {AssignmentId} to {SerialNumber} by {PerformedBy}",
+            assignmentId, dto.SerialNumber, performedBy);
+
+        // Return updated assignment
+        var updatedAssignment = await _assignmentService.GetByIdAsync(assignmentId, cancellationToken);
+        return Ok(updatedAssignment);
+    }
+
     #region Private Mapping Methods
 
     private static RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)

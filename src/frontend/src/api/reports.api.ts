@@ -636,3 +636,91 @@ export const exportRolloutReport = async (
   });
   return response.data;
 };
+
+// ===== SERIAL NUMBER MANAGEMENT API CALLS =====
+
+/**
+ * Asset serial number data for rollout session
+ */
+export interface RolloutAssetSerial {
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  equipmentType: string;
+  currentSerialNumber?: string;
+  brand?: string;
+  model?: string;
+  workplaceName: string;
+  userDisplayName?: string;
+  serviceName: string;
+  buildingName: string;
+  date?: string;
+  status: string;
+  isMissingSerial: boolean;
+}
+
+/**
+ * Single serial number update
+ */
+export interface SerialNumberUpdate {
+  assetId: number;
+  serialNumber: string;
+}
+
+/**
+ * Bulk serial number update request
+ */
+export interface BulkSerialNumberUpdateRequest {
+  updates: SerialNumberUpdate[];
+}
+
+/**
+ * Bulk serial number update result
+ */
+export interface BulkSerialNumberUpdateResult {
+  successCount: number;
+  failedCount: number;
+  errors: string[];
+}
+
+/**
+ * Get all assets linked to a rollout session for serial number management
+ */
+export const getRolloutAssetSerials = async (
+  sessionId: number,
+  onlyMissing: boolean = false
+): Promise<RolloutAssetSerial[]> => {
+  const response = await apiClient.get<RolloutAssetSerial[]>(
+    `/reports/rollout/sessions/${sessionId}/serial-numbers`,
+    { params: { onlyMissing } }
+  );
+  return response.data;
+};
+
+/**
+ * Bulk update serial numbers for assets
+ */
+export const bulkUpdateSerialNumbers = async (
+  sessionId: number,
+  updates: SerialNumberUpdate[]
+): Promise<BulkSerialNumberUpdateResult> => {
+  const response = await apiClient.patch<BulkSerialNumberUpdateResult>(
+    `/reports/rollout/sessions/${sessionId}/serial-numbers/bulk`,
+    { updates }
+  );
+  return response.data;
+};
+
+/**
+ * Update a single asset's serial number
+ */
+export const updateAssetSerialNumber = async (
+  assetId: number,
+  serialNumber: string
+): Promise<{ message: string; serialNumber: string }> => {
+  const response = await apiClient.patch<{ message: string; serialNumber: string }>(
+    `/reports/assets/${assetId}/serial`,
+    { assetId, serialNumber }
+  );
+  return response.data;
+};

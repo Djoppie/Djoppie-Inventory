@@ -261,6 +261,19 @@ export const reopenRolloutWorkplace = async (
 };
 
 /**
+ * Update the serial number for an assignment.
+ * Used to fill in missing serial numbers after rollout completion.
+ */
+export const updateAssignmentSerialNumber = async (
+  assignmentId: number,
+  serialNumber: string
+): Promise<void> => {
+  await apiClient.patch(`/rollout/workplaces/assignments/${assignmentId}/serial`, {
+    serialNumber,
+  });
+};
+
+/**
  * Move a workplace to a different date by updating its scheduledDate.
  * The workplace stays in its original planning but will be executed on the new date.
  * Returns the updated workplace.

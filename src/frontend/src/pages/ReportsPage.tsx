@@ -21,6 +21,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import BadgeIcon from '@mui/icons-material/Badge';
 import DescriptionIcon from '@mui/icons-material/Description';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { ROUTES } from '../constants/routes';
@@ -33,6 +34,7 @@ import {
   SwapsTab,
   LicensesTab,
   LeasingTab,
+  SerialNumbersTab,
 } from '../components/reports';
 
 // Report tab configuration
@@ -73,6 +75,12 @@ const REPORT_TABS: { id: ReportTab; label: string; icon: ReactElement; descripti
     icon: <DescriptionIcon />,
     description: 'Lease contracten en vervaldatums',
   },
+  {
+    id: 'serialnumbers',
+    label: 'Serienummers',
+    icon: <QrCode2Icon />,
+    description: 'Beheer serienummers van rollout assets',
+  },
 ];
 
 // Tab colors
@@ -83,6 +91,7 @@ const TAB_COLORS: Record<ReportTab, string> = {
   swaps: '#26A69A', // Teal
   licenses: '#1976D2', // Blue
   leasing: '#F57C00', // Dark Orange
+  serialnumbers: '#43A047', // Green
 };
 
 const ReportsPage = () => {
@@ -139,6 +148,9 @@ const ReportsPage = () => {
         break;
       case 'rollout':
         queryClient.invalidateQueries({ queryKey: ['rollouts'] });
+        break;
+      case 'serialnumbers':
+        queryClient.invalidateQueries({ queryKey: ['reports', 'serial-numbers'] });
         break;
     }
   };
@@ -269,6 +281,7 @@ const ReportsPage = () => {
         {activeTab === 'swaps' && <SwapsTab />}
         {activeTab === 'licenses' && <LicensesTab />}
         {activeTab === 'leasing' && <LeasingTab />}
+        {activeTab === 'serialnumbers' && <SerialNumbersTab />}
       </Paper>
     </Container>
   );

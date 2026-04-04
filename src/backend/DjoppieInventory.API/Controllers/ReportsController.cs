@@ -1316,6 +1316,7 @@ public class ReportsController : ControllerBase
         {
             equipmentRows.Add(new RolloutEquipmentRowDto
             {
+                AssignmentId = a.Id,
                 EquipmentType = "Desktop/Laptop",
                 Category = a.AssignmentCategory.ToString(),
                 NewAssetId = a.NewAssetId,
@@ -1335,6 +1336,7 @@ public class ReportsController : ControllerBase
         {
             equipmentRows.Add(new RolloutEquipmentRowDto
             {
+                AssignmentId = a.Id,
                 EquipmentType = "Docking",
                 Category = a.AssignmentCategory.ToString(),
                 NewAssetId = a.NewAssetId,
@@ -1569,6 +1571,187 @@ public class ReportsController : ControllerBase
 
         sheet.Columns().AdjustToContents();
         sheet.SheetView.FreezeRows(1);
+    }
+
+    // ========================================
+    // Serial Number Management
+    // ========================================
+
+    /// <summary>
+    /// Gets all assets linked to a rollout session for serial number management.
+    /// Returns all new assets (both assigned via assignments and directly linked).
+    /// </summary>
+    [HttpGet("rollout/sessions/{sessionId}/serial-numbers")]
+    [ProducesResponseType(typeof(List<RolloutAssetSerialDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<RolloutAssetSerialDto>>> GetRolloutAssetSerials(
+        int sessionId,
+        [FromQuery] bool onlyMissing = false,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await _context.RolloutSessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
+
+        if (session == null)
+            return NotFound($"Session {sessionId} not found");
+
+        // Get all assignments with new assets for this session
+        var assignmentsWithAssets = await _context.WorkplaceAssetAssignments
+            .Include(a => a.NewAsset).ThenInclude(asset => asset!.AssetType)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.Service)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.Building)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.RolloutDay)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.PhysicalWorkplace)
+            .Include(a => a.AssetType)
+            .Where(a => a.RolloutWorkplace.RolloutDay.RolloutSessionId == sessionId)
+            .Where(a => a.NewAssetId.HasValue)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var results = assignmentsWithAssets
+            .Where(a => a.NewAsset != null)
+            .Select(a => new RolloutAssetSerialDto
+            {
+                AssetId = a.NewAsset!.Id,
+                AssetCode = a.NewAsset.AssetCode,
+                AssetName = a.NewAsset.AssetName,
+                EquipmentType = a.AssetType?.Name ?? a.NewAsset.AssetType?.Name ?? "Unknown",
+                CurrentSerialNumber = a.NewAsset.SerialNumber ?? a.SerialNumberCaptured,
+                Brand = a.NewAsset.Brand,
+                Model = a.NewAsset.Model,
+                WorkplaceName = a.RolloutWorkplace.PhysicalWorkplace?.Name ?? a.RolloutWorkplace.UserName ?? $"Workplace {a.RolloutWorkplace.Id}",
+                UserDisplayName = a.RolloutWorkplace.UserName,
+                ServiceName = a.RolloutWorkplace.Service?.Name ?? "",
+                BuildingName = a.RolloutWorkplace.Building?.Name ?? "",
+                Date = a.RolloutWorkplace.RolloutDay?.Date,
+                Status = a.NewAsset.Status.ToString(),
+                IsMissingSerial = string.IsNullOrEmpty(a.NewAsset.SerialNumber) && string.IsNullOrEmpty(a.SerialNumberCaptured)
+            })
+            .DistinctBy(a => a.AssetId) // Remove duplicates if same asset in multiple assignments
+            .OrderBy(a => a.ServiceName)
+            .ThenBy(a => a.Date)
+            .ThenBy(a => a.WorkplaceName)
+            .ToList();
+
+        if (onlyMissing)
+        {
+            results = results.Where(a => a.IsMissingSerial).ToList();
+        }
+
+        _logger.LogInformation("Found {Count} assets for serial number management in session {SessionId} (missing only: {OnlyMissing})",
+            results.Count, sessionId, onlyMissing);
+
+        return Ok(results);
+    }
+
+    /// <summary>
+    /// Bulk update serial numbers for assets.
+    /// </summary>
+    [HttpPatch("rollout/sessions/{sessionId}/serial-numbers/bulk")]
+    [ProducesResponseType(typeof(BulkSerialNumberUpdateResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkSerialNumberUpdateResult>> BulkUpdateSerialNumbers(
+        int sessionId,
+        [FromBody] BulkSerialNumberUpdateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Updates == null || request.Updates.Count == 0)
+        {
+            return BadRequest(new { message = "No updates provided" });
+        }
+
+        var successCount = 0;
+        var errors = new List<string>();
+
+        foreach (var update in request.Updates)
+        {
+            if (string.IsNullOrWhiteSpace(update.SerialNumber))
+            {
+                errors.Add($"Asset {update.AssetId}: Serienummer mag niet leeg zijn");
+                continue;
+            }
+
+            var asset = await _context.Assets.FindAsync(new object[] { update.AssetId }, cancellationToken);
+            if (asset == null)
+            {
+                errors.Add($"Asset {update.AssetId}: Niet gevonden");
+                continue;
+            }
+
+            asset.SerialNumber = update.SerialNumber.Trim();
+            asset.UpdatedAt = DateTime.UtcNow;
+
+            // Also update any assignments that reference this asset
+            var assignments = await _context.WorkplaceAssetAssignments
+                .Where(a => a.NewAssetId == update.AssetId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var assignment in assignments)
+            {
+                assignment.SerialNumberCaptured = update.SerialNumber.Trim();
+                assignment.UpdatedAt = DateTime.UtcNow;
+            }
+
+            successCount++;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Bulk updated {SuccessCount} serial numbers for session {SessionId}. Errors: {ErrorCount}",
+            successCount, sessionId, errors.Count);
+
+        return Ok(new BulkSerialNumberUpdateResult
+        {
+            SuccessCount = successCount,
+            FailedCount = errors.Count,
+            Errors = errors
+        });
+    }
+
+    /// <summary>
+    /// Update a single asset's serial number.
+    /// </summary>
+    [HttpPatch("assets/{assetId}/serial")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> UpdateAssetSerialNumber(
+        int assetId,
+        [FromBody] SerialNumberUpdateDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.SerialNumber))
+        {
+            return BadRequest(new { message = "Serienummer mag niet leeg zijn" });
+        }
+
+        var asset = await _context.Assets.FindAsync(new object[] { assetId }, cancellationToken);
+        if (asset == null)
+        {
+            return NotFound(new { message = $"Asset {assetId} niet gevonden" });
+        }
+
+        asset.SerialNumber = request.SerialNumber.Trim();
+        asset.UpdatedAt = DateTime.UtcNow;
+
+        // Also update any assignments that reference this asset
+        var assignments = await _context.WorkplaceAssetAssignments
+            .Where(a => a.NewAssetId == assetId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var assignment in assignments)
+        {
+            assignment.SerialNumberCaptured = request.SerialNumber.Trim();
+            assignment.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated serial number for asset {AssetId} to {SerialNumber}",
+            assetId, request.SerialNumber);
+
+        return Ok(new { message = "Serienummer bijgewerkt", serialNumber = request.SerialNumber.Trim() });
     }
 
     // ========================================

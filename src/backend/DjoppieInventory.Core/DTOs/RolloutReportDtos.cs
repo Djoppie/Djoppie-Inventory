@@ -126,6 +126,11 @@ public record RolloutWorkplaceChecklistDto
 /// </summary>
 public record RolloutEquipmentRowDto
 {
+    /// <summary>
+    /// Assignment ID for updating serial numbers
+    /// </summary>
+    public int AssignmentId { get; init; }
+
     public string EquipmentType { get; init; } = string.Empty; // "Desktop/Laptop", "Docking"
     public string Category { get; init; } = string.Empty; // UserAssigned, WorkplaceFixed
 
@@ -214,4 +219,54 @@ public record RolloutExcelExportRequest
     public bool IncludeSwapChecklist { get; init; } = true;
     public bool IncludeUnscheduledAssets { get; init; } = true;
     public bool IncludeSectorBreakdown { get; init; } = true;
+}
+
+// ===== SERIAL NUMBER MANAGEMENT =====
+
+/// <summary>
+/// Asset with missing or editable serial number in a rollout session
+/// </summary>
+public record RolloutAssetSerialDto
+{
+    public int AssetId { get; init; }
+    public string AssetCode { get; init; } = string.Empty;
+    public string? AssetName { get; init; }
+    public string EquipmentType { get; init; } = string.Empty;
+    public string? CurrentSerialNumber { get; init; }
+    public string? Brand { get; init; }
+    public string? Model { get; init; }
+    public string WorkplaceName { get; init; } = string.Empty;
+    public string? UserDisplayName { get; init; }
+    public string ServiceName { get; init; } = string.Empty;
+    public string BuildingName { get; init; } = string.Empty;
+    public DateTime? Date { get; init; }
+    public string Status { get; init; } = string.Empty; // Nieuw, InGebruik
+    public bool IsMissingSerial { get; init; }
+}
+
+/// <summary>
+/// Single serial number update request
+/// </summary>
+public record SerialNumberUpdateDto
+{
+    public int AssetId { get; init; }
+    public string SerialNumber { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// Bulk serial number update request
+/// </summary>
+public record BulkSerialNumberUpdateRequest
+{
+    public List<SerialNumberUpdateDto> Updates { get; init; } = new();
+}
+
+/// <summary>
+/// Result of bulk serial number update
+/// </summary>
+public record BulkSerialNumberUpdateResult
+{
+    public int SuccessCount { get; init; }
+    public int FailedCount { get; init; }
+    public List<string> Errors { get; init; } = new();
 }
