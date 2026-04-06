@@ -14,17 +14,9 @@ import {
   Box,
   Paper,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
   TextField,
   InputAdornment,
   IconButton,
-  Button,
   Chip,
   Tooltip,
   FormControl,
@@ -34,11 +26,10 @@ import {
   CircularProgress,
   Alert,
   SelectChangeEvent,
-  alpha,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import DownloadIcon from '@mui/icons-material/Download';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import PersonIcon from '@mui/icons-material/Person';
@@ -46,10 +37,10 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
 import type {
   AssetMovement,
   AssetMovementFilters,
-  AssetMovementSort,
 } from '../../../types/report.types';
 import type { EquipmentType } from '../../../types/rollout';
 import {
@@ -104,12 +95,6 @@ const AssetMovementTable = ({
     searchQuery: '',
   });
 
-  // Sort state
-  const [sort, setSort] = useState<AssetMovementSort>({
-    field: 'date',
-    direction: 'desc',
-  });
-
   // Handle search change
   const handleSearchChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,14 +124,6 @@ const AssetMovementTable = ({
     []
   );
 
-  // Handle sort change
-  const handleSortChange = useCallback((field: AssetMovementSort['field']) => {
-    setSort((prev) => ({
-      field,
-      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
-    }));
-  }, []);
-
   // Clear filters
   const handleClearFilters = useCallback(() => {
     setFilters({
@@ -156,7 +133,7 @@ const AssetMovementTable = ({
     });
   }, []);
 
-  // Filter and sort movements
+  // Filter movements (sorting handled by DataGrid)
   const filteredMovements = useMemo(() => {
     let result = [...movements];
 
@@ -184,34 +161,12 @@ const AssetMovementTable = ({
       );
     }
 
-    // Apply sorting
-    result.sort((a, b) => {
-      let comparison = 0;
-      switch (sort.field) {
-        case 'assetCode':
-          comparison = a.assetCode.localeCompare(b.assetCode);
-          break;
-        case 'equipmentType':
-          comparison = a.equipmentType.localeCompare(b.equipmentType);
-          break;
-        case 'userName':
-          comparison = a.userName.localeCompare(b.userName);
-          break;
-        case 'serviceName':
-          comparison = (a.serviceName || '').localeCompare(b.serviceName || '');
-          break;
-        case 'executedBy':
-          comparison = a.executedBy.localeCompare(b.executedBy);
-          break;
-        case 'date':
-          comparison = new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime();
-          break;
-      }
-      return sort.direction === 'asc' ? comparison : -comparison;
-    });
-
-    return result;
-  }, [movements, filters, sort]);
+    // Add id field for DataGrid (composite key from assetId, workplaceId, executedAt)
+    return result.map((m, index) => ({
+      ...m,
+      id: `${m.assetId}-${m.workplaceId}-${m.executedAt}-${index}`,
+    }));
+  }, [movements, filters]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -221,10 +176,266 @@ const AssetMovementTable = ({
     return { deployments, decommissions, transfers, total: movements.length };
   }, [movements]);
 
+  // Column definitions
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'assetCode',
+      headerName: 'Asset',
+      width: 160,
+      renderCell: (params: GridRenderCellParams<AssetMovement>) => (
+        <Tooltip title={params.row.assetName || params.value}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <InventoryIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {params.value}
+              </Typography>
+              {params.row.serialNumber && (
+                <Typography variant="caption" color="text.secondary">
+                  S/N: {params.row.serialNumber}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'equipmentType',
+      headerName: 'Type',
+      width: 140,
+      renderCell: (params: GridRenderCellParams<AssetMovement>) => (
+        <Box>
+          <Typography variant="body2">
+            {getEquipmentTypeLabel(params.value)}
+          </Typography>
+          {params.row.brand && params.row.model && (
+            <Typography variant="caption" color="text.secondary">
+              {params.row.brand} {params.row.model}
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: 'statusTransition',
+      headerName: 'Status Wijziging',
+      width: 240,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<AssetMovement>) => {
+        const statusColor = getMovementStatusColor(params.row.movementType);
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {getMovementIcon(params.row.movementType)}
+            <Chip
+              size="small"
+              label={params.row.previousStatus}
+              variant="outlined"
+              sx={{ fontSize: '0.7rem', height: 22 }}
+            />
+            <ArrowForwardIcon
+              sx={{ fontSize: '0.9rem', color: 'text.secondary', mx: 0.5 }}
+            />
+            <Chip
+              size="small"
+              label={params.row.newStatus}
+              color={statusColor}
+              sx={{ fontSize: '0.7rem', height: 22 }}
+            />
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'userName',
+      headerName: 'Gebruiker',
+      width: 180,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams<AssetMovement>) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PersonIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+          <Box>
+            <Typography variant="body2">{params.value}</Typography>
+            {params.row.userEmail && (
+              <Typography variant="caption" color="text.secondary">
+                {params.row.userEmail}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      field: 'serviceName',
+      headerName: 'Dienst/Locatie',
+      width: 180,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams<AssetMovement>) => (
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+          <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary', mt: 0.25 }} />
+          <Box>
+            <Typography variant="body2">
+              {params.value || '-'}
+            </Typography>
+            {params.row.location && (
+              <Typography variant="caption" color="text.secondary">
+                {params.row.location}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      field: 'executedBy',
+      headerName: 'Uitgevoerd door',
+      width: 150,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2">{params.value}</Typography>
+      ),
+    },
+    {
+      field: 'executedAt',
+      headerName: 'Datum',
+      width: 140,
+      renderCell: (params: GridRenderCellParams<AssetMovement>) => (
+        <Tooltip title={formatReportDate(params.row.date)}>
+          <Typography variant="body2">
+            {formatReportDateTime(params.value)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+  ], []);
+
   const hasActiveFilters =
     filters.movementType !== 'all' ||
     filters.equipmentType !== 'all' ||
     !!filters.searchQuery;
+
+  // Statistics chips component (rendered in header)
+  const statisticsChips = useMemo(() => (
+    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+      <Chip
+        icon={<CheckCircleIcon />}
+        label={`${stats.deployments} In Gebruik`}
+        size="small"
+        variant="outlined"
+        sx={{
+          borderColor: 'success.main',
+          color: 'success.main',
+          '& .MuiChip-icon': { color: 'success.main' },
+        }}
+      />
+      <Chip
+        icon={<RemoveCircleIcon />}
+        label={`${stats.decommissions} Uit Dienst`}
+        size="small"
+        variant="outlined"
+        sx={{
+          borderColor: 'error.main',
+          color: 'error.main',
+          '& .MuiChip-icon': { color: 'error.main' },
+        }}
+      />
+      {stats.transfers > 0 && (
+        <Chip
+          icon={<SwapHorizIcon />}
+          label={`${stats.transfers} Overdracht`}
+          size="small"
+          variant="outlined"
+          sx={{
+            borderColor: 'info.main',
+            color: 'info.main',
+            '& .MuiChip-icon': { color: 'info.main' },
+          }}
+        />
+      )}
+    </Box>
+  ), [stats]);
+
+  // Advanced filters component
+  const advancedFilters = useMemo(() => {
+    if (!showFilters) return null;
+    return (
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {/* Search */}
+        <TextField
+          size="small"
+          placeholder="Zoek asset, gebruiker, locatie..."
+          value={filters.searchQuery}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
+              </InputAdornment>
+            ),
+            endAdornment: filters.searchQuery && (
+              <InputAdornment position="end">
+                <IconButton
+                  size="small"
+                  onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
+                >
+                  <ClearIcon sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          sx={{ minWidth: 250, flexGrow: 1, maxWidth: 350 }}
+        />
+
+        {/* Movement type filter */}
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Type</InputLabel>
+          <Select
+            value={filters.movementType || 'all'}
+            label="Type"
+            onChange={handleMovementTypeChange}
+          >
+            <MenuItem value="all">Alle</MenuItem>
+            <MenuItem value="deployment">In Gebruik</MenuItem>
+            <MenuItem value="decommission">Uit Dienst</MenuItem>
+            <MenuItem value="transfer">Overdracht</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Equipment type filter */}
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>Apparaat</InputLabel>
+          <Select
+            value={filters.equipmentType || 'all'}
+            label="Apparaat"
+            onChange={handleEquipmentTypeChange}
+          >
+            <MenuItem value="all">Alle</MenuItem>
+            <MenuItem value="laptop">Laptop</MenuItem>
+            <MenuItem value="desktop">Desktop</MenuItem>
+            <MenuItem value="docking">Docking</MenuItem>
+            <MenuItem value="monitor">Monitor</MenuItem>
+            <MenuItem value="keyboard">Toetsenbord</MenuItem>
+            <MenuItem value="mouse">Muis</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Clear filters */}
+        {hasActiveFilters && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              {filteredMovements.length} van {movements.length} bewegingen
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleClearFilters}
+              sx={{ color: 'text.secondary' }}
+            >
+              <ClearIcon />
+            </IconButton>
+          </Box>
+        )}
+      </Box>
+    );
+  }, [showFilters, filters, handleSearchChange, handleMovementTypeChange, handleEquipmentTypeChange, hasActiveFilters, filteredMovements.length, movements.length, handleClearFilters]);
 
   // Loading state
   if (isLoading) {
@@ -297,422 +508,37 @@ const AssetMovementTable = ({
         borderRadius: 2,
       }}
     >
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: 2,
-          mb: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-            Asset Bewegingen
-            {sessionName && (
-              <Typography
-                component="span"
-                variant="body2"
-                sx={{ ml: 1, color: 'text.secondary', fontWeight: 400 }}
-              >
-                - {sessionName}
-              </Typography>
-            )}
-          </Typography>
-
-          {/* Statistics chips */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip
-              icon={<CheckCircleIcon />}
-              label={`${stats.deployments} In Gebruik`}
-              size="small"
-              variant="outlined"
-              sx={{
-                borderColor: 'success.main',
-                color: 'success.main',
-                '& .MuiChip-icon': { color: 'success.main' },
-              }}
-            />
-            <Chip
-              icon={<RemoveCircleIcon />}
-              label={`${stats.decommissions} Uit Dienst`}
-              size="small"
-              variant="outlined"
-              sx={{
-                borderColor: 'error.main',
-                color: 'error.main',
-                '& .MuiChip-icon': { color: 'error.main' },
-              }}
-            />
-            {stats.transfers > 0 && (
-              <Chip
-                icon={<SwapHorizIcon />}
-                label={`${stats.transfers} Overdracht`}
-                size="small"
-                variant="outlined"
-                sx={{
-                  borderColor: 'info.main',
-                  color: 'info.main',
-                  '& .MuiChip-icon': { color: 'info.main' },
-                }}
-              />
-            )}
-          </Box>
-        </Box>
-
-        {/* Export button */}
-        {onExport && (
-          <Button
-            variant="outlined"
-            startIcon={isExporting ? <CircularProgress size={16} /> : <DownloadIcon />}
-            onClick={onExport}
-            disabled={isExporting}
-            size="small"
-            sx={{
-              borderColor: ASSET_COLOR,
-              color: ASSET_COLOR,
-              '&:hover': {
-                borderColor: ASSET_COLOR,
-                bgcolor: 'rgba(255, 119, 0, 0.08)',
-              },
-            }}
-          >
-            {isExporting ? 'Exporteren...' : 'Export CSV'}
-          </Button>
-        )}
+      {/* Header with title and statistics */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+          Asset Bewegingen
+          {sessionName && (
+            <Typography
+              component="span"
+              variant="body2"
+              sx={{ ml: 1, color: 'text.secondary', fontWeight: 400 }}
+            >
+              - {sessionName}
+            </Typography>
+          )}
+        </Typography>
+        {statisticsChips}
       </Box>
 
-      {/* Filters */}
-      {showFilters && (
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-          {/* Search */}
-          <TextField
-            size="small"
-            placeholder="Zoek asset, gebruiker, locatie..."
-            value={filters.searchQuery}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
-                </InputAdornment>
-              ),
-              endAdornment: filters.searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={() => setFilters((prev) => ({ ...prev, searchQuery: '' }))}
-                  >
-                    <ClearIcon sx={{ fontSize: '1rem' }} />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{ minWidth: 250, flexGrow: 1, maxWidth: 350 }}
-          />
-
-          {/* Movement type filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Type</InputLabel>
-            <Select
-              value={filters.movementType || 'all'}
-              label="Type"
-              onChange={handleMovementTypeChange}
-            >
-              <MenuItem value="all">Alle</MenuItem>
-              <MenuItem value="deployment">In Gebruik</MenuItem>
-              <MenuItem value="decommission">Uit Dienst</MenuItem>
-              <MenuItem value="transfer">Overdracht</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Equipment type filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Apparaat</InputLabel>
-            <Select
-              value={filters.equipmentType || 'all'}
-              label="Apparaat"
-              onChange={handleEquipmentTypeChange}
-            >
-              <MenuItem value="all">Alle</MenuItem>
-              <MenuItem value="laptop">Laptop</MenuItem>
-              <MenuItem value="desktop">Desktop</MenuItem>
-              <MenuItem value="docking">Docking</MenuItem>
-              <MenuItem value="monitor">Monitor</MenuItem>
-              <MenuItem value="keyboard">Toetsenbord</MenuItem>
-              <MenuItem value="mouse">Muis</MenuItem>
-            </Select>
-          </FormControl>
-
-          {/* Clear filters */}
-          {hasActiveFilters && (
-            <Button
-              size="small"
-              variant="text"
-              startIcon={<ClearIcon />}
-              onClick={handleClearFilters}
-              sx={{ color: 'text.secondary' }}
-            >
-              Wissen
-            </Button>
-          )}
-        </Box>
-      )}
-
-      {/* Results count */}
-      {hasActiveFilters && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          {filteredMovements.length} van {movements.length} bewegingen
-        </Typography>
-      )}
-
-      {/* Table */}
-      <TableContainer
-        sx={{
-          maxHeight,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          overflow: 'hidden',
-        }}
-      >
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow
-              sx={{
-                '& th': {
-                  bgcolor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? alpha(ASSET_COLOR, 0.08)
-                      : alpha(ASSET_COLOR, 0.04),
-                  borderBottom: '2px solid',
-                  borderColor: ASSET_COLOR,
-                },
-              }}
-            >
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                <TableSortLabel
-                  active={sort.field === 'assetCode'}
-                  direction={sort.field === 'assetCode' ? sort.direction : 'asc'}
-                  onClick={() => handleSortChange('assetCode')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Asset
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                <TableSortLabel
-                  active={sort.field === 'equipmentType'}
-                  direction={sort.field === 'equipmentType' ? sort.direction : 'asc'}
-                  onClick={() => handleSortChange('equipmentType')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Type
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                Status Wijziging
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                <TableSortLabel
-                  active={sort.field === 'userName'}
-                  direction={sort.field === 'userName' ? sort.direction : 'asc'}
-                  onClick={() => handleSortChange('userName')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Gebruiker
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                <TableSortLabel
-                  active={sort.field === 'serviceName'}
-                  direction={sort.field === 'serviceName' ? sort.direction : 'asc'}
-                  onClick={() => handleSortChange('serviceName')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Dienst/Locatie
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                <TableSortLabel
-                  active={sort.field === 'executedBy'}
-                  direction={sort.field === 'executedBy' ? sort.direction : 'asc'}
-                  onClick={() => handleSortChange('executedBy')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Uitgevoerd door
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', py: 1.5 }}>
-                <TableSortLabel
-                  active={sort.field === 'date'}
-                  direction={sort.field === 'date' ? sort.direction : 'asc'}
-                  onClick={() => handleSortChange('date')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Datum
-                </TableSortLabel>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredMovements.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Geen bewegingen gevonden met deze filters.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredMovements.map((movement, index) => {
-                const statusColor = getMovementStatusColor(movement.movementType);
-
-                return (
-                  <TableRow
-                    key={`${movement.assetId}-${movement.workplaceId}-${index}`}
-                    hover
-                    sx={{
-                      bgcolor: (theme) =>
-                        index % 2 === 1
-                          ? theme.palette.mode === 'dark'
-                            ? 'rgba(255, 255, 255, 0.02)'
-                            : 'rgba(0, 0, 0, 0.02)'
-                          : 'transparent',
-                      transition: 'all 0.15s ease',
-                      '&:hover': {
-                        bgcolor: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? alpha(ASSET_COLOR, 0.08)
-                            : alpha(ASSET_COLOR, 0.04),
-                      },
-                    }}
-                  >
-                    {/* Asset */}
-                    <TableCell>
-                      <Tooltip title={movement.assetName || movement.assetCode}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <InventoryIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {movement.assetCode}
-                            </Typography>
-                            {movement.serialNumber && (
-                              <Typography variant="caption" color="text.secondary">
-                                S/N: {movement.serialNumber}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Box>
-                      </Tooltip>
-                    </TableCell>
-
-                    {/* Equipment Type */}
-                    <TableCell>
-                      <Typography variant="body2">
-                        {getEquipmentTypeLabel(movement.equipmentType)}
-                      </Typography>
-                      {movement.brand && movement.model && (
-                        <Typography variant="caption" color="text.secondary">
-                          {movement.brand} {movement.model}
-                        </Typography>
-                      )}
-                    </TableCell>
-
-                    {/* Status Transition */}
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {getMovementIcon(movement.movementType)}
-                        <Chip
-                          size="small"
-                          label={movement.previousStatus}
-                          variant="outlined"
-                          sx={{ fontSize: '0.7rem', height: 22 }}
-                        />
-                        <ArrowForwardIcon
-                          sx={{ fontSize: '0.9rem', color: 'text.secondary', mx: 0.5 }}
-                        />
-                        <Chip
-                          size="small"
-                          label={movement.newStatus}
-                          color={statusColor}
-                          sx={{ fontSize: '0.7rem', height: 22 }}
-                        />
-                      </Box>
-                    </TableCell>
-
-                    {/* User */}
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PersonIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                        <Box>
-                          <Typography variant="body2">{movement.userName}</Typography>
-                          {movement.userEmail && (
-                            <Typography variant="caption" color="text.secondary">
-                              {movement.userEmail}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-
-                    {/* Service/Location */}
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <LocationOnIcon sx={{ fontSize: '1rem', color: 'text.secondary', mt: 0.25 }} />
-                        <Box>
-                          <Typography variant="body2">
-                            {movement.serviceName || '-'}
-                          </Typography>
-                          {movement.location && (
-                            <Typography variant="caption" color="text.secondary">
-                              {movement.location}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-
-                    {/* Executed By */}
-                    <TableCell>
-                      <Typography variant="body2">{movement.executedBy}</Typography>
-                    </TableCell>
-
-                    {/* Date */}
-                    <TableCell>
-                      <Tooltip title={formatReportDate(movement.date)}>
-                        <Typography variant="body2">
-                          {formatReportDateTime(movement.executedAt)}
-                        </Typography>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* DataGrid with filters and export */}
+      <NeumorphicDataGrid
+        rows={filteredMovements}
+        columns={columns}
+        loading={isLoading}
+        accentColor={ASSET_COLOR}
+        advancedFilters={advancedFilters}
+        exportable={!!onExport}
+        onExport={onExport}
+        isExporting={isExporting}
+        autoHeight={false}
+        maxHeight={maxHeight}
+        initialPageSize={25}
+      />
     </Paper>
   );
 };
