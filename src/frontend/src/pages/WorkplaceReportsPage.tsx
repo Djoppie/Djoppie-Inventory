@@ -109,7 +109,7 @@ const WorkplaceReportsPage = () => {
     );
   }
 
-  const occupancyPercentage = (stats.occupancyRate * 100).toFixed(1);
+  const occupancyPercentage = stats.occupancyRate.toFixed(1);
   const vacancyRate = ((stats.vacantWorkplaces / stats.totalWorkplaces) * 100).toFixed(1);
 
   return (
@@ -236,7 +236,7 @@ const WorkplaceReportsPage = () => {
           },
           {
             label: 'Uitrusting',
-            value: `${(stats.equipment.overallEquipmentRate * 100).toFixed(0)}%`,
+            value: `${stats.equipment.overallEquipmentRate.toFixed(0)}%`,
             subtitle: 'Vul percentage',
             color: '#1976D2',
             Icon: DevicesIcon,
@@ -483,7 +483,7 @@ const WorkplaceReportsPage = () => {
                           <TableCell align="right">{building.occupiedWorkplaces}</TableCell>
                           <TableCell align="right">
                             <Chip
-                              label={`${(building.occupancyRate * 100).toFixed(0)}%`}
+                              label={`${building.occupancyRate.toFixed(0)}%`}
                               size="small"
                               sx={{
                                 bgcolor: alpha(BUILDING_COLOR, 0.1),
@@ -578,7 +578,7 @@ const WorkplaceReportsPage = () => {
                           <TableCell align="right">{service.occupiedWorkplaces}</TableCell>
                           <TableCell align="right">
                             <Chip
-                              label={`${(service.occupancyRate * 100).toFixed(0)}%`}
+                              label={`${service.occupancyRate.toFixed(0)}%`}
                               size="small"
                               sx={{
                                 bgcolor: alpha(SERVICE_COLOR, 0.1),

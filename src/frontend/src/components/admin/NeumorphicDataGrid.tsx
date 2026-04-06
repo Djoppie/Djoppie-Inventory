@@ -309,7 +309,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
     [initialPageSize]
   );
 
-  // Build initialState - do NOT include rowSelection when using controlled rowSelectionModel
+  // Build initialState - do NOT mix initialState.rowSelection with controlled props
   const gridInitialState = useMemo(() => ({
     pagination: { paginationModel },
   }), [paginationModel]);
@@ -360,13 +360,9 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         columns={finalColumns}
         loading={loading}
         autoHeight={autoHeight}
-        {...(checkboxSelection
-          ? {
-              checkboxSelection: true,
-              rowSelectionModel: rowSelectionModel ?? [],
-              onRowSelectionModelChange: onRowSelectionModelChange ?? (() => {}),
-            }
-          : {})}
+        checkboxSelection={checkboxSelection}
+        rowSelectionModel={checkboxSelection ? (rowSelectionModel ?? []) : undefined}
+        onRowSelectionModelChange={checkboxSelection ? (onRowSelectionModelChange ?? (() => {})) : undefined}
         {...(columnVisibilityModel && { columnVisibilityModel })}
         disableRowSelectionOnClick={!onRowClick}
         {...(onRowClick && { onRowClick: handleRowClick })}

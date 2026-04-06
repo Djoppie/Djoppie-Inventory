@@ -616,22 +616,37 @@ public class PhysicalWorkplacesController : ControllerBase
     public async Task<ActionResult<IEnumerable<BuildingOccupancyDto>>> GetStatisticsByBuilding(
         CancellationToken cancellationToken = default)
     {
-        var stats = await _context.PhysicalWorkplaces
+        // Load data into memory first to avoid LINQ translation issues
+        var workplaces = await _context.PhysicalWorkplaces
+            .Include(pw => pw.Building)
             .Where(pw => pw.IsActive)
-            .GroupBy(pw => new { pw.BuildingId, pw.Building.Name, pw.Building.Code })
-            .Select(g => new BuildingOccupancyDto(
-                g.Key.BuildingId,
-                g.Key.Name,
-                g.Key.Code,
-                g.Count(),
-                g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null),
-                g.Count(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null),
-                g.Count() > 0
-                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null) / g.Count() * 100, 1)
-                    : 0
-            ))
-            .OrderByDescending(b => b.TotalWorkplaces)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        // Perform grouping and calculations in memory
+        var stats = workplaces
+            .GroupBy(pw => new { pw.BuildingId, BuildingName = pw.Building?.Name, BuildingCode = pw.Building?.Code })
+            .Select(g =>
+            {
+                var totalWorkplaces = g.Count();
+                var occupiedWorkplaces = g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null);
+                var vacantWorkplaces = g.Count(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null);
+                var occupancyRate = totalWorkplaces > 0
+                    ? Math.Round((decimal)occupiedWorkplaces / totalWorkplaces * 100, 1)
+                    : 0;
+
+                return new BuildingOccupancyDto(
+                    g.Key.BuildingId,
+                    g.Key.BuildingName ?? "Unknown Building",
+                    g.Key.BuildingCode,
+                    totalWorkplaces,
+                    occupiedWorkplaces,
+                    vacantWorkplaces,
+                    occupancyRate
+                );
+            })
+            .OrderByDescending(b => b.TotalWorkplaces)
+            .ToList();
 
         return Ok(stats);
     }
@@ -645,22 +660,37 @@ public class PhysicalWorkplacesController : ControllerBase
     public async Task<ActionResult<IEnumerable<ServiceOccupancyDto>>> GetStatisticsByService(
         CancellationToken cancellationToken = default)
     {
-        var stats = await _context.PhysicalWorkplaces
+        // Load data into memory first to avoid LINQ translation issues
+        var workplaces = await _context.PhysicalWorkplaces
+            .Include(pw => pw.Service)
             .Where(pw => pw.IsActive)
-            .GroupBy(pw => new { pw.ServiceId, ServiceName = pw.Service != null ? pw.Service.Name : null, ServiceCode = pw.Service != null ? pw.Service.Code : null })
-            .Select(g => new ServiceOccupancyDto(
-                g.Key.ServiceId,
-                g.Key.ServiceName ?? "Geen dienst",
-                g.Key.ServiceCode,
-                g.Count(),
-                g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null),
-                g.Count(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null),
-                g.Count() > 0
-                    ? Math.Round((decimal)g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null) / g.Count() * 100, 1)
-                    : 0
-            ))
-            .OrderByDescending(s => s.TotalWorkplaces)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
+
+        // Perform grouping and calculations in memory
+        var stats = workplaces
+            .GroupBy(pw => new { pw.ServiceId, ServiceName = pw.Service?.Name, ServiceCode = pw.Service?.Code })
+            .Select(g =>
+            {
+                var totalWorkplaces = g.Count();
+                var occupiedWorkplaces = g.Count(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null);
+                var vacantWorkplaces = g.Count(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null);
+                var occupancyRate = totalWorkplaces > 0
+                    ? Math.Round((decimal)occupiedWorkplaces / totalWorkplaces * 100, 1)
+                    : 0;
+
+                return new ServiceOccupancyDto(
+                    g.Key.ServiceId,
+                    g.Key.ServiceName ?? "Geen dienst",
+                    g.Key.ServiceCode,
+                    totalWorkplaces,
+                    occupiedWorkplaces,
+                    vacantWorkplaces,
+                    occupancyRate
+                );
+            })
+            .OrderByDescending(s => s.TotalWorkplaces)
+            .ToList();
 
         return Ok(stats);
     }
