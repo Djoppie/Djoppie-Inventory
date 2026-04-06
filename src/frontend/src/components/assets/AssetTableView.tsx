@@ -91,17 +91,20 @@ const AssetTableView = ({
 
   // Handle selection changes from DataGrid
   const handleSelectionModelChange = useCallback(
-    (newSelection: number[]) => {
+    (newSelection: any) => {
       if (!selectable || !onSelectionChange) return;
 
+      // Ensure newSelection is an array
+      const selectionArray = Array.isArray(newSelection) ? newSelection : [];
+
       // Determine which rows were added or removed
-      const newSet = new Set(newSelection);
+      const newSet = new Set(selectionArray);
       const oldSet = selectedAssetIds;
 
       // Find added rows
       newSet.forEach((id) => {
-        if (!oldSet.has(id)) {
-          onSelectionChange(id, true);
+        if (!oldSet.has(id as number)) {
+          onSelectionChange(id as number, true);
         }
       });
 
