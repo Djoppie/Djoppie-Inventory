@@ -97,9 +97,7 @@ const CustomToolbar = memo(function CustomToolbar({
         borderColor: 'divider',
       }}
     >
-      <GridToolbarQuickFilter
-        variant="outlined"
-        size="small"
+      <Box
         sx={{
           flex: { xs: 1, md: '0 0 280px' },
           '& .MuiOutlinedInput-root': {
@@ -119,7 +117,9 @@ const CustomToolbar = memo(function CustomToolbar({
             py: 0.75,
           },
         }}
-      />
+      >
+        <GridToolbarQuickFilter />
+      </Box>
       {toolbarActions}
       {exportable && onExport && (
         <Button
