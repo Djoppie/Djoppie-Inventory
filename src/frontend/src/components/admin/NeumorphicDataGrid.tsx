@@ -247,7 +247,7 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
         loading={loading}
         autoHeight={autoHeight}
         checkboxSelection={checkboxSelection}
-        {...(rowSelectionModel !== undefined && { rowSelectionModel })}
+        {...(rowSelectionModel && rowSelectionModel.length > 0 && { rowSelectionModel })}
         {...(onRowSelectionModelChange && { onRowSelectionModelChange })}
         disableRowSelectionOnClick
         initialState={{

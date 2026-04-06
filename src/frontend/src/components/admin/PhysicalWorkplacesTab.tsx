@@ -485,8 +485,8 @@ const PhysicalWorkplacesTab = () => {
         onDelete={handleOpenDeleteDialog}
         showActiveStatus
         checkboxSelection
-        rowSelectionModel={selectedIds.length > 0 ? selectedIds : undefined}
-        onRowSelectionModelChange={(ids) => setSelectedIds(ids)}
+        rowSelectionModel={selectedIds}
+        onRowSelectionModelChange={(newModel: any) => setSelectedIds(Array.isArray(newModel) ? newModel : Array.from(newModel))}
       />
 
       {/* Add Button */}
