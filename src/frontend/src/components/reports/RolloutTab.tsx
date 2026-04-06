@@ -20,7 +20,6 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   TextField,
   InputAdornment,
   IconButton,
@@ -43,6 +42,7 @@ import {
   Skeleton,
   alpha,
   useTheme,
+  Grid
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -92,6 +92,12 @@ import {
   getNeumorphInset,
   getNeumorphColors,
 } from '../../utils/neumorphicStyles';
+import {
+  getEnhancedStatCard,
+  getEnhancedIconContainer,
+  getEnhancedTypography,
+  getFadeInUpAnimation,
+} from '../../utils/designSystem';
 import type {
   RolloutDayChecklist,
   RolloutWorkplaceChecklist,
@@ -379,117 +385,72 @@ const RolloutTab = () => {
       {/* Overview KPI Cards */}
       {overview && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          {/* Workplaces Total */}
-          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${ROLLOUT_COLOR}`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: getNeumorph(isDark, 'medium'),
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(ROLLOUT_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <PeopleIcon sx={{ fontSize: 22, color: ROLLOUT_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: ROLLOUT_COLOR, lineHeight: 1 }}>
-                    {overview.totalWorkplaces}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Werkplekken
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
+          {/* Standard KPI Cards */}
+          {[
+            { icon: PeopleIcon, value: overview.totalWorkplaces, label: 'Werkplekken', color: ROLLOUT_COLOR },
+            { icon: CheckCircleIcon, value: overview.completedWorkplaces, label: 'Voltooid', color: SUCCESS_COLOR },
+            { icon: DevicesIcon, value: overview.installedAssets, label: 'Geïnstalleerd', color: SUCCESS_COLOR },
+            { icon: QrCode2Icon, value: overview.qrCodesApplied, label: 'QR Toegepast', color: overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR },
+          ].map((kpi, index) => (
+            <Grid size={{ xs: 6, sm: 4, md: 2 }} key={kpi.label}>
+              <Paper
+                elevation={0}
+                sx={{
+                  ...getEnhancedStatCard(isDark, kpi.color),
+                  ...getFadeInUpAnimation(index * 0.08),
+                  p: 2,
+                }}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Box sx={getEnhancedIconContainer(isDark, kpi.color)}>
+                    <kpi.icon sx={{ fontSize: 22, color: kpi.color }} />
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        ...getEnhancedTypography().metricValue,
+                        fontSize: '1.5rem',
+                        color: kpi.color,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {kpi.value}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        fontSize: '0.65rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {kpi.label}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid>
+          ))}
 
-          {/* Completed Workplaces */}
+          {/* Progress Card (with circular progress) */}
           <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Paper
               elevation={0}
               sx={{
+                ...getEnhancedStatCard(isDark, INFO_COLOR),
+                ...getFadeInUpAnimation(1 * 0.08),
                 p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${SUCCESS_COLOR}`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: getNeumorph(isDark, 'medium'),
-                  transform: 'translateY(-2px)',
-                },
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(SUCCESS_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <CheckCircleIcon sx={{ fontSize: 22, color: SUCCESS_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: SUCCESS_COLOR, lineHeight: 1 }}>
-                    {overview.completedWorkplaces}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Voltooid
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          {/* Progress */}
-          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${INFO_COLOR}`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: getNeumorph(isDark, 'medium'),
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                <Box sx={{ position: 'relative', display: 'inline-flex', ...getEnhancedIconContainer(isDark, INFO_COLOR) }}>
                   <CircularProgress
                     variant="determinate"
                     value={overview.completionPercentage}
-                    size={40}
+                    size={48}
                     thickness={4}
                     sx={{
                       color: INFO_COLOR,
@@ -510,7 +471,7 @@ const RolloutTab = () => {
                       justifyContent: 'center',
                     }}
                   >
-                    <Typography variant="caption" fontWeight={700} color={INFO_COLOR} sx={{ fontSize: '0.6rem' }}>
+                    <Typography variant="caption" fontWeight={700} color={INFO_COLOR} sx={{ fontSize: '0.65rem' }}>
                       {overview.completionPercentage}%
                     </Typography>
                   </Box>
@@ -527,124 +488,18 @@ const RolloutTab = () => {
             </Paper>
           </Grid>
 
-          {/* Assets Installed */}
+          {/* Missing QR Codes Card (dynamic icon/color) */}
           <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Paper
               elevation={0}
               sx={{
+                ...getEnhancedStatCard(isDark, overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR),
+                ...getFadeInUpAnimation(5 * 0.08),
                 p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${SUCCESS_COLOR}`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: getNeumorph(isDark, 'medium'),
-                  transform: 'translateY(-2px)',
-                },
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(SUCCESS_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <DevicesIcon sx={{ fontSize: 22, color: SUCCESS_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: SUCCESS_COLOR, lineHeight: 1 }}>
-                    {overview.installedAssets}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Geïnstalleerd
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          {/* QR Codes Applied */}
-          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR}`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: getNeumorph(isDark, 'medium'),
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <QrCode2Icon sx={{ fontSize: 22, color: overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR, lineHeight: 1 }}>
-                    {overview.qrCodesApplied}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    QR Toegepast
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          {/* Missing QR Codes */}
-          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR}`,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  boxShadow: getNeumorph(isDark, 'medium'),
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
+                <Box sx={getEnhancedIconContainer(isDark, overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR)}>
                   {overview.missingQrCodes > 0 ? (
                     <WarningAmberIcon sx={{ fontSize: 22, color: ERROR_COLOR }} />
                   ) : (
@@ -652,10 +507,27 @@ const RolloutTab = () => {
                   )}
                 </Box>
                 <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, lineHeight: 1 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      ...getEnhancedTypography().metricValue,
+                      fontSize: '1.5rem',
+                      color: overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR,
+                      lineHeight: 1,
+                    }}
+                  >
                     {overview.missingQrCodes}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      fontSize: '0.65rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      fontWeight: 600,
+                    }}
+                  >
                     Ontbrekend
                   </Typography>
                 </Box>
@@ -919,6 +791,7 @@ const RolloutTab = () => {
           accentColor={INFO_COLOR}
           isDark={isDark}
           neumorphColors={neumorphColors}
+          keyPrefix="service"
         />
       </Collapse>
 
@@ -934,6 +807,7 @@ const RolloutTab = () => {
           accentColor={WARNING_COLOR}
           isDark={isDark}
           neumorphColors={neumorphColors}
+          keyPrefix="building"
         />
       </Collapse>
 
@@ -1067,6 +941,7 @@ interface FilterPanelProps {
   accentColor: string;
   isDark: boolean;
   neumorphColors: ReturnType<typeof getNeumorphColors>;
+  keyPrefix: string; // Prefix for unique keys to avoid duplicates across different filter types
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({
@@ -1079,6 +954,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   accentColor,
   isDark,
   neumorphColors,
+  keyPrefix,
 }) => (
   <Paper
     elevation={0}
@@ -1124,7 +1000,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           const isSelected = selectedIds.includes(option.id);
           return (
             <Chip
-              key={option.id}
+              key={`${keyPrefix}-${option.id}`}
               label={`${option.name} (${option.count})`}
               onClick={() => onToggle(option.id)}
               icon={isSelected ? <CheckIcon sx={{ fontSize: 14 }} /> : undefined}

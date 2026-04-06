@@ -29,9 +29,9 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Grid,
   alpha,
   useTheme,
+  Grid
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -47,6 +47,12 @@ import { useHardwareReport, useHardwareReportSummary, useExportHardwareReport } 
 import { StatusBadge, ServiceSelect, BuildingSelect, AssetTypeSelect } from '../common';
 import { buildRoute } from '../../constants/routes';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
+import {
+  getEnhancedStatCard,
+  getEnhancedIconContainer,
+  getEnhancedTypography,
+  getFadeInUpAnimation,
+} from '../../utils/designSystem';
 import type { HardwareReportItem, HardwareReportFilters } from '../../types/report.types';
 
 // Status filter options
@@ -197,41 +203,66 @@ const HardwareTab = () => {
     <Box>
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {STAT_CARDS.map((card) => {
+        {STAT_CARDS.map((card, index) => {
           const IconComponent = card.icon;
           const count = card.key === 'total'
             ? summary?.totalAssets || 0
             : summary?.byStatus?.[card.key] || 0;
+          const isSelected = filters.status === card.key;
+          const isClickable = card.key !== 'total';
 
           return (
             <Grid size={{ xs: 6, sm: 4, md: 2 }} key={card.key}>
               <Paper
+                elevation={0}
                 sx={{
-                  p: 2,
-                  bgcolor: bgBase,
-                  boxShadow: getNeumorph(isDark, 'soft'),
-                  borderRadius: 2,
-                  textAlign: 'center',
-                  cursor: card.key !== 'total' ? 'pointer' : 'default',
-                  transition: 'all 0.2s ease',
-                  border: filters.status === card.key ? `2px solid ${card.color}` : '2px solid transparent',
-                  '&:hover': card.key !== 'total' ? {
-                    transform: 'translateY(-2px)',
-                    boxShadow: getNeumorph(isDark, 'medium'),
+                  ...getEnhancedStatCard(isDark, card.color),
+                  ...getFadeInUpAnimation(index * 0.08),
+                  cursor: isClickable ? 'pointer' : 'default',
+                  borderTopWidth: isSelected ? '5px' : '3px',
+                  '&:hover': isClickable ? {
+                    boxShadow: `${getNeumorph(isDark, 'strong')}, 0 8px 32px ${alpha(card.color, 0.15)}`,
+                    transform: 'translateY(-6px) scale(1.03)',
+                    borderTopWidth: '5px',
                   } : {},
                 }}
-                onClick={() => card.key !== 'total' && handleStatusChange(
-                  filters.status === card.key ? '' : card.key
+                onClick={() => isClickable && handleStatusChange(
+                  isSelected ? '' : card.key
                 )}
               >
-                <IconComponent sx={{ fontSize: 28, color: card.color, mb: 0.5 }} />
+                <Box
+                  sx={{
+                    ...getEnhancedIconContainer(isDark, card.color),
+                    mx: 'auto',
+                    mb: 1.5,
+                  }}
+                >
+                  <IconComponent sx={{ fontSize: 28, color: card.color }} />
+                </Box>
                 <Typography
                   variant="h5"
-                  sx={{ fontWeight: 700, color: card.color }}
+                  sx={{
+                    ...getEnhancedTypography().metricValue,
+                    fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                    color: card.color,
+                    textAlign: 'center',
+                    mb: 0.5,
+                  }}
                 >
                   {count}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    display: 'block',
+                    textAlign: 'center',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                  }}
+                >
                   {card.label}
                 </Typography>
               </Paper>

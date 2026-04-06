@@ -9,7 +9,6 @@ import {
   Tooltip,
   Chip,
   Avatar,
-  Grid,
   Skeleton,
   Button,
   alpha,
@@ -27,6 +26,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Grid
 } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 

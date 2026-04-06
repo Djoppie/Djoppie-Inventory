@@ -16,7 +16,6 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   TextField,
   InputAdornment,
   IconButton,
@@ -38,6 +37,7 @@ import {
   Skeleton,
   alpha,
   useTheme,
+  Grid
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -58,9 +58,14 @@ import {
 } from '../../api/reports.api';
 import {
   getNeumorph,
-  getNeumorphInset,
   getNeumorphColors,
 } from '../../utils/neumorphicStyles';
+import {
+  getEnhancedStatCard,
+  getEnhancedIconContainer,
+  getEnhancedTypography,
+  getFadeInUpAnimation,
+} from '../../utils/designSystem';
 
 // Accent colors
 const ROLLOUT_COLOR = '#FF7700';
@@ -310,119 +315,52 @@ const SerialNumbersTab = () => {
       {/* Stats Cards */}
       {!isLoading && selectedSessionId && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 4 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${INFO_COLOR}`,
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(INFO_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <DevicesIcon sx={{ fontSize: 22, color: INFO_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: INFO_COLOR, lineHeight: 1 }}>
-                    {stats.total}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Totaal Assets
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 4 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${WARNING_COLOR}`,
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(WARNING_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <WarningAmberIcon sx={{ fontSize: 22, color: WARNING_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: WARNING_COLOR, lineHeight: 1 }}>
-                    {stats.missing}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Ontbrekend
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 4 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                bgcolor: neumorphColors.bgSurface,
-                boxShadow: getNeumorph(isDark, 'soft'),
-                borderRadius: 2.5,
-                borderLeft: `3px solid ${SUCCESS_COLOR}`,
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    bgcolor: alpha(SUCCESS_COLOR, isDark ? 0.15 : 0.1),
-                    boxShadow: getNeumorphInset(isDark),
-                  }}
-                >
-                  <CheckCircleIcon sx={{ fontSize: 22, color: SUCCESS_COLOR }} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: SUCCESS_COLOR, lineHeight: 1 }}>
-                    {stats.filled}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Ingevuld
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
+          {[
+            { icon: DevicesIcon, value: stats.total, label: 'Totaal Assets', color: INFO_COLOR },
+            { icon: WarningAmberIcon, value: stats.missing, label: 'Ontbrekend', color: WARNING_COLOR },
+            { icon: CheckCircleIcon, value: stats.filled, label: 'Ingevuld', color: SUCCESS_COLOR },
+          ].map((stat, index) => (
+            <Grid size={{ xs: 12, sm: 4 }} key={stat.label}>
+              <Paper
+                elevation={0}
+                sx={{
+                  ...getEnhancedStatCard(isDark, stat.color),
+                  ...getFadeInUpAnimation(index * 0.1),
+                }}
+              >
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box sx={getEnhancedIconContainer(isDark, stat.color)}>
+                    <stat.icon sx={{ fontSize: 28, color: stat.color }} />
+                  </Box>
+                  <Box flex={1}>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        ...getEnhancedTypography().metricValue,
+                        fontSize: { xs: '1.75rem', sm: '2rem' },
+                        color: stat.color,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {stat.value}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {stat.label}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid>
+          ))}
         </Grid>
       )}
 
