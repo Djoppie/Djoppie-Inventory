@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace DjoppieInventory.Core.Entities;
 
 /// <summary>
@@ -232,6 +234,7 @@ public class Asset
     /// The physical workplace this asset is fixed to (optional).
     /// Only set for workplace-fixed assets (monitors, docking stations, desktops).
     /// </summary>
+    [JsonIgnore]
     public PhysicalWorkplace? PhysicalWorkplace { get; set; }
 
     /// <summary>
