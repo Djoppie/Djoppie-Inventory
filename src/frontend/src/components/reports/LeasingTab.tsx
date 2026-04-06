@@ -16,32 +16,20 @@ import {
   Paper,
   TextField,
   InputAdornment,
-  IconButton,
-  Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  TablePagination,
   Chip,
-  CircularProgress,
   Alert,
   alpha,
   useTheme,
   Grid
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
-import DownloadIcon from '@mui/icons-material/Download';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import EuroIcon from '@mui/icons-material/Euro';
 import DevicesIcon from '@mui/icons-material/Devices';
-import { visuallyHidden } from '@mui/utils';
 
 import {
   useLeaseReport,
@@ -50,29 +38,18 @@ import {
   formatCurrency,
 } from '../../hooks/reports';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
-import type { LeaseReportItem, LeaseReportFilters } from '../../types/report.types';
+import NeumorphicDataGrid from '../admin/NeumorphicDataGrid';
+import StatisticsCard from '../common/StatisticsCard';
+import type { LeaseReportFilters } from '../../types/report.types';
 
-// Table columns
-type OrderBy = 'contractNumber' | 'vendorName' | 'startDate' | 'endDate' | 'monthlyAmount' | 'assetCount' | 'status';
-
-interface HeadCell {
-  id: OrderBy;
-  label: string;
-  numeric: boolean;
-  width?: string | number;
-}
-
-const headCells: HeadCell[] = [
-  { id: 'contractNumber', label: 'Contract Nr.', numeric: false, width: 140 },
-  { id: 'vendorName', label: 'Leverancier', numeric: false },
-  { id: 'startDate', label: 'Start', numeric: false, width: 110 },
-  { id: 'endDate', label: 'Einde', numeric: false, width: 110 },
-  { id: 'monthlyAmount', label: 'Maandelijks', numeric: true, width: 120 },
-  { id: 'assetCount', label: 'Assets', numeric: true, width: 80 },
-  { id: 'status', label: 'Status', numeric: false, width: 130 },
+// Statistics card configuration
+const STAT_CARDS = [
+  { key: 'total', label: 'Totaal Contracten', icon: DescriptionIcon, color: '#F57C00' },
+  { key: 'active', label: 'Actief', icon: CheckCircleIcon, color: '#4CAF50' },
+  { key: 'expiring', label: 'Bijna Verlopen', icon: WarningIcon, color: '#FF9800' },
 ];
 
-// Status config
+// Status config for chips
 const STATUS_CONFIG = {
   active: { color: '#4CAF50', icon: CheckCircleIcon, label: 'Actief' },
   expiring: { color: '#FF9800', icon: WarningIcon, label: 'Bijna Verlopen' },
@@ -88,13 +65,6 @@ const LeasingTab = () => {
   // Filters state
   const [filters, setFilters] = useState<LeaseReportFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedContract, setExpandedContract] = useState<number | null>(null);
-
-  // Table state
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-  const [orderBy, setOrderBy] = useState<OrderBy>('endDate');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   // Queries
   const { data: items = [], isLoading, error } = useLeaseReport(filters);
@@ -112,57 +82,12 @@ const LeasingTab = () => {
     );
   }, [items, searchQuery]);
 
-  // Sorting
-  const handleRequestSort = (property: OrderBy) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  // Sort and paginate data
-  const sortedItems = useMemo(() => {
-    return [...filteredItems].sort((a, b) => {
-      let aValue: string | number = '';
-      let bValue: string | number = '';
-
-      if (orderBy === 'monthlyAmount' || orderBy === 'assetCount') {
-        aValue = a[orderBy] || 0;
-        bValue = b[orderBy] || 0;
-        return order === 'asc' ? aValue - bValue : bValue - aValue;
-      } else if (orderBy === 'startDate' || orderBy === 'endDate') {
-        aValue = new Date(a[orderBy]).getTime();
-        bValue = new Date(b[orderBy]).getTime();
-        return order === 'asc' ? aValue - bValue : bValue - aValue;
-      } else {
-        aValue = String(a[orderBy] || '');
-        bValue = String(b[orderBy] || '');
-        const comparison = aValue.localeCompare(bValue);
-        return order === 'asc' ? comparison : -comparison;
-      }
-    });
-  }, [filteredItems, order, orderBy]);
-
-  const paginatedItems = useMemo(() => {
-    return sortedItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [sortedItems, page, rowsPerPage]);
-
-  // Pagination handlers
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
   // Status filter handler
   const handleStatusFilter = (status: LeaseReportFilters['status']) => {
     setFilters(prev => ({
       ...prev,
       status: prev.status === status ? 'all' : status,
     }));
-    setPage(0);
   };
 
   // Export
@@ -170,7 +95,7 @@ const LeasingTab = () => {
     exportMutation.mutate(filters);
   };
 
-  // Format date
+  // Format date helper
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('nl-NL', {
       day: '2-digit',
@@ -179,10 +104,110 @@ const LeasingTab = () => {
     });
   };
 
-  // Toggle contract expansion
-  const handleExpandContract = (contractId: number) => {
-    setExpandedContract(expandedContract === contractId ? null : contractId);
-  };
+  // Column definitions
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'contractNumber',
+      headerName: 'Contract Nr.',
+      width: 140,
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={params.value}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            bgcolor: alpha('#F57C00', 0.1),
+            color: '#F57C00',
+          }}
+        />
+      ),
+    },
+    {
+      field: 'vendorName',
+      headerName: 'Leverancier',
+      width: 180,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" fontWeight={500}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'startDate',
+      headerName: 'Start',
+      width: 110,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2">
+          {formatDate(params.value)}
+        </Typography>
+      ),
+    },
+    {
+      field: 'endDate',
+      headerName: 'Einde',
+      width: 110,
+      renderCell: (params: GridRenderCellParams) => (
+        <Box>
+          <Typography variant="body2" fontWeight={500}>
+            {formatDate(params.value)}
+          </Typography>
+          {params.row.daysUntilExpiration !== undefined && params.row.daysUntilExpiration > 0 && (
+            <Typography variant="caption" color="text.secondary">
+              {params.row.daysUntilExpiration} dagen
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: 'monthlyAmount',
+      headerName: 'Maandelijks',
+      width: 120,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" fontWeight={600}>
+          {params.value ? formatCurrency(params.value) : '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'assetCount',
+      headerName: 'Assets',
+      width: 80,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params: GridRenderCellParams) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
+          <DevicesIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="body2">{params.value}</Typography>
+        </Box>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 130,
+      renderCell: (params: GridRenderCellParams) => {
+        const statusConfig = STATUS_CONFIG[params.value as keyof typeof STATUS_CONFIG];
+        const StatusIcon = statusConfig.icon;
+        return (
+          <Chip
+            icon={<StatusIcon sx={{ fontSize: 16 }} />}
+            label={statusConfig.label}
+            size="small"
+            sx={{
+              bgcolor: alpha(statusConfig.color, 0.15),
+              color: statusConfig.color,
+              fontWeight: 600,
+              '& .MuiChip-icon': { color: statusConfig.color },
+            }}
+          />
+        );
+      },
+    },
+  ], []);
 
   if (error) {
     return (
@@ -192,367 +217,188 @@ const LeasingTab = () => {
     );
   }
 
-  return (
-    <Box>
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-            }}
-          >
-            <DescriptionIcon sx={{ fontSize: 28, color: '#F57C00', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#F57C00' }}>
-              {summary?.totalContracts || 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Totaal Contracten
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            onClick={() => handleStatusFilter('active')}
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-              cursor: 'pointer',
-              border: filters.status === 'active' ? '2px solid #4CAF50' : '2px solid transparent',
-              '&:hover': { transform: 'translateY(-2px)' },
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <CheckCircleIcon sx={{ fontSize: 28, color: '#4CAF50', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#4CAF50' }}>
-              {summary?.activeContracts || 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Actief
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            onClick={() => handleStatusFilter('expiring')}
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-              cursor: 'pointer',
-              border: filters.status === 'expiring' ? '2px solid #FF9800' : '2px solid transparent',
-              '&:hover': { transform: 'translateY(-2px)' },
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <WarningIcon sx={{ fontSize: 28, color: '#FF9800', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#FF9800' }}>
-              {summary?.expiringContracts || 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Bijna Verlopen
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-            }}
-          >
-            <EuroIcon sx={{ fontSize: 28, color: '#1976D2', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976D2' }}>
-              {summary?.totalMonthlyAmount
-                ? formatCurrency(summary.totalMonthlyAmount)
-                : '€0'}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Maandelijks
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
+  // Statistics cards component
+  const statisticsCards = useMemo(() => (
+    <Grid container spacing={2}>
+      {STAT_CARDS.map((card) => {
+        const IconComponent = card.icon;
+        let count = 0;
+        if (card.key === 'total') {
+          count = summary?.totalContracts || 0;
+        } else if (card.key === 'active') {
+          count = summary?.activeContracts || 0;
+        } else if (card.key === 'expiring') {
+          count = summary?.expiringContracts || 0;
+        }
+        const isSelected = filters.status === card.key;
+        const isClickable = card.key !== 'total';
 
-      {/* Vendor Breakdown */}
-      {summary?.contractsByVendor && Object.keys(summary.contractsByVendor).length > 0 && (
+        return (
+          <Grid size={{ xs: 6, sm: 3 }} key={card.key}>
+            <StatisticsCard
+              icon={IconComponent}
+              label={card.label}
+              value={count}
+              color={card.color}
+              onClick={isClickable ? () => handleStatusFilter(card.key as LeaseReportFilters['status']) : undefined}
+              isSelected={isSelected}
+            />
+          </Grid>
+        );
+      })}
+      {/* Monthly Cost Card */}
+      <Grid size={{ xs: 6, sm: 3 }}>
         <Paper
           sx={{
             p: 2,
-            mb: 3,
             bgcolor: bgBase,
             boxShadow: getNeumorph(isDark, 'soft'),
             borderRadius: 2,
+            textAlign: 'center',
           }}
         >
-          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-            Per Leverancier
+          <EuroIcon sx={{ fontSize: 28, color: '#1976D2', mb: 0.5 }} />
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976D2' }}>
+            {summary?.totalMonthlyAmount ? formatCurrency(summary.totalMonthlyAmount) : '€0'}
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {Object.entries(summary.contractsByVendor)
-              .sort(([, a], [, b]) => b - a)
-              .map(([vendor, count]) => (
-                <Chip
-                  key={vendor}
-                  label={`${vendor}: ${count}`}
-                  sx={{
-                    bgcolor: alpha('#F57C00', 0.1),
-                    color: '#F57C00',
-                  }}
-                />
-              ))}
-          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Maandelijks
+          </Typography>
         </Paper>
-      )}
+      </Grid>
+    </Grid>
+  ), [summary, filters.status, bgBase, isDark]);
 
-      {/* Expiring Soon Alert */}
-      {summary && summary.expiringContracts > 0 && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 3 }}
-          icon={<WarningIcon />}
-        >
-          <Typography variant="subtitle2">
-            {summary.expiringContracts} contract(en) verlopen binnenkort!
-          </Typography>
-          <Typography variant="body2">
-            Bekijk de contracten met status "Bijna Verlopen" voor details.
-          </Typography>
-        </Alert>
-      )}
-
-      {/* Filters */}
+  // Vendor breakdown component
+  const vendorBreakdown = useMemo(() => {
+    if (!summary?.contractsByVendor || Object.keys(summary.contractsByVendor).length === 0) {
+      return null;
+    }
+    return (
       <Paper
         sx={{
           p: 2,
-          mb: 3,
           bgcolor: bgBase,
           boxShadow: getNeumorph(isDark, 'soft'),
           borderRadius: 2,
         }}
       >
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 5 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Zoeken op contract nr., leverancier..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <TextField
-              fullWidth
-              size="small"
-              select
-              label="Status"
-              value={filters.status || 'all'}
-              onChange={(e) => setFilters(prev => ({
-                ...prev,
-                status: e.target.value as LeaseReportFilters['status'],
-              }))}
-              SelectProps={{ native: true }}
-            >
-              <option value="all">Alle</option>
-              <option value="active">Actief</option>
-              <option value="expiring">Bijna Verlopen</option>
-              <option value="expired">Verlopen</option>
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 4, md: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              {filteredItems.length} contracten
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 2, md: 1 }}>
-            <Tooltip title="Exporteer naar Excel">
-              <IconButton
-                onClick={handleExport}
-                disabled={exportMutation.isPending}
+        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+          Per Leverancier
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {Object.entries(summary.contractsByVendor)
+            .sort(([, a], [, b]) => b - a)
+            .map(([vendor, count]) => (
+              <Chip
+                key={vendor}
+                label={`${vendor}: ${count}`}
                 sx={{
                   bgcolor: alpha('#F57C00', 0.1),
-                  '&:hover': { bgcolor: alpha('#F57C00', 0.2) },
+                  color: '#F57C00',
                 }}
-              >
-                {exportMutation.isPending ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  <DownloadIcon sx={{ color: '#F57C00' }} />
-                )}
-              </IconButton>
-            </Tooltip>
-          </Grid>
+              />
+            ))}
+        </Box>
+      </Paper>
+    );
+  }, [summary, bgBase, isDark]);
+
+  // Expiring alert component
+  const expiringAlert = useMemo(() => {
+    if (!summary || summary.expiringContracts === 0) {
+      return null;
+    }
+    return (
+      <Alert severity="warning" icon={<WarningIcon />}>
+        <Typography variant="subtitle2">
+          {summary.expiringContracts} contract(en) verlopen binnenkort!
+        </Typography>
+        <Typography variant="body2">
+          Bekijk de contracten met status "Bijna Verlopen" voor details.
+        </Typography>
+      </Alert>
+    );
+  }, [summary]);
+
+  // Advanced filters component
+  const advancedFilters = useMemo(() => (
+    <Paper
+      sx={{
+        p: 2,
+        bgcolor: bgBase,
+        boxShadow: getNeumorph(isDark, 'soft'),
+        borderRadius: 2,
+      }}
+    >
+      <Grid container spacing={2} alignItems="center">
+        <Grid size={{ xs: 12, md: 5 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Zoeken op contract nr., leverancier..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
         </Grid>
-      </Paper>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            size="small"
+            select
+            label="Status"
+            value={filters.status || 'all'}
+            onChange={(e) => setFilters(prev => ({
+              ...prev,
+              status: e.target.value as LeaseReportFilters['status'],
+            }))}
+            SelectProps={{ native: true }}
+          >
+            <option value="all">Alle</option>
+            <option value="active">Actief</option>
+            <option value="expiring">Bijna Verlopen</option>
+            <option value="expired">Verlopen</option>
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 6, md: 4 }}>
+          <Typography variant="body2" color="text.secondary">
+            {filteredItems.length} contracten
+          </Typography>
+        </Grid>
+      </Grid>
+    </Paper>
+  ), [searchQuery, filters.status, filteredItems.length, bgBase, isDark]);
 
-      {/* Data Table */}
-      <Paper
-        sx={{
-          bgcolor: bgBase,
-          boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2,
-          overflow: 'hidden',
-        }}
-      >
-        <TableContainer sx={{ maxHeight: 600 }}>
-          <Table stickyHeader size="small">
-            <TableHead>
-              <TableRow>
-                {headCells.map((headCell) => (
-                  <TableCell
-                    key={headCell.id}
-                    align={headCell.numeric ? 'right' : 'left'}
-                    sortDirection={orderBy === headCell.id ? order : false}
-                    sx={{
-                      width: headCell.width,
-                      fontWeight: 700,
-                      bgcolor: isDark ? 'grey.900' : 'grey.100',
-                    }}
-                  >
-                    <TableSortLabel
-                      active={orderBy === headCell.id}
-                      direction={orderBy === headCell.id ? order : 'asc'}
-                      onClick={() => handleRequestSort(headCell.id)}
-                    >
-                      {headCell.label}
-                      {orderBy === headCell.id ? (
-                        <Box component="span" sx={visuallyHidden}>
-                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                        </Box>
-                      ) : null}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={headCells.length} align="center" sx={{ py: 4 }}>
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              ) : paginatedItems.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={headCells.length} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">
-                      Geen contracten gevonden
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedItems.map((item: LeaseReportItem) => {
-                  const statusConfig = STATUS_CONFIG[item.status];
-                  const StatusIcon = statusConfig.icon;
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Statistics Cards */}
+      {statisticsCards}
 
-                  return (
-                    <TableRow
-                      key={item.id}
-                      hover
-                      onClick={() => item.assetCount > 0 && handleExpandContract(item.id)}
-                      sx={{
-                        cursor: item.assetCount > 0 ? 'pointer' : 'default',
-                        '&:hover': {
-                          bgcolor: alpha('#F57C00', 0.05),
-                        },
-                      }}
-                    >
-                      <TableCell>
-                        <Chip
-                          label={item.contractNumber}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            bgcolor: alpha('#F57C00', 0.1),
-                            color: '#F57C00',
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight={500}>
-                          {item.vendorName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {formatDate(item.startDate)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            {formatDate(item.endDate)}
-                          </Typography>
-                          {item.daysUntilExpiration !== undefined && item.daysUntilExpiration > 0 && (
-                            <Typography variant="caption" color="text.secondary">
-                              {item.daysUntilExpiration} dagen
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2" fontWeight={600}>
-                          {item.monthlyAmount ? formatCurrency(item.monthlyAmount) : '-'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-                          <DevicesIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2">{item.assetCount}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={<StatusIcon sx={{ fontSize: 16 }} />}
-                          label={statusConfig.label}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha(statusConfig.color, 0.15),
-                            color: statusConfig.color,
-                            fontWeight: 600,
-                            '& .MuiChip-icon': { color: statusConfig.color },
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          component="div"
-          count={filteredItems.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Rijen per pagina:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} van ${count}`}
-        />
-      </Paper>
+      {/* Vendor Breakdown */}
+      {vendorBreakdown}
+
+      {/* Expiring Alert */}
+      {expiringAlert}
+
+      {/* Table with Filters */}
+      <NeumorphicDataGrid
+        rows={filteredItems}
+        columns={columns}
+        loading={isLoading}
+        accentColor="#F57C00"
+        advancedFilters={advancedFilters}
+        exportable
+        onExport={handleExport}
+        isExporting={exportMutation.isPending}
+        initialPageSize={25}
+      />
     </Box>
   );
 };
