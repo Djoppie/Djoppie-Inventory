@@ -63,6 +63,28 @@ export const ASSET_COLOR = '#FF7700';
 export const BUILDING_COLOR = '#7E57C2';
 
 // =============================================================================
+// ADMIN SECTION COLORS
+// =============================================================================
+
+/**
+ * Admin Assets section color (Djoppie Orange)
+ * Used for: Admin > Assets section (Categories, Asset Types, Intune Sync)
+ */
+export const ADMIN_ASSET_COLOR = '#FF7700';
+
+/**
+ * Admin Organisation section color (Teal)
+ * Used for: Admin > Organisation section (Sectors, Services, Employees)
+ */
+export const ADMIN_ORGANIZATION_COLOR = '#26A69A';
+
+/**
+ * Admin Locations section color (Purple)
+ * Used for: Admin > Locations section (Physical Workplaces, Buildings)
+ */
+export const ADMIN_LOCATION_COLOR = '#7E57C2';
+
+// =============================================================================
 // STATUS COLORS
 // =============================================================================
 

@@ -23,6 +23,7 @@ import {
   Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -67,27 +68,6 @@ interface AdminDataTableProps<T> {
   onSearchTermChange?: (value: string) => void;
   hideSearch?: boolean;
 }
-
-// Neumorphic shadow utilities
-const getNeumorph = (isDark: boolean, intensity: 'soft' | 'medium' | 'strong' = 'medium') => {
-  const shadows = {
-    soft: isDark
-      ? '4px 4px 8px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.03)'
-      : '4px 4px 8px rgba(0,0,0,0.08), -2px -2px 6px rgba(255,255,255,0.8)',
-    medium: isDark
-      ? '6px 6px 12px rgba(0,0,0,0.5), -3px -3px 8px rgba(255,255,255,0.04)'
-      : '6px 6px 12px rgba(0,0,0,0.1), -3px -3px 8px rgba(255,255,255,0.9)',
-    strong: isDark
-      ? '8px 8px 16px rgba(0,0,0,0.6), -4px -4px 10px rgba(255,255,255,0.05)'
-      : '8px 8px 16px rgba(0,0,0,0.12), -4px -4px 10px rgba(255,255,255,1)',
-  };
-  return shadows[intensity];
-};
-
-const getNeumorphInset = (isDark: boolean) =>
-  isDark
-    ? 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03)'
-    : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)';
 
 function AdminDataTable<T extends object & { isActive?: boolean }>({
   data,

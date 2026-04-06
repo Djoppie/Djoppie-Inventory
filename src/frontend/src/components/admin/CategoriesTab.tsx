@@ -16,9 +16,10 @@ import {
   Divider,
   Chip,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
-import AdminDataTable, { Column } from './AdminDataTable';
+import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import { Category, CreateCategoryDto, UpdateCategoryDto } from '../../types/admin.types';
 import { categoriesApi } from '../../api/admin.api';
@@ -39,6 +40,39 @@ const initialFormData: FormData = {
   sortOrder: '0',
   isActive: true,
 };
+
+const columns: GridColDef[] = [
+  {
+    field: 'code',
+    headerName: 'Code',
+    minWidth: 100,
+    flex: 0.5,
+    renderCell: (params: GridRenderCellParams) => (
+      <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
+        {params.value}
+      </Typography>
+    ),
+  },
+  { field: 'name', headerName: 'Name', minWidth: 150, flex: 1 },
+  { field: 'description', headerName: 'Description', minWidth: 200, flex: 1.5 },
+  {
+    field: 'assetTypeCount',
+    headerName: 'Asset Types',
+    minWidth: 100,
+    align: 'center',
+    headerAlign: 'center',
+    renderCell: (params: GridRenderCellParams) => (
+      <Chip
+        label={params.value ?? 0}
+        size="small"
+        color={params.value && params.value > 0 ? 'primary' : 'default'}
+        variant="outlined"
+        sx={{ fontWeight: 600 }}
+      />
+    ),
+  },
+  { field: 'sortOrder', headerName: 'Sort Order', minWidth: 80, align: 'center', headerAlign: 'center' },
+];
 
 const CategoriesTab = () => {
   const queryClient = useQueryClient();
@@ -197,49 +231,15 @@ const CategoriesTab = () => {
     await deleteMutation.mutateAsync(deletingItem.id);
   };
 
-  const columns: Column<Category>[] = [
-    {
-      id: 'code',
-      label: 'Code',
-      minWidth: 100,
-      format: (item) => (
-        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
-          {item.code}
-        </Typography>
-      ),
-    },
-    { id: 'name', label: 'Name', minWidth: 150 },
-    { id: 'description', label: 'Description', minWidth: 200 },
-    {
-      id: 'assetTypeCount',
-      label: 'Asset Types',
-      minWidth: 100,
-      align: 'center',
-      format: (item) => (
-        <Chip
-          label={item.assetTypeCount ?? 0}
-          size="small"
-          color={item.assetTypeCount && item.assetTypeCount > 0 ? 'primary' : 'default'}
-          variant="outlined"
-          sx={{ fontWeight: 600 }}
-        />
-      ),
-    },
-    { id: 'sortOrder', label: 'Sort Order', minWidth: 80, align: 'center' },
-  ];
-
   if (isLoading) return <Loading message="Loading categories..." />;
 
   return (
     <Box>
-      <AdminDataTable
-        data={categories}
+      <NeumorphicDataGrid<Category>
+        rows={categories}
         columns={columns}
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
-        searchPlaceholder="Search categories..."
-        emptyMessage="No categories available. Click the + button to add one."
-        getItemId={(item) => item.id}
         showActiveStatus
       />
 
@@ -279,7 +279,6 @@ const CategoriesTab = () => {
         isSubmitting={createMutation.isPending || updateMutation.isPending}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Code Field */}
           <TextField
             label="Code"
             value={formData.code}

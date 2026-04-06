@@ -26,6 +26,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { ROUTES } from '../constants/routes';
 import { getNeumorph, getNeumorphColors } from '../utils/neumorphicStyles';
+import { getEnhancedTypography, getFadeInUpAnimation } from '../utils/designSystem';
+import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SECTOR_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../constants/filterColors';
 import type { ReportTab } from '../types/report.types';
 import {
   HardwareTab,
@@ -83,15 +85,15 @@ const REPORT_TABS: { id: ReportTab; label: string; icon: ReactElement; descripti
   },
 ];
 
-// Tab colors
+// Tab colors (using centralized filterColors)
 const TAB_COLORS: Record<ReportTab, string> = {
-  hardware: '#FF7700', // Djoppie Orange
-  rollout: '#E53935', // Red
-  workplaces: '#7E57C2', // Purple
-  swaps: '#26A69A', // Teal
-  licenses: '#1976D2', // Blue
-  leasing: '#F57C00', // Dark Orange
-  serialnumbers: '#43A047', // Green
+  hardware: ASSET_COLOR, // Djoppie Orange
+  rollout: DANGER_COLOR, // Red
+  workplaces: BUILDING_COLOR, // Purple
+  swaps: SERVICE_COLOR, // Teal
+  licenses: SECTOR_COLOR, // Blue
+  leasing: ASSET_COLOR, // Dark Orange (using ASSET_COLOR)
+  serialnumbers: SUCCESS_COLOR, // Green
 };
 
 const ReportsPage = () => {
@@ -164,6 +166,7 @@ const ReportsPage = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           mb: 3,
+          ...getFadeInUpAnimation(0),
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -171,27 +174,40 @@ const ReportsPage = () => {
             <IconButton
               onClick={() => navigate(ROUTES.DASHBOARD)}
               sx={{
+                width: 48,
+                height: 48,
                 bgcolor: bgBase,
                 boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.3s ease',
                 '&:hover': {
                   bgcolor: alpha(currentColor, 0.1),
+                  boxShadow: `0 0 20px ${alpha(currentColor, 0.3)}`,
+                  transform: 'translateX(-4px)',
                 },
               }}
             >
-              <ArrowBackIcon sx={{ color: currentColor }} />
+              <ArrowBackIcon sx={{ color: currentColor, transition: 'color 0.3s ease' }} />
             </IconButton>
           </Tooltip>
           <Box>
             <Typography
               variant="h4"
               sx={{
-                fontWeight: 700,
-                color: 'text.primary',
+                ...getEnhancedTypography().pageTitle,
+                color: currentColor,
+                background: `linear-gradient(135deg, ${currentColor} 0%, ${alpha(currentColor, 0.7)} 100%)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
               }}
             >
               Rapportage
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.5, fontSize: '0.875rem' }}
+            >
               {currentTab.description}
             </Typography>
           </Box>
@@ -201,14 +217,27 @@ const ReportsPage = () => {
           <IconButton
             onClick={handleRefresh}
             sx={{
+              width: 48,
+              height: 48,
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
+              transition: 'all 0.3s ease',
+              position: 'relative',
               '&:hover': {
                 bgcolor: alpha(currentColor, 0.1),
+                boxShadow: `0 0 20px ${alpha(currentColor, 0.3)}`,
+                '& svg': {
+                  transform: 'rotate(180deg)',
+                },
               },
             }}
           >
-            <RefreshIcon sx={{ color: currentColor }} />
+            <RefreshIcon
+              sx={{
+                color: currentColor,
+                transition: 'transform 0.6s ease',
+              }}
+            />
           </IconButton>
         </Tooltip>
       </Box>
@@ -218,9 +247,12 @@ const ReportsPage = () => {
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2,
+          borderRadius: 2.5,
           mb: 3,
           overflow: 'hidden',
+          border: '1px solid',
+          borderColor: 'divider',
+          ...getFadeInUpAnimation(0.1),
         }}
       >
         <Tabs
@@ -229,22 +261,33 @@ const ReportsPage = () => {
           variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons={isMobile ? 'auto' : false}
           sx={{
-            minHeight: 56,
+            minHeight: 64,
             '& .MuiTab-root': {
-              minHeight: 56,
+              minHeight: 64,
               textTransform: 'none',
               fontWeight: 600,
               fontSize: '0.875rem',
               gap: 1,
-              transition: 'all 0.2s ease',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
               '&.Mui-selected': {
                 color: TAB_COLORS[activeTab],
+                fontWeight: 700,
+                '& svg': {
+                  transform: 'scale(1.15)',
+                  filter: `drop-shadow(0 0 8px ${alpha(TAB_COLORS[activeTab], 0.5)})`,
+                },
+              },
+              '& svg': {
+                transition: 'all 0.3s ease',
               },
             },
             '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: '3px 3px 0 0',
+              height: 4,
+              borderRadius: '4px 4px 0 0',
               backgroundColor: TAB_COLORS[activeTab],
+              boxShadow: `0 -2px 12px ${alpha(TAB_COLORS[activeTab], 0.4)}`,
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             },
           }}
         >
@@ -258,6 +301,10 @@ const ReportsPage = () => {
               sx={{
                 '&:hover': {
                   bgcolor: alpha(TAB_COLORS[tab.id], 0.08),
+                  '& svg': {
+                    transform: 'translateY(-2px) scale(1.1)',
+                    color: TAB_COLORS[tab.id],
+                  },
                 },
               }}
             />
@@ -270,9 +317,25 @@ const ReportsPage = () => {
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2,
+          borderRadius: 2.5,
           p: 3,
           minHeight: 400,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderTop: `3px solid ${currentColor}`,
+          position: 'relative',
+          overflow: 'hidden',
+          ...getFadeInUpAnimation(0.2),
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '30%',
+            height: '100%',
+            background: `radial-gradient(circle at top right, ${alpha(currentColor, 0.05)} 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          },
         }}
       >
         {activeTab === 'hardware' && <HardwareTab />}

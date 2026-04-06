@@ -31,6 +31,15 @@ export const ROUTES = {
   /** Admin management page */
   ADMIN: '/admin',
 
+  /** Admin Assets section (Categories, Asset Types, Intune Sync) */
+  ADMIN_ASSETS: '/admin/assets',
+
+  /** Admin Organisation section (Sectors, Services, Employees) */
+  ADMIN_ORGANISATION: '/admin/organisation',
+
+  /** Admin Locations section (Physical Workplaces, Buildings) */
+  ADMIN_LOCATIONS: '/admin/locations',
+
   /** Installed software page (requires :id parameter) */
   ASSET_SOFTWARE: '/assets/:id/software',
 
@@ -69,6 +78,21 @@ export const ROUTES = {
 
   /** Physical workplace detail page (requires :id parameter) */
   WORKPLACE_DETAIL: '/workplaces/:id',
+
+  /** Workplace reports page */
+  WORKPLACE_REPORTS: '/workplaces/reports',
+
+  /** Requests dashboard page */
+  REQUESTS: '/requests',
+
+  /** Onboarding requests page */
+  REQUESTS_ONBOARDING: '/requests/onboarding',
+
+  /** Offboarding requests page */
+  REQUESTS_OFFBOARDING: '/requests/offboarding',
+
+  /** Requests reports (history of swaps, onboarding, offboarding) */
+  REQUESTS_REPORTS: '/requests/reports',
 
   /** Laptop swap / Device deployment page */
   LAPTOP_SWAP: '/laptop-swap',

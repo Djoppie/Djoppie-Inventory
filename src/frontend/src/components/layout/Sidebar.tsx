@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -16,27 +16,51 @@ import {
   Avatar,
   alpha,
   useTheme,
+  Collapse,
+  Badge,
 } from '@mui/material';
 import { getRolloutSessions } from '../../api/rollout.api';
 import type { RolloutSession } from '../../types/rollout';
 
-// Icons
+// Icons - Parent navigation
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory2';
-import StyleIcon from '@mui/icons-material/Style';
-import AddBoxIcon from '@mui/icons-material/AddBox';
 import BusinessIcon from '@mui/icons-material/Business';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import HistoryIcon from '@mui/icons-material/History';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
-import DevicesIcon from '@mui/icons-material/Devices';
-import AssessmentIcon from '@mui/icons-material/Assessment';
+import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+// Icons - Inventory sub-items
+import AddBoxIcon from '@mui/icons-material/AddBox';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import StyleIcon from '@mui/icons-material/Style';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+
+// Icons - Workplaces sub-items
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+
+// Icons - Operations sub-items
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import TimelineIcon from '@mui/icons-material/Timeline';
+
+// Icons - Admin sub-items
+import CategoryIcon from '@mui/icons-material/Category';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import PlaceIcon from '@mui/icons-material/Place';
+
+// Icons - Requests
+import AssignmentIcon from '@mui/icons-material/Assignment';
+
+// Icons - Requests sub-items
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import HistoryIcon from '@mui/icons-material/History';
 
 import { ROUTES } from '../../constants/routes';
 import { useThemeMode } from '../../hooks/useThemeMode';
@@ -53,43 +77,53 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-interface NavSection {
-  title: string;
-  items: NavItem[];
+interface NavSubItem {
+  label: string;
+  icon: React.ReactNode;
+  path: string;
+  matchPaths?: string[];
+  badge?: number | string;
 }
 
 interface NavItem {
   label: string;
   icon: React.ReactNode;
-  path: string;
+  path?: string;
   matchPaths?: string[];
+  subItems?: NavSubItem[];
   highlighted?: boolean;
-  highlightId?: string; // For dynamic highlight colors (e.g., 'rollout')
+  highlightId?: string;
+  isDashboard?: boolean;
 }
 
-// Navigation structure
-const navSections: NavSection[] = [
+// Navigation structure with hierarchy
+const navigationItems: NavItem[] = [
   {
-    title: 'Overzicht',
-    items: [
-      {
-        label: 'Dashboard',
-        icon: <DashboardIcon />,
-        path: ROUTES.DASHBOARD,
-        matchPaths: ['/'],
-        highlighted: true,
-      },
-    ],
+    label: 'Dashboard',
+    icon: <DashboardIcon />,
+    path: ROUTES.DASHBOARD,
+    matchPaths: ['/'],
+    highlighted: true,
+    isDashboard: true,
   },
   {
-    title: 'Assets',
-    items: [
+    label: 'Inventory',
+    icon: <InventoryIcon />,
+    path: ROUTES.DASHBOARD,
+    matchPaths: ['/devices', '/assets'],
+    highlighted: true,
+    subItems: [
       {
-        label: 'Alle Assets',
-        icon: <InventoryIcon />,
-        path: ROUTES.DEVICE_MANAGEMENT,
-        matchPaths: ['/devices', '/assets'],
-        highlighted: true,
+        label: 'Create Asset',
+        icon: <AddBoxIcon />,
+        path: ROUTES.ASSETS_NEW,
+        matchPaths: ['/devices/new'],
+      },
+      {
+        label: 'Bulk Create Asset',
+        icon: <PlaylistAddIcon />,
+        path: ROUTES.ASSETS_BULK_NEW,
+        matchPaths: ['/devices/bulk-create'],
       },
       {
         label: 'Templates',
@@ -98,95 +132,107 @@ const navSections: NavSection[] = [
         matchPaths: ['/templates'],
       },
       {
-        label: 'Bulk Aanmaken',
-        icon: <AddBoxIcon />,
-        path: ROUTES.ASSETS_BULK_NEW,
-        matchPaths: ['/devices/bulk-create'],
+        label: 'Reports',
+        icon: <AssessmentIcon />,
+        path: ROUTES.REPORTS,
+        matchPaths: ['/reports'],
       },
     ],
   },
   {
-    title: 'Werkplekken',
-    items: [
+    label: 'Workplaces',
+    icon: <BusinessIcon />,
+    path: ROUTES.PHYSICAL_WORKPLACES,
+    matchPaths: ['/workplaces'],
+    highlighted: true,
+    subItems: [
       {
-        label: 'Fysieke Werkplekken',
-        icon: <BusinessIcon />,
-        path: ROUTES.PHYSICAL_WORKPLACES,
-        matchPaths: ['/workplaces'],
-        highlighted: true,
+        label: 'Reports',
+        icon: <LocationOnIcon />,
+        path: '/workplaces/reports',
+        matchPaths: ['/workplaces/reports'],
       },
     ],
   },
   {
-    title: 'Scannen',
-    items: [
+    label: 'Operations',
+    icon: <SettingsApplicationsIcon />,
+    path: ROUTES.ROLLOUTS,
+    matchPaths: ['/rollouts', '/laptop-swap'],
+    highlighted: true,
+    highlightId: 'operations',
+    subItems: [
       {
-        label: 'QR Scanner',
-        icon: <QrCodeScannerIcon />,
-        path: ROUTES.SCAN,
-        matchPaths: ['/scan'],
-        highlighted: true,
+        label: 'Rollout Sessions',
+        icon: <RocketLaunchIcon />,
+        path: ROUTES.ROLLOUTS,
+        matchPaths: ['/rollouts'],
       },
-    ],
-  },
-  {
-    title: 'Swaps',
-    items: [
       {
-        label: 'Laptop Swap',
+        label: 'Swaps',
         icon: <SwapHorizIcon />,
         path: ROUTES.LAPTOP_SWAP,
         matchPaths: ['/laptop-swap'],
-        highlighted: true,
       },
       {
-        label: 'Geschiedenis',
-        icon: <HistoryIcon />,
+        label: 'Reports',
+        icon: <TimelineIcon />,
         path: ROUTES.DEPLOYMENT_HISTORY,
         matchPaths: ['/laptop-swap/history', '/deployment'],
       },
     ],
   },
   {
-    title: 'Uitrol',
-    items: [
+    label: 'Requests',
+    icon: <AssignmentIcon />,
+    path: ROUTES.REQUESTS,
+    matchPaths: ['/requests'],
+    highlighted: true,
+    subItems: [
       {
-        label: 'Rollout Sessies',
-        icon: <RocketLaunchIcon />,
-        path: ROUTES.ROLLOUTS,
-        matchPaths: ['/rollouts'],
-        highlighted: true,
-        highlightId: 'rollout',
+        label: 'Onboarding',
+        icon: <PersonAddIcon />,
+        path: ROUTES.REQUESTS_ONBOARDING,
+        matchPaths: ['/requests/onboarding'],
       },
       {
-        label: 'Autopilot Devices',
-        icon: <DevicesIcon />,
-        path: ROUTES.AUTOPILOT_DEVICES,
-        matchPaths: ['/devices/autopilot'],
+        label: 'Offboarding',
+        icon: <PersonRemoveIcon />,
+        path: ROUTES.REQUESTS_OFFBOARDING,
+        matchPaths: ['/requests/offboarding'],
       },
-    ],
-  },
-  {
-    title: 'Rapportage',
-    items: [
       {
-        label: 'Rapporten',
-        icon: <AssessmentIcon />,
-        path: ROUTES.REPORTS,
-        matchPaths: ['/reports'],
-        highlighted: true,
+        label: 'Reports',
+        icon: <HistoryIcon />,
+        path: ROUTES.REQUESTS_REPORTS,
+        matchPaths: ['/requests/reports'],
       },
     ],
   },
   {
-    title: 'Admin',
-    items: [
+    label: 'Admin',
+    icon: <SettingsIcon />,
+    path: ROUTES.ADMIN,
+    matchPaths: ['/admin'],
+    highlighted: true,
+    subItems: [
       {
-        label: 'Beheer',
-        icon: <SettingsIcon />,
-        path: ROUTES.ADMIN,
-        matchPaths: ['/admin'],
-        highlighted: true,
+        label: 'Assets',
+        icon: <CategoryIcon />,
+        path: ROUTES.ADMIN_ASSETS,
+        matchPaths: ['/admin/assets'],
+      },
+      {
+        label: 'Organisation',
+        icon: <AccountTreeIcon />,
+        path: ROUTES.ADMIN_ORGANISATION,
+        matchPaths: ['/admin/organisation'],
+      },
+      {
+        label: 'Locations',
+        icon: <PlaceIcon />,
+        path: ROUTES.ADMIN_LOCATIONS,
+        matchPaths: ['/admin/locations'],
       },
     ],
   },
@@ -213,6 +259,15 @@ const Sidebar = ({
 
   const { bgBase, bgSurface } = getNeumorphColors(isDark);
 
+  // Expanded sections state (only for items with subItems)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    Inventory: false,
+    Workplaces: false,
+    Operations: false,
+    Requests: false,
+    Admin: false,
+  });
+
   // Get user initials for avatar
   const userInitials = account?.name
     ? account.name
@@ -225,6 +280,7 @@ const Sidebar = ({
 
   // Get user's first name for display
   const userFirstName = account?.name?.split(' ')[0] || account?.username?.split('@')[0] || 'User';
+  const userEmail = account?.username || '';
 
   // Check for active rollout sessions
   const { data: rolloutSessions = [] } = useQuery<RolloutSession[]>({
@@ -237,17 +293,17 @@ const Sidebar = ({
     (session: RolloutSession) => session.status === 'InProgress'
   );
 
-  // Get icon color based on item properties
-  const getIconColor = (item: NavItem, isItemActive: boolean): string => {
-    if (isItemActive) return ASSET_COLOR;
-    if (item.highlightId === 'rollout' && hasActiveRollouts) return ROLLOUT_ACTIVE_COLOR;
-    if (item.highlighted) return HIGHLIGHT_COLOR;
-    return 'inherit';
-  };
+  // Toggle section expansion
+  const toggleSection = useCallback((sectionLabel: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionLabel]: !prev[sectionLabel],
+    }));
+  }, []);
 
-  // Check if a nav item is active
+  // Check if a nav item or sub-item is active
   const isActive = useCallback(
-    (item: NavItem): boolean => {
+    (item: NavItem | NavSubItem): boolean => {
       const currentPath = location.pathname;
 
       // Exact match for dashboard
@@ -263,10 +319,33 @@ const Sidebar = ({
         });
       }
 
-      return currentPath.startsWith(item.path);
+      if (item.path) {
+        return currentPath.startsWith(item.path);
+      }
+
+      return false;
     },
     [location.pathname]
   );
+
+  // Check if parent section has any active child
+  const hasActiveChild = useCallback(
+    (item: NavItem): boolean => {
+      if (!item.subItems) return false;
+      return item.subItems.some((subItem) => isActive(subItem));
+    },
+    [isActive]
+  );
+
+  // Get icon color based on item properties
+  const getIconColor = (item: NavItem | NavSubItem, isItemActive: boolean, isParent = false): string => {
+    if (isItemActive) return ASSET_COLOR;
+    if ('highlightId' in item && item.highlightId === 'operations' && hasActiveRollouts) {
+      return ROLLOUT_ACTIVE_COLOR;
+    }
+    if ('highlighted' in item && item.highlighted && !isParent) return HIGHLIGHT_COLOR;
+    return 'inherit';
+  };
 
   // Handle navigation
   const handleNavigation = useCallback(
@@ -277,6 +356,22 @@ const Sidebar = ({
       }
     },
     [navigate, isMobile, onMobileClose]
+  );
+
+  // Handle parent item click
+  const handleParentClick = useCallback(
+    (item: NavItem) => {
+      // Navigate to the dashboard if path exists
+      if (item.path) {
+        handleNavigation(item.path);
+      }
+
+      // Toggle expansion if has sub-items
+      if (item.subItems) {
+        toggleSection(item.label);
+      }
+    },
+    [toggleSection, handleNavigation]
   );
 
   // Sidebar content
@@ -403,67 +498,107 @@ const Sidebar = ({
         </Box>
       )}
 
-      {/* Header */}
+      {/* User Profile Card */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: isCollapsed ? 'center' : 'space-between',
           p: 2,
-          minHeight: 72,
+          minHeight: 88,
           borderBottom: '1px solid',
           borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+          transition: 'all 0.3s ease',
         }}
       >
-        {!isCollapsed && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {!isCollapsed ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+              flex: 1,
+              overflow: 'hidden',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar
+                sx={{
+                  width: 44,
+                  height: 44,
+                  bgcolor: ASSET_COLOR,
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  border: '2px solid',
+                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                  boxShadow: getNeumorph(isDark, 'soft'),
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: `0 0 0 3px ${alpha(ASSET_COLOR, 0.2)}`,
+                  },
+                }}
+              >
+                {userInitials}
+              </Avatar>
+              <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    background: isDark
+                      ? 'linear-gradient(135deg, #FFFFFF 0%, #FF9933 100%)'
+                      : 'linear-gradient(135deg, #2C3E50 0%, #FF7700 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {userFirstName}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+                    fontSize: '0.7rem',
+                    display: 'block',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {userEmail}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        ) : (
+          <Tooltip title={`${userFirstName} (${userEmail})`} placement="right" arrow>
             <Avatar
               sx={{
                 width: 40,
                 height: 40,
                 bgcolor: ASSET_COLOR,
-                fontSize: '1rem',
+                fontSize: '0.95rem',
                 fontWeight: 700,
                 border: '2px solid',
                 borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
                 boxShadow: getNeumorph(isDark, 'soft'),
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  boxShadow: `0 0 0 3px ${alpha(ASSET_COLOR, 0.2)}`,
+                },
               }}
             >
               {userInitials}
             </Avatar>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                fontSize: '1.1rem',
-                background: isDark
-                  ? 'linear-gradient(135deg, #FFFFFF 0%, #FF9933 100%)'
-                  : 'linear-gradient(135deg, #2C3E50 0%, #FF7700 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              {userFirstName}
-            </Typography>
-          </Box>
-        )}
-
-        {isCollapsed && (
-          <Avatar
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: ASSET_COLOR,
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              border: '2px solid',
-              borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
-              boxShadow: getNeumorph(isDark, 'soft'),
-            }}
-          >
-            {userInitials}
-          </Avatar>
+          </Tooltip>
         )}
 
         {!isMobile && (
@@ -474,9 +609,11 @@ const Sidebar = ({
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
               transition: 'all 0.2s ease',
+              ml: isCollapsed ? 0 : 1,
               '&:hover': {
                 bgcolor: alpha(ASSET_COLOR, 0.1),
                 boxShadow: `0 0 0 2px ${alpha(ASSET_COLOR, 0.3)}`,
+                transform: 'scale(1.1)',
               },
             }}
           >
@@ -495,7 +632,7 @@ const Sidebar = ({
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          py: 2,
+          py: 1.5,
           '&::-webkit-scrollbar': {
             width: 6,
           },
@@ -508,108 +645,252 @@ const Sidebar = ({
           },
         }}
       >
-        {navSections.map((section, sectionIndex) => (
-          <Box key={section.title} sx={{ mb: 1 }}>
-            {/* Section Header */}
-            {!isCollapsed && (
-              <Typography
-                variant="caption"
-                sx={{
-                  px: 3,
-                  py: 1,
-                  display: 'block',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-                }}
-              >
-                {section.title}
-              </Typography>
-            )}
+        <List disablePadding>
+          {navigationItems.map((item) => {
+            const active = isActive(item);
+            const hasChildren = !!item.subItems;
+            const isExpanded = expandedSections[item.label] || false;
+            const childActive = hasActiveChild(item);
 
-            {isCollapsed && sectionIndex > 0 && (
-              <Divider
-                sx={{
-                  mx: 2,
-                  my: 1,
-                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-                }}
-              />
-            )}
-
-            {/* Section Items */}
-            <List disablePadding>
-              {section.items.map((item) => {
-                const active = isActive(item);
-
-                const buttonContent = (
-                  <ListItemButton
-                    onClick={() => handleNavigation(item.path)}
-                    sx={{
-                      mx: 1.5,
-                      my: 0.5,
-                      borderRadius: 2,
-                      minHeight: 44,
-                      justifyContent: isCollapsed ? 'center' : 'flex-start',
-                      px: isCollapsed ? 1 : 2,
-                      bgcolor: active
-                        ? alpha(ASSET_COLOR, isDark ? 0.15 : 0.1)
-                        : 'transparent',
-                      boxShadow: active
-                        ? getNeumorphInset(isDark)
-                        : 'none',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        bgcolor: active
-                          ? alpha(ASSET_COLOR, isDark ? 0.2 : 0.15)
-                          : alpha(ASSET_COLOR, 0.08),
-                        boxShadow: active
-                          ? getNeumorphInset(isDark)
-                          : getNeumorph(isDark, 'soft'),
-                        transform: 'translateX(2px)',
-                      },
-                    }}
-                  >
-                    <ListItemIcon
+            return (
+              <Box key={item.label} sx={{ mb: item.isDashboard ? 1 : 0 }}>
+                {/* Parent Item */}
+                <ListItem disablePadding>
+                  {isCollapsed ? (
+                    <Tooltip title={item.label} placement="right" arrow>
+                      <ListItemButton
+                        onClick={() => handleParentClick(item)}
+                        sx={{
+                          mx: 1.5,
+                          my: 0.5,
+                          borderRadius: 2,
+                          minHeight: 48,
+                          justifyContent: 'center',
+                          px: 1,
+                          bgcolor: active || childActive
+                            ? alpha(ASSET_COLOR, isDark ? 0.15 : 0.1)
+                            : 'transparent',
+                          boxShadow: active || childActive
+                            ? getNeumorphInset(isDark)
+                            : 'none',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          position: 'relative',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0,
+                            top: '20%',
+                            bottom: '20%',
+                            width: 3,
+                            borderRadius: '0 2px 2px 0',
+                            bgcolor: active || childActive ? ASSET_COLOR : 'transparent',
+                            transition: 'all 0.3s ease',
+                          },
+                          '&:hover': {
+                            bgcolor: active || childActive
+                              ? alpha(ASSET_COLOR, isDark ? 0.2 : 0.15)
+                              : alpha(ASSET_COLOR, 0.08),
+                            boxShadow: active || childActive
+                              ? getNeumorphInset(isDark)
+                              : getNeumorph(isDark, 'soft'),
+                            transform: 'translateX(3px)',
+                          },
+                        }}
+                      >
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 0,
+                            justifyContent: 'center',
+                            color: getIconColor(item, active || childActive, true),
+                            transition: 'all 0.3s ease',
+                          }}
+                        >
+                          {hasActiveRollouts && item.highlightId === 'operations' ? (
+                            <Badge
+                              variant="dot"
+                              color="error"
+                              sx={{
+                                '& .MuiBadge-badge': {
+                                  animation: 'pulse 2s infinite',
+                                  '@keyframes pulse': {
+                                    '0%, 100%': { opacity: 1 },
+                                    '50%': { opacity: 0.5 },
+                                  },
+                                },
+                              }}
+                            >
+                              {item.icon}
+                            </Badge>
+                          ) : (
+                            item.icon
+                          )}
+                        </ListItemIcon>
+                      </ListItemButton>
+                    </Tooltip>
+                  ) : (
+                    <ListItemButton
+                      onClick={() => handleParentClick(item)}
                       sx={{
-                        minWidth: isCollapsed ? 0 : 40,
-                        justifyContent: 'center',
-                        color: getIconColor(item, active),
-                        transition: 'color 0.2s ease',
+                        mx: 1.5,
+                        my: 0.5,
+                        borderRadius: 2,
+                        minHeight: 48,
+                        px: 2,
+                        bgcolor: active || childActive
+                          ? alpha(ASSET_COLOR, isDark ? 0.15 : 0.1)
+                          : 'transparent',
+                        boxShadow: active || childActive
+                          ? getNeumorphInset(isDark)
+                          : 'none',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        position: 'relative',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          left: 0,
+                          top: '20%',
+                          bottom: '20%',
+                          width: 3,
+                          borderRadius: '0 2px 2px 0',
+                          bgcolor: active || childActive ? ASSET_COLOR : 'transparent',
+                          transition: 'all 0.3s ease',
+                        },
+                        '&:hover': {
+                          bgcolor: active || childActive
+                            ? alpha(ASSET_COLOR, isDark ? 0.2 : 0.15)
+                            : alpha(ASSET_COLOR, 0.08),
+                          boxShadow: active || childActive
+                            ? getNeumorphInset(isDark)
+                            : getNeumorph(isDark, 'soft'),
+                          transform: 'translateX(3px)',
+                        },
                       }}
                     >
-                      {item.icon}
-                    </ListItemIcon>
-                    {!isCollapsed && (
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 40,
+                          color: getIconColor(item, active || childActive, true),
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        {hasActiveRollouts && item.highlightId === 'operations' ? (
+                          <Badge
+                            variant="dot"
+                            color="error"
+                            sx={{
+                              '& .MuiBadge-badge': {
+                                animation: 'pulse 2s infinite',
+                                '@keyframes pulse': {
+                                  '0%, 100%': { opacity: 1 },
+                                  '50%': { opacity: 0.5 },
+                                },
+                              },
+                            }}
+                          >
+                            {item.icon}
+                          </Badge>
+                        ) : (
+                          item.icon
+                        )}
+                      </ListItemIcon>
                       <ListItemText
                         primary={item.label}
                         primaryTypographyProps={{
-                          fontSize: '0.875rem',
-                          fontWeight: active ? 600 : 500,
-                          color: active ? ASSET_COLOR : 'text.primary',
+                          fontSize: '0.9rem',
+                          fontWeight: active || childActive ? 700 : 600,
+                          color: active || childActive ? ASSET_COLOR : 'text.primary',
                         }}
                       />
-                    )}
-                  </ListItemButton>
-                );
+                      {hasChildren && (
+                        <Box
+                          sx={{
+                            transition: 'transform 0.3s ease',
+                            transform: isExpanded ? 'rotate(0deg)' : 'rotate(0deg)',
+                            color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+                          }}
+                        >
+                          {isExpanded ? (
+                            <ExpandLessIcon fontSize="small" />
+                          ) : (
+                            <ExpandMoreIcon fontSize="small" />
+                          )}
+                        </Box>
+                      )}
+                    </ListItemButton>
+                  )}
+                </ListItem>
 
-                return (
-                  <ListItem key={item.path} disablePadding>
-                    {isCollapsed ? (
-                      <Tooltip title={item.label} placement="right" arrow>
-                        {buttonContent}
-                      </Tooltip>
-                    ) : (
-                      buttonContent
-                    )}
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Box>
-        ))}
+                {/* Sub Items */}
+                {hasChildren && !isCollapsed && (
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <List disablePadding sx={{ pl: 1 }}>
+                      {item.subItems!.map((subItem) => {
+                        const subActive = isActive(subItem);
+
+                        return (
+                          <ListItem key={subItem.path} disablePadding>
+                            <ListItemButton
+                              onClick={() => handleNavigation(subItem.path)}
+                              sx={{
+                                mx: 1.5,
+                                my: 0.25,
+                                borderRadius: 1.5,
+                                minHeight: 40,
+                                pl: 5,
+                                pr: 2,
+                                bgcolor: subActive
+                                  ? alpha(ASSET_COLOR, isDark ? 0.1 : 0.08)
+                                  : 'transparent',
+                                transition: 'all 0.2s ease',
+                                position: 'relative',
+                                '&:hover': {
+                                  bgcolor: subActive
+                                    ? alpha(ASSET_COLOR, isDark ? 0.15 : 0.12)
+                                    : alpha(ASSET_COLOR, 0.05),
+                                  transform: 'translateX(4px)',
+                                },
+                              }}
+                            >
+                              <ListItemIcon
+                                sx={{
+                                  minWidth: 36,
+                                  color: getIconColor(subItem, subActive),
+                                  fontSize: '1.1rem',
+                                  transition: 'color 0.2s ease',
+                                }}
+                              >
+                                {subItem.icon}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={subItem.label}
+                                primaryTypographyProps={{
+                                  fontSize: '0.8rem',
+                                  fontWeight: subActive ? 600 : 500,
+                                  color: subActive ? ASSET_COLOR : 'text.secondary',
+                                }}
+                              />
+                            </ListItemButton>
+                          </ListItem>
+                        );
+                      })}
+                    </List>
+                  </Collapse>
+                )}
+
+                {/* Divider after Dashboard */}
+                {item.isDashboard && (
+                  <Divider
+                    sx={{
+                      mx: 2,
+                      my: 1,
+                      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                    }}
+                  />
+                )}
+              </Box>
+            );
+          })}
+        </List>
       </Box>
 
       {/* Footer */}

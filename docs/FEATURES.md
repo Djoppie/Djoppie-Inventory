@@ -28,7 +28,7 @@ Djoppie Inventory is a comprehensive IT asset management system with Microsoft I
 ### Status Management
 
 | Status | Dutch | Description |
-|--------|-------|-------------|
+| -------- | -------|-------------|
 | InGebruik | In gebruik | Asset actively in use |
 | Stock | Stock | In stock, available |
 | Herstelling | Herstelling | Under repair |

@@ -22,12 +22,18 @@ const routeLabels: Record<string, string> = {
   'templates': 'Templates',
   'scan': 'QR Scanner',
   'admin': 'Beheer',
+  'organisation': 'Organisatie',
+  'locations': 'Locaties',
   'rollouts': 'Rollout Sessies',
   'execute': 'Uitvoering',
   'report': 'Rapport',
+  'reports': 'Rapporten',
   'days': 'Dagen',
   'workplaces': 'Werkplekken',
   'laptop-swap': 'Laptop Swap',
+  'requests': 'Aanvragen',
+  'onboarding': 'Onboarding',
+  'offboarding': 'Offboarding',
   'history': 'Geschiedenis',
   'autopilot': 'Autopilot',
   'timeline': 'Timeline',
@@ -42,7 +48,9 @@ const routeLinks: Record<string, string> = {
   'rollouts': ROUTES.ROLLOUTS,
   'workplaces': ROUTES.PHYSICAL_WORKPLACES,
   'laptop-swap': ROUTES.LAPTOP_SWAP,
+  'requests': ROUTES.LAPTOP_SWAP,
   'autopilot': ROUTES.AUTOPILOT_DEVICES,
+  'admin': ROUTES.ADMIN,
 };
 
 interface BreadcrumbItem {
