@@ -76,6 +76,9 @@ export interface NeumorphicDataGridProps<T extends { id: number | string }> {
   // NEW: Sticky header with max height
   stickyHeader?: boolean;
   maxHeight?: number | string;
+
+  // NEW: Column visibility model for responsive columns
+  columnVisibilityModel?: any;
 }
 
 const CustomToolbar = memo(function CustomToolbar({
@@ -283,6 +286,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   onRowClick,
   stickyHeader = false,
   maxHeight,
+  columnVisibilityModel,
 }: NeumorphicDataGridProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -354,6 +358,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         checkboxSelection={checkboxSelection}
         {...(rowSelectionModel && rowSelectionModel.length > 0 && { rowSelectionModel })}
         {...(onRowSelectionModelChange && { onRowSelectionModelChange })}
+        {...(columnVisibilityModel && { columnVisibilityModel })}
         disableRowSelectionOnClick={!onRowClick}
         {...(onRowClick && { onRowClick: handleRowClick })}
         initialState={{
