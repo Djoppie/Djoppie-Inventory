@@ -2,6 +2,7 @@ using DjoppieInventory.Core.DTOs.PhysicalWorkplace;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Infrastructure.Data;
+using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,13 +19,16 @@ namespace DjoppieInventory.API.Controllers;
 [Authorize]
 public class PhysicalWorkplacesController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IPhysicalWorkplaceService _workplaceService;
+    private readonly ApplicationDbContext _context; // Keep for complex operations not yet in service
     private readonly ILogger<PhysicalWorkplacesController> _logger;
 
     public PhysicalWorkplacesController(
+        IPhysicalWorkplaceService workplaceService,
         ApplicationDbContext context,
         ILogger<PhysicalWorkplacesController> logger)
     {
+        _workplaceService = workplaceService;
         _context = context;
         _logger = logger;
     }
@@ -41,91 +45,9 @@ public class PhysicalWorkplacesController : ControllerBase
         [FromQuery] bool? hasOccupant = null,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.PhysicalWorkplaces
-            .Include(pw => pw.Building)
-            .Include(pw => pw.Service)
-            .Include(pw => pw.FixedAssets)
-            .Include(pw => pw.DockingStationAsset)
-            .Include(pw => pw.Monitor1Asset)
-            .Include(pw => pw.Monitor2Asset)
-            .Include(pw => pw.Monitor3Asset)
-            .Include(pw => pw.KeyboardAsset)
-            .Include(pw => pw.MouseAsset)
-            .AsNoTracking();
-
-        if (buildingId.HasValue)
-            query = query.Where(pw => pw.BuildingId == buildingId.Value);
-
-        if (serviceId.HasValue)
-            query = query.Where(pw => pw.ServiceId == serviceId.Value);
-
-        if (isActive.HasValue)
-            query = query.Where(pw => pw.IsActive == isActive.Value);
-
-        if (hasOccupant.HasValue)
-        {
-            if (hasOccupant.Value)
-                query = query.Where(pw => pw.CurrentOccupantEntraId != null || pw.CurrentOccupantName != null);
-            else
-                query = query.Where(pw => pw.CurrentOccupantEntraId == null && pw.CurrentOccupantName == null);
-        }
-
-        var workplaces = await query
-            .OrderBy(pw => pw.Building.Name)
-            .ThenBy(pw => pw.Service != null ? pw.Service.Name : "")
-            .ThenBy(pw => pw.Name)
-            .ToListAsync(cancellationToken);
-
-        // Get occupant identifiers to look up their active laptops
-        var occupantEmails = workplaces
-            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantEmail))
-            .Select(pw => pw.CurrentOccupantEmail!.ToLower())
-            .Distinct()
-            .ToList();
-
-        var occupantEntraIds = workplaces
-            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantEntraId))
-            .Select(pw => pw.CurrentOccupantEntraId!)
-            .Distinct()
-            .ToList();
-
-        var occupantNames = workplaces
-            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantName))
-            .Select(pw => pw.CurrentOccupantName!.ToLower())
-            .Distinct()
-            .ToList();
-
-        // Look up active laptops (InGebruik) for occupants - match by Owner (name or email) OR Employee EntraId
-        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
-        var activeLaptops = await _context.Assets
-            .Include(a => a.AssetType)
-            .Include(a => a.Employee)
-            .Where(a => a.Status == AssetStatus.InGebruik)
-            .Where(a =>
-                (a.Owner != null && (occupantEmails.Contains(a.Owner.ToLower()) || occupantNames.Contains(a.Owner.ToLower()))) ||
-                (a.Employee != null && occupantEntraIds.Contains(a.Employee.EntraId)))
-            .Where(a =>
-                (a.AssetType != null && (
-                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
-                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
-                )) ||
-                (a.Category != null && laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))))
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        // Create lookups by owner (name/email) and employee EntraId (case-insensitive)
-        var laptopByOwner = activeLaptops
-            .Where(a => !string.IsNullOrEmpty(a.Owner))
-            .GroupBy(a => a.Owner!.ToLower())
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var laptopByEntraId = activeLaptops
-            .Where(a => a.Employee != null)
-            .GroupBy(a => a.Employee!.EntraId)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var dtos = workplaces.Select(pw => MapToDtoWithActiveLaptop(pw, laptopByOwner, laptopByEntraId));
-        return Ok(dtos);
+        var workplaces = await _workplaceService.GetAllAsync(
+            buildingId, serviceId, isActive, hasOccupant, cancellationToken);
+        return Ok(workplaces);
     }
 
     /// <summary>
@@ -190,6 +112,7 @@ public class PhysicalWorkplacesController : ControllerBase
     }
 
     /// <summary>
+    /// <summary>
     /// Gets a specific physical workplace by ID
     /// </summary>
     [HttpGet("{id}")]
@@ -199,24 +122,14 @@ public class PhysicalWorkplacesController : ControllerBase
         int id,
         CancellationToken cancellationToken = default)
     {
-        var workplace = await _context.PhysicalWorkplaces
-            .Include(pw => pw.Building)
-            .Include(pw => pw.Service)
-            .Include(pw => pw.FixedAssets)
-            .Include(pw => pw.DockingStationAsset)
-            .Include(pw => pw.Monitor1Asset)
-            .Include(pw => pw.Monitor2Asset)
-            .Include(pw => pw.Monitor3Asset)
-            .Include(pw => pw.KeyboardAsset)
-            .Include(pw => pw.MouseAsset)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
-
+        var workplace = await _workplaceService.GetDtoByIdAsync(id, cancellationToken);
+        
         if (workplace == null)
             return NotFound($"Physical workplace with ID {id} not found");
 
-        return Ok(MapToDto(workplace));
+        return Ok(workplace);
     }
+
 
     /// <summary>
     /// Creates a new physical workplace
@@ -526,32 +439,20 @@ public class PhysicalWorkplacesController : ControllerBase
         [FromQuery] bool hardDelete = false,
         CancellationToken cancellationToken = default)
     {
-        var workplace = await _context.PhysicalWorkplaces
-            .Include(pw => pw.FixedAssets)
-            .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
-
-        if (workplace == null)
-            return NotFound($"Physical workplace with ID {id} not found");
-
-        if (hardDelete)
+        try
         {
-            // Check for fixed assets
-            if (workplace.FixedAssets.Any())
-                return BadRequest($"Cannot delete workplace with {workplace.FixedAssets.Count} fixed assets. Remove assets first or use soft delete.");
+            var success = await _workplaceService.DeleteAsync(id, cancellationToken);
+            
+            if (!success)
+                return NotFound($"Physical workplace with ID {id} not found");
 
-            _context.PhysicalWorkplaces.Remove(workplace);
-            _logger.LogInformation("Hard deleted physical workplace {Id} ({Code})", id, workplace.Code);
+            _logger.LogInformation("Soft deleted physical workplace {Id}", id);
+            return NoContent();
         }
-        else
+        catch (KeyNotFoundException ex)
         {
-            workplace.IsActive = false;
-            workplace.UpdatedAt = DateTime.UtcNow;
-            _logger.LogInformation("Soft deleted physical workplace {Id} ({Code})", id, workplace.Code);
+            return NotFound(ex.Message);
         }
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
     }
 
     /// <summary>
@@ -565,46 +466,15 @@ public class PhysicalWorkplacesController : ControllerBase
         int id,
         CancellationToken cancellationToken = default)
     {
-        var workplace = await _context.PhysicalWorkplaces
-            .AsNoTracking()
-            .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
-
-        if (workplace == null)
-            return NotFound($"Physical workplace with ID {id} not found");
-
-        // Collect all equipment slot asset IDs
-        var equipmentSlotAssetIds = new List<int?>
+        try
         {
-            workplace.DockingStationAssetId,
-            workplace.Monitor1AssetId,
-            workplace.Monitor2AssetId,
-            workplace.Monitor3AssetId,
-            workplace.KeyboardAssetId,
-            workplace.MouseAssetId
-        }.Where(assetId => assetId.HasValue).Select(assetId => assetId!.Value).ToList();
-
-        // Query assets that are either:
-        // 1. Linked via PhysicalWorkplaceId (generic fixed assets)
-        // 2. Linked via equipment slots (dedicated equipment)
-        var assets = await _context.Assets
-            .Where(a => a.PhysicalWorkplaceId == id || equipmentSlotAssetIds.Contains(a.Id))
-            .Include(a => a.AssetType)
-            .AsNoTracking()
-            .OrderBy(a => a.AssetType != null ? a.AssetType.SortOrder : 999)
-            .Select(a => new
-            {
-                a.Id,
-                a.AssetCode,
-                a.AssetName,
-                AssetType = a.AssetType != null ? a.AssetType.Name : a.Category,
-                a.Brand,
-                a.Model,
-                a.SerialNumber,
-                a.Status
-            })
-            .ToListAsync(cancellationToken);
-
-        return Ok(assets);
+            var assets = await _workplaceService.GetWorkplaceAssetsAsync(id, cancellationToken);
+            return Ok(assets);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     /// <summary>
@@ -621,58 +491,23 @@ public class PhysicalWorkplacesController : ControllerBase
         int assetId,
         CancellationToken cancellationToken = default)
     {
-        var workplace = await _context.PhysicalWorkplaces
-            .Include(pw => pw.Building)
-            .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
-
-        if (workplace == null)
-            return NotFound($"Physical workplace with ID {id} not found");
-
-        if (!workplace.IsActive)
-            return BadRequest("Cannot assign assets to an inactive workplace");
-
-        var asset = await _context.Assets
-            .Include(a => a.AssetType)
-            .Include(a => a.PhysicalWorkplace)
-            .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
-
-        if (asset == null)
-            return NotFound($"Asset with ID {assetId} not found");
-
-        // Check if asset is already assigned to another workplace
-        if (asset.PhysicalWorkplaceId.HasValue && asset.PhysicalWorkplaceId != id)
+        try
         {
-            return BadRequest($"Asset '{asset.AssetCode}' is already assigned to workplace '{asset.PhysicalWorkplace?.Code ?? "unknown"}'");
+            await _workplaceService.AssignAssetAsync(id, assetId, cancellationToken);
+            
+            _logger.LogInformation("Assigned asset {AssetId} to workplace {WorkplaceId}",
+                assetId, id);
+
+            return Ok(new { message = $"Asset assigned to workplace successfully" });
         }
-
-        // Check if already assigned to this workplace
-        if (asset.PhysicalWorkplaceId == id)
+        catch (KeyNotFoundException ex)
         {
-            return Ok(new { message = "Asset is already assigned to this workplace" });
+            return NotFound(ex.Message);
         }
-
-        // Assign the asset to the workplace
-        asset.PhysicalWorkplaceId = id;
-        asset.BuildingId = workplace.BuildingId; // Sync building with workplace
-        asset.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation(
-            "Assigned asset {AssetCode} ({AssetType}) to workplace {WorkplaceCode} in {Building}",
-            asset.AssetCode,
-            asset.AssetType?.Name ?? asset.Category,
-            workplace.Code,
-            workplace.Building?.Name ?? "unknown");
-
-        return Ok(new
+        catch (InvalidOperationException ex)
         {
-            message = $"Asset '{asset.AssetCode}' assigned to workplace '{workplace.Code}'",
-            assetId = asset.Id,
-            assetCode = asset.AssetCode,
-            workplaceId = workplace.Id,
-            workplaceCode = workplace.Code
-        });
+            return BadRequest(ex.Message);
+        }
     }
 
     /// <summary>
@@ -688,37 +523,23 @@ public class PhysicalWorkplacesController : ControllerBase
         int assetId,
         CancellationToken cancellationToken = default)
     {
-        var workplace = await _context.PhysicalWorkplaces
-            .AsNoTracking()
-            .FirstOrDefaultAsync(pw => pw.Id == id, cancellationToken);
-
-        if (workplace == null)
-            return NotFound($"Physical workplace with ID {id} not found");
-
-        var asset = await _context.Assets
-            .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
-
-        if (asset == null)
-            return NotFound($"Asset with ID {assetId} not found");
-
-        // Check if asset is assigned to this workplace
-        if (asset.PhysicalWorkplaceId != id)
+        try
         {
-            return BadRequest($"Asset '{asset.AssetCode}' is not assigned to workplace '{workplace.Code}'");
+            await _workplaceService.RemoveAssetAsync(id, assetId, cancellationToken);
+            
+            _logger.LogInformation("Unassigned asset {AssetId} from workplace {WorkplaceId}",
+                assetId, id);
+
+            return NoContent();
         }
-
-        // Unassign the asset
-        asset.PhysicalWorkplaceId = null;
-        asset.UpdatedAt = DateTime.UtcNow;
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation(
-            "Unassigned asset {AssetCode} from workplace {WorkplaceCode}",
-            asset.AssetCode,
-            workplace.Code);
-
-        return NoContent();
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // ============================================================
@@ -1365,85 +1186,27 @@ public class PhysicalWorkplacesController : ControllerBase
         [FromBody] BulkCreateWorkplacesDto dto,
         CancellationToken cancellationToken = default)
     {
-        // Validate building exists
-        var building = await _context.Buildings.FindAsync(new object[] { dto.BuildingId }, cancellationToken);
-        if (building == null)
-            return BadRequest($"Building with ID {dto.BuildingId} not found");
-
-        // Validate service exists if provided
-        Service? service = null;
-        if (dto.ServiceId.HasValue)
+        try
         {
-            service = await _context.Services.FindAsync(new object[] { dto.ServiceId.Value }, cancellationToken);
-            if (service == null)
-                return BadRequest($"Service with ID {dto.ServiceId} not found");
+            var result = await _workplaceService.BulkCreateAsync(dto, cancellationToken);
+            
+            _logger.LogInformation("Bulk workplace creation completed. Success: {Success}, Errors: {Errors}",
+                result.SuccessCount, result.FailureCount);
+
+            return Ok(new BulkCreateWorkplacesResultDto(
+                dto.Count,
+                result.SuccessCount,
+                result.FailureCount,
+                result.CreatedWorkplaces.Select(w => new BulkCreateWorkplaceItemResult(
+                    w.Id, w.Code, w.Name, true, null)).ToList()
+                    .Concat(result.Errors.Select(e => new BulkCreateWorkplaceItemResult(
+                        null, "", "", false, e))).ToList()
+            ));
         }
-
-        if (dto.Count < 1 || dto.Count > 100)
-            return BadRequest("Count must be between 1 and 100");
-
-        if (string.IsNullOrWhiteSpace(dto.CodePrefix))
-            return BadRequest("CodePrefix is required");
-
-        if (string.IsNullOrWhiteSpace(dto.NameTemplate))
-            return BadRequest("NameTemplate is required (use {n} for number placeholder)");
-
-        var existingCodes = (await _context.PhysicalWorkplaces
-            .Where(pw => pw.BuildingId == dto.BuildingId)
-            .Select(pw => pw.Code.ToUpperInvariant())
-            .ToListAsync(cancellationToken)).ToHashSet();
-
-        var results = new List<BulkCreateWorkplaceItemResult>();
-
-        for (int i = 0; i < dto.Count; i++)
+        catch (InvalidOperationException ex)
         {
-            var number = dto.StartNumber + i;
-            var code = $"{dto.CodePrefix}{number:D2}";
-            var name = dto.NameTemplate.Replace("{n}", number.ToString());
-
-            if (existingCodes.Contains(code.ToUpperInvariant()))
-            {
-                results.Add(new BulkCreateWorkplaceItemResult(null, code, name, false,
-                    $"Workplace with code '{code}' already exists"));
-                continue;
-            }
-
-            var workplace = new PhysicalWorkplace
-            {
-                Code = code,
-                Name = name,
-                BuildingId = dto.BuildingId,
-                ServiceId = dto.ServiceId,
-                Floor = dto.Floor,
-                Room = dto.Room,
-                Type = dto.Type,
-                MonitorCount = dto.MonitorCount,
-                HasDockingStation = dto.HasDockingStation,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            try
-            {
-                _context.PhysicalWorkplaces.Add(workplace);
-                await _context.SaveChangesAsync(cancellationToken);
-                results.Add(new BulkCreateWorkplaceItemResult(workplace.Id, code, name, true, null));
-                existingCodes.Add(code.ToUpperInvariant());
-            }
-            catch (Exception ex)
-            {
-                results.Add(new BulkCreateWorkplaceItemResult(null, code, name, false, ex.Message));
-            }
+            return BadRequest(ex.Message);
         }
-
-        var successCount = results.Count(r => r.Success);
-        var errorCount = results.Count(r => !r.Success);
-
-        _logger.LogInformation("Bulk workplace creation completed. Building: {Building}, Success: {Success}, Errors: {Errors}",
-            building.Name, successCount, errorCount);
-
-        return Ok(new BulkCreateWorkplacesResultDto(dto.Count, successCount, errorCount, results));
     }
 
     // ============================================================

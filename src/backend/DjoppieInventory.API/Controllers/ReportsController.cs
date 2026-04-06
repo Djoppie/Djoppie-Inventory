@@ -19,15 +19,18 @@ namespace DjoppieInventory.API.Controllers;
 [Authorize]
 public class ReportsController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IReportService _reportService;
+    private readonly ApplicationDbContext _context; // Keep for endpoints not yet migrated to service
     private readonly ILicenseService _licenseService;
     private readonly ILogger<ReportsController> _logger;
 
     public ReportsController(
+        IReportService reportService,
         ApplicationDbContext context,
         ILicenseService licenseService,
         ILogger<ReportsController> logger)
     {
+        _reportService = reportService;
         _context = context;
         _licenseService = licenseService;
         _logger = logger;
@@ -1194,24 +1197,24 @@ public class ReportsController : ControllerBase
             .ToListAsync(cancellationToken);
 
         var services = workplaces
-            .Where(w => w.Service != null)
-            .GroupBy(w => w.Service!)
+            .Where(w => w.ServiceId.HasValue)
+            .GroupBy(w => w.ServiceId!.Value)
             .Select(g => new FilterOptionDto
             {
-                Id = g.Key.Id,
-                Name = g.Key.Name,
+                Id = g.Key,
+                Name = g.First().Service!.Name,
                 Count = g.Count()
             })
             .OrderBy(f => f.Name)
             .ToList();
 
         var buildings = workplaces
-            .Where(w => w.Building != null)
-            .GroupBy(w => w.Building!)
+            .Where(w => w.BuildingId.HasValue)
+            .GroupBy(w => w.BuildingId!.Value)
             .Select(g => new FilterOptionDto
             {
-                Id = g.Key.Id,
-                Name = g.Key.Name,
+                Id = g.Key,
+                Name = g.First().Building!.Name,
                 Count = g.Count()
             })
             .OrderBy(f => f.Name)
