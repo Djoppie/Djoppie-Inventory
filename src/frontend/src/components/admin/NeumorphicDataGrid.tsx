@@ -372,6 +372,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         getRowClassName={getRowClass}
         slots={{
           toolbar: CustomToolbar,
+          ...(!checkboxSelection && { footer: () => null }),
         }}
         slotProps={{
           toolbar: {
