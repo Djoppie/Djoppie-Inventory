@@ -357,12 +357,13 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         autoHeight={autoHeight}
         checkboxSelection={checkboxSelection}
         rowSelectionModel={rowSelectionModel || []}
-        onRowSelectionModelChange={onRowSelectionModelChange}
+        onRowSelectionModelChange={onRowSelectionModelChange || (() => {})}
         {...(columnVisibilityModel && { columnVisibilityModel })}
         disableRowSelectionOnClick={!onRowClick}
         {...(onRowClick && { onRowClick: handleRowClick })}
         initialState={{
           pagination: { paginationModel },
+          rowSelection: rowSelectionModel || [],
         }}
         pageSizeOptions={[10, 15, 25, 50]}
         getRowClassName={getRowClass}
