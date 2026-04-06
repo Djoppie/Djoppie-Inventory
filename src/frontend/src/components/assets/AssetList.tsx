@@ -69,6 +69,7 @@ const AssetList = ({
         selectable={selectable}
         selectedAssetIds={selectedAssetIds}
         onSelectionChange={onSelectionChange}
+        onSelectAll={onSelectAll}
       />
     );
   }
