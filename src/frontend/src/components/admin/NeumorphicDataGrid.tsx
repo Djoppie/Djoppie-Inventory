@@ -309,18 +309,10 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
     [initialPageSize]
   );
 
-  // Build initialState with conditional rowSelection
-  const gridInitialState = useMemo(() => {
-    const state: any = {
-      pagination: { paginationModel },
-    };
-    // Only add rowSelection to initialState if checkboxSelection is enabled
-    // This ensures the state slice exists when footer tries to access it
-    if (checkboxSelection) {
-      state.rowSelection = {};
-    }
-    return state;
-  }, [paginationModel, checkboxSelection]);
+  // Build initialState - do NOT include rowSelection when using controlled rowSelectionModel
+  const gridInitialState = useMemo(() => ({
+    pagination: { paginationModel },
+  }), [paginationModel]);
 
   // Memoize row click handler
   const handleRowClick = useCallback(
@@ -383,7 +375,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         getRowClassName={getRowClass}
         slots={{
           toolbar: CustomToolbar,
-          ...(!checkboxSelection && { footer: () => null }),
+          footer: () => null,
         }}
         slotProps={{
           toolbar: {
