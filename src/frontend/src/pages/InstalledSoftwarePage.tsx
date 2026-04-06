@@ -9,13 +9,6 @@ import {
   InputAdornment,
   IconButton,
   Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
   Chip,
   Menu,
   MenuItem,
@@ -26,9 +19,12 @@ import {
   alpha,
   useTheme,
   useMediaQuery,
+  Grid,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
+import NeumorphicDataGrid from '../components/admin/NeumorphicDataGrid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AppsIcon from '@mui/icons-material/Apps';
 import SearchIcon from '@mui/icons-material/Search';
@@ -53,7 +49,6 @@ import {
   InstalledSoftware,
   SoftwareCategory,
   SoftwareFilters,
-  SoftwareSortOption,
   DeviceHealth,
 } from '../types/software.types';
 import { softwareApi } from '../api/software.api';
@@ -151,7 +146,6 @@ const InstalledSoftwarePage = () => {
     publisher: 'all',
   });
 
-  const [sortBy, setSortBy] = useState<SoftwareSortOption>('name-asc');
   const [categoryMenuAnchor, setCategoryMenuAnchor] = useState<null | HTMLElement>(null);
   const [publisherMenuAnchor, setPublisherMenuAnchor] = useState<null | HTMLElement>(null);
 
@@ -217,8 +211,8 @@ const InstalledSoftwarePage = () => {
     return Array.from(uniquePublishers).sort();
   }, [software]);
 
-  // Apply filters and sorting
-  const filteredAndSortedSoftware = useMemo(() => {
+  // Apply filters (sorting handled by DataGrid)
+  const filteredSoftware = useMemo(() => {
     let result = [...software];
 
     // Apply search filter
@@ -242,44 +236,9 @@ const InstalledSoftwarePage = () => {
       result = result.filter((s) => s.publisher === filters.publisher);
     }
 
-    // Apply sorting
-    switch (sortBy) {
-      case 'name-asc':
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'name-desc':
-        result.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case 'publisher-asc':
-        result.sort((a, b) => a.publisher.localeCompare(b.publisher));
-        break;
-      case 'publisher-desc':
-        result.sort((a, b) => b.publisher.localeCompare(a.publisher));
-        break;
-      case 'date-newest':
-        result.sort((a, b) => {
-          if (!a.installDate) return 1;
-          if (!b.installDate) return -1;
-          return new Date(b.installDate).getTime() - new Date(a.installDate).getTime();
-        });
-        break;
-      case 'date-oldest':
-        result.sort((a, b) => {
-          if (!a.installDate) return 1;
-          if (!b.installDate) return -1;
-          return new Date(a.installDate).getTime() - new Date(b.installDate).getTime();
-        });
-        break;
-      case 'size-asc':
-        result.sort((a, b) => (a.size || 0) - (b.size || 0));
-        break;
-      case 'size-desc':
-        result.sort((a, b) => (b.size || 0) - (a.size || 0));
-        break;
-    }
-
+    // Add id field for DataGrid (software already has id from Intune)
     return result;
-  }, [software, filters, sortBy]);
+  }, [software, filters]);
 
   // Calculate statistics
   const totalSize = useMemo(() => {
@@ -297,7 +256,7 @@ const InstalledSoftwarePage = () => {
 
   const handleExport = () => {
     try {
-      const blob = softwareApi.exportSoftwareToCSV(filteredAndSortedSoftware);
+      const blob = softwareApi.exportSoftwareToCSV(filteredSoftware);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -311,9 +270,247 @@ const InstalledSoftwarePage = () => {
     }
   };
 
-  const handleSortChange = (option: SoftwareSortOption) => {
-    setSortBy(option);
-  };
+  // Column definitions for DataGrid
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'name',
+      headerName: 'Application Name',
+      width: 300,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams<InstalledSoftware>) => (
+        <Typography variant="body2" fontWeight={600} sx={{ color: ASSET_COLOR }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'version',
+      headerName: 'Version',
+      width: 140,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'text.secondary' }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'publisher',
+      headerName: 'Publisher',
+      width: 200,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" color="text.secondary">
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'category',
+      headerName: 'Category',
+      width: 160,
+      renderCell: (params: GridRenderCellParams<InstalledSoftware>) => {
+        if (!params.value) return null;
+        return (
+          <Chip
+            label={params.value}
+            size="small"
+            sx={{
+              height: 22,
+              bgcolor: alpha(getCategoryColor(params.value), 0.15),
+              color: getCategoryColor(params.value),
+              border: '1px solid',
+              borderColor: alpha(getCategoryColor(params.value), 0.3),
+              fontWeight: 600,
+              fontSize: '0.7rem',
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'installDate',
+      headerName: 'Install Date',
+      width: 130,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" color="text.secondary">
+          {formatDate(params.value)}
+        </Typography>
+      ),
+    },
+    {
+      field: 'size',
+      headerName: 'Size',
+      width: 110,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'text.secondary' }}>
+          {formatSize(params.value)}
+        </Typography>
+      ),
+    },
+  ], []);
+
+  // Advanced filters component
+  const advancedFilters = useMemo(() => (
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Search */}
+        <Box sx={{ flex: '1 1 300px', maxWidth: 500 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search software by name, publisher, or version..."
+            value={filters.searchQuery}
+            onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: filters.searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setFilters({ ...filters, searchQuery: '' })}
+                    edge="end"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': {
+                  borderColor: 'primary.main',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'primary.main',
+                },
+              },
+            }}
+          />
+        </Box>
+
+        {/* Filter Buttons */}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {/* Category Filter */}
+          <Tooltip title="Filter by category">
+            <IconButton
+              onClick={(e) => setCategoryMenuAnchor(e.currentTarget)}
+              sx={{
+                border: '1px solid',
+                borderColor: filters.category !== 'all' ? 'primary.main' : 'divider',
+                borderRadius: 2,
+                color: filters.category !== 'all' ? 'primary.main' : 'inherit',
+                '&:hover': {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 119, 0, 0.1)'
+                      : 'rgba(255, 119, 0, 0.05)',
+                  borderColor: 'primary.main',
+                },
+              }}
+            >
+              {filters.category !== 'all' ? <CheckIcon /> : <CategoryIcon />}
+            </IconButton>
+          </Tooltip>
+
+          {/* Publisher Filter */}
+          <Tooltip title="Filter by publisher">
+            <IconButton
+              onClick={(e) => setPublisherMenuAnchor(e.currentTarget)}
+              sx={{
+                border: '1px solid',
+                borderColor: filters.publisher !== 'all' ? 'primary.main' : 'divider',
+                borderRadius: 2,
+                color: filters.publisher !== 'all' ? 'primary.main' : 'inherit',
+                '&:hover': {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(255, 119, 0, 0.1)'
+                      : 'rgba(255, 119, 0, 0.05)',
+                  borderColor: 'primary.main',
+                },
+              }}
+            >
+              {filters.publisher !== 'all' ? <CheckIcon /> : <BusinessIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
+
+      {/* Active Filters Display */}
+      {(filters.searchQuery || filters.category !== 'all' || filters.publisher !== 'all') && (
+        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            Active filters:
+          </Typography>
+          {filters.searchQuery && (
+            <Chip
+              label={`Search: "${filters.searchQuery}"`}
+              onDelete={() => setFilters({ ...filters, searchQuery: '' })}
+              size="small"
+              sx={{
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.2)'
+                    : 'rgba(255, 119, 0, 0.1)',
+                color: 'primary.main',
+                border: '1px solid',
+                borderColor: 'primary.main',
+              }}
+            />
+          )}
+          {filters.category !== 'all' && (
+            <Chip
+              label={`Category: ${filters.category}`}
+              onDelete={() => setFilters({ ...filters, category: 'all' })}
+              size="small"
+              sx={{
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.2)'
+                    : 'rgba(255, 119, 0, 0.1)',
+                color: 'primary.main',
+                border: '1px solid',
+                borderColor: 'primary.main',
+              }}
+            />
+          )}
+          {filters.publisher !== 'all' && (
+            <Chip
+              label={`Publisher: ${filters.publisher}`}
+              onDelete={() => setFilters({ ...filters, publisher: 'all' })}
+              size="small"
+              sx={{
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 119, 0, 0.2)'
+                    : 'rgba(255, 119, 0, 0.1)',
+                color: 'primary.main',
+                border: '1px solid',
+                borderColor: 'primary.main',
+              }}
+            />
+          )}
+        </Box>
+      )}
+    </Box>
+  ), [filters]);
 
   if (isLoadingAsset) return <Loading />;
 
@@ -891,174 +1088,7 @@ const InstalledSoftwarePage = () => {
         </Card>
       </Box>
 
-      {/* Filters and Search Bar */}
-      <Paper
-        elevation={0}
-        sx={{
-          mb: 3,
-          p: 2,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          backgroundColor: (theme) =>
-            theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-          }}
-        >
-          {/* Search */}
-          <Box sx={{ flex: '1 1 300px', maxWidth: 500 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search software by name, publisher, or version..."
-              value={filters.searchQuery}
-              onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: filters.searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setFilters({ ...filters, searchQuery: '' })}
-                      edge="end"
-                    >
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  '&:hover fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
-                },
-              }}
-            />
-          </Box>
-
-          {/* Filter Buttons */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Category Filter */}
-            <Tooltip title="Filter by category">
-              <IconButton
-                onClick={(e) => setCategoryMenuAnchor(e.currentTarget)}
-                sx={{
-                  border: '1px solid',
-                  borderColor: filters.category !== 'all' ? 'primary.main' : 'divider',
-                  borderRadius: 2,
-                  color: filters.category !== 'all' ? 'primary.main' : 'inherit',
-                  '&:hover': {
-                    backgroundColor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 119, 0, 0.1)'
-                        : 'rgba(255, 119, 0, 0.05)',
-                    borderColor: 'primary.main',
-                  },
-                }}
-              >
-                {filters.category !== 'all' ? <CheckIcon /> : <CategoryIcon />}
-              </IconButton>
-            </Tooltip>
-
-            {/* Publisher Filter */}
-            <Tooltip title="Filter by publisher">
-              <IconButton
-                onClick={(e) => setPublisherMenuAnchor(e.currentTarget)}
-                sx={{
-                  border: '1px solid',
-                  borderColor: filters.publisher !== 'all' ? 'primary.main' : 'divider',
-                  borderRadius: 2,
-                  color: filters.publisher !== 'all' ? 'primary.main' : 'inherit',
-                  '&:hover': {
-                    backgroundColor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 119, 0, 0.1)'
-                        : 'rgba(255, 119, 0, 0.05)',
-                    borderColor: 'primary.main',
-                  },
-                }}
-              >
-                {filters.publisher !== 'all' ? <CheckIcon /> : <BusinessIcon />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        {/* Active Filters Display */}
-        {(filters.searchQuery || filters.category !== 'all' || filters.publisher !== 'all') && (
-          <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Active filters:
-            </Typography>
-            {filters.searchQuery && (
-              <Chip
-                label={`Search: "${filters.searchQuery}"`}
-                onDelete={() => setFilters({ ...filters, searchQuery: '' })}
-                size="small"
-                sx={{
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'rgba(255, 119, 0, 0.1)',
-                  color: 'primary.main',
-                  border: '1px solid',
-                  borderColor: 'primary.main',
-                }}
-              />
-            )}
-            {filters.category !== 'all' && (
-              <Chip
-                label={`Category: ${filters.category}`}
-                onDelete={() => setFilters({ ...filters, category: 'all' })}
-                size="small"
-                sx={{
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'rgba(255, 119, 0, 0.1)',
-                  color: 'primary.main',
-                  border: '1px solid',
-                  borderColor: 'primary.main',
-                }}
-              />
-            )}
-            {filters.publisher !== 'all' && (
-              <Chip
-                label={`Publisher: ${filters.publisher}`}
-                onDelete={() => setFilters({ ...filters, publisher: 'all' })}
-                size="small"
-                sx={{
-                  backgroundColor: (theme) =>
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(255, 119, 0, 0.2)'
-                      : 'rgba(255, 119, 0, 0.1)',
-                  color: 'primary.main',
-                  border: '1px solid',
-                  borderColor: 'primary.main',
-                }}
-              />
-            )}
-          </Box>
-        )}
-      </Paper>
+      {/* Filters moved to advancedFilters prop in NeumorphicDataGrid */}
 
       {/* Category Filter Menu */}
       <Menu
@@ -1163,252 +1193,33 @@ const InstalledSoftwarePage = () => {
       </Menu>
 
       {/* Software Table */}
-      <Card elevation={0} sx={scannerCardSx}>
-        <CardContent sx={{ p: 0 }}>
-          {isLoading ? (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Loading message="Loading installed software..." />
-            </Box>
-          ) : error ? (
-            <Alert severity="error" sx={{ m: 3 }}>
-              {error}
-            </Alert>
-          ) : filteredAndSortedSoftware.length === 0 ? (
-            <Box sx={{ p: 8, textAlign: 'center' }}>
-              <AppsIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No software found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {filters.searchQuery || filters.category !== 'all' || filters.publisher !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'No installed software data available for this asset'}
-              </Typography>
-            </Box>
-          ) : isTablet ? (
-            /* Mobile/Tablet: Card View */
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, p: 2 }}>
-              {filteredAndSortedSoftware.map((app) => (
-                <Paper
-                  key={app.id}
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      borderColor: ASSET_COLOR,
-                      bgcolor: (thm) =>
-                        thm.palette.mode === 'dark'
-                          ? alpha(ASSET_COLOR, 0.04)
-                          : alpha(ASSET_COLOR, 0.02),
-                    },
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                    <Typography fontWeight={600} sx={{ color: ASSET_COLOR, fontSize: '0.9rem' }}>
-                      {app.name}
-                    </Typography>
-                    {app.category && (
-                      <Chip
-                        label={app.category}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          bgcolor: alpha(getCategoryColor(app.category), 0.15),
-                          color: getCategoryColor(app.category),
-                          border: '1px solid',
-                          borderColor: alpha(getCategoryColor(app.category), 0.3),
-                          fontWeight: 600,
-                          fontSize: '0.65rem',
-                        }}
-                      />
-                    )}
-                  </Stack>
-
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                    {app.publisher}
-                  </Typography>
-
-                  <Stack direction="row" spacing={2} mt={1.5} flexWrap="wrap" gap={1}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                        Version
-                      </Typography>
-                      <Typography variant="body2" fontFamily="monospace" fontSize="0.8rem">
-                        {app.version}
-                      </Typography>
-                    </Box>
-                    {app.installDate && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          Installed
-                        </Typography>
-                        <Typography variant="body2" fontSize="0.8rem">
-                          {formatDate(app.installDate)}
-                        </Typography>
-                      </Box>
-                    )}
-                    {app.size && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          Size
-                        </Typography>
-                        <Typography variant="body2" fontFamily="monospace" fontSize="0.8rem">
-                          {formatSize(app.size)}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </Paper>
-              ))}
-            </Box>
-          ) : (
-            /* Desktop: Table View */
-            <TableContainer
-              component={Paper}
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Table size="small">
-                <TableHead>
-                  <TableRow
-                    sx={{
-                      bgcolor: (thm) =>
-                        thm.palette.mode === 'dark'
-                          ? alpha(ASSET_COLOR, 0.08)
-                          : alpha(ASSET_COLOR, 0.04),
-                      borderBottom: '2px solid',
-                      borderColor: ASSET_COLOR,
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      <TableSortLabel
-                        active={sortBy === 'name-asc' || sortBy === 'name-desc'}
-                        direction={sortBy === 'name-asc' ? 'asc' : 'desc'}
-                        onClick={() =>
-                          handleSortChange(sortBy === 'name-asc' ? 'name-desc' : 'name-asc')
-                        }
-                      >
-                        Application Name
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Version
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      <TableSortLabel
-                        active={sortBy === 'publisher-asc' || sortBy === 'publisher-desc'}
-                        direction={sortBy === 'publisher-asc' ? 'asc' : 'desc'}
-                        onClick={() =>
-                          handleSortChange(
-                            sortBy === 'publisher-asc' ? 'publisher-desc' : 'publisher-asc'
-                          )
-                        }
-                      >
-                        Publisher
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Category
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      <TableSortLabel
-                        active={sortBy === 'date-newest' || sortBy === 'date-oldest'}
-                        direction={sortBy === 'date-newest' ? 'desc' : 'asc'}
-                        onClick={() =>
-                          handleSortChange(sortBy === 'date-newest' ? 'date-oldest' : 'date-newest')
-                        }
-                      >
-                        Install Date
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', py: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      <TableSortLabel
-                        active={sortBy === 'size-asc' || sortBy === 'size-desc'}
-                        direction={sortBy === 'size-asc' ? 'asc' : 'desc'}
-                        onClick={() =>
-                          handleSortChange(sortBy === 'size-asc' ? 'size-desc' : 'size-asc')
-                        }
-                      >
-                        Size
-                      </TableSortLabel>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredAndSortedSoftware.map((app, index) => (
-                    <TableRow
-                      key={app.id}
-                      sx={{
-                        bgcolor: (thm) =>
-                          index % 2 === 0
-                            ? 'transparent'
-                            : thm.palette.mode === 'dark'
-                              ? 'rgba(255, 255, 255, 0.02)'
-                              : 'rgba(0, 0, 0, 0.02)',
-                        '&:hover': {
-                          bgcolor: (thm) =>
-                            thm.palette.mode === 'dark'
-                              ? alpha(ASSET_COLOR, 0.08)
-                              : alpha(ASSET_COLOR, 0.04),
-                        },
-                        transition: 'background-color 0.15s ease',
-                      }}
-                    >
-                      <TableCell sx={{ py: 1, fontSize: '0.85rem', fontWeight: 600, color: ASSET_COLOR }}>
-                        {app.name}
-                      </TableCell>
-                      <TableCell sx={{ py: 1, fontSize: '0.8rem', fontFamily: 'monospace', color: 'text.secondary' }}>
-                        {app.version}
-                      </TableCell>
-                      <TableCell sx={{ py: 1, fontSize: '0.85rem', color: 'text.secondary' }}>
-                        {app.publisher}
-                      </TableCell>
-                      <TableCell sx={{ py: 1 }}>
-                        {app.category && (
-                          <Chip
-                            label={app.category}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              bgcolor: alpha(getCategoryColor(app.category), 0.15),
-                              color: getCategoryColor(app.category),
-                              border: '1px solid',
-                              borderColor: alpha(getCategoryColor(app.category), 0.3),
-                              fontWeight: 600,
-                              fontSize: '0.7rem',
-                            }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell align="right" sx={{ py: 1, fontSize: '0.85rem', color: 'text.secondary' }}>
-                        {formatDate(app.installDate)}
-                      </TableCell>
-                      <TableCell align="right" sx={{ py: 1, fontSize: '0.8rem', fontFamily: 'monospace', color: 'text.secondary' }}>
-                        {formatSize(app.size)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+      {isLoading ? (
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <Loading message="Loading installed software..." />
+        </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ m: 3 }}>
+          {error}
+        </Alert>
+      ) : (
+        <NeumorphicDataGrid
+          rows={filteredSoftware}
+          columns={columns}
+          loading={isLoading}
+          accentColor={ASSET_COLOR}
+          advancedFilters={advancedFilters}
+          exportable
+          onExport={handleExport}
+          initialPageSize={25}
+          autoHeight
+        />
+      )}
 
       {/* Results Count */}
-      {!isLoading && !error && filteredAndSortedSoftware.length > 0 && (
+      {!isLoading && !error && filteredSoftware.length > 0 && (
         <Box sx={{ mt: 2, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            Showing {filteredAndSortedSoftware.length} of {software.length} applications
+            Showing {filteredSoftware.length} of {software.length} applications
           </Typography>
         </Box>
       )}
