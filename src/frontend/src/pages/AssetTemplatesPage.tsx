@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -14,12 +14,6 @@ import {
   IconButton,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Fab,
   Stack,
   Snackbar,
@@ -34,6 +28,7 @@ import {
   MenuItem,
   Tooltip,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
@@ -50,6 +45,7 @@ import Loading from '../components/common/Loading';
 import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
 import AssetTypeSelect from '../components/common/AssetTypeSelect';
 import ServiceSelect from '../components/common/ServiceSelect';
+import NeumorphicDataGrid from '../components/admin/NeumorphicDataGrid';
 import CategoryIcon from '@mui/icons-material/Category';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -310,6 +306,69 @@ const AssetTemplatesPage = () => {
 
   const templateCount = templates?.length || 0;
 
+  // Column definitions for DataGrid
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'templateName',
+      headerName: t('templates.templateName'),
+      width: 200,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography
+          fontWeight={600}
+          sx={{ fontSize: '0.85rem', color: ASSET_COLOR }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'assetName',
+      headerName: t('templates.assetName'),
+      width: 150,
+      flex: 1,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'assetType',
+      headerName: t('templates.assetType'),
+      width: 130,
+      valueGetter: (_value, row) => row.assetType?.name || '-',
+    },
+    {
+      field: 'brand',
+      headerName: t('templates.brand'),
+      width: 120,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'model',
+      headerName: t('templates.model'),
+      width: 120,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'owner',
+      headerName: t('templates.owner'),
+      width: 150,
+      flex: 1,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'service',
+      headerName: t('templates.service'),
+      width: 130,
+      valueGetter: (_value, row) => row.service?.name || '-',
+    },
+    {
+      field: 'installationLocation',
+      headerName: t('templates.installationLocation'),
+      width: 180,
+      flex: 1,
+      valueGetter: (value) => value || '-',
+    },
+  ], [t]);
+
   return (
     <Box sx={{ pb: 10 }}>
       {/* Back Button - Outside card */}
@@ -547,132 +606,16 @@ const AssetTemplatesPage = () => {
             </Box>
           )}
 
-          {/* Desktop: Table View */}
+          {/* Desktop: DataGrid View */}
           {!isTablet && (
-            <TableContainer
-              component={Paper}
-              elevation={0}
-              sx={{
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Table size="small">
-                <TableHead>
-                  <TableRow
-                    sx={{
-                      backgroundColor: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? alpha(ASSET_COLOR, 0.08)
-                          : alpha(ASSET_COLOR, 0.04),
-                      borderBottom: '2px solid',
-                      borderColor: ASSET_COLOR,
-                    }}
-                  >
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>
-                      {t('templates.templateName')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>
-                      {t('templates.assetName')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>
-                      {t('templates.assetType')}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.brand')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.model')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.owner')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.service')}</TableCell>
-                    <TableCell sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5 }}>{t('templates.installationLocation')}</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1.5, width: 100 }}>
-                      {t('common.actions')}
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {templates?.map((template, index) => (
-                    <TableRow
-                      key={template.id}
-                      sx={{
-                        backgroundColor: (theme) =>
-                          index % 2 === 0
-                            ? 'transparent'
-                            : theme.palette.mode === 'dark'
-                              ? 'rgba(255, 255, 255, 0.02)'
-                              : 'rgba(0, 0, 0, 0.02)',
-                        '&:hover': {
-                          backgroundColor: (theme) =>
-                            theme.palette.mode === 'dark'
-                              ? alpha(ASSET_COLOR, 0.08)
-                              : alpha(ASSET_COLOR, 0.04),
-                        },
-                        transition: 'background-color 0.15s ease',
-                      }}
-                    >
-                      <TableCell sx={{ fontWeight: 600, color: ASSET_COLOR, fontSize: '0.85rem', py: 1 }}>
-                        {template.templateName}
-                      </TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.assetName || '-'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.assetType?.name || '-'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.brand || '-'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.model || '-'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.owner || '-'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.service?.name || '-'}</TableCell>
-                      <TableCell sx={{ fontSize: '0.85rem', py: 1 }}>{template.installationLocation || '-'}</TableCell>
-                      <TableCell align="center" sx={{ py: 1 }}>
-                        <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <Tooltip title={t('common.edit')} arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDialog(template)}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 0.75,
-                                color: ASSET_COLOR,
-                                bgcolor: 'transparent',
-                                border: '1px solid',
-                                borderColor: alpha(ASSET_COLOR, 0.35),
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  bgcolor: alpha(ASSET_COLOR, 0.08),
-                                  borderColor: ASSET_COLOR,
-                                },
-                              }}
-                            >
-                              <EditIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title={t('common.delete')} arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDeleteDialog(template)}
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 0.75,
-                                color: '#EF5350',
-                                bgcolor: 'transparent',
-                                border: '1px solid',
-                                borderColor: alpha('#EF5350', 0.35),
-                                transition: 'all 0.15s ease',
-                                '&:hover': {
-                                  bgcolor: alpha('#EF5350', 0.08),
-                                  borderColor: '#EF5350',
-                                },
-                              }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 15 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <NeumorphicDataGrid
+              rows={templates || []}
+              columns={columns}
+              loading={isLoading}
+              accentColor={ASSET_COLOR}
+              onEdit={handleOpenDialog}
+              onDelete={handleOpenDeleteDialog}
+            />
           )}
         </>
       )}
