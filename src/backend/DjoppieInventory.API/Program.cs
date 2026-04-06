@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using DjoppieInventory.API.Extensions;
 using DjoppieInventory.API.Middleware;
+using DjoppieInventory.API.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,16 @@ builder.Configuration.AddAzureKeyVaultConfiguration(builder.Environment);
 builder.Services.AddApplicationInsightsTelemetry();
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Ensure camel case property naming (e.g., EventDate -> eventDate)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Use custom DateTime converter to ensure UTC with 'Z' suffix (prevents "Invalid Date" in JavaScript)
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+        // Use ISO 8601 date format for enums
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // Configure Authentication and Authorization with Microsoft Entra ID
 builder.Services.AddEntraIdAuthentication(builder.Configuration);

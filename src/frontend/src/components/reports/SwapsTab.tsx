@@ -1,298 +1,284 @@
 /**
- * SwapsTab - Swap History Report
+ * SwapsTab - Asset Change History Report
  *
- * Displays asset swap/deployment history with:
- * - Summary statistics by month/technician
- * - Date range filters
- * - Detailed swap records
- * - Export functionality
+ * Displays asset change history - every time an asset changes status or owner.
+ * Shows asset-focused metrics instead of technician-focused metrics.
  */
 
 import { useState, useMemo } from 'react';
 import {
   Box,
-  Typography,
   Paper,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Tooltip,
+  Typography,
+  Grid,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  TableSortLabel,
-  TablePagination,
-  Chip,
+  TextField,
+  MenuItem,
+  Button,
   CircularProgress,
   Alert,
+  Chip,
+  Tooltip,
+  TableSortLabel,
   alpha,
-  useTheme,
-  Grid
+  Card,
+  CardContent,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import DownloadIcon from '@mui/icons-material/Download';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import PersonIcon from '@mui/icons-material/Person';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { visuallyHidden } from '@mui/utils';
+import {
+  Timeline as TimelineIcon,
+  SwapHoriz as SwapHorizIcon,
+  Person as PersonIcon,
+  LocationOn as LocationIcon,
+  Inventory as InventoryIcon,
+  TrendingUp as TrendingUpIcon,
+  Download as DownloadIcon,
+} from '@mui/icons-material';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import type { AssetChangeHistoryItem, AssetChangeHistorySummary } from '../../types/report.types';
+import { getAssetChangeHistory, getAssetChangeHistorySummary, exportAssetChangeHistory } from '../../api/reports.api';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
-import { useSwapHistory, useSwapHistorySummary, useExportSwapHistory } from '../../hooks/reports';
-import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
-import type { SwapHistoryFilters } from '../../types/report.types';
-
-// Table columns
-type OrderBy = 'swapDate' | 'userName' | 'technicianName' | 'oldAssetCode' | 'newAssetCode' | 'serviceName';
-
-interface HeadCell {
-  id: OrderBy;
-  label: string;
-  numeric: boolean;
-  width?: string | number;
-}
-
-const headCells: HeadCell[] = [
-  { id: 'swapDate', label: 'Datum', numeric: false, width: 120 },
-  { id: 'userName', label: 'Gebruiker', numeric: false },
-  { id: 'oldAssetCode', label: 'Oud Asset', numeric: false, width: 150 },
-  { id: 'newAssetCode', label: 'Nieuw Asset', numeric: false, width: 150 },
-  { id: 'technicianName', label: 'Technicus', numeric: false },
-  { id: 'serviceName', label: 'Dienst', numeric: false, width: 140 },
-];
+type SortField = 'eventDate' | 'assetCode' | 'eventType' | 'currentOwner' | 'serviceName';
+type SortOrder = 'asc' | 'desc';
 
 const SwapsTab = () => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
-  const { bgBase } = getNeumorphColors(isDark);
-
-  // Default date range: last 30 days
-  const defaultDateFrom = useMemo(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    return date.toISOString().split('T')[0];
-  }, []);
-
-  const defaultDateTo = useMemo(() => {
-    return new Date().toISOString().split('T')[0];
-  }, []);
-
-  // Filters state
-  const [filters, setFilters] = useState<SwapHistoryFilters>({
-    dateFrom: defaultDateFrom,
-    dateTo: defaultDateTo,
-  });
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [serviceFilter, setServiceFilter] = useState<number | ''>('');
+  const [eventTypeFilter, setEventTypeFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>('eventDate');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  // Table state
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-  const [orderBy, setOrderBy] = useState<OrderBy>('swapDate');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  // Fetch asset change history
+  const { data: history = [], isLoading, error } = useQuery<AssetChangeHistoryItem[]>({
+    queryKey: ['assetChangeHistory', { dateFrom, dateTo, serviceFilter, eventTypeFilter, searchQuery }],
+    queryFn: async () => {
+      const data = await getAssetChangeHistory({
+        dateFrom,
+        dateTo,
+        serviceId: serviceFilter || undefined,
+        eventType: eventTypeFilter || undefined,
+        searchQuery: searchQuery || undefined,
+      });
+      return data;
+    },
+  });
 
-  // Queries
-  const { data: items = [], isLoading, error } = useSwapHistory(filters);
-  const { data: summary } = useSwapHistorySummary(filters);
-  const exportMutation = useExportSwapHistory();
+  // Fetch summary statistics
+  const { data: summary } = useQuery<AssetChangeHistorySummary>({
+    queryKey: ['assetChangeHistorySummary', { dateFrom, dateTo }],
+    queryFn: async () => {
+      const data = await getAssetChangeHistorySummary({ dateFrom, dateTo });
+      return data;
+    },
+  });
 
-  // Filter by search
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) return items;
-    const query = searchQuery.toLowerCase();
-    return items.filter(item =>
-      item.userName?.toLowerCase().includes(query) ||
-      item.technicianName?.toLowerCase().includes(query) ||
-      item.oldAssetCode?.toLowerCase().includes(query) ||
-      item.newAssetCode?.toLowerCase().includes(query) ||
-      item.serviceName?.toLowerCase().includes(query)
-    );
-  }, [items, searchQuery]);
+  // Export mutation
+  const exportMutation = useMutation({
+    mutationFn: () => exportAssetChangeHistory({ dateFrom, dateTo, serviceId: serviceFilter || undefined }),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `asset-geschiedenis-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+  });
 
-  // Sorting
-  const handleRequestSort = (property: OrderBy) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
+  // Get unique services for filter dropdown
+  const services = useMemo(() => {
+    const serviceSet = new Set<string>();
+    history.forEach(item => {
+      if (item.serviceName) serviceSet.add(item.serviceName);
+    });
+    return Array.from(serviceSet).sort();
+  }, [history]);
 
-  // Sort and paginate data
-  const sortedItems = useMemo(() => {
-    return [...filteredItems].sort((a, b) => {
-      const aValue = a[orderBy] || '';
-      const bValue = b[orderBy] || '';
+  // Get unique event types for filter dropdown
+  const eventTypes = useMemo(() => {
+    const typeSet = new Set<string>();
+    history.forEach(item => {
+      if (item.eventTypeDisplay) typeSet.add(item.eventTypeDisplay);
+    });
+    return Array.from(typeSet).sort();
+  }, [history]);
 
-      if (orderBy === 'swapDate') {
-        const dateA = new Date(aValue as string).getTime();
-        const dateB = new Date(bValue as string).getTime();
-        return order === 'asc' ? dateA - dateB : dateB - dateA;
+  // Sort history
+  const sortedHistory = useMemo(() => {
+    const sorted = [...history];
+    sorted.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'eventDate':
+          comparison = new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
+          break;
+        case 'assetCode':
+          comparison = a.assetCode.localeCompare(b.assetCode);
+          break;
+        case 'eventType':
+          comparison = a.eventTypeDisplay.localeCompare(b.eventTypeDisplay);
+          break;
+        case 'currentOwner':
+          comparison = (a.currentOwner || '').localeCompare(b.currentOwner || '');
+          break;
+        case 'serviceName':
+          comparison = (a.serviceName || '').localeCompare(b.serviceName || '');
+          break;
       }
 
-      const comparison = String(aValue).localeCompare(String(bValue));
-      return order === 'asc' ? comparison : -comparison;
+      return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredItems, order, orderBy]);
+    return sorted;
+  }, [history, sortField, sortOrder]);
 
-  const paginatedItems = useMemo(() => {
-    return sortedItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [sortedItems, page, rowsPerPage]);
-
-  // Pagination handlers
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
   };
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  // Filter handlers
-  const handleDateFromChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({ ...prev, dateFrom: event.target.value }));
-    setPage(0);
-  };
-
-  const handleDateToChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters(prev => ({ ...prev, dateTo: event.target.value }));
-    setPage(0);
-  };
-
-  // Export
-  const handleExport = () => {
-    exportMutation.mutate(filters);
-  };
-
-  // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-NL', {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('nl-NL', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Fout bij laden van swap geschiedenis: {(error as Error).message}
-      </Alert>
-    );
-  }
+  const getEventTypeColor = (eventType?: string): string => {
+    if (!eventType) return '#757575';
+    if (eventType.includes('Status')) return '#2196F3';
+    if (eventType.includes('Eigenaar')) return '#9C27B0';
+    if (eventType.includes('Locatie')) return '#FF9800';
+    if (eventType.includes('Onboarding')) return '#4CAF50';
+    if (eventType.includes('Offboarding')) return '#F44336';
+    return '#757575';
+  };
 
   return (
     <Box>
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-            }}
-          >
-            <SwapHorizIcon sx={{ fontSize: 28, color: '#26A69A', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#26A69A' }}>
-              {summary?.totalSwaps || 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Totaal Swaps
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-            }}
-          >
-            <PersonIcon sx={{ fontSize: 28, color: '#7E57C2', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#7E57C2' }}>
-              {summary?.byTechnician ? Object.keys(summary.byTechnician).length : 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Technici
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-            }}
-          >
-            <CalendarMonthIcon sx={{ fontSize: 28, color: '#FF7700', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#FF7700' }}>
-              {summary?.byMonth?.length || 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Maanden
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
-          <Paper
-            sx={{
-              p: 2,
-              bgcolor: bgBase,
-              boxShadow: getNeumorph(isDark, 'soft'),
-              borderRadius: 2,
-              textAlign: 'center',
-            }}
-          >
-            <TrendingUpIcon sx={{ fontSize: 28, color: '#4CAF50', mb: 0.5 }} />
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#4CAF50' }}>
-              {summary?.totalSwaps && summary.byMonth?.length
-                ? Math.round(summary.totalSwaps / summary.byMonth.length)
-                : 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Gem./Maand
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+        Asset Geschiedenis
+      </Typography>
 
-      {/* Technician Breakdown (if available) */}
-      {summary?.byTechnician && Object.keys(summary.byTechnician).length > 0 && (
+      {/* Summary Statistics Cards */}
+      {summary && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card
+              variant="outlined"
+              sx={{
+                borderColor: alpha(ASSET_COLOR, 0.3),
+                borderWidth: 2,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  borderColor: ASSET_COLOR,
+                  boxShadow: `0 4px 12px ${alpha(ASSET_COLOR, 0.2)}`,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <TimelineIcon sx={{ fontSize: 32, color: ASSET_COLOR, mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: ASSET_COLOR }}>
+                  {summary.totalChanges}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Totaal Wijzigingen
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card variant="outlined" sx={{ borderColor: '#2196F3', borderWidth: 1 }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <SwapHorizIcon sx={{ fontSize: 32, color: '#2196F3', mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#2196F3' }}>
+                  {summary.statusChanges}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Status Wijzigingen
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card variant="outlined" sx={{ borderColor: '#9C27B0', borderWidth: 1 }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <PersonIcon sx={{ fontSize: 32, color: '#9C27B0', mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#9C27B0' }}>
+                  {summary.ownerChanges}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Eigenaar Wijzigingen
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card variant="outlined" sx={{ borderColor: '#4CAF50', borderWidth: 1 }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <TrendingUpIcon sx={{ fontSize: 32, color: '#4CAF50', mb: 1 }} />
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#4CAF50' }}>
+                  {summary.activeAssets}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Actieve Assets
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Event Type Breakdown */}
+      {summary?.byEventType && Object.keys(summary.byEventType).length > 0 && (
         <Paper
           sx={{
             p: 2,
             mb: 3,
-            bgcolor: bgBase,
-            boxShadow: getNeumorph(isDark, 'soft'),
-            borderRadius: 2,
+            bgcolor: (theme) => alpha(ASSET_COLOR, theme.palette.mode === 'dark' ? 0.05 : 0.02),
+            border: '1px solid',
+            borderColor: (theme) => alpha(ASSET_COLOR, 0.1),
           }}
         >
-          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-            Per Technicus
+          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: ASSET_COLOR }}>
+            Per Gebeurtenis Type
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {Object.entries(summary.byTechnician)
+            {Object.entries(summary.byEventType)
               .sort(([, a], [, b]) => b - a)
-              .map(([technician, count]) => (
+              .map(([type, count]) => (
                 <Chip
-                  key={technician}
-                  icon={<PersonIcon />}
-                  label={`${technician}: ${count}`}
+                  key={type}
+                  label={`${type}: ${count}`}
+                  size="small"
                   sx={{
-                    bgcolor: alpha('#7E57C2', 0.1),
-                    color: '#7E57C2',
-                    '& .MuiChip-icon': { color: '#7E57C2' },
+                    bgcolor: alpha(getEventTypeColor(type), 0.1),
+                    color: getEventTypeColor(type),
+                    borderColor: getEventTypeColor(type),
+                    border: '1px solid',
+                    fontWeight: 600,
+                    fontSize: '0.75rem',
                   }}
                 />
               ))}
@@ -301,215 +287,299 @@ const SwapsTab = () => {
       )}
 
       {/* Filters */}
-      <Paper
-        sx={{
-          p: 2,
-          mb: 3,
-          bgcolor: bgBase,
-          boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2,
-        }}
-      >
+      <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Zoeken op gebruiker, technicus, asset..."
+              label="Van Datum"
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Tot Datum"
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              select
+              label="Gebeurtenis Type"
+              value={eventTypeFilter}
+              onChange={(e) => setEventTypeFilter(e.target.value)}
+            >
+              <MenuItem value="">Alle</MenuItem>
+              {eventTypes.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {type}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Zoeken"
+              placeholder="Asset code, naam, eigenaar..."
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 12, md: 2.4 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={exportMutation.isPending ? <CircularProgress size={16} /> : <DownloadIcon />}
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending}
+              sx={{
+                borderColor: ASSET_COLOR,
+                color: ASSET_COLOR,
+                '&:hover': {
+                  borderColor: ASSET_COLOR,
+                  bgcolor: alpha(ASSET_COLOR, 0.08),
+                },
               }}
-            />
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <TextField
-              fullWidth
-              size="small"
-              type="date"
-              label="Van"
-              value={filters.dateFrom || ''}
-              onChange={handleDateFromChange}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <TextField
-              fullWidth
-              size="small"
-              type="date"
-              label="Tot"
-              value={filters.dateTo || ''}
-              onChange={handleDateToChange}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 10, md: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              {filteredItems.length} resultaten
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 2, md: 1 }}>
-            <Tooltip title="Exporteer naar Excel">
-              <IconButton
-                onClick={handleExport}
-                disabled={exportMutation.isPending}
-                sx={{
-                  bgcolor: alpha('#26A69A', 0.1),
-                  '&:hover': { bgcolor: alpha('#26A69A', 0.2) },
-                }}
-              >
-                {exportMutation.isPending ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  <DownloadIcon sx={{ color: '#26A69A' }} />
-                )}
-              </IconButton>
-            </Tooltip>
+            >
+              Export CSV
+            </Button>
           </Grid>
         </Grid>
       </Paper>
 
-      {/* Data Table */}
-      <Paper
-        sx={{
-          bgcolor: bgBase,
-          boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2,
-          overflow: 'hidden',
-        }}
-      >
-        <TableContainer sx={{ maxHeight: 600 }}>
+      {/* Table */}
+      {isLoading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Fout bij het laden van asset geschiedenis: {(error as Error).message}
+        </Alert>
+      )}
+
+      {!isLoading && !error && (
+        <TableContainer
+          component={Paper}
+          sx={{
+            maxHeight: 600,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
           <Table stickyHeader size="small">
             <TableHead>
-              <TableRow>
-                {headCells.map((headCell) => (
-                  <TableCell
-                    key={headCell.id}
-                    align={headCell.numeric ? 'right' : 'left'}
-                    sortDirection={orderBy === headCell.id ? order : false}
+              <TableRow
+                sx={{
+                  '& th': {
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? alpha(ASSET_COLOR, 0.08)
+                        : alpha(ASSET_COLOR, 0.04),
+                    borderBottom: '2px solid',
+                    borderColor: ASSET_COLOR,
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    py: 1.5,
+                  },
+                }}
+              >
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'eventDate'}
+                    direction={sortField === 'eventDate' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('eventDate')}
                     sx={{
-                      width: headCell.width,
-                      fontWeight: 700,
-                      bgcolor: isDark ? 'grey.900' : 'grey.100',
+                      '&.Mui-active': { color: ASSET_COLOR },
+                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
                     }}
                   >
-                    <TableSortLabel
-                      active={orderBy === headCell.id}
-                      direction={orderBy === headCell.id ? order : 'asc'}
-                      onClick={() => handleRequestSort(headCell.id)}
-                    >
-                      {headCell.label}
-                      {orderBy === headCell.id ? (
-                        <Box component="span" sx={visuallyHidden}>
-                          {order === 'desc' ? 'sorted descending' : 'sorted ascending'}
-                        </Box>
-                      ) : null}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
+                    Datum
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'assetCode'}
+                    direction={sortField === 'assetCode' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('assetCode')}
+                    sx={{
+                      '&.Mui-active': { color: ASSET_COLOR },
+                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                    }}
+                  >
+                    Asset Code
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Asset Type</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'eventType'}
+                    direction={sortField === 'eventType' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('eventType')}
+                    sx={{
+                      '&.Mui-active': { color: ASSET_COLOR },
+                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                    }}
+                  >
+                    Gebeurtenis
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Oude Waarde</TableCell>
+                <TableCell>Nieuwe Waarde</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'currentOwner'}
+                    direction={sortField === 'currentOwner' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('currentOwner')}
+                    sx={{
+                      '&.Mui-active': { color: ASSET_COLOR },
+                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                    }}
+                  >
+                    Huidige Eigenaar
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortField === 'serviceName'}
+                    direction={sortField === 'serviceName' ? sortOrder : 'asc'}
+                    onClick={() => handleSort('serviceName')}
+                    sx={{
+                      '&.Mui-active': { color: ASSET_COLOR },
+                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
+                    }}
+                  >
+                    Dienst
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Locatie</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading ? (
+              {sortedHistory.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={headCells.length} align="center" sx={{ py: 4 }}>
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              ) : paginatedItems.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={headCells.length} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">
-                      Geen swap records gevonden
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Geen asset wijzigingen gevonden
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedItems.map((item) => (
+                sortedHistory.map((item, index) => (
                   <TableRow
                     key={item.id}
                     hover
                     sx={{
+                      bgcolor: (theme) =>
+                        index % 2 === 1
+                          ? theme.palette.mode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.02)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                          : 'transparent',
                       '&:hover': {
-                        bgcolor: alpha('#26A69A', 0.05),
+                        bgcolor: (theme) =>
+                          theme.palette.mode === 'dark'
+                            ? alpha(ASSET_COLOR, 0.08)
+                            : alpha(ASSET_COLOR, 0.04),
                       },
                     }}
                   >
                     <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
-                        {formatDate(item.swapDate)}
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        {formatDate(item.eventDate)}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">
-                        {item.userName || '-'}
-                      </Typography>
-                      {item.userEmail && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {item.userEmail}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <InventoryIcon fontSize="small" color="action" />
+                        <Tooltip title={item.assetName || item.assetCode}>
+                          <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.8rem' }}>
+                            {item.assetCode}
+                          </Typography>
+                        </Tooltip>
+                      </Box>
+                      {item.serialNumber && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          SN: {item.serialNumber}
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell>
-                      {item.oldAssetCode ? (
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        {item.assetTypeName || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={item.eventTypeDisplay}
+                        sx={{
+                          bgcolor: alpha(getEventTypeColor(item.eventTypeDisplay), 0.1),
+                          color: getEventTypeColor(item.eventTypeDisplay),
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          borderColor: getEventTypeColor(item.eventTypeDisplay),
+                          border: '1px solid',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        {item.oldValue || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        {item.newValue || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {item.currentOwner && <PersonIcon fontSize="small" color="action" />}
+                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                          {item.currentOwner || '-'}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        {item.serviceName || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {item.buildingName && <LocationIcon fontSize="small" color="action" />}
                         <Box>
-                          <Chip
-                            label={item.oldAssetCode}
-                            size="small"
-                            sx={{
-                              fontWeight: 600,
-                              bgcolor: alpha('#F44336', 0.1),
-                              color: '#F44336',
-                            }}
-                          />
-                          {item.oldAssetName && (
-                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                              {item.oldAssetName}
+                          {item.buildingName && (
+                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                              {item.buildingName}
                             </Typography>
                           )}
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.disabled">-</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {item.newAssetCode ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          {item.oldAssetCode && (
-                            <ArrowForwardIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                          {item.location && (
+                            <Typography variant="caption" color="text.secondary">
+                              {item.location}
+                            </Typography>
                           )}
-                          <Box>
-                            <Chip
-                              label={item.newAssetCode}
-                              size="small"
-                              sx={{
-                                fontWeight: 600,
-                                bgcolor: alpha('#4CAF50', 0.1),
-                                color: '#4CAF50',
-                              }}
-                            />
-                            {item.newAssetName && (
-                              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
-                                {item.newAssetName}
-                              </Typography>
-                            )}
-                          </Box>
+                          {!item.buildingName && !item.location && <Typography variant="body2">-</Typography>}
                         </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.disabled">-</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {item.technicianName || '-'}
-                    </TableCell>
-                    <TableCell>
-                      {item.serviceName || '-'}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
@@ -517,18 +587,13 @@ const SwapsTab = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          component="div"
-          count={filteredItems.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Rijen per pagina:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} van ${count}`}
-        />
-      </Paper>
+      )}
+
+      {sortedHistory.length > 0 && (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}>
+          {sortedHistory.length} wijziging{sortedHistory.length !== 1 ? 'en' : ''} weergegeven
+        </Typography>
+      )}
     </Box>
   );
 };

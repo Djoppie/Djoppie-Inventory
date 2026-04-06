@@ -252,42 +252,67 @@ export interface WorkplaceReportSummary {
   byBuilding: Record<string, { total: number; occupied: number }>;
 }
 
-// ===== SWAP HISTORY REPORT TYPES =====
+// ===== ASSET CHANGE HISTORY REPORT TYPES =====
 
-export interface SwapHistoryItem {
+/**
+ * Asset change history item - represents one asset status or owner change event
+ */
+export interface AssetChangeHistoryItem {
   id: number;
-  swapDate: string;
-  userName: string;
-  userEmail?: string;
+  eventDate: string;
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  assetTypeName?: string;
+  serialNumber?: string;
+  eventType: string;
+  eventTypeDisplay: string;
+  description: string;
+  oldValue?: string;
+  newValue?: string;
+  currentOwner?: string;
+  currentStatus?: string;
   serviceName?: string;
-  technicianName?: string;
-  technicianEmail?: string;
-  oldAssetCode?: string;
-  oldAssetName?: string;
-  oldSerialNumber?: string;
-  newAssetCode?: string;
-  newAssetName?: string;
-  newSerialNumber?: string;
+  buildingName?: string;
   location?: string;
+  performedBy?: string;
+  performedByEmail?: string;
   notes?: string;
-  rolloutSessionId?: number;
-  rolloutSessionName?: string;
 }
 
-export interface SwapHistoryFilters {
+/**
+ * Filter options for asset change history
+ */
+export interface AssetChangeHistoryFilters {
   dateFrom?: string;
   dateTo?: string;
-  technicianId?: number;
   serviceId?: number;
+  eventType?: string;
   searchQuery?: string;
 }
 
-export interface SwapHistorySummary {
-  totalSwaps: number;
-  byTechnician: Record<string, number>;
+/**
+ * Asset change history summary with asset-focused metrics
+ */
+export interface AssetChangeHistorySummary {
+  totalChanges: number;
+  statusChanges: number;
+  ownerChanges: number;
+  locationChanges: number;
+  uniqueAssetsChanged: number;
+  activeAssets: number;
+  byEventType: Record<string, number>;
   byService: Record<string, number>;
   byMonth: Array<{ month: string; count: number }>;
 }
+
+// Legacy types for backward compatibility (deprecated)
+/** @deprecated Use AssetChangeHistoryItem instead */
+export type SwapHistoryItem = AssetChangeHistoryItem;
+/** @deprecated Use AssetChangeHistoryFilters instead */
+export type SwapHistoryFilters = AssetChangeHistoryFilters;
+/** @deprecated Use AssetChangeHistorySummary instead */
+export type SwapHistorySummary = AssetChangeHistorySummary;
 
 // ===== LICENSE REPORT TYPES =====
 

@@ -15,9 +15,9 @@ import type {
   HardwareReportSummary,
   WorkplaceReportItem,
   WorkplaceReportSummary,
-  SwapHistoryItem,
-  SwapHistoryFilters,
-  SwapHistorySummary,
+  AssetChangeHistoryItem,
+  AssetChangeHistoryFilters,
+  AssetChangeHistorySummary,
   LicenseSummary,
   LicenseUser,
   LicenseReportFilters,
@@ -346,11 +346,11 @@ export const exportWorkplaceReport = async (): Promise<Blob> => {
 // ===== SWAP HISTORY REPORT API CALLS =====
 
 /**
- * Get swap history
+ * Get asset change history - tracks all asset status and owner changes
  */
-export const getSwapHistory = async (
-  filters?: SwapHistoryFilters
-): Promise<SwapHistoryItem[]> => {
+export const getAssetChangeHistory = async (
+  filters?: AssetChangeHistoryFilters
+): Promise<AssetChangeHistoryItem[]> => {
   const params: Record<string, string | number> = {};
 
   if (filters?.dateFrom) {
@@ -359,27 +359,27 @@ export const getSwapHistory = async (
   if (filters?.dateTo) {
     params.dateTo = filters.dateTo;
   }
-  if (filters?.technicianId) {
-    params.technicianId = filters.technicianId;
-  }
   if (filters?.serviceId) {
     params.serviceId = filters.serviceId;
+  }
+  if (filters?.eventType) {
+    params.eventType = filters.eventType;
   }
   if (filters?.searchQuery) {
     params.search = filters.searchQuery;
   }
 
-  const response = await apiClient.get<SwapHistoryItem[]>('/reports/swaps', { params });
+  const response = await apiClient.get<AssetChangeHistoryItem[]>('/reports/swaps', { params });
   return response.data;
 };
 
 /**
- * Get swap history summary
+ * Get asset change history summary with asset-focused metrics
  */
-export const getSwapHistorySummary = async (
-  filters?: SwapHistoryFilters
-): Promise<SwapHistorySummary> => {
-  const params: Record<string, string | number> = {};
+export const getAssetChangeHistorySummary = async (
+  filters?: Pick<AssetChangeHistoryFilters, 'dateFrom' | 'dateTo'>
+): Promise<AssetChangeHistorySummary> => {
+  const params: Record<string, string> = {};
 
   if (filters?.dateFrom) {
     params.dateFrom = filters.dateFrom;
@@ -388,15 +388,15 @@ export const getSwapHistorySummary = async (
     params.dateTo = filters.dateTo;
   }
 
-  const response = await apiClient.get<SwapHistorySummary>('/reports/swaps/summary', { params });
+  const response = await apiClient.get<AssetChangeHistorySummary>('/reports/swaps/summary', { params });
   return response.data;
 };
 
 /**
- * Export swap history as Excel
+ * Export asset change history as CSV
  */
-export const exportSwapHistory = async (
-  filters?: SwapHistoryFilters
+export const exportAssetChangeHistory = async (
+  filters?: Pick<AssetChangeHistoryFilters, 'dateFrom' | 'dateTo' | 'serviceId'>
 ): Promise<Blob> => {
   const params: Record<string, string | number> = {};
 
@@ -416,6 +416,14 @@ export const exportSwapHistory = async (
   });
   return response.data;
 };
+
+// Backward compatibility aliases (deprecated)
+/** @deprecated Use getAssetChangeHistory instead */
+export const getSwapHistory = getAssetChangeHistory;
+/** @deprecated Use getAssetChangeHistorySummary instead */
+export const getSwapHistorySummary = getAssetChangeHistorySummary;
+/** @deprecated Use exportAssetChangeHistory instead */
+export const exportSwapHistory = exportAssetChangeHistory;
 
 // ===== LICENSE REPORT API CALLS =====
 

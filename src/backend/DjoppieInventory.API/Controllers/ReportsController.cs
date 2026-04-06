@@ -359,27 +359,53 @@ public class ReportsController : ControllerBase
     // ========================================
 
     /// <summary>
-    /// Gets swap history (asset events).
+    /// Test endpoint to verify JSON serialization
+    /// </summary>
+    [HttpGet("swaps/test")]
+    [AllowAnonymous]
+    public ActionResult<object> TestJsonSerialization()
+    {
+        var testItem = new AssetChangeHistoryItemDto
+        {
+            Id = 1,
+            EventDate = DateTime.Parse("2024-04-07T10:30:00"),
+            AssetId = 100,
+            AssetCode = "TEST-001",
+            EventType = "StatusChanged",
+            EventTypeDisplay = "Status Wijziging",
+            Description = "Test event"
+        };
+        return Ok(testItem);
+    }
+
+    /// <summary>
+    /// Gets asset change history (status and owner changes).
+    /// Every time an asset changes status or owner, a record is included.
     /// </summary>
     [HttpGet("swaps")]
-    [ProducesResponseType(typeof(IEnumerable<SwapHistoryItemDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<SwapHistoryItemDto>>> GetSwapHistory(
+    [ProducesResponseType(typeof(IEnumerable<AssetChangeHistoryItemDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<AssetChangeHistoryItemDto>>> GetSwapHistory(
         [FromQuery] string? dateFrom = null,
         [FromQuery] string? dateTo = null,
-        [FromQuery] int? technicianId = null,
         [FromQuery] int? serviceId = null,
+        [FromQuery] string? eventType = null,
         [FromQuery] string? search = null,
         CancellationToken cancellationToken = default)
     {
         var query = _context.AssetEvents
             .Include(e => e.Asset)
-            .ThenInclude(a => a!.Service)
+                .ThenInclude(a => a!.AssetType)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.Service)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.Building)
             .AsNoTracking();
 
-        // Filter to swap-related events
+        // Filter to status and owner change events
         query = query.Where(e =>
             e.EventType == AssetEventType.StatusChanged ||
             e.EventType == AssetEventType.OwnerChanged ||
+            e.EventType == AssetEventType.LocationChanged ||
             e.EventType == AssetEventType.LaptopSwapped ||
             e.EventType == AssetEventType.DeviceOnboarded ||
             e.EventType == AssetEventType.DeviceOffboarded);
@@ -400,48 +426,81 @@ public class ReportsController : ControllerBase
             query = query.Where(e => e.Asset != null && e.Asset.ServiceId == serviceId.Value);
         }
 
+        // Filter by event type if specified
+        if (!string.IsNullOrEmpty(eventType) && Enum.TryParse<AssetEventType>(eventType, true, out var eventTypeEnum))
+        {
+            query = query.Where(e => e.EventType == eventTypeEnum);
+        }
+
         if (!string.IsNullOrEmpty(search))
         {
             var searchLower = search.ToLower();
             query = query.Where(e =>
                 (e.Asset != null && e.Asset.AssetCode.ToLower().Contains(searchLower)) ||
-                (e.Asset != null && e.Asset.Owner != null && e.Asset.Owner.ToLower().Contains(searchLower)) ||
-                (e.PerformedBy != null && e.PerformedBy.ToLower().Contains(searchLower)));
+                (e.Asset != null && e.Asset.AssetName != null && e.Asset.AssetName.ToLower().Contains(searchLower)) ||
+                (e.Asset != null && e.Asset.SerialNumber != null && e.Asset.SerialNumber.ToLower().Contains(searchLower)) ||
+                (e.Asset != null && e.Asset.Owner != null && e.Asset.Owner.ToLower().Contains(searchLower)));
         }
 
         var events = await query
             .OrderByDescending(e => e.EventDate)
-            .Take(500)
-            .Select(e => new SwapHistoryItemDto
+            .Take(1000)
+            .Select(e => new AssetChangeHistoryItemDto
             {
                 Id = e.Id,
-                SwapDate = e.EventDate.ToString("yyyy-MM-dd"),
-                UserName = e.Asset != null ? e.Asset.Owner : null,
-                UserEmail = e.Asset != null ? e.Asset.Owner : null,
+                EventDate = e.EventDate,
+                AssetId = e.AssetId,
+                AssetCode = e.Asset != null ? e.Asset.AssetCode : "",
+                AssetName = e.Asset != null ? e.Asset.AssetName : null,
+                AssetTypeName = e.Asset != null && e.Asset.AssetType != null ? e.Asset.AssetType.Name : null,
+                SerialNumber = e.Asset != null ? e.Asset.SerialNumber : null,
+                EventType = e.EventType.ToString(),
+                EventTypeDisplay = GetEventTypeDisplay(e.EventType),
+                Description = e.Description,
+                OldValue = e.OldValue,
+                NewValue = e.NewValue,
+                CurrentOwner = e.Asset != null ? e.Asset.Owner : null,
+                CurrentStatus = e.Asset != null ? e.Asset.Status.ToString() : null,
                 ServiceName = e.Asset != null && e.Asset.Service != null ? e.Asset.Service.Name : null,
-                TechnicianName = e.PerformedBy,
-                TechnicianEmail = e.PerformedBy,
-                OldAssetCode = e.OldValue,
-                OldAssetName = null,
-                NewAssetCode = e.Asset != null ? e.Asset.AssetCode : null,
-                NewAssetName = e.Asset != null ? e.Asset.AssetName : null,
+                BuildingName = e.Asset != null && e.Asset.Building != null ? e.Asset.Building.Name : null,
                 Location = e.Asset != null ? e.Asset.OfficeLocation : null,
-                Notes = e.Notes,
-                RolloutSessionId = null,
-                RolloutSessionName = null
+                PerformedBy = e.PerformedBy,
+                PerformedByEmail = e.PerformedByEmail,
+                Notes = e.Notes
             })
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Swap history report generated with {Count} events", events.Count);
+        _logger.LogInformation("Asset change history report generated with {Count} events", events.Count);
         return Ok(events);
     }
 
     /// <summary>
-    /// Gets swap history summary.
+    /// Helper method to get display-friendly event type names
+    /// </summary>
+    private static string GetEventTypeDisplay(AssetEventType eventType)
+    {
+        return eventType switch
+        {
+            AssetEventType.StatusChanged => "Status Wijziging",
+            AssetEventType.OwnerChanged => "Eigenaar Wijziging",
+            AssetEventType.LocationChanged => "Locatie Wijziging",
+            AssetEventType.LaptopSwapped => "Laptop Swap",
+            AssetEventType.DeviceOnboarded => "Onboarding",
+            AssetEventType.DeviceOffboarded => "Offboarding",
+            AssetEventType.LeaseStarted => "Lease Gestart",
+            AssetEventType.LeaseEnded => "Lease Beëindigd",
+            AssetEventType.Maintenance => "Onderhoud",
+            AssetEventType.Created => "Aangemaakt",
+            _ => eventType.ToString()
+        };
+    }
+
+    /// <summary>
+    /// Gets asset change history summary with asset-focused metrics.
     /// </summary>
     [HttpGet("swaps/summary")]
-    [ProducesResponseType(typeof(SwapHistorySummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<SwapHistorySummaryDto>> GetSwapHistorySummary(
+    [ProducesResponseType(typeof(AssetChangeHistorySummaryDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AssetChangeHistorySummaryDto>> GetSwapHistorySummary(
         [FromQuery] string? dateFrom = null,
         [FromQuery] string? dateTo = null,
         CancellationToken cancellationToken = default)
@@ -451,10 +510,11 @@ public class ReportsController : ControllerBase
             .ThenInclude(a => a!.Service)
             .AsNoTracking();
 
-        // Filter to swap-related events
+        // Filter to status and owner change events
         query = query.Where(e =>
             e.EventType == AssetEventType.StatusChanged ||
             e.EventType == AssetEventType.OwnerChanged ||
+            e.EventType == AssetEventType.LocationChanged ||
             e.EventType == AssetEventType.LaptopSwapped ||
             e.EventType == AssetEventType.DeviceOnboarded ||
             e.EventType == AssetEventType.DeviceOffboarded);
@@ -472,13 +532,28 @@ public class ReportsController : ControllerBase
 
         var events = await query.ToListAsync(cancellationToken);
 
-        var summary = new SwapHistorySummaryDto
+        // Get count of unique assets that had changes
+        var uniqueAssetsWithChanges = events.Select(e => e.AssetId).Distinct().Count();
+
+        // Get count of active assets (InGebruik status)
+        var activeAssetsCount = await _context.Assets
+            .Where(a => a.Status == AssetStatus.InGebruik)
+            .CountAsync(cancellationToken);
+
+        var summary = new AssetChangeHistorySummaryDto
         {
-            TotalSwaps = events.Count,
-            ByTechnician = events
-                .Where(e => !string.IsNullOrEmpty(e.PerformedBy))
-                .GroupBy(e => e.PerformedBy!)
-                .ToDictionary(g => g.Key, g => g.Count()),
+            TotalChanges = events.Count,
+            StatusChanges = events.Count(e => e.EventType == AssetEventType.StatusChanged),
+            OwnerChanges = events.Count(e => e.EventType == AssetEventType.OwnerChanged),
+            LocationChanges = events.Count(e => e.EventType == AssetEventType.LocationChanged),
+            UniqueAssetsChanged = uniqueAssetsWithChanges,
+            ActiveAssets = activeAssetsCount,
+            ByEventType = events
+                .GroupBy(e => e.EventType)
+                .ToDictionary(
+                    g => GetEventTypeDisplay(g.Key),
+                    g => g.Count()
+                ),
             ByService = events
                 .Where(e => e.Asset?.Service != null)
                 .GroupBy(e => e.Asset!.Service!.Name)
@@ -494,7 +569,7 @@ public class ReportsController : ControllerBase
     }
 
     /// <summary>
-    /// Exports swap history as CSV.
+    /// Exports asset change history as CSV.
     /// </summary>
     [HttpGet("swaps/export")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
@@ -506,12 +581,17 @@ public class ReportsController : ControllerBase
     {
         var query = _context.AssetEvents
             .Include(e => e.Asset)
-            .ThenInclude(a => a!.Service)
+                .ThenInclude(a => a!.AssetType)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.Service)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.Building)
             .AsNoTracking();
 
         query = query.Where(e =>
             e.EventType == AssetEventType.StatusChanged ||
             e.EventType == AssetEventType.OwnerChanged ||
+            e.EventType == AssetEventType.LocationChanged ||
             e.EventType == AssetEventType.LaptopSwapped ||
             e.EventType == AssetEventType.DeviceOnboarded ||
             e.EventType == AssetEventType.DeviceOffboarded);
@@ -536,25 +616,33 @@ public class ReportsController : ControllerBase
             .ToListAsync(cancellationToken);
 
         var sb = new StringBuilder();
-        sb.AppendLine("Date,AssetCode,EventType,User,Technician,Service,Notes");
+        sb.AppendLine("Datum,Asset Code,Asset Naam,Type,Gebeurtenis,Oude Waarde,Nieuwe Waarde,Huidige Eigenaar,Status,Dienst,Gebouw,Locatie,Serienummer,Uitgevoerd Door,Notities");
 
         foreach (var e in events)
         {
             sb.AppendLine(string.Join(",",
                 e.EventDate.ToString("yyyy-MM-dd HH:mm"),
                 EscapeCsv(e.Asset?.AssetCode ?? ""),
-                EscapeCsv(e.EventType.ToString()),
+                EscapeCsv(e.Asset?.AssetName ?? ""),
+                EscapeCsv(e.Asset?.AssetType?.Name ?? ""),
+                EscapeCsv(GetEventTypeDisplay(e.EventType)),
+                EscapeCsv(e.OldValue ?? ""),
+                EscapeCsv(e.NewValue ?? ""),
                 EscapeCsv(e.Asset?.Owner ?? ""),
-                EscapeCsv(e.PerformedBy ?? ""),
+                EscapeCsv(e.Asset?.Status.ToString() ?? ""),
                 EscapeCsv(e.Asset?.Service?.Name ?? ""),
+                EscapeCsv(e.Asset?.Building?.Name ?? ""),
+                EscapeCsv(e.Asset?.OfficeLocation ?? ""),
+                EscapeCsv(e.Asset?.SerialNumber ?? ""),
+                EscapeCsv(e.PerformedBy ?? ""),
                 EscapeCsv(e.Notes ?? "")
             ));
         }
 
         var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-        var fileName = $"swap-geschiedenis-{DateTime.UtcNow:yyyyMMdd}.csv";
+        var fileName = $"asset-geschiedenis-{DateTime.UtcNow:yyyyMMdd}.csv";
 
-        _logger.LogInformation("Exported swap history with {Count} events", events.Count);
+        _logger.LogInformation("Exported asset change history with {Count} events", events.Count);
         return File(bytes, "text/csv", fileName);
     }
 
@@ -1856,31 +1944,45 @@ public class BuildingOccupancyData
     public int Occupied { get; set; }
 }
 
-public class SwapHistoryItemDto
+/// <summary>
+/// DTO for asset change history items - each record represents one asset status or owner change
+/// </summary>
+public class AssetChangeHistoryItemDto
 {
     public int Id { get; set; }
-    public string SwapDate { get; set; } = "";
-    public string? UserName { get; set; }
-    public string? UserEmail { get; set; }
+    public DateTime EventDate { get; set; }
+    public int AssetId { get; set; }
+    public string AssetCode { get; set; } = "";
+    public string? AssetName { get; set; }
+    public string? AssetTypeName { get; set; }
+    public string? SerialNumber { get; set; }
+    public string EventType { get; set; } = "";
+    public string EventTypeDisplay { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string? OldValue { get; set; }
+    public string? NewValue { get; set; }
+    public string? CurrentOwner { get; set; }
+    public string? CurrentStatus { get; set; }
     public string? ServiceName { get; set; }
-    public string? TechnicianName { get; set; }
-    public string? TechnicianEmail { get; set; }
-    public string? OldAssetCode { get; set; }
-    public string? OldAssetName { get; set; }
-    public string? OldSerialNumber { get; set; }
-    public string? NewAssetCode { get; set; }
-    public string? NewAssetName { get; set; }
-    public string? NewSerialNumber { get; set; }
+    public string? BuildingName { get; set; }
     public string? Location { get; set; }
+    public string? PerformedBy { get; set; }
+    public string? PerformedByEmail { get; set; }
     public string? Notes { get; set; }
-    public int? RolloutSessionId { get; set; }
-    public string? RolloutSessionName { get; set; }
 }
 
-public class SwapHistorySummaryDto
+/// <summary>
+/// DTO for asset change history summary with asset-focused metrics
+/// </summary>
+public class AssetChangeHistorySummaryDto
 {
-    public int TotalSwaps { get; set; }
-    public Dictionary<string, int> ByTechnician { get; set; } = new();
+    public int TotalChanges { get; set; }
+    public int StatusChanges { get; set; }
+    public int OwnerChanges { get; set; }
+    public int LocationChanges { get; set; }
+    public int UniqueAssetsChanged { get; set; }
+    public int ActiveAssets { get; set; }
+    public Dictionary<string, int> ByEventType { get; set; } = new();
     public Dictionary<string, int> ByService { get; set; } = new();
     public List<MonthlyCount> ByMonth { get; set; } = new();
 }

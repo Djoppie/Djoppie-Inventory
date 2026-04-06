@@ -61,9 +61,9 @@ const REPORT_TABS: { id: ReportTab; label: string; icon: ReactElement; descripti
   },
   {
     id: 'swaps',
-    label: 'Swap Geschiedenis',
+    label: 'Asset Geschiedenis',
     icon: <SwapHorizIcon />,
-    description: 'Asset bewegingen en swap historie',
+    description: 'Asset wijzigingen, status- en eigenaar historie',
   },
   {
     id: 'licenses',
