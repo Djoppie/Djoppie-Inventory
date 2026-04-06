@@ -1,10 +1,12 @@
 /**
  * StatisticsCard Component
  * Reusable statistics card with click functionality for filtering
+ * Optimized with React.memo to prevent unnecessary re-renders
  */
 
 import { Box, Paper, Typography, alpha, useTheme } from '@mui/material';
 import { SvgIconComponent } from '@mui/icons-material';
+import { memo } from 'react';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 
 export interface StatisticsCardProps {
@@ -17,7 +19,7 @@ export interface StatisticsCardProps {
   subtitle?: string;
 }
 
-export const StatisticsCard: React.FC<StatisticsCardProps> = ({
+export const StatisticsCard = memo<StatisticsCardProps>(({
   icon: Icon,
   label,
   value,
@@ -122,6 +124,8 @@ export const StatisticsCard: React.FC<StatisticsCardProps> = ({
       </Box>
     </Paper>
   );
-};
+});
+
+StatisticsCard.displayName = 'StatisticsCard';
 
 export default StatisticsCard;

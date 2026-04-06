@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo, useCallback } from 'react';
 import {
   Box,
   IconButton,
@@ -78,7 +78,7 @@ export interface NeumorphicDataGridProps<T extends { id: number | string }> {
   maxHeight?: number | string;
 }
 
-function CustomToolbar({
+const CustomToolbar = memo(function CustomToolbar({
   accentColor,
   isDark,
   toolbarActions,
@@ -167,7 +167,7 @@ function CustomToolbar({
       </Box>
     </GridToolbarContainer>
   );
-}
+});
 
 // Status column definition helper
 export function getStatusColumn(_accentColor: string = ASSET_COLOR): GridColDef {
@@ -260,7 +260,7 @@ export function getActionsColumn<T extends { id: number | string }>(
   };
 }
 
-function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean }>({
+const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean }>({
   rows,
   columns,
   onEdit,
@@ -300,7 +300,34 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
     return cols;
   }, [columns, showActiveStatus, onEdit, onDelete, accentColor]);
 
-  const paginationModel: GridPaginationModel = { pageSize: initialPageSize, page: 0 };
+  const paginationModel: GridPaginationModel = useMemo(
+    () => ({ pageSize: initialPageSize, page: 0 }),
+    [initialPageSize]
+  );
+
+  // Memoize row click handler
+  const handleRowClick = useCallback(
+    (params: GridRowParams) => {
+      if (onRowClick) {
+        onRowClick(params.row as T);
+      }
+    },
+    [onRowClick]
+  );
+
+  // Memoize row className getter
+  const getRowClass = useCallback(
+    (params: GridRowParams) => {
+      if (getRowClassName) {
+        return getRowClassName(params);
+      }
+      if (showActiveStatus && params.row.isActive === false) {
+        return 'row-inactive';
+      }
+      return '';
+    },
+    [getRowClassName, showActiveStatus]
+  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -328,19 +355,12 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
         {...(rowSelectionModel && rowSelectionModel.length > 0 && { rowSelectionModel })}
         {...(onRowSelectionModelChange && { onRowSelectionModelChange })}
         disableRowSelectionOnClick={!onRowClick}
-        {...(onRowClick && {
-          onRowClick: (params) => {
-            onRowClick(params.row as T);
-          },
-        })}
+        {...(onRowClick && { onRowClick: handleRowClick })}
         initialState={{
           pagination: { paginationModel },
         }}
         pageSizeOptions={[10, 15, 25, 50]}
-        getRowClassName={getRowClassName ?? ((params) => {
-          if (showActiveStatus && params.row.isActive === false) return 'row-inactive';
-          return '';
-        })}
+        getRowClassName={getRowClass}
         slots={{
           toolbar: CustomToolbar,
         }}
@@ -493,6 +513,8 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
       </Box>
     </Box>
   );
-}
+}) as <T extends { id: number | string; isActive?: boolean }>(
+  props: NeumorphicDataGridProps<T>
+) => JSX.Element;
 
 export default NeumorphicDataGrid;
