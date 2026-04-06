@@ -356,8 +356,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         loading={loading}
         autoHeight={autoHeight}
         checkboxSelection={checkboxSelection}
-        rowSelectionModel={checkboxSelection ? (rowSelectionModel || []) : undefined}
-        onRowSelectionModelChange={checkboxSelection ? onRowSelectionModelChange : undefined}
+        rowSelectionModel={rowSelectionModel || []}
+        onRowSelectionModelChange={onRowSelectionModelChange}
         {...(columnVisibilityModel && { columnVisibilityModel })}
         disableRowSelectionOnClick={!onRowClick}
         {...(onRowClick && { onRowClick: handleRowClick })}
