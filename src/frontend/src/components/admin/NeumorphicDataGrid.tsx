@@ -7,6 +7,8 @@ import {
   Chip,
   useTheme,
   alpha,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   DataGrid,
@@ -23,6 +25,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import DownloadIcon from '@mui/icons-material/Download';
 import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 import { ASSET_COLOR } from '../../constants/filterColors';
 
@@ -31,6 +34,9 @@ interface CustomToolbarProps {
   isDark: boolean;
   toolbarActions?: React.ReactNode;
   rowCount: number;
+  exportable?: boolean;
+  onExport?: () => void;
+  isExporting?: boolean;
 }
 
 declare module '@mui/x-data-grid' {
@@ -52,9 +58,35 @@ export interface NeumorphicDataGridProps<T extends { id: number | string }> {
   initialPageSize?: number;
   autoHeight?: boolean;
   getRowClassName?: (params: GridRowParams) => string;
+
+  // NEW: Export functionality
+  exportable?: boolean;
+  onExport?: () => void;
+  isExporting?: boolean;
+
+  // NEW: Statistics cards (rendered above table)
+  statisticsCards?: React.ReactNode;
+
+  // NEW: Advanced filters (rendered between stats and table)
+  advancedFilters?: React.ReactNode;
+
+  // NEW: Row click handler
+  onRowClick?: (row: T) => void;
+
+  // NEW: Sticky header with max height
+  stickyHeader?: boolean;
+  maxHeight?: number | string;
 }
 
-function CustomToolbar({ accentColor, isDark, toolbarActions, rowCount }: CustomToolbarProps) {
+function CustomToolbar({
+  accentColor,
+  isDark,
+  toolbarActions,
+  rowCount,
+  exportable,
+  onExport,
+  isExporting,
+}: CustomToolbarProps) {
   const { bgBase } = getNeumorphColors(isDark);
   return (
     <GridToolbarContainer
@@ -89,6 +121,36 @@ function CustomToolbar({ accentColor, isDark, toolbarActions, rowCount }: Custom
         }}
       />
       {toolbarActions}
+      {exportable && onExport && (
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={isExporting ? <CircularProgress size={14} /> : <DownloadIcon />}
+          onClick={onExport}
+          disabled={isExporting}
+          sx={{
+            borderColor: alpha(accentColor, 0.35),
+            color: accentColor,
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            py: 0.5,
+            px: 1.5,
+            borderRadius: 1,
+            textTransform: 'none',
+            bgcolor: bgBase,
+            boxShadow: getNeumorph(isDark, 'soft'),
+            '&:hover': {
+              bgcolor: alpha(accentColor, 0.08),
+              borderColor: accentColor,
+            },
+            '&.Mui-disabled': {
+              opacity: 0.5,
+            },
+          }}
+        >
+          Export
+        </Button>
+      )}
       <Box sx={{ ml: 'auto' }}>
         <Chip
           size="small"
@@ -213,6 +275,14 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
   initialPageSize = 15,
   autoHeight = true,
   getRowClassName,
+  exportable = false,
+  onExport,
+  isExporting = false,
+  statisticsCards,
+  advancedFilters,
+  onRowClick,
+  stickyHeader = false,
+  maxHeight,
 }: NeumorphicDataGridProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -233,14 +303,22 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
   const paginationModel: GridPaginationModel = { pageSize: initialPageSize, page: 0 };
 
   return (
-    <Box
-      sx={{
-        bgcolor: bgBase,
-        borderRadius: 3,
-        p: { xs: 1.5, sm: 2 },
-        boxShadow: getNeumorph(isDark, 'medium'),
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Statistics Cards Section */}
+      {statisticsCards && <Box>{statisticsCards}</Box>}
+
+      {/* Advanced Filters Section */}
+      {advancedFilters && <Box>{advancedFilters}</Box>}
+
+      {/* Data Grid Section */}
+      <Box
+        sx={{
+          bgcolor: bgBase,
+          borderRadius: 3,
+          p: { xs: 1.5, sm: 2 },
+          boxShadow: getNeumorph(isDark, 'medium'),
+        }}
+      >
       <DataGrid
         rows={rows as GridRowsProp}
         columns={finalColumns}
@@ -249,7 +327,12 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
         checkboxSelection={checkboxSelection}
         {...(rowSelectionModel && rowSelectionModel.length > 0 && { rowSelectionModel })}
         {...(onRowSelectionModelChange && { onRowSelectionModelChange })}
-        disableRowSelectionOnClick
+        disableRowSelectionOnClick={!onRowClick}
+        {...(onRowClick && {
+          onRowClick: (params) => {
+            onRowClick(params.row as T);
+          },
+        })}
         initialState={{
           pagination: { paginationModel },
         }}
@@ -267,6 +350,9 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
             isDark,
             toolbarActions,
             rowCount: rows.length,
+            exportable,
+            onExport,
+            isExporting,
           },
         }}
         sx={{
@@ -275,6 +361,17 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
           border: '1px solid',
           borderColor: 'divider',
           fontSize: '0.85rem',
+          ...(maxHeight && {
+            maxHeight,
+            '& .MuiDataGrid-virtualScroller': {
+              maxHeight,
+            },
+          }),
+          ...(onRowClick && {
+            '& .MuiDataGrid-row': {
+              cursor: 'pointer',
+            },
+          }),
 
           // Header styling
           '& .MuiDataGrid-columnHeaders': {
@@ -393,6 +490,7 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
           },
         }}
       />
+      </Box>
     </Box>
   );
 }
