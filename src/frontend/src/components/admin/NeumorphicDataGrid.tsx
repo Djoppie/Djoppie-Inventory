@@ -17,7 +17,6 @@ import {
   GridRenderCellParams,
   GridRowParams,
   GridPaginationModel,
-  GridRowId,
 } from '@mui/x-data-grid';
 
 import EditIcon from '@mui/icons-material/Edit';
@@ -248,8 +247,8 @@ function NeumorphicDataGrid<T extends { id: number | string; isActive?: boolean 
         loading={loading}
         autoHeight={autoHeight}
         checkboxSelection={checkboxSelection}
-        rowSelectionModel={rowSelectionModel ?? []}
-        onRowSelectionModelChange={onRowSelectionModelChange}
+        {...(rowSelectionModel !== undefined && { rowSelectionModel })}
+        {...(onRowSelectionModelChange && { onRowSelectionModelChange })}
         disableRowSelectionOnClick
         initialState={{
           pagination: { paginationModel },
