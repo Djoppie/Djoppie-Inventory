@@ -88,7 +88,8 @@ const WorkplacesTab = () => {
           item.code.toLowerCase().includes(query) ||
           item.name.toLowerCase().includes(query) ||
           item.occupantName?.toLowerCase().includes(query) ||
-          item.buildingName?.toLowerCase().includes(query)
+          item.buildingName?.toLowerCase().includes(query) ||
+          item.serviceName?.toLowerCase().includes(query)
         );
       }
       return true;
@@ -143,6 +144,12 @@ const WorkplacesTab = () => {
           )}
         </Box>
       ),
+    },
+    {
+      field: 'serviceName',
+      headerName: 'Dienst',
+      width: 150,
+      valueGetter: (value) => value || '-',
     },
     {
       field: 'buildingName',
@@ -324,7 +331,7 @@ const WorkplacesTab = () => {
           <TextField
             fullWidth
             size="small"
-            placeholder="Zoeken op code, naam, bezetter..."
+            placeholder="Zoeken op code, naam, dienst, bezetter..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
