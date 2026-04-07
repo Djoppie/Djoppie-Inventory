@@ -284,7 +284,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   statisticsCards,
   advancedFilters,
   onRowClick,
-  stickyHeader = false,
+  stickyHeader: _stickyHeader = false,
   maxHeight,
   columnVisibilityModel,
 }: NeumorphicDataGridProps<T>) {
@@ -524,6 +524,6 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   );
 }) as <T extends { id: number | string; isActive?: boolean }>(
   props: NeumorphicDataGridProps<T>
-) => JSX.Element;
+) => React.ReactElement;
 
 export default NeumorphicDataGrid;

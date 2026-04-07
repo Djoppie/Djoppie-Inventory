@@ -15,7 +15,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 
 // API
 import { categoriesApi, assetTypesApi } from '../api/admin.api';
-import { getNeumorph, getNeumorphColors } from '../utils/neumorphicStyles';
+import { getNeumorphColors } from '../utils/neumorphicStyles';
 import { ADMIN_ASSET_COLOR } from '../constants/filterColors';
 
 type AdminAssetTab = 'categories' | 'asset-types' | 'intune-sync';

@@ -13,7 +13,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 
 // API
 import { buildingsApi } from '../api/admin.api';
-import { getNeumorph, getNeumorphColors } from '../utils/neumorphicStyles';
+import { getNeumorphColors } from '../utils/neumorphicStyles';
 import { ADMIN_LOCATION_COLOR } from '../constants/filterColors';
 import { usePhysicalWorkplaces } from '../hooks/usePhysicalWorkplaces';
 

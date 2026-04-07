@@ -446,7 +446,7 @@ const RolloutTab = () => {
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={{ position: 'relative', display: 'inline-flex', ...getEnhancedIconContainer(isDark, INFO_COLOR) }}>
+                <Box sx={{ ...getEnhancedIconContainer(isDark, INFO_COLOR), position: 'relative', display: 'inline-flex' }}>
                   <CircularProgress
                     variant="determinate"
                     value={overview.completionPercentage}

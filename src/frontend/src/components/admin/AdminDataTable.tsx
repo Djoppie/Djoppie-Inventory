@@ -23,7 +23,7 @@ import {
   Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
+import { getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';

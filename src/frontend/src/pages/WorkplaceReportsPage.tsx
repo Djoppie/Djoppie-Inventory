@@ -37,7 +37,6 @@ import {
   getEnhancedStatCard,
   getEnhancedIconContainer,
   getEnhancedProgressBar,
-  getFadeInUpAnimation,
   getEnhancedTypography,
 } from '../utils/designSystem';
 import { WORKPLACE_COLOR, BUILDING_COLOR, SERVICE_COLOR } from '../constants/filterColors';

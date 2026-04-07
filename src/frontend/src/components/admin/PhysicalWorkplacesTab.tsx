@@ -24,14 +24,13 @@ import {
   ListItemText,
   alpha,
 } from '@mui/material';
-import { GridColDef, GridRenderCellParams, GridRowSelectionModel } from '@mui/x-data-grid';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import WorkplaceGapAnalysisSection from './WorkplaceGapAnalysisSection';
@@ -90,7 +89,7 @@ const PhysicalWorkplacesTab = () => {
   const [importResult, setImportResult] = useState<WorkplaceCsvImportResult | null>(null);
   const [editingItem, setEditingItem] = useState<PhysicalWorkplace | null>(null);
   const [deletingItem, setDeletingItem] = useState<PhysicalWorkplace | null>(null);
-  const [selectedIds, setSelectedIds] = useState<GridRowSelectionModel>([]);
+  const [selectedIds, setSelectedIds] = useState<any[]>([]);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [snackbar, setSnackbar] = useState({

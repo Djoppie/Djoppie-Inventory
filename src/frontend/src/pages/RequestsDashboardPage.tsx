@@ -24,12 +24,10 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 import { ROUTES } from '../constants/routes';
-import { getNeumorph } from '../utils/neumorphicStyles';
 import {
   getEnhancedStatCard,
   getEnhancedIconContainer,
   getEnhancedTypography,
-  getFadeInUpAnimation,
 } from '../utils/designSystem';
 
 // Requests accent color

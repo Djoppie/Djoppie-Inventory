@@ -15,7 +15,7 @@ import PeopleIcon from '@mui/icons-material/People';
 
 // API
 import { sectorsApi, servicesApi } from '../api/admin.api';
-import { getNeumorph, getNeumorphColors } from '../utils/neumorphicStyles';
+import { getNeumorphColors } from '../utils/neumorphicStyles';
 import { ADMIN_ORGANIZATION_COLOR } from '../constants/filterColors';
 
 type AdminOrganisationTab = 'sectors' | 'services' | 'employees';

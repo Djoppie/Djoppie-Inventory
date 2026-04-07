@@ -49,7 +49,7 @@ type SortOrder = 'asc' | 'desc';
 const SwapsTab = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [serviceFilter, setServiceFilter] = useState<number | ''>('');
+  const [serviceFilter] = useState<number | ''>('');
   const [eventTypeFilter, setEventTypeFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('eventDate');
@@ -92,14 +92,14 @@ const SwapsTab = () => {
     },
   });
 
-  // Get unique services for filter dropdown
-  const services = useMemo(() => {
-    const serviceSet = new Set<string>();
-    history.forEach(item => {
-      if (item.serviceName) serviceSet.add(item.serviceName);
-    });
-    return Array.from(serviceSet).sort();
-  }, [history]);
+  // Get unique services for filter dropdown (currently unused)
+  // const services = useMemo(() => {
+  //   const serviceSet = new Set<string>();
+  //   history.forEach(item => {
+  //     if (item.serviceName) serviceSet.add(item.serviceName);
+  //   });
+  //   return Array.from(serviceSet).sort();
+  // }, [history]);
 
   // Get unique event types for filter dropdown
   const eventTypes = useMemo(() => {
@@ -258,7 +258,7 @@ const SwapsTab = () => {
             mb: 3,
             bgcolor: (theme) => alpha(ASSET_COLOR, theme.palette.mode === 'dark' ? 0.05 : 0.02),
             border: '1px solid',
-            borderColor: (theme) => alpha(ASSET_COLOR, 0.1),
+            borderColor: () => alpha(ASSET_COLOR, 0.1),
           }}
         >
           <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: ASSET_COLOR }}>

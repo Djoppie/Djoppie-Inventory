@@ -17,9 +17,6 @@ import {
   Stack,
   Paper,
   alpha,
-  useTheme,
-  useMediaQuery,
-  Grid,
 } from '@mui/material';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useAsset } from '../hooks/useAssets';
@@ -127,8 +124,6 @@ const formatBytes = (bytes?: number): string => {
 const InstalledSoftwarePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { data: asset, isLoading: isLoadingAsset } = useAsset(Number(id));
 
   const [software, setSoftware] = useState<InstalledSoftware[]>([]);
