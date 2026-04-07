@@ -382,9 +382,9 @@ const RolloutTab = () => {
         </Box>
       )}
 
-      {/* Overview KPI Cards */}
+      {/* Overview KPI Cards - Compact Badges */}
       {overview && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
           {/* Standard KPI Cards */}
           {[
             { icon: PeopleIcon, value: overview.totalWorkplaces, label: 'Werkplekken', color: ROLLOUT_COLOR },
@@ -392,146 +392,222 @@ const RolloutTab = () => {
             { icon: DevicesIcon, value: overview.installedAssets, label: 'Geïnstalleerd', color: SUCCESS_COLOR },
             { icon: QrCode2Icon, value: overview.qrCodesApplied, label: 'QR Toegepast', color: overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR },
           ].map((kpi, index) => (
-            <Grid size={{ xs: 6, sm: 4, md: 2 }} key={kpi.label}>
+            <Grid size={{ xs: 6, sm: 3, md: 2 }} key={kpi.label}>
               <Paper
                 elevation={0}
                 sx={{
-                  ...getEnhancedStatCard(isDark, kpi.color),
-                  ...getFadeInUpAnimation(index * 0.08),
-                  p: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  py: 0.75,
+                  px: 1.25,
+                  borderRadius: 3,
+                  bgcolor: alpha(kpi.color, isDark ? 0.15 : 0.08),
+                  border: `1.5px solid ${alpha(kpi.color, isDark ? 0.3 : 0.25)}`,
+                  boxShadow: `0 2px 8px ${alpha(kpi.color, 0.12)}`,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: `0 4px 12px ${alpha(kpi.color, 0.2)}`,
+                  },
+                  ...getFadeInUpAnimation(index * 0.06),
                 }}
               >
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Box sx={getEnhancedIconContainer(isDark, kpi.color)}>
-                    <kpi.icon sx={{ fontSize: 22, color: kpi.color }} />
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        ...getEnhancedTypography().metricValue,
-                        fontSize: '1.5rem',
-                        color: kpi.color,
-                        lineHeight: 1,
-                      }}
-                    >
-                      {kpi.value}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{
-                        fontSize: '0.65rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {kpi.label}
-                    </Typography>
-                  </Box>
-                </Stack>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 1.5,
+                    bgcolor: alpha(kpi.color, isDark ? 0.25 : 0.15),
+                  }}
+                >
+                  <kpi.icon sx={{ fontSize: 16, color: kpi.color }} />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontSize: '1.1rem',
+                      fontWeight: 800,
+                      color: kpi.color,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {kpi.value}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: '0.6rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      fontWeight: 600,
+                      color: alpha(isDark ? '#fff' : '#000', 0.6),
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: 'block',
+                    }}
+                  >
+                    {kpi.label}
+                  </Typography>
+                </Box>
               </Paper>
             </Grid>
           ))}
 
-          {/* Progress Card (with circular progress) */}
-          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+          {/* Progress Card (with circular progress) - Compact */}
+          <Grid size={{ xs: 6, sm: 3, md: 2 }}>
             <Paper
               elevation={0}
               sx={{
-                ...getEnhancedStatCard(isDark, INFO_COLOR),
-                ...getFadeInUpAnimation(1 * 0.08),
-                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                py: 0.75,
+                px: 1.25,
+                borderRadius: 3,
+                bgcolor: alpha(INFO_COLOR, isDark ? 0.15 : 0.08),
+                border: `1.5px solid ${alpha(INFO_COLOR, isDark ? 0.3 : 0.25)}`,
+                boxShadow: `0 2px 8px ${alpha(INFO_COLOR, 0.12)}`,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 4px 12px ${alpha(INFO_COLOR, 0.2)}`,
+                },
+                ...getFadeInUpAnimation(4 * 0.06),
               }}
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={{ ...getEnhancedIconContainer(isDark, INFO_COLOR), position: 'relative', display: 'inline-flex' }}>
-                  <CircularProgress
-                    variant="determinate"
-                    value={overview.completionPercentage}
-                    size={48}
-                    thickness={4}
-                    sx={{
-                      color: INFO_COLOR,
-                      '& .MuiCircularProgress-circle': {
-                        strokeLinecap: 'round',
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      position: 'absolute',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight={700} color={INFO_COLOR} sx={{ fontSize: '0.65rem' }}>
-                      {overview.completionPercentage}%
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: INFO_COLOR, lineHeight: 1 }}>
-                    Voortgang
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                    Compleet
+              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                <CircularProgress
+                  variant="determinate"
+                  value={overview.completionPercentage}
+                  size={32}
+                  thickness={4}
+                  sx={{
+                    color: INFO_COLOR,
+                    '& .MuiCircularProgress-circle': {
+                      strokeLinecap: 'round',
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography variant="caption" fontWeight={700} color={INFO_COLOR} sx={{ fontSize: '0.6rem' }}>
+                    {overview.completionPercentage}%
                   </Typography>
                 </Box>
-              </Stack>
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    color: INFO_COLOR,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Voortgang
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: '0.6rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontWeight: 600,
+                    color: alpha(isDark ? '#fff' : '#000', 0.6),
+                    display: 'block',
+                  }}
+                >
+                  Compleet
+                </Typography>
+              </Box>
             </Paper>
           </Grid>
 
-          {/* Missing QR Codes Card (dynamic icon/color) */}
-          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+          {/* Missing QR Codes Card - Compact */}
+          <Grid size={{ xs: 6, sm: 3, md: 2 }}>
             <Paper
               elevation={0}
               sx={{
-                ...getEnhancedStatCard(isDark, overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR),
-                ...getFadeInUpAnimation(5 * 0.08),
-                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                py: 0.75,
+                px: 1.25,
+                borderRadius: 3,
+                bgcolor: alpha(overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, isDark ? 0.15 : 0.08),
+                border: `1.5px solid ${alpha(overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, isDark ? 0.3 : 0.25)}`,
+                boxShadow: `0 2px 8px ${alpha(overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, 0.12)}`,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 4px 12px ${alpha(overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, 0.2)}`,
+                },
+                ...getFadeInUpAnimation(5 * 0.06),
               }}
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={getEnhancedIconContainer(isDark, overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR)}>
-                  {overview.missingQrCodes > 0 ? (
-                    <WarningAmberIcon sx={{ fontSize: 22, color: ERROR_COLOR }} />
-                  ) : (
-                    <CheckIcon sx={{ fontSize: 22, color: SUCCESS_COLOR }} />
-                  )}
-                </Box>
-                <Box>
-                  <Typography
-                    variant="h5"
-                    sx={{
-                      ...getEnhancedTypography().metricValue,
-                      fontSize: '1.5rem',
-                      color: overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {overview.missingQrCodes}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      fontSize: '0.65rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Ontbrekend
-                  </Typography>
-                </Box>
-              </Stack>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 1.5,
+                  bgcolor: alpha(overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR, isDark ? 0.25 : 0.15),
+                }}
+              >
+                {overview.missingQrCodes > 0 ? (
+                  <WarningAmberIcon sx={{ fontSize: 16, color: ERROR_COLOR }} />
+                ) : (
+                  <CheckIcon sx={{ fontSize: 16, color: SUCCESS_COLOR }} />
+                )}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontSize: '1.1rem',
+                    fontWeight: 800,
+                    color: overview.missingQrCodes > 0 ? ERROR_COLOR : SUCCESS_COLOR,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {overview.missingQrCodes}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: '0.6rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontWeight: 600,
+                    color: alpha(isDark ? '#fff' : '#000', 0.6),
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: 'block',
+                  }}
+                >
+                  Ontbrekend
+                </Typography>
+              </Box>
             </Paper>
           </Grid>
         </Grid>
