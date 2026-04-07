@@ -26,7 +26,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { ROUTES } from '../constants/routes';
 import { getNeumorph, getNeumorphColors } from '../utils/neumorphicStyles';
-import { getEnhancedTypography, getFadeInUpAnimation } from '../utils/designSystem';
+import { getFadeInUpAnimation } from '../utils/designSystem';
 import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SECTOR_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../constants/filterColors';
 import type { ReportTab } from '../types/report.types';
 import {
@@ -158,43 +158,46 @@ const ReportsPage = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      {/* Header */}
+    <Container maxWidth="xl" sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
+      {/* Compact Header */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          mb: 3,
+          mb: 1.5,
           ...getFadeInUpAnimation(0),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Tooltip title="Terug naar Dashboard">
             <IconButton
               onClick={() => navigate(ROUTES.DASHBOARD)}
+              size="small"
               sx={{
-                width: 48,
-                height: 48,
+                width: 36,
+                height: 36,
                 bgcolor: bgBase,
                 boxShadow: getNeumorph(isDark, 'soft'),
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
                 '&:hover': {
                   bgcolor: alpha(currentColor, 0.1),
-                  boxShadow: `0 0 20px ${alpha(currentColor, 0.3)}`,
-                  transform: 'translateX(-4px)',
+                  boxShadow: `0 0 12px ${alpha(currentColor, 0.25)}`,
+                  transform: 'translateX(-2px)',
                 },
               }}
             >
-              <ArrowBackIcon sx={{ color: currentColor, transition: 'color 0.3s ease' }} />
+              <ArrowBackIcon sx={{ color: currentColor, fontSize: 18 }} />
             </IconButton>
           </Tooltip>
           <Box>
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
-                ...getEnhancedTypography().pageTitle,
+                fontSize: '1.25rem',
+                fontWeight: 700,
                 color: currentColor,
+                lineHeight: 1.2,
                 background: `linear-gradient(135deg, ${currentColor} 0%, ${alpha(currentColor, 0.7)} 100%)`,
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
@@ -204,9 +207,9 @@ const ReportsPage = () => {
               Rapportage
             </Typography>
             <Typography
-              variant="body2"
+              variant="caption"
               color="text.secondary"
-              sx={{ mt: 0.5, fontSize: '0.875rem' }}
+              sx={{ fontSize: '0.7rem', display: 'block', mt: 0.25 }}
             >
               {currentTab.description}
             </Typography>
@@ -216,16 +219,16 @@ const ReportsPage = () => {
         <Tooltip title="Vernieuwen">
           <IconButton
             onClick={handleRefresh}
+            size="small"
             sx={{
-              width: 48,
-              height: 48,
+              width: 36,
+              height: 36,
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
-              transition: 'all 0.3s ease',
-              position: 'relative',
+              transition: 'all 0.2s ease',
               '&:hover': {
                 bgcolor: alpha(currentColor, 0.1),
-                boxShadow: `0 0 20px ${alpha(currentColor, 0.3)}`,
+                boxShadow: `0 0 12px ${alpha(currentColor, 0.25)}`,
                 '& svg': {
                   transform: 'rotate(180deg)',
                 },
@@ -235,24 +238,25 @@ const ReportsPage = () => {
             <RefreshIcon
               sx={{
                 color: currentColor,
-                transition: 'transform 0.6s ease',
+                fontSize: 18,
+                transition: 'transform 0.5s ease',
               }}
             />
           </IconButton>
         </Tooltip>
       </Box>
 
-      {/* Tabs */}
+      {/* Compact Tabs */}
       <Paper
         sx={{
           bgcolor: bgSurface,
-          boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2.5,
-          mb: 3,
+          boxShadow: getNeumorph(isDark, 'soft'),
+          borderRadius: 2,
+          mb: 1.5,
           overflow: 'hidden',
           border: '1px solid',
-          borderColor: 'divider',
-          ...getFadeInUpAnimation(0.1),
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
+          ...getFadeInUpAnimation(0.05),
         }}
       >
         <Tabs
@@ -261,33 +265,36 @@ const ReportsPage = () => {
           variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons={isMobile ? 'auto' : false}
           sx={{
-            minHeight: 64,
+            minHeight: 44,
             '& .MuiTab-root': {
-              minHeight: 64,
+              minHeight: 44,
+              py: 1,
+              px: 1.5,
+              minWidth: isMobile ? 60 : 100,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.875rem',
-              gap: 1,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              position: 'relative',
+              fontSize: '0.75rem',
+              gap: 0.75,
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               '&.Mui-selected': {
                 color: TAB_COLORS[activeTab],
                 fontWeight: 700,
                 '& svg': {
-                  transform: 'scale(1.15)',
-                  filter: `drop-shadow(0 0 8px ${alpha(TAB_COLORS[activeTab], 0.5)})`,
+                  transform: 'scale(1.1)',
+                  filter: `drop-shadow(0 0 6px ${alpha(TAB_COLORS[activeTab], 0.4)})`,
                 },
               },
               '& svg': {
-                transition: 'all 0.3s ease',
+                fontSize: 18,
+                transition: 'all 0.2s ease',
               },
             },
             '& .MuiTabs-indicator': {
-              height: 4,
-              borderRadius: '4px 4px 0 0',
+              height: 3,
+              borderRadius: '3px 3px 0 0',
               backgroundColor: TAB_COLORS[activeTab],
-              boxShadow: `0 -2px 12px ${alpha(TAB_COLORS[activeTab], 0.4)}`,
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: `0 -1px 8px ${alpha(TAB_COLORS[activeTab], 0.3)}`,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             },
           }}
         >
@@ -300,9 +307,9 @@ const ReportsPage = () => {
               label={isMobile ? undefined : tab.label}
               sx={{
                 '&:hover': {
-                  bgcolor: alpha(TAB_COLORS[tab.id], 0.08),
+                  bgcolor: alpha(TAB_COLORS[tab.id], 0.06),
                   '& svg': {
-                    transform: 'translateY(-2px) scale(1.1)',
+                    transform: 'translateY(-1px) scale(1.05)',
                     color: TAB_COLORS[tab.id],
                   },
                 },
@@ -312,28 +319,28 @@ const ReportsPage = () => {
         </Tabs>
       </Paper>
 
-      {/* Tab Content */}
+      {/* Compact Tab Content */}
       <Paper
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2.5,
-          p: 3,
+          borderRadius: 2,
+          p: 2,
           minHeight: 400,
           border: '1px solid',
-          borderColor: 'divider',
-          borderTop: `3px solid ${currentColor}`,
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
+          borderTop: `2px solid ${currentColor}`,
           position: 'relative',
           overflow: 'hidden',
-          ...getFadeInUpAnimation(0.2),
+          ...getFadeInUpAnimation(0.1),
           '&::before': {
             content: '""',
             position: 'absolute',
             top: 0,
             right: 0,
-            width: '30%',
+            width: '25%',
             height: '100%',
-            background: `radial-gradient(circle at top right, ${alpha(currentColor, 0.05)} 0%, transparent 70%)`,
+            background: `radial-gradient(circle at top right, ${alpha(currentColor, 0.04)} 0%, transparent 60%)`,
             pointerEvents: 'none',
           },
         }}

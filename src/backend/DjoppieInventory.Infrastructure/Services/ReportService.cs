@@ -40,6 +40,12 @@ public class ReportService : IReportService
             .Include(a => a.Service)
             .Include(a => a.Building)
             .Include(a => a.Employee)
+                .ThenInclude(e => e.CurrentWorkplace)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw.Building)
+            .Include(a => a.PhysicalWorkplace)
+                .ThenInclude(pw => pw.Service)
+                    .ThenInclude(s => s.Sector)
             .AsNoTracking();
 
         // Apply filters
@@ -94,6 +100,18 @@ public class ReportService : IReportService
             Service = a.Service != null ? new ServiceInfo { Id = a.Service.Id, Name = a.Service.Name } : null,
             BuildingId = a.BuildingId,
             Building = a.Building != null ? new BuildingInfo { Id = a.Building.Id, Name = a.Building.Name } : null,
+            PhysicalWorkplaceId = a.PhysicalWorkplaceId,
+            PhysicalWorkplace = a.PhysicalWorkplace != null ? new PhysicalWorkplaceInfo
+            {
+                Id = a.PhysicalWorkplace.Id,
+                Code = a.PhysicalWorkplace.Code,
+                Name = a.PhysicalWorkplace.Name,
+                ServiceName = a.PhysicalWorkplace.Service?.Name,
+                BuildingName = a.PhysicalWorkplace.Building?.Name,
+                SectorName = a.PhysicalWorkplace.Service?.Sector?.Name,
+                CurrentOccupantName = a.PhysicalWorkplace.CurrentOccupantName,
+                Floor = a.PhysicalWorkplace.Floor
+            } : null,
             EmployeeId = a.EmployeeId,
             Employee = a.Employee != null ? new EmployeeInfoDto(
                 a.Employee.Id,
@@ -103,8 +121,8 @@ public class ReportService : IReportService
                 a.Employee.JobTitle,
                 a.Employee.ServiceId,
                 a.Employee.Service?.Name,
-                null, // PhysicalWorkplaceId - not loaded
-                null  // PhysicalWorkplaceCode - not loaded
+                a.Employee.CurrentWorkplace?.Id,
+                a.Employee.CurrentWorkplace?.Code
             ) : null,
             CreatedAt = a.CreatedAt,
             UpdatedAt = a.UpdatedAt
@@ -124,11 +142,11 @@ public class ReportService : IReportService
         var report = await GetHardwareInventoryReportAsync(status, assetTypeId, categoryId, null, cancellationToken);
 
         var csv = new StringBuilder();
-        csv.AppendLine("Asset Code,Name,Type,Category,Status,Brand,Model,Serial Number,Owner,Service,Building,Purchase Date,Warranty Expiry");
+        csv.AppendLine("Asset Code,Name,Type,Category,Status,Brand,Model,Serial Number,Owner,Service,Building,Workplace,Workplace Service,Workplace Building,Purchase Date,Warranty Expiry");
 
         foreach (var asset in report.Assets)
         {
-            csv.AppendLine($"\"{asset.AssetCode}\",\"{asset.AssetName}\",\"{asset.AssetType?.Name}\",\"{asset.Category}\",\"{asset.Status}\",\"{asset.Brand}\",\"{asset.Model}\",\"{asset.SerialNumber}\",\"{asset.Owner}\",\"{asset.Service?.Name}\",\"{asset.Building?.Name}\",\"{asset.PurchaseDate:yyyy-MM-dd}\",\"{asset.WarrantyExpiry:yyyy-MM-dd}\"");
+            csv.AppendLine($"\"{asset.AssetCode}\",\"{asset.AssetName}\",\"{asset.AssetType?.Name}\",\"{asset.Category}\",\"{asset.Status}\",\"{asset.Brand}\",\"{asset.Model}\",\"{asset.SerialNumber}\",\"{asset.Owner}\",\"{asset.Service?.Name}\",\"{asset.Building?.Name}\",\"{asset.PhysicalWorkplace?.Name}\",\"{asset.PhysicalWorkplace?.ServiceName}\",\"{asset.PhysicalWorkplace?.BuildingName}\",\"{asset.PurchaseDate:yyyy-MM-dd}\",\"{asset.WarrantyExpiry:yyyy-MM-dd}\"");
         }
 
         return Encoding.UTF8.GetBytes(csv.ToString());

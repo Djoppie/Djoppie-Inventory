@@ -36,20 +36,21 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
     <Paper
       onClick={onClick}
       sx={{
-        p: 2.5,
-        borderRadius: 3,
+        p: 1.25,
+        borderRadius: 1.5,
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.18s ease',
         bgcolor: bgBase,
         boxShadow: isSelected
-          ? `${getNeumorph(isDark, 'medium')}, 0 0 0 2px ${alpha(color, 0.4)}`
+          ? `${getNeumorph(isDark, 'soft')}, inset 0 0 0 2px ${alpha(color, 0.5)}`
           : getNeumorph(isDark, 'soft'),
         position: 'relative',
         overflow: 'hidden',
+        height: '100%',
         '&:hover': onClick
           ? {
-              boxShadow: `${getNeumorph(isDark, 'medium')}, 0 0 0 2px ${alpha(color, 0.3)}`,
-              transform: 'translateY(-2px)',
+              boxShadow: `${getNeumorph(isDark, 'soft')}, inset 0 0 0 2px ${alpha(color, 0.35)}`,
+              transform: 'translateY(-1px)',
             }
           : {},
         '&::before': {
@@ -58,51 +59,54 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
           top: 0,
           left: 0,
           right: 0,
-          height: 4,
+          height: 2,
           bgcolor: color,
-          opacity: isSelected ? 1 : 0.6,
+          opacity: isSelected ? 1 : 0.7,
         },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-        {/* Icon Container */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {/* Compact Icon Container */}
         <Box
           sx={{
-            width: 56,
-            height: 56,
-            borderRadius: 2,
+            width: 40,
+            height: 40,
+            borderRadius: 1.25,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: alpha(color, 0.1),
-            border: `1px solid ${alpha(color, 0.2)}`,
+            bgcolor: alpha(color, 0.12),
+            border: `1px solid ${alpha(color, 0.25)}`,
+            flexShrink: 0,
           }}
         >
-          <Icon sx={{ fontSize: 28, color }} />
+          <Icon sx={{ fontSize: 20, color }} />
         </Box>
 
-        {/* Content */}
-        <Box sx={{ flex: 1 }}>
+        {/* Compact Content */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             variant="body2"
             sx={{
-              fontSize: '0.75rem',
-              fontWeight: 600,
+              fontSize: '0.65rem',
+              fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)',
-              mb: 0.5,
+              letterSpacing: '0.08em',
+              color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.55)',
+              mb: 0.25,
+              lineHeight: 1,
             }}
           >
             {label}
           </Typography>
           <Typography
-            variant="h4"
+            variant="h5"
             sx={{
-              fontSize: '2rem',
+              fontSize: '1.5rem',
               fontWeight: 700,
               color: color,
               lineHeight: 1,
+              letterSpacing: '-0.02em',
             }}
           >
             {value}
@@ -111,10 +115,11 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
             <Typography
               variant="caption"
               sx={{
-                fontSize: '0.7rem',
-                color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
-                mt: 0.5,
+                fontSize: '0.65rem',
+                color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)',
+                mt: 0.25,
                 display: 'block',
+                lineHeight: 1.2,
               }}
             >
               {subtitle}

@@ -94,30 +94,32 @@ const CustomToolbar = memo(function CustomToolbar({
   return (
     <GridToolbarContainer
       sx={{
-        p: 1.5,
-        gap: 1.5,
+        p: 1.25,
+        gap: 1.25,
         borderBottom: '1px solid',
-        borderColor: 'divider',
+        borderColor: alpha(isDark ? '#fff' : '#000', 0.06),
+        minHeight: 42,
       }}
     >
       <Box
         sx={{
-          flex: { xs: 1, md: '0 0 280px' },
+          flex: { xs: 1, md: '0 0 240px' },
           '& .MuiOutlinedInput-root': {
             bgcolor: bgBase,
-            borderRadius: 1.5,
-            fontSize: '0.85rem',
+            borderRadius: 1.25,
+            fontSize: '0.8rem',
             boxShadow: getNeumorphInset(isDark),
             '& fieldset': { border: 'none' },
             '&:hover': {
-              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.3)}`,
+              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.25)}`,
             },
             '&.Mui-focused': {
-              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.4)}`,
+              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.35)}`,
             },
           },
           '& .MuiInputBase-input': {
-            py: 0.75,
+            py: 0.6,
+            fontSize: '0.8rem',
           },
         }}
       >
@@ -128,22 +130,23 @@ const CustomToolbar = memo(function CustomToolbar({
         <Button
           variant="outlined"
           size="small"
-          startIcon={isExporting ? <CircularProgress size={14} /> : <DownloadIcon />}
+          startIcon={isExporting ? <CircularProgress size={12} /> : <DownloadIcon sx={{ fontSize: 16 }} />}
           onClick={onExport}
           disabled={isExporting}
           sx={{
-            borderColor: alpha(accentColor, 0.35),
+            borderColor: alpha(accentColor, 0.3),
             color: accentColor,
-            fontSize: '0.75rem',
+            fontSize: '0.7rem',
             fontWeight: 600,
-            py: 0.5,
-            px: 1.5,
+            py: 0.4,
+            px: 1.25,
             borderRadius: 1,
             textTransform: 'none',
             bgcolor: bgBase,
             boxShadow: getNeumorph(isDark, 'soft'),
+            minHeight: 28,
             '&:hover': {
-              bgcolor: alpha(accentColor, 0.08),
+              bgcolor: alpha(accentColor, 0.06),
               borderColor: accentColor,
             },
             '&.Mui-disabled': {
@@ -159,12 +162,13 @@ const CustomToolbar = memo(function CustomToolbar({
           size="small"
           label={`${rowCount} items`}
           sx={{
-            height: 24,
-            fontSize: '0.7rem',
-            fontWeight: 600,
+            height: 22,
+            fontSize: '0.65rem',
+            fontWeight: 700,
             bgcolor: alpha(accentColor, 0.1),
             color: accentColor,
             border: 'none',
+            letterSpacing: '0.02em',
           }}
         />
       </Box>
@@ -339,7 +343,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {/* Statistics Cards Section */}
       {statisticsCards && <Box>{statisticsCards}</Box>}
 
@@ -350,8 +354,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
       <Box
         sx={{
           bgcolor: bgBase,
-          borderRadius: 3,
-          p: { xs: 1.5, sm: 2 },
+          borderRadius: 2,
+          p: { xs: 1.25, sm: 1.5 },
           boxShadow: getNeumorph(isDark, 'medium'),
         }}
       >
@@ -360,6 +364,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         columns={finalColumns}
         loading={loading}
         autoHeight={autoHeight}
+        density="compact"
+        getRowHeight={() => 'auto'}
         checkboxSelection={checkboxSelection}
         rowSelectionModel={checkboxSelection ? (rowSelectionModel ?? []) : undefined}
         onRowSelectionModelChange={checkboxSelection ? (onRowSelectionModelChange ?? (() => {})) : undefined}
@@ -371,7 +377,6 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         getRowClassName={getRowClass}
         slots={{
           toolbar: CustomToolbar,
-          footer: () => null,
         }}
         slotProps={{
           toolbar: {
@@ -386,10 +391,10 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         }}
         sx={{
           bgcolor: bgSurface,
-          borderRadius: 2,
+          borderRadius: 1.5,
           border: '1px solid',
-          borderColor: 'divider',
-          fontSize: '0.85rem',
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
+          fontSize: '0.8rem',
           ...(maxHeight && {
             maxHeight,
             '& .MuiDataGrid-virtualScroller': {
@@ -404,21 +409,24 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
 
           // Header styling
           '& .MuiDataGrid-columnHeaders': {
-            bgcolor: isDark ? alpha(accentColor, 0.08) : alpha(accentColor, 0.04),
+            bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
             borderBottom: '2px solid',
-            borderColor: accentColor,
+            borderColor: alpha(accentColor, 0.4),
+            minHeight: '36px !important',
+            maxHeight: '36px !important',
           },
           '& .MuiDataGrid-columnHeader': {
-            py: 1,
+            py: 0.5,
           },
           '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 700,
-            fontSize: '0.75rem',
+            fontSize: '0.7rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
+            letterSpacing: '0.06em',
           },
           '& .MuiDataGrid-sortIcon': {
             color: accentColor,
+            fontSize: 16,
           },
           '& .MuiDataGrid-menuIconButton': {
             color: alpha(accentColor, 0.6),
@@ -426,20 +434,20 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
 
           // Row styling
           '& .MuiDataGrid-row': {
-            transition: 'all 0.15s ease',
+            transition: 'all 0.12s ease',
             '&:hover': {
-              bgcolor: isDark ? alpha(accentColor, 0.08) : alpha(accentColor, 0.04),
+              bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
             },
             '&.Mui-selected': {
-              bgcolor: alpha(accentColor, isDark ? 0.15 : 0.08),
+              bgcolor: alpha(accentColor, isDark ? 0.12 : 0.06),
               '&:hover': {
-                bgcolor: alpha(accentColor, isDark ? 0.2 : 0.12),
+                bgcolor: alpha(accentColor, isDark ? 0.16 : 0.09),
               },
             },
             '&:nth-of-type(even)': {
-              bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)',
               '&:hover': {
-                bgcolor: isDark ? alpha(accentColor, 0.08) : alpha(accentColor, 0.04),
+                bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
               },
             },
           },
@@ -447,12 +455,14 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
             opacity: 0.5,
           },
 
-          // Cell styling
+          // Cell styling (compact with auto height support)
           '& .MuiDataGrid-cell': {
-            py: 1,
-            px: 1.5,
-            fontSize: '0.85rem',
-            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+            py: 0.75,
+            px: 1.25,
+            fontSize: '0.8rem',
+            borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+            display: 'flex !important',
+            alignItems: 'center',
           },
 
           // Checkbox styling

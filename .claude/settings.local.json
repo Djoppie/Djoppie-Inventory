@@ -22,7 +22,8 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(find:*)",
       "Bash(node -e:*)",
-      "Skill(commit-commands:commit-push-pr)"
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(sqlcmd -S sql-djoppie-inventory-dev-k5xdqp.database.windows.net -d sqldb-djoppie-inventory-dev -U sqladmin -P Dj0ppenbeek026 -i query-tables.sql)"
     ]
   }
 }

@@ -190,6 +190,18 @@ export interface HardwareReportItem {
   serviceName?: string;
   buildingName?: string;
   location?: string;
+  // Physical Workplace information
+  physicalWorkplaceId?: number;
+  physicalWorkplace?: {
+    id: number;
+    code: string;
+    name: string;
+    serviceName?: string;
+    buildingName?: string;
+    sectorName?: string;
+    currentOccupantName?: string;
+    floor?: string;
+  };
   intuneDeviceId?: string;
   intuneComplianceState?: string;
   intuneLastSync?: string;
