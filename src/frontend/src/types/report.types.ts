@@ -283,10 +283,15 @@ export interface AssetChangeHistoryItem {
   oldValue?: string;
   newValue?: string;
   currentOwner?: string;
+  currentOwnerDisplayName?: string;
   currentStatus?: string;
   serviceName?: string;
   buildingName?: string;
   location?: string;
+  workplaceCode?: string;
+  workplaceBuilding?: string;
+  workplaceService?: string;
+  workplaceRoom?: string;
   performedBy?: string;
   performedByEmail?: string;
   notes?: string;

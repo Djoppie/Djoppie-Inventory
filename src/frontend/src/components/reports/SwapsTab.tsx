@@ -1,68 +1,90 @@
 /**
  * SwapsTab - Asset Change History Report
+ * @updated 2026-04-07
  *
- * Displays asset change history - every time an asset changes status or owner.
- * Shows asset-focused metrics instead of technician-focused metrics.
+ * Modern, compact redesign with:
+ * - Neumorphic design system
+ * - Compact StatisticsCard indicators
+ * - Streamlined filter section with grouped layout
+ * - NeumorphicDataGrid for professional table display
+ * - Event type badges with semantic colors
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
-  Paper,
-  Typography,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   MenuItem,
-  Button,
-  CircularProgress,
-  Alert,
-  Chip,
+  InputAdornment,
+  Collapse,
+  IconButton,
   Tooltip,
-  TableSortLabel,
+  Badge,
+  Chip,
+  Alert,
   alpha,
-  Card,
-  CardContent,
+  useTheme,
+  Grid,
+  Paper,
 } from '@mui/material';
 import {
   Timeline as TimelineIcon,
   SwapHoriz as SwapHorizIcon,
   Person as PersonIcon,
   LocationOn as LocationIcon,
-  Inventory as InventoryIcon,
   TrendingUp as TrendingUpIcon,
-  Download as DownloadIcon,
+  Search as SearchIcon,
+  ExpandMore as ExpandMoreIcon,
+  Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { useQuery } from '@tanstack/react-query';
 import type { AssetChangeHistoryItem, AssetChangeHistorySummary } from '../../types/report.types';
 import { getAssetChangeHistory, getAssetChangeHistorySummary, exportAssetChangeHistory } from '../../api/reports.api';
 import { ASSET_COLOR } from '../../constants/filterColors';
+import { getNeumorph, getNeumorphColors, getNeumorphInset } from '../../utils/neumorphicStyles';
+import NeumorphicDataGrid from '../admin/NeumorphicDataGrid';
+import StatisticsCard from '../common/StatisticsCard';
+import { useMutation } from '@tanstack/react-query';
 
-type SortField = 'eventDate' | 'assetCode' | 'eventType' | 'currentOwner' | 'serviceName';
-type SortOrder = 'asc' | 'desc';
+// Event type color mapping
+const getEventTypeColor = (eventType?: string): string => {
+  if (!eventType) return '#757575';
+  if (eventType.includes('Status')) return '#2196F3';
+  if (eventType.includes('Eigenaar')) return '#9C27B0';
+  if (eventType.includes('Locatie')) return '#FF9800';
+  if (eventType.includes('Onboarding')) return '#4CAF50';
+  if (eventType.includes('Offboarding')) return '#F44336';
+  return '#757575';
+};
+
+// Statistics card configuration
+const STAT_CARDS = [
+  { key: 'total', label: 'Totaal', icon: TimelineIcon, color: ASSET_COLOR },
+  { key: 'status', label: 'Status', icon: SwapHorizIcon, color: '#2196F3' },
+  { key: 'owner', label: 'Eigenaar', icon: PersonIcon, color: '#9C27B0' },
+  { key: 'active', label: 'Actief', icon: TrendingUpIcon, color: '#4CAF50' },
+];
 
 const SwapsTab = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const { bgBase } = getNeumorphColors(isDark);
+
+  // Filter states
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [serviceFilter] = useState<number | ''>('');
   const [eventTypeFilter, setEventTypeFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<SortField>('eventDate');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Fetch asset change history
   const { data: history = [], isLoading, error } = useQuery<AssetChangeHistoryItem[]>({
-    queryKey: ['assetChangeHistory', { dateFrom, dateTo, serviceFilter, eventTypeFilter, searchQuery }],
+    queryKey: ['assetChangeHistory', { dateFrom, dateTo, eventTypeFilter, searchQuery }],
     queryFn: async () => {
       const data = await getAssetChangeHistory({
         dateFrom,
         dateTo,
-        serviceId: serviceFilter || undefined,
         eventType: eventTypeFilter || undefined,
         searchQuery: searchQuery || undefined,
       });
@@ -81,7 +103,7 @@ const SwapsTab = () => {
 
   // Export mutation
   const exportMutation = useMutation({
-    mutationFn: () => exportAssetChangeHistory({ dateFrom, dateTo, serviceId: serviceFilter || undefined }),
+    mutationFn: () => exportAssetChangeHistory({ dateFrom, dateTo }),
     onSuccess: (blob) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -92,15 +114,6 @@ const SwapsTab = () => {
     },
   });
 
-  // Get unique services for filter dropdown (currently unused)
-  // const services = useMemo(() => {
-  //   const serviceSet = new Set<string>();
-  //   history.forEach(item => {
-  //     if (item.serviceName) serviceSet.add(item.serviceName);
-  //   });
-  //   return Array.from(serviceSet).sort();
-  // }, [history]);
-
   // Get unique event types for filter dropdown
   const eventTypes = useMemo(() => {
     const typeSet = new Set<string>();
@@ -110,44 +123,7 @@ const SwapsTab = () => {
     return Array.from(typeSet).sort();
   }, [history]);
 
-  // Sort history
-  const sortedHistory = useMemo(() => {
-    const sorted = [...history];
-    sorted.sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortField) {
-        case 'eventDate':
-          comparison = new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
-          break;
-        case 'assetCode':
-          comparison = a.assetCode.localeCompare(b.assetCode);
-          break;
-        case 'eventType':
-          comparison = a.eventTypeDisplay.localeCompare(b.eventTypeDisplay);
-          break;
-        case 'currentOwner':
-          comparison = (a.currentOwner || '').localeCompare(b.currentOwner || '');
-          break;
-        case 'serviceName':
-          comparison = (a.serviceName || '').localeCompare(b.serviceName || '');
-          break;
-      }
-
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-    return sorted;
-  }, [history, sortField, sortOrder]);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
+  // Format date helper
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -161,440 +137,475 @@ const SwapsTab = () => {
     });
   };
 
-  const getEventTypeColor = (eventType?: string): string => {
-    if (!eventType) return '#757575';
-    if (eventType.includes('Status')) return '#2196F3';
-    if (eventType.includes('Eigenaar')) return '#9C27B0';
-    if (eventType.includes('Locatie')) return '#FF9800';
-    if (eventType.includes('Onboarding')) return '#4CAF50';
-    if (eventType.includes('Offboarding')) return '#F44336';
-    return '#757575';
-  };
+  // Export handler
+  const handleExport = useCallback(() => {
+    exportMutation.mutate();
+  }, [exportMutation]);
 
-  return (
-    <Box>
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-        Asset Geschiedenis
-      </Typography>
-
-      {/* Summary Statistics Cards */}
-      {summary && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card
-              variant="outlined"
-              sx={{
-                borderColor: alpha(ASSET_COLOR, 0.3),
-                borderWidth: 2,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: ASSET_COLOR,
-                  boxShadow: `0 4px 12px ${alpha(ASSET_COLOR, 0.2)}`,
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <TimelineIcon sx={{ fontSize: 32, color: ASSET_COLOR, mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: ASSET_COLOR }}>
-                  {summary.totalChanges}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Totaal Wijzigingen
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card variant="outlined" sx={{ borderColor: '#2196F3', borderWidth: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <SwapHorizIcon sx={{ fontSize: 32, color: '#2196F3', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#2196F3' }}>
-                  {summary.statusChanges}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Status Wijzigingen
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card variant="outlined" sx={{ borderColor: '#9C27B0', borderWidth: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <PersonIcon sx={{ fontSize: 32, color: '#9C27B0', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#9C27B0' }}>
-                  {summary.ownerChanges}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Eigenaar Wijzigingen
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card variant="outlined" sx={{ borderColor: '#4CAF50', borderWidth: 1 }}>
-              <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                <TrendingUpIcon sx={{ fontSize: 32, color: '#4CAF50', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: '#4CAF50' }}>
-                  {summary.activeAssets}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  Actieve Assets
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Event Type Breakdown */}
-      {summary?.byEventType && Object.keys(summary.byEventType).length > 0 && (
-        <Paper
+  // Column definitions for DataGrid
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'eventDate',
+      headerName: 'Datum',
+      width: 150,
+      renderCell: (params: GridRenderCellParams) => formatDate(params.value),
+    },
+    {
+      field: 'assetCode',
+      headerName: 'Asset Code',
+      width: 130,
+      renderCell: (params: GridRenderCellParams) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <InventoryIcon sx={{ fontSize: 16, color: 'action.active' }} />
+          <Chip
+            label={params.value}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              bgcolor: alpha(ASSET_COLOR, 0.1),
+              color: ASSET_COLOR,
+              fontSize: '0.7rem',
+              height: 22,
+            }}
+          />
+        </Box>
+      ),
+    },
+    {
+      field: 'assetTypeName',
+      headerName: 'Type',
+      width: 130,
+    },
+    {
+      field: 'serialNumber',
+      headerName: 'Serienummer',
+      width: 150,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'eventTypeDisplay',
+      headerName: 'Gebeurtenis',
+      width: 160,
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          size="small"
+          label={params.value}
           sx={{
-            p: 2,
-            mb: 3,
-            bgcolor: (theme) => alpha(ASSET_COLOR, theme.palette.mode === 'dark' ? 0.05 : 0.02),
+            bgcolor: alpha(getEventTypeColor(params.value), 0.12),
+            color: getEventTypeColor(params.value),
+            fontWeight: 600,
+            fontSize: '0.7rem',
             border: '1px solid',
-            borderColor: () => alpha(ASSET_COLOR, 0.1),
+            borderColor: alpha(getEventTypeColor(params.value), 0.35),
+            height: 22,
+          }}
+        />
+      ),
+    },
+    {
+      field: 'oldValue',
+      headerName: 'Oude Waarde',
+      width: 140,
+      flex: 1,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'newValue',
+      headerName: 'Nieuwe Waarde',
+      width: 140,
+      flex: 1,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'currentOwnerDisplayName',
+      headerName: 'Huidige Eigenaar',
+      width: 180,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams) => {
+        const displayName = params.value || params.row.currentOwner;
+        return displayName ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <PersonIcon sx={{ fontSize: 16, color: 'action.active' }} />
+            {displayName}
+          </Box>
+        ) : '-';
+      },
+    },
+    {
+      field: 'serviceName',
+      headerName: 'Dienst',
+      width: 130,
+      valueGetter: (value) => value || '-',
+    },
+    {
+      field: 'location',
+      headerName: 'Locatie',
+      width: 200,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams) => {
+        const workplaceCode = params.row.workplaceCode;
+        const workplaceBuilding = params.row.workplaceBuilding;
+        const workplaceService = params.row.workplaceService;
+        const workplaceRoom = params.row.workplaceRoom;
+
+        // Build location string from workplace info
+        const locationParts: string[] = [];
+        if (workplaceCode) locationParts.push(workplaceCode);
+        if (workplaceBuilding) locationParts.push(workplaceBuilding);
+        if (workplaceService) locationParts.push(workplaceService);
+        if (workplaceRoom) locationParts.push(workplaceRoom);
+
+        const workplaceLocation = locationParts.length > 0 ? locationParts.join(' • ') : null;
+
+        // Fallback to old location fields if no workplace info
+        const fallbackBuilding = params.row.buildingName;
+        const fallbackLocation = params.value;
+
+        const hasWorkplace = workplaceLocation !== null;
+        const hasFallback = fallbackBuilding || fallbackLocation;
+
+        if (!hasWorkplace && !hasFallback) return '-';
+
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <LocationIcon sx={{ fontSize: 16, color: 'action.active' }} />
+            <Box>
+              {hasWorkplace ? (
+                <Box sx={{ fontSize: '0.75rem', fontWeight: 500 }}>{workplaceLocation}</Box>
+              ) : (
+                <>
+                  {fallbackBuilding && <Box sx={{ fontSize: '0.75rem' }}>{fallbackBuilding}</Box>}
+                  {fallbackLocation && (
+                    <Box sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>{fallbackLocation}</Box>
+                  )}
+                </>
+              )}
+            </Box>
+          </Box>
+        );
+      },
+    },
+  ], [formatDate]);
+
+  // Error state
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Fout bij laden van asset geschiedenis: {(error as Error).message}
+      </Alert>
+    );
+  }
+
+  // Statistics cards
+  const statisticsCards = useMemo(() => (
+    <Grid container spacing={1.5}>
+      {STAT_CARDS.map((card) => {
+        const IconComponent = card.icon;
+        let count = 0;
+
+        if (summary) {
+          switch (card.key) {
+            case 'total':
+              count = summary.totalChanges;
+              break;
+            case 'status':
+              count = summary.statusChanges;
+              break;
+            case 'owner':
+              count = summary.ownerChanges;
+              break;
+            case 'active':
+              count = summary.activeAssets;
+              break;
+          }
+        }
+
+        return (
+          <Grid size={{ xs: 6, sm: 3, md: 3 }} key={card.key}>
+            <StatisticsCard
+              icon={IconComponent}
+              label={card.label}
+              value={count}
+              color={card.color}
+            />
+          </Grid>
+        );
+      })}
+    </Grid>
+  ), [summary]);
+
+  // Event type breakdown section
+  const eventTypeBreakdown = useMemo(() => {
+    if (!summary?.byEventType || Object.keys(summary.byEventType).length === 0) return null;
+
+    return (
+      <Paper
+        sx={{
+          bgcolor: bgBase,
+          boxShadow: getNeumorph(isDark, 'soft'),
+          borderRadius: 1.5,
+          p: 1.5,
+          border: '1px solid',
+          borderColor: alpha(ASSET_COLOR, 0.15),
+        }}
+      >
+        <Box sx={{ mb: 1.25 }}>
+          <Box
+            component="span"
+            sx={{
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: ASSET_COLOR,
+            }}
+          >
+            Per Gebeurtenis Type
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {Object.entries(summary.byEventType)
+            .sort(([, a], [, b]) => b - a)
+            .map(([type, count]) => (
+              <Chip
+                key={type}
+                label={`${type}: ${count}`}
+                size="small"
+                sx={{
+                  height: 24,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  bgcolor: alpha(getEventTypeColor(type), 0.12),
+                  color: getEventTypeColor(type),
+                  border: '1px solid',
+                  borderColor: alpha(getEventTypeColor(type), 0.3),
+                }}
+              />
+            ))}
+        </Box>
+      </Paper>
+    );
+  }, [summary, bgBase, isDark]);
+
+  // Advanced filters
+  const advancedFilters = useMemo(() => {
+    const hasActiveFilters = dateFrom || dateTo || eventTypeFilter;
+
+    return (
+      <Paper
+        sx={{
+          bgcolor: bgBase,
+          boxShadow: getNeumorph(isDark, 'soft'),
+          borderRadius: 1.5,
+          overflow: 'hidden',
+          border: '1px solid',
+          borderColor: hasActiveFilters ? alpha(ASSET_COLOR, 0.3) : 'transparent',
+        }}
+      >
+        {/* Filter Header Bar with Search */}
+        <Box
+          sx={{
+            p: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
           }}
         >
-          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: ASSET_COLOR }}>
-            Per Gebeurtenis Type
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {Object.entries(summary.byEventType)
-              .sort(([, a], [, b]) => b - a)
-              .map(([type, count]) => (
-                <Chip
-                  key={type}
-                  label={`${type}: ${count}`}
-                  size="small"
-                  sx={{
-                    bgcolor: alpha(getEventTypeColor(type), 0.1),
-                    color: getEventTypeColor(type),
-                    borderColor: getEventTypeColor(type),
-                    border: '1px solid',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                  }}
-                />
-              ))}
-          </Box>
-        </Paper>
-      )}
-
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+          <Box sx={{ flex: 1 }}>
             <TextField
               fullWidth
               size="small"
-              label="Van Datum"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Tot Datum"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <TextField
-              fullWidth
-              size="small"
-              select
-              label="Gebeurtenis Type"
-              value={eventTypeFilter}
-              onChange={(e) => setEventTypeFilter(e.target.value)}
-            >
-              <MenuItem value="">Alle</MenuItem>
-              {eventTypes.map((type) => (
-                <MenuItem key={type} value={type}>
-                  {type}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Zoeken"
-              placeholder="Asset code, naam, eigenaar..."
+              placeholder="Zoeken op code, naam, eigenaar..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 12, md: 2.4 }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={exportMutation.isPending ? <CircularProgress size={16} /> : <DownloadIcon />}
-              onClick={() => exportMutation.mutate()}
-              disabled={exportMutation.isPending}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
               sx={{
-                borderColor: ASSET_COLOR,
-                color: ASSET_COLOR,
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '0.8rem',
+                  '& input': {
+                    py: 0.75,
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          <Tooltip title={filtersExpanded ? 'Filters verbergen' : 'Meer filters'}>
+            <IconButton
+              size="small"
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              sx={{
+                width: 32,
+                height: 32,
+                transition: 'all 0.2s ease',
+                bgcolor: filtersExpanded ? alpha(ASSET_COLOR, 0.1) : 'transparent',
                 '&:hover': {
-                  borderColor: ASSET_COLOR,
-                  bgcolor: alpha(ASSET_COLOR, 0.08),
+                  bgcolor: alpha(ASSET_COLOR, 0.15),
                 },
               }}
             >
-              Export CSV
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+              <Badge
+                badgeContent={hasActiveFilters ? '!' : null}
+                color="warning"
+                variant="dot"
+              >
+                <ExpandMoreIcon
+                  sx={{
+                    fontSize: 20,
+                    color: filtersExpanded ? ASSET_COLOR : 'text.secondary',
+                    transform: filtersExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+        </Box>
 
-      {/* Table */}
-      {isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+        {/* Collapsible Filter Options */}
+        <Collapse in={filtersExpanded}>
+          <Box
+            sx={{
+              p: 2,
+              pt: 1.5,
+              borderTop: '1px solid',
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
+            }}
+          >
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Van Datum"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '0.8rem',
+                      bgcolor: bgBase,
+                      boxShadow: getNeumorphInset(isDark),
+                      '&:hover': {
+                        boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(ASSET_COLOR, 0.25)}`,
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(ASSET_COLOR, 0.35)}`,
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                    },
+                    '& fieldset': { border: 'none' },
+                  }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Tot Datum"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '0.8rem',
+                      bgcolor: bgBase,
+                      boxShadow: getNeumorphInset(isDark),
+                      '&:hover': {
+                        boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(ASSET_COLOR, 0.25)}`,
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(ASSET_COLOR, 0.35)}`,
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                    },
+                    '& fieldset': { border: 'none' },
+                  }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  select
+                  label="Gebeurtenis Type"
+                  value={eventTypeFilter}
+                  onChange={(e) => setEventTypeFilter(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '0.8rem',
+                      bgcolor: bgBase,
+                      boxShadow: getNeumorphInset(isDark),
+                      '&:hover': {
+                        boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(ASSET_COLOR, 0.25)}`,
+                      },
+                      '&.Mui-focused': {
+                        boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(ASSET_COLOR, 0.35)}`,
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                    },
+                    '& fieldset': { border: 'none' },
+                  }}
+                >
+                  <MenuItem value="">Alle</MenuItem>
+                  {eventTypes.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </Box>
+        </Collapse>
+      </Paper>
+    );
+  }, [dateFrom, dateTo, eventTypeFilter, searchQuery, eventTypes, filtersExpanded, bgBase, isDark]);
+
+  return (
+    <>
+      {/* Event Type Breakdown - rendered above statistics */}
+      {eventTypeBreakdown && (
+        <Box sx={{ mb: 1.5 }}>
+          {eventTypeBreakdown}
         </Box>
       )}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Fout bij het laden van asset geschiedenis: {(error as Error).message}
-        </Alert>
-      )}
-
-      {!isLoading && !error && (
-        <TableContainer
-          component={Paper}
-          sx={{
-            maxHeight: 600,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Table stickyHeader size="small">
-            <TableHead>
-              <TableRow
-                sx={{
-                  '& th': {
-                    bgcolor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? alpha(ASSET_COLOR, 0.08)
-                        : alpha(ASSET_COLOR, 0.04),
-                    borderBottom: '2px solid',
-                    borderColor: ASSET_COLOR,
-                    fontWeight: 700,
-                    fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    py: 1.5,
-                  },
-                }}
-              >
-                <TableCell>
-                  <TableSortLabel
-                    active={sortField === 'eventDate'}
-                    direction={sortField === 'eventDate' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('eventDate')}
-                    sx={{
-                      '&.Mui-active': { color: ASSET_COLOR },
-                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                    }}
-                  >
-                    Datum
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortField === 'assetCode'}
-                    direction={sortField === 'assetCode' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('assetCode')}
-                    sx={{
-                      '&.Mui-active': { color: ASSET_COLOR },
-                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                    }}
-                  >
-                    Asset Code
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Asset Type</TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortField === 'eventType'}
-                    direction={sortField === 'eventType' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('eventType')}
-                    sx={{
-                      '&.Mui-active': { color: ASSET_COLOR },
-                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                    }}
-                  >
-                    Gebeurtenis
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Oude Waarde</TableCell>
-                <TableCell>Nieuwe Waarde</TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortField === 'currentOwner'}
-                    direction={sortField === 'currentOwner' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('currentOwner')}
-                    sx={{
-                      '&.Mui-active': { color: ASSET_COLOR },
-                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                    }}
-                  >
-                    Huidige Eigenaar
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortField === 'serviceName'}
-                    direction={sortField === 'serviceName' ? sortOrder : 'asc'}
-                    onClick={() => handleSort('serviceName')}
-                    sx={{
-                      '&.Mui-active': { color: ASSET_COLOR },
-                      '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                    }}
-                  >
-                    Dienst
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Locatie</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sortedHistory.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Geen asset wijzigingen gevonden
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedHistory.map((item, index) => (
-                  <TableRow
-                    key={item.id}
-                    hover
-                    sx={{
-                      bgcolor: (theme) =>
-                        index % 2 === 1
-                          ? theme.palette.mode === 'dark'
-                            ? 'rgba(255, 255, 255, 0.02)'
-                            : 'rgba(0, 0, 0, 0.02)'
-                          : 'transparent',
-                      '&:hover': {
-                        bgcolor: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? alpha(ASSET_COLOR, 0.08)
-                            : alpha(ASSET_COLOR, 0.04),
-                      },
-                    }}
-                  >
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                        {formatDate(item.eventDate)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <InventoryIcon fontSize="small" color="action" />
-                        <Tooltip title={item.assetName || item.assetCode}>
-                          <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.8rem' }}>
-                            {item.assetCode}
-                          </Typography>
-                        </Tooltip>
-                      </Box>
-                      {item.serialNumber && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          SN: {item.serialNumber}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                        {item.assetTypeName || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        label={item.eventTypeDisplay}
-                        sx={{
-                          bgcolor: alpha(getEventTypeColor(item.eventTypeDisplay), 0.1),
-                          color: getEventTypeColor(item.eventTypeDisplay),
-                          fontWeight: 600,
-                          fontSize: '0.7rem',
-                          borderColor: getEventTypeColor(item.eventTypeDisplay),
-                          border: '1px solid',
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                        {item.oldValue || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                        {item.newValue || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {item.currentOwner && <PersonIcon fontSize="small" color="action" />}
-                        <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                          {item.currentOwner || '-'}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                        {item.serviceName || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {item.buildingName && <LocationIcon fontSize="small" color="action" />}
-                        <Box>
-                          {item.buildingName && (
-                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                              {item.buildingName}
-                            </Typography>
-                          )}
-                          {item.location && (
-                            <Typography variant="caption" color="text.secondary">
-                              {item.location}
-                            </Typography>
-                          )}
-                          {!item.buildingName && !item.location && <Typography variant="body2">-</Typography>}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {sortedHistory.length > 0 && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}>
-          {sortedHistory.length} wijziging{sortedHistory.length !== 1 ? 'en' : ''} weergegeven
-        </Typography>
-      )}
-    </Box>
+      {/* DataGrid with integrated statistics, filters, and table */}
+      <NeumorphicDataGrid
+        rows={history}
+        columns={columns}
+        loading={isLoading}
+        accentColor={ASSET_COLOR}
+        statisticsCards={statisticsCards}
+        advancedFilters={advancedFilters}
+        exportable
+        onExport={handleExport}
+        isExporting={exportMutation.isPending}
+        initialPageSize={25}
+        maxHeight={600}
+        stickyHeader
+      />
+    </>
   );
 };
 

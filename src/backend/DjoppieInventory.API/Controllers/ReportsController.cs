@@ -399,6 +399,14 @@ public class ReportsController : ControllerBase
                 .ThenInclude(a => a!.Service)
             .Include(e => e.Asset)
                 .ThenInclude(a => a!.Building)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.Employee)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.PhysicalWorkplace)
+                    .ThenInclude(pw => pw!.Building)
+            .Include(e => e.Asset)
+                .ThenInclude(a => a!.PhysicalWorkplace)
+                    .ThenInclude(pw => pw!.Service)
             .AsNoTracking();
 
         // Filter to status and owner change events
@@ -460,10 +468,19 @@ public class ReportsController : ControllerBase
                 OldValue = e.OldValue,
                 NewValue = e.NewValue,
                 CurrentOwner = e.Asset != null ? e.Asset.Owner : null,
+                CurrentOwnerDisplayName = e.Asset != null && e.Asset.Employee != null
+                    ? e.Asset.Employee.DisplayName
+                    : e.Asset != null ? e.Asset.Owner : null,
                 CurrentStatus = e.Asset != null ? e.Asset.Status.ToString() : null,
                 ServiceName = e.Asset != null && e.Asset.Service != null ? e.Asset.Service.Name : null,
                 BuildingName = e.Asset != null && e.Asset.Building != null ? e.Asset.Building.Name : null,
                 Location = e.Asset != null ? e.Asset.OfficeLocation : null,
+                WorkplaceCode = e.Asset != null && e.Asset.PhysicalWorkplace != null ? e.Asset.PhysicalWorkplace.Code : null,
+                WorkplaceBuilding = e.Asset != null && e.Asset.PhysicalWorkplace != null && e.Asset.PhysicalWorkplace.Building != null
+                    ? e.Asset.PhysicalWorkplace.Building.Name : null,
+                WorkplaceService = e.Asset != null && e.Asset.PhysicalWorkplace != null && e.Asset.PhysicalWorkplace.Service != null
+                    ? e.Asset.PhysicalWorkplace.Service.Name : null,
+                WorkplaceRoom = e.Asset != null && e.Asset.PhysicalWorkplace != null ? e.Asset.PhysicalWorkplace.Room : null,
                 PerformedBy = e.PerformedBy,
                 PerformedByEmail = e.PerformedByEmail,
                 Notes = e.Notes
@@ -1962,10 +1979,15 @@ public class AssetChangeHistoryItemDto
     public string? OldValue { get; set; }
     public string? NewValue { get; set; }
     public string? CurrentOwner { get; set; }
+    public string? CurrentOwnerDisplayName { get; set; }
     public string? CurrentStatus { get; set; }
     public string? ServiceName { get; set; }
     public string? BuildingName { get; set; }
     public string? Location { get; set; }
+    public string? WorkplaceCode { get; set; }
+    public string? WorkplaceBuilding { get; set; }
+    public string? WorkplaceService { get; set; }
+    public string? WorkplaceRoom { get; set; }
     public string? PerformedBy { get; set; }
     public string? PerformedByEmail { get; set; }
     public string? Notes { get; set; }
