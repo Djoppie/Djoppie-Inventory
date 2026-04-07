@@ -1,6 +1,7 @@
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,15 +18,21 @@ public class RolloutDaysController : ControllerBase
 {
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IServiceRepository _serviceRepository;
+    private readonly IWorkplaceAssetAssignmentService _assignmentService;
+    private readonly AssetPlanSyncService _syncService;
     private readonly ILogger<RolloutDaysController> _logger;
 
     public RolloutDaysController(
         IRolloutRepository rolloutRepository,
         IServiceRepository serviceRepository,
+        IWorkplaceAssetAssignmentService assignmentService,
+        AssetPlanSyncService syncService,
         ILogger<RolloutDaysController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _serviceRepository = serviceRepository;
+        _assignmentService = assignmentService;
+        _syncService = syncService;
         _logger = logger;
     }
 
@@ -361,6 +368,111 @@ public class RolloutDaysController : ControllerBase
         return Ok(services);
     }
 
+    /// <summary>
+    /// Gets all workplaces for a specific day.
+    /// </summary>
+    /// <param name="id">Day ID</param>
+    /// <param name="includeAssignments">Include asset assignments for each workplace</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/workplaces")]
+    [ProducesResponseType(typeof(IEnumerable<RolloutWorkplaceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<RolloutWorkplaceDto>>> GetWorkplaces(
+        int id,
+        [FromQuery] bool includeAssignments = true,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(id, false, cancellationToken);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {id} not found" });
+        }
+
+        var workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(id, cancellationToken);
+        var dtos = new List<RolloutWorkplaceDto>();
+
+        // Include asset assignments for each workplace if requested
+        foreach (var workplace in workplaces)
+        {
+            var dto = MapToWorkplaceDto(workplace);
+
+            if (includeAssignments)
+            {
+                var assignments = await _assignmentService.GetByWorkplaceIdAsync(workplace.Id, cancellationToken);
+                dto.AssetAssignments = assignments.ToList();
+
+                // Convert to AssetPlans for frontend compatibility
+                dto.AssetPlans = await _syncService.ConvertToAssetPlansAsync(workplace.Id, cancellationToken);
+
+                // Fallback to legacy JSON if no relational assignments exist
+                if (dto.AssetPlans.Count == 0 && !string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+                {
+                    try
+                    {
+                        var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+                        if (legacyPlans != null && legacyPlans.Count > 0)
+                        {
+                            dto.AssetPlans = legacyPlans;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", workplace.Id);
+                    }
+                }
+            }
+
+            dtos.Add(dto);
+        }
+
+        return Ok(dtos);
+    }
+
+    /// <summary>
+    /// Creates a new workplace for a day.
+    /// </summary>
+    /// <param name="id">Day ID</param>
+    /// <param name="dto">Workplace creation data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/workplaces")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> CreateWorkplace(
+        int id,
+        [FromBody] CreateRolloutWorkplaceDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(id, false, cancellationToken);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {id} not found" });
+        }
+
+        var workplace = new RolloutWorkplace
+        {
+            RolloutDayId = id,
+            UserName = dto.UserName,
+            UserEmail = dto.UserEmail,
+            UserEntraId = dto.UserEntraId,
+            Location = dto.Location,
+            ScheduledDate = dto.ScheduledDate,
+            ServiceId = dto.ServiceId,
+            PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
+            IsLaptopSetup = dto.IsLaptopSetup,
+            Status = RolloutWorkplaceStatus.Pending,
+            Notes = dto.Notes
+        };
+
+        var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Created rollout workplace {WorkplaceId} for day {DayId}", createdWorkplace.Id, id);
+
+        return CreatedAtAction(nameof(GetWorkplaces), new { id = id }, MapToWorkplaceDto(createdWorkplace));
+    }
+
     #region Private Mapping Methods
 
     private static RolloutDayDto MapToDto(RolloutDay day)
@@ -432,6 +544,9 @@ public class RolloutDaysController : ControllerBase
             ServiceName = workplace.Service?.Name,
             BuildingId = workplace.BuildingId,
             BuildingName = workplace.Building?.Name,
+            PhysicalWorkplaceId = workplace.PhysicalWorkplaceId,
+            PhysicalWorkplaceCode = workplace.PhysicalWorkplace?.Code,
+            PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             ScheduledDate = workplace.ScheduledDate,
             IsLaptopSetup = workplace.IsLaptopSetup,
             Status = workplace.Status.ToString(),

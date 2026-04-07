@@ -313,6 +313,80 @@ public class RolloutSessionsController : ControllerBase
     }
 
     /// <summary>
+    /// Gets all days for a specific session.
+    /// </summary>
+    /// <param name="id">Session ID</param>
+    /// <param name="includeWorkplaces">Include workplaces in response</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/days")]
+    [ProducesResponseType(typeof(IEnumerable<RolloutDayDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<RolloutDayDto>>> GetDays(
+        int id,
+        [FromQuery] bool includeWorkplaces = false,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify session exists
+        var session = await _rolloutRepository.GetSessionByIdAsync(id, cancellationToken: cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {id} not found" });
+        }
+
+        // Get days for this session
+        var days = await _rolloutRepository.GetDaysBySessionIdAsync(id, includeWorkplaces, cancellationToken);
+        var dayDtos = days.Select(MapToDayDto).ToList();
+
+        return Ok(dayDtos);
+    }
+
+    /// <summary>
+    /// Creates a new day for a session.
+    /// </summary>
+    /// <param name="id">Session ID</param>
+    /// <param name="dto">Day creation data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/days")]
+    [ProducesResponseType(typeof(RolloutDayDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutDayDto>> CreateDay(
+        int id,
+        [FromBody] CreateRolloutDayDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify session exists
+        var session = await _rolloutRepository.GetSessionByIdAsync(id, cancellationToken: cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {id} not found" });
+        }
+
+        // Get the next day number
+        var existingDays = await _rolloutRepository.GetDaysBySessionIdAsync(id, false, cancellationToken);
+        var maxDayNumber = existingDays.Any() ? existingDays.Max(d => d.DayNumber) : 0;
+
+        var day = new RolloutDay
+        {
+            RolloutSessionId = id,
+            Date = dto.Date,
+            Name = dto.Name,
+            DayNumber = maxDayNumber + 1,
+            ScheduledServiceIds = dto.ScheduledServiceIds.Count > 0
+                ? string.Join(",", dto.ScheduledServiceIds)
+                : null,
+            Status = RolloutDayStatus.Planning,
+            Notes = dto.Notes
+        };
+
+        var createdDay = await _rolloutRepository.CreateDayAsync(day, cancellationToken);
+
+        _logger.LogInformation("Created rollout day {DayId} for session {SessionId}", createdDay.Id, id);
+
+        return CreatedAtAction(nameof(GetDays), new { id = id }, MapToDayDto(createdDay));
+    }
+
+    /// <summary>
     /// Gets asset status change report for a rollout session.
     /// Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
     /// </summary>

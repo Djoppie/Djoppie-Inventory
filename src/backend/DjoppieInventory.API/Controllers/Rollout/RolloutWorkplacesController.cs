@@ -93,6 +93,26 @@ public class RolloutWorkplacesController : ControllerBase
         {
             var assignments = await _assignmentService.GetByWorkplaceIdAsync(id, cancellationToken);
             dto.AssetAssignments = assignments.ToList();
+
+            // Convert to AssetPlans for frontend compatibility
+            dto.AssetPlans = await _syncService.ConvertToAssetPlansAsync(id, cancellationToken);
+
+            // Fallback to legacy JSON if no relational assignments exist
+            if (dto.AssetPlans.Count == 0 && !string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+                    if (legacyPlans != null && legacyPlans.Count > 0)
+                    {
+                        dto.AssetPlans = legacyPlans;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", id);
+                }
+            }
         }
 
         return Ok(dto);
