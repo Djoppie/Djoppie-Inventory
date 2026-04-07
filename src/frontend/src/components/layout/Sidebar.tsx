@@ -47,7 +47,6 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 // Icons - Operations sub-items
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import TimelineIcon from '@mui/icons-material/Timeline';
 
 // Icons - Admin sub-items
 import CategoryIcon from '@mui/icons-material/Category';
@@ -60,7 +59,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 // Icons - Requests sub-items
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import HistoryIcon from '@mui/icons-material/History';
 
 import { ROUTES } from '../../constants/routes';
 import { useThemeMode } from '../../hooks/useThemeMode';
@@ -148,7 +146,7 @@ const navigationItems: NavItem[] = [
     subItems: [
       {
         label: 'Reports',
-        icon: <LocationOnIcon />,
+        icon: <AssessmentIcon />,
         path: '/workplaces/reports',
         matchPaths: ['/workplaces/reports'],
       },
@@ -176,7 +174,7 @@ const navigationItems: NavItem[] = [
       },
       {
         label: 'Reports',
-        icon: <TimelineIcon />,
+        icon: <AssessmentIcon />,
         path: ROUTES.DEPLOYMENT_HISTORY,
         matchPaths: ['/laptop-swap/history', '/deployment'],
       },
@@ -203,7 +201,7 @@ const navigationItems: NavItem[] = [
       },
       {
         label: 'Reports',
-        icon: <HistoryIcon />,
+        icon: <AssessmentIcon />,
         path: ROUTES.REQUESTS_REPORTS,
         matchPaths: ['/requests/reports'],
       },
@@ -293,12 +291,31 @@ const Sidebar = ({
     (session: RolloutSession) => session.status === 'InProgress'
   );
 
-  // Toggle section expansion
+  // Toggle section expansion (auto-collapse other sections)
   const toggleSection = useCallback((sectionLabel: string) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [sectionLabel]: !prev[sectionLabel],
-    }));
+    setExpandedSections((prev) => {
+      const isCurrentlyExpanded = prev[sectionLabel];
+
+      // If clicking on already expanded section, just collapse it
+      if (isCurrentlyExpanded) {
+        return {
+          ...prev,
+          [sectionLabel]: false,
+        };
+      }
+
+      // Otherwise, collapse all sections and expand the clicked one
+      const newState: Record<string, boolean> = {
+        Inventory: false,
+        Workplaces: false,
+        Operations: false,
+        Requests: false,
+        Admin: false,
+      };
+      newState[sectionLabel] = true;
+
+      return newState;
+    });
   }, []);
 
   // Check if a nav item or sub-item is active
@@ -855,8 +872,11 @@ const Sidebar = ({
                                 sx={{
                                   minWidth: 36,
                                   color: getIconColor(subItem, subActive),
-                                  fontSize: '1.1rem',
+                                  fontSize: '0.85rem',
                                   transition: 'color 0.2s ease',
+                                  '& .MuiSvgIcon-root': {
+                                    fontSize: '1.2rem', // Smaller than parent icons (which are 1.5rem default)
+                                  },
                                 }}
                               >
                                 {subItem.icon}
