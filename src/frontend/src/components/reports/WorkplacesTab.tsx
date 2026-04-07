@@ -209,7 +209,7 @@ const WorkplacesTab = () => {
 
   // Statistics cards component
   const statisticsCards = useMemo(() => (
-    <Grid container spacing={2}>
+    <Grid container spacing={1.25}>
       {STAT_CARDS.map((card) => {
         const IconComponent = card.icon;
         let count = 0;
@@ -284,10 +284,10 @@ const WorkplacesTab = () => {
           borderRadius: 2,
         }}
       >
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
           Per Gebouw
         </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={1.25}>
           {Object.entries(summary.byBuilding).map(([building, data]) => (
             <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={building}>
               <Paper
@@ -326,7 +326,7 @@ const WorkplacesTab = () => {
         borderRadius: 2,
       }}
     >
-      <Grid container spacing={2} alignItems="center">
+      <Grid container spacing={1.5} alignItems="center">
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
             fullWidth
@@ -379,7 +379,7 @@ const WorkplacesTab = () => {
   ), [searchQuery, buildingFilter, occupancyFilter, buildings, bgBase, isDark]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {/* Statistics Cards */}
       {statisticsCards}
 

@@ -315,7 +315,7 @@ const RolloutTab = () => {
           borderLeft: `3px solid ${ROLLOUT_COLOR}`,
         }}
       >
-        <Grid container spacing={2} alignItems="center">
+        <Grid container spacing={1.5} alignItems="center">
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
@@ -710,7 +710,7 @@ const RolloutTab = () => {
 
       {/* Day Checklists */}
       {checklistLoading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {[1, 2, 3].map(i => (
             <Skeleton key={i} variant="rounded" height={80} />
           ))}

@@ -158,25 +158,25 @@ const ReportsPage = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2, px: { xs: 2, sm: 3 } }}>
-      {/* Compact Header */}
+    <Container maxWidth="xl" sx={{ py: 1.25, px: { xs: 1.5, sm: 2 } }}>
+      {/* Ultra-Compact Header */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          mb: 1.5,
+          mb: 0.75,
           ...getFadeInUpAnimation(0),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Tooltip title="Terug naar Dashboard">
             <IconButton
               onClick={() => navigate(ROUTES.DASHBOARD)}
               size="small"
               sx={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 bgcolor: bgBase,
                 boxShadow: getNeumorph(isDark, 'soft'),
                 transition: 'all 0.2s ease',
@@ -187,17 +187,17 @@ const ReportsPage = () => {
                 },
               }}
             >
-              <ArrowBackIcon sx={{ color: currentColor, fontSize: 18 }} />
+              <ArrowBackIcon sx={{ color: currentColor, fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           <Box>
             <Typography
               variant="h5"
               sx={{
-                fontSize: '1.25rem',
+                fontSize: '1.1rem',
                 fontWeight: 700,
                 color: currentColor,
-                lineHeight: 1.2,
+                lineHeight: 1.1,
                 background: `linear-gradient(135deg, ${currentColor} 0%, ${alpha(currentColor, 0.7)} 100%)`,
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
@@ -209,7 +209,7 @@ const ReportsPage = () => {
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ fontSize: '0.7rem', display: 'block', mt: 0.25 }}
+              sx={{ fontSize: '0.65rem', display: 'block', mt: 0.15 }}
             >
               {currentTab.description}
             </Typography>
@@ -221,8 +221,8 @@ const ReportsPage = () => {
             onClick={handleRefresh}
             size="small"
             sx={{
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
               transition: 'all 0.2s ease',
@@ -238,7 +238,7 @@ const ReportsPage = () => {
             <RefreshIcon
               sx={{
                 color: currentColor,
-                fontSize: 18,
+                fontSize: 16,
                 transition: 'transform 0.5s ease',
               }}
             />
@@ -246,13 +246,13 @@ const ReportsPage = () => {
         </Tooltip>
       </Box>
 
-      {/* Compact Tabs */}
+      {/* Ultra-Compact Tabs */}
       <Paper
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2,
-          mb: 1.5,
+          borderRadius: 1.5,
+          mb: 0.75,
           overflow: 'hidden',
           border: '1px solid',
           borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
@@ -265,16 +265,16 @@ const ReportsPage = () => {
           variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons={isMobile ? 'auto' : false}
           sx={{
-            minHeight: 44,
+            minHeight: 38,
             '& .MuiTab-root': {
-              minHeight: 44,
-              py: 1,
-              px: 1.5,
-              minWidth: isMobile ? 60 : 100,
+              minHeight: 38,
+              py: 0.75,
+              px: 1.25,
+              minWidth: isMobile ? 56 : 90,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.75rem',
-              gap: 0.75,
+              fontSize: '0.7rem',
+              gap: 0.5,
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               '&.Mui-selected': {
                 color: TAB_COLORS[activeTab],
@@ -285,15 +285,15 @@ const ReportsPage = () => {
                 },
               },
               '& svg': {
-                fontSize: 18,
+                fontSize: 16,
                 transition: 'all 0.2s ease',
               },
             },
             '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: '3px 3px 0 0',
+              height: 2.5,
+              borderRadius: '2.5px 2.5px 0 0',
               backgroundColor: TAB_COLORS[activeTab],
-              boxShadow: `0 -1px 8px ${alpha(TAB_COLORS[activeTab], 0.3)}`,
+              boxShadow: `0 -1px 6px ${alpha(TAB_COLORS[activeTab], 0.3)}`,
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             },
           }}
@@ -319,13 +319,13 @@ const ReportsPage = () => {
         </Tabs>
       </Paper>
 
-      {/* Compact Tab Content */}
+      {/* Ultra-Compact Tab Content */}
       <Paper
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2,
-          p: 2,
+          borderRadius: 1.5,
+          p: 1.5,
           minHeight: 400,
           border: '1px solid',
           borderColor: alpha(isDark ? '#fff' : '#000', 0.08),

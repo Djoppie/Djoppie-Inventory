@@ -377,7 +377,7 @@ const LeasingTab = () => {
   ), [searchQuery, filters.status, filteredItems.length, bgBase, isDark]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {/* Statistics Cards */}
       {statisticsCards}
 
