@@ -198,7 +198,7 @@ const HardwareTab = () => {
       field: 'physicalWorkplace',
       headerName: 'Werkplek',
       width: 140,
-      valueGetter: (value, row) => row.physicalWorkplace?.name || '-',
+      valueGetter: (_value, row) => row.physicalWorkplace?.name || '-',
     },
     {
       field: 'serviceName',

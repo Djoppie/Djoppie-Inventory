@@ -13,7 +13,6 @@ import {
   Chip,
 } from '@mui/material';
 import { memo, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import {
   Add,
@@ -51,9 +50,8 @@ export const RecentActivityWidget = memo<RecentActivityProps>(({
   isLoading = false,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
   const isDark = theme.palette.mode === 'dark';
-  const { bgBase, bgSurface } = getNeumorphColors(isDark);
+  const { bgSurface } = getNeumorphColors(isDark);
 
   const activities = useMemo(() => {
     const events: ActivityEvent[] = [];

@@ -14,14 +14,12 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { memo, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import {
   Cloud,
   CloudDone,
   CheckCircle,
   Schedule,
-  Sync,
   Warning,
 } from '@mui/icons-material';
 import { Asset } from '../../types/asset.types';
@@ -38,9 +36,8 @@ export const IntuneSyncStatusWidget = memo<IntuneSyncStatusProps>(({
   isLoading = false,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
   const isDark = theme.palette.mode === 'dark';
-  const { bgBase, bgSurface } = getNeumorphColors(isDark);
+  const { bgSurface } = getNeumorphColors(isDark);
 
   const intuneStats = useMemo(() => {
     const managedDevices = assets.filter(a => a.intuneSyncedAt);

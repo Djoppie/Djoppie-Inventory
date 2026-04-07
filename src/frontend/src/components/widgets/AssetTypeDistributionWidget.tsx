@@ -13,7 +13,6 @@ import {
   Chip,
 } from '@mui/material';
 import { memo, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import {
   Laptop,
@@ -51,9 +50,8 @@ export const AssetTypeDistributionWidget = memo<AssetTypeDistributionProps>(({
   isLoading = false,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
   const isDark = theme.palette.mode === 'dark';
-  const { bgBase, bgSurface } = getNeumorphColors(isDark);
+  const { bgSurface } = getNeumorphColors(isDark);
 
   const typeData = useMemo(() => {
     const typeCounts = assets.reduce((acc, asset) => {

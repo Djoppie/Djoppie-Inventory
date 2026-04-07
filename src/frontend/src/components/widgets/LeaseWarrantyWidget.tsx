@@ -11,10 +11,8 @@ import {
   useTheme,
   Skeleton,
   Chip,
-  Divider,
 } from '@mui/material';
 import { memo, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import {
   Warning,
@@ -24,7 +22,7 @@ import {
   ErrorOutline,
 } from '@mui/icons-material';
 import { Asset } from '../../types/asset.types';
-import { differenceInDays, format, isPast } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 interface ExpiringItem {
@@ -46,9 +44,8 @@ export const LeaseWarrantyWidget = memo<LeaseWarrantyProps>(({
   isLoading = false,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
   const isDark = theme.palette.mode === 'dark';
-  const { bgBase, bgSurface } = getNeumorphColors(isDark);
+  const { bgSurface } = getNeumorphColors(isDark);
 
   const expiringItems = useMemo(() => {
     const items: ExpiringItem[] = [];
@@ -304,7 +301,7 @@ export const LeaseWarrantyWidget = memo<LeaseWarrantyProps>(({
           }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {expiringItems.slice(0, 10).map((item, index) => {
+            {expiringItems.slice(0, 10).map((item) => {
               const urgencyColor = getUrgencyColor(item.urgency);
               const formattedDate = format(item.expiryDate, 'dd MMM yyyy', { locale: nl });
 

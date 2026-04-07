@@ -12,7 +12,6 @@ import {
   Skeleton,
 } from '@mui/material';
 import { memo, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import {
   CheckCircle,
@@ -81,7 +80,6 @@ export const StatusDistributionWidget = memo<StatusDistributionProps>(({
   isLoading = false,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
   const isDark = theme.palette.mode === 'dark';
   const { bgBase, bgSurface } = getNeumorphColors(isDark);
 

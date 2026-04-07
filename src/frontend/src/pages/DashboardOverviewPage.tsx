@@ -5,8 +5,7 @@
  */
 
 import { useMemo } from 'react';
-import { Box, Typography, useTheme, Grid2 as Grid } from '@mui/material';
-import { useTranslation } from 'react-i18next';
+import { Box, Typography, useTheme, Grid } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getNeumorphColors, getNeumorph } from '../utils/neumorphicStyles';
 
@@ -33,7 +32,6 @@ import {
   Inventory2,
   Build,
   Error as ErrorIcon,
-  Cancel,
   FiberNew,
   Cloud,
 } from '@mui/icons-material';
@@ -46,11 +44,10 @@ import {
 } from '../constants/filterColors';
 
 const DashboardOverviewPage = () => {
-  const { t } = useTranslation();
   const theme = useTheme();
   const navigate = useNavigate();
   const isDark = theme.palette.mode === 'dark';
-  const { bgBase, bgSurface } = getNeumorphColors(isDark);
+  const { bgBase } = getNeumorphColors(isDark);
 
   // Fetch all assets
   const { data: assets, isLoading, error, refetch } = useAssets();

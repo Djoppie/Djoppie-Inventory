@@ -7,7 +7,7 @@ import Layout from './components/layout/Layout';
 import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const DashboardOverviewPage = lazy(() => import('./pages/DashboardOverviewPage'));
 const ScanPage = lazy(() => import('./pages/ScanPage'));
 const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage'));
 const AddAssetPage = lazy(() => import('./pages/AddAssetPage'));
@@ -55,7 +55,7 @@ function App() {
             <Layout>
               <Suspense fallback={<Loading />}>
                 <Routes>
-                  <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+                  <Route path={ROUTES.DASHBOARD} element={<DashboardOverviewPage />} />
                   <Route path={ROUTES.SCAN} element={<ScanPage />} />
                   <Route path={ROUTES.DEVICE_MANAGEMENT} element={<DeviceManagementPage />} />
                   <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />

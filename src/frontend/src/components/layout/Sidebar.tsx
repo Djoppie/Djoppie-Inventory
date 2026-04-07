@@ -41,9 +41,6 @@ import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import StyleIcon from '@mui/icons-material/Style';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
-// Icons - Workplaces sub-items
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-
 // Icons - Operations sub-items
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';

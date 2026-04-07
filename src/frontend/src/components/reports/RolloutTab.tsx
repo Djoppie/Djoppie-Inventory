@@ -54,7 +54,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PeopleIcon from '@mui/icons-material/People';
 import DevicesIcon from '@mui/icons-material/Devices';
-import QrCode2Icon from '@mui/icons-material/QrCode2';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
