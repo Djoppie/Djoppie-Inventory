@@ -73,12 +73,17 @@ public class PhysicalWorkplaceService : IPhysicalWorkplaceService
         var occupantDevices = new Dictionary<string, Asset>();
         if (occupantEmails.Any())
         {
-            occupantDevices = await _context.Assets
+            // Load assets into memory first, then group by owner to handle duplicate emails
+            var assets = await _context.Assets
                 .Where(a => occupantEmails.Contains(a.Owner!.ToLower()) && a.Status == AssetStatus.InGebruik)
-                .ToDictionaryAsync(
-                    a => a.Owner!.ToLower(),
-                    a => a,
-                    cancellationToken);
+                .ToListAsync(cancellationToken);
+
+            // Group by owner email and take first asset per owner (handles users with multiple laptops)
+            occupantDevices = assets
+                .GroupBy(a => a.Owner!.ToLower())
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.First());
         }
 
         return workplaces.Select(pw =>
