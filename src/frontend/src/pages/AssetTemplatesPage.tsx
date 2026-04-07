@@ -279,34 +279,7 @@ const AssetTemplatesPage = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  if (isLoading) return <Loading message={t('templates.loading')} />;
-
-  if (error) {
-    const isNetworkError =
-      error instanceof Error &&
-      (error.message.includes('Network Error') ||
-        error.message.includes('ERR_CONNECTION_REFUSED') ||
-        error.message.includes('fetch'));
-
-    if (isNetworkError) {
-      return <ApiErrorDisplay onRetry={() => refetch()} />;
-    }
-
-    return (
-      <Box sx={{ textAlign: 'center', py: 4 }}>
-        <Typography variant="h6" color="error">
-          {t('templates.errorLoading')}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {error instanceof Error ? error.message : t('errors.unexpectedError')}
-        </Typography>
-      </Box>
-    );
-  }
-
-  const templateCount = templates?.length || 0;
-
-  // Column definitions for DataGrid
+  // Column definitions for DataGrid - must be before early returns (Rules of Hooks)
   const columns: GridColDef[] = useMemo(() => [
     {
       field: 'templateName',
@@ -368,6 +341,34 @@ const AssetTemplatesPage = () => {
       valueGetter: (value) => value || '-',
     },
   ], [t]);
+
+  // Early returns after all hooks
+  if (isLoading) return <Loading message={t('templates.loading')} />;
+
+  if (error) {
+    const isNetworkError =
+      error instanceof Error &&
+      (error.message.includes('Network Error') ||
+        error.message.includes('ERR_CONNECTION_REFUSED') ||
+        error.message.includes('fetch'));
+
+    if (isNetworkError) {
+      return <ApiErrorDisplay onRetry={() => refetch()} />;
+    }
+
+    return (
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Typography variant="h6" color="error">
+          {t('templates.errorLoading')}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {error instanceof Error ? error.message : t('errors.unexpectedError')}
+        </Typography>
+      </Box>
+    );
+  }
+
+  const templateCount = templates?.length || 0;
 
   return (
     <Box sx={{ pb: 10 }}>
