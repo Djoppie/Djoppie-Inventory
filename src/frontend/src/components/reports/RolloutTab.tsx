@@ -406,14 +406,6 @@ const RolloutTab = () => {
           </Grid>
           <Grid size={{ xs: 6, sm: 3, md: 2 }}>
             <StatisticsCard
-              icon={QrCode2Icon}
-              value={overview.qrCodesApplied}
-              label="QR Toegepast"
-              color={overview.missingQrCodes > 0 ? WARNING_COLOR : SUCCESS_COLOR}
-            />
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3, md: 2 }}>
-            <StatisticsCard
               icon={PlayArrowIcon}
               value={`${overview.completionPercentage}%`}
               label="Voortgang"
