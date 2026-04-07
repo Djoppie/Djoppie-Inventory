@@ -380,27 +380,31 @@ const HardwareTab = () => {
                     />
                   )}
                   renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option, index) => (
-                      <Chip
-                        label={option.label}
-                        size="small"
-                        {...getTagProps({ index })}
-                        sx={{
-                          fontSize: '0.7rem',
-                          height: 24,
-                          fontWeight: 600,
-                          bgcolor: alpha('#FF7700', 0.1),
-                          color: '#FF7700',
-                          '& .MuiChip-deleteIcon': {
-                            color: alpha('#FF7700', 0.7),
-                            fontSize: '1rem',
-                            '&:hover': {
-                              color: '#FF7700',
+                    tagValue.map((option, index) => {
+                      const { key, ...chipProps } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.label}
+                          size="small"
+                          {...chipProps}
+                          sx={{
+                            fontSize: '0.7rem',
+                            height: 24,
+                            fontWeight: 600,
+                            bgcolor: alpha('#FF7700', 0.1),
+                            color: '#FF7700',
+                            '& .MuiChip-deleteIcon': {
+                              color: alpha('#FF7700', 0.7),
+                              fontSize: '1rem',
+                              '&:hover': {
+                                color: '#FF7700',
+                              },
                             },
-                          },
-                        }}
-                      />
-                    ))
+                          }}
+                        />
+                      );
+                    })
                   }
                   sx={{
                     '& .MuiAutocomplete-popupIndicator': {
@@ -448,27 +452,31 @@ const HardwareTab = () => {
                     />
                   )}
                   renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option, index) => (
-                      <Chip
-                        label={option.name}
-                        size="small"
-                        {...getTagProps({ index })}
-                        sx={{
-                          fontSize: '0.7rem',
-                          height: 24,
-                          fontWeight: 600,
-                          bgcolor: alpha('#2196F3', 0.1),
-                          color: '#2196F3',
-                          '& .MuiChip-deleteIcon': {
-                            color: alpha('#2196F3', 0.7),
-                            fontSize: '1rem',
-                            '&:hover': {
-                              color: '#2196F3',
+                    tagValue.map((option, index) => {
+                      const { key, ...chipProps } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.name}
+                          size="small"
+                          {...chipProps}
+                          sx={{
+                            fontSize: '0.7rem',
+                            height: 24,
+                            fontWeight: 600,
+                            bgcolor: alpha('#2196F3', 0.1),
+                            color: '#2196F3',
+                            '& .MuiChip-deleteIcon': {
+                              color: alpha('#2196F3', 0.7),
+                              fontSize: '1rem',
+                              '&:hover': {
+                                color: '#2196F3',
+                              },
                             },
-                          },
-                        }}
-                      />
-                    ))
+                          }}
+                        />
+                      );
+                    })
                   }
                   sx={{
                     '& .MuiAutocomplete-popupIndicator': {
@@ -516,27 +524,31 @@ const HardwareTab = () => {
                     />
                   )}
                   renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option, index) => (
-                      <Chip
-                        label={option.code}
-                        size="small"
-                        {...getTagProps({ index })}
-                        sx={{
-                          fontSize: '0.7rem',
-                          height: 24,
-                          fontWeight: 600,
-                          bgcolor: alpha('#4CAF50', 0.1),
-                          color: '#4CAF50',
-                          '& .MuiChip-deleteIcon': {
-                            color: alpha('#4CAF50', 0.7),
-                            fontSize: '1rem',
-                            '&:hover': {
-                              color: '#4CAF50',
+                    tagValue.map((option, index) => {
+                      const { key, ...chipProps } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.code}
+                          size="small"
+                          {...chipProps}
+                          sx={{
+                            fontSize: '0.7rem',
+                            height: 24,
+                            fontWeight: 600,
+                            bgcolor: alpha('#4CAF50', 0.1),
+                            color: '#4CAF50',
+                            '& .MuiChip-deleteIcon': {
+                              color: alpha('#4CAF50', 0.7),
+                              fontSize: '1rem',
+                              '&:hover': {
+                                color: '#4CAF50',
+                              },
                             },
-                          },
-                        }}
-                      />
-                    ))
+                          }}
+                        />
+                      );
+                    })
                   }
                   sx={{
                     '& .MuiAutocomplete-popupIndicator': {
@@ -584,27 +596,31 @@ const HardwareTab = () => {
                     />
                   )}
                   renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option, index) => (
-                      <Chip
-                        label={option.name}
-                        size="small"
-                        {...getTagProps({ index })}
-                        sx={{
-                          fontSize: '0.7rem',
-                          height: 24,
-                          fontWeight: 600,
-                          bgcolor: alpha('#9C27B0', 0.1),
-                          color: '#9C27B0',
-                          '& .MuiChip-deleteIcon': {
-                            color: alpha('#9C27B0', 0.7),
-                            fontSize: '1rem',
-                            '&:hover': {
-                              color: '#9C27B0',
+                    tagValue.map((option, index) => {
+                      const { key, ...chipProps } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          label={option.name}
+                          size="small"
+                          {...chipProps}
+                          sx={{
+                            fontSize: '0.7rem',
+                            height: 24,
+                            fontWeight: 600,
+                            bgcolor: alpha('#9C27B0', 0.1),
+                            color: '#9C27B0',
+                            '& .MuiChip-deleteIcon': {
+                              color: alpha('#9C27B0', 0.7),
+                              fontSize: '1rem',
+                              '&:hover': {
+                                color: '#9C27B0',
+                              },
                             },
-                          },
-                        }}
-                      />
-                    ))
+                          }}
+                        />
+                      );
+                    })
                   }
                   sx={{
                     '& .MuiAutocomplete-popupIndicator': {
