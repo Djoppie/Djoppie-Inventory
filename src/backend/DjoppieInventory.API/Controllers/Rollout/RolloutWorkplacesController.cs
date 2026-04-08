@@ -692,6 +692,95 @@ public class RolloutWorkplacesController : ControllerBase
         return Ok(updatedAssignment);
     }
 
+    /// <summary>
+    /// Updates assignment details by item index (for backward compatibility with legacy frontend code).
+    /// This endpoint translates item index to assignment position and updates the assignment.
+    /// </summary>
+    /// <param name="workplaceId">Workplace ID</param>
+    /// <param name="itemIndex">Zero-based index of the item/assignment</param>
+    /// <param name="dto">Update details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{workplaceId}/items/{itemIndex}/details")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemDetails(
+        int workplaceId,
+        int itemIndex,
+        [FromBody] UpdateItemDetailsDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Get workplace
+        var workplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        // Get assignments ordered by position
+        var assignments = await _context.WorkplaceAssetAssignments
+            .Include(a => a.AssetType)
+            .Include(a => a.NewAsset)
+            .Include(a => a.OldAsset)
+            .Where(a => a.RolloutWorkplaceId == workplaceId)
+            .OrderBy(a => a.Position)
+            .ToListAsync(cancellationToken);
+
+        // Check if index is valid
+        if (itemIndex < 0 || itemIndex >= assignments.Count)
+        {
+            return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+        }
+
+        var assignment = assignments[itemIndex];
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+        var performedByEmail = User.FindFirstValue(ClaimTypes.Email);
+
+        // Update assignment details
+        if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+        {
+            assignment.SerialNumberCaptured = dto.SerialNumber;
+            assignment.SerialNumberRequired = true;
+
+            // Update linked asset if it exists
+            if (assignment.NewAsset != null)
+            {
+                assignment.NewAsset.SerialNumber = dto.SerialNumber;
+                assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Handle installation status
+        if (dto.MarkAsInstalled == true)
+        {
+            assignment.Status = AssetAssignmentStatus.Installed;
+            assignment.InstalledAt = DateTime.UtcNow;
+            assignment.InstalledBy = performedBy;
+            assignment.InstalledByEmail = performedByEmail;
+        }
+
+        assignment.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated item {ItemIndex} details for workplace {WorkplaceId} by {PerformedBy}",
+            itemIndex, workplaceId, performedBy);
+
+        // Return updated workplace
+        var updatedWorkplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        return Ok(MapToDto(updatedWorkplace!));
+    }
+
     #region Private Mapping Methods
 
     private static RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)
