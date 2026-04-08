@@ -262,7 +262,7 @@ const SerialNumbersTab = () => {
           borderLeft: `3px solid ${ROLLOUT_COLOR}`,
         }}
       >
-        <Grid container spacing={2} alignItems="center">
+        <Grid container spacing={1} alignItems="center">
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
@@ -293,7 +293,7 @@ const SerialNumbersTab = () => {
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             {selectedSession && (
-              <Stack direction="row" spacing={2} alignItems="center" justifyContent="flex-end">
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
                 <Chip
                   icon={<CalendarTodayIcon sx={{ fontSize: 16 }} />}
                   label={selectedSession.plannedStartDate
@@ -314,7 +314,7 @@ const SerialNumbersTab = () => {
 
       {/* Stats Cards */}
       {!isLoading && selectedSessionId && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={1} sx={{ mb: 3 }}>
           {[
             { icon: DevicesIcon, value: stats.total, label: 'Totaal Assets', color: INFO_COLOR },
             { icon: WarningAmberIcon, value: stats.missing, label: 'Ontbrekend', color: WARNING_COLOR },
@@ -328,7 +328,7 @@ const SerialNumbersTab = () => {
                   ...getFadeInUpAnimation(index * 0.1),
                 }}
               >
-                <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="row" spacing={1} alignItems="center">
                   <Box sx={getEnhancedIconContainer(isDark, stat.color)}>
                     <stat.icon sx={{ fontSize: 28, color: stat.color }} />
                   </Box>
@@ -376,7 +376,7 @@ const SerialNumbersTab = () => {
           borderLeft: `3px solid ${ROLLOUT_COLOR}`,
         }}
       >
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           {/* Show only missing toggle */}
           <FormControlLabel
             control={

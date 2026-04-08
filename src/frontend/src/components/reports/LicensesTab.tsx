@@ -543,7 +543,7 @@ const LicensesTab = () => {
   return (
     <Box sx={{ pb: 4 }}>
       {/* Summary Cards - Compact Enterprise Style */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid container spacing={1} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6, sm: 3 }}>
           <Paper
             elevation={0}
@@ -560,7 +560,7 @@ const LicensesTab = () => {
               },
             }}
           >
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={0.75} alignItems="center">
               <Box
                 sx={{
                   display: 'flex',
@@ -607,7 +607,7 @@ const LicensesTab = () => {
               },
             }}
           >
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={0.75} alignItems="center">
               <Box
                 sx={{
                   display: 'flex',
@@ -654,7 +654,7 @@ const LicensesTab = () => {
               },
             }}
           >
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={0.75} alignItems="center">
               <Box
                 sx={{
                   display: 'flex',
@@ -701,7 +701,7 @@ const LicensesTab = () => {
               },
             }}
           >
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={0.75} alignItems="center">
               <Box sx={{ position: 'relative', display: 'inline-flex' }}>
                 <CircularProgress
                   variant="determinate"
@@ -1012,7 +1012,7 @@ const LicensesTab = () => {
                       },
                     }}
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                    <Stack direction="row" spacing={0.75} alignItems="flex-start">
                       <Box
                         sx={{
                           display: 'flex',
@@ -1089,7 +1089,7 @@ const LicensesTab = () => {
         >
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-            <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Stack direction="row" alignItems="center" spacing={0.75}>
               <Box
                 sx={{
                   display: 'flex',
@@ -1145,7 +1145,7 @@ const LicensesTab = () => {
           {!optimizationLoading && optimization && !optimizationError && (
             <>
               {/* Summary Cards */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid container spacing={1} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 6, sm: 3 }}>
                   <Paper
                     elevation={0}
@@ -1159,7 +1159,7 @@ const LicensesTab = () => {
                       '&:hover': { transform: 'translateY(-2px)', boxShadow: getNeumorph(isDark, 'soft') },
                     }}
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={0.75} alignItems="center">
                       <PersonOffIcon sx={{ fontSize: 28, color: WARNING_COLOR }} />
                       <Box>
                         <Typography variant="h5" sx={{ fontWeight: 800, color: WARNING_COLOR, lineHeight: 1 }}>
@@ -1186,7 +1186,7 @@ const LicensesTab = () => {
                       '&:hover': { transform: 'translateY(-2px)', boxShadow: getNeumorph(isDark, 'soft') },
                     }}
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={0.75} alignItems="center">
                       <SwapHorizIcon sx={{ fontSize: 28, color: E3_COLOR }} />
                       <Box>
                         <Typography variant="h5" sx={{ fontWeight: 800, color: E3_COLOR, lineHeight: 1 }}>
@@ -1213,7 +1213,7 @@ const LicensesTab = () => {
                       '&:hover': { transform: 'translateY(-2px)', boxShadow: getNeumorph(isDark, 'soft') },
                     }}
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={0.75} alignItems="center">
                       <SavingsIcon sx={{ fontSize: 28, color: SAVINGS_COLOR }} />
                       <Box>
                         <Typography variant="h5" sx={{ fontWeight: 800, color: SAVINGS_COLOR, lineHeight: 1 }}>
@@ -1240,7 +1240,7 @@ const LicensesTab = () => {
                       '&:hover': { transform: 'translateY(-2px)', boxShadow: getNeumorph(isDark, 'soft') },
                     }}
                   >
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={0.75} alignItems="center">
                       <SavingsIcon sx={{ fontSize: 28, color: SAVINGS_COLOR }} />
                       <Box>
                         <Typography variant="h5" sx={{ fontWeight: 800, color: SAVINGS_COLOR, lineHeight: 1 }}>

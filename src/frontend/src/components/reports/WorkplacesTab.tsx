@@ -209,7 +209,7 @@ const WorkplacesTab = () => {
 
   // Statistics cards component
   const statisticsCards = useMemo(() => (
-    <Grid container spacing={1.25}>
+    <Grid container spacing={0.75}>
       {STAT_CARDS.map((card) => {
         const IconComponent = card.icon;
         let count = 0;
@@ -240,14 +240,14 @@ const WorkplacesTab = () => {
       <Grid size={{ xs: 6, sm: 3 }}>
         <Paper
           sx={{
-            p: 2,
+            p: 1.25,
             bgcolor: bgBase,
             boxShadow: getNeumorph(isDark, 'soft'),
-            borderRadius: 2,
+            borderRadius: 1.5,
             textAlign: 'center',
           }}
         >
-          <MeetingRoomIcon sx={{ fontSize: 28, color: '#FF7700', mb: 0.5 }} />
+          <MeetingRoomIcon sx={{ fontSize: 24, color: '#FF7700', mb: 0.4 }} />
           <Typography variant="h5" sx={{ fontWeight: 700, color: '#FF7700' }}>
             {occupancyRate}%
           </Typography>
@@ -278,21 +278,21 @@ const WorkplacesTab = () => {
     return (
       <Paper
         sx={{
-          p: 2,
+          p: 1.25,
           bgcolor: bgBase,
           boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2,
+          borderRadius: 1.5,
         }}
       >
-        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
           Per Gebouw
         </Typography>
-        <Grid container spacing={1.25}>
+        <Grid container spacing={0.75}>
           {Object.entries(summary.byBuilding).map(([building, data]) => (
             <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={building}>
               <Paper
                 sx={{
-                  p: 1.5,
+                  p: 1,
                   textAlign: 'center',
                   bgcolor: alpha('#7E57C2', 0.05),
                   borderRadius: 1,
@@ -320,13 +320,13 @@ const WorkplacesTab = () => {
   const advancedFilters = useMemo(() => (
     <Paper
       sx={{
-        p: 2,
+        p: 1.25,
         bgcolor: bgBase,
         boxShadow: getNeumorph(isDark, 'soft'),
-        borderRadius: 2,
+        borderRadius: 1.5,
       }}
     >
-      <Grid container spacing={1.5} alignItems="center">
+      <Grid container spacing={1} alignItems="center">
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
             fullWidth
@@ -379,7 +379,7 @@ const WorkplacesTab = () => {
   ), [searchQuery, buildingFilter, occupancyFilter, buildings, bgBase, isDark]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
       {/* Statistics Cards */}
       {statisticsCards}
 

@@ -301,20 +301,20 @@ const RolloutTab = () => {
   const isLoading = sessionsLoading || overviewLoading || checklistLoading;
 
   return (
-    <Box sx={{ pb: 4 }}>
+    <Box sx={{ pb: 2 }}>
       {/* Session Selector */}
       <Paper
         elevation={0}
         sx={{
-          p: 2,
-          mb: 3,
+          p: 1.25,
+          mb: 1.5,
           bgcolor: neumorphColors.bgSurface,
           boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2.5,
+          borderRadius: 2,
           borderLeft: `3px solid ${ROLLOUT_COLOR}`,
         }}
       >
-        <Grid container spacing={1.5} alignItems="center">
+        <Grid container spacing={1} alignItems="center">
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
@@ -378,7 +378,7 @@ const RolloutTab = () => {
 
       {/* Overview KPI Cards */}
       {overview && (
-        <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+        <Grid container spacing={0.75} sx={{ mb: 1.25 }}>
           <Grid size={{ xs: 6, sm: 3, md: 2 }}>
             <StatisticsCard
               icon={PeopleIcon}
@@ -427,15 +427,15 @@ const RolloutTab = () => {
       <Paper
         elevation={0}
         sx={{
-          mb: (serviceFilterExpanded || buildingFilterExpanded) ? 0 : 2,
-          p: 1.5,
-          borderRadius: (serviceFilterExpanded || buildingFilterExpanded) ? '12px 12px 0 0' : 3,
+          mb: (serviceFilterExpanded || buildingFilterExpanded) ? 0 : 1,
+          p: 1,
+          borderRadius: (serviceFilterExpanded || buildingFilterExpanded) ? '12px 12px 0 0' : 2,
           bgcolor: neumorphColors.bgSurface,
           boxShadow: (serviceFilterExpanded || buildingFilterExpanded) ? 'none' : getNeumorph(isDark, 'soft'),
           borderLeft: `3px solid ${ROLLOUT_COLOR}`,
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
           {/* Service Filter Toggle */}
           <Tooltip title={serviceFilterExpanded ? 'Sluit filter' : 'Filter op dienst'}>
             <IconButton
@@ -709,7 +709,7 @@ const RolloutTab = () => {
 
       {/* Day Checklists */}
       {checklistLoading ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
           {[1, 2, 3].map(i => (
             <Skeleton key={i} variant="rounded" height={80} />
           ))}
@@ -718,11 +718,11 @@ const RolloutTab = () => {
         <Paper
           elevation={0}
           sx={{
-            p: 4,
+            p: 3,
             textAlign: 'center',
             bgcolor: neumorphColors.bgSurface,
             boxShadow: getNeumorph(isDark, 'soft'),
-            borderRadius: 3,
+            borderRadius: 2,
           }}
         >
           <Typography color="text.secondary">
@@ -730,7 +730,7 @@ const RolloutTab = () => {
           </Typography>
         </Paper>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
           {filteredChecklist.map((day) => (
             <DayChecklistCard
               key={day.dayId}
@@ -845,16 +845,16 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   <Paper
     elevation={0}
     sx={{
-      mb: 2,
-      p: 2,
-      pt: 1.5,
+      mb: 1,
+      p: 1.25,
+      pt: 1,
       borderRadius: '0 0 12px 12px',
       bgcolor: neumorphColors.bgBase,
       boxShadow: getNeumorphInset(isDark),
       borderLeft: `3px solid ${accentColor}`,
     }}
   >
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
       <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
         {icon}
         {title}
@@ -929,15 +929,15 @@ const UnscheduledAssetsPanel: React.FC<UnscheduledAssetsPanelProps> = ({
   <Paper
     elevation={0}
     sx={{
-      mb: 3,
-      p: 2.5,
-      borderRadius: 3,
+      mb: 1.5,
+      p: 1.5,
+      borderRadius: 2,
       bgcolor: neumorphColors.bgSurface,
       boxShadow: getNeumorph(isDark, 'soft'),
       borderLeft: `4px solid ${ERROR_COLOR}`,
     }}
   >
-    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
       <Box
         sx={{
           display: 'flex',

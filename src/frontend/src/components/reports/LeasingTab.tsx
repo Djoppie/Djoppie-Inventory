@@ -219,7 +219,7 @@ const LeasingTab = () => {
 
   // Statistics cards component
   const statisticsCards = useMemo(() => (
-    <Grid container spacing={2}>
+    <Grid container spacing={1}>
       {STAT_CARDS.map((card) => {
         const IconComponent = card.icon;
         let count = 0;
@@ -331,7 +331,7 @@ const LeasingTab = () => {
         borderRadius: 2,
       }}
     >
-      <Grid container spacing={2} alignItems="center">
+      <Grid container spacing={1} alignItems="center">
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
             fullWidth
