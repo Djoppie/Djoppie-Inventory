@@ -94,11 +94,11 @@ const CustomToolbar = memo(function CustomToolbar({
   return (
     <GridToolbarContainer
       sx={{
-        p: 1.25,
-        gap: 1.25,
+        p: 0.85,
+        gap: 1,
         borderBottom: '1px solid',
         borderColor: alpha(isDark ? '#fff' : '#000', 0.06),
-        minHeight: 42,
+        minHeight: 36,
       }}
     >
       <Box
@@ -343,7 +343,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
       {/* Statistics Cards Section */}
       {statisticsCards && <Box>{statisticsCards}</Box>}
 
@@ -354,8 +354,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
       <Box
         sx={{
           bgcolor: bgBase,
-          borderRadius: 2,
-          p: { xs: 1.25, sm: 1.5 },
+          borderRadius: 1.5,
+          p: { xs: 0.85, sm: 1 },
           boxShadow: getNeumorph(isDark, 'medium'),
         }}
       >
@@ -412,17 +412,17 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
             bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
             borderBottom: '2px solid',
             borderColor: alpha(accentColor, 0.4),
-            minHeight: '36px !important',
-            maxHeight: '36px !important',
+            minHeight: '32px !important',
+            maxHeight: '32px !important',
           },
           '& .MuiDataGrid-columnHeader': {
-            py: 0.5,
+            py: 0.35,
           },
           '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 700,
-            fontSize: '0.7rem',
+            fontSize: '0.65rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.06em',
+            letterSpacing: '0.05em',
           },
           '& .MuiDataGrid-sortIcon': {
             color: accentColor,
@@ -457,9 +457,9 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
 
           // Cell styling (compact with auto height support)
           '& .MuiDataGrid-cell': {
-            py: 0.75,
-            px: 1.25,
-            fontSize: '0.8rem',
+            py: 0.5,
+            px: 0.85,
+            fontSize: '0.75rem',
             borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
             display: 'flex !important',
             alignItems: 'center',

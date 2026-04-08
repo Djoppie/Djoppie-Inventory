@@ -36,8 +36,8 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
     <Paper
       onClick={onClick}
       sx={{
-        p: 1.25,
-        borderRadius: 1.5,
+        p: 0.85,
+        borderRadius: 1.25,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.18s ease',
         bgcolor: bgBase,
@@ -65,13 +65,13 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
         },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {/* Compact Icon Container */}
         <Box
           sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 1.25,
+            width: 32,
+            height: 32,
+            borderRadius: 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -80,7 +80,7 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
             flexShrink: 0,
           }}
         >
-          <Icon sx={{ fontSize: 20, color }} />
+          <Icon sx={{ fontSize: 16, color }} />
         </Box>
 
         {/* Compact Content */}
@@ -88,12 +88,12 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
           <Typography
             variant="body2"
             sx={{
-              fontSize: '0.65rem',
+              fontSize: '0.6rem',
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.06em',
               color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.55)',
-              mb: 0.25,
+              mb: 0.2,
               lineHeight: 1,
             }}
           >
@@ -102,7 +102,7 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
           <Typography
             variant="h5"
             sx={{
-              fontSize: '1.5rem',
+              fontSize: '1.25rem',
               fontWeight: 700,
               color: color,
               lineHeight: 1,
@@ -115,9 +115,9 @@ export const StatisticsCard = memo<StatisticsCardProps>(({
             <Typography
               variant="caption"
               sx={{
-                fontSize: '0.65rem',
+                fontSize: '0.6rem',
                 color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)',
-                mt: 0.25,
+                mt: 0.2,
                 display: 'block',
                 lineHeight: 1.2,
               }}

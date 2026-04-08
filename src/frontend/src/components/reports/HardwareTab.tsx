@@ -225,7 +225,7 @@ const HardwareTab = () => {
 
   // Compact horizontal statistics cards
   const statisticsCards = useMemo(() => (
-    <Grid container spacing={1.5}>
+    <Grid container spacing={0.75}>
       {STAT_CARDS.map((card) => {
         const IconComponent = card.icon;
         const count = card.key === 'total'
@@ -268,10 +268,10 @@ const HardwareTab = () => {
         {/* Filter Header Bar with Search */}
         <Box
           sx={{
-            p: 1.5,
+            p: 1,
             display: 'flex',
             alignItems: 'center',
-            gap: 1.5,
+            gap: 1,
             bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
           }}
         >
@@ -336,14 +336,14 @@ const HardwareTab = () => {
         <Collapse in={filtersExpanded}>
           <Box
             sx={{
-              p: 2,
-              pt: 1.5,
+              p: 1.25,
+              pt: 1,
               borderTop: '1px solid',
               borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
               bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
             }}
           >
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Autocomplete
                   multiple
