@@ -6,8 +6,11 @@ import {
   Toolbar,
   Typography,
   IconButton,
+  Tooltip,
+  alpha,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import Navigation from './Navigation';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
@@ -207,6 +210,28 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Spacer */}
             <Box sx={{ flexGrow: 1 }} />
+
+            {/* QR Code Scanner Button */}
+            <Tooltip title="QR Code Scanner" placement="bottom">
+              <IconButton
+                onClick={() => navigate(ROUTES.SCAN)}
+                sx={{
+                  bgcolor: alpha('#FF7700', 0.1),
+                  border: '2px solid #FF7700',
+                  width: 40,
+                  height: 40,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    bgcolor: '#FF7700',
+                    color: 'white',
+                    transform: 'scale(1.05)',
+                    boxShadow: `0 4px 12px ${alpha('#FF7700', 0.4)}`,
+                  },
+                }}
+              >
+                <QrCodeScannerIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
 
             {/* Language Switcher */}
             <LanguageSwitcher />
