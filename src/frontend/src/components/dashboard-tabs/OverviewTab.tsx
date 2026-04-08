@@ -21,6 +21,7 @@ import { useAssets } from '../../hooks/useAssets';
 import { useRolloutSessions } from '../../hooks/rollout/useRolloutSessions';
 import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
 import { ROUTES } from '../../constants/routes';
+import AssetPlanningCalendar from '../dashboard/AssetPlanningCalendar';
 
 interface CompactKPIProps {
   icon: React.ElementType;
@@ -396,7 +397,7 @@ const OverviewTab = () => {
       </Box>
 
       {/* Main Content Grid */}
-      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
         {/* Alarms & Alerts */}
         <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: 300 }}>
           <Box
@@ -529,6 +530,9 @@ const OverviewTab = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Asset Planning Calendar - Full Width */}
+      <AssetPlanningCalendar />
     </Box>
   );
 };
