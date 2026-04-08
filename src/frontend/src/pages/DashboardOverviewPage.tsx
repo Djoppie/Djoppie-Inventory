@@ -56,8 +56,8 @@ const DashboardOverviewPage = () => {
       {/* Page Header */}
       <Box
         sx={{
-          px: { xs: 2, sm: 3 },
-          pt: { xs: 2, sm: 2.5 },
+          px: { xs: 1.5, sm: 2 },
+          pt: { xs: 1.5, sm: 2 },
           pb: 0,
         }}
       >
@@ -66,9 +66,9 @@ const DashboardOverviewPage = () => {
           sx={{
             fontWeight: 800,
             color: isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)',
-            mb: 0.5,
+            mb: 0.35,
             letterSpacing: '-0.02em',
-            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+            fontSize: { xs: '1.35rem', sm: '1.6rem', md: '1.85rem' },
           }}
         >
           Business Dashboard
@@ -77,8 +77,8 @@ const DashboardOverviewPage = () => {
           variant="body2"
           sx={{
             color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-            mb: 2,
-            fontSize: '0.85rem',
+            mb: 1.25,
+            fontSize: '0.8rem',
           }}
         >
           Comprehensive asset management and rollout operations
@@ -89,20 +89,20 @@ const DashboardOverviewPage = () => {
           value={activeTab}
           onChange={handleTabChange}
           sx={{
-            minHeight: 42,
+            minHeight: 36,
             '& .MuiTabs-indicator': {
               backgroundColor: '#FF7700',
-              height: 3,
-              borderRadius: '3px 3px 0 0',
+              height: 2.5,
+              borderRadius: '2.5px 2.5px 0 0',
             },
             '& .MuiTab-root': {
-              minHeight: 42,
+              minHeight: 36,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: { xs: '0.75rem', sm: '0.85rem' },
+              fontSize: { xs: '0.7rem', sm: '0.8rem' },
               color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-              px: { xs: 1.5, sm: 2 },
-              py: 1,
+              px: { xs: 1.25, sm: 1.75 },
+              py: 0.75,
               transition: 'all 0.2s ease',
               '&.Mui-selected': {
                 color: '#FF7700',
@@ -118,25 +118,25 @@ const DashboardOverviewPage = () => {
           <Tab
             value="overview"
             label="Overview"
-            icon={<DashboardIcon sx={{ fontSize: 18 }} />}
+            icon={<DashboardIcon sx={{ fontSize: 16 }} />}
             iconPosition="start"
           />
           <Tab
             value="inventory"
             label="Inventory"
-            icon={<InventoryIcon sx={{ fontSize: 18 }} />}
+            icon={<InventoryIcon sx={{ fontSize: 16 }} />}
             iconPosition="start"
           />
           <Tab
             value="rollout"
             label="Rollout Planning"
-            icon={<RocketLaunch sx={{ fontSize: 18 }} />}
+            icon={<RocketLaunch sx={{ fontSize: 16 }} />}
             iconPosition="start"
           />
           <Tab
             value="swaps"
             label="Swap Management"
-            icon={<SwapHoriz sx={{ fontSize: 18 }} />}
+            icon={<SwapHoriz sx={{ fontSize: 16 }} />}
             iconPosition="start"
           />
         </Tabs>

@@ -328,7 +328,7 @@ const OverviewTab = () => {
         sx={{
           display: 'flex',
           gap: 1,
-          mb: 2,
+          mb: 1.25,
           flexWrap: 'wrap',
         }}
       >
@@ -398,7 +398,7 @@ const OverviewTab = () => {
       </Box>
 
       {/* Main Content Grid */}
-      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+      <Box sx={{ display: 'flex', gap: 0.85, flexWrap: 'wrap', mb: 1.25 }}>
         {/* Alarms & Alerts */}
         <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: 300 }}>
           <Box

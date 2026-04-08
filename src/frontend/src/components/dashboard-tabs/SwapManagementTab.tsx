@@ -223,7 +223,7 @@ const SwapManagementTab = () => {
           gap: 1,
         }}
       >
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <Box>
             <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
               Total Changes
