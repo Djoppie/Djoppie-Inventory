@@ -26,6 +26,8 @@ import {
   Chip,
   IconButton,
   Alert,
+  Skeleton,
+  Snackbar,
 } from '@mui/material';
 import {
   format,
@@ -48,6 +50,7 @@ import {
 import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
 import { useAssets } from '../../hooks/useAssets';
 import { useRolloutSessions } from '../../hooks/rollout/useRolloutSessions';
+import { useCreateAssetRequest, useAssetRequestsByDateRange } from '../../hooks/useAssetRequests';
 
 interface DayData {
   date: Date;
@@ -62,9 +65,11 @@ interface AssetRequestDialogProps {
   selectedDate: Date | null;
   availableStock: number;
   onClose: () => void;
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
 }
 
-const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose }: AssetRequestDialogProps) => {
+const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose, onSuccess, onError }: AssetRequestDialogProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { bgSurface } = getNeumorphColors(isDark);
@@ -74,16 +79,26 @@ const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose }: Ass
   const [assetType, setAssetType] = useState('laptop');
   const [notes, setNotes] = useState('');
 
-  const handleSubmit = () => {
-    // TODO: Implement actual API call to create asset request
-    console.log('Creating request:', {
-      date: selectedDate,
-      type: requestType,
-      employee: employeeName,
-      assetType,
-      notes,
-    });
-    handleClose();
+  const createRequest = useCreateAssetRequest();
+
+  const handleSubmit = async () => {
+    if (!selectedDate) return;
+
+    try {
+      await createRequest.mutateAsync({
+        requestedDate: selectedDate.toISOString(),
+        requestType,
+        employeeName: employeeName.trim(),
+        assetType,
+        notes: notes.trim() || undefined,
+      });
+
+      onSuccess('Asset aanvraag succesvol ingediend');
+      handleClose();
+    } catch (error) {
+      onError('Fout bij het indienen van de aanvraag');
+      console.error('Error creating asset request:', error);
+    }
   };
 
   const handleClose = () => {
@@ -221,7 +236,7 @@ const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose }: Ass
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!employeeName.trim()}
+          disabled={!employeeName.trim() || createRequest.isPending}
           sx={{
             bgcolor: '#FF7700',
             '&:hover': { bgcolor: '#E06600' },
@@ -229,7 +244,7 @@ const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose }: Ass
             fontWeight: 600,
           }}
         >
-          Aanvraag Indienen
+          {createRequest.isPending ? 'Bezig...' : 'Aanvraag Indienen'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -243,9 +258,21 @@ export const AssetPlanningCalendar = () => {
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error',
+  });
 
-  const { data: assets } = useAssets();
-  const { data: sessions } = useRolloutSessions();
+  const { data: assets, isLoading: assetsLoading } = useAssets();
+  const { data: sessions, isLoading: sessionsLoading } = useRolloutSessions();
+
+  // Load asset requests for the 14-day period
+  const today = startOfDay(new Date());
+  const endDate = addDays(today, 14);
+  const { data: assetRequests, isLoading: requestsLoading } = useAssetRequestsByDateRange(today, endDate);
+
+  const isLoading = assetsLoading || sessionsLoading || requestsLoading;
 
   // Calculate stock availability
   const stockAssets = useMemo(() => {
@@ -281,12 +308,23 @@ export const AssetPlanningCalendar = () => {
       const dayOfWeek = date.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-      // Count rollouts scheduled for this day
-      const dayRollouts = allRolloutDays.filter((rd) => isSameDay(new Date(rd.scheduledDate), date));
-      const onboardingCount = dayRollouts.reduce((sum, r) => sum + (r.workplaces?.length || 0), 0);
+      // Count rollouts scheduled for this day (from rollout sessions)
+      const dayRollouts = allRolloutDays.filter((rd) => isSameDay(new Date(rd.date), date));
+      const rolloutOnboardingCount = dayRollouts.reduce((sum, r) => sum + (r.workplaces?.length || 0), 0);
 
-      // Mock offboarding count (TODO: Get from actual API)
-      const offboardingCount = Math.floor(Math.random() * 3);
+      // Count asset requests for this day
+      const dayRequests = assetRequests?.filter((req) =>
+        isSameDay(new Date(req.requestedDate), date) &&
+        req.status !== 'Cancelled' &&
+        req.status !== 'Rejected'
+      ) || [];
+
+      const requestOnboardingCount = dayRequests.filter(req => req.requestType === 'onboarding').length;
+      const requestOffboardingCount = dayRequests.filter(req => req.requestType === 'offboarding').length;
+
+      // Total counts from both sources
+      const onboardingCount = rolloutOnboardingCount + requestOnboardingCount;
+      const offboardingCount = requestOffboardingCount;
 
       // Calculate remaining stock after planned allocations
       const totalPlanned = onboardingCount + offboardingCount;
@@ -302,7 +340,7 @@ export const AssetPlanningCalendar = () => {
     }
 
     return days;
-  }, [allRolloutDays, stockAssets]);
+  }, [allRolloutDays, assetRequests, stockAssets]);
 
   const handleDayClick = (day: DayData) => {
     if (!isBefore(day.date, startOfDay(new Date()))) {
@@ -316,6 +354,26 @@ export const AssetPlanningCalendar = () => {
     if (day.availableStock < 5) return '#F59E0B'; // Orange - low stock
     return '#10B981'; // Green - good stock
   };
+
+  if (isLoading) {
+    return (
+      <Paper
+        sx={{
+          p: 1.5,
+          bgcolor: bgSurface,
+          boxShadow: getNeumorph(isDark, 'medium'),
+          borderRadius: 2,
+          border: `2px solid ${alpha('#FF7700', 0.2)}`,
+        }}
+      >
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ flex: 1 }}>
+            <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 1 }} />
+          </Box>
+        </Box>
+      </Paper>
+    );
+  }
 
   return (
     <>
@@ -549,7 +607,26 @@ export const AssetPlanningCalendar = () => {
         selectedDate={selectedDate}
         availableStock={selectedDate ? calendarDays.find((d) => isSameDay(d.date, selectedDate))?.availableStock || 0 : 0}
         onClose={() => setDialogOpen(false)}
+        onSuccess={(message) => setSnackbar({ open: true, message, severity: 'success' })}
+        onError={(message) => setSnackbar({ open: true, message, severity: 'error' })}
       />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetEventRepository, AssetEventRepository>();
         services.AddScoped<ILeaseContractRepository, LeaseContractRepository>();
         services.AddScoped<IRolloutRepository, RolloutRepository>();
+        services.AddScoped<IAssetRequestRepository, AssetRequestRepository>();
 
         // Register Services
         services.AddScoped<IAssetService, AssetService>();

@@ -22,6 +22,7 @@ import { useRolloutSessions } from '../../hooks/rollout/useRolloutSessions';
 import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
 import { ROUTES } from '../../constants/routes';
 import AssetPlanningCalendar from '../dashboard/AssetPlanningCalendar';
+import AssetKPIs from '../dashboard/AssetKPIs';
 
 interface CompactKPIProps {
   icon: React.ElementType;
@@ -529,6 +530,11 @@ const OverviewTab = () => {
             </Box>
           </Box>
         </Box>
+      </Box>
+
+      {/* Asset KPIs - Stock, In Use, Swaps */}
+      <Box sx={{ mb: 1.5 }}>
+        <AssetKPIs />
       </Box>
 
       {/* Asset Planning Calendar - Full Width */}

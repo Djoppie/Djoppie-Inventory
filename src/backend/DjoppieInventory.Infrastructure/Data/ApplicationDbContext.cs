@@ -35,6 +35,9 @@ public class ApplicationDbContext : DbContext
     // Physical workplace management
     public DbSet<PhysicalWorkplace> PhysicalWorkplaces { get; set; }
 
+    // Asset request planning
+    public DbSet<AssetRequest> AssetRequests { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -553,6 +556,30 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.MouseAsset)
                 .WithMany()
                 .HasForeignKey(e => e.MouseAssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // AssetRequest configuration
+        modelBuilder.Entity<AssetRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.RequestedDate);
+            entity.HasIndex(e => e.RequestType);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.Property(e => e.EmployeeName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.AssetType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ModifiedBy).HasMaxLength(200);
+            entity.Property(e => e.RequestType).HasConversion<int>();
+            entity.Property(e => e.Status).HasConversion<int>();
+
+            // Foreign key to Asset (optional, set null if asset deleted)
+            entity.HasOne(e => e.AssignedAsset)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedAssetId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
