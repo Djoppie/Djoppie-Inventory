@@ -61,11 +61,15 @@ const Layout = ({ children }: LayoutProps) => {
       >
         <AppBar
           position="sticky"
-          elevation={0}
+          elevation={4}
           sx={{
-            zIndex: 1100,
+            zIndex: 1200,
             backdropFilter: 'blur(12px) saturate(180%)',
             background: 'transparent',
+            mx: { xs: 1, sm: 1.5, md: 2 },
+            my: { xs: 0.75, sm: 1, md: 1.25 },
+            borderRadius: 2,
+            overflow: 'visible',
             '&::after': {
               content: '""',
               position: 'absolute',
@@ -100,6 +104,7 @@ const Layout = ({ children }: LayoutProps) => {
               bgcolor: bgSurface,
               position: 'relative',
               overflow: 'visible',
+              borderRadius: 2,
               borderBottom: '1px solid',
               borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
             }}
