@@ -248,14 +248,17 @@ const ReportsPage = () => {
 
       {/* Ultra-Compact Tabs */}
       <Paper
+        elevation={6}
         sx={{
           bgcolor: bgSurface,
-          boxShadow: getNeumorph(isDark, 'soft'),
+          boxShadow: getNeumorph(isDark, 'medium'),
           borderRadius: 1.5,
-          mb: 0.75,
+          mb: 2.5,
           overflow: 'hidden',
           border: '1px solid',
-          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.12),
+          position: 'relative',
+          zIndex: 10,
           ...getFadeInUpAnimation(0.05),
         }}
       >
