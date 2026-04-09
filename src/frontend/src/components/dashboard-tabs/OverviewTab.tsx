@@ -218,16 +218,16 @@ const OverviewTab = () => {
   }
 
   return (
-    <Box sx={{ p: 1.5, maxWidth: '1600px', mx: 'auto' }}>
+    <Box sx={{ p: 1, maxWidth: '1600px', mx: 'auto' }}>
       {/* Hero Metrics Row - Eye-catching KPIs */}
       <Fade in timeout={600}>
-        <Box sx={{ mb: 1.5 }}>
+        <Box sx={{ mb: 1 }}>
           <Typography
             variant="h5"
             sx={{
-              fontSize: '1.25rem',
+              fontSize: '1.1rem',
               fontWeight: 800,
-              mb: 1.5,
+              mb: 1,
               background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #FF7700 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -242,14 +242,14 @@ const OverviewTab = () => {
 
       {/* Top Row: Workplace Occupancy + Equipment Status */}
       <Zoom in timeout={700}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5, mb: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1, mb: 1 }}>
         {/* Werkplek Bezetting (Workplace Occupancy) */}
         <Box>
           <Box
             onClick={() => navigate(ROUTES.PHYSICAL_WORKPLACES)}
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              borderRadius: 1.5,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
               cursor: 'pointer',
@@ -263,14 +263,14 @@ const OverviewTab = () => {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: '3px',
+                height: '2px',
                 background: 'linear-gradient(90deg, #3B82F6 0%, #8B5CF6 100%)',
                 opacity: 0,
                 transition: 'opacity 0.3s ease',
               },
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 8px 16px ${alpha('#3B82F6', 0.15)}`,
+                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 6px 12px ${alpha('#3B82F6', 0.15)}`,
                 '&::before': {
                   opacity: 1,
                 },
@@ -278,35 +278,35 @@ const OverviewTab = () => {
             }}
           >
             {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <Box
                   sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
+                    width: 28,
+                    height: 28,
+                    borderRadius: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: `linear-gradient(135deg, ${alpha('#3B82F6', 0.15)} 0%, ${alpha('#8B5CF6', 0.15)} 100%)`,
-                    boxShadow: `inset 0 2px 6px ${alpha('#3B82F6', 0.2)}`,
+                    boxShadow: `inset 0 2px 4px ${alpha('#3B82F6', 0.2)}`,
                   }}
                 >
-                  <Business sx={{ fontSize: 20, color: '#3B82F6' }} />
+                  <Business sx={{ fontSize: 16, color: '#3B82F6' }} />
                 </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 700, lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2 }}>
                     Werkplekken
                   </Typography>
-                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                  <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
                     Bezetting overzicht
                   </Typography>
                 </Box>
               </Box>
               <Box
                 sx={{
-                  px: 1.5,
-                  py: 0.75,
+                  px: 1.25,
+                  py: 0.5,
                   borderRadius: 1.5,
                   background: `linear-gradient(135deg, ${alpha('#3B82F6', 0.15)} 0%, ${alpha('#8B5CF6', 0.1)} 100%)`,
                 }}
@@ -314,7 +314,7 @@ const OverviewTab = () => {
                 <Typography
                   variant="h5"
                   sx={{
-                    fontSize: '1.3rem',
+                    fontSize: '1.1rem',
                     fontWeight: 800,
                     background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
                     WebkitBackgroundClip: 'text',
@@ -328,12 +328,12 @@ const OverviewTab = () => {
             </Box>
 
             {/* Occupancy Progress Bar */}
-            <Box sx={{ mb: 1.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
-                <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
+            <Box sx={{ mb: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
                   Bezettingsgraad
                 </Typography>
-                <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#3B82F6' }}>
+                <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#3B82F6' }}>
                   {workplaceStats?.occupiedWorkplaces} / {workplaceStats?.activeWorkplaces}
                 </Typography>
               </Box>
@@ -341,12 +341,12 @@ const OverviewTab = () => {
                 variant="determinate"
                 value={workplaceStats?.occupancyRate || 0}
                 sx={{
-                  height: 10,
-                  borderRadius: 5,
+                  height: 8,
+                  borderRadius: 4,
                   bgcolor: alpha('#3B82F6', 0.12),
                   boxShadow: `inset 0 2px 4px ${alpha('#000', 0.1)}`,
                   '& .MuiLinearProgress-bar': {
-                    borderRadius: 5,
+                    borderRadius: 4,
                     background: `linear-gradient(90deg, #10B981 0%, #3B82F6 50%, #8B5CF6 100%)`,
                     boxShadow: `0 0 12px ${alpha('#3B82F6', 0.4)}`,
                   },
@@ -355,11 +355,11 @@ const OverviewTab = () => {
             </Box>
 
             {/* Breakdown */}
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'space-between' }}>
               <Box
                 sx={{
                   flex: 1,
-                  p: 1,
+                  p: 0.75,
                   borderRadius: 1.5,
                   bgcolor: alpha('#3B82F6', 0.08),
                   textAlign: 'center',
@@ -371,18 +371,18 @@ const OverviewTab = () => {
                   },
                 }}
               >
-                <Business sx={{ fontSize: 16, color: '#3B82F6', mb: 0.25 }} />
-                <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 800, color: '#3B82F6' }}>
+                <Business sx={{ fontSize: 14, color: '#3B82F6', mb: 0.15 }} />
+                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#3B82F6' }}>
                   {workplaceStats?.activeWorkplaces || 0}
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', fontWeight: 600 }}>
                   Totaal actief
                 </Typography>
               </Box>
               <Box
                 sx={{
                   flex: 1,
-                  p: 1,
+                  p: 0.75,
                   borderRadius: 1.5,
                   bgcolor: alpha('#10B981', 0.08),
                   textAlign: 'center',
@@ -394,18 +394,18 @@ const OverviewTab = () => {
                   },
                 }}
               >
-                <CheckCircle sx={{ fontSize: 16, color: '#10B981', mb: 0.25 }} />
-                <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 800, color: '#10B981' }}>
+                <CheckCircle sx={{ fontSize: 14, color: '#10B981', mb: 0.15 }} />
+                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#10B981' }}>
                   {workplaceStats?.occupiedWorkplaces || 0}
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', fontWeight: 600 }}>
                   Bezet
                 </Typography>
               </Box>
               <Box
                 sx={{
                   flex: 1,
-                  p: 1,
+                  p: 0.75,
                   borderRadius: 1.5,
                   bgcolor: alpha('#F59E0B', 0.08),
                   textAlign: 'center',
@@ -417,11 +417,11 @@ const OverviewTab = () => {
                   },
                 }}
               >
-                <Inventory2 sx={{ fontSize: 16, color: '#F59E0B', mb: 0.25 }} />
-                <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 800, color: '#F59E0B' }}>
+                <Inventory2 sx={{ fontSize: 14, color: '#F59E0B', mb: 0.15 }} />
+                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#F59E0B' }}>
                   {workplaceStats?.vacantWorkplaces || 0}
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary', fontWeight: 600 }}>
                   Vrij
                 </Typography>
               </Box>
@@ -433,8 +433,8 @@ const OverviewTab = () => {
         <Box>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              borderRadius: 1.5,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -447,45 +447,45 @@ const OverviewTab = () => {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: '3px',
+                height: '2px',
                 background: 'linear-gradient(90deg, #FF7700 0%, #F59E0B 100%)',
               },
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 8px 16px ${alpha('#FF7700', 0.12)}`,
+                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 6px 12px ${alpha('#FF7700', 0.12)}`,
               },
             }}
           >
             {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 <Box
                   sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
+                    width: 28,
+                    height: 28,
+                    borderRadius: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: `linear-gradient(135deg, ${alpha('#FF7700', 0.15)} 0%, ${alpha('#F59E0B', 0.15)} 100%)`,
-                    boxShadow: `inset 0 2px 6px ${alpha('#FF7700', 0.2)}`,
+                    boxShadow: `inset 0 2px 4px ${alpha('#FF7700', 0.2)}`,
                   }}
                 >
-                  <Devices sx={{ fontSize: 20, color: '#FF7700' }} />
+                  <Devices sx={{ fontSize: 16, color: '#FF7700' }} />
                 </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 700, lineHeight: 1.2 }}>
+                  <Typography variant="h6" sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2 }}>
                     Apparatuur
                   </Typography>
-                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                  <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
                     Toewijzingsstatus per type
                   </Typography>
                 </Box>
               </Box>
               <Box
                 sx={{
-                  px: 1.5,
-                  py: 0.75,
+                  px: 1.25,
+                  py: 0.5,
                   borderRadius: 1.5,
                   background: `linear-gradient(135deg, ${alpha('#FF7700', 0.15)} 0%, ${alpha('#F59E0B', 0.1)} 100%)`,
                 }}
@@ -493,7 +493,7 @@ const OverviewTab = () => {
                 <Typography
                   variant="h5"
                   sx={{
-                    fontSize: '1.3rem',
+                    fontSize: '1.1rem',
                     fontWeight: 800,
                     background: 'linear-gradient(135deg, #FF7700 0%, #F59E0B 100%)',
                     WebkitBackgroundClip: 'text',
@@ -507,7 +507,7 @@ const OverviewTab = () => {
             </Box>
 
             {/* Equipment Breakdown */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               {equipmentStats?.map((equipment: EquipmentTypeStatus) => {
                 const Icon = getEquipmentIcon(equipment.equipmentType);
                 const color = getEquipmentColor(equipment.fillRate);
@@ -518,8 +518,8 @@ const OverviewTab = () => {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 1,
-                      p: 0.75,
+                      gap: 0.75,
+                      p: 0.5,
                       borderRadius: 1.5,
                       bgcolor: alpha(color, 0.05),
                       border: `1px solid ${alpha(color, 0.12)}`,
@@ -533,8 +533,8 @@ const OverviewTab = () => {
                   >
                     <Box
                       sx={{
-                        width: 28,
-                        height: 28,
+                        width: 24,
+                        height: 24,
                         borderRadius: 1.5,
                         display: 'flex',
                         alignItems: 'center',
@@ -543,14 +543,14 @@ const OverviewTab = () => {
                         flexShrink: 0,
                       }}
                     >
-                      <Icon sx={{ fontSize: 16, color }} />
+                      <Icon sx={{ fontSize: 14, color }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 700 }}>
                           {equipment.displayName}
                         </Typography>
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem', fontWeight: 800, color }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.7rem', fontWeight: 800, color }}>
                           {equipment.filledSlots} / {equipment.totalSlots}
                         </Typography>
                       </Box>
@@ -558,12 +558,12 @@ const OverviewTab = () => {
                         variant="determinate"
                         value={equipment.fillRate}
                         sx={{
-                          height: 6,
-                          borderRadius: 3,
+                          height: 5,
+                          borderRadius: 2.5,
                           bgcolor: alpha(color, 0.15),
                           boxShadow: `inset 0 1px 2px ${alpha('#000', 0.08)}`,
                           '& .MuiLinearProgress-bar': {
-                            borderRadius: 3,
+                            borderRadius: 2.5,
                             bgcolor: color,
                             boxShadow: `0 0 6px ${alpha(color, 0.3)}`,
                           },
@@ -599,37 +599,37 @@ const OverviewTab = () => {
 
       {/* Asset Planning Calendar - Prominent Feature */}
       <Fade in timeout={800}>
-        <Box sx={{ mb: 1.5 }}>
+        <Box sx={{ mb: 1 }}>
           <AssetPlanningCalendar />
         </Box>
       </Fade>
 
       {/* Second Row: Upcoming Rollouts + Stock Inventory */}
       <Zoom in timeout={900}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5, mb: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1, mb: 1 }}>
         {/* Planned Onboarding/Offboarding */}
         <Box>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              borderRadius: 1.5,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
-              maxHeight: 350,
+              maxHeight: 280,
               overflow: 'hidden',
               border: `1px solid ${alpha('#9C27B0', 0.1)}`,
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 8px 16px ${alpha('#9C27B0', 0.12)}`,
+                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 6px 12px ${alpha('#9C27B0', 0.12)}`,
               },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
               <Box
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   borderRadius: 1.5,
                   display: 'flex',
                   alignItems: 'center',
@@ -638,13 +638,13 @@ const OverviewTab = () => {
                   boxShadow: `inset 0 2px 4px ${alpha('#9C27B0', 0.2)}`,
                 }}
               >
-                <CalendarMonth sx={{ fontSize: 18, color: '#9C27B0' }} />
+                <CalendarMonth sx={{ fontSize: 16, color: '#9C27B0' }} />
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.2 }}>
+                <Typography variant="h6" sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2 }}>
                   Geplande Rollouts
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
                   Toekomstige onboarding met voorraad indicatie
                 </Typography>
               </Box>
@@ -879,30 +879,30 @@ const OverviewTab = () => {
 
       {/* Third Row: Upcoming Available Devices + Expiring Certificates */}
       <Fade in timeout={1000}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1 }}>
         {/* Devices Becoming Available */}
         <Box>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              borderRadius: 1.5,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
-              maxHeight: 300,
+              maxHeight: 250,
               overflow: 'hidden',
               border: `1px solid ${alpha('#10B981', 0.1)}`,
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 8px 16px ${alpha('#10B981', 0.12)}`,
+                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 6px 12px ${alpha('#10B981', 0.12)}`,
               },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
               <Box
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   borderRadius: 1.5,
                   display: 'flex',
                   alignItems: 'center',
@@ -911,13 +911,13 @@ const OverviewTab = () => {
                   boxShadow: `inset 0 2px 4px ${alpha('#10B981', 0.2)}`,
                 }}
               >
-                <TrendingDown sx={{ fontSize: 18, color: '#10B981' }} />
+                <TrendingDown sx={{ fontSize: 16, color: '#10B981' }} />
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.2 }}>
+                <Typography variant="h6" sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2 }}>
                   Vrijkomende Apparaten
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
                   Apparaten beschikbaar binnen 90 dagen
                 </Typography>
               </Box>
@@ -925,7 +925,7 @@ const OverviewTab = () => {
 
             <Box
               sx={{
-                maxHeight: 180,
+                maxHeight: 150,
                 overflowY: 'auto',
                 '&::-webkit-scrollbar': { width: 4 },
                 '&::-webkit-scrollbar-thumb': {
@@ -972,25 +972,25 @@ const OverviewTab = () => {
         <Box>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: 2,
+              p: 1,
+              borderRadius: 1.5,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
-              maxHeight: 300,
+              maxHeight: 250,
               overflow: 'hidden',
               border: `1px solid ${alpha('#F59E0B', 0.1)}`,
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 8px 16px ${alpha('#F59E0B', 0.12)}`,
+                boxShadow: `${getNeumorph(isDark, 'strong')}, 0 6px 12px ${alpha('#F59E0B', 0.12)}`,
               },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
               <Box
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   borderRadius: 1.5,
                   display: 'flex',
                   alignItems: 'center',
@@ -999,13 +999,13 @@ const OverviewTab = () => {
                   boxShadow: `inset 0 2px 4px ${alpha('#F59E0B', 0.2)}`,
                 }}
               >
-                <Warning sx={{ fontSize: 18, color: '#F59E0B' }} />
+                <Warning sx={{ fontSize: 16, color: '#F59E0B' }} />
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.2 }}>
+                <Typography variant="h6" sx={{ fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.2 }}>
                   Verlopende Certificaten
                 </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.68rem', color: 'text.secondary' }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
                   Management certificaten binnen 90 dagen
                 </Typography>
               </Box>
@@ -1013,7 +1013,7 @@ const OverviewTab = () => {
 
             <Box
               sx={{
-                maxHeight: 180,
+                maxHeight: 150,
                 overflowY: 'auto',
                 '&::-webkit-scrollbar': { width: 4 },
                 '&::-webkit-scrollbar-thumb': {
