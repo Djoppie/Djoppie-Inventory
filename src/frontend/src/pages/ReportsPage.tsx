@@ -158,25 +158,27 @@ const ReportsPage = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 0.75, px: { xs: 1, sm: 1.5 } }}>
-      {/* Ultra-Compact Header */}
+    <Container maxWidth="xl" sx={{ py: 2, px: { xs: 1.5, sm: 2 } }}>
+      {/* Header with better spacing */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          mb: 0.5,
+          mb: 2,
+          pb: 1.5,
+          borderBottom: `2px solid ${alpha(currentColor, 0.15)}`,
           ...getFadeInUpAnimation(0),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Tooltip title="Terug naar Dashboard">
             <IconButton
               onClick={() => navigate(ROUTES.DASHBOARD)}
-              size="small"
+              size="medium"
               sx={{
-                width: 28,
-                height: 28,
+                width: 40,
+                height: 40,
                 bgcolor: bgBase,
                 boxShadow: getNeumorph(isDark, 'soft'),
                 transition: 'all 0.2s ease',
@@ -187,17 +189,17 @@ const ReportsPage = () => {
                 },
               }}
             >
-              <ArrowBackIcon sx={{ color: currentColor, fontSize: 14 }} />
+              <ArrowBackIcon sx={{ color: currentColor, fontSize: 20 }} />
             </IconButton>
           </Tooltip>
           <Box>
             <Typography
               variant="h5"
               sx={{
-                fontSize: '0.95rem',
+                fontSize: '1.5rem',
                 fontWeight: 700,
                 color: currentColor,
-                lineHeight: 1.1,
+                lineHeight: 1.2,
                 background: `linear-gradient(135deg, ${currentColor} 0%, ${alpha(currentColor, 0.7)} 100%)`,
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
@@ -209,7 +211,7 @@ const ReportsPage = () => {
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ fontSize: '0.6rem', display: 'block', mt: 0.1 }}
+              sx={{ fontSize: '0.85rem', display: 'block', mt: 0.25 }}
             >
               {currentTab.description}
             </Typography>
@@ -219,10 +221,10 @@ const ReportsPage = () => {
         <Tooltip title="Vernieuwen">
           <IconButton
             onClick={handleRefresh}
-            size="small"
+            size="medium"
             sx={{
-              width: 28,
-              height: 28,
+              width: 40,
+              height: 40,
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
               transition: 'all 0.2s ease',
@@ -238,7 +240,7 @@ const ReportsPage = () => {
             <RefreshIcon
               sx={{
                 color: currentColor,
-                fontSize: 14,
+                fontSize: 20,
                 transition: 'transform 0.5s ease',
               }}
             />
@@ -246,14 +248,14 @@ const ReportsPage = () => {
         </Tooltip>
       </Box>
 
-      {/* Ultra-Compact Tabs */}
+      {/* Navigation Tabs - Clearly separated */}
       <Paper
         elevation={6}
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 1.25,
-          mb: 1,
+          borderRadius: 2,
+          mb: 2.5,
           overflow: 'hidden',
           border: '1px solid',
           borderColor: alpha(isDark ? '#fff' : '#000', 0.12),
@@ -268,35 +270,36 @@ const ReportsPage = () => {
           variant={isMobile ? 'scrollable' : 'fullWidth'}
           scrollButtons={isMobile ? 'auto' : false}
           sx={{
-            minHeight: 34,
+            minHeight: 48,
             '& .MuiTab-root': {
-              minHeight: 34,
-              py: 0.5,
-              px: 1,
-              minWidth: isMobile ? 50 : 80,
+              minHeight: 48,
+              py: 1.5,
+              px: 2,
+              minWidth: isMobile ? 60 : 100,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.65rem',
-              gap: 0.4,
+              fontSize: '0.875rem',
+              gap: 0.75,
               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
               '&.Mui-selected': {
                 color: TAB_COLORS[activeTab],
                 fontWeight: 700,
+                bgcolor: alpha(TAB_COLORS[activeTab], 0.08),
                 '& svg': {
-                  transform: 'scale(1.08)',
+                  transform: 'scale(1.1)',
                   filter: `drop-shadow(0 0 6px ${alpha(TAB_COLORS[activeTab], 0.4)})`,
                 },
               },
               '& svg': {
-                fontSize: 14,
+                fontSize: 18,
                 transition: 'all 0.2s ease',
               },
             },
             '& .MuiTabs-indicator': {
-              height: 2,
-              borderRadius: '2px 2px 0 0',
+              height: 3,
+              borderRadius: '3px 3px 0 0',
               backgroundColor: TAB_COLORS[activeTab],
-              boxShadow: `0 -1px 6px ${alpha(TAB_COLORS[activeTab], 0.3)}`,
+              boxShadow: `0 -1px 8px ${alpha(TAB_COLORS[activeTab], 0.4)}`,
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             },
           }}
@@ -322,17 +325,17 @@ const ReportsPage = () => {
         </Tabs>
       </Paper>
 
-      {/* Ultra-Compact Tab Content */}
+      {/* Tab Content - Better spacing */}
       <Paper
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 1.25,
-          p: 1,
-          minHeight: 400,
+          borderRadius: 2,
+          p: 2.5,
+          minHeight: 500,
           border: '1px solid',
           borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
-          borderTop: `2px solid ${currentColor}`,
+          borderTop: `3px solid ${currentColor}`,
           position: 'relative',
           overflow: 'hidden',
           ...getFadeInUpAnimation(0.1),
