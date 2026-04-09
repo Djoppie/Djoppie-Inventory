@@ -30,6 +30,50 @@ export interface IntuneDevice {
   managementAgent?: string;
 }
 
+/**
+ * Configuration profile deployment status for a device.
+ * Used to check certificate/Wi-Fi profile status and detect
+ * issues caused by primary user changes.
+ */
+export interface DeviceConfigurationStatus {
+  deviceId: string;
+  deviceName: string;
+  primaryUserUpn?: string;
+  primaryUserDisplayName?: string;
+  enrolledDateTime?: string;
+  lastSyncDateTime?: string;
+  configurationProfiles: ConfigurationProfileStatus[];
+  summary: ConfigurationStatusSummary;
+  hasCertificateProfiles: boolean;
+  hasCertificateIssues: boolean;
+  retrievedAt: string;
+}
+
+export interface ConfigurationProfileStatus {
+  profileId?: string;
+  displayName: string;
+  profileType?: string;
+  platformType?: string;
+  status: string;
+  lastReportedDateTime?: string;
+  userPrincipalName?: string;
+  userDisplayName?: string;
+  isCertificateRelated: boolean;
+  errorCode?: number;
+  settingsInError?: number;
+  settingsInConflict?: number;
+}
+
+export interface ConfigurationStatusSummary {
+  total: number;
+  succeeded: number;
+  failed: number;
+  pending: number;
+  error: number;
+  notApplicable: number;
+  conflict: number;
+}
+
 export interface AutopilotDevice {
   id: string;
   serialNumber?: string;

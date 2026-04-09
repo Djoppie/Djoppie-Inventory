@@ -708,6 +708,94 @@ public class IntuneController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves configuration profile deployment statuses for a device by Intune device ID.
+    /// Shows all assigned profiles including certificate, Wi-Fi, VPN profiles and their deployment status.
+    /// Critical for diagnosing network certificate issues after primary user changes.
+    /// </summary>
+    /// <param name="deviceId">The Intune device identifier (GUID)</param>
+    /// <returns>Configuration profile statuses with certificate issue detection</returns>
+    [HttpGet("devices/{deviceId}/configuration-status")]
+    [ProducesResponseType(typeof(DeviceConfigurationStatusDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceConfigurationStatusDto>> GetDeviceConfigurationStatus(string deviceId)
+    {
+        try
+        {
+            if (!InputValidator.ValidateDeviceId(deviceId, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request to retrieve configuration status for device: {DeviceId}", deviceId);
+            var result = await _intuneService.GetDeviceConfigurationStatusAsync(deviceId);
+
+            if (result == null)
+            {
+                return NotFound(new { error = $"Device with ID '{deviceId}' not found in Intune" });
+            }
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve configuration status for device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "Failed to retrieve configuration status", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving configuration status for device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "An unexpected error occurred while retrieving configuration status" });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves configuration profile deployment statuses for a device by serial number.
+    /// Shows all assigned profiles including certificate, Wi-Fi, VPN profiles and their deployment status.
+    /// Critical for diagnosing network certificate issues after primary user changes.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Configuration profile statuses with certificate issue detection</returns>
+    [HttpGet("devices/serial/{serialNumber}/configuration-status")]
+    [ProducesResponseType(typeof(DeviceConfigurationStatusDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceConfigurationStatusDto>> GetDeviceConfigurationStatusBySerial(string serialNumber)
+    {
+        try
+        {
+            if (!InputValidator.ValidateSerialNumber(serialNumber, out var errorMessage))
+            {
+                return BadRequest(new { error = errorMessage });
+            }
+
+            _logger.LogInformation("API request to retrieve configuration status for device with serial: {SerialNumber}", serialNumber);
+            var result = await _intuneService.GetDeviceConfigurationStatusBySerialAsync(serialNumber);
+
+            if (result == null)
+            {
+                return NotFound(new { error = $"Device with serial number '{serialNumber}' not found in Intune" });
+            }
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve configuration status for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "Failed to retrieve configuration status", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving configuration status for serial {SerialNumber}", serialNumber);
+            return StatusCode(500, new { error = "An unexpected error occurred while retrieving configuration status" });
+        }
+    }
+
+    /// <summary>
     /// Imports selected Intune devices as new assets in the inventory.
     /// Creates Asset entities from Intune device data with automatic asset code generation.
     /// </summary>

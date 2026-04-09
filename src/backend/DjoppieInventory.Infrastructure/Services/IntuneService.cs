@@ -1536,4 +1536,203 @@ public class IntuneService : IIntuneService
             throw;
         }
     }
+
+    /// <inheritdoc/>
+    public async Task<DeviceConfigurationStatusDto?> GetDeviceConfigurationStatusAsync(string deviceId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+            {
+                throw new ArgumentException("Device ID cannot be null or empty", nameof(deviceId));
+            }
+
+            _logger.LogInformation("Retrieving configuration profile statuses for device: {DeviceId}", deviceId);
+
+            // First get the device basic info for context
+            var device = await GetDeviceByIdAsync(deviceId);
+            if (device == null)
+            {
+                _logger.LogWarning("Device not found: {DeviceId}", deviceId);
+                return null;
+            }
+
+            // Use beta API to get device configuration statuses
+            // This endpoint returns all configuration profiles and their deployment status per device
+            var endpoint = $"https://graph.microsoft.com/beta/deviceManagement/managedDevices/{deviceId}/deviceConfigurationStates";
+
+            var requestInfo = new Microsoft.Kiota.Abstractions.RequestInformation
+            {
+                HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                URI = new Uri(endpoint)
+            };
+
+            var nativeRequest = await _graphClient.RequestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo)
+                ?? throw new InvalidOperationException("Failed to create native HTTP request");
+
+            using var httpClient = new HttpClient();
+            var response = await httpClient.SendAsync(nativeRequest);
+
+            var profiles = new List<ConfigurationProfileStatusDto>();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var json = JsonDocument.Parse(content).RootElement;
+
+                if (json.TryGetProperty("value", out var profileArray) && profileArray.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var profile in profileArray.EnumerateArray())
+                    {
+                        var displayName = profile.TryGetProperty("displayName", out var dn) ? dn.GetString() ?? "" : "";
+                        var state = profile.TryGetProperty("state", out var st) ? st.GetString() ?? "unknown" : "unknown";
+                        var profileType = profile.TryGetProperty("platformType", out var pt) ? pt.GetString() : null;
+                        var settingCount = profile.TryGetProperty("settingCount", out var sc) && sc.ValueKind == JsonValueKind.Number ? sc.GetInt32() : 0;
+
+                        // Determine if this is a certificate-related profile based on display name patterns
+                        var isCertRelated = IsCertificateRelatedProfile(displayName);
+
+                        var profileStatus = new ConfigurationProfileStatusDto
+                        {
+                            ProfileId = profile.TryGetProperty("id", out var id) ? id.GetString() : null,
+                            DisplayName = displayName,
+                            ProfileType = profile.TryGetProperty("platformType", out var pType) ? pType.GetString() : null,
+                            PlatformType = profileType,
+                            Status = state,
+                            LastReportedDateTime = profile.TryGetProperty("lastReportedDateTime", out var lrd) && lrd.ValueKind != JsonValueKind.Null
+                                ? lrd.GetDateTime()
+                                : null,
+                            UserPrincipalName = profile.TryGetProperty("userPrincipalName", out var upn) ? upn.GetString() : null,
+                            UserDisplayName = profile.TryGetProperty("userDisplayName", out var udn) ? udn.GetString() : null,
+                            IsCertificateRelated = isCertRelated,
+                            ErrorCode = profile.TryGetProperty("errorCode", out var ec) && ec.ValueKind == JsonValueKind.Number ? ec.GetInt64() : null,
+                            SettingsInError = profile.TryGetProperty("settingStates", out var ss) && ss.ValueKind == JsonValueKind.Array
+                                ? ss.EnumerateArray().Count(s => s.TryGetProperty("state", out var sState) && sState.GetString() == "error")
+                                : null,
+                            SettingsInConflict = profile.TryGetProperty("settingStates", out var sc2) && sc2.ValueKind == JsonValueKind.Array
+                                ? sc2.EnumerateArray().Count(s => s.TryGetProperty("state", out var sState) && sState.GetString() == "conflict")
+                                : null
+                        };
+
+                        // If no user info from the profile state, use the device's primary user
+                        if (string.IsNullOrEmpty(profileStatus.UserPrincipalName))
+                        {
+                            profileStatus.UserPrincipalName = device.UserPrincipalName;
+                            profileStatus.UserDisplayName = device.UserDisplayName;
+                        }
+
+                        profiles.Add(profileStatus);
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Failed to retrieve configuration states for device {DeviceId}. Status: {StatusCode}",
+                    deviceId, response.StatusCode);
+            }
+
+            // Build result
+            var result = new DeviceConfigurationStatusDto
+            {
+                DeviceId = device.Id ?? deviceId,
+                DeviceName = device.DeviceName ?? "Unknown",
+                PrimaryUserUpn = device.UserPrincipalName,
+                PrimaryUserDisplayName = device.UserDisplayName,
+                EnrolledDateTime = device.EnrolledDateTime?.DateTime,
+                LastSyncDateTime = device.LastSyncDateTime?.DateTime,
+                ConfigurationProfiles = profiles,
+                HasCertificateProfiles = profiles.Any(p => p.IsCertificateRelated),
+                HasCertificateIssues = profiles.Any(p => p.IsCertificateRelated &&
+                    (p.Status == "failed" || p.Status == "error" || p.Status == "conflict" || p.Status == "notApplicable")),
+                Summary = new ConfigurationStatusSummaryDto
+                {
+                    Total = profiles.Count,
+                    Succeeded = profiles.Count(p => p.Status == "succeeded" || p.Status == "compliant"),
+                    Failed = profiles.Count(p => p.Status == "failed"),
+                    Pending = profiles.Count(p => p.Status == "pending" || p.Status == "notApplicable"),
+                    Error = profiles.Count(p => p.Status == "error"),
+                    NotApplicable = profiles.Count(p => p.Status == "notApplicable"),
+                    Conflict = profiles.Count(p => p.Status == "conflict")
+                },
+                RetrievedAt = DateTime.UtcNow
+            };
+
+            _logger.LogInformation(
+                "Configuration status retrieved for {DeviceName}: {Total} profiles, {CertProfiles} certificate-related, HasIssues={HasIssues}",
+                result.DeviceName, result.Summary.Total,
+                profiles.Count(p => p.IsCertificateRelated), result.HasCertificateIssues);
+
+            return result;
+        }
+        catch (ArgumentException)
+        {
+            throw;
+        }
+        catch (ServiceException ex)
+        {
+            _logger.LogError(ex, "Microsoft Graph API error retrieving configuration status for device {DeviceId}. Status: {StatusCode}",
+                deviceId, ex.ResponseStatusCode);
+            throw new InvalidOperationException($"Failed to retrieve configuration status: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error retrieving configuration status for device {DeviceId}", deviceId);
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<DeviceConfigurationStatusDto?> GetDeviceConfigurationStatusBySerialAsync(string serialNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(serialNumber))
+            {
+                throw new ArgumentException("Serial number cannot be null or empty", nameof(serialNumber));
+            }
+
+            _logger.LogInformation("Looking up device by serial number for configuration status: {SerialNumber}", serialNumber);
+
+            var device = await GetDeviceBySerialNumberAsync(serialNumber);
+            if (device == null || string.IsNullOrWhiteSpace(device.Id))
+            {
+                _logger.LogWarning("No device found with serial number: {SerialNumber}", serialNumber);
+                return null;
+            }
+
+            return await GetDeviceConfigurationStatusAsync(device.Id);
+        }
+        catch (ArgumentException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving configuration status for device with serial number {SerialNumber}", serialNumber);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Determines if a configuration profile is certificate-related based on its display name.
+    /// Matches SCEP, PKCS, trusted root, Wi-Fi with certificate, VPN with certificate, and 802.1x profiles.
+    /// </summary>
+    private static bool IsCertificateRelatedProfile(string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName)) return false;
+
+        var nameLower = displayName.ToLowerInvariant();
+        return nameLower.Contains("certificate") ||
+               nameLower.Contains("certificaat") ||
+               nameLower.Contains("scep") ||
+               nameLower.Contains("pkcs") ||
+               nameLower.Contains("trusted root") ||
+               nameLower.Contains("802.1x") ||
+               nameLower.Contains("wifi") ||
+               nameLower.Contains("wi-fi") ||
+               nameLower.Contains("wlan") ||
+               nameLower.Contains("network auth") ||
+               nameLower.Contains("netwerk") ||
+               nameLower.Contains("radius");
+    }
 }

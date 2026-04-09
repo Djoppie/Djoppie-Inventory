@@ -110,4 +110,22 @@ public interface IIntuneService
     /// </summary>
     /// <returns>A collection of Autopilot device identities</returns>
     Task<IEnumerable<AutopilotDeviceDto>> GetAutopilotDevicesAsync();
+
+    /// <summary>
+    /// Retrieves configuration profile deployment statuses for a device.
+    /// Shows which profiles (including certificate/Wi-Fi/VPN profiles) are deployed,
+    /// their status, and which user they target — critical for diagnosing network
+    /// certificate issues after primary user changes.
+    /// </summary>
+    /// <param name="deviceId">The Intune device identifier</param>
+    /// <returns>Configuration status with profile details, or null if device not found</returns>
+    Task<DeviceConfigurationStatusDto?> GetDeviceConfigurationStatusAsync(string deviceId);
+
+    /// <summary>
+    /// Retrieves configuration profile deployment statuses for a device identified by serial number.
+    /// Convenience method that first looks up the device by serial, then retrieves configuration status.
+    /// </summary>
+    /// <param name="serialNumber">The device serial number</param>
+    /// <returns>Configuration status with profile details, or null if device not found</returns>
+    Task<DeviceConfigurationStatusDto?> GetDeviceConfigurationStatusBySerialAsync(string serialNumber);
 }

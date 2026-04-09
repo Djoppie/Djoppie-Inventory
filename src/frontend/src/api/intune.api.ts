@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { IntuneDevice, AutopilotDevice } from '../types/graph.types';
+import { IntuneDevice, AutopilotDevice, DeviceConfigurationStatus } from '../types/graph.types';
 import { ProvisioningTimeline } from '../types/provisioning.types';
 
 /**
@@ -96,6 +96,26 @@ export const intuneApi = {
    */
   getProvisioningTimeline: async (serialNumber: string): Promise<ProvisioningTimeline> => {
     const response = await apiClient.get<ProvisioningTimeline>(`/intune/devices/serial/${serialNumber}/provisioning-timeline`);
+    return response.data;
+  },
+
+  /**
+   * Get configuration profile deployment statuses for a device by Intune device ID.
+   * Shows certificate, Wi-Fi, VPN profile statuses — critical for diagnosing
+   * network issues after primary user changes.
+   * @param deviceId - The Intune device identifier
+   */
+  getDeviceConfigurationStatus: async (deviceId: string): Promise<DeviceConfigurationStatus> => {
+    const response = await apiClient.get<DeviceConfigurationStatus>(`/intune/devices/${deviceId}/configuration-status`);
+    return response.data;
+  },
+
+  /**
+   * Get configuration profile deployment statuses for a device by serial number.
+   * @param serialNumber - The device serial number
+   */
+  getDeviceConfigurationStatusBySerial: async (serialNumber: string): Promise<DeviceConfigurationStatus> => {
+    const response = await apiClient.get<DeviceConfigurationStatus>(`/intune/devices/serial/${serialNumber}/configuration-status`);
     return response.data;
   },
 
