@@ -62,10 +62,10 @@ const OverviewTab = () => {
     }
 
     const laptopsInStock = assets.filter(
-      (a) => a.status === 'Stock' && a.assetTypeName?.toLowerCase().includes('lap')
+      (a) => a.status === 'Stock' && a.assetType?.name.toLowerCase().includes('lap')
     );
     const desktopsInStock = assets.filter(
-      (a) => a.status === 'Stock' && a.assetTypeName?.toLowerCase().includes('desk')
+      (a) => a.status === 'Stock' && a.assetType?.name.toLowerCase().includes('desk')
     );
 
     return {
@@ -82,7 +82,7 @@ const OverviewTab = () => {
 
     const now = new Date();
     const futureRollouts = rolloutSessions
-      .filter((s) => s.status === 'Planned' || s.status === 'InProgress')
+      .filter((s) => s.status === 'Planning' || s.status === 'InProgress')
       .map((session) => {
         const futureDays = (session.days || []).filter((day) => {
           const dayDate = new Date(day.date || '');
@@ -135,7 +135,7 @@ const OverviewTab = () => {
       .map((a) => ({
         assetCode: a.assetCode,
         assetName: a.assetName || '',
-        assetType: a.assetTypeName || '',
+        assetType: a.assetType?.name || '',
         brand: a.brand || '',
         model: a.model || '',
         serialNumber: a.serialNumber || '',
@@ -156,20 +156,20 @@ const OverviewTab = () => {
 
     const expiring = assets
       .filter((a) => {
-        if (!a.managementCertificateExpirationDate) return false;
-        const expiryDate = new Date(a.managementCertificateExpirationDate);
+        if (!a.intuneCertificateExpiry) return false;
+        const expiryDate = new Date(a.intuneCertificateExpiry);
         return expiryDate > now && expiryDate <= ninetyDaysFromNow;
       })
       .map((a) => ({
         assetCode: a.assetCode,
         assetName: a.assetName || '',
-        assetType: a.assetTypeName || '',
+        assetType: a.assetType?.name || '',
         brand: a.brand || '',
         model: a.model || '',
         serialNumber: a.serialNumber || '',
-        expiryDate: a.managementCertificateExpirationDate || '',
+        expiryDate: a.intuneCertificateExpiry || '',
         daysRemaining: Math.ceil(
-          (new Date(a.managementCertificateExpirationDate!).getTime() - now.getTime()) /
+          (new Date(a.intuneCertificateExpiry!).getTime() - now.getTime()) /
             (1000 * 60 * 60 * 24)
         ),
       }))
@@ -466,7 +466,7 @@ const OverviewTab = () => {
                 upcomingRollouts.map((rollout) => (
                   <Box
                     key={rollout.sessionId}
-                    onClick={() => navigate(`${ROUTES.ROLLOUT_PLANNER}?session=${rollout.sessionId}`)}
+                    onClick={() => navigate(`${ROUTES.ROLLOUTS}?session=${rollout.sessionId}`)}
                     sx={{
                       p: 1,
                       borderRadius: 1.5,
