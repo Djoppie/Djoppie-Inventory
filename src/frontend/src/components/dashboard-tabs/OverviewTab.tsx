@@ -1,216 +1,33 @@
 /**
  * OverviewTab Component
- * Ultra-compact executive dashboard with KPIs, alerts, and activity
+ * Executive dashboard with workplace occupancy, equipment status, and inventory planning
  */
 
 import { useMemo } from 'react';
-import { Box, Typography, useTheme, alpha, Skeleton, Chip } from '@mui/material';
+import { Box, Typography, useTheme, alpha, Skeleton, LinearProgress, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
+  Business,
   Devices,
   CheckCircle,
   Inventory2,
-  Error as ErrorIcon,
   Warning,
-  Cloud,
-  EventNote,
-  TrendingUp,
-  Schedule,
+  DockTwoTone,
+  Monitor,
+  Keyboard,
+  Mouse,
+  Laptop,
+  Computer,
+  CalendarMonth,
+  TrendingDown,
 } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
 import { useAssets } from '../../hooks/useAssets';
 import { useRolloutSessions } from '../../hooks/rollout/useRolloutSessions';
+import { physicalWorkplacesStatisticsApi } from '../../api/physicalWorkplaces.api';
 import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
 import { ROUTES } from '../../constants/routes';
-import AssetPlanningCalendar from '../dashboard/AssetPlanningCalendar';
-import AssetKPIs from '../dashboard/AssetKPIs';
-
-interface CompactKPIProps {
-  icon: React.ElementType;
-  label: string;
-  value: number | string;
-  color: string;
-  subtitle?: string;
-  onClick?: () => void;
-}
-
-const CompactKPI = ({ icon: Icon, label, value, color, subtitle, onClick }: CompactKPIProps) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const { bgSurface } = getNeumorphColors(isDark);
-
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        p: 1,
-        borderRadius: 2,
-        bgcolor: bgSurface,
-        boxShadow: getNeumorph(isDark, 'medium'),
-        cursor: onClick ? 'pointer' : 'default',
-        transition: 'all 0.2s ease',
-        border: `1px solid ${alpha(color, 0.15)}`,
-        '&:hover': onClick
-          ? {
-              transform: 'translateY(-2px)',
-              boxShadow: getNeumorph(isDark, 'strong'),
-              borderColor: alpha(color, 0.4),
-            }
-          : {},
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
-        <Icon sx={{ fontSize: 18, color: alpha(color, 0.9) }} />
-        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', fontWeight: 500 }}>
-          {label}
-        </Typography>
-      </Box>
-      <Typography
-        variant="h5"
-        sx={{
-          fontWeight: 700,
-          fontSize: '1.5rem',
-          lineHeight: 1,
-          color: alpha(color, 1),
-          mb: subtitle ? 0.3 : 0,
-        }}
-      >
-        {value}
-      </Typography>
-      {subtitle && (
-        <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled' }}>
-          {subtitle}
-        </Typography>
-      )}
-    </Box>
-  );
-};
-
-interface AlertItemProps {
-  label: string;
-  count: number;
-  severity: 'error' | 'warning' | 'info';
-  onClick?: () => void;
-}
-
-const AlertItem = ({ label, count, severity, onClick }: AlertItemProps) => {
-  const severityColors = {
-    error: '#EF4444',
-    warning: '#F59E0B',
-    info: '#3B82F6',
-  };
-
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        py: 0.5,
-        px: 1,
-        borderRadius: 1,
-        cursor: onClick ? 'pointer' : 'default',
-        '&:hover': onClick
-          ? {
-              bgcolor: alpha(severityColors[severity], 0.05),
-            }
-          : {},
-      }}
-    >
-      <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.primary' }}>
-        {label}
-      </Typography>
-      <Chip
-        label={count}
-        size="small"
-        sx={{
-          height: 18,
-          fontSize: '0.65rem',
-          fontWeight: 600,
-          bgcolor: alpha(severityColors[severity], 0.15),
-          color: severityColors[severity],
-          '& .MuiChip-label': { px: 0.75 },
-        }}
-      />
-    </Box>
-  );
-};
-
-interface ActivityItemProps {
-  title: string;
-  subtitle: string;
-  timestamp: string;
-  icon: React.ElementType;
-  color?: string;
-}
-
-const ActivityItem = ({ title, subtitle, timestamp, icon: Icon, color = '#3B82F6' }: ActivityItemProps) => {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        gap: 1,
-        py: 0.75,
-        px: 1,
-        borderRadius: 1,
-        '&:hover': {
-          bgcolor: alpha(color, 0.05),
-        },
-      }}
-    >
-      <Box
-        sx={{
-          mt: 0.3,
-          width: 24,
-          height: 24,
-          borderRadius: '50%',
-          bgcolor: alpha(color, 0.15),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon sx={{ fontSize: 14, color }} />
-      </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.7rem',
-            fontWeight: 600,
-            color: 'text.primary',
-            display: 'block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {title}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.65rem',
-            color: 'text.secondary',
-            display: 'block',
-          }}
-        >
-          {subtitle}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.6rem',
-            color: 'text.disabled',
-          }}
-        >
-          {timestamp}
-        </Typography>
-      </Box>
-    </Box>
-  );
-};
+import type { EquipmentTypeStatus } from '../../types/physicalWorkplace.types';
 
 const OverviewTab = () => {
   const theme = useTheme();
@@ -221,288 +38,544 @@ const OverviewTab = () => {
   const { data: assets, isLoading: assetsLoading } = useAssets();
   const { data: rolloutSessions, isLoading: rolloutsLoading } = useRolloutSessions();
 
-  // Calculate KPIs
-  const kpis = useMemo(() => {
+  // Fetch workplace statistics
+  const { data: workplaceStats, isLoading: workplaceStatsLoading } = useQuery({
+    queryKey: ['workplace-statistics'],
+    queryFn: () => physicalWorkplacesStatisticsApi.getStatistics(),
+  });
+
+  // Fetch equipment statistics
+  const { data: equipmentStats, isLoading: equipmentStatsLoading } = useQuery({
+    queryKey: ['equipment-statistics'],
+    queryFn: () => physicalWorkplacesStatisticsApi.getEquipmentStatistics(),
+  });
+
+  // Calculate stock metrics
+  const stockMetrics = useMemo(() => {
     if (!assets) {
       return {
-        total: 0,
-        inGebruik: 0,
-        stock: 0,
-        needsAttention: 0,
-        intuneManaged: 0,
-        missingSerials: 0,
-        expiringWarranties: 0,
+        laptopsInStock: [],
+        desktopsInStock: [],
+        totalLaptopsStock: 0,
+        totalDesktopsStock: 0,
       };
     }
+
+    const laptopsInStock = assets.filter(
+      (a) => a.status === 'Stock' && a.assetTypeName?.toLowerCase().includes('lap')
+    );
+    const desktopsInStock = assets.filter(
+      (a) => a.status === 'Stock' && a.assetTypeName?.toLowerCase().includes('desk')
+    );
+
+    return {
+      laptopsInStock,
+      desktopsInStock,
+      totalLaptopsStock: laptopsInStock.length,
+      totalDesktopsStock: desktopsInStock.length,
+    };
+  }, [assets]);
+
+  // Calculate upcoming rollouts with stock requirements
+  const upcomingRollouts = useMemo(() => {
+    if (!rolloutSessions) return [];
+
+    const now = new Date();
+    const futureRollouts = rolloutSessions
+      .filter((s) => s.status === 'Planned' || s.status === 'InProgress')
+      .map((session) => {
+        const futureDays = (session.days || []).filter((day) => {
+          const dayDate = new Date(day.date || '');
+          return dayDate >= now;
+        });
+
+        const totalWorkplaces = futureDays.reduce(
+          (sum, day) => sum + (day.workplaces?.length || 0),
+          0
+        );
+
+        // Estimate: assume 1 laptop per workplace (simplified)
+        const estimatedLaptopsNeeded = totalWorkplaces;
+
+        return {
+          sessionId: session.id,
+          sessionName: session.sessionName,
+          totalWorkplaces,
+          estimatedLaptopsNeeded,
+          hasEnoughLaptops: stockMetrics.totalLaptopsStock >= estimatedLaptopsNeeded,
+          earliestDate: futureDays[0]?.date || '',
+        };
+      })
+      .filter((r) => r.totalWorkplaces > 0)
+      .sort((a, b) => new Date(a.earliestDate).getTime() - new Date(b.earliestDate).getTime())
+      .slice(0, 5);
+
+    return futureRollouts;
+  }, [rolloutSessions, stockMetrics.totalLaptopsStock]);
+
+  // Calculate devices becoming available (assets with upcoming decommission dates)
+  const upcomingAvailableDevices = useMemo(() => {
+    if (!assets) return [];
 
     const now = new Date();
     const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-    return {
-      total: assets.length,
-      inGebruik: assets.filter((a) => a.status === 'InGebruik').length,
-      stock: assets.filter((a) => a.status === 'Stock').length,
-      needsAttention: assets.filter((a) => a.status === 'Defect' || a.status === 'Herstelling').length,
-      intuneManaged: assets.filter((a) => a.intuneSyncedAt).length,
-      missingSerials: assets.filter((a) => !a.serialNumber || a.serialNumber.trim() === '').length,
-      expiringWarranties: assets.filter(
-        (a) => a.warrantyExpiry && new Date(a.warrantyExpiry) <= ninetyDaysFromNow
-      ).length,
-    };
+    // Look for assets with warranty expiry or other date fields as proxy for "expected decommission"
+    // In a real scenario, you'd have a dedicated "expectedDecommissionDate" field
+    const upcoming = assets
+      .filter((a) => {
+        if (a.status !== 'InGebruik') return false;
+        // Use warranty expiry as proxy for when device might become available
+        if (a.warrantyExpiry) {
+          const expiryDate = new Date(a.warrantyExpiry);
+          return expiryDate > now && expiryDate <= ninetyDaysFromNow;
+        }
+        return false;
+      })
+      .map((a) => ({
+        assetCode: a.assetCode,
+        assetName: a.assetName || '',
+        assetType: a.assetTypeName || '',
+        brand: a.brand || '',
+        model: a.model || '',
+        serialNumber: a.serialNumber || '',
+        expectedDate: a.warrantyExpiry || '',
+      }))
+      .sort((a, b) => new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime())
+      .slice(0, 5);
+
+    return upcoming;
   }, [assets]);
 
-  // Rollout metrics
-  const rolloutMetrics = useMemo(() => {
-    if (!rolloutSessions) {
-      return {
-        activeSessions: 0,
-        todayRollouts: [],
-        thisWeekWorkplaces: 0,
-      };
-    }
-
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    return {
-      activeSessions: rolloutSessions.filter((s) => s.status === 'InProgress').length,
-      todayRollouts: rolloutSessions.filter((s) => {
-        // Check if session has any days scheduled for today
-        return s.days?.some((d) => d.date?.split('T')[0] === today) ?? false;
-      }),
-      thisWeekWorkplaces: rolloutSessions.reduce((total, session) => {
-        const weekWorkplaces = session.days?.reduce((dayTotal, day) => {
-          const dayDate = new Date(day.date || '');
-          const diffDays = Math.floor((dayDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          return diffDays >= 0 && diffDays <= 7 ? dayTotal + (day.workplaces?.length || 0) : dayTotal;
-        }, 0);
-        return total + (weekWorkplaces || 0);
-      }, 0),
-    };
-  }, [rolloutSessions]);
-
-  // Recent activity (latest Intune synced assets)
-  const recentActivity = useMemo(() => {
+  // Calculate expiring management certificates
+  const expiringCertificates = useMemo(() => {
     if (!assets) return [];
 
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const now = new Date();
+    const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
-    return assets
-      .filter((a) => a.intuneSyncedAt && new Date(a.intuneSyncedAt) >= sevenDaysAgo)
-      .sort((a, b) => new Date(b.intuneSyncedAt!).getTime() - new Date(a.intuneSyncedAt!).getTime())
-      .slice(0, 8);
+    const expiring = assets
+      .filter((a) => {
+        if (!a.managementCertificateExpirationDate) return false;
+        const expiryDate = new Date(a.managementCertificateExpirationDate);
+        return expiryDate > now && expiryDate <= ninetyDaysFromNow;
+      })
+      .map((a) => ({
+        assetCode: a.assetCode,
+        assetName: a.assetName || '',
+        assetType: a.assetTypeName || '',
+        brand: a.brand || '',
+        model: a.model || '',
+        serialNumber: a.serialNumber || '',
+        expiryDate: a.managementCertificateExpirationDate || '',
+        daysRemaining: Math.ceil(
+          (new Date(a.managementCertificateExpirationDate!).getTime() - now.getTime()) /
+            (1000 * 60 * 60 * 24)
+        ),
+      }))
+      .sort((a, b) => a.daysRemaining - b.daysRemaining)
+      .slice(0, 5);
+
+    return expiring;
   }, [assets]);
 
-  const formatTimestamp = (dateString: string) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
+    return date.toLocaleDateString('nl-NL', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
-  if (assetsLoading || rolloutsLoading) {
+  const getEquipmentIcon = (type: string) => {
+    const icons: Record<string, React.ElementType> = {
+      docking: DockTwoTone,
+      monitor: Monitor,
+      keyboard: Keyboard,
+      mouse: Mouse,
+    };
+    return icons[type.toLowerCase()] || Devices;
+  };
+
+  const getEquipmentColor = (fillRate: number) => {
+    if (fillRate >= 80) return '#10B981'; // Green
+    if (fillRate >= 50) return '#FF7700'; // Orange
+    return '#EF4444'; // Red
+  };
+
+  if (assetsLoading || rolloutsLoading || workplaceStatsLoading || equipmentStatsLoading) {
     return (
       <Box sx={{ p: 1.5 }}>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {[...Array(7)].map((_, i) => (
-            <Box key={i} sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-              <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
-            </Box>
-          ))}
-        </Box>
+        <Skeleton variant="rectangular" height={500} sx={{ borderRadius: 2 }} />
       </Box>
     );
   }
 
   return (
     <Box sx={{ p: 1.5 }}>
-      {/* Critical KPIs - Ultra Compact */}
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 1,
-          mb: 1.25,
-          flexWrap: 'wrap',
-        }}
-      >
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={Devices}
-            label="Total Assets"
-            value={kpis.total}
-            color="#3B82F6"
-            onClick={() => navigate(`${ROUTES.DASHBOARD}?tab=inventory`)}
-          />
-        </Box>
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={CheckCircle}
-            label="In Use"
-            value={kpis.inGebruik}
-            color="#10B981"
-            onClick={() => navigate(`${ROUTES.DASHBOARD}?tab=inventory&status=InGebruik`)}
-          />
-        </Box>
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={Inventory2}
-            label="Stock"
-            value={kpis.stock}
-            color="#3B82F6"
-            onClick={() => navigate(`${ROUTES.DASHBOARD}?tab=inventory&status=Stock`)}
-          />
-        </Box>
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={ErrorIcon}
-            label="Needs Attention"
-            value={kpis.needsAttention}
-            color="#EF4444"
-            onClick={() => navigate(`${ROUTES.DASHBOARD}?tab=inventory&status=Defect,Herstelling`)}
-          />
-        </Box>
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={Cloud}
-            label="Intune Managed"
-            value={kpis.intuneManaged}
-            color="#14B8A6"
-            subtitle={`${assets ? ((kpis.intuneManaged / assets.length) * 100).toFixed(0) : 0}% coverage`}
-          />
-        </Box>
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={EventNote}
-            label="Active Rollouts"
-            value={rolloutMetrics.activeSessions}
-            color="#FF7700"
-            onClick={() => navigate(`${ROUTES.DASHBOARD}?tab=rollout`)}
-          />
-        </Box>
-        <Box sx={{ flex: '1 1 calc(14.285% - 8px)', minWidth: 120 }}>
-          <CompactKPI
-            icon={Schedule}
-            label="This Week"
-            value={rolloutMetrics.thisWeekWorkplaces}
-            color="#9C27B0"
-            subtitle="workplaces"
-          />
-        </Box>
-      </Box>
-
-      {/* Main Content Grid */}
-      <Box sx={{ display: 'flex', gap: 0.85, flexWrap: 'wrap', mb: 1.25 }}>
-        {/* Alarms & Alerts */}
-        <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: 300 }}>
+      {/* Top Row: Workplace Occupancy + Equipment Status */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.25, flexWrap: 'wrap' }}>
+        {/* Werkplek Bezetting (Workplace Occupancy) */}
+        <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 300 }}>
           <Box
+            onClick={() => navigate(ROUTES.PHYSICAL_WORKPLACES)}
             sx={{
               p: 1.5,
               borderRadius: 2,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
-              height: '100%',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: getNeumorph(isDark, 'strong'),
+              },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Warning sx={{ fontSize: 18, color: '#F59E0B' }} />
-              <Typography variant="subtitle2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
-                Active Alarms
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Business sx={{ fontSize: 20, color: '#3B82F6' }} />
+                <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                  Werkplekken
+                </Typography>
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#3B82F6' }}
+              >
+                {workplaceStats?.occupancyRate.toFixed(1)}%
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <AlertItem
-                label="Expiring Warranties (90 days)"
-                count={kpis.expiringWarranties}
-                severity="warning"
+
+            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Bezetting overzicht
+            </Typography>
+
+            {/* Occupancy Progress Bar */}
+            <Box sx={{ mb: 1.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                  Bezettingsgraad
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                  {workplaceStats?.occupiedWorkplaces} / {workplaceStats?.activeWorkplaces}
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={workplaceStats?.occupancyRate || 0}
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  bgcolor: alpha('#3B82F6', 0.15),
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 4,
+                    background: `linear-gradient(90deg, #10B981 0%, #FF7700 50%, #EF4444 100%)`,
+                  },
+                }}
               />
-              <AlertItem label="Missing Serial Numbers" count={kpis.missingSerials} severity="warning" />
-              <AlertItem label="Needs Repair" count={kpis.needsAttention} severity="error" />
+            </Box>
+
+            {/* Breakdown */}
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 1,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#3B82F6', 0.08),
+                  textAlign: 'center',
+                }}
+              >
+                <Business sx={{ fontSize: 16, color: '#3B82F6', mb: 0.3 }} />
+                <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#3B82F6' }}>
+                  {workplaceStats?.activeWorkplaces || 0}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                  Totaal actief
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 1,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#10B981', 0.08),
+                  textAlign: 'center',
+                }}
+              >
+                <CheckCircle sx={{ fontSize: 16, color: '#10B981', mb: 0.3 }} />
+                <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#10B981' }}>
+                  {workplaceStats?.occupiedWorkplaces || 0}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                  Bezet
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 1,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#F59E0B', 0.08),
+                  textAlign: 'center',
+                }}
+              >
+                <Inventory2 sx={{ fontSize: 16, color: '#F59E0B', mb: 0.3 }} />
+                <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#F59E0B' }}>
+                  {workplaceStats?.vacantWorkplaces || 0}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                  Vrij
+                </Typography>
+              </Box>
             </Box>
           </Box>
         </Box>
 
-        {/* Rollout Planning Quick View */}
-        <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: 300 }}>
+        {/* Apparatuur (Equipment Status) */}
+        <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 300 }}>
           <Box
             sx={{
               p: 1.5,
               borderRadius: 2,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
-              height: '100%',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <EventNote sx={{ fontSize: 18, color: '#FF7700' }} />
-              <Typography variant="subtitle2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
-                Rollout Planning
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Box sx={{ py: 0.5, px: 1 }}>
-                <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-                  Active Sessions
-                </Typography>
-                <Typography variant="h6" sx={{ fontSize: '1.2rem', fontWeight: 700, color: '#FF7700' }}>
-                  {rolloutMetrics.activeSessions}
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Devices sx={{ fontSize: 20, color: '#FF7700' }} />
+                <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                  Apparatuur
                 </Typography>
               </Box>
-              {rolloutMetrics.todayRollouts.length > 0 && (
-                <Box sx={{ py: 0.5, px: 1 }}>
-                  <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary', mb: 0.5 }}>
-                    Today&apos;s Rollouts
-                  </Typography>
-                  {rolloutMetrics.todayRollouts.map((session) => (
-                    <Chip
-                      key={session.id}
-                      label={session.sessionName}
-                      size="small"
-                      sx={{
-                        height: 18,
-                        fontSize: '0.65rem',
-                        mb: 0.5,
-                        mr: 0.5,
-                      }}
-                    />
-                  ))}
-                </Box>
+              <Typography
+                variant="h6"
+                sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#FF7700' }}
+              >
+                {workplaceStats?.equipment.overallEquipmentRate.toFixed(0)}% toegewezen
+              </Typography>
+            </Box>
+
+            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Toewijzingsstatus per type
+            </Typography>
+
+            {/* Equipment Breakdown */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {equipmentStats?.map((equipment: EquipmentTypeStatus) => {
+                const Icon = getEquipmentIcon(equipment.equipmentType);
+                const color = getEquipmentColor(equipment.fillRate);
+
+                return (
+                  <Box key={equipment.equipmentType} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Icon sx={{ fontSize: 16, color }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                          {equipment.displayName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600, color }}>
+                          {equipment.filledSlots} / {equipment.totalSlots}
+                        </Typography>
+                      </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={equipment.fillRate}
+                        sx={{
+                          height: 6,
+                          borderRadius: 3,
+                          bgcolor: alpha(color, 0.15),
+                          '& .MuiLinearProgress-bar': {
+                            borderRadius: 3,
+                            bgcolor: color,
+                          },
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+
+            {/* Total Summary */}
+            <Box
+              sx={{
+                mt: 1,
+                pt: 1,
+                borderTop: `1px solid ${alpha(isDark ? '#fff' : '#000', 0.08)}`,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                Totaal slots
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                {equipmentStats?.reduce((sum, e) => sum + e.filledSlots, 0)} /{' '}
+                {equipmentStats?.reduce((sum, e) => sum + e.totalSlots, 0)} toegewezen
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Second Row: Upcoming Rollouts + Stock Inventory */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.25, flexWrap: 'wrap' }}>
+        {/* Planned Onboarding/Offboarding */}
+        <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 300 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: bgSurface,
+              boxShadow: getNeumorph(isDark, 'medium'),
+              maxHeight: 350,
+              overflow: 'hidden',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+              <CalendarMonth sx={{ fontSize: 20, color: '#9C27B0' }} />
+              <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                Geplande Rollouts
+              </Typography>
+            </Box>
+
+            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Toekomstige onboarding met voorraad indicatie
+            </Typography>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.75,
+                maxHeight: 260,
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': { width: 4 },
+                '&::-webkit-scrollbar-thumb': {
+                  bgcolor: alpha('#9C27B0', 0.3),
+                  borderRadius: 2,
+                },
+              }}
+            >
+              {upcomingRollouts.length > 0 ? (
+                upcomingRollouts.map((rollout) => (
+                  <Box
+                    key={rollout.sessionId}
+                    onClick={() => navigate(`${ROUTES.ROLLOUT_PLANNER}?session=${rollout.sessionId}`)}
+                    sx={{
+                      p: 1,
+                      borderRadius: 1.5,
+                      bgcolor: alpha(rollout.hasEnoughLaptops ? '#10B981' : '#EF4444', 0.08),
+                      border: `1px solid ${alpha(
+                        rollout.hasEnoughLaptops ? '#10B981' : '#EF4444',
+                        0.2
+                      )}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: alpha(rollout.hasEnoughLaptops ? '#10B981' : '#EF4444', 0.12),
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                        {rollout.sessionName}
+                      </Typography>
+                      <Chip
+                        icon={rollout.hasEnoughLaptops ? <CheckCircle /> : <Warning />}
+                        label={rollout.hasEnoughLaptops ? 'Voorraad OK' : 'Tekort'}
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          bgcolor: alpha(rollout.hasEnoughLaptops ? '#10B981' : '#EF4444', 0.15),
+                          color: rollout.hasEnoughLaptops ? '#10B981' : '#EF4444',
+                          '& .MuiChip-icon': { fontSize: 12 },
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', display: 'block' }}>
+                      {rollout.totalWorkplaces} werkplekken • {formatDate(rollout.earliestDate)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                      Geschatte behoefte: {rollout.estimatedLaptopsNeeded} LAP
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.disabled', p: 1 }}>
+                  Geen geplande rollouts
+                </Typography>
               )}
             </Box>
           </Box>
         </Box>
 
-        {/* Recent Activity */}
-        <Box sx={{ flex: '1 1 calc(33.333% - 12px)', minWidth: 300 }}>
+        {/* Stock Inventory (Laptops + Desktops) */}
+        <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 300 }}>
           <Box
             sx={{
               p: 1.5,
               borderRadius: 2,
               bgcolor: bgSurface,
               boxShadow: getNeumorph(isDark, 'medium'),
-              height: '100%',
-              maxHeight: 300,
+              maxHeight: 350,
               overflow: 'hidden',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <TrendingUp sx={{ fontSize: 18, color: '#3B82F6' }} />
-              <Typography variant="subtitle2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
-                Recent Activity (7 days)
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+              <Inventory2 sx={{ fontSize: 20, color: '#3B82F6' }} />
+              <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                Voorraad (Stock)
               </Typography>
             </Box>
+
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 0.75,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#3B82F6', 0.08),
+                  textAlign: 'center',
+                }}
+              >
+                <Laptop sx={{ fontSize: 16, color: '#3B82F6', mb: 0.25 }} />
+                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 700, color: '#3B82F6' }}>
+                  {stockMetrics.totalLaptopsStock}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                  Laptops (LAP)
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 0.75,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#14B8A6', 0.08),
+                  textAlign: 'center',
+                }}
+              >
+                <Computer sx={{ fontSize: 16, color: '#14B8A6', mb: 0.25 }} />
+                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 700, color: '#14B8A6' }}>
+                  {stockMetrics.totalDesktopsStock}
+                </Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.secondary' }}>
+                  Desktops (DESK)
+                </Typography>
+              </Box>
+            </Box>
+
             <Box
               sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.25,
-                maxHeight: 240,
+                maxHeight: 220,
                 overflowY: 'auto',
                 '&::-webkit-scrollbar': { width: 4 },
                 '&::-webkit-scrollbar-thumb': {
@@ -511,34 +584,221 @@ const OverviewTab = () => {
                 },
               }}
             >
-              {recentActivity.length > 0 ? (
-                recentActivity.map((asset) => (
-                  <ActivityItem
-                    key={asset.id}
-                    title={asset.assetCode || 'Unknown Asset'}
-                    subtitle={`${asset.assetName || ''} - Intune Synced`}
-                    timestamp={formatTimestamp(asset.intuneSyncedAt!)}
-                    icon={Cloud}
-                    color="#14B8A6"
-                  />
+              {/* Laptops */}
+              {stockMetrics.laptopsInStock.slice(0, 5).map((asset) => (
+                <Box
+                  key={asset.id}
+                  onClick={() => navigate(`${ROUTES.ASSET_DETAIL}/${asset.id}`)}
+                  sx={{
+                    p: 0.75,
+                    mb: 0.5,
+                    borderRadius: 1,
+                    bgcolor: alpha('#3B82F6', 0.05),
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: alpha('#3B82F6', 0.1),
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                      {asset.assetCode}
+                    </Typography>
+                    <Chip label="LAP" size="small" sx={{ height: 16, fontSize: '0.6rem' }} />
+                  </Box>
+                  <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                    {asset.brand} {asset.model}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled' }}>
+                    SN: {asset.serialNumber || 'N/A'}
+                  </Typography>
+                </Box>
+              ))}
+
+              {/* Desktops */}
+              {stockMetrics.desktopsInStock.slice(0, 3).map((asset) => (
+                <Box
+                  key={asset.id}
+                  onClick={() => navigate(`${ROUTES.ASSET_DETAIL}/${asset.id}`)}
+                  sx={{
+                    p: 0.75,
+                    mb: 0.5,
+                    borderRadius: 1,
+                    bgcolor: alpha('#14B8A6', 0.05),
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: alpha('#14B8A6', 0.1),
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                      {asset.assetCode}
+                    </Typography>
+                    <Chip label="DESK" size="small" sx={{ height: 16, fontSize: '0.6rem' }} />
+                  </Box>
+                  <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                    {asset.brand} {asset.model}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled' }}>
+                    SN: {asset.serialNumber || 'N/A'}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Third Row: Upcoming Available Devices + Expiring Certificates */}
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        {/* Devices Becoming Available */}
+        <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 300 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: bgSurface,
+              boxShadow: getNeumorph(isDark, 'medium'),
+              maxHeight: 300,
+              overflow: 'hidden',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+              <TrendingDown sx={{ fontSize: 20, color: '#10B981' }} />
+              <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                Verwachte Vrijkomende Apparaten
+              </Typography>
+            </Box>
+
+            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Apparaten die binnenkort beschikbaar komen (90 dagen)
+            </Typography>
+
+            <Box
+              sx={{
+                maxHeight: 200,
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': { width: 4 },
+                '&::-webkit-scrollbar-thumb': {
+                  bgcolor: alpha('#10B981', 0.3),
+                  borderRadius: 2,
+                },
+              }}
+            >
+              {upcomingAvailableDevices.length > 0 ? (
+                upcomingAvailableDevices.map((device, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      p: 0.75,
+                      mb: 0.5,
+                      borderRadius: 1,
+                      bgcolor: alpha('#10B981', 0.05),
+                      border: `1px solid ${alpha('#10B981', 0.15)}`,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                        {device.assetCode}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#10B981' }}>
+                        {formatDate(device.expectedDate)}
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                      {device.brand} {device.model}
+                    </Typography>
+                  </Box>
                 ))
               ) : (
                 <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.disabled', p: 1 }}>
-                  No recent Intune activity
+                  Geen verwachte vrijkomende apparaten
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Expiring Management Certificates */}
+        <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 300 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              bgcolor: bgSurface,
+              boxShadow: getNeumorph(isDark, 'medium'),
+              maxHeight: 300,
+              overflow: 'hidden',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+              <Warning sx={{ fontSize: 20, color: '#F59E0B' }} />
+              <Typography variant="subtitle2" sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                Verlopende Management Certificaten
+              </Typography>
+            </Box>
+
+            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Certificaten die binnen 90 dagen verlopen
+            </Typography>
+
+            <Box
+              sx={{
+                maxHeight: 200,
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': { width: 4 },
+                '&::-webkit-scrollbar-thumb': {
+                  bgcolor: alpha('#F59E0B', 0.3),
+                  borderRadius: 2,
+                },
+              }}
+            >
+              {expiringCertificates.length > 0 ? (
+                expiringCertificates.map((cert, idx) => (
+                  <Box
+                    key={idx}
+                    sx={{
+                      p: 0.75,
+                      mb: 0.5,
+                      borderRadius: 1,
+                      bgcolor: alpha('#F59E0B', 0.05),
+                      border: `1px solid ${alpha('#F59E0B', 0.15)}`,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                        {cert.assetCode}
+                      </Typography>
+                      <Chip
+                        label={`${cert.daysRemaining}d`}
+                        size="small"
+                        sx={{
+                          height: 16,
+                          fontSize: '0.6rem',
+                          fontWeight: 600,
+                          bgcolor: alpha(cert.daysRemaining <= 30 ? '#EF4444' : '#F59E0B', 0.15),
+                          color: cert.daysRemaining <= 30 ? '#EF4444' : '#F59E0B',
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                      {cert.brand} {cert.model}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'text.disabled', display: 'block' }}>
+                      Verloopt: {formatDate(cert.expiryDate)}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.disabled', p: 1 }}>
+                  Geen verlopende certificaten
                 </Typography>
               )}
             </Box>
           </Box>
         </Box>
       </Box>
-
-      {/* Asset KPIs - Stock, In Use, Swaps */}
-      <Box sx={{ mb: 1.5 }}>
-        <AssetKPIs />
-      </Box>
-
-      {/* Asset Planning Calendar - Full Width */}
-      <AssetPlanningCalendar />
     </Box>
   );
 };

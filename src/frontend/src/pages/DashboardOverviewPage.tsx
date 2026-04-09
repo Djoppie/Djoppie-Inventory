@@ -90,6 +90,7 @@ const DashboardOverviewPage = () => {
           onChange={handleTabChange}
           sx={{
             minHeight: 36,
+            mb: 1.5,
             '& .MuiTabs-indicator': {
               backgroundColor: '#FF7700',
               height: 2.5,
