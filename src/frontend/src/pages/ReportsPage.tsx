@@ -158,79 +158,74 @@ const ReportsPage = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2, px: { xs: 1.5, sm: 2 } }}>
-      {/* Header with better spacing */}
+    <Container maxWidth="xl" sx={{ py: 0.75, px: { xs: 1, sm: 1.5 } }}>
+      {/* Ultra-Compact Header - Single line */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          mb: 2,
-          pb: 1.5,
-          borderBottom: `2px solid ${alpha(currentColor, 0.15)}`,
+          mb: 0.75,
+          py: 0.5,
           ...getFadeInUpAnimation(0),
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Tooltip title="Terug naar Dashboard">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Tooltip title="Dashboard">
             <IconButton
               onClick={() => navigate(ROUTES.DASHBOARD)}
-              size="medium"
+              size="small"
               sx={{
-                width: 40,
-                height: 40,
+                width: 28,
+                height: 28,
                 bgcolor: bgBase,
                 boxShadow: getNeumorph(isDark, 'soft'),
-                transition: 'all 0.2s ease',
+                transition: 'all 0.15s ease',
                 '&:hover': {
                   bgcolor: alpha(currentColor, 0.1),
-                  boxShadow: `0 0 12px ${alpha(currentColor, 0.25)}`,
-                  transform: 'translateX(-2px)',
+                  transform: 'translateX(-1px)',
                 },
               }}
             >
-              <ArrowBackIcon sx={{ color: currentColor, fontSize: 20 }} />
+              <ArrowBackIcon sx={{ color: currentColor, fontSize: 16 }} />
             </IconButton>
           </Tooltip>
-          <Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                color: currentColor,
-                lineHeight: 1.2,
-                background: `linear-gradient(135deg, ${currentColor} 0%, ${alpha(currentColor, 0.7)} 100%)`,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              Rapportage
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: '0.85rem', display: 'block', mt: 0.25 }}
-            >
-              {currentTab.description}
-            </Typography>
-          </Box>
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: '1rem',
+              fontWeight: 700,
+              color: currentColor,
+              lineHeight: 1,
+              mr: 1,
+            }}
+          >
+            Rapportage
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: '0.7rem',
+              color: 'text.secondary',
+              opacity: 0.75,
+            }}
+          >
+            {currentTab.description}
+          </Typography>
         </Box>
 
         <Tooltip title="Vernieuwen">
           <IconButton
             onClick={handleRefresh}
-            size="medium"
+            size="small"
             sx={{
-              width: 40,
-              height: 40,
+              width: 28,
+              height: 28,
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
-              transition: 'all 0.2s ease',
+              transition: 'all 0.15s ease',
               '&:hover': {
                 bgcolor: alpha(currentColor, 0.1),
-                boxShadow: `0 0 12px ${alpha(currentColor, 0.25)}`,
                 '& svg': {
                   transform: 'rotate(180deg)',
                 },
@@ -240,67 +235,69 @@ const ReportsPage = () => {
             <RefreshIcon
               sx={{
                 color: currentColor,
-                fontSize: 20,
-                transition: 'transform 0.5s ease',
+                fontSize: 16,
+                transition: 'transform 0.4s ease',
               }}
             />
           </IconButton>
         </Tooltip>
       </Box>
 
-      {/* Navigation Tabs - Clearly separated */}
+      {/* Compact Chip-Style Navigation Tabs */}
       <Paper
-        elevation={6}
+        elevation={2}
         sx={{
           bgcolor: bgSurface,
-          boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2,
-          mb: 2.5,
+          boxShadow: getNeumorph(isDark, 'soft'),
+          borderRadius: 1.25,
+          mb: 0.75,
           overflow: 'hidden',
           border: '1px solid',
-          borderColor: alpha(isDark ? '#fff' : '#000', 0.12),
-          position: 'relative',
-          zIndex: 10,
-          ...getFadeInUpAnimation(0.05),
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
+          ...getFadeInUpAnimation(0.03),
         }}
       >
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          variant={isMobile ? 'scrollable' : 'fullWidth'}
-          scrollButtons={isMobile ? 'auto' : false}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            minHeight: 48,
+            minHeight: 36,
             '& .MuiTab-root': {
-              minHeight: 48,
-              py: 1.5,
-              px: 2,
-              minWidth: isMobile ? 60 : 100,
+              minHeight: 36,
+              py: 0.5,
+              px: 1.25,
+              minWidth: isMobile ? 50 : 80,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: '0.875rem',
-              gap: 0.75,
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontSize: '0.7rem',
+              gap: 0.5,
+              transition: 'all 0.15s ease',
               '&.Mui-selected': {
                 color: TAB_COLORS[activeTab],
                 fontWeight: 700,
-                bgcolor: alpha(TAB_COLORS[activeTab], 0.08),
+                bgcolor: alpha(TAB_COLORS[activeTab], 0.1),
                 '& svg': {
-                  transform: 'scale(1.1)',
-                  filter: `drop-shadow(0 0 6px ${alpha(TAB_COLORS[activeTab], 0.4)})`,
+                  transform: 'scale(1.05)',
                 },
               },
               '& svg': {
-                fontSize: 18,
-                transition: 'all 0.2s ease',
+                fontSize: 14,
+                transition: 'all 0.15s ease',
               },
             },
             '& .MuiTabs-indicator': {
-              height: 3,
-              borderRadius: '3px 3px 0 0',
+              height: 2,
+              borderRadius: '2px 2px 0 0',
               backgroundColor: TAB_COLORS[activeTab],
-              boxShadow: `0 -1px 8px ${alpha(TAB_COLORS[activeTab], 0.4)}`,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'all 0.2s ease',
+            },
+            '& .MuiTabs-scrollButtons': {
+              width: 28,
+              '& svg': {
+                fontSize: 16,
+              },
             },
           }}
         >
@@ -313,9 +310,8 @@ const ReportsPage = () => {
               label={isMobile ? undefined : tab.label}
               sx={{
                 '&:hover': {
-                  bgcolor: alpha(TAB_COLORS[tab.id], 0.06),
+                  bgcolor: alpha(TAB_COLORS[tab.id], 0.05),
                   '& svg': {
-                    transform: 'translateY(-1px) scale(1.05)',
                     color: TAB_COLORS[tab.id],
                   },
                 },
@@ -325,30 +321,20 @@ const ReportsPage = () => {
         </Tabs>
       </Paper>
 
-      {/* Tab Content - Better spacing */}
+      {/* Tab Content - Maximum table density */}
       <Paper
         sx={{
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
-          borderRadius: 2,
-          p: 2.5,
-          minHeight: 500,
+          borderRadius: 1.25,
+          p: 1,
+          minHeight: 400,
           border: '1px solid',
-          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
-          borderTop: `3px solid ${currentColor}`,
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.06),
+          borderTop: `2px solid ${currentColor}`,
           position: 'relative',
           overflow: 'hidden',
-          ...getFadeInUpAnimation(0.1),
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '25%',
-            height: '100%',
-            background: `radial-gradient(circle at top right, ${alpha(currentColor, 0.04)} 0%, transparent 60%)`,
-            pointerEvents: 'none',
-          },
+          ...getFadeInUpAnimation(0.06),
         }}
       >
         {activeTab === 'hardware' && <HardwareTab />}

@@ -94,32 +94,32 @@ const CustomToolbar = memo(function CustomToolbar({
   return (
     <GridToolbarContainer
       sx={{
-        p: 0.85,
-        gap: 1,
+        p: 0.5,
+        gap: 0.75,
         borderBottom: '1px solid',
-        borderColor: alpha(isDark ? '#fff' : '#000', 0.06),
-        minHeight: 36,
+        borderColor: alpha(isDark ? '#fff' : '#000', 0.04),
+        minHeight: 32,
       }}
     >
       <Box
         sx={{
-          flex: { xs: 1, md: '0 0 240px' },
+          flex: { xs: 1, md: '0 0 200px' },
           '& .MuiOutlinedInput-root': {
             bgcolor: bgBase,
-            borderRadius: 1.25,
-            fontSize: '0.8rem',
+            borderRadius: 1,
+            fontSize: '0.7rem',
             boxShadow: getNeumorphInset(isDark),
             '& fieldset': { border: 'none' },
             '&:hover': {
-              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.25)}`,
+              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(accentColor, 0.2)}`,
             },
             '&.Mui-focused': {
-              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(accentColor, 0.35)}`,
+              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1.5px ${alpha(accentColor, 0.3)}`,
             },
           },
           '& .MuiInputBase-input': {
-            py: 0.6,
-            fontSize: '0.8rem',
+            py: 0.4,
+            fontSize: '0.7rem',
           },
         }}
       >
@@ -130,23 +130,23 @@ const CustomToolbar = memo(function CustomToolbar({
         <Button
           variant="outlined"
           size="small"
-          startIcon={isExporting ? <CircularProgress size={12} /> : <DownloadIcon sx={{ fontSize: 16 }} />}
+          startIcon={isExporting ? <CircularProgress size={10} /> : <DownloadIcon sx={{ fontSize: 14 }} />}
           onClick={onExport}
           disabled={isExporting}
           sx={{
-            borderColor: alpha(accentColor, 0.3),
+            borderColor: alpha(accentColor, 0.25),
             color: accentColor,
-            fontSize: '0.7rem',
+            fontSize: '0.65rem',
             fontWeight: 600,
-            py: 0.4,
-            px: 1.25,
-            borderRadius: 1,
+            py: 0.3,
+            px: 1,
+            borderRadius: 0.75,
             textTransform: 'none',
             bgcolor: bgBase,
             boxShadow: getNeumorph(isDark, 'soft'),
-            minHeight: 28,
+            minHeight: 26,
             '&:hover': {
-              bgcolor: alpha(accentColor, 0.06),
+              bgcolor: alpha(accentColor, 0.05),
               borderColor: accentColor,
             },
             '&.Mui-disabled': {
@@ -162,8 +162,8 @@ const CustomToolbar = memo(function CustomToolbar({
           size="small"
           label={`${rowCount} items`}
           sx={{
-            height: 22,
-            fontSize: '0.65rem',
+            height: 20,
+            fontSize: '0.6rem',
             fontWeight: 700,
             bgcolor: alpha(accentColor, 0.1),
             color: accentColor,
@@ -343,7 +343,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       {/* Statistics Cards Section */}
       {statisticsCards && <Box>{statisticsCards}</Box>}
 
@@ -354,8 +354,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
       <Box
         sx={{
           bgcolor: bgBase,
-          borderRadius: 1.5,
-          p: { xs: 0.85, sm: 1 },
+          borderRadius: 1,
+          p: { xs: 0.5, sm: 0.65 },
           boxShadow: getNeumorph(isDark, 'medium'),
         }}
       >
@@ -391,10 +391,10 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         }}
         sx={{
           bgcolor: bgSurface,
-          borderRadius: 1.5,
+          borderRadius: 1,
           border: '1px solid',
-          borderColor: alpha(isDark ? '#fff' : '#000', 0.08),
-          fontSize: '0.8rem',
+          borderColor: alpha(isDark ? '#fff' : '#000', 0.06),
+          fontSize: '0.7rem',
           ...(maxHeight && {
             maxHeight,
             '& .MuiDataGrid-virtualScroller': {
@@ -407,47 +407,47 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
             },
           }),
 
-          // Header styling
+          // Ultra-Compact Header styling
           '& .MuiDataGrid-columnHeaders': {
-            bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
-            borderBottom: '2px solid',
-            borderColor: alpha(accentColor, 0.4),
-            minHeight: '32px !important',
-            maxHeight: '32px !important',
+            bgcolor: isDark ? alpha(accentColor, 0.05) : alpha(accentColor, 0.025),
+            borderBottom: '1.5px solid',
+            borderColor: alpha(accentColor, 0.35),
+            minHeight: '28px !important',
+            maxHeight: '28px !important',
           },
           '& .MuiDataGrid-columnHeader': {
-            py: 0.35,
+            py: 0.25,
           },
           '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 700,
-            fontSize: '0.65rem',
+            fontSize: '0.6rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
+            letterSpacing: '0.04em',
           },
           '& .MuiDataGrid-sortIcon': {
             color: accentColor,
-            fontSize: 16,
+            fontSize: 14,
           },
           '& .MuiDataGrid-menuIconButton': {
-            color: alpha(accentColor, 0.6),
+            color: alpha(accentColor, 0.5),
           },
 
-          // Row styling
+          // Ultra-Compact Row styling
           '& .MuiDataGrid-row': {
-            transition: 'all 0.12s ease',
+            transition: 'all 0.1s ease',
             '&:hover': {
-              bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
+              bgcolor: isDark ? alpha(accentColor, 0.05) : alpha(accentColor, 0.025),
             },
             '&.Mui-selected': {
-              bgcolor: alpha(accentColor, isDark ? 0.12 : 0.06),
+              bgcolor: alpha(accentColor, isDark ? 0.1 : 0.05),
               '&:hover': {
-                bgcolor: alpha(accentColor, isDark ? 0.16 : 0.09),
+                bgcolor: alpha(accentColor, isDark ? 0.14 : 0.08),
               },
             },
             '&:nth-of-type(even)': {
-              bgcolor: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
               '&:hover': {
-                bgcolor: isDark ? alpha(accentColor, 0.06) : alpha(accentColor, 0.03),
+                bgcolor: isDark ? alpha(accentColor, 0.05) : alpha(accentColor, 0.025),
               },
             },
           },
@@ -455,12 +455,12 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
             opacity: 0.5,
           },
 
-          // Cell styling (compact with auto height support)
+          // Ultra-Compact Cell styling
           '& .MuiDataGrid-cell': {
-            py: 0.5,
-            px: 0.85,
-            fontSize: '0.75rem',
-            borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+            py: 0.35,
+            px: 0.65,
+            fontSize: '0.7rem',
+            borderColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
             display: 'flex !important',
             alignItems: 'center',
           },
@@ -473,27 +473,33 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
             },
           },
 
-          // Pagination styling
+          // Ultra-Compact Pagination styling
           '& .MuiDataGrid-footerContainer': {
             borderTop: '1px solid',
             borderColor: 'divider',
+            minHeight: 40,
           },
           '& .MuiTablePagination-root': {
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-              fontSize: '0.75rem',
+              fontSize: '0.65rem',
             },
             '& .MuiTablePagination-select': {
-              fontSize: '0.75rem',
+              fontSize: '0.65rem',
             },
             '& .MuiIconButton-root': {
               bgcolor: bgBase,
               boxShadow: getNeumorph(isDark, 'soft'),
-              mx: 0.25,
+              mx: 0.2,
+              width: 28,
+              height: 28,
               '&:hover': {
-                bgcolor: alpha(accentColor, 0.1),
+                bgcolor: alpha(accentColor, 0.08),
               },
               '&.Mui-disabled': {
-                opacity: 0.4,
+                opacity: 0.3,
+              },
+              '& svg': {
+                fontSize: 16,
               },
             },
           },

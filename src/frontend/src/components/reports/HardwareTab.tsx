@@ -223,9 +223,27 @@ const HardwareTab = () => {
     );
   }
 
-  // Compact horizontal statistics cards
+  // Ultra-compact horizontal statistics cards
   const statisticsCards = useMemo(() => (
-    <Grid container spacing={0.75}>
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 0.5,
+        overflowX: 'auto',
+        pb: 0.5,
+        '&::-webkit-scrollbar': {
+          height: 4,
+        },
+        '&::-webkit-scrollbar-track': {
+          bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+          borderRadius: 2,
+        },
+        '&::-webkit-scrollbar-thumb': {
+          bgcolor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+          borderRadius: 2,
+        },
+      }}
+    >
       {STAT_CARDS.map((card) => {
         const IconComponent = card.icon;
         const count = card.key === 'total'
@@ -235,7 +253,7 @@ const HardwareTab = () => {
         const isClickable = card.key !== 'total';
 
         return (
-          <Grid size={{ xs: 6, sm: 4, md: 2 }} key={card.key}>
+          <Box key={card.key} sx={{ minWidth: 120, flex: '1 1 auto' }}>
             <StatisticsCard
               icon={IconComponent}
               label={card.label}
@@ -244,13 +262,13 @@ const HardwareTab = () => {
               onClick={isClickable ? () => handleStatusChange(card.key) : undefined}
               isSelected={isSelected}
             />
-          </Grid>
+          </Box>
         );
       })}
-    </Grid>
-  ), [summary, selectedStatuses, handleStatusChange]);
+    </Box>
+  ), [summary, selectedStatuses, handleStatusChange, isDark]);
 
-  // Collapsible advanced filters component
+  // Ultra-compact collapsible filters
   const advancedFilters = useMemo(() => {
     const hasActiveFilters = selectedStatuses.length > 0 || selectedAssetTypeIds.length > 0 || selectedServiceIds.length > 0 || selectedBuildingIds.length > 0;
 
@@ -259,20 +277,20 @@ const HardwareTab = () => {
         sx={{
           bgcolor: bgBase,
           boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 1.5,
+          borderRadius: 1,
           overflow: 'hidden',
           border: '1px solid',
-          borderColor: hasActiveFilters ? alpha('#FF7700', 0.3) : 'transparent',
+          borderColor: hasActiveFilters ? alpha('#FF7700', 0.25) : 'transparent',
         }}
       >
-        {/* Filter Header Bar with Search */}
+        {/* Ultra-Compact Filter Header with Search */}
         <Box
           sx={{
-            p: 1,
+            p: 0.5,
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+            gap: 0.5,
+            bgcolor: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)',
           }}
         >
           <Box sx={{ flex: 1 }}>
@@ -285,15 +303,15 @@ const HardwareTab = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    <SearchIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  fontSize: '0.8rem',
+                  fontSize: '0.75rem',
                   '& input': {
-                    py: 0.75,
+                    py: 0.5,
                   },
                 },
               }}
@@ -305,12 +323,12 @@ const HardwareTab = () => {
               size="small"
               onClick={() => setFiltersExpanded(!filtersExpanded)}
               sx={{
-                width: 32,
-                height: 32,
-                transition: 'all 0.2s ease',
+                width: 28,
+                height: 28,
+                transition: 'all 0.15s ease',
                 bgcolor: filtersExpanded ? alpha('#FF7700', 0.1) : 'transparent',
                 '&:hover': {
-                  bgcolor: alpha('#FF7700', 0.15),
+                  bgcolor: alpha('#FF7700', 0.12),
                 },
               }}
             >
@@ -321,10 +339,10 @@ const HardwareTab = () => {
               >
                 <ExpandMoreIcon
                   sx={{
-                    fontSize: 20,
+                    fontSize: 18,
                     color: filtersExpanded ? '#FF7700' : 'text.secondary',
                     transform: filtersExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s ease',
+                    transition: 'transform 0.15s ease',
                   }}
                 />
               </Badge>
@@ -332,18 +350,17 @@ const HardwareTab = () => {
           </Tooltip>
         </Box>
 
-        {/* Collapsible Filter Options - Multiselect */}
+        {/* Collapsible Filter Options - Ultra-Compact */}
         <Collapse in={filtersExpanded}>
           <Box
             sx={{
-              p: 1.25,
-              pt: 1,
+              p: 0.75,
               borderTop: '1px solid',
-              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-              bgcolor: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
+              borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.008)' : 'rgba(0,0,0,0.008)',
             }}
           >
-            <Grid container spacing={1}>
+            <Grid container spacing={0.5}>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Autocomplete
                   multiple

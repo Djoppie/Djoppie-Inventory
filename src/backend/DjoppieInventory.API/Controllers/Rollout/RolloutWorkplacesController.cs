@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace DjoppieInventory.API.Controllers.Rollout;
 
@@ -223,6 +224,11 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.PhysicalWorkplaceId = dto.PhysicalWorkplaceId;
         workplace.IsLaptopSetup = dto.IsLaptopSetup;
         workplace.Notes = dto.Notes;
+        workplace.Status = Enum.Parse<RolloutWorkplaceStatus>(dto.Status);
+
+        // Update AssetPlansJson from DTO
+        workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
+
         workplace.UpdatedAt = DateTime.UtcNow;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
