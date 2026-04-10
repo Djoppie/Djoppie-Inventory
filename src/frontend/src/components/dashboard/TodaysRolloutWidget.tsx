@@ -21,6 +21,7 @@ import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import EventIcon from '@mui/icons-material/Event';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { getTodaysRolloutDays } from '../../api/rollout.api';
+import { ROUTES, buildRoute } from '../../constants/routes';
 import type { RolloutDayWithSession } from '../../types/rollout';
 
 /**
@@ -53,7 +54,7 @@ const TodaysRolloutWidget = () => {
   });
 
   const handleDayClick = (dayId: number, sessionId: number) => {
-    navigate(`/rollouts/${sessionId}/days/${dayId}`);
+    navigate(buildRoute.rolloutDayDetail(sessionId, dayId));
   };
 
   // Loading state
@@ -349,7 +350,7 @@ const TodaysRolloutWidget = () => {
           cursor: 'pointer',
           '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
         }}
-        onClick={() => navigate('/rollouts')}
+        onClick={() => navigate(ROUTES.OPERATIONS_ROLLOUTS)}
       >
         <Typography
           variant="caption"

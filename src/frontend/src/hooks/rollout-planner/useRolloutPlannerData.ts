@@ -10,6 +10,7 @@ import {
   useUpdateRolloutDayStatus,
 } from '../useRollout';
 import { servicesApi } from '../../api/admin.api';
+import { buildRoute } from '../../constants/routes';
 import type {
   RolloutSession,
   RolloutDay,
@@ -275,7 +276,7 @@ export function useRolloutPlannerData({
       },
     });
     if (newStatus === 'InProgress') {
-      navigate(`/rollouts/${session.id}/execute`);
+      navigate(buildRoute.rolloutExecute(session.id));
     }
   }, [session, updateMutation, navigate]);
 

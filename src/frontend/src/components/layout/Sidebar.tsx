@@ -36,15 +36,14 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 // Icons - Inventory sub-items
-import AddBoxIcon from '@mui/icons-material/AddBox';
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import StyleIcon from '@mui/icons-material/Style';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-
+import CloudIcon from '@mui/icons-material/Cloud';
 
 // Icons - Operations sub-items
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import HistoryIcon from '@mui/icons-material/History';
 
 // Icons - Admin sub-items
 import CategoryIcon from '@mui/icons-material/Category';
@@ -105,33 +104,27 @@ const navigationItems: NavItem[] = [
   {
     label: 'Inventory',
     icon: <InventoryIcon />,
-    path: ROUTES.DASHBOARD,
-    matchPaths: ['/devices', '/assets'],
+    path: ROUTES.INVENTORY,
+    matchPaths: ['/inventory', '/assets'],
     highlighted: true,
     subItems: [
       {
-        label: 'Create Asset',
-        icon: <AddBoxIcon />,
-        path: ROUTES.ASSETS_NEW,
-        matchPaths: ['/devices/new'],
-      },
-      {
-        label: 'Bulk Create Asset',
-        icon: <PlaylistAddIcon />,
-        path: ROUTES.ASSETS_BULK_NEW,
-        matchPaths: ['/devices/bulk-create'],
-      },
-      {
         label: 'Templates',
         icon: <StyleIcon />,
-        path: ROUTES.TEMPLATES,
-        matchPaths: ['/templates'],
+        path: ROUTES.INVENTORY_TEMPLATES,
+        matchPaths: ['/inventory/templates'],
+      },
+      {
+        label: 'Cloud Devices',
+        icon: <CloudIcon />,
+        path: ROUTES.INVENTORY_CLOUD,
+        matchPaths: ['/inventory/cloud'],
       },
       {
         label: 'Reports',
         icon: <AssessmentIcon />,
-        path: ROUTES.REPORTS,
-        matchPaths: ['/reports'],
+        path: ROUTES.INVENTORY_REPORTS,
+        matchPaths: ['/inventory/reports'],
       },
     ],
   },
@@ -145,7 +138,7 @@ const navigationItems: NavItem[] = [
       {
         label: 'Reports',
         icon: <AssessmentIcon />,
-        path: '/workplaces/reports',
+        path: ROUTES.WORKPLACE_REPORTS,
         matchPaths: ['/workplaces/reports'],
       },
     ],
@@ -153,28 +146,28 @@ const navigationItems: NavItem[] = [
   {
     label: 'Operations',
     icon: <SettingsApplicationsIcon />,
-    path: ROUTES.ROLLOUTS,
-    matchPaths: ['/rollouts', '/laptop-swap'],
+    path: ROUTES.OPERATIONS_ROLLOUTS,
+    matchPaths: ['/operations'],
     highlighted: true,
     highlightId: 'operations',
     subItems: [
       {
-        label: 'Rollout Sessions',
+        label: 'Rollouts',
         icon: <RocketLaunchIcon />,
-        path: ROUTES.ROLLOUTS,
-        matchPaths: ['/rollouts'],
+        path: ROUTES.OPERATIONS_ROLLOUTS,
+        matchPaths: ['/operations/rollouts'],
       },
       {
-        label: 'Swaps',
+        label: 'Deployments',
         icon: <SwapHorizIcon />,
-        path: ROUTES.LAPTOP_SWAP,
-        matchPaths: ['/laptop-swap'],
+        path: ROUTES.OPERATIONS_DEPLOYMENTS,
+        matchPaths: ['/operations/deployments'],
       },
       {
-        label: 'Reports',
-        icon: <AssessmentIcon />,
-        path: ROUTES.DEPLOYMENT_HISTORY,
-        matchPaths: ['/laptop-swap/history', '/deployment'],
+        label: 'History',
+        icon: <HistoryIcon />,
+        path: ROUTES.OPERATIONS_HISTORY,
+        matchPaths: ['/operations/history'],
       },
     ],
   },
@@ -208,7 +201,7 @@ const navigationItems: NavItem[] = [
   {
     label: 'Admin',
     icon: <SettingsIcon />,
-    path: ROUTES.ADMIN,
+    path: ROUTES.ADMIN_ASSETS,
     matchPaths: ['/admin'],
     highlighted: true,
     subItems: [

@@ -285,7 +285,7 @@ const LaptopSwapPage = () => {
         </Tooltip>
         <Button
           startIcon={<HistoryIcon />}
-          onClick={() => navigate(ROUTES.DEPLOYMENT_HISTORY)}
+          onClick={() => navigate(ROUTES.OPERATIONS_HISTORY)}
           variant="outlined"
           size="small"
         >
@@ -899,7 +899,7 @@ const LaptopSwapPage = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => navigate(ROUTES.DEPLOYMENT_HISTORY)} color="inherit">
+          <Button onClick={() => navigate(ROUTES.OPERATIONS_HISTORY)} color="inherit">
             {t('deployment.success.viewHistory')}
           </Button>
           <Button onClick={() => setSuccessDialogOpen(false)} variant="contained" color="success">

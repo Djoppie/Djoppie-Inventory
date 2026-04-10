@@ -85,7 +85,7 @@ const RolloutReportPage = () => {
   const { isLoading: progressLoading } = useRolloutProgress(sessionId);
 
   const handleBack = () => {
-    navigate(ROUTES.ROLLOUTS);
+    navigate(ROUTES.OPERATIONS_ROLLOUTS);
   };
 
   const formatDate = (dateString: string) => {

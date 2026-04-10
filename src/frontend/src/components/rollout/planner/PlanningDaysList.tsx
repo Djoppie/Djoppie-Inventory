@@ -12,6 +12,7 @@ import type { RescheduledByDate } from '../../../hooks/rollout-planner';
 import React from 'react';
 import type { PlanningStatusFilterValue } from '../PlanningStatusFilter';
 import { ASSET_COLOR } from '../../../constants/filterColors';
+import { buildRoute } from '../../../constants/routes';
 
 /**
  * Memoized component for rendering rescheduled workplaces grouped by their source planning
@@ -214,7 +215,7 @@ export default function PlanningDaysList({
 
   // Memoize callback for navigating to execute page
   const handleExecute = useCallback((dayId: number) => {
-    navigate(`/rollouts/${session.id}/execute?dayId=${dayId}`);
+    navigate(`${buildRoute.rolloutExecute(session.id)}?dayId=${dayId}`);
   }, [navigate, session.id]);
 
   return (

@@ -23,6 +23,7 @@ import {
 import { WORKPLACE_STATUS_SORT_ORDER } from '../../../constants/rollout.constants';
 import type { RolloutWorkplace } from '../../../types/rollout';
 import { ASSET_COLOR, SERVICE_COLOR, SECTOR_COLOR } from '../../../constants/filterColors';
+import { buildRoute } from '../../../constants/routes';
 
 interface WorkplaceListProps {
   dayId: number;
@@ -443,7 +444,7 @@ export default function WorkplaceList({
                       <Tooltip title="Ga naar uitvoering">
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/rollouts/${sessionId}/execute?workplaceId=${workplace.id}`)}
+                          onClick={() => navigate(`${buildRoute.rolloutExecute(sessionId)}?workplaceId=${workplace.id}`)}
                           sx={{
                             color: ASSET_COLOR,
                             bgcolor: 'rgba(255, 119, 0, 0.1)',

@@ -67,7 +67,7 @@ const AutopilotTimelinePage = () => {
       {/* Back Button */}
       <Tooltip title={t('autopilot.backToList', 'Back to Autopilot Devices')}>
         <IconButton
-          onClick={() => navigate(ROUTES.AUTOPILOT_DEVICES)}
+          onClick={() => navigate(ROUTES.INVENTORY_CLOUD_AUTOPILOT)}
           sx={{
             ...iconButtonSx,
             mb: 2,

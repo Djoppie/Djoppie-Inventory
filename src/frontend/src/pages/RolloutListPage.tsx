@@ -292,7 +292,7 @@ const RolloutListPage = () => {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => navigate(ROUTES.ROLLOUTS_NEW)}
+            onClick={() => navigate(ROUTES.OPERATIONS_ROLLOUTS_NEW)}
             sx={{
               px: 3,
               py: 1.25,
@@ -535,7 +535,7 @@ const RolloutListPage = () => {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => navigate(ROUTES.ROLLOUTS_NEW)}
+            onClick={() => navigate(ROUTES.OPERATIONS_ROLLOUTS_NEW)}
             sx={{
               bgcolor: '#FF7700',
               fontWeight: 600,

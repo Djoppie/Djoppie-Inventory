@@ -229,7 +229,7 @@ const RolloutExecutionPage = () => {
   }, [expandedWorkplace, filteredWorkplaces]);
 
   const handleBack = () => {
-    navigate(ROUTES.ROLLOUTS);
+    navigate(ROUTES.OPERATIONS_ROLLOUTS);
   };
 
   const handleBackToPlanning = async () => {

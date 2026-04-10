@@ -263,7 +263,7 @@ const SwapManagementTab = () => {
             variant="outlined"
             size="small"
             startIcon={<SwapHoriz />}
-            onClick={() => navigate(ROUTES.LAPTOP_SWAP)}
+            onClick={() => navigate(ROUTES.OPERATIONS_DEPLOYMENTS)}
             sx={{
               textTransform: 'none',
               fontWeight: 600,
@@ -282,7 +282,7 @@ const SwapManagementTab = () => {
             variant="outlined"
             size="small"
             startIcon={<History />}
-            onClick={() => navigate(ROUTES.DEPLOYMENT_HISTORY)}
+            onClick={() => navigate(ROUTES.OPERATIONS_HISTORY)}
             sx={{
               textTransform: 'none',
               fontWeight: 600,
@@ -346,7 +346,7 @@ const SwapManagementTab = () => {
             size="small"
             variant="outlined"
             startIcon={<TrendingUp />}
-            onClick={() => navigate(ROUTES.LAPTOP_SWAP)}
+            onClick={() => navigate(ROUTES.OPERATIONS_DEPLOYMENTS)}
             sx={{
               fontSize: '0.75rem',
               textTransform: 'none',

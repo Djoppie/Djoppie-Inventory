@@ -522,7 +522,7 @@ const RolloutPlanningTab = () => {
             variant="contained"
             size="small"
             startIcon={<Add sx={{ fontSize: 16 }} />}
-            onClick={() => navigate(ROUTES.ROLLOUTS_NEW)}
+            onClick={() => navigate(ROUTES.OPERATIONS_ROLLOUTS_NEW)}
             sx={{
               bgcolor: '#FF7700',
               '&:hover': { bgcolor: '#E06600' },

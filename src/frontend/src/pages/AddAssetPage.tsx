@@ -180,7 +180,7 @@ const AddAssetPage = () => {
             <Button
               variant="contained"
               startIcon={<LibraryAddIcon />}
-              onClick={() => navigate(ROUTES.ASSETS_BULK_NEW)}
+              onClick={() => navigate(ROUTES.INVENTORY_BULK_CREATE)}
               sx={{ whiteSpace: 'nowrap', minWidth: 160 }}
             >
               Bulk Create

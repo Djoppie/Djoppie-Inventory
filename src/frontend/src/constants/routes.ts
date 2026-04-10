@@ -4,41 +4,43 @@
  */
 
 export const ROUTES = {
-  /** Dashboard/Home page showing asset list */
+  /** Dashboard/Home page - overview with summary widgets */
   DASHBOARD: '/',
 
   /** QR code scanner page */
   SCAN: '/scan',
 
-  /** Device management hub page */
-  DEVICE_MANAGEMENT: '/devices',
+  // ── Inventory ──────────────────────────────────────────────
+  /** Inventory page (full asset list) */
+  INVENTORY: '/inventory',
 
   /** Create new asset page */
-  ASSETS_NEW: '/devices/new',
+  INVENTORY_NEW: '/inventory/new',
 
   /** Bulk create assets page */
-  ASSETS_BULK_NEW: '/devices/bulk-create',
+  INVENTORY_BULK_CREATE: '/inventory/bulk-create',
 
+  /** Asset templates management page */
+  INVENTORY_TEMPLATES: '/inventory/templates',
+
+  /** Cloud devices page (Intune + Autopilot) */
+  INVENTORY_CLOUD: '/inventory/cloud',
+
+  /** Autopilot devices list page */
+  INVENTORY_CLOUD_AUTOPILOT: '/inventory/cloud/autopilot',
+
+  /** Autopilot device timeline page (requires :serialNumber parameter) */
+  INVENTORY_CLOUD_AUTOPILOT_TIMELINE: '/inventory/cloud/autopilot/timeline/:serialNumber',
+
+  /** Reports hub page */
+  INVENTORY_REPORTS: '/inventory/reports',
+
+  // ── Asset detail (cross-cutting, not nested under inventory) ──
   /** Asset detail page (requires :id parameter) */
   ASSET_DETAIL: '/assets/:id',
 
   /** Edit asset page (requires :id parameter) */
   ASSET_EDIT: '/assets/:id/edit',
-
-  /** Asset templates management page */
-  TEMPLATES: '/templates',
-
-  /** Admin management page */
-  ADMIN: '/admin',
-
-  /** Admin Assets section (Categories, Asset Types, Intune Sync) */
-  ADMIN_ASSETS: '/admin/assets',
-
-  /** Admin Organisation section (Sectors, Services, Employees) */
-  ADMIN_ORGANISATION: '/admin/organisation',
-
-  /** Admin Locations section (Physical Workplaces, Buildings) */
-  ADMIN_LOCATIONS: '/admin/locations',
 
   /** Installed software page (requires :id parameter) */
   ASSET_SOFTWARE: '/assets/:id/software',
@@ -46,36 +48,7 @@ export const ROUTES = {
   /** Asset Intune management page (requires :id parameter) */
   ASSET_INTUNE: '/assets/:id/intune',
 
-  /** Rollout list page */
-  ROLLOUTS: '/rollouts',
-
-  /** New rollout planner page */
-  ROLLOUTS_NEW: '/rollouts/new',
-
-  /** Edit rollout planner page (requires :id parameter) */
-  ROLLOUT_EDIT: '/rollouts/:id',
-
-  /** Rollout execution page (requires :id parameter) */
-  ROLLOUT_EXECUTE: '/rollouts/:id/execute',
-
-  /** Rollout report page (requires :id parameter) */
-  ROLLOUT_REPORT: '/rollouts/:id/report',
-
-  /** Rollout day detail page (requires :id and :dayId parameters) */
-  ROLLOUT_DAY_DETAIL: '/rollouts/:id/days/:dayId',
-
-  /** Rollout day edit page (requires :id and :dayId parameters) */
-  ROLLOUT_DAY_EDIT: '/rollouts/:id/days/:dayId/edit',
-
-  /** Autopilot devices list page */
-  AUTOPILOT_DEVICES: '/devices/autopilot',
-
-  /** Autopilot device timeline page (requires :serialNumber parameter) */
-  AUTOPILOT_TIMELINE: '/devices/autopilot/timeline/:serialNumber',
-
-  /** Intune Device Dashboard page */
-  INTUNE_DASHBOARD: '/devices/intune-dashboard',
-
+  // ── Workplaces ─────────────────────────────────────────────
   /** Physical workplaces management page */
   PHYSICAL_WORKPLACES: '/workplaces',
 
@@ -85,6 +58,35 @@ export const ROUTES = {
   /** Workplace reports page */
   WORKPLACE_REPORTS: '/workplaces/reports',
 
+  // ── Operations ─────────────────────────────────────────────
+  /** Rollout sessions list page */
+  OPERATIONS_ROLLOUTS: '/operations/rollouts',
+
+  /** New rollout planner page */
+  OPERATIONS_ROLLOUTS_NEW: '/operations/rollouts/new',
+
+  /** Edit rollout planner page (requires :id parameter) */
+  OPERATIONS_ROLLOUT_EDIT: '/operations/rollouts/:id',
+
+  /** Rollout execution page (requires :id parameter) */
+  OPERATIONS_ROLLOUT_EXECUTE: '/operations/rollouts/:id/execute',
+
+  /** Rollout report page (requires :id parameter) */
+  OPERATIONS_ROLLOUT_REPORT: '/operations/rollouts/:id/report',
+
+  /** Rollout day detail page (requires :id and :dayId parameters) */
+  OPERATIONS_ROLLOUT_DAY_DETAIL: '/operations/rollouts/:id/days/:dayId',
+
+  /** Rollout day edit page (requires :id and :dayId parameters) */
+  OPERATIONS_ROLLOUT_DAY_EDIT: '/operations/rollouts/:id/days/:dayId/edit',
+
+  /** Device deployments page */
+  OPERATIONS_DEPLOYMENTS: '/operations/deployments',
+
+  /** Deployment history page */
+  OPERATIONS_HISTORY: '/operations/history',
+
+  // ── Requests ───────────────────────────────────────────────
   /** Requests dashboard page */
   REQUESTS: '/requests',
 
@@ -94,99 +96,33 @@ export const ROUTES = {
   /** Offboarding requests page */
   REQUESTS_OFFBOARDING: '/requests/offboarding',
 
-  /** Requests reports (history of swaps, onboarding, offboarding) */
+  /** Requests reports */
   REQUESTS_REPORTS: '/requests/reports',
 
-  /** Laptop swap / Device deployment page */
-  LAPTOP_SWAP: '/laptop-swap',
+  // ── Admin ──────────────────────────────────────────────────
+  /** Admin Assets section (Categories, Asset Types, Intune Sync) */
+  ADMIN_ASSETS: '/admin/assets',
 
-  /** Deployment history page */
-  DEPLOYMENT_HISTORY: '/laptop-swap/history',
+  /** Admin Organisation section (Sectors, Services, Employees) */
+  ADMIN_ORGANISATION: '/admin/organisation',
 
-  /** Reports hub page */
-  REPORTS: '/reports',
+  /** Admin Locations section (Physical Workplaces, Buildings) */
+  ADMIN_LOCATIONS: '/admin/locations',
 } as const;
 
 /**
  * Helper functions for building dynamic routes with parameters
  */
 export const buildRoute = {
-  /**
-   * Builds the asset detail route with the specified asset ID.
-   * @param id - The asset ID
-   * @returns The full route path
-   */
   assetDetail: (id: number | string) => `/assets/${id}`,
-
-  /**
-   * Builds the asset edit route with the specified asset ID.
-   * @param id - The asset ID
-   * @returns The full route path
-   */
   assetEdit: (id: number | string) => `/assets/${id}/edit`,
-
-  /**
-   * Builds the installed software route with the specified asset ID.
-   * @param id - The asset ID
-   * @returns The full route path
-   */
   assetSoftware: (id: number | string) => `/assets/${id}/software`,
-
-  /**
-   * Builds the Intune management route with the specified asset ID.
-   * @param id - The asset ID
-   * @returns The full route path
-   */
   assetIntune: (id: number | string) => `/assets/${id}/intune`,
-
-  /**
-   * Builds the rollout edit route with the specified rollout ID.
-   * @param id - The rollout ID
-   * @returns The full route path
-   */
-  rolloutEdit: (id: number | string) => `/rollouts/${id}`,
-
-  /**
-   * Builds the rollout execution route with the specified rollout ID.
-   * @param id - The rollout ID
-   * @returns The full route path
-   */
-  rolloutExecute: (id: number | string) => `/rollouts/${id}/execute`,
-
-  /**
-   * Builds the rollout report route with the specified rollout ID.
-   * @param id - The rollout ID
-   * @returns The full route path
-   */
-  rolloutReport: (id: number | string) => `/rollouts/${id}/report`,
-
-  /**
-   * Builds the rollout day detail route.
-   * @param sessionId - The rollout session ID
-   * @param dayId - The rollout day ID
-   * @returns The full route path
-   */
-  rolloutDayDetail: (sessionId: number | string, dayId: number | string) => `/rollouts/${sessionId}/days/${dayId}`,
-
-  /**
-   * Builds the rollout day edit route.
-   * @param sessionId - The rollout session ID
-   * @param dayId - The rollout day ID
-   * @returns The full route path
-   */
-  rolloutDayEdit: (sessionId: number | string, dayId: number | string) => `/rollouts/${sessionId}/days/${dayId}/edit`,
-
-  /**
-   * Builds the Autopilot timeline route with the specified serial number.
-   * @param serialNumber - The device serial number
-   * @returns The full route path
-   */
-  autopilotTimeline: (serialNumber: string) => `/devices/autopilot/timeline/${serialNumber}`,
-
-  /**
-   * Builds the workplace detail route with the specified workplace ID.
-   * @param id - The workplace ID
-   * @returns The full route path
-   */
+  rolloutEdit: (id: number | string) => `/operations/rollouts/${id}`,
+  rolloutExecute: (id: number | string) => `/operations/rollouts/${id}/execute`,
+  rolloutReport: (id: number | string) => `/operations/rollouts/${id}/report`,
+  rolloutDayDetail: (sessionId: number | string, dayId: number | string) => `/operations/rollouts/${sessionId}/days/${dayId}`,
+  rolloutDayEdit: (sessionId: number | string, dayId: number | string) => `/operations/rollouts/${sessionId}/days/${dayId}/edit`,
+  autopilotTimeline: (serialNumber: string) => `/inventory/cloud/autopilot/timeline/${serialNumber}`,
   workplaceDetail: (id: number | string) => `/workplaces/${id}`,
 } as const;

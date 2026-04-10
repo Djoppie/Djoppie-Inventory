@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import type { RolloutSession, RolloutDay } from '../../../types/rollout';
 import { ASSET_COLOR } from '../../../constants/filterColors';
+import { buildRoute } from '../../../constants/routes';
 
 interface ExecutionPromptCardProps {
   session: RolloutSession;
@@ -58,7 +59,7 @@ export default function ExecutionPromptCard({ session, days }: ExecutionPromptCa
         variant="contained"
         size="large"
         startIcon={<PlayArrowIcon />}
-        onClick={() => navigate(`/rollouts/${session.id}/execute`)}
+        onClick={() => navigate(buildRoute.rolloutExecute(session.id))}
         sx={{
           bgcolor: ASSET_COLOR,
           px: 4,
