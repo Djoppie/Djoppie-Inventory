@@ -35,6 +35,7 @@ const RequestsReportsPage = lazy(() => import('./pages/RequestsReportsPage'));
 const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
 const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const IntuneDeviceDashboardPage = lazy(() => import('./pages/IntuneDeviceDashboardPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,7 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
+                  <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />
                   <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
                   <Route path={ROUTES.WORKPLACE_REPORTS} element={<WorkplaceReportsPage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />

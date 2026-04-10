@@ -62,6 +62,9 @@ export interface ConfigurationProfileStatus {
   errorCode?: number;
   settingsInError?: number;
   settingsInConflict?: number;
+  certificateStorePath?: string;
+  certificateExpiryDate?: string;
+  thumbprint?: string;
 }
 
 export interface ConfigurationStatusSummary {

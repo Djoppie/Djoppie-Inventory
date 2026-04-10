@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { IntuneDevice, AutopilotDevice, DeviceConfigurationStatus } from '../types/graph.types';
 import { ProvisioningTimeline } from '../types/provisioning.types';
+import { DeviceGroupMembership, DeviceEventsResponse, DeviceHealthInfo } from '../types/intune-dashboard.types';
 
 /**
  * API service for Microsoft Intune operations
@@ -136,7 +137,22 @@ export const intuneApi = {
   importDevicesAsAssets: async (request: ImportIntuneDevicesRequest): Promise<ImportIntuneDevicesResult> => {
     const response = await apiClient.post<ImportIntuneDevicesResult>('/intune/import-devices', request);
     return response.data;
-  }
+  },
+
+  getDeviceGroups: async (deviceId: string): Promise<DeviceGroupMembership> => {
+    const response = await apiClient.get<DeviceGroupMembership>(`/intune/devices/${deviceId}/groups`);
+    return response.data;
+  },
+
+  getDeviceEvents: async (deviceId: string): Promise<DeviceEventsResponse> => {
+    const response = await apiClient.get<DeviceEventsResponse>(`/intune/devices/${deviceId}/events`);
+    return response.data;
+  },
+
+  getDeviceHealth: async (serialNumber: string): Promise<DeviceHealthInfo> => {
+    const response = await apiClient.get<DeviceHealthInfo>(`/intune/devices/serial/${serialNumber}/health`);
+    return response.data;
+  },
 };
 
 /**
