@@ -1592,6 +1592,20 @@ public class IntuneService : IIntuneService
                         // Determine if this is a certificate-related profile based on display name patterns
                         var isCertRelated = IsCertificateRelatedProfile(displayName);
 
+                        // Derive certificate store location
+                        string? certStorePath = null;
+                        if (isCertRelated)
+                        {
+                            var nameLower = displayName.ToLowerInvariant();
+                            var hasUserContext = !string.IsNullOrEmpty(
+                                profile.TryGetProperty("userPrincipalName", out var upnCheck) ? upnCheck.GetString() : null
+                            );
+                            var nameContainsUser = nameLower.Contains("user");
+                            var nameContainsDevice = nameLower.Contains("device") || nameLower.Contains("machine");
+                            certStorePath = nameContainsDevice ? "Machine" :
+                                           (nameContainsUser || hasUserContext) ? "User" : "Machine";
+                        }
+
                         var profileStatus = new ConfigurationProfileStatusDto
                         {
                             ProfileId = profile.TryGetProperty("id", out var id) ? id.GetString() : null,
@@ -1611,7 +1625,10 @@ public class IntuneService : IIntuneService
                                 : null,
                             SettingsInConflict = profile.TryGetProperty("settingStates", out var sc2) && sc2.ValueKind == JsonValueKind.Array
                                 ? sc2.EnumerateArray().Count(s => s.TryGetProperty("state", out var sState) && sState.GetString() == "conflict")
-                                : null
+                                : null,
+                            CertificateStorePath = certStorePath,
+                            CertificateExpiryDate = isCertRelated ? device.ManagementCertificateExpirationDate?.DateTime : null,
+                            Thumbprint = null
                         };
 
                         // If no user info from the profile state, use the device's primary user
@@ -1709,6 +1726,281 @@ public class IntuneService : IIntuneService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving configuration status for device with serial number {SerialNumber}", serialNumber);
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<DeviceGroupMembershipDto?> GetDeviceGroupMembershipsAsync(string deviceId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                throw new ArgumentException("Device ID cannot be null or empty", nameof(deviceId));
+
+            _logger.LogInformation("Retrieving group memberships for device: {DeviceId}", deviceId);
+
+            var device = await GetDeviceByIdAsync(deviceId);
+            if (device == null)
+            {
+                _logger.LogWarning("Device not found: {DeviceId}", deviceId);
+                return null;
+            }
+
+            var result = new DeviceGroupMembershipDto
+            {
+                DeviceId = device.Id ?? deviceId,
+                DeviceName = device.DeviceName ?? "Unknown"
+            };
+
+            var deviceGroupsTask = FetchDeviceGroupsAsync(device.AzureADDeviceId);
+            var userGroupsTask = !string.IsNullOrWhiteSpace(device.UserPrincipalName)
+                ? FetchUserGroupsAsync(device.UserPrincipalName)
+                : Task.FromResult(new List<GroupInfoDto>());
+
+            await Task.WhenAll(deviceGroupsTask, userGroupsTask);
+
+            result.DeviceGroups = deviceGroupsTask.Result;
+            result.UserGroups = userGroupsTask.Result;
+
+            _logger.LogInformation("Group memberships retrieved for {DeviceName}: {DeviceGroupCount} device groups, {UserGroupCount} user groups",
+                result.DeviceName, result.DeviceGroups.Count, result.UserGroups.Count);
+
+            return result;
+        }
+        catch (ArgumentException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving group memberships for device {DeviceId}", deviceId);
+            throw;
+        }
+    }
+
+    private async Task<List<GroupInfoDto>> FetchDeviceGroupsAsync(string? azureAdDeviceId)
+    {
+        if (string.IsNullOrWhiteSpace(azureAdDeviceId))
+            return new List<GroupInfoDto>();
+
+        try
+        {
+            var memberOf = await _graphClient.Devices[azureAdDeviceId].MemberOf.GetAsync();
+            return ExtractGroups(memberOf?.Value);
+        }
+        catch (ServiceException ex) when (ex.ResponseStatusCode == (int)System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("Azure AD device not found: {AzureAdDeviceId}", azureAdDeviceId);
+            return new List<GroupInfoDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch device groups for Azure AD device {AzureAdDeviceId}", azureAdDeviceId);
+            return new List<GroupInfoDto>();
+        }
+    }
+
+    private async Task<List<GroupInfoDto>> FetchUserGroupsAsync(string userPrincipalName)
+    {
+        try
+        {
+            var memberOf = await _graphClient.Users[userPrincipalName].MemberOf.GetAsync();
+            return ExtractGroups(memberOf?.Value);
+        }
+        catch (ServiceException ex) when (ex.ResponseStatusCode == (int)System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("User not found: {UserPrincipalName}", userPrincipalName);
+            return new List<GroupInfoDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch user groups for {UserPrincipalName}", userPrincipalName);
+            return new List<GroupInfoDto>();
+        }
+    }
+
+    private static List<GroupInfoDto> ExtractGroups(List<DirectoryObject>? members)
+    {
+        if (members == null) return new List<GroupInfoDto>();
+
+        return members
+            .OfType<Microsoft.Graph.Models.Group>()
+            .Select(g => new GroupInfoDto
+            {
+                Id = g.Id ?? string.Empty,
+                DisplayName = g.DisplayName ?? string.Empty,
+                Description = g.Description,
+                GroupType = g.SecurityEnabled == true ? "Security" :
+                            g.GroupTypes?.Contains("Unified") == true ? "Microsoft365" : "Distribution",
+                IsDynamic = g.MembershipRule != null
+            })
+            .OrderBy(g => g.DisplayName)
+            .ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<DeviceEventsResponseDto?> GetDeviceEventsAsync(string deviceId)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                throw new ArgumentException("Device ID cannot be null or empty", nameof(deviceId));
+
+            _logger.LogInformation("Retrieving events for device: {DeviceId}", deviceId);
+
+            var device = await _graphClient.DeviceManagement.ManagedDevices[deviceId]
+                .GetAsync(requestConfiguration =>
+                {
+                    requestConfiguration.QueryParameters.Select = new[]
+                    {
+                        "id", "deviceName", "complianceState", "lastSyncDateTime",
+                        "enrolledDateTime", "managementCertificateExpirationDate",
+                        "deviceActionResults", "userPrincipalName", "operatingSystem",
+                        "isEncrypted", "totalStorageSpaceInBytes", "freeStorageSpaceInBytes"
+                    };
+                });
+
+            if (device == null)
+            {
+                _logger.LogWarning("Device not found: {DeviceId}", deviceId);
+                return null;
+            }
+
+            var events = new List<DeviceEventDto>();
+            var now = DateTime.UtcNow;
+
+            // Compliance event
+            var isCompliant = device.ComplianceState == ComplianceState.Compliant;
+            events.Add(new DeviceEventDto
+            {
+                Timestamp = device.LastSyncDateTime?.DateTime ?? now,
+                EventType = "compliance",
+                Severity = isCompliant ? "success" : "error",
+                Title = isCompliant ? "Device Compliant" : "Device Non-Compliant",
+                Description = $"Compliance state: {device.ComplianceState?.ToString() ?? "unknown"}",
+            });
+
+            // Sync event
+            if (device.LastSyncDateTime?.DateTime != null)
+            {
+                var lastSync = device.LastSyncDateTime.Value.DateTime;
+                var daysSinceSync = (now - lastSync).TotalDays;
+                events.Add(new DeviceEventDto
+                {
+                    Timestamp = lastSync,
+                    EventType = "sync",
+                    Severity = daysSinceSync > 7 ? "warning" : "success",
+                    Title = daysSinceSync > 7 ? "Sync Stale" : "Last Sync",
+                    Description = daysSinceSync > 7
+                        ? $"Device has not synced for {(int)daysSinceSync} days"
+                        : "Device synced successfully",
+                });
+            }
+
+            // Management certificate expiry
+            if (device.ManagementCertificateExpirationDate?.DateTime != null)
+            {
+                var certExpiry = device.ManagementCertificateExpirationDate.Value.DateTime;
+                var daysUntilExpiry = (certExpiry - now).TotalDays;
+                if (daysUntilExpiry < 30)
+                {
+                    events.Add(new DeviceEventDto
+                    {
+                        Timestamp = now,
+                        EventType = "cert",
+                        Severity = daysUntilExpiry < 0 ? "error" : "warning",
+                        Title = daysUntilExpiry < 0 ? "Management Certificate Expired" : "Management Certificate Expiring",
+                        Description = daysUntilExpiry < 0
+                            ? $"Certificate expired on {certExpiry:yyyy-MM-dd}"
+                            : $"Certificate expires in {(int)daysUntilExpiry} days ({certExpiry:yyyy-MM-dd})",
+                    });
+                }
+            }
+
+            // Encryption status
+            if (device.IsEncrypted == false)
+            {
+                events.Add(new DeviceEventDto
+                {
+                    Timestamp = now,
+                    EventType = "compliance",
+                    Severity = "warning",
+                    Title = "Device Not Encrypted",
+                    Description = "BitLocker encryption is not enabled on this device",
+                });
+            }
+
+            // Storage warning
+            if (device.TotalStorageSpaceInBytes > 0 && device.FreeStorageSpaceInBytes.HasValue)
+            {
+                var usagePercent = (double)(device.TotalStorageSpaceInBytes!.Value - device.FreeStorageSpaceInBytes.Value) / device.TotalStorageSpaceInBytes.Value * 100;
+                if (usagePercent >= 90)
+                {
+                    events.Add(new DeviceEventDto
+                    {
+                        Timestamp = now,
+                        EventType = "compliance",
+                        Severity = usagePercent >= 95 ? "error" : "warning",
+                        Title = "Storage Space Low",
+                        Description = $"Storage usage at {usagePercent:F0}%",
+                    });
+                }
+            }
+
+            // Enrollment event
+            if (device.EnrolledDateTime?.DateTime != null)
+            {
+                events.Add(new DeviceEventDto
+                {
+                    Timestamp = device.EnrolledDateTime.Value.DateTime,
+                    EventType = "provisioning",
+                    Severity = "info",
+                    Title = "Device Enrolled",
+                    Description = "Device enrolled in Intune management",
+                });
+            }
+
+            // Device action results
+            if (device.DeviceActionResults != null)
+            {
+                foreach (var action in device.DeviceActionResults)
+                {
+                    var actionTime = action.LastUpdatedDateTime?.DateTime ?? now;
+                    var actionState = action.ActionState?.ToString() ?? "unknown";
+                    var actionName = action.ActionName ?? "Unknown Action";
+                    var isSuccess = actionState.Equals("done", StringComparison.OrdinalIgnoreCase);
+                    var isFailed = actionState.Equals("failed", StringComparison.OrdinalIgnoreCase);
+
+                    events.Add(new DeviceEventDto
+                    {
+                        Timestamp = actionTime,
+                        EventType = "action",
+                        Severity = isFailed ? "error" : isSuccess ? "success" : "info",
+                        Title = $"Device Action: {actionName}",
+                        Description = $"Status: {actionState}",
+                    });
+                }
+            }
+
+            events = events.OrderByDescending(e => e.Timestamp).ToList();
+
+            var result = new DeviceEventsResponseDto
+            {
+                DeviceId = device.Id ?? deviceId,
+                DeviceName = device.DeviceName ?? "Unknown",
+                Events = events
+            };
+
+            _logger.LogInformation("Events retrieved for {DeviceName}: {EventCount} events", result.DeviceName, events.Count);
+            return result;
+        }
+        catch (ArgumentException) { throw; }
+        catch (ServiceException ex) when (ex.ResponseStatusCode == (int)System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning("Device not found: {DeviceId}", deviceId);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving events for device {DeviceId}", deviceId);
             throw;
         }
     }

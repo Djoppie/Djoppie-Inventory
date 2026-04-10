@@ -916,4 +916,64 @@ public class IntuneController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred while syncing Intune data" });
         }
     }
+
+    /// <summary>
+    /// Retrieves Azure AD group memberships for a device and its primary user.
+    /// </summary>
+    [HttpGet("devices/{deviceId}/groups")]
+    [ProducesResponseType(typeof(DeviceGroupMembershipDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceGroupMembershipDto>> GetDeviceGroupMemberships(string deviceId)
+    {
+        try
+        {
+            _logger.LogInformation("API request to retrieve group memberships for device: {DeviceId}", deviceId);
+            var result = await _intuneService.GetDeviceGroupMembershipsAsync(deviceId);
+
+            if (result == null)
+                return NotFound(new { error = $"Device with ID '{deviceId}' not found" });
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve group memberships for device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "Failed to retrieve group memberships", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves aggregated events for a device (compliance, sync, cert, actions).
+    /// </summary>
+    [HttpGet("devices/{deviceId}/events")]
+    [ProducesResponseType(typeof(DeviceEventsResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DeviceEventsResponseDto>> GetDeviceEvents(string deviceId)
+    {
+        try
+        {
+            _logger.LogInformation("API request to retrieve events for device: {DeviceId}", deviceId);
+            var result = await _intuneService.GetDeviceEventsAsync(deviceId);
+
+            if (result == null)
+                return NotFound(new { error = $"Device with ID '{deviceId}' not found" });
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve events for device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "Failed to retrieve device events", details = ex.Message });
+        }
+    }
 }
