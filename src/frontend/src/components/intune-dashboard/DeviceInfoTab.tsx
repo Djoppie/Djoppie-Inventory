@@ -86,7 +86,7 @@ const DeviceInfoTab = ({ health, loading }: DeviceInfoTabProps) => {
   const leftColumn = [
     { label: 'Model', value: health.model ?? '-' },
     { label: 'Manufacturer', value: health.manufacturer ?? '-' },
-    { label: 'Serial', value: health.azureAdDeviceId ? health.azureAdDeviceId.substring(0, 8) + '...' : '-' },
+    { label: 'Serial Number', value: health.serialNumber ?? '-' },
     { label: 'OS', value: `${health.operatingSystem ?? '-'} ${health.osVersion ?? ''}`.trim() },
     { label: 'Enrollment Date', value: formatDate(health.enrolledDateTime) },
     { label: 'Last Sync', value: formatDate(health.lastSyncDateTime) },

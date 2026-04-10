@@ -33,6 +33,7 @@ export interface DeviceEvent {
 export interface DeviceHealthInfo {
   deviceId: string;
   deviceName: string;
+  serialNumber?: string;
   manufacturer?: string;
   model?: string;
   operatingSystem?: string;

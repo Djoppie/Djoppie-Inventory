@@ -84,8 +84,10 @@ public class IntuneService : IIntuneService
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
                         "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
                         "enrolledDateTime", "userPrincipalName", "managementAgent",
+                        "managementCertificateExpirationDate", "azureADDeviceId",
                         "totalStorageSpaceInBytes", "freeStorageSpaceInBytes",
-                        "azureADDeviceId", "managementCertificateExpirationDate"
+                        "physicalMemoryInBytes", "isEncrypted", "isSupervised",
+                        "wiFiMacAddress", "ethernetMacAddress", "userDisplayName"
                     };
                 });
 
@@ -145,7 +147,10 @@ public class IntuneService : IIntuneService
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
                         "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
                         "enrolledDateTime", "userPrincipalName", "managementAgent",
-                        "managementCertificateExpirationDate"
+                        "managementCertificateExpirationDate", "azureADDeviceId",
+                        "totalStorageSpaceInBytes", "freeStorageSpaceInBytes",
+                        "physicalMemoryInBytes", "isEncrypted", "isSupervised",
+                        "wiFiMacAddress", "ethernetMacAddress", "userDisplayName"
                     };
                 });
 
@@ -548,6 +553,7 @@ public class IntuneService : IIntuneService
             {
                 DeviceId = device.Id,
                 DeviceName = device.DeviceName ?? "Unknown",
+                SerialNumber = device.SerialNumber,
                 Manufacturer = device.Manufacturer,
                 Model = device.Model,
                 OperatingSystem = device.OperatingSystem,
