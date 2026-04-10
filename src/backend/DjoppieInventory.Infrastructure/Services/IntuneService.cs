@@ -85,7 +85,7 @@ public class IntuneService : IIntuneService
                         "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
                         "enrolledDateTime", "userPrincipalName", "managementAgent",
                         "totalStorageSpaceInBytes", "freeStorageSpaceInBytes",
-                        "azureActiveDirectoryDeviceId"
+                        "azureADDeviceId", "managementCertificateExpirationDate"
                     };
                 });
 
