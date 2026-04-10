@@ -128,4 +128,18 @@ public interface IIntuneService
     /// <param name="serialNumber">The device serial number</param>
     /// <returns>Configuration status with profile details, or null if device not found</returns>
     Task<DeviceConfigurationStatusDto?> GetDeviceConfigurationStatusBySerialAsync(string serialNumber);
+
+    /// <summary>
+    /// Retrieves Azure AD group memberships for a device and its primary user.
+    /// </summary>
+    /// <param name="deviceId">The Intune device identifier</param>
+    /// <returns>Group memberships for both device and user, or null if device not found</returns>
+    Task<DeviceGroupMembershipDto?> GetDeviceGroupMembershipsAsync(string deviceId);
+
+    /// <summary>
+    /// Retrieves aggregated events for a device including compliance, sync, cert, and action events.
+    /// </summary>
+    /// <param name="deviceId">The Intune device identifier</param>
+    /// <returns>Chronological events list, or null if device not found</returns>
+    Task<DeviceEventsResponseDto?> GetDeviceEventsAsync(string deviceId);
 }

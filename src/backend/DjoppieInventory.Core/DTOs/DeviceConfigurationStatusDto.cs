@@ -127,6 +127,21 @@ public class ConfigurationProfileStatusDto
     /// Number of settings in conflict state
     /// </summary>
     public int? SettingsInConflict { get; set; }
+
+    /// <summary>
+    /// Certificate store location: "User" or "Machine"
+    /// </summary>
+    public string? CertificateStorePath { get; set; }
+
+    /// <summary>
+    /// Certificate expiry date (from management cert or profile metadata)
+    /// </summary>
+    public DateTime? CertificateExpiryDate { get; set; }
+
+    /// <summary>
+    /// Certificate thumbprint if available
+    /// </summary>
+    public string? Thumbprint { get; set; }
 }
 
 /// <summary>
