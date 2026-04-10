@@ -85,7 +85,8 @@ const DeviceListItem = ({ device, expanded, onToggle }: DeviceListItemProps) => 
   const [activeTab, setActiveTab] = useState<DetailTab>('info');
 
   const laptop = isLaptop(device.model);
-  const nonCompliant = device.complianceState !== 'compliant';
+  const state = device.complianceState?.toLowerCase();
+  const nonCompliant = state === 'noncompliant' || state === 'error' || state === 'conflict';
   const staleSync = isSyncStale(device.lastSyncDateTime);
 
   // Look up linked asset by serial number (only when expanded)

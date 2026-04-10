@@ -25,6 +25,16 @@ const isSyncStale = (device: IntuneDevice): boolean => {
   }
 };
 
+const isCompliant = (device: IntuneDevice): boolean => {
+  const state = device.complianceState?.toLowerCase();
+  return state === 'compliant';
+};
+
+const isNonCompliant = (device: IntuneDevice): boolean => {
+  const state = device.complianceState?.toLowerCase();
+  return state === 'noncompliant' || state === 'error' || state === 'conflict';
+};
+
 const IntuneDeviceDashboardPage = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -50,8 +60,8 @@ const IntuneDeviceDashboardPage = () => {
   const stats = useMemo(() => {
     if (!devices) return { total: undefined, compliant: undefined, nonCompliant: undefined, syncStale: undefined };
     const total = devices.length;
-    const compliant = devices.filter((d) => d.complianceState === 'compliant').length;
-    const nonCompliant = total - compliant;
+    const compliant = devices.filter(isCompliant).length;
+    const nonCompliant = devices.filter(isNonCompliant).length;
     const syncStale = devices.filter(isSyncStale).length;
     return { total, compliant, nonCompliant, syncStale };
   }, [devices]);
@@ -77,7 +87,7 @@ const IntuneDeviceDashboardPage = () => {
     for (const filter of activeFilters) {
       switch (filter) {
         case 'nonCompliant':
-          result = result.filter((d) => d.complianceState !== 'compliant');
+          result = result.filter(isNonCompliant);
           break;
         case 'syncStale':
           result = result.filter(isSyncStale);
@@ -142,7 +152,7 @@ const IntuneDeviceDashboardPage = () => {
           certIssueCount={undefined}
           syncStaleCount={stats.syncStale}
           loading={isLoading}
-          certLoading={true}
+          certLoading={false}
         />
       </Box>
 
