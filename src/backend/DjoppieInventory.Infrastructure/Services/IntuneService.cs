@@ -83,7 +83,8 @@ public class IntuneService : IIntuneService
                         "id", "deviceName", "serialNumber", "manufacturer", "model",
                         "operatingSystem", "osVersion", "complianceState", "lastSyncDateTime",
                         "enrolledDateTime", "userPrincipalName", "managementAgent",
-                        "totalStorageSpaceInBytes", "freeStorageSpaceInBytes"
+                        "totalStorageSpaceInBytes", "freeStorageSpaceInBytes",
+                        "azureActiveDirectoryDeviceId"
                     };
                 });
 
@@ -1603,7 +1604,7 @@ public class IntuneService : IIntuneService
                             var nameContainsUser = nameLower.Contains("user");
                             var nameContainsDevice = nameLower.Contains("device") || nameLower.Contains("machine");
                             certStorePath = nameContainsDevice ? "Machine" :
-                                           (nameContainsUser || hasUserContext) ? "User" : "Machine";
+                                           (nameContainsUser || hasUserContext) ? "User" : null;
                         }
 
                         var profileStatus = new ConfigurationProfileStatusDto
@@ -1627,7 +1628,7 @@ public class IntuneService : IIntuneService
                                 ? sc2.EnumerateArray().Count(s => s.TryGetProperty("state", out var sState) && sState.GetString() == "conflict")
                                 : null,
                             CertificateStorePath = certStorePath,
-                            CertificateExpiryDate = isCertRelated ? device.ManagementCertificateExpirationDate?.DateTime : null,
+                            CertificateExpiryDate = null, // Per-profile cert expiry not available from this Graph endpoint
                             Thumbprint = null
                         };
 
@@ -1660,13 +1661,13 @@ public class IntuneService : IIntuneService
                 ConfigurationProfiles = profiles,
                 HasCertificateProfiles = profiles.Any(p => p.IsCertificateRelated),
                 HasCertificateIssues = profiles.Any(p => p.IsCertificateRelated &&
-                    (p.Status == "failed" || p.Status == "error" || p.Status == "conflict" || p.Status == "notApplicable")),
+                    (p.Status == "failed" || p.Status == "error" || p.Status == "conflict")),
                 Summary = new ConfigurationStatusSummaryDto
                 {
                     Total = profiles.Count,
                     Succeeded = profiles.Count(p => p.Status == "succeeded" || p.Status == "compliant"),
                     Failed = profiles.Count(p => p.Status == "failed"),
-                    Pending = profiles.Count(p => p.Status == "pending" || p.Status == "notApplicable"),
+                    Pending = profiles.Count(p => p.Status == "pending"),
                     Error = profiles.Count(p => p.Status == "error"),
                     NotApplicable = profiles.Count(p => p.Status == "notApplicable"),
                     Conflict = profiles.Count(p => p.Status == "conflict")
