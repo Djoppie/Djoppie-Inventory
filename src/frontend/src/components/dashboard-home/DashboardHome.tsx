@@ -1,15 +1,14 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, useTheme, Fade, alpha, CircularProgress } from '@mui/material';
+import { Box, Typography, useTheme, Fade, CircularProgress } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useAssets } from '../../hooks/useAssets';
 import { useWorkplaceStatistics, useWorkplaceEquipmentStatistics } from '../../hooks/usePhysicalWorkplaces';
 import { useRolloutSessions } from '../../hooks/rollout';
 import { assetEventsApi } from '../../api/assetEvents.api';
 import { getExpiringLeaseContracts } from '../../api/leaseContracts.api';
-import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
 import { ASSET_COLOR } from '../../constants/filterColors';
-import { buildRoute, ROUTES } from '../../constants/routes';
+import { buildRoute } from '../../constants/routes';
 
 import KPIHeroSection from './KPIHeroSection';
 import AssetDistributionChart from './AssetDistributionChart';
@@ -23,8 +22,6 @@ const DashboardHome = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
-  const { bgBase } = getNeumorphColors(isDark);
-
   // Data queries
   const { data: assets = [], isLoading: assetsLoading } = useAssets();
   const { data: workplaceStats } = useWorkplaceStatistics();
