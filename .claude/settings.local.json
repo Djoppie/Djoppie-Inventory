@@ -23,7 +23,9 @@
       "Bash(find:*)",
       "Bash(node -e:*)",
       "Skill(commit-commands:commit-push-pr)",
-      "Bash(sqlcmd -S sql-djoppie-inventory-dev-k5xdqp.database.windows.net -d sqldb-djoppie-inventory-dev -U sqladmin -P Dj0ppenbeek026 -i query-tables.sql)"
+      "Bash(sqlcmd -S sql-djoppie-inventory-dev-k5xdqp.database.windows.net -d sqldb-djoppie-inventory-dev -U sqladmin -P Dj0ppenbeek026 -i query-tables.sql)",
+      "Bash(gh pr edit 18 --title 'Intune Device Dashboard + Dashboard Redesign + Admin Refactor' --body ':*)",
+      "Bash(gh pr:*)"
     ]
   }
 }
