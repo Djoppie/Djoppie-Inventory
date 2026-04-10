@@ -37,6 +37,7 @@ public class IntuneService : IIntuneService
                 .GetAsync(requestConfiguration =>
                 {
                     requestConfiguration.QueryParameters.Top = 999;
+                    requestConfiguration.QueryParameters.Filter = "operatingSystem eq 'Windows'";
                     requestConfiguration.QueryParameters.Select = new[]
                     {
                         "id", "deviceName", "serialNumber", "manufacturer", "model",

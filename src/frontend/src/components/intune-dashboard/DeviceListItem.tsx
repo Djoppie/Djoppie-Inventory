@@ -8,15 +8,21 @@ import {
   Tab,
   Tooltip,
   Collapse,
+  IconButton,
 } from '@mui/material';
 import {
   Laptop as LaptopIcon,
   DesktopWindows as DesktopIcon,
   ExpandMore as ExpandMoreIcon,
+  OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { getNeumorphColors, getNeumorphInset } from '../../utils/neumorphicStyles';
 import { DANGER_COLOR, ASSET_COLOR } from '../../constants/filterColors';
 import { useDeviceHealth, useDeviceGroups, useDeviceConfigStatus, useDeviceEvents } from '../../hooks/useIntuneDeviceDashboard';
+import { getAssetBySerialNumber } from '../../api/assets.api';
+import { buildRoute } from '../../constants/routes';
 import type { IntuneDevice } from '../../types/graph.types';
 import DeviceInfoTab from './DeviceInfoTab';
 import DeviceGroupsTab from './DeviceGroupsTab';
@@ -75,12 +81,22 @@ const DeviceListItem = ({ device, expanded, onToggle }: DeviceListItemProps) => 
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { bgSurface } = getNeumorphColors(isDark);
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<DetailTab>('info');
 
   const laptop = isLaptop(device.model);
   const nonCompliant = device.complianceState !== 'compliant';
   const staleSync = isSyncStale(device.lastSyncDateTime);
+
+  // Look up linked asset by serial number (only when expanded)
+  const assetQuery = useQuery({
+    queryKey: ['asset-by-serial', device.serialNumber],
+    queryFn: () => getAssetBySerialNumber(device.serialNumber!),
+    enabled: expanded && !!device.serialNumber,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
   // Lazy-fetch hooks: only fetch when expanded and on the right tab
   const healthQuery = useDeviceHealth(device.serialNumber, expanded && activeTab === 'info');
@@ -216,6 +232,32 @@ const DeviceListItem = ({ device, expanded, onToggle }: DeviceListItemProps) => 
             bgcolor: isDark ? '#1a1f2e' : '#f0f2f5',
           }}
         >
+          {/* Asset deeplink */}
+          {assetQuery.data && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                mb: 1,
+                cursor: 'pointer',
+                '&:hover': { opacity: 0.8 },
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(buildRoute.assetDetail(assetQuery.data.id));
+              }}
+            >
+              <OpenInNewIcon sx={{ fontSize: 14, color: ASSET_COLOR }} />
+              <Typography
+                variant="caption"
+                sx={{ color: ASSET_COLOR, fontWeight: 600, fontSize: '0.72rem' }}
+              >
+                Open in Inventory — {assetQuery.data.assetCode}
+              </Typography>
+            </Box>
+          )}
+
           <Tabs
             value={activeTab}
             onChange={(_e, v: DetailTab) => setActiveTab(v)}
