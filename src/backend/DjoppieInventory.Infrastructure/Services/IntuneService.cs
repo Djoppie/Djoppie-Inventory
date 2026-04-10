@@ -1785,7 +1785,23 @@ public class IntuneService : IIntuneService
 
         try
         {
-            var memberOf = await _graphClient.Devices[azureAdDeviceId].MemberOf.GetAsync();
+            // azureAdDeviceId from Intune is the device identifier, not the Azure AD object ID.
+            // We need to look up the Azure AD device object by its deviceId property first.
+            var devices = await _graphClient.Devices.GetAsync(config =>
+            {
+                config.QueryParameters.Filter = $"deviceId eq '{azureAdDeviceId}'";
+                config.QueryParameters.Select = new[] { "id" };
+                config.QueryParameters.Top = 1;
+            });
+
+            var azureAdObjectId = devices?.Value?.FirstOrDefault()?.Id;
+            if (string.IsNullOrWhiteSpace(azureAdObjectId))
+            {
+                _logger.LogDebug("No Azure AD device object found for deviceId: {AzureAdDeviceId}", azureAdDeviceId);
+                return new List<GroupInfoDto>();
+            }
+
+            var memberOf = await _graphClient.Devices[azureAdObjectId].MemberOf.GetAsync();
             return ExtractGroups(memberOf?.Value);
         }
         catch (ServiceException ex) when (ex.ResponseStatusCode == (int)System.Net.HttpStatusCode.NotFound)
