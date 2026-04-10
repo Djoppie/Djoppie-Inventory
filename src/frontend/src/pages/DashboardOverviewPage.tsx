@@ -4,9 +4,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, useTheme, Tabs, Tab, alpha } from '@mui/material';
+import { Box, useTheme, Tabs, Tab, alpha } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
-import { getNeumorphColors, getNeumorph } from '../utils/neumorphicStyles';
+import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../utils/neumorphicStyles';
 import {
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
@@ -14,6 +14,7 @@ import {
   SwapHoriz,
   MonitorHeart as MonitorHeartIcon,
 } from '@mui/icons-material';
+import { ASSET_COLOR } from '../constants/filterColors';
 import {
   OverviewTab,
   InventoryTab,
@@ -55,65 +56,45 @@ const DashboardOverviewPage = () => {
         overflow: 'hidden',
       }}
     >
-      {/* Page Header */}
+      {/* Navigation Bar */}
       <Box
         sx={{
-          px: { xs: 1.5, sm: 2 },
-          pt: { xs: 1.5, sm: 2 },
+          px: { xs: 1, sm: 1.5 },
+          pt: { xs: 1, sm: 1.25 },
           pb: 0,
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 800,
-            color: isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)',
-            mb: 0.35,
-            letterSpacing: '-0.02em',
-            fontSize: { xs: '1.35rem', sm: '1.6rem', md: '1.85rem' },
-          }}
-        >
-          Business Dashboard
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-            mb: 1.25,
-            fontSize: '0.8rem',
-          }}
-        >
-          Comprehensive asset management and rollout operations
-        </Typography>
-
-        {/* Tabs Navigation */}
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            minHeight: 36,
-            mb: 1.5,
+            minHeight: 42,
             '& .MuiTabs-indicator': {
-              backgroundColor: '#FF7700',
-              height: 2.5,
-              borderRadius: '2.5px 2.5px 0 0',
+              display: 'none',
+            },
+            '& .MuiTabs-flexContainer': {
+              gap: 0.5,
             },
             '& .MuiTab-root': {
-              minHeight: 36,
+              minHeight: 38,
               textTransform: 'none',
               fontWeight: 600,
-              fontSize: { xs: '0.7rem', sm: '0.8rem' },
-              color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
+              fontSize: { xs: '0.75rem', sm: '0.82rem' },
+              color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
               px: { xs: 1.25, sm: 1.75 },
               py: 0.75,
+              borderRadius: 2,
               transition: 'all 0.2s ease',
               '&.Mui-selected': {
-                color: '#FF7700',
-                bgcolor: alpha('#FF7700', 0.05),
+                color: isDark ? '#fff' : ASSET_COLOR,
+                bgcolor: isDark ? alpha(ASSET_COLOR, 0.15) : alpha(ASSET_COLOR, 0.08),
+                boxShadow: getNeumorphInset(isDark),
               },
-              '&:hover': {
-                color: '#FF7700',
-                bgcolor: alpha('#FF7700', 0.03),
+              '&:hover:not(.Mui-selected)': {
+                color: isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.75)',
+                bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
               },
             },
           }}
