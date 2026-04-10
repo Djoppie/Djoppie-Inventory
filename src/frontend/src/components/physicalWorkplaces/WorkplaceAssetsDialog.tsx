@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Dialog,
   Box,
@@ -19,6 +19,7 @@ import {
   Autocomplete,
   useMediaQuery,
   useTheme,
+  Button,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
@@ -27,15 +28,18 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import LinkIcon from '@mui/icons-material/Link';
+import SaveIcon from '@mui/icons-material/Save';
 import { useQuery } from '@tanstack/react-query';
 import {
   usePhysicalWorkplaceAssets,
   useAssignAsset,
   useUnassignAsset,
+  useUpdateEquipmentSlots,
 } from '../../hooks/usePhysicalWorkplaces';
-import { PhysicalWorkplace, WorkplaceFixedAsset } from '../../types/physicalWorkplace.types';
+import { PhysicalWorkplace, WorkplaceFixedAsset, UpdateEquipmentSlotsDto } from '../../types/physicalWorkplace.types';
 import { getAssets } from '../../api/assets.api';
 import { Asset } from '../../types/asset.types';
+import EquipmentSlotsSection from './EquipmentSlotsSection';
 
 interface WorkplaceAssetsDialogProps {
   open: boolean;
@@ -59,6 +63,8 @@ const WorkplaceAssetsDialog = ({
 
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [equipmentChanges, setEquipmentChanges] = useState<UpdateEquipmentSlotsDto | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Neomorph styling constants
   const neomorphBoxShadow = isDark
@@ -113,6 +119,29 @@ const WorkplaceAssetsDialog = ({
 
   const assignMutation = useAssignAsset();
   const unassignMutation = useUnassignAsset();
+  const updateEquipmentMutation = useUpdateEquipmentSlots();
+
+  // Handle equipment slot changes from EquipmentSlotsSection
+  const handleEquipmentChange = useCallback((data: UpdateEquipmentSlotsDto) => {
+    setEquipmentChanges(data);
+    setHasUnsavedChanges(true);
+  }, []);
+
+  // Save equipment slot changes
+  const handleSaveEquipment = async () => {
+    if (!workplace || !equipmentChanges) return;
+
+    try {
+      await updateEquipmentMutation.mutateAsync({
+        id: workplace.id,
+        data: equipmentChanges,
+      });
+      setHasUnsavedChanges(false);
+      onSuccess?.(t('physicalWorkplaces.equipmentUpdated'));
+    } catch {
+      onError?.(t('physicalWorkplaces.equipmentUpdateError'));
+    }
+  };
 
   const handleAssignAsset = async () => {
     if (!workplace || !selectedAsset) return;
@@ -147,6 +176,8 @@ const WorkplaceAssetsDialog = ({
   const handleClose = () => {
     setSelectedAsset(null);
     setSearchQuery('');
+    setEquipmentChanges(null);
+    setHasUnsavedChanges(false);
     onClose();
   };
 
@@ -282,7 +313,14 @@ const WorkplaceAssetsDialog = ({
       </Box>
 
       {/* Content */}
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, maxHeight: '60vh', overflowY: 'auto' }}>
+        {/* Equipment Slots Section */}
+        <EquipmentSlotsSection
+          workplace={workplace}
+          onEquipmentChange={handleEquipmentChange}
+          isLoading={updateEquipmentMutation.isPending}
+        />
+
         {/* Assigned Assets Section */}
         <Box
           sx={{
@@ -509,20 +547,43 @@ const WorkplaceAssetsDialog = ({
           p: 3,
           borderTop: `1px solid ${isDark ? '#2a3038' : '#d0d7de'}`,
           display: 'flex',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 2,
         }}
       >
-        <Box
-          component="button"
-          onClick={handleClose}
-          sx={{
-            ...neomorphButtonSx,
-            px: 4,
-            py: 1.5,
-            cursor: 'pointer',
-          }}
-        >
-          {t('common.close')}
+        {hasUnsavedChanges && (
+          <Typography variant="body2" color="warning.main" sx={{ fontWeight: 500 }}>
+            {t('common.unsavedChanges')}
+          </Typography>
+        )}
+        <Box sx={{ display: 'flex', gap: 2, ml: 'auto' }}>
+          {hasUnsavedChanges && (
+            <Button
+              variant="contained"
+              startIcon={updateEquipmentMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+              onClick={handleSaveEquipment}
+              disabled={updateEquipmentMutation.isPending}
+              sx={{
+                bgcolor: tealColor,
+                '&:hover': { bgcolor: '#00796b' },
+              }}
+            >
+              {t('common.save')}
+            </Button>
+          )}
+          <Box
+            component="button"
+            onClick={handleClose}
+            sx={{
+              ...neomorphButtonSx,
+              px: 4,
+              py: 1.5,
+              cursor: 'pointer',
+            }}
+          >
+            {t('common.close')}
+          </Box>
         </Box>
       </Box>
     </Dialog>

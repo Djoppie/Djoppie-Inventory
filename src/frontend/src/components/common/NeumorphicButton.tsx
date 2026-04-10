@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { Button, ButtonProps, CircularProgress, useTheme, alpha } from '@mui/material';
+import { getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 
 type NeumorphicVariant = 'primary' | 'secondary' | 'success' | 'danger';
 
@@ -69,21 +70,15 @@ const NeumorphicButton = React.memo(function NeumorphicButton({
         ...(variant === 'contained' && {
           bgcolor: colors.main,
           color: colors.text,
-          boxShadow: isDark
-            ? `4px 4px 8px #161a1d, -4px -4px 8px #262c33, inset 0 0 0 transparent`
-            : `4px 4px 8px #c5cad0, -4px -4px 8px #ffffff, inset 0 0 0 transparent`,
+          boxShadow: getNeumorph(isDark, 'soft'),
           '&:hover:not(:disabled)': {
             bgcolor: colors.hover,
             transform: 'translateY(-1px)',
-            boxShadow: isDark
-              ? `6px 6px 12px #161a1d, -6px -6px 12px #262c33`
-              : `6px 6px 12px #c5cad0, -6px -6px 12px #ffffff`,
+            boxShadow: getNeumorph(isDark, 'medium'),
           },
           '&:active:not(:disabled)': {
             transform: 'translateY(1px)',
-            boxShadow: isDark
-              ? `inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33`
-              : `inset 3px 3px 6px ${alpha(colors.main, 0.3)}, inset -3px -3px 6px ${alpha('#fff', 0.5)}`,
+            boxShadow: getNeumorphInset(isDark),
           },
         }),
 
@@ -92,22 +87,16 @@ const NeumorphicButton = React.memo(function NeumorphicButton({
           bgcolor: isDark ? '#1e2328' : '#e8eef3',
           color: colors.main,
           border: `2px solid ${alpha(colors.main, 0.3)}`,
-          boxShadow: isDark
-            ? '4px 4px 8px #161a1d, -4px -4px 8px #262c33'
-            : '4px 4px 8px #c5cad0, -4px -4px 8px #ffffff',
+          boxShadow: getNeumorph(isDark, 'soft'),
           '&:hover:not(:disabled)': {
             bgcolor: isDark ? '#1e2328' : '#e8eef3',
             borderColor: colors.main,
             transform: 'translateY(-1px)',
-            boxShadow: isDark
-              ? `6px 6px 12px #161a1d, -6px -6px 12px #262c33, 0 0 10px ${alpha(colors.main, 0.2)}`
-              : `6px 6px 12px #c5cad0, -6px -6px 12px #ffffff, 0 0 10px ${alpha(colors.main, 0.15)}`,
+            boxShadow: `${getNeumorph(isDark, 'medium')}, 0 0 10px ${alpha(colors.main, isDark ? 0.2 : 0.15)}`,
           },
           '&:active:not(:disabled)': {
             transform: 'translateY(1px)',
-            boxShadow: isDark
-              ? 'inset 3px 3px 6px #161a1d, inset -3px -3px 6px #262c33'
-              : 'inset 3px 3px 6px #c5cad0, inset -3px -3px 6px #ffffff',
+            boxShadow: getNeumorphInset(isDark),
           },
         }),
 

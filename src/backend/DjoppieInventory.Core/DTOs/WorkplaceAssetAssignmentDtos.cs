@@ -389,3 +389,14 @@ public class AssignmentByAssetTypeDto
     /// </summary>
     public int Pending { get; set; }
 }
+
+/// <summary>
+/// Request to update the serial number for an assignment
+/// </summary>
+public class UpdateSerialNumberDto
+{
+    /// <summary>
+    /// The serial number to set
+    /// </summary>
+    public string SerialNumber { get; set; } = string.Empty;
+}

@@ -209,6 +209,71 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.ToTable("AssetEvents");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AssetType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("AssignedAssetId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EmployeeName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RequestType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("RequestedDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedAssetId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("RequestType");
+
+                    b.HasIndex("RequestedDate");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("AssetRequests");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
                 {
                     b.Property<int>("Id")
@@ -1021,7 +1086,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
 
                     b.HasIndex("Code");
 
-                    b.HasIndex("CurrentOccupantEntraId");
+                    b.HasIndex("CurrentOccupantEntraId")
+                        .IsUnique();
 
                     b.HasIndex("DockingStationAssetId");
 
@@ -2017,6 +2083,9 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Property<bool>("QRCodeRequired")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool?>("QrCodeApplied")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RolloutWorkplaceId")
                         .HasColumnType("INTEGER");
 
@@ -2116,6 +2185,16 @@ namespace DjoppieInventory.Infrastructure.Migrations
                     b.Navigation("Asset");
                 });
 
+            modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetRequest", b =>
+                {
+                    b.HasOne("DjoppieInventory.Core.Entities.Asset", "AssignedAsset")
+                        .WithMany()
+                        .HasForeignKey("AssignedAssetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AssignedAsset");
+                });
+
             modelBuilder.Entity("DjoppieInventory.Core.Entities.AssetTemplate", b =>
                 {
                     b.HasOne("DjoppieInventory.Core.Entities.AssetType", "AssetType")
@@ -2171,6 +2250,11 @@ namespace DjoppieInventory.Infrastructure.Migrations
                         .HasForeignKey("BuildingId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("DjoppieInventory.Core.Entities.Employee", null)
+                        .WithOne("CurrentWorkplace")
+                        .HasForeignKey("DjoppieInventory.Core.Entities.PhysicalWorkplace", "CurrentOccupantEntraId")
+                        .HasPrincipalKey("DjoppieInventory.Core.Entities.Employee", "EntraId");
 
                     b.HasOne("DjoppieInventory.Core.Entities.Asset", "DockingStationAsset")
                         .WithMany()
@@ -2414,6 +2498,8 @@ namespace DjoppieInventory.Infrastructure.Migrations
             modelBuilder.Entity("DjoppieInventory.Core.Entities.Employee", b =>
                 {
                     b.Navigation("Assets");
+
+                    b.Navigation("CurrentWorkplace");
                 });
 
             modelBuilder.Entity("DjoppieInventory.Core.Entities.PhysicalWorkplace", b =>

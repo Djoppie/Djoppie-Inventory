@@ -6,8 +6,11 @@ import {
   Toolbar,
   Typography,
   IconButton,
+  Tooltip,
+  alpha,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import Navigation from './Navigation';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
@@ -61,11 +64,15 @@ const Layout = ({ children }: LayoutProps) => {
       >
         <AppBar
           position="sticky"
-          elevation={0}
+          elevation={4}
           sx={{
-            zIndex: 1100,
+            zIndex: 1200,
             backdropFilter: 'blur(12px) saturate(180%)',
             background: 'transparent',
+            mx: { xs: 1, sm: 1.5, md: 2 },
+            my: { xs: 0.75, sm: 1, md: 1.25 },
+            borderRadius: 2,
+            overflow: 'visible',
             '&::after': {
               content: '""',
               position: 'absolute',
@@ -100,6 +107,7 @@ const Layout = ({ children }: LayoutProps) => {
               bgcolor: bgSurface,
               position: 'relative',
               overflow: 'visible',
+              borderRadius: 2,
               borderBottom: '1px solid',
               borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
             }}
@@ -202,6 +210,28 @@ const Layout = ({ children }: LayoutProps) => {
 
             {/* Spacer */}
             <Box sx={{ flexGrow: 1 }} />
+
+            {/* QR Code Scanner Button */}
+            <Tooltip title="QR Code Scanner" placement="bottom">
+              <IconButton
+                onClick={() => navigate(ROUTES.SCAN)}
+                sx={{
+                  bgcolor: alpha('#FF7700', 0.1),
+                  border: '2px solid #FF7700',
+                  width: 40,
+                  height: 40,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    bgcolor: '#FF7700',
+                    color: 'white',
+                    transform: 'scale(1.05)',
+                    boxShadow: `0 4px 12px ${alpha('#FF7700', 0.4)}`,
+                  },
+                }}
+              >
+                <QrCodeScannerIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
 
             {/* Language Switcher */}
             <LanguageSwitcher />

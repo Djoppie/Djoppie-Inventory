@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace DjoppieInventory.API.Controllers.Rollout;
 
@@ -93,6 +94,26 @@ public class RolloutWorkplacesController : ControllerBase
         {
             var assignments = await _assignmentService.GetByWorkplaceIdAsync(id, cancellationToken);
             dto.AssetAssignments = assignments.ToList();
+
+            // Convert to AssetPlans for frontend compatibility
+            dto.AssetPlans = await _syncService.ConvertToAssetPlansAsync(id, cancellationToken);
+
+            // Fallback to legacy JSON if no relational assignments exist
+            if (dto.AssetPlans.Count == 0 && !string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+                    if (legacyPlans != null && legacyPlans.Count > 0)
+                    {
+                        dto.AssetPlans = legacyPlans;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", id);
+                }
+            }
         }
 
         return Ok(dto);
@@ -203,6 +224,11 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.PhysicalWorkplaceId = dto.PhysicalWorkplaceId;
         workplace.IsLaptopSetup = dto.IsLaptopSetup;
         workplace.Notes = dto.Notes;
+        workplace.Status = Enum.Parse<RolloutWorkplaceStatus>(dto.Status);
+
+        // Update AssetPlansJson from DTO
+        workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
+
         workplace.UpdatedAt = DateTime.UtcNow;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
@@ -388,12 +414,24 @@ public class RolloutWorkplacesController : ControllerBase
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
 
-        // Update day completed count
-        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, false, cancellationToken);
+        // Update day completed count and check if day is fully completed
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, true, cancellationToken);
         if (day != null)
         {
             day.CompletedWorkplaces++;
             day.UpdatedAt = DateTime.UtcNow;
+
+            // Auto-complete day if all workplaces are done (Completed or Skipped)
+            var allWorkplacesDone = day.Workplaces != null && day.Workplaces.All(w =>
+                w.Status == RolloutWorkplaceStatus.Completed ||
+                w.Status == RolloutWorkplaceStatus.Skipped);
+
+            if (allWorkplacesDone && day.Status != RolloutDayStatus.Completed)
+            {
+                day.Status = RolloutDayStatus.Completed;
+                _logger.LogInformation("Auto-completed rollout day {DayId} - all workplaces are done", day.Id);
+            }
+
             await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
         }
 
@@ -432,6 +470,24 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.UpdatedAt = DateTime.UtcNow;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        // Check if day is fully completed after skipping this workplace
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, true, cancellationToken);
+        if (day != null)
+        {
+            // Auto-complete day if all workplaces are done (Completed or Skipped)
+            var allWorkplacesDone = day.Workplaces != null && day.Workplaces.All(w =>
+                w.Status == RolloutWorkplaceStatus.Completed ||
+                w.Status == RolloutWorkplaceStatus.Skipped);
+
+            if (allWorkplacesDone && day.Status != RolloutDayStatus.Completed)
+            {
+                day.Status = RolloutDayStatus.Completed;
+                day.UpdatedAt = DateTime.UtcNow;
+                await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
+                _logger.LogInformation("Auto-completed rollout day {DayId} - all workplaces are done", day.Id);
+            }
+        }
 
         _logger.LogInformation("Skipped workplace {WorkplaceId}: {Reason}", id, dto.Reason);
 
@@ -586,6 +642,149 @@ public class RolloutWorkplacesController : ControllerBase
     {
         var movements = await _movementService.GetMovementsByWorkplaceAsync(id, cancellationToken);
         return Ok(movements);
+    }
+
+    /// <summary>
+    /// Updates the serial number for an assignment.
+    /// Used to fill in missing serial numbers after rollout completion.
+    /// </summary>
+    /// <param name="assignmentId">Assignment ID</param>
+    /// <param name="dto">Serial number update data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPatch("assignments/{assignmentId}/serial")]
+    [ProducesResponseType(typeof(WorkplaceAssetAssignmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WorkplaceAssetAssignmentDto>> UpdateAssignmentSerial(
+        int assignmentId,
+        [FromBody] UpdateSerialNumberDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dto.SerialNumber))
+        {
+            return BadRequest(new { message = "Serial number is required" });
+        }
+
+        var assignment = await _context.WorkplaceAssetAssignments
+            .Include(a => a.NewAsset)
+            .Include(a => a.AssetType)
+            .FirstOrDefaultAsync(a => a.Id == assignmentId, cancellationToken);
+
+        if (assignment == null)
+        {
+            return NotFound(new { message = $"Assignment with ID {assignmentId} not found" });
+        }
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        // Update the SerialNumberCaptured on the assignment
+        assignment.SerialNumberCaptured = dto.SerialNumber;
+        assignment.UpdatedAt = DateTime.UtcNow;
+
+        // If there's a linked asset, also update its serial number
+        if (assignment.NewAsset != null)
+        {
+            assignment.NewAsset.SerialNumber = dto.SerialNumber;
+            assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated serial number for assignment {AssignmentId} to {SerialNumber} by {PerformedBy}",
+            assignmentId, dto.SerialNumber, performedBy);
+
+        // Return updated assignment
+        var updatedAssignment = await _assignmentService.GetByIdAsync(assignmentId, cancellationToken);
+        return Ok(updatedAssignment);
+    }
+
+    /// <summary>
+    /// Updates assignment details by item index (for backward compatibility with legacy frontend code).
+    /// This endpoint translates item index to assignment position and updates the assignment.
+    /// </summary>
+    /// <param name="workplaceId">Workplace ID</param>
+    /// <param name="itemIndex">Zero-based index of the item/assignment</param>
+    /// <param name="dto">Update details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{workplaceId}/items/{itemIndex}/details")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemDetails(
+        int workplaceId,
+        int itemIndex,
+        [FromBody] UpdateItemDetailsDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Get workplace
+        var workplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        // Get assignments ordered by position
+        var assignments = await _context.WorkplaceAssetAssignments
+            .Include(a => a.AssetType)
+            .Include(a => a.NewAsset)
+            .Include(a => a.OldAsset)
+            .Where(a => a.RolloutWorkplaceId == workplaceId)
+            .OrderBy(a => a.Position)
+            .ToListAsync(cancellationToken);
+
+        // Check if index is valid
+        if (itemIndex < 0 || itemIndex >= assignments.Count)
+        {
+            return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+        }
+
+        var assignment = assignments[itemIndex];
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+        var performedByEmail = User.FindFirstValue(ClaimTypes.Email);
+
+        // Update assignment details
+        if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+        {
+            assignment.SerialNumberCaptured = dto.SerialNumber;
+            assignment.SerialNumberRequired = true;
+
+            // Update linked asset if it exists
+            if (assignment.NewAsset != null)
+            {
+                assignment.NewAsset.SerialNumber = dto.SerialNumber;
+                assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Handle installation status
+        if (dto.MarkAsInstalled == true)
+        {
+            assignment.Status = AssetAssignmentStatus.Installed;
+            assignment.InstalledAt = DateTime.UtcNow;
+            assignment.InstalledBy = performedBy;
+            assignment.InstalledByEmail = performedByEmail;
+        }
+
+        assignment.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated item {ItemIndex} details for workplace {WorkplaceId} by {PerformedBy}",
+            itemIndex, workplaceId, performedBy);
+
+        // Return updated workplace
+        var updatedWorkplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        return Ok(MapToDto(updatedWorkplace!));
     }
 
     #region Private Mapping Methods

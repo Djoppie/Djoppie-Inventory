@@ -15,13 +15,15 @@ import {
   Switch,
   Divider,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
-import AdminDataTable, { Column } from './AdminDataTable';
+import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import { Building, CreateBuildingDto, UpdateBuildingDto } from '../../types/admin.types';
 import { buildingsApi } from '../../api/admin.api';
 import Loading from '../common/Loading';
+import { BUILDING_COLOR } from '../../constants/filterColors';
 
 interface FormData {
   code: string;
@@ -38,6 +40,23 @@ const initialFormData: FormData = {
   sortOrder: '0',
   isActive: true,
 };
+
+const columns: GridColDef[] = [
+  {
+    field: 'code',
+    headerName: 'Code',
+    minWidth: 100,
+    flex: 0.5,
+    renderCell: (params: GridRenderCellParams) => (
+      <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
+        {params.value}
+      </Typography>
+    ),
+  },
+  { field: 'name', headerName: 'Name', minWidth: 150, flex: 1 },
+  { field: 'address', headerName: 'Address', minWidth: 200, flex: 1.5 },
+  { field: 'sortOrder', headerName: 'Sort Order', minWidth: 80, align: 'center', headerAlign: 'center' },
+];
 
 const BuildingsTab = () => {
   const queryClient = useQueryClient();
@@ -192,35 +211,17 @@ const BuildingsTab = () => {
     await deleteMutation.mutateAsync(deletingItem.id);
   };
 
-  const columns: Column<Building>[] = [
-    {
-      id: 'code',
-      label: 'Code',
-      minWidth: 100,
-      format: (item) => (
-        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
-          {item.code}
-        </Typography>
-      ),
-    },
-    { id: 'name', label: 'Name', minWidth: 150 },
-    { id: 'address', label: 'Address', minWidth: 200 },
-    { id: 'sortOrder', label: 'Sort Order', minWidth: 80, align: 'center' },
-  ];
-
   if (isLoading) return <Loading message="Loading buildings..." />;
 
   return (
     <Box>
-      <AdminDataTable
-        data={buildings}
+      <NeumorphicDataGrid<Building>
+        rows={buildings}
         columns={columns}
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
-        searchPlaceholder="Search buildings..."
-        emptyMessage="No buildings available. Click the + button to add one."
-        getItemId={(item) => item.id}
         showActiveStatus
+        accentColor={BUILDING_COLOR}
       />
 
       {/* Add Button */}

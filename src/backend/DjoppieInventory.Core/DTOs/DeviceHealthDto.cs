@@ -16,6 +16,11 @@ public class DeviceHealthDto
     public string DeviceName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Device serial number
+    /// </summary>
+    public string? SerialNumber { get; set; }
+
+    /// <summary>
     /// Device manufacturer (e.g., HP, Dell, Lenovo)
     /// </summary>
     public string? Manufacturer { get; set; }

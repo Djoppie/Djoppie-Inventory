@@ -167,6 +167,12 @@ public class DeploymentService : IDeploymentService
                 newLaptop.InstallationDate = timestamp;
                 newLaptop.UpdatedAt = timestamp;
 
+                // Link laptop to physical workplace if provided
+                if (request.PhysicalWorkplaceId.HasValue)
+                {
+                    newLaptop.PhysicalWorkplaceId = request.PhysicalWorkplaceId.Value;
+                }
+
                 // Create asset event for new laptop
                 var eventType = request.Mode == DeploymentMode.Onboarding
                     ? AssetEventType.DeviceOnboarded

@@ -14,11 +14,11 @@ import {
   Box,
   Paper,
   Typography,
-  Grid,
   Chip,
   Skeleton,
   Alert,
   Tooltip,
+  Grid
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PeopleIcon from '@mui/icons-material/People';

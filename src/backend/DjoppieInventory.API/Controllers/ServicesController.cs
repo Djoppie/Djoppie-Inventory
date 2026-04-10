@@ -1,8 +1,8 @@
-using System.Globalization;
 using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Core.Utilities;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -221,11 +221,11 @@ public class ServicesController : ControllerBase
             _logger.LogInformation("Starting service sync from Entra mail groups");
 
             var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
-            var existingCodes = existingServices.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
+            var existingCodes = existingServices.ToDictionary(s => TextUtilities.RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
 
             // Get all sectors for linking services
             var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-            var sectorsByCode = sectors.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
+            var sectorsByCode = sectors.ToDictionary(s => TextUtilities.RemoveDiacritics(s.Code).ToUpperInvariant(), s => s);
 
             // Get sector groups to find nested service groups
             var sectorGroups = await _graphUserService.GetSectorGroupsAsync();
@@ -246,7 +246,7 @@ public class ServicesController : ControllerBase
                 var rawSectorCode = sectorGroup.DisplayName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
                     ? sectorGroup.DisplayName.Substring("MG-SECTOR-".Length)
                     : sectorGroup.DisplayName;
-                var sectorCode = RemoveDiacritics(rawSectorCode).ToUpperInvariant();
+                var sectorCode = TextUtilities.RemoveDiacritics(rawSectorCode).ToUpperInvariant();
 
                 if (!sectorsByCode.TryGetValue(sectorCode, out var sector))
                 {
@@ -268,7 +268,7 @@ public class ServicesController : ControllerBase
                     var rawCode = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
                         ? groupName.Substring("MG-".Length)
                         : groupName;
-                    var code = RemoveDiacritics(rawCode).ToUpperInvariant();
+                    var code = TextUtilities.RemoveDiacritics(rawCode).ToUpperInvariant();
 
                     // Use clean name without MG- prefix
                     var name = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
@@ -330,7 +330,7 @@ public class ServicesController : ControllerBase
                 var rawCode = groupName.StartsWith("MG-", StringComparison.OrdinalIgnoreCase)
                     ? groupName.Substring("MG-".Length)
                     : groupName;
-                var code = RemoveDiacritics(rawCode).ToUpperInvariant();
+                var code = TextUtilities.RemoveDiacritics(rawCode).ToUpperInvariant();
 
                 // Skip if already processed in phase 1
                 if (processedCodes.Contains(code)) continue;
@@ -447,9 +447,9 @@ public class ServicesController : ControllerBase
         // Build lookup dictionaries - only store IDs, not tracked entities
         // Normalize codes to remove diacritics for consistent matching
         var sectors = await _sectorRepository.GetAllAsync(true, cancellationToken);
-        var sectorIdsByCode = sectors.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
+        var sectorIdsByCode = sectors.ToDictionary(s => TextUtilities.RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
         var existingServices = await _serviceRepository.GetAllAsync(true, null, cancellationToken);
-        var existingServicesByCode = existingServices.ToDictionary(s => RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
+        var existingServicesByCode = existingServices.ToDictionary(s => TextUtilities.RemoveDiacritics(s.Code).ToUpperInvariant(), s => s.Id);
 
         using var reader = new StreamReader(file.OpenReadStream());
         var headerLine = await reader.ReadLineAsync(cancellationToken);
@@ -457,7 +457,7 @@ public class ServicesController : ControllerBase
             return BadRequest("CSV file is empty");
 
         // Detect delimiter from header line (supports comma, semicolon, tab)
-        var delimiter = DetectDelimiter(headerLine);
+        var delimiter = CsvUtilities.DetectDelimiter(headerLine);
 
         int rowNumber = 1;
         int created = 0;
@@ -472,7 +472,7 @@ public class ServicesController : ControllerBase
 
             try
             {
-                var values = ParseCsvLine(line, delimiter);
+                var values = CsvUtilities.ParseCsvLine(line, delimiter);
                 if (values.Length < 2)
                 {
                     results.Add(new ServiceImportRowResult(rowNumber, null, null, false, "Onvoldoende kolommen"));
@@ -480,9 +480,9 @@ public class ServicesController : ControllerBase
                     continue;
                 }
 
-                var code = RemoveDiacritics(values[0].Trim()).ToUpperInvariant();
+                var code = TextUtilities.RemoveDiacritics(values[0].Trim()).ToUpperInvariant();
                 var name = values[1].Trim();
-                var sectorCode = values.Length > 2 ? RemoveDiacritics(values[2].Trim()).ToUpperInvariant() : "";
+                var sectorCode = values.Length > 2 ? TextUtilities.RemoveDiacritics(values[2].Trim()).ToUpperInvariant() : "";
                 var sortOrder = values.Length > 3 && int.TryParse(values[3].Trim(), out var so) ? so : 0;
 
                 if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
@@ -563,71 +563,6 @@ public class ServicesController : ControllerBase
         _logger.LogWarning("Deleted ALL {Count} services", count);
 
         return Ok(new { message = $"Deleted {count} services", count });
-    }
-
-    private static string[] ParseCsvLine(string line, char delimiter = ',')
-    {
-        var result = new List<string>();
-        var inQuotes = false;
-        var current = new StringBuilder();
-
-        foreach (var c in line)
-        {
-            if (c == '"')
-            {
-                inQuotes = !inQuotes;
-            }
-            else if (c == delimiter && !inQuotes)
-            {
-                result.Add(current.ToString());
-                current.Clear();
-            }
-            else
-            {
-                current.Append(c);
-            }
-        }
-        result.Add(current.ToString());
-
-        return result.ToArray();
-    }
-
-    private static char DetectDelimiter(string headerLine)
-    {
-        // Count occurrences of common delimiters
-        var commaCount = headerLine.Count(c => c == ',');
-        var semicolonCount = headerLine.Count(c => c == ';');
-        var tabCount = headerLine.Count(c => c == '\t');
-
-        // Return the most common one (prefer semicolon for European locales)
-        if (semicolonCount >= commaCount && semicolonCount >= tabCount)
-            return ';';
-        if (tabCount > commaCount)
-            return '\t';
-        return ',';
-    }
-
-    /// <summary>
-    /// Removes diacritics/accents from a string (e.g., "financiën" → "financien")
-    /// </summary>
-    private static string RemoveDiacritics(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return text;
-
-        var normalizedString = text.Normalize(NormalizationForm.FormD);
-        var stringBuilder = new StringBuilder(normalizedString.Length);
-
-        foreach (var c in normalizedString)
-        {
-            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-            {
-                stringBuilder.Append(c);
-            }
-        }
-
-        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 }
 

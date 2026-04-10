@@ -39,7 +39,7 @@ import type {
  * Get all rollout sessions with optional status filter
  */
 export const getRolloutSessions = async (params?: RolloutSessionsQueryParams): Promise<RolloutSession[]> => {
-  const response = await apiClient.get<RolloutSession[]>('/rollouts', { params });
+  const response = await apiClient.get<RolloutSession[]>('/rollout/sessions', { params });
   return response.data;
 };
 
@@ -50,7 +50,7 @@ export const getRolloutSession = async (
   id: number,
   params?: RolloutSessionQueryParams
 ): Promise<RolloutSession> => {
-  const response = await apiClient.get<RolloutSession>(`/rollouts/${id}`, { params });
+  const response = await apiClient.get<RolloutSession>(`/rollout/sessions/${id}`, { params });
   return response.data;
 };
 
@@ -58,7 +58,7 @@ export const getRolloutSession = async (
  * Create a new rollout session
  */
 export const createRolloutSession = async (data: CreateRolloutSession): Promise<RolloutSession> => {
-  const response = await apiClient.post<RolloutSession>('/rollouts', data);
+  const response = await apiClient.post<RolloutSession>('/rollout/sessions', data);
   return response.data;
 };
 
@@ -66,7 +66,7 @@ export const createRolloutSession = async (data: CreateRolloutSession): Promise<
  * Update an existing rollout session
  */
 export const updateRolloutSession = async (id: number, data: UpdateRolloutSession): Promise<RolloutSession> => {
-  const response = await apiClient.put<RolloutSession>(`/rollouts/${id}`, data);
+  const response = await apiClient.put<RolloutSession>(`/rollout/sessions/${id}`, data);
   return response.data;
 };
 
@@ -74,7 +74,7 @@ export const updateRolloutSession = async (id: number, data: UpdateRolloutSessio
  * Delete a rollout session (cascade deletes days and workplaces)
  */
 export const deleteRolloutSession = async (id: number): Promise<void> => {
-  await apiClient.delete(`/rollouts/${id}`);
+  await apiClient.delete(`/rollout/sessions/${id}`);
 };
 
 // ===== DAY API CALLS =====
@@ -86,7 +86,7 @@ export const getRolloutDays = async (
   sessionId: number,
   params?: RolloutDaysQueryParams
 ): Promise<RolloutDay[]> => {
-  const response = await apiClient.get<RolloutDay[]>(`/rollouts/${sessionId}/days`, { params });
+  const response = await apiClient.get<RolloutDay[]>(`/rollout/sessions/${sessionId}/days`, { params });
   return response.data;
 };
 
@@ -109,7 +109,7 @@ export const getRolloutDay = async (
   dayId: number,
   params?: RolloutDaysQueryParams
 ): Promise<RolloutDay> => {
-  const response = await apiClient.get<RolloutDay>(`/rollouts/days/${dayId}`, { params });
+  const response = await apiClient.get<RolloutDay>(`/rollout/days/${dayId}`, { params });
   return response.data;
 };
 
@@ -117,7 +117,7 @@ export const getRolloutDay = async (
  * Create a new rollout day
  */
 export const createRolloutDay = async (sessionId: number, data: CreateRolloutDay): Promise<RolloutDay> => {
-  const response = await apiClient.post<RolloutDay>(`/rollouts/${sessionId}/days`, data);
+  const response = await apiClient.post<RolloutDay>(`/rollout/sessions/${sessionId}/days`, data);
   return response.data;
 };
 
@@ -125,7 +125,7 @@ export const createRolloutDay = async (sessionId: number, data: CreateRolloutDay
  * Update an existing rollout day
  */
 export const updateRolloutDay = async (dayId: number, data: UpdateRolloutDay): Promise<RolloutDay> => {
-  const response = await apiClient.put<RolloutDay>(`/rollouts/days/${dayId}`, data);
+  const response = await apiClient.put<RolloutDay>(`/rollout/days/${dayId}`, data);
   return response.data;
 };
 
@@ -133,7 +133,7 @@ export const updateRolloutDay = async (dayId: number, data: UpdateRolloutDay): P
  * Update the status of a rollout day (Planning → Ready → Completed)
  */
 export const updateRolloutDayStatus = async (dayId: number, status: string): Promise<RolloutDay> => {
-  const response = await apiClient.patch<RolloutDay>(`/rollouts/days/${dayId}/status`, { status });
+  const response = await apiClient.patch<RolloutDay>(`/rollout/days/${dayId}/status`, { status });
   return response.data;
 };
 
@@ -141,7 +141,7 @@ export const updateRolloutDayStatus = async (dayId: number, status: string): Pro
  * Delete a rollout day (cascade deletes workplaces)
  */
 export const deleteRolloutDay = async (dayId: number): Promise<void> => {
-  await apiClient.delete(`/rollouts/days/${dayId}`);
+  await apiClient.delete(`/rollout/days/${dayId}`);
 };
 
 // ===== WORKPLACE API CALLS =====
@@ -153,7 +153,7 @@ export const getRolloutWorkplaces = async (
   dayId: number,
   params?: RolloutWorkplacesQueryParams
 ): Promise<RolloutWorkplace[]> => {
-  const response = await apiClient.get<RolloutWorkplace[]>(`/rollouts/days/${dayId}/workplaces`, { params });
+  const response = await apiClient.get<RolloutWorkplace[]>(`/rollout/days/${dayId}/workplaces`, { params });
   return response.data;
 };
 
@@ -161,7 +161,7 @@ export const getRolloutWorkplaces = async (
  * Get a specific workplace by ID
  */
 export const getRolloutWorkplace = async (workplaceId: number): Promise<RolloutWorkplace> => {
-  const response = await apiClient.get<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}`);
+  const response = await apiClient.get<RolloutWorkplace>(`/rollout/workplaces/${workplaceId}`);
   return response.data;
 };
 
@@ -172,7 +172,7 @@ export const createRolloutWorkplace = async (
   dayId: number,
   data: CreateRolloutWorkplace
 ): Promise<RolloutWorkplace> => {
-  const response = await apiClient.post<RolloutWorkplace>(`/rollouts/days/${dayId}/workplaces`, data);
+  const response = await apiClient.post<RolloutWorkplace>(`/rollout/days/${dayId}/workplaces`, data);
   return response.data;
 };
 
@@ -183,7 +183,7 @@ export const updateRolloutWorkplace = async (
   workplaceId: number,
   data: UpdateRolloutWorkplace
 ): Promise<RolloutWorkplace> => {
-  const response = await apiClient.put<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}`, data);
+  const response = await apiClient.put<RolloutWorkplace>(`/rollout/workplaces/${workplaceId}`, data);
   return response.data;
 };
 
@@ -191,7 +191,7 @@ export const updateRolloutWorkplace = async (
  * Start a workplace execution (sets status to InProgress)
  */
 export const startRolloutWorkplace = async (workplaceId: number): Promise<RolloutWorkplace> => {
-  const response = await apiClient.post<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}/start`);
+  const response = await apiClient.post<RolloutWorkplace>(`/rollout/workplaces/${workplaceId}/start`);
   return response.data;
 };
 
@@ -199,7 +199,7 @@ export const startRolloutWorkplace = async (workplaceId: number): Promise<Rollou
  * Update workplace status (e.g., mark as Ready)
  */
 export const updateWorkplaceStatus = async (workplaceId: number, status: string): Promise<RolloutWorkplace> => {
-  const response = await apiClient.post<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}/status`, { status });
+  const response = await apiClient.post<RolloutWorkplace>(`/rollout/workplaces/${workplaceId}/status`, { status });
   return response.data;
 };
 
@@ -212,7 +212,7 @@ export const updateItemStatus = async (
   status: string
 ): Promise<RolloutWorkplace> => {
   const response = await apiClient.post<RolloutWorkplace>(
-    `/rollouts/workplaces/${workplaceId}/items/${itemIndex}/status`,
+    `/rollout/workplaces/${workplaceId}/items/${itemIndex}/status`,
     { status }
   );
   return response.data;
@@ -227,7 +227,7 @@ export const updateItemDetails = async (
   data: UpdateItemDetails
 ): Promise<RolloutWorkplace> => {
   const response = await apiClient.post<RolloutWorkplace>(
-    `/rollouts/workplaces/${workplaceId}/items/${itemIndex}/details`,
+    `/rollout/workplaces/${workplaceId}/items/${itemIndex}/details`,
     data
   );
   return response.data;
@@ -240,7 +240,7 @@ export const completeRolloutWorkplace = async (
   workplaceId: number,
   data: CompleteWorkplace
 ): Promise<RolloutWorkplace> => {
-  const response = await apiClient.post<RolloutWorkplace>(`/rollouts/workplaces/${workplaceId}/complete`, data);
+  const response = await apiClient.post<RolloutWorkplace>(`/rollout/workplaces/${workplaceId}/complete`, data);
   return response.data;
 };
 
@@ -253,11 +253,24 @@ export const reopenRolloutWorkplace = async (
   reverseAssets: boolean = false
 ): Promise<RolloutWorkplace> => {
   const response = await apiClient.post<RolloutWorkplace>(
-    `/rollouts/workplaces/${workplaceId}/reopen`,
+    `/rollout/workplaces/${workplaceId}/reopen`,
     null,
     { params: { reverseAssets } }
   );
   return response.data;
+};
+
+/**
+ * Update the serial number for an assignment.
+ * Used to fill in missing serial numbers after rollout completion.
+ */
+export const updateAssignmentSerialNumber = async (
+  assignmentId: number,
+  serialNumber: string
+): Promise<void> => {
+  await apiClient.patch(`/rollout/workplaces/assignments/${assignmentId}/serial`, {
+    serialNumber,
+  });
 };
 
 /**
@@ -270,7 +283,7 @@ export const moveRolloutWorkplace = async (
   data: MoveWorkplace
 ): Promise<RolloutWorkplace> => {
   const response = await apiClient.post<RolloutWorkplace>(
-    `/rollouts/workplaces/${workplaceId}/move`,
+    `/rollout/workplaces/${workplaceId}/move`,
     data
   );
   return response.data;
@@ -280,7 +293,7 @@ export const moveRolloutWorkplace = async (
  * Delete a workplace
  */
 export const deleteRolloutWorkplace = async (workplaceId: number): Promise<void> => {
-  await apiClient.delete(`/rollouts/workplaces/${workplaceId}`);
+  await apiClient.delete(`/rollout/workplaces/${workplaceId}`);
 };
 
 /**
@@ -291,7 +304,7 @@ export const bulkCreateWorkplaces = async (
   data: BulkCreateWorkplaces
 ): Promise<BulkCreateWorkplacesResult> => {
   const response = await apiClient.post<BulkCreateWorkplacesResult>(
-    `/rollouts/days/${dayId}/workplaces/bulk`,
+    `/rollout/days/${dayId}/workplaces/bulk`,
     data
   );
   return response.data;
@@ -303,7 +316,7 @@ export const bulkCreateWorkplaces = async (
  * Get all unique departments from Azure AD
  */
 export const getGraphDepartments = async (): Promise<string[]> => {
-  const response = await apiClient.get<string[]>('/rollouts/graph/departments');
+  const response = await apiClient.get<string[]>('/rollout/graph/departments');
   return response.data;
 };
 
@@ -311,7 +324,7 @@ export const getGraphDepartments = async (): Promise<string[]> => {
  * Get users from Azure AD by department
  */
 export const getGraphUsersByDepartment = async (department: string): Promise<GraphUser[]> => {
-  const response = await apiClient.get<GraphUser[]>('/rollouts/graph/users', {
+  const response = await apiClient.get<GraphUser[]>('/rollout/graph/users', {
     params: { department },
   });
   return response.data;
@@ -321,7 +334,7 @@ export const getGraphUsersByDepartment = async (department: string): Promise<Gra
  * Get all service distribution groups (MG-*) from Azure AD
  */
 export const getGraphServiceGroups = async (): Promise<GraphGroup[]> => {
-  const response = await apiClient.get<GraphGroup[]>('/rollouts/graph/service-groups');
+  const response = await apiClient.get<GraphGroup[]>('/rollout/graph/service-groups');
   return response.data;
 };
 
@@ -329,7 +342,7 @@ export const getGraphServiceGroups = async (): Promise<GraphGroup[]> => {
  * Get all sector distribution groups (MG-SECTOR-*) from Azure AD
  */
 export const getGraphSectorGroups = async (): Promise<GraphGroup[]> => {
-  const response = await apiClient.get<GraphGroup[]>('/rollouts/graph/sector-groups');
+  const response = await apiClient.get<GraphGroup[]>('/rollout/graph/sector-groups');
   return response.data;
 };
 
@@ -337,7 +350,7 @@ export const getGraphSectorGroups = async (): Promise<GraphGroup[]> => {
  * Get service groups (MG-*) nested within a sector group
  */
 export const getGraphSectorServices = async (sectorId: string): Promise<GraphGroup[]> => {
-  const response = await apiClient.get<GraphGroup[]>(`/rollouts/graph/sectors/${sectorId}/services`);
+  const response = await apiClient.get<GraphGroup[]>(`/rollout/graph/sectors/${sectorId}/services`);
   return response.data;
 };
 
@@ -345,7 +358,7 @@ export const getGraphSectorServices = async (sectorId: string): Promise<GraphGro
  * Get members of a specific Azure AD group
  */
 export const getGraphGroupMembers = async (groupId: string): Promise<GraphUser[]> => {
-  const response = await apiClient.get<GraphUser[]>(`/rollouts/graph/groups/${groupId}/members`);
+  const response = await apiClient.get<GraphUser[]>(`/rollout/graph/groups/${groupId}/members`);
   return response.data;
 };
 
@@ -357,7 +370,7 @@ export const bulkCreateWorkplacesFromGraph = async (
   data: BulkCreateFromGraph
 ): Promise<BulkCreateFromGraphResult> => {
   const response = await apiClient.post<BulkCreateFromGraphResult>(
-    `/rollouts/days/${dayId}/workplaces/from-graph`,
+    `/rollout/days/${dayId}/workplaces/from-graph`,
     data
   );
   return response.data;
@@ -367,7 +380,7 @@ export const bulkCreateWorkplacesFromGraph = async (
  * Get new assets for a day (for QR code printing)
  */
 export const getNewAssetsForDay = async (dayId: number): Promise<Asset[]> => {
-  const response = await apiClient.get<Asset[]>(`/rollouts/days/${dayId}/new-assets`);
+  const response = await apiClient.get<Asset[]>(`/rollout/days/${dayId}/new-assets`);
   return response.data;
 };
 
@@ -377,7 +390,7 @@ export const getNewAssetsForDay = async (dayId: number): Promise<Asset[]> => {
  * Get comprehensive progress statistics for a session
  */
 export const getRolloutProgress = async (sessionId: number): Promise<RolloutProgress> => {
-  const response = await apiClient.get<RolloutProgress>(`/rollouts/${sessionId}/progress`);
+  const response = await apiClient.get<RolloutProgress>(`/rollout/sessions/${sessionId}/progress`);
   return response.data;
 };
 
@@ -391,7 +404,7 @@ export const getServiceMapping = async (): Promise<{
   unmatchedDatabaseServices: string[];
   unmatchedAzureAdGroups: string[];
 }> => {
-  const response = await apiClient.get('/rollouts/graph/service-mapping');
+  const response = await apiClient.get('/rollout/graph/service-mapping');
   return response.data;
 };
 
@@ -400,7 +413,7 @@ export const getServiceMapping = async (): Promise<{
  * Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
  */
 export const getRolloutAssetReport = async (sessionId: number): Promise<RolloutAssetStatusReport> => {
-  const response = await apiClient.get<RolloutAssetStatusReport>(`/rollouts/${sessionId}/asset-report`);
+  const response = await apiClient.get<RolloutAssetStatusReport>(`/rollout/sessions/${sessionId}/asset-report`);
   return response.data;
 };
 
@@ -409,7 +422,7 @@ export const getRolloutAssetReport = async (sessionId: number): Promise<RolloutA
  * Returns a Blob that can be downloaded.
  */
 export const exportRolloutAssetReport = async (sessionId: number): Promise<Blob> => {
-  const response = await apiClient.get(`/rollouts/${sessionId}/asset-report/export`, {
+  const response = await apiClient.get(`/rollout/sessions/${sessionId}/asset-report/export`, {
     responseType: 'blob',
   });
   return response.data;
@@ -421,7 +434,7 @@ export const exportRolloutAssetReport = async (sessionId: number): Promise<Blob>
  * Start a rollout session (Planning → InProgress)
  */
 export const startRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
-  const response = await apiClient.post<RolloutSession>(`/rollouts/${sessionId}/start`);
+  const response = await apiClient.post<RolloutSession>(`/rollout/sessions/${sessionId}/start`);
   return response.data;
 };
 
@@ -429,7 +442,7 @@ export const startRolloutSession = async (sessionId: number): Promise<RolloutSes
  * Complete a rollout session (InProgress → Completed)
  */
 export const completeRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
-  const response = await apiClient.post<RolloutSession>(`/rollouts/${sessionId}/complete`);
+  const response = await apiClient.post<RolloutSession>(`/rollout/sessions/${sessionId}/complete`);
   return response.data;
 };
 

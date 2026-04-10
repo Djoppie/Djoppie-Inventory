@@ -54,6 +54,8 @@ import AdminFormDialog from './AdminFormDialog';
 import { Service, UpdateServiceDto, Sector } from '../../types/admin.types';
 import { servicesApi, sectorsApi, ServiceCsvImportResult } from '../../api/admin.api';
 import Loading from '../common/Loading';
+import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
+import { SERVICE_COLOR } from '../../constants/filterColors';
 
 interface FormData {
   code: string;
@@ -73,30 +75,12 @@ const initialFormData: FormData = {
   isActive: true,
 };
 
-// Neumorphic shadow utilities
-const getNeumorph = (isDark: boolean, intensity: 'soft' | 'medium' | 'strong' = 'medium') => {
-  const shadows = {
-    soft: isDark
-      ? '4px 4px 8px rgba(0,0,0,0.4), -2px -2px 6px rgba(255,255,255,0.03)'
-      : '4px 4px 8px rgba(0,0,0,0.08), -2px -2px 6px rgba(255,255,255,0.8)',
-    medium: isDark
-      ? '6px 6px 12px rgba(0,0,0,0.5), -3px -3px 8px rgba(255,255,255,0.04)'
-      : '6px 6px 12px rgba(0,0,0,0.1), -3px -3px 8px rgba(255,255,255,0.9)',
-    strong: isDark
-      ? '8px 8px 16px rgba(0,0,0,0.6), -4px -4px 10px rgba(255,255,255,0.05)'
-      : '8px 8px 16px rgba(0,0,0,0.12), -4px -4px 10px rgba(255,255,255,1)',
-  };
-  return shadows[intensity];
-};
-
-const getNeumorphInset = (isDark: boolean) =>
-  isDark
-    ? 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03)'
-    : 'inset 2px 2px 4px rgba(0,0,0,0.06), inset -1px -1px 3px rgba(255,255,255,0.7)';
-
 const ServicesTab = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const { bgBase, bgSurface } = getNeumorphColors(isDark);
+  const accentColor = SERVICE_COLOR;
+  const sectorColor = '#9C27B0';
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -116,12 +100,6 @@ const ServicesTab = () => {
     severity: 'success' as 'success' | 'error',
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Theme colors
-  const bgBase = isDark ? '#1a1f2e' : '#f0f2f5';
-  const bgSurface = isDark ? '#232936' : '#ffffff';
-  const accentColor = '#FF7700';
-  const sectorColor = '#9C27B0';
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['admin', 'services', 'active'],
@@ -513,7 +491,7 @@ const ServicesTab = () => {
               borderColor: accentColor,
               color: accentColor,
               '&:hover': {
-                borderColor: '#e65c00',
+                borderColor: accentColor,
                 bgcolor: alpha(accentColor, 0.08),
               },
             }}
@@ -533,7 +511,7 @@ const ServicesTab = () => {
               borderColor: accentColor,
               color: accentColor,
               '&:hover': {
-                borderColor: '#e65c00',
+                borderColor: accentColor,
                 bgcolor: alpha(accentColor, 0.08),
               },
             }}
@@ -552,7 +530,8 @@ const ServicesTab = () => {
             sx={{
               bgcolor: accentColor,
               '&:hover': {
-                bgcolor: '#e65c00',
+                bgcolor: accentColor,
+                filter: 'brightness(0.9)',
               },
             }}
           >

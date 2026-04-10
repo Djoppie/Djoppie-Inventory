@@ -184,6 +184,7 @@ public class RolloutRepository : IRolloutRepository
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
+            .Include(w => w.Building)
             .Include(w => w.PhysicalWorkplace)
             .Where(w => w.RolloutDayId == dayId)
             .OrderBy(w => w.Status)
@@ -205,6 +206,7 @@ public class RolloutRepository : IRolloutRepository
     {
         return await _context.RolloutWorkplaces
             .Include(w => w.Service)
+            .Include(w => w.Building)
             .Include(w => w.PhysicalWorkplace)
             .Include(w => w.RolloutDay)
                 .ThenInclude(d => d.RolloutSession)

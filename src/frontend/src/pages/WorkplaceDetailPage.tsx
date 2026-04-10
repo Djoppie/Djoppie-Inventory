@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Paper,
@@ -8,7 +9,6 @@ import {
   Tooltip,
   Chip,
   Avatar,
-  Grid,
   Skeleton,
   Button,
   alpha,
@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Grid
 } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -52,11 +53,18 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 // Hooks
-import { usePhysicalWorkplace, usePhysicalWorkplaceAssets } from '../hooks/usePhysicalWorkplaces';
+import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant, useUpdateOccupant } from '../hooks/usePhysicalWorkplaces';
+
+// Common components
+import UserAutocomplete from '../components/common/UserAutocomplete';
+
+// Types
+import { GraphUser } from '../types/graph.types';
 
 // Dialogs
 import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
 import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
+import DeviceAssignmentDialog from '../components/physicalWorkplaces/DeviceAssignmentDialog';
 
 // Neumorphic utilities
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
@@ -106,6 +114,7 @@ const WorkplaceDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { t } = useTranslation();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isDark = theme.palette.mode === 'dark';
   const neumorphColors = getNeumorphColors(isDark);
@@ -118,6 +127,15 @@ const WorkplaceDetailPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [assetsDialogOpen, setAssetsDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [deviceAssignmentDialogOpen, setDeviceAssignmentDialogOpen] = useState(false);
+  const [clearOccupantDialogOpen, setClearOccupantDialogOpen] = useState(false);
+  const [assignOccupantDialogOpen, setAssignOccupantDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<GraphUser | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState('');
+
+  // Mutations
+  const clearOccupantMutation = useClearOccupant();
+  const updateOccupantMutation = useUpdateOccupant();
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -130,7 +148,24 @@ const WorkplaceDetailPage = () => {
   const showSuccess = (message: string) => setSnackbar({ open: true, message, severity: 'success' });
   const showError = (message: string) => setSnackbar({ open: true, message, severity: 'error' });
 
-  // Filter out assets already shown in equipment slots
+  // Find shared device (laptop/desktop) from fixed assets when no occupant device is set
+  const sharedDevice = useMemo(() => {
+    if (!workplace || workplace.occupantDeviceAssetCode) return null;
+
+    // Look for a laptop or desktop type asset assigned to this workplace
+    // Check asset code prefix (LAP0002, DESK-26-XXXX), asset type name, and asset type code
+    const devicePrefixes = ['lap', 'desk', 'laptop', 'desktop', 'pc', 'computer', 'notebook'];
+    return allFixedAssets.find((asset: any) => {
+      const assetCode = asset.assetCode?.toLowerCase() || '';
+      const typeName = asset.assetType?.name?.toLowerCase() || '';
+      const typeCode = asset.assetType?.code?.toLowerCase() || '';
+      return devicePrefixes.some(prefix =>
+        assetCode.startsWith(prefix) || typeName.includes(prefix) || typeCode.includes(prefix)
+      );
+    }) || null;
+  }, [workplace, allFixedAssets]);
+
+  // Filter out assets already shown in equipment slots (including shared device)
   const fixedAssets = useMemo(() => {
     if (!workplace) return allFixedAssets;
 
@@ -141,10 +176,11 @@ const WorkplaceDetailPage = () => {
       workplace.monitor3AssetId,
       workplace.keyboardAssetId,
       workplace.mouseAssetId,
+      sharedDevice?.id, // Also filter out the shared device shown in Desktop/Laptop row
     ].filter(Boolean));
 
     return allFixedAssets.filter((asset: any) => !equipmentAssetIds.has(asset.id));
-  }, [workplace, allFixedAssets]);
+  }, [workplace, allFixedAssets, sharedDevice]);
 
   // Calculate equipment status
   const equipmentStatus = useMemo(() => {
@@ -357,6 +393,29 @@ const WorkplaceDetailPage = () => {
                   <SettingsIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title={t('deviceAssignment.title')} arrow>
+                <IconButton
+                  onClick={() => setDeviceAssignmentDialogOpen(true)}
+                  sx={{
+                    color: '#1976d2',
+                    bgcolor: neumorphColors.bgSurface,
+                    boxShadow: getNeumorph(isDark, 'soft'),
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: '#1976d2',
+                      color: '#fff',
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 4px 12px ${alpha('#1976d2', 0.4)}`,
+                    },
+                    '&:active': {
+                      boxShadow: getNeumorphInset(isDark),
+                      transform: 'translateY(0)',
+                    },
+                  }}
+                >
+                  <LaptopIcon />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Bewerken" arrow>
                 <IconButton
                   onClick={() => setEditDialogOpen(true)}
@@ -457,12 +516,23 @@ const WorkplaceDetailPage = () => {
                   </Typography>
                 </Box>
                 {isOccupied ? (
-                  <IconButton size="small" sx={{ color: 'error.main' }}>
-                    <PersonRemoveIcon fontSize="small" />
-                  </IconButton>
+                  <Tooltip title={t('physicalWorkplaces.clearOccupant')} arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => setClearOccupantDialogOpen(true)}
+                      sx={{ color: 'error.main' }}
+                    >
+                      <PersonRemoveIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 ) : (
-                  <Button size="small" variant="outlined" sx={{ color: OCCUPANT_COLOR, borderColor: alpha(OCCUPANT_COLOR, 0.3) }}>
-                    Toewijzen
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setAssignOccupantDialogOpen(true)}
+                    sx={{ color: OCCUPANT_COLOR, borderColor: alpha(OCCUPANT_COLOR, 0.3) }}
+                  >
+                    {t('physicalWorkplaces.occupier.assignOccupier')}
                   </Button>
                 )}
               </Box>
@@ -641,6 +711,9 @@ const WorkplaceDetailPage = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <DesktopWindowsIcon sx={{ fontSize: 18, color: EQUIPMENT_COLOR }} />
                         Desktop
+                        {sharedDevice && !workplace.occupantDeviceAssetCode && (
+                          <Chip size="small" label="Gedeeld" sx={{ ml: 1, height: 18, fontSize: '0.65rem', bgcolor: alpha(OCCUPANT_COLOR, 0.1), color: OCCUPANT_COLOR }} />
+                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -652,12 +725,20 @@ const WorkplaceDetailPage = () => {
                         >
                           {workplace.occupantDeviceAssetCode}
                         </Typography>
+                      ) : sharedDevice ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${sharedDevice.id}`}
+                          sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {sharedDevice.assetCode}
+                        </Typography>
                       ) : (
                         <Typography color="text.disabled">-</Typography>
                       )}
                     </TableCell>
                     <TableCell>
-                      {workplace.occupantDeviceAssetCode ? (
+                      {workplace.occupantDeviceAssetCode || sharedDevice ? (
                         <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
                       ) : (
                         <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
@@ -854,8 +935,8 @@ const WorkplaceDetailPage = () => {
                   </TableCell>
                 </TableRow>
 
-                {/* Occupant's Laptop (for non-desktop workplaces) */}
-                {workplace.type !== WorkplaceType.Desktop && isOccupied && workplace.occupantDeviceAssetCode && (
+                {/* Laptop (for non-desktop workplaces) - shows occupant's laptop or shared device */}
+                {workplace.type !== WorkplaceType.Desktop && (workplace.occupantDeviceAssetCode || sharedDevice) && (
                   <TableRow
                     sx={{
                       borderLeft: `3px solid ${OCCUPANT_COLOR}`,
@@ -867,17 +948,32 @@ const WorkplaceDetailPage = () => {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <LaptopIcon sx={{ fontSize: 18, color: OCCUPANT_COLOR }} />
-                        <Typography sx={{ fontWeight: 500 }}>Laptop (bezetter)</Typography>
+                        <Typography sx={{ fontWeight: 500 }}>
+                          {workplace.occupantDeviceAssetCode ? 'Laptop (bezetter)' : 'Laptop'}
+                        </Typography>
+                        {sharedDevice && !workplace.occupantDeviceAssetCode && (
+                          <Chip size="small" label="Gedeeld" sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha(OCCUPANT_COLOR, 0.1), color: OCCUPANT_COLOR }} />
+                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Typography
-                        component={Link}
-                        to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
-                        sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                      >
-                        {workplace.occupantDeviceAssetCode}
-                      </Typography>
+                      {workplace.occupantDeviceAssetCode ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
+                          sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {workplace.occupantDeviceAssetCode}
+                        </Typography>
+                      ) : sharedDevice ? (
+                        <Typography
+                          component={Link}
+                          to={`/assets/${sharedDevice.id}`}
+                          sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                        >
+                          {sharedDevice.assetCode}
+                        </Typography>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <CheckCircleIcon sx={{ fontSize: 18, color: 'success.main' }} />
@@ -959,6 +1055,136 @@ const WorkplaceDetailPage = () => {
         onSuccess={showSuccess}
         onError={showError}
       />
+
+      {/* Device Assignment Dialog */}
+      <DeviceAssignmentDialog
+        open={deviceAssignmentDialogOpen}
+        onClose={() => setDeviceAssignmentDialogOpen(false)}
+        workplace={workplace}
+        onSuccess={showSuccess}
+        onError={showError}
+      />
+
+      {/* Clear Occupant Confirmation Dialog */}
+      <Dialog
+        open={clearOccupantDialogOpen}
+        onClose={() => setClearOccupantDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'strong'),
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: 'error.main' }}>
+          {t('physicalWorkplaces.clearOccupantTitle')}
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t('physicalWorkplaces.clearOccupantConfirm', { name: workplace.currentOccupantName })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearOccupantDialogOpen(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={clearOccupantMutation.isPending}
+            onClick={async () => {
+              try {
+                await clearOccupantMutation.mutateAsync(workplaceId);
+                showSuccess(t('physicalWorkplaces.occupantCleared'));
+                setClearOccupantDialogOpen(false);
+              } catch (error) {
+                showError(t('physicalWorkplaces.occupantClearError'));
+              }
+            }}
+          >
+            {clearOccupantMutation.isPending ? t('common.loading') : t('physicalWorkplaces.clearOccupant')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Assign Occupant Dialog */}
+      <Dialog
+        open={assignOccupantDialogOpen}
+        onClose={() => {
+          setAssignOccupantDialogOpen(false);
+          setSelectedUser(null);
+          setSelectedUserName('');
+        }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            bgcolor: neumorphColors.bgSurface,
+            boxShadow: getNeumorph(isDark, 'strong'),
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: OCCUPANT_COLOR }}>
+          {t('physicalWorkplaces.occupier.assignOccupier')}
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            {t('physicalWorkplaces.occupier.searchPlaceholder')}
+          </Typography>
+          <UserAutocomplete
+            value={selectedUserName}
+            onChange={(displayName, user) => {
+              setSelectedUserName(displayName);
+              setSelectedUser(user);
+            }}
+            label={t('physicalWorkplaces.occupier.title')}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setAssignOccupantDialogOpen(false);
+              setSelectedUser(null);
+              setSelectedUserName('');
+            }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!selectedUser || updateOccupantMutation.isPending}
+            onClick={async () => {
+              if (!selectedUser) return;
+              try {
+                await updateOccupantMutation.mutateAsync({
+                  id: workplaceId,
+                  data: {
+                    occupantEntraId: selectedUser.id,
+                    occupantName: selectedUser.displayName,
+                    occupantEmail: selectedUser.mail || selectedUser.userPrincipalName,
+                  },
+                });
+                showSuccess(t('physicalWorkplaces.occupier.assignSuccess'));
+                setAssignOccupantDialogOpen(false);
+                setSelectedUser(null);
+                setSelectedUserName('');
+              } catch (error) {
+                showError(t('physicalWorkplaces.occupier.assignError'));
+              }
+            }}
+            sx={{
+              bgcolor: OCCUPANT_COLOR,
+              '&:hover': { bgcolor: alpha(OCCUPANT_COLOR, 0.85) },
+            }}
+          >
+            {updateOccupantMutation.isPending ? t('common.loading') : t('physicalWorkplaces.occupier.assignOccupier')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* QR Code Dialog */}
       <Dialog

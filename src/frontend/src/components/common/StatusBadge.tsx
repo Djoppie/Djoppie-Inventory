@@ -1,6 +1,7 @@
 import React from 'react';
-import { Chip } from '@mui/material';
+import { Chip, alpha } from '@mui/material';
 import { AssetStatus } from '../../types/asset.types';
+import { SUCCESS_COLOR, DANGER_COLOR, ASSET_COLOR } from '../../constants/filterColors';
 
 interface StatusBadgeProps {
   status: AssetStatus | string;
@@ -13,18 +14,18 @@ const StatusBadge = React.memo(function StatusBadge({ status, size = 'small' }: 
     switch (status) {
       case AssetStatus.InGebruik:
       case 'InGebruik':
-        // Green - In Use/Active
+        // Green - In Use/Active (using SUCCESS_COLOR from filterColors.ts)
         return {
-          backgroundColor: 'rgba(76, 175, 80, 0.15)',
+          backgroundColor: alpha(SUCCESS_COLOR, 0.15),
           color: 'rgb(27, 94, 32)',
-          border: '2px solid rgba(76, 175, 80, 0.6)',
+          border: `2px solid ${alpha(SUCCESS_COLOR, 0.6)}`,
           '& .MuiChip-label': {
             color: 'rgb(27, 94, 32)',
             fontWeight: 700,
           },
           '&:hover': {
-            backgroundColor: 'rgba(76, 175, 80, 0.25)',
-            boxShadow: '0 0 8px rgba(76, 175, 80, 0.3)',
+            backgroundColor: alpha(SUCCESS_COLOR, 0.25),
+            boxShadow: `0 0 8px ${alpha(SUCCESS_COLOR, 0.3)}`,
           },
         };
 
@@ -64,18 +65,18 @@ const StatusBadge = React.memo(function StatusBadge({ status, size = 'small' }: 
 
       case AssetStatus.Defect:
       case 'Defect':
-        // Red - Defective
+        // Red - Defective (using DANGER_COLOR from filterColors.ts)
         return {
-          backgroundColor: 'rgba(244, 67, 54, 0.15)',
+          backgroundColor: alpha(DANGER_COLOR, 0.15),
           color: 'rgb(183, 28, 28)',
-          border: '2px solid rgba(244, 67, 54, 0.6)',
+          border: `2px solid ${alpha(DANGER_COLOR, 0.6)}`,
           '& .MuiChip-label': {
             color: 'rgb(183, 28, 28)',
             fontWeight: 700,
           },
           '&:hover': {
-            backgroundColor: 'rgba(244, 67, 54, 0.25)',
-            boxShadow: '0 0 8px rgba(244, 67, 54, 0.3)',
+            backgroundColor: alpha(DANGER_COLOR, 0.25),
+            boxShadow: `0 0 8px ${alpha(DANGER_COLOR, 0.3)}`,
           },
         };
 
@@ -114,18 +115,18 @@ const StatusBadge = React.memo(function StatusBadge({ status, size = 'small' }: 
         };
 
       default:
-        // Default - Djoppie Orange for unknown statuses
+        // Default - Djoppie Orange for unknown statuses (using ASSET_COLOR from filterColors.ts)
         return {
-          backgroundColor: 'rgba(255, 119, 0, 0.15)',
+          backgroundColor: alpha(ASSET_COLOR, 0.15),
           color: 'rgb(204, 0, 0)',
-          border: '2px solid rgba(255, 119, 0, 0.6)',
+          border: `2px solid ${alpha(ASSET_COLOR, 0.6)}`,
           '& .MuiChip-label': {
             color: 'rgb(204, 0, 0)',
             fontWeight: 700,
           },
           '&:hover': {
-            backgroundColor: 'rgba(255, 119, 0, 0.25)',
-            boxShadow: '0 0 8px rgba(255, 119, 0, 0.3)',
+            backgroundColor: alpha(ASSET_COLOR, 0.25),
+            boxShadow: `0 0 8px ${alpha(ASSET_COLOR, 0.3)}`,
           },
         };
     }

@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetEventRepository, AssetEventRepository>();
         services.AddScoped<ILeaseContractRepository, LeaseContractRepository>();
         services.AddScoped<IRolloutRepository, RolloutRepository>();
+        services.AddScoped<IAssetRequestRepository, AssetRequestRepository>();
 
         // Register Services
         services.AddScoped<IAssetService, AssetService>();
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IIntuneService, IntuneService>();
         services.AddScoped<IIntuneSyncService, IntuneSyncService>();
         services.AddScoped<IGraphUserService, GraphUserService>();
+        services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IAssetCodeGenerator, AssetCodeGeneratorService>();
         services.AddScoped<IRolloutWorkplaceService, RolloutWorkplaceService>();
 
@@ -47,6 +49,12 @@ public static class ServiceCollectionExtensions
 
         // Device Deployment Services (Laptop Swap / Onboarding)
         services.AddScoped<IDeploymentService, DeploymentService>();
+
+        // Physical Workplace Services (Clean Architecture)
+        services.AddScoped<IPhysicalWorkplaceService, PhysicalWorkplaceService>();
+
+        // Report Services (Clean Architecture)
+        services.AddScoped<IReportService, ReportService>();
 
         // Configure AutoMapper (v13+ API - AddAutoMapper is now in core package)
         services.AddAutoMapper(cfg => { }, typeof(Profiles.MappingProfile).Assembly);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -17,12 +17,13 @@ import {
   Chip,
   Autocomplete,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
 import SyncIcon from '@mui/icons-material/Sync';
 import PersonIcon from '@mui/icons-material/Person';
 import DevicesIcon from '@mui/icons-material/Devices';
-import AdminDataTable, { Column } from './AdminDataTable';
+import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import { Employee, UpdateEmployeeDto, Service } from '../../types/admin.types';
 import { employeesApi, servicesApi } from '../../api/admin.api';
@@ -262,100 +263,121 @@ const EmployeesTab = () => {
     await deleteMutation.mutateAsync(deletingItem.id);
   };
 
-  const columns: Column<Employee>[] = [
-    {
-      id: 'displayName',
-      label: 'Name',
-      minWidth: 180,
-      format: (item) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PersonIcon sx={{ fontSize: 18, color: EMPLOYEE_COLOR }} />
-          <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-            {item.displayName}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      id: 'email',
-      label: 'Email',
-      minWidth: 200,
-      format: (item) => (
-        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-          {item.email || '-'}
-        </Typography>
-      ),
-    },
-    {
-      id: 'service',
-      label: 'Service',
-      minWidth: 120,
-      format: (item) =>
-        item.service ? (
-          <Chip
-            label={item.service.code}
-            size="small"
-            sx={{
-              bgcolor: 'rgba(255, 119, 0, 0.1)',
-              color: '#FF7700',
-              fontWeight: 600,
-              fontSize: '0.7rem',
-            }}
-          />
-        ) : (
-          <Typography sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>-</Typography>
+  const columns: GridColDef[] = useMemo(
+    () => [
+      {
+        field: 'displayName',
+        headerName: 'Name',
+        minWidth: 180,
+        flex: 1,
+        renderCell: (params: GridRenderCellParams) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PersonIcon sx={{ fontSize: 18, color: EMPLOYEE_COLOR }} />
+            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+              {params.value}
+            </Typography>
+          </Box>
         ),
-    },
-    {
-      id: 'jobTitle',
-      label: 'Job Title',
-      minWidth: 150,
-      format: (item) => (
-        <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-          {item.jobTitle || '-'}
-        </Typography>
-      ),
-    },
-    {
-      id: 'assetCount',
-      label: 'Assets',
-      minWidth: 80,
-      align: 'center',
-      format: (item) => (
-        <Chip
-          icon={<DevicesIcon sx={{ fontSize: 14 }} />}
-          label={item.assetCount}
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (item.assetCount > 0) handleOpenAssetsDialog(item);
-          }}
-          sx={{
-            cursor: item.assetCount > 0 ? 'pointer' : 'default',
-            bgcolor: item.assetCount > 0 ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
-            color: item.assetCount > 0 ? '#2196F3' : 'text.disabled',
-            fontWeight: 600,
-            '&:hover': item.assetCount > 0 ? { bgcolor: 'rgba(33, 150, 243, 0.2)' } : {},
-          }}
-        />
-      ),
-    },
-    { id: 'sortOrder', label: 'Order', minWidth: 60, align: 'center' },
-  ];
+      },
+      {
+        field: 'email',
+        headerName: 'Email',
+        minWidth: 200,
+        flex: 1,
+        renderCell: (params: GridRenderCellParams) => (
+          <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+            {params.value || '-'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'service',
+        headerName: 'Service',
+        minWidth: 120,
+        flex: 0.5,
+        valueGetter: (_value: unknown, row: Employee) => row.service?.code ?? '',
+        renderCell: (params: GridRenderCellParams) => {
+          const row = params.row as Employee;
+          return row.service ? (
+            <Chip
+              label={row.service.code}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(255, 119, 0, 0.1)',
+                color: '#FF7700',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+              }}
+            />
+          ) : (
+            <Typography sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>-</Typography>
+          );
+        },
+      },
+      {
+        field: 'jobTitle',
+        headerName: 'Job Title',
+        minWidth: 150,
+        flex: 0.7,
+        renderCell: (params: GridRenderCellParams) => (
+          <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
+            {params.value || '-'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'assetCount',
+        headerName: 'Assets',
+        minWidth: 80,
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: (params: GridRenderCellParams) => {
+          const count = params.value as number;
+          const row = params.row as Employee;
+          return (
+            <Chip
+              icon={<DevicesIcon sx={{ fontSize: 14 }} />}
+              label={count}
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (count > 0) handleOpenAssetsDialog(row);
+              }}
+              sx={{
+                cursor: count > 0 ? 'pointer' : 'default',
+                bgcolor: count > 0 ? 'rgba(33, 150, 243, 0.1)' : 'transparent',
+                color: count > 0 ? '#2196F3' : 'text.disabled',
+                fontWeight: 600,
+                '&:hover': count > 0 ? { bgcolor: 'rgba(33, 150, 243, 0.2)' } : {},
+              }}
+            />
+          );
+        },
+      },
+      {
+        field: 'sortOrder',
+        headerName: 'Order',
+        minWidth: 60,
+        align: 'center',
+        headerAlign: 'center',
+      },
+    ],
+    // handleOpenAssetsDialog is stable enough; it depends on setState which never changes identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   if (isLoading) return <Loading message="Loading employees..." />;
 
   return (
     <Box>
-      <AdminDataTable
-        data={employees}
+      <NeumorphicDataGrid<Employee>
+        rows={employees}
         columns={columns}
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
-        searchPlaceholder="Search employees..."
-        emptyMessage="No employees found. Use the sync button to import from Entra ID."
-        getItemId={(item) => item.id}
         showActiveStatus
+        accentColor={EMPLOYEE_COLOR}
       />
 
       {/* Sync FAB */}

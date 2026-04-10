@@ -13,7 +13,17 @@
       "Skill(commit-commands:commit)",
       "Skill(frontend-design)",
       "mcp__ide__getDiagnostics",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(start http://localhost:5173/intake)",
+      "Bash(test:*)",
+      "Bash(export:*)",
+      "Bash(done)",
+      "Bash(xargs grep:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(find:*)",
+      "Bash(node -e:*)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(sqlcmd -S sql-djoppie-inventory-dev-k5xdqp.database.windows.net -d sqldb-djoppie-inventory-dev -U sqladmin -P Dj0ppenbeek026 -i query-tables.sql)"
     ]
   }
 }

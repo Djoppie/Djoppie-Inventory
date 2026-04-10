@@ -24,14 +24,14 @@ import {
   ListItemText,
   alpha,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import AdminDataTable, { Column } from './AdminDataTable';
+import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import WorkplaceGapAnalysisSection from './WorkplaceGapAnalysisSection';
 import {
@@ -89,7 +89,7 @@ const PhysicalWorkplacesTab = () => {
   const [importResult, setImportResult] = useState<WorkplaceCsvImportResult | null>(null);
   const [editingItem, setEditingItem] = useState<PhysicalWorkplace | null>(null);
   const [deletingItem, setDeletingItem] = useState<PhysicalWorkplace | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<any[]>([]);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [snackbar, setSnackbar] = useState({
@@ -241,16 +241,16 @@ const PhysicalWorkplacesTab = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.length === 0) return;
     try {
-      const ids = Array.from(selectedIds).map((id) => Number(id));
+      const ids = selectedIds.map((id) => Number(id));
       const result = await bulkDeleteMutation.mutateAsync(ids);
       setSnackbar({
         open: true,
         message: `${result.deleted} werkplekken verwijderd${result.errors.length > 0 ? `, ${result.errors.length} fouten` : ''}`,
         severity: result.errors.length > 0 ? 'error' : 'success',
       });
-      setSelectedIds(new Set());
+      setSelectedIds([]);
       setBulkDeleteDialogOpen(false);
     } catch {
       setSnackbar({ open: true, message: 'Fout bij verwijderen werkplekken', severity: 'error' });
@@ -265,7 +265,7 @@ const PhysicalWorkplacesTab = () => {
         message: result.message,
         severity: 'success',
       });
-      setSelectedIds(new Set());
+      setSelectedIds([]);
       setBulkDeleteDialogOpen(false);
     } catch {
       setSnackbar({ open: true, message: 'Fout bij verwijderen alle werkplekken', severity: 'error' });
@@ -319,41 +319,55 @@ const PhysicalWorkplacesTab = () => {
     }
   };
 
-  const columns: Column<PhysicalWorkplace>[] = [
+  const columns: GridColDef[] = [
     {
-      id: 'code',
-      label: 'Code',
+      field: 'code',
+      headerName: 'Code',
       minWidth: 100,
-      format: (item) => (
+      flex: 1,
+      renderCell: (params: GridRenderCellParams) => (
         <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#009688' }}>
-          {item.code}
+          {params.value}
         </Typography>
       ),
     },
-    { id: 'name', label: 'Naam', minWidth: 150 },
     {
-      id: 'type',
-      label: 'Type',
-      minWidth: 120,
-      format: (item) => WorkplaceTypeLabels[item.type] || item.type,
+      field: 'name',
+      headerName: 'Naam',
+      minWidth: 150,
+      flex: 1.5,
     },
     {
-      id: 'buildingName',
-      label: 'Gebouw',
+      field: 'type',
+      headerName: 'Type',
       minWidth: 120,
-      format: (item) => item.buildingName || '-',
+      flex: 1,
+      valueGetter: (_value: WorkplaceType, row: PhysicalWorkplace) =>
+        WorkplaceTypeLabels[row.type] || row.type,
     },
     {
-      id: 'serviceName',
-      label: 'Dienst',
+      field: 'buildingName',
+      headerName: 'Gebouw',
       minWidth: 120,
-      format: (item) => item.serviceName || '-',
+      flex: 1,
+      valueGetter: (_value: string | undefined, row: PhysicalWorkplace) =>
+        row.buildingName || '-',
     },
     {
-      id: 'floor',
-      label: 'Verdieping',
+      field: 'serviceName',
+      headerName: 'Dienst',
+      minWidth: 120,
+      flex: 1,
+      valueGetter: (_value: string | undefined, row: PhysicalWorkplace) =>
+        row.serviceName || '-',
+    },
+    {
+      field: 'floor',
+      headerName: 'Verdieping',
       minWidth: 80,
-      format: (item) => item.floor || '-',
+      flex: 0.7,
+      valueGetter: (_value: string | undefined, row: PhysicalWorkplace) =>
+        row.floor || '-',
     },
   ];
 
@@ -367,91 +381,111 @@ const PhysicalWorkplacesTab = () => {
       <WorkplaceGapAnalysisSection />
 
       {/* Toolbar with Import/Export buttons */}
-      <Stack
-        direction="row"
-        spacing={1}
+      <Box
         sx={{
           mb: 2,
-          p: 1.5,
+          p: 2,
           bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0, 150, 136, 0.08)' : 'rgba(0, 150, 136, 0.05)',
           borderRadius: 2,
-          border: '1px solid',
-          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0, 150, 136, 0.2)' : 'rgba(0, 150, 136, 0.15)',
+          border: '2px solid',
+          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0, 150, 136, 0.3)' : 'rgba(0, 150, 136, 0.2)',
         }}
       >
-        <Tooltip title="Download CSV template voor import">
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={downloadTemplateMutation.isPending ? <CircularProgress size={16} /> : <FileDownloadIcon />}
-            onClick={handleDownloadTemplate}
-            disabled={isAnyMutationPending}
-            sx={{
-              borderColor: '#009688',
-              color: '#009688',
-              '&:hover': {
-                borderColor: '#00796b',
-                bgcolor: alpha('#009688', 0.08),
-              },
-            }}
-          >
-            Template
-          </Button>
-        </Tooltip>
-
-        <Tooltip title="Exporteer alle werkplekken naar CSV">
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={exportCsvMutation.isPending ? <CircularProgress size={16} /> : <DownloadIcon />}
-            onClick={handleExportCsv}
-            disabled={isAnyMutationPending || workplaces.length === 0}
-            sx={{
-              borderColor: '#009688',
-              color: '#009688',
-              '&:hover': {
-                borderColor: '#00796b',
-                bgcolor: alpha('#009688', 0.08),
-              },
-            }}
-          >
-            Exporteer ({workplaces.length})
-          </Button>
-        </Tooltip>
-
-        <Tooltip title="Importeer werkplekken vanuit CSV">
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={importCsvMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />}
-            onClick={handleImportClick}
-            disabled={isAnyMutationPending}
-            sx={{
-              bgcolor: '#009688',
-              '&:hover': {
-                bgcolor: '#00796b',
-              },
-            }}
-          >
-            Importeer CSV
-          </Button>
-        </Tooltip>
-
-        {/* Delete Selected Button */}
-        {selectedIds.size > 0 && (
-          <Tooltip title={`Verwijder ${selectedIds.size} geselecteerde werkplekken`}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            mb: 1.5,
+            fontWeight: 700,
+            color: '#009688',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <DownloadIcon sx={{ fontSize: 18 }} />
+          Export & Import Gegevens
+        </Typography>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap">
+          <Tooltip title="Download lege CSV template om nieuwe werkplekken te importeren" arrow placement="top">
             <Button
-              variant="contained"
-              size="small"
-              color="error"
-              startIcon={bulkDeleteMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <DeleteSweepIcon />}
-              onClick={() => setBulkDeleteDialogOpen(true)}
-              disabled={isAnyMutationPending || bulkDeleteMutation.isPending}
+              variant="outlined"
+              size="medium"
+              startIcon={downloadTemplateMutation.isPending ? <CircularProgress size={18} /> : <FileDownloadIcon />}
+              onClick={handleDownloadTemplate}
+              disabled={isAnyMutationPending}
+              sx={{
+                borderColor: '#009688',
+                color: '#009688',
+                borderWidth: 2,
+                fontWeight: 600,
+                px: 2,
+                '&:hover': {
+                  borderColor: '#00796b',
+                  borderWidth: 2,
+                  bgcolor: alpha('#009688', 0.12),
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0, 150, 136, 0.25)',
+                },
+                transition: 'all 0.2s ease',
+              }}
             >
-              Verwijder ({selectedIds.size})
+              Download Template
             </Button>
           </Tooltip>
-        )}
+
+          <Tooltip title="Exporteer alle werkplekken naar CSV bestand voor backup of bewerking" arrow placement="top">
+            <Button
+              variant="outlined"
+              size="medium"
+              startIcon={exportCsvMutation.isPending ? <CircularProgress size={18} /> : <DownloadIcon />}
+              onClick={handleExportCsv}
+              disabled={isAnyMutationPending || workplaces.length === 0}
+              sx={{
+                borderColor: '#009688',
+                color: '#009688',
+                borderWidth: 2,
+                fontWeight: 600,
+                px: 2,
+                '&:hover': {
+                  borderColor: '#00796b',
+                  borderWidth: 2,
+                  bgcolor: alpha('#009688', 0.12),
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0, 150, 136, 0.25)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Exporteer ({workplaces.length})
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Upload CSV bestand om werkplekken in bulk te importeren" arrow placement="top">
+            <Button
+              variant="contained"
+              size="medium"
+              startIcon={importCsvMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <UploadIcon />}
+              onClick={handleImportClick}
+              disabled={isAnyMutationPending}
+              sx={{
+                bgcolor: '#009688',
+                fontWeight: 600,
+                px: 2.5,
+                boxShadow: '0 2px 8px rgba(0, 150, 136, 0.3)',
+                '&:hover': {
+                  bgcolor: '#00796b',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(0, 150, 136, 0.4)',
+                },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Importeer CSV
+            </Button>
+          </Tooltip>
+
+          {/* Bulk Delete temporarily disabled due to MUI DataGrid checkbox selection bug */}
+        </Stack>
 
         {/* Hidden file input */}
         <input
@@ -461,20 +495,15 @@ const PhysicalWorkplacesTab = () => {
           accept=".csv"
           style={{ display: 'none' }}
         />
-      </Stack>
+      </Box>
 
-      <AdminDataTable
-        data={workplaces}
+      <NeumorphicDataGrid<PhysicalWorkplace>
+        rows={workplaces}
         columns={columns}
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
-        searchPlaceholder="Zoek werkplekken..."
-        emptyMessage="Geen werkplekken gevonden. Klik op + om een werkplek toe te voegen."
-        getItemId={(item) => item.id}
         showActiveStatus
-        selectable
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
+        checkboxSelection={false}
       />
 
       {/* Add Button */}
@@ -706,7 +735,7 @@ const PhysicalWorkplacesTab = () => {
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Typography variant="body1">
-            Weet je zeker dat je <strong>{selectedIds.size} werkplekken</strong> wilt verwijderen?
+            Weet je zeker dat je <strong>{selectedIds.length} werkplekken</strong> wilt verwijderen?
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Deze actie kan niet ongedaan worden gemaakt.
@@ -734,7 +763,7 @@ const PhysicalWorkplacesTab = () => {
             color="error"
             disabled={bulkDeleteMutation.isPending || deleteAllMutation.isPending}
           >
-            {bulkDeleteMutation.isPending ? 'Verwijderen...' : `Verwijder (${selectedIds.size})`}
+            {bulkDeleteMutation.isPending ? 'Verwijderen...' : `Verwijder (${selectedIds.length})`}
           </Button>
         </DialogActions>
       </Dialog>

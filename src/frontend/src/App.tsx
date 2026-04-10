@@ -7,14 +7,16 @@ import Layout from './components/layout/Layout';
 import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const DashboardOverviewPage = lazy(() => import('./pages/DashboardOverviewPage'));
 const ScanPage = lazy(() => import('./pages/ScanPage'));
 const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage'));
 const AddAssetPage = lazy(() => import('./pages/AddAssetPage'));
 const EditAssetPage = lazy(() => import('./pages/EditAssetPage'));
 const BulkCreateAssetPage = lazy(() => import('./pages/BulkCreateAssetPage'));
 const AssetTemplatesPage = lazy(() => import('./pages/AssetTemplatesPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AdminAssetsPage = lazy(() => import('./pages/AdminAssetsPage'));
+const AdminOrganisationPage = lazy(() => import('./pages/AdminOrganisationPage'));
+const AdminLocationsPage = lazy(() => import('./pages/AdminLocationsPage'));
 const InstalledSoftwarePage = lazy(() => import('./pages/InstalledSoftwarePage'));
 const AssetIntunePage = lazy(() => import('./pages/AssetIntunePage'));
 const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
@@ -27,8 +29,13 @@ const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage')
 const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
 const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
 const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
+const WorkplaceReportsPage = lazy(() => import('./pages/WorkplaceReportsPage'));
+const RequestsDashboardPage = lazy(() => import('./pages/RequestsDashboardPage'));
+const RequestsReportsPage = lazy(() => import('./pages/RequestsReportsPage'));
 const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
 const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const IntuneDeviceDashboardPage = lazy(() => import('./pages/IntuneDeviceDashboardPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +56,7 @@ function App() {
             <Layout>
               <Suspense fallback={<Loading />}>
                 <Routes>
-                  <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+                  <Route path={ROUTES.DASHBOARD} element={<DashboardOverviewPage />} />
                   <Route path={ROUTES.SCAN} element={<ScanPage />} />
                   <Route path={ROUTES.DEVICE_MANAGEMENT} element={<DeviceManagementPage />} />
                   <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />
@@ -59,7 +66,9 @@ function App() {
                   <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
                   <Route path={ROUTES.ASSET_INTUNE} element={<AssetIntunePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
-                  <Route path={ROUTES.ADMIN} element={<AdminPage />} />
+                  <Route path={ROUTES.ADMIN_ASSETS} element={<AdminAssetsPage />} />
+                  <Route path={ROUTES.ADMIN_ORGANISATION} element={<AdminOrganisationPage />} />
+                  <Route path={ROUTES.ADMIN_LOCATIONS} element={<AdminLocationsPage />} />
                   <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />
                   <Route path={ROUTES.ROLLOUTS_NEW} element={<RolloutPlannerPage />} />
                   <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
@@ -69,10 +78,17 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
+                  <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />
                   <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
+                  <Route path={ROUTES.WORKPLACE_REPORTS} element={<WorkplaceReportsPage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
+                  <Route path={ROUTES.REQUESTS} element={<RequestsDashboardPage />} />
+                  <Route path={ROUTES.REQUESTS_ONBOARDING} element={<RequestsDashboardPage />} />
+                  <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<RequestsDashboardPage />} />
+                  <Route path={ROUTES.REQUESTS_REPORTS} element={<RequestsReportsPage />} />
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
+                  <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
                 </Routes>
               </Suspense>
             </Layout>

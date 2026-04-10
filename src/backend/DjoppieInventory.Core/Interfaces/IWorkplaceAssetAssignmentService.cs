@@ -1,4 +1,5 @@
 using DjoppieInventory.Core.DTOs;
+using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 

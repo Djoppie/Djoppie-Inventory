@@ -15,10 +15,11 @@ import {
   Switch,
   Divider,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
 import SyncIcon from '@mui/icons-material/Sync';
-import AdminDataTable, { Column } from './AdminDataTable';
+import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import { Sector, UpdateSectorDto } from '../../types/admin.types';
 import { sectorsApi } from '../../api/admin.api';
@@ -40,6 +41,23 @@ const initialFormData: FormData = {
   isActive: true,
 };
 
+const columns: GridColDef[] = [
+  {
+    field: 'code',
+    headerName: 'Code',
+    minWidth: 80,
+    flex: 0.5,
+    renderCell: (params: GridRenderCellParams) => (
+      <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#FF7700', fontSize: '0.8rem' }}>
+        {params.value}
+      </Typography>
+    ),
+  },
+  { field: 'name', headerName: 'Name', minWidth: 150, flex: 1 },
+  { field: 'description', headerName: 'Description', minWidth: 180, flex: 1.5 },
+  { field: 'sortOrder', headerName: 'Order', minWidth: 60, align: 'center', headerAlign: 'center' },
+];
+
 const SectorsTab = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -56,7 +74,7 @@ const SectorsTab = () => {
 
   const { data: sectors = [], isLoading } = useQuery({
     queryKey: ['admin', 'sectors', 'active'],
-    queryFn: () => sectorsApi.getAll(false), // Only active sectors
+    queryFn: () => sectorsApi.getAll(false),
   });
 
   const createMutation = useMutation({
@@ -198,34 +216,15 @@ const SectorsTab = () => {
     await deleteMutation.mutateAsync(deletingItem.id);
   };
 
-  const columns: Column<Sector>[] = [
-    {
-      id: 'code',
-      label: 'Code',
-      minWidth: 80,
-      format: (item) => (
-        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#FF7700', fontSize: '0.8rem' }}>
-          {item.code}
-        </Typography>
-      ),
-    },
-    { id: 'name', label: 'Name', minWidth: 150 },
-    { id: 'description', label: 'Description', minWidth: 180 },
-    { id: 'sortOrder', label: 'Order', minWidth: 60, align: 'center' },
-  ];
-
   if (isLoading) return <Loading message="Loading sectors..." />;
 
   return (
     <Box>
-      <AdminDataTable
-        data={sectors}
+      <NeumorphicDataGrid<Sector>
+        rows={sectors}
         columns={columns}
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
-        searchPlaceholder="Search sectors..."
-        emptyMessage="No sectors available"
-        getItemId={(item) => item.id}
         showActiveStatus
       />
 

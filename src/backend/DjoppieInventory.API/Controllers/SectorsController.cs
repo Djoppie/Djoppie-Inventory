@@ -1,8 +1,7 @@
-using System.Globalization;
-using System.Text;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Core.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -197,7 +196,7 @@ public class SectorsController : ControllerBase
             // Store only IDs and essential data to avoid EF Core tracking conflicts
             // Normalize codes to remove diacritics for consistent matching
             var existingCodes = existingSectors.ToDictionary(
-                s => RemoveDiacritics(s.Code).ToUpperInvariant(),
+                s => TextUtilities.RemoveDiacritics(s.Code).ToUpperInvariant(),
                 s => new { s.Id, s.Name, s.IsActive, s.SortOrder });
 
             int created = 0;
@@ -214,7 +213,7 @@ public class SectorsController : ControllerBase
                 var rawCode = groupName.StartsWith("MG-SECTOR-", StringComparison.OrdinalIgnoreCase)
                     ? groupName.Substring("MG-SECTOR-".Length)
                     : groupName;
-                var code = RemoveDiacritics(rawCode).ToUpperInvariant();
+                var code = TextUtilities.RemoveDiacritics(rawCode).ToUpperInvariant();
 
                 // Use display name or mail nickname as the sector name
                 var name = group.DisplayName;
@@ -252,26 +251,4 @@ public class SectorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Removes diacritics/accents from a string (e.g., "financiën" → "financien")
-    /// </summary>
-    private static string RemoveDiacritics(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return text;
-
-        var normalizedString = text.Normalize(NormalizationForm.FormD);
-        var stringBuilder = new StringBuilder(normalizedString.Length);
-
-        foreach (var c in normalizedString)
-        {
-            var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-            if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-            {
-                stringBuilder.Append(c);
-            }
-        }
-
-        return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
-    }
 }

@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useAsset } from '../hooks/useAssets';
 import Loading from '../components/common/Loading';
 import LiveStatusSection from '../components/intune/LiveStatusSection';
+import ConfigurationStatusSection from '../components/intune/ConfigurationStatusSection';
 import ProvisioningTimeline from '../components/intune/ProvisioningTimeline';
 import DeviceTerminal from '../components/intune/DeviceTerminal';
 import { buildRoute } from '../constants/routes';
@@ -182,6 +183,9 @@ const AssetIntunePage = () => {
         serialNumber={asset.serialNumber!}
         assetId={asset.id}
       />
+
+      {/* Configuration Profile Status (Certificate/Network diagnostics) */}
+      <ConfigurationStatusSection serialNumber={asset.serialNumber!} />
 
       {/* Provisioning Timeline */}
       <ProvisioningTimeline serialNumber={asset.serialNumber!} />

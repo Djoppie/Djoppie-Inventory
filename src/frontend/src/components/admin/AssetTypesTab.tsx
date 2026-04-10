@@ -16,9 +16,10 @@ import {
   Divider,
   MenuItem,
 } from '@mui/material';
+import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddIcon from '@mui/icons-material/Add';
-import AdminDataTable, { Column } from './AdminDataTable';
+import NeumorphicDataGrid from './NeumorphicDataGrid';
 import AdminFormDialog from './AdminFormDialog';
 import { AssetType, CreateAssetTypeDto, UpdateAssetTypeDto, Category } from '../../types/admin.types';
 import { assetTypesApi, categoriesApi } from '../../api/admin.api';
@@ -71,6 +72,33 @@ const AssetTypesTab = () => {
     categories.forEach((c) => map.set(c.id, c));
     return map;
   }, [categories]);
+
+  const columns: GridColDef[] = useMemo(() => [
+    {
+      field: 'code',
+      headerName: 'Code',
+      minWidth: 100,
+      flex: 0.5,
+      renderCell: (params: GridRenderCellParams) => (
+        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    { field: 'name', headerName: 'Name', minWidth: 150, flex: 1 },
+    {
+      field: 'categoryId',
+      headerName: 'Category',
+      minWidth: 120,
+      flex: 0.8,
+      valueGetter: (value: number) => {
+        const cat = value ? categoryMap.get(value) : null;
+        return cat ? cat.name : '-';
+      },
+    },
+    { field: 'description', headerName: 'Description', minWidth: 200, flex: 1.5 },
+    { field: 'sortOrder', headerName: 'Sort Order', minWidth: 80, align: 'center', headerAlign: 'center' },
+  ], [categoryMap]);
 
   const createMutation = useMutation({
     mutationFn: assetTypesApi.create,
@@ -209,43 +237,15 @@ const AssetTypesTab = () => {
     await deleteMutation.mutateAsync(deletingItem.id);
   };
 
-  const columns: Column<AssetType>[] = [
-    {
-      id: 'code',
-      label: 'Code',
-      minWidth: 100,
-      format: (item) => (
-        <Typography sx={{ fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' }}>
-          {item.code}
-        </Typography>
-      ),
-    },
-    { id: 'name', label: 'Name', minWidth: 150 },
-    {
-      id: 'categoryId',
-      label: 'Category',
-      minWidth: 120,
-      format: (item) => {
-        const cat = item.categoryId ? categoryMap.get(item.categoryId) : null;
-        return cat ? cat.name : '-';
-      },
-    },
-    { id: 'description', label: 'Description', minWidth: 200 },
-    { id: 'sortOrder', label: 'Sort Order', minWidth: 80, align: 'center' },
-  ];
-
   if (isLoading) return <Loading message="Loading asset types..." />;
 
   return (
     <Box>
-      <AdminDataTable
-        data={assetTypes}
+      <NeumorphicDataGrid<AssetType>
+        rows={assetTypes}
         columns={columns}
         onEdit={handleOpenDialog}
         onDelete={handleOpenDeleteDialog}
-        searchPlaceholder="Search asset types..."
-        emptyMessage="No asset types available. Click the + button to add one."
-        getItemId={(item) => item.id}
         showActiveStatus
       />
 
@@ -285,7 +285,6 @@ const AssetTypesTab = () => {
         isSubmitting={createMutation.isPending || updateMutation.isPending}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Code Field - disabled when editing */}
           <TextField
             label="Code"
             value={formData.code}

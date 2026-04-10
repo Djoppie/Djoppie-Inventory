@@ -1,9 +1,12 @@
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
+using DjoppieInventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 namespace DjoppieInventory.API.Controllers.Rollout;
 
@@ -17,13 +20,19 @@ namespace DjoppieInventory.API.Controllers.Rollout;
 public class RolloutSessionsController : ControllerBase
 {
     private readonly IRolloutRepository _rolloutRepository;
+    private readonly IAssetMovementService _movementService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<RolloutSessionsController> _logger;
 
     public RolloutSessionsController(
         IRolloutRepository rolloutRepository,
+        IAssetMovementService movementService,
+        ApplicationDbContext context,
         ILogger<RolloutSessionsController> logger)
     {
         _rolloutRepository = rolloutRepository;
+        _movementService = movementService;
+        _context = context;
         _logger = logger;
     }
 
@@ -303,6 +312,213 @@ public class RolloutSessionsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Gets all days for a specific session.
+    /// </summary>
+    /// <param name="id">Session ID</param>
+    /// <param name="includeWorkplaces">Include workplaces in response</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/days")]
+    [ProducesResponseType(typeof(IEnumerable<RolloutDayDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<RolloutDayDto>>> GetDays(
+        int id,
+        [FromQuery] bool includeWorkplaces = false,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify session exists
+        var session = await _rolloutRepository.GetSessionByIdAsync(id, cancellationToken: cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {id} not found" });
+        }
+
+        // Get days for this session
+        var days = await _rolloutRepository.GetDaysBySessionIdAsync(id, includeWorkplaces, cancellationToken);
+        var dayDtos = days.Select(MapToDayDto).ToList();
+
+        return Ok(dayDtos);
+    }
+
+    /// <summary>
+    /// Creates a new day for a session.
+    /// </summary>
+    /// <param name="id">Session ID</param>
+    /// <param name="dto">Day creation data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/days")]
+    [ProducesResponseType(typeof(RolloutDayDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutDayDto>> CreateDay(
+        int id,
+        [FromBody] CreateRolloutDayDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify session exists
+        var session = await _rolloutRepository.GetSessionByIdAsync(id, cancellationToken: cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {id} not found" });
+        }
+
+        // Get the next day number
+        var existingDays = await _rolloutRepository.GetDaysBySessionIdAsync(id, false, cancellationToken);
+        var maxDayNumber = existingDays.Any() ? existingDays.Max(d => d.DayNumber) : 0;
+
+        var day = new RolloutDay
+        {
+            RolloutSessionId = id,
+            Date = dto.Date,
+            Name = dto.Name,
+            DayNumber = maxDayNumber + 1,
+            ScheduledServiceIds = dto.ScheduledServiceIds.Count > 0
+                ? string.Join(",", dto.ScheduledServiceIds)
+                : null,
+            Status = RolloutDayStatus.Planning,
+            Notes = dto.Notes
+        };
+
+        var createdDay = await _rolloutRepository.CreateDayAsync(day, cancellationToken);
+
+        _logger.LogInformation("Created rollout day {DayId} for session {SessionId}", createdDay.Id, id);
+
+        return CreatedAtAction(nameof(GetDays), new { id = id }, MapToDayDto(createdDay));
+    }
+
+    /// <summary>
+    /// Gets asset status change report for a rollout session.
+    /// Shows all assets that were deployed (Nieuw->InGebruik) or decommissioned (->UitDienst).
+    /// </summary>
+    /// <param name="id">Session ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/asset-report")]
+    [ProducesResponseType(typeof(RolloutAssetStatusReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RolloutAssetStatusReportDto>> GetAssetReport(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await _rolloutRepository.GetSessionByIdAsync(id, true, true, cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {id} not found" });
+        }
+
+        var assetChanges = await GetAssetChangesForSession(id, cancellationToken);
+
+        var report = new RolloutAssetStatusReportDto
+        {
+            SessionId = id,
+            SessionName = session.SessionName,
+            GeneratedAt = DateTime.UtcNow,
+            TotalDeployments = assetChanges.Count(c => c.ChangeType == "InGebruik"),
+            TotalDecommissions = assetChanges.Count(c => c.ChangeType == "UitDienst"),
+            TotalAssetsDeployed = assetChanges.Count(c => c.ChangeType == "InGebruik"),
+            TotalAssetsDecommissioned = assetChanges.Count(c => c.ChangeType == "UitDienst"),
+            TotalWorkplacesCompleted = session.Days?
+                .Sum(d => d.Workplaces?.Count(w => w.Status == RolloutWorkplaceStatus.Completed) ?? 0) ?? 0,
+            AssetChanges = assetChanges
+        };
+
+        return Ok(report);
+    }
+
+    /// <summary>
+    /// Exports asset status change report as CSV file.
+    /// Focuses on asset information (no technician data).
+    /// </summary>
+    /// <param name="id">Session ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/asset-report/export")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ExportAssetReport(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await _rolloutRepository.GetSessionByIdAsync(id, cancellationToken: cancellationToken);
+        if (session == null)
+        {
+            return NotFound(new { message = $"Rollout session with ID {id} not found" });
+        }
+
+        var assetChanges = await GetAssetChangesForSession(id, cancellationToken);
+
+        var sb = new StringBuilder();
+
+        // Header - Asset-focused columns (no technician info)
+        sb.AppendLine("Datum,Type,Werkplaats,Gebruiker,GebruikerEmail,AssetCode,Serienummer,Merk,Model,OudeStatus,NieuweStatus,Dienst");
+
+        foreach (var change in assetChanges.OrderBy(c => c.CompletedAt))
+        {
+            sb.AppendLine(string.Join(",",
+                change.CompletedAt.ToString("yyyy-MM-dd HH:mm"),
+                EscapeCsvField(change.ChangeType == "InGebruik" ? "Onboarding" : "Offboarding"),
+                EscapeCsvField(change.Location ?? ""),
+                EscapeCsvField(change.UserName),
+                EscapeCsvField(change.UserEmail ?? ""),
+                EscapeCsvField(change.AssetCode),
+                EscapeCsvField(change.SerialNumber ?? ""),
+                EscapeCsvField(change.Brand ?? ""),
+                EscapeCsvField(change.Model ?? ""),
+                EscapeCsvField(change.OldStatus),
+                EscapeCsvField(change.NewStatus),
+                EscapeCsvField(change.ServiceName ?? "")
+            ));
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var fileName = $"rollout-asset-wijzigingen-{session.SessionName.Replace(" ", "-")}-{DateTime.UtcNow:yyyyMMdd}.csv";
+
+        _logger.LogInformation("Exported asset changes for session {SessionId} to CSV", id);
+
+        return File(bytes, "text/csv", fileName);
+    }
+
+    /// <summary>
+    /// Helper method to load asset changes with full entity includes for proper data mapping.
+    /// </summary>
+    private async Task<List<RolloutAssetChangeDto>> GetAssetChangesForSession(
+        int sessionId,
+        CancellationToken cancellationToken)
+    {
+        var movements = await _context.RolloutAssetMovements
+            .Include(m => m.Asset)
+                .ThenInclude(a => a!.AssetType)
+            .Include(m => m.RolloutWorkplace)
+                .ThenInclude(w => w!.RolloutDay)
+            .Include(m => m.NewService)
+            .Where(m => m.RolloutSessionId == sessionId)
+            .OrderByDescending(m => m.PerformedAt)
+            .ToListAsync(cancellationToken);
+
+        return movements.Select(m => new RolloutAssetChangeDto
+        {
+            AssetId = m.AssetId,
+            AssetCode = m.Asset?.AssetCode ?? "",
+            AssetName = m.Asset?.AssetName,
+            EquipmentType = m.Asset?.AssetType?.Name ?? "Unknown",
+            SerialNumber = m.SerialNumber,
+            Brand = m.Asset?.Brand,
+            Model = m.Asset?.Model,
+            OldStatus = m.PreviousStatus?.ToString() ?? "",
+            NewStatus = m.NewStatus.ToString(),
+            ChangeType = m.MovementType == Core.Entities.Enums.MovementType.Deployed ? "InGebruik" : "UitDienst",
+            WorkplaceId = m.RolloutWorkplaceId ?? 0,
+            UserName = m.RolloutWorkplace?.UserName ?? "",
+            UserEmail = m.RolloutWorkplace?.UserEmail,
+            Location = m.NewLocation,
+            ServiceName = m.NewService?.Name,
+            DayId = m.RolloutWorkplace?.RolloutDayId ?? 0,
+            DayNumber = m.RolloutWorkplace?.RolloutDay?.DayNumber ?? 0,
+            Date = m.RolloutWorkplace?.RolloutDay?.Date ?? m.PerformedAt,
+            CompletedBy = m.PerformedBy,
+            CompletedByEmail = m.PerformedByEmail,
+            CompletedAt = m.PerformedAt
+        }).ToList();
+    }
+
     #region Private Mapping Methods
 
     private static RolloutSessionDto MapToDto(RolloutSession session)
@@ -388,6 +604,19 @@ public class RolloutSessionsController : ControllerBase
             CreatedAt = workplace.CreatedAt,
             UpdatedAt = workplace.UpdatedAt
         };
+    }
+
+    private static string EscapeCsvField(string field)
+    {
+        if (string.IsNullOrEmpty(field))
+            return "";
+
+        if (field.Contains(',') || field.Contains('"') || field.Contains('\n') || field.Contains('\r'))
+        {
+            return $"\"{field.Replace("\"", "\"\"")}\"";
+        }
+
+        return field;
     }
 
     #endregion

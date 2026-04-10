@@ -1,6 +1,7 @@
 import { apiClient } from './client';
-import { IntuneDevice, AutopilotDevice } from '../types/graph.types';
+import { IntuneDevice, AutopilotDevice, DeviceConfigurationStatus } from '../types/graph.types';
 import { ProvisioningTimeline } from '../types/provisioning.types';
+import { DeviceGroupMembership, DeviceEventsResponse, DeviceHealthInfo } from '../types/intune-dashboard.types';
 
 /**
  * API service for Microsoft Intune operations
@@ -100,6 +101,26 @@ export const intuneApi = {
   },
 
   /**
+   * Get configuration profile deployment statuses for a device by Intune device ID.
+   * Shows certificate, Wi-Fi, VPN profile statuses — critical for diagnosing
+   * network issues after primary user changes.
+   * @param deviceId - The Intune device identifier
+   */
+  getDeviceConfigurationStatus: async (deviceId: string): Promise<DeviceConfigurationStatus> => {
+    const response = await apiClient.get<DeviceConfigurationStatus>(`/intune/devices/${deviceId}/configuration-status`);
+    return response.data;
+  },
+
+  /**
+   * Get configuration profile deployment statuses for a device by serial number.
+   * @param serialNumber - The device serial number
+   */
+  getDeviceConfigurationStatusBySerial: async (serialNumber: string): Promise<DeviceConfigurationStatus> => {
+    const response = await apiClient.get<DeviceConfigurationStatus>(`/intune/devices/serial/${serialNumber}/configuration-status`);
+    return response.data;
+  },
+
+  /**
    * Sync Intune data (enrollment date, last check-in, certificate expiry) to Asset entities
    * @param assetIds - Optional array of asset IDs to sync. If not provided, syncs all laptops/desktops.
    */
@@ -116,7 +137,22 @@ export const intuneApi = {
   importDevicesAsAssets: async (request: ImportIntuneDevicesRequest): Promise<ImportIntuneDevicesResult> => {
     const response = await apiClient.post<ImportIntuneDevicesResult>('/intune/import-devices', request);
     return response.data;
-  }
+  },
+
+  getDeviceGroups: async (deviceId: string): Promise<DeviceGroupMembership> => {
+    const response = await apiClient.get<DeviceGroupMembership>(`/intune/devices/${deviceId}/groups`);
+    return response.data;
+  },
+
+  getDeviceEvents: async (deviceId: string): Promise<DeviceEventsResponse> => {
+    const response = await apiClient.get<DeviceEventsResponse>(`/intune/devices/${deviceId}/events`);
+    return response.data;
+  },
+
+  getDeviceHealth: async (serialNumber: string): Promise<DeviceHealthInfo> => {
+    const response = await apiClient.get<DeviceHealthInfo>(`/intune/devices/serial/${serialNumber}/health`);
+    return response.data;
+  },
 };
 
 /**

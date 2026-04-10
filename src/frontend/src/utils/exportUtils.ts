@@ -251,3 +251,105 @@ export const getDefaultExportColumns = (): ExportColumn[] => [
   { key: 'createdAt', label: 'Created At', enabled: false },
   { key: 'updatedAt', label: 'Updated At', enabled: false },
 ];
+
+// ========================================
+// Generic Export Utilities (for all tables)
+// ========================================
+
+export interface GenericExportColumn {
+  field: string;
+  headerName: string;
+  valueFormatter?: (value: any) => string;
+}
+
+/**
+ * Generic export to CSV function that works with any data type
+ * @param data - Array of objects to export
+ * @param filename - Name of the file to download
+ * @param columns - Column definitions with field names and headers
+ */
+export const exportToCsv = <T extends Record<string, any>>(
+  data: T[],
+  filename: string,
+  columns: GenericExportColumn[]
+): void => {
+  if (data.length === 0) {
+    console.warn('No data to export');
+    return;
+  }
+
+  // Create CSV header row
+  const headers = columns.map((col) => col.headerName);
+  const headerRow = headers.map((h) => `"${h}"`).join(',');
+
+  // Create CSV data rows
+  const dataRows = data.map((row) => {
+    return columns
+      .map((col) => {
+        const value = row[col.field];
+        const formattedValue = col.valueFormatter
+          ? col.valueFormatter(value)
+          : value ?? '';
+
+        // Escape quotes and wrap in quotes if contains comma, newline, or quote
+        const stringValue = String(formattedValue);
+        if (
+          stringValue.includes(',') ||
+          stringValue.includes('\n') ||
+          stringValue.includes('"')
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      })
+      .join(',');
+  });
+
+  // Combine header and data
+  const csvContent = [headerRow, ...dataRows].join('\n');
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `${filename}.csv`);
+};
+
+/**
+ * Format date for CSV export (generic helper)
+ * @param date - Date string or Date object
+ * @returns Formatted date string (DD/MM/YYYY)
+ */
+export const formatDateForExport = (date: string | Date | null | undefined): string => {
+  if (!date) return '';
+
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+
+  return format(d, 'dd/MM/yyyy');
+};
+
+/**
+ * Format currency for CSV export (generic helper)
+ * @param value - Numeric value
+ * @param currency - Currency symbol (default: '€')
+ * @returns Formatted currency string
+ */
+export const formatCurrencyForExport = (value: number | null | undefined, currency = '€'): string => {
+  if (value === null || value === undefined) return '';
+  return `${currency}${value.toFixed(2)}`;
+};
+
+/**
+ * Format boolean for CSV export (generic helper)
+ * @param value - Boolean value
+ * @param trueLabel - Label for true value (default: 'Yes')
+ * @param falseLabel - Label for false value (default: 'No')
+ * @returns Formatted string
+ */
+export const formatBooleanForExport = (
+  value: boolean | null | undefined,
+  trueLabel = 'Yes',
+  falseLabel = 'No'
+): string => {
+  if (value === null || value === undefined) return '';
+  return value ? trueLabel : falseLabel;
+};

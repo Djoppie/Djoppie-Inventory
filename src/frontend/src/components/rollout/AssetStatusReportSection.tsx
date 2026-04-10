@@ -45,7 +45,7 @@ interface AssetStatusReportSectionProps {
 }
 
 type TabValue = 'all' | 'deployed' | 'decommissioned';
-type SortField = 'assetCode' | 'equipmentType' | 'userName' | 'date' | 'completedBy';
+type SortField = 'assetCode' | 'equipmentType' | 'userName' | 'date' | 'changeType';
 type SortOrder = 'asc' | 'desc';
 
 /**
@@ -141,8 +141,8 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
         case 'date':
           comparison = new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime();
           break;
-        case 'completedBy':
-          comparison = a.completedBy.localeCompare(b.completedBy);
+        case 'changeType':
+          comparison = a.changeType.localeCompare(b.changeType);
           break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -211,7 +211,7 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
-            sm: 'repeat(3, 1fr)',
+            sm: 'repeat(2, 1fr)',
           },
           gap: 2,
           mb: 3,
@@ -219,24 +219,17 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
       >
         <StatCard
           icon={<CheckCircleIcon sx={{ color: 'success.main' }} />}
-          label="In Gebruik Gezet"
+          label="Onboarding"
           value={deployedCount}
-          description="Assets van Nieuw naar InGebruik"
+          description="Assets in gebruik gezet"
           color="success"
         />
         <StatCard
           icon={<RemoveCircleIcon sx={{ color: 'error.main' }} />}
-          label="Uit Dienst Gezet"
+          label="Offboarding"
           value={decommissionedCount}
-          description="Assets naar UitDienst"
+          description="Assets uit dienst gezet"
           color="error"
-        />
-        <StatCard
-          icon={<PersonIcon sx={{ color: 'info.main' }} />}
-          label="Werkplekken Voltooid"
-          value={report.totalWorkplacesCompleted}
-          description="Met asset wijzigingen"
-          color="info"
         />
       </Box>
 
@@ -291,22 +284,22 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
             >
               <TableCell>
                 <TableSortLabel
-                  active={sortField === 'assetCode'}
-                  direction={sortField === 'assetCode' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('assetCode')}
+                  active={sortField === 'date'}
+                  direction={sortField === 'date' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('date')}
                   sx={{
                     '&.Mui-active': { color: ASSET_COLOR },
                     '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
                   }}
                 >
-                  Asset
+                  Datum
                 </TableSortLabel>
               </TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortField === 'equipmentType'}
-                  direction={sortField === 'equipmentType' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('equipmentType')}
+                  active={sortField === 'changeType'}
+                  direction={sortField === 'changeType' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('changeType')}
                   sx={{
                     '&.Mui-active': { color: ASSET_COLOR },
                     '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
@@ -315,7 +308,7 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   Type
                 </TableSortLabel>
               </TableCell>
-              <TableCell>Status Wijziging</TableCell>
+              <TableCell>Werkplaats</TableCell>
               <TableCell>
                 <TableSortLabel
                   active={sortField === 'userName'}
@@ -329,33 +322,21 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   Gebruiker
                 </TableSortLabel>
               </TableCell>
-              <TableCell>Locatie</TableCell>
               <TableCell>
                 <TableSortLabel
-                  active={sortField === 'completedBy'}
-                  direction={sortField === 'completedBy' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('completedBy')}
+                  active={sortField === 'assetCode'}
+                  direction={sortField === 'assetCode' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('assetCode')}
                   sx={{
                     '&.Mui-active': { color: ASSET_COLOR },
                     '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
                   }}
                 >
-                  Uitgevoerd door
+                  Asset Code
                 </TableSortLabel>
               </TableCell>
-              <TableCell>
-                <TableSortLabel
-                  active={sortField === 'date'}
-                  direction={sortField === 'date' ? sortOrder : 'asc'}
-                  onClick={() => handleSort('date')}
-                  sx={{
-                    '&.Mui-active': { color: ASSET_COLOR },
-                    '& .MuiTableSortLabel-icon': { color: `${ASSET_COLOR} !important` },
-                  }}
-                >
-                  Datum
-                </TableSortLabel>
-              </TableCell>
+              <TableCell>Serienummer</TableCell>
+              <TableCell>Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -378,6 +359,49 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                   },
                 }}
               >
+                {/* Datum */}
+                <TableCell>
+                  <Tooltip title={formatDate(change.date)}>
+                    <Typography variant="body2">{formatDateTime(change.completedAt)}</Typography>
+                  </Tooltip>
+                </TableCell>
+
+                {/* Type (Onboarding/Offboarding) */}
+                <TableCell>
+                  <Chip
+                    size="small"
+                    label={change.changeType === 'InGebruik' ? 'Onboarding' : 'Offboarding'}
+                    color={change.changeType === 'InGebruik' ? 'success' : 'error'}
+                    sx={{ fontSize: '0.7rem', fontWeight: 600 }}
+                  />
+                </TableCell>
+
+                {/* Werkplaats */}
+                <TableCell>
+                  <Typography variant="body2">{change.location || '-'}</Typography>
+                  {change.serviceName && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {change.serviceName}
+                    </Typography>
+                  )}
+                </TableCell>
+
+                {/* Gebruiker */}
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <PersonIcon fontSize="small" color="action" />
+                    <Box>
+                      <Typography variant="body2">{change.userName}</Typography>
+                      {change.userEmail && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {change.userEmail}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+                </TableCell>
+
+                {/* Asset Code */}
                 <TableCell>
                   <Tooltip title={change.assetName || change.assetCode}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -386,25 +410,27 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                         <Typography variant="body2" fontWeight="medium">
                           {change.assetCode}
                         </Typography>
-                        {change.serialNumber && (
-                          <Typography variant="caption" color="text.secondary">
-                            S/N: {change.serialNumber}
-                          </Typography>
-                        )}
+                        <Typography variant="caption" color="text.secondary">
+                          {getEquipmentLabel(change.equipmentType)}
+                        </Typography>
                       </Box>
                     </Box>
                   </Tooltip>
                 </TableCell>
+
+                {/* Serienummer */}
                 <TableCell>
                   <Typography variant="body2">
-                    {getEquipmentLabel(change.equipmentType)}
+                    {change.serialNumber || '-'}
                   </Typography>
                   {change.brand && change.model && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                       {change.brand} {change.model}
                     </Typography>
                   )}
                 </TableCell>
+
+                {/* Status */}
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Chip
@@ -423,30 +449,6 @@ const AssetStatusReportSection = ({ sessionId, sessionName }: AssetStatusReportS
                       sx={{ fontSize: '0.7rem' }}
                     />
                   </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{change.userName}</Typography>
-                  {change.userEmail && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                      {change.userEmail}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{change.location || '-'}</Typography>
-                  {change.serviceName && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                      {change.serviceName}
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{change.completedBy}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Tooltip title={formatDate(change.date)}>
-                    <Typography variant="body2">{formatDateTime(change.completedAt)}</Typography>
-                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

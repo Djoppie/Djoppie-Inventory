@@ -10,6 +10,27 @@ import type {
   SessionProgressStats,
   DayProgressStats,
   ReportExportOptions,
+  HardwareReportItem,
+  HardwareReportFilters,
+  HardwareReportSummary,
+  WorkplaceReportItem,
+  WorkplaceReportSummary,
+  AssetChangeHistoryItem,
+  AssetChangeHistoryFilters,
+  AssetChangeHistorySummary,
+  LicenseSummary,
+  LicenseUser,
+  LicenseReportFilters,
+  LicenseOptimization,
+  LeaseReportItem,
+  LeaseReportSummary,
+  LeaseReportFilters,
+  RolloutSessionOverview,
+  RolloutDayChecklist,
+  UnscheduledAsset,
+  RolloutReportFilterOptions,
+  RolloutReportFilters,
+  RolloutExcelExportRequest,
 } from '../types/report.types';
 
 // ===== PROGRESS API CALLS =====
@@ -223,4 +244,491 @@ export const getMovementStatusColor = (
     default:
       return 'warning';
   }
+};
+
+// ===== HARDWARE REPORT API CALLS =====
+
+/**
+ * Get all assets for hardware inventory report
+ */
+export const getHardwareReport = async (
+  filters?: HardwareReportFilters
+): Promise<HardwareReportItem[]> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status) {
+    params.status = filters.status;
+  }
+  if (filters?.assetTypeId) {
+    params.assetTypeId = filters.assetTypeId;
+  }
+  if (filters?.categoryId) {
+    params.categoryId = filters.categoryId;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+  if (filters?.buildingId) {
+    params.buildingId = filters.buildingId;
+  }
+  if (filters?.searchQuery) {
+    params.search = filters.searchQuery;
+  }
+
+  const response = await apiClient.get<HardwareReportItem[]>('/reports/hardware', { params });
+  return response.data;
+};
+
+/**
+ * Get hardware report summary statistics
+ */
+export const getHardwareReportSummary = async (): Promise<HardwareReportSummary> => {
+  const response = await apiClient.get<HardwareReportSummary>('/reports/hardware/summary');
+  return response.data;
+};
+
+/**
+ * Export hardware report as Excel
+ */
+export const exportHardwareReport = async (
+  filters?: HardwareReportFilters
+): Promise<Blob> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status) {
+    params.status = filters.status;
+  }
+  if (filters?.assetTypeId) {
+    params.assetTypeId = filters.assetTypeId;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+  if (filters?.buildingId) {
+    params.buildingId = filters.buildingId;
+  }
+
+  const response = await apiClient.get('/reports/hardware/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== WORKPLACE REPORT API CALLS =====
+
+/**
+ * Get all workplaces for workplace report
+ */
+export const getWorkplaceReport = async (): Promise<WorkplaceReportItem[]> => {
+  const response = await apiClient.get<WorkplaceReportItem[]>('/reports/workplaces');
+  return response.data;
+};
+
+/**
+ * Get workplace report summary (occupancy stats)
+ */
+export const getWorkplaceReportSummary = async (): Promise<WorkplaceReportSummary> => {
+  const response = await apiClient.get<WorkplaceReportSummary>('/reports/workplaces/summary');
+  return response.data;
+};
+
+/**
+ * Export workplace report as Excel
+ */
+export const exportWorkplaceReport = async (): Promise<Blob> => {
+  const response = await apiClient.get('/reports/workplaces/export', {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== SWAP HISTORY REPORT API CALLS =====
+
+/**
+ * Get asset change history - tracks all asset status and owner changes
+ */
+export const getAssetChangeHistory = async (
+  filters?: AssetChangeHistoryFilters
+): Promise<AssetChangeHistoryItem[]> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.dateFrom) {
+    params.dateFrom = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    params.dateTo = filters.dateTo;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+  if (filters?.eventType) {
+    params.eventType = filters.eventType;
+  }
+  if (filters?.searchQuery) {
+    params.search = filters.searchQuery;
+  }
+
+  const response = await apiClient.get<AssetChangeHistoryItem[]>('/reports/swaps', { params });
+  return response.data;
+};
+
+/**
+ * Get asset change history summary with asset-focused metrics
+ */
+export const getAssetChangeHistorySummary = async (
+  filters?: Pick<AssetChangeHistoryFilters, 'dateFrom' | 'dateTo'>
+): Promise<AssetChangeHistorySummary> => {
+  const params: Record<string, string> = {};
+
+  if (filters?.dateFrom) {
+    params.dateFrom = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    params.dateTo = filters.dateTo;
+  }
+
+  const response = await apiClient.get<AssetChangeHistorySummary>('/reports/swaps/summary', { params });
+  return response.data;
+};
+
+/**
+ * Export asset change history as CSV
+ */
+export const exportAssetChangeHistory = async (
+  filters?: Pick<AssetChangeHistoryFilters, 'dateFrom' | 'dateTo' | 'serviceId'>
+): Promise<Blob> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.dateFrom) {
+    params.dateFrom = filters.dateFrom;
+  }
+  if (filters?.dateTo) {
+    params.dateTo = filters.dateTo;
+  }
+  if (filters?.serviceId) {
+    params.serviceId = filters.serviceId;
+  }
+
+  const response = await apiClient.get('/reports/swaps/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// Backward compatibility aliases (deprecated)
+/** @deprecated Use getAssetChangeHistory instead */
+export const getSwapHistory = getAssetChangeHistory;
+/** @deprecated Use getAssetChangeHistorySummary instead */
+export const getSwapHistorySummary = getAssetChangeHistorySummary;
+/** @deprecated Use exportAssetChangeHistory instead */
+export const exportSwapHistory = exportAssetChangeHistory;
+
+// ===== LICENSE REPORT API CALLS =====
+
+/**
+ * Get MS365 license summary
+ */
+export const getLicenseSummary = async (): Promise<LicenseSummary> => {
+  const response = await apiClient.get<LicenseSummary>('/reports/licenses/summary');
+  return response.data;
+};
+
+/**
+ * Get license users (users with assigned licenses)
+ */
+export const getLicenseUsers = async (
+  filters?: LicenseReportFilters
+): Promise<LicenseUser[]> => {
+  const params: Record<string, string> = {};
+
+  if (filters?.skuId) {
+    params.skuId = filters.skuId;
+  }
+  if (filters?.department) {
+    params.department = filters.department;
+  }
+  if (filters?.searchQuery) {
+    params.search = filters.searchQuery;
+  }
+
+  const response = await apiClient.get<LicenseUser[]>('/reports/licenses/users', { params });
+  return response.data;
+};
+
+/**
+ * Export license report as Excel
+ */
+export const exportLicenseReport = async (): Promise<Blob> => {
+  const response = await apiClient.get('/reports/licenses/export', {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+/**
+ * Get license optimization analysis
+ */
+export const getLicenseOptimization = async (
+  inactiveDaysThreshold: number = 90
+): Promise<LicenseOptimization> => {
+  const response = await apiClient.get<LicenseOptimization>('/reports/licenses/optimization', {
+    params: { inactiveDaysThreshold },
+  });
+  return response.data;
+};
+
+// ===== LEASE REPORT API CALLS =====
+
+/**
+ * Get lease contracts for report
+ */
+export const getLeaseReport = async (
+  filters?: LeaseReportFilters
+): Promise<LeaseReportItem[]> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status && filters.status !== 'all') {
+    params.status = filters.status;
+  }
+  if (filters?.vendorId) {
+    params.vendorId = filters.vendorId;
+  }
+  if (filters?.expiringWithinDays) {
+    params.expiringWithinDays = filters.expiringWithinDays;
+  }
+
+  const response = await apiClient.get<LeaseReportItem[]>('/reports/leases', { params });
+  return response.data;
+};
+
+/**
+ * Get lease report summary
+ */
+export const getLeaseReportSummary = async (): Promise<LeaseReportSummary> => {
+  const response = await apiClient.get<LeaseReportSummary>('/reports/leases/summary');
+  return response.data;
+};
+
+/**
+ * Export lease report as Excel
+ */
+export const exportLeaseReport = async (
+  filters?: LeaseReportFilters
+): Promise<Blob> => {
+  const params: Record<string, string | number> = {};
+
+  if (filters?.status && filters.status !== 'all') {
+    params.status = filters.status;
+  }
+  if (filters?.expiringWithinDays) {
+    params.expiringWithinDays = filters.expiringWithinDays;
+  }
+
+  const response = await apiClient.get('/reports/leases/export', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== ROLLOUT REPORT API CALLS =====
+
+/**
+ * Get rollout session overview with KPIs and breakdowns
+ */
+export const getRolloutSessionOverview = async (
+  sessionId: number,
+  filters?: RolloutReportFilters
+): Promise<RolloutSessionOverview> => {
+  const params: Record<string, string | number | string[]> = {};
+
+  if (filters?.serviceIds && filters.serviceIds.length > 0) {
+    params.serviceIds = filters.serviceIds.join(',');
+  }
+  if (filters?.buildingIds && filters.buildingIds.length > 0) {
+    params.buildingIds = filters.buildingIds.join(',');
+  }
+
+  const response = await apiClient.get<RolloutSessionOverview>(
+    `/reports/rollout/sessions/${sessionId}/overview`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * Get rollout session checklist (all days with workplaces)
+ */
+export const getRolloutSessionChecklist = async (
+  sessionId: number,
+  filters?: RolloutReportFilters
+): Promise<RolloutDayChecklist[]> => {
+  const params: Record<string, string | number | string[]> = {};
+
+  if (filters?.serviceIds && filters.serviceIds.length > 0) {
+    params.serviceIds = filters.serviceIds.join(',');
+  }
+  if (filters?.buildingIds && filters.buildingIds.length > 0) {
+    params.buildingIds = filters.buildingIds.join(',');
+  }
+  if (filters?.statuses && filters.statuses.length > 0) {
+    params.statuses = filters.statuses.join(',');
+  }
+
+  const response = await apiClient.get<RolloutDayChecklist[]>(
+    `/reports/rollout/sessions/${sessionId}/checklist`,
+    { params }
+  );
+  return response.data;
+};
+
+/**
+ * Get unscheduled assets (not yet in any rollout)
+ */
+export const getUnscheduledAssets = async (
+  sessionId: number,
+  limit: number = 100
+): Promise<UnscheduledAsset[]> => {
+  const response = await apiClient.get<UnscheduledAsset[]>(
+    `/reports/rollout/sessions/${sessionId}/unscheduled`,
+    { params: { limit } }
+  );
+  return response.data;
+};
+
+/**
+ * Get filter options for rollout report
+ */
+export const getRolloutReportFilterOptions = async (
+  sessionId: number
+): Promise<RolloutReportFilterOptions> => {
+  const response = await apiClient.get<RolloutReportFilterOptions>(
+    `/reports/rollout/sessions/${sessionId}/filter-options`
+  );
+  return response.data;
+};
+
+/**
+ * Export rollout report as Excel
+ */
+export const exportRolloutReport = async (
+  sessionId: number,
+  options?: RolloutExcelExportRequest
+): Promise<Blob> => {
+  const params: Record<string, string | boolean> = {};
+
+  if (options?.serviceIds && options.serviceIds.length > 0) {
+    params.serviceIds = options.serviceIds.join(',');
+  }
+  if (options?.buildingIds && options.buildingIds.length > 0) {
+    params.buildingIds = options.buildingIds.join(',');
+  }
+  if (options?.includeOverview !== undefined) {
+    params.includeOverview = options.includeOverview;
+  }
+  if (options?.includeSwapChecklist !== undefined) {
+    params.includeSwapChecklist = options.includeSwapChecklist;
+  }
+  if (options?.includeUnscheduledAssets !== undefined) {
+    params.includeUnscheduledAssets = options.includeUnscheduledAssets;
+  }
+  if (options?.includeSectorBreakdown !== undefined) {
+    params.includeSectorBreakdown = options.includeSectorBreakdown;
+  }
+
+  const response = await apiClient.get(`/reports/rollout/sessions/${sessionId}/export`, {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+// ===== SERIAL NUMBER MANAGEMENT API CALLS =====
+
+/**
+ * Asset serial number data for rollout session
+ */
+export interface RolloutAssetSerial {
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  equipmentType: string;
+  currentSerialNumber?: string;
+  brand?: string;
+  model?: string;
+  workplaceName: string;
+  userDisplayName?: string;
+  serviceName: string;
+  buildingName: string;
+  date?: string;
+  status: string;
+  isMissingSerial: boolean;
+}
+
+/**
+ * Single serial number update
+ */
+export interface SerialNumberUpdate {
+  assetId: number;
+  serialNumber: string;
+}
+
+/**
+ * Bulk serial number update request
+ */
+export interface BulkSerialNumberUpdateRequest {
+  updates: SerialNumberUpdate[];
+}
+
+/**
+ * Bulk serial number update result
+ */
+export interface BulkSerialNumberUpdateResult {
+  successCount: number;
+  failedCount: number;
+  errors: string[];
+}
+
+/**
+ * Get all assets linked to a rollout session for serial number management
+ */
+export const getRolloutAssetSerials = async (
+  sessionId: number,
+  onlyMissing: boolean = false
+): Promise<RolloutAssetSerial[]> => {
+  const response = await apiClient.get<RolloutAssetSerial[]>(
+    `/reports/rollout/sessions/${sessionId}/serial-numbers`,
+    { params: { onlyMissing } }
+  );
+  return response.data;
+};
+
+/**
+ * Bulk update serial numbers for assets
+ */
+export const bulkUpdateSerialNumbers = async (
+  sessionId: number,
+  updates: SerialNumberUpdate[]
+): Promise<BulkSerialNumberUpdateResult> => {
+  const response = await apiClient.patch<BulkSerialNumberUpdateResult>(
+    `/reports/rollout/sessions/${sessionId}/serial-numbers/bulk`,
+    { updates }
+  );
+  return response.data;
+};
+
+/**
+ * Update a single asset's serial number
+ */
+export const updateAssetSerialNumber = async (
+  assetId: number,
+  serialNumber: string
+): Promise<{ message: string; serialNumber: string }> => {
+  const response = await apiClient.patch<{ message: string; serialNumber: string }>(
+    `/reports/assets/${assetId}/serial`,
+    { assetId, serialNumber }
+  );
+  return response.data;
 };

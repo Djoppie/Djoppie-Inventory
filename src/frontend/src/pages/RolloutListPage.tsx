@@ -15,6 +15,7 @@ import {
   Collapse,
   LinearProgress,
   Avatar,
+  CircularProgress,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +39,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import BuildIcon from '@mui/icons-material/Build';
-import { useRolloutSessions, useDeleteRolloutSession, useUpdateRolloutSession } from '../hooks/useRollout';
+import { useRolloutSessions, useRolloutSession, useDeleteRolloutSession, useUpdateRolloutSession } from '../hooks/useRollout';
 import { getStatusColor } from '../api/rollout.api';
 import { ROUTES, buildRoute } from '../constants/routes';
 import Loading from '../components/common/Loading';
@@ -629,6 +630,16 @@ const SessionRow = ({
   const isComplete = session.status === 'Completed';
   const canExecute = !['Completed', 'Cancelled'].includes(session.status);
 
+  // Lazy load session details (with days and workplaces) only when expanded
+  // Pass 0 as id when not expanded to disable the query
+  const { data: sessionDetails, isLoading: isLoadingDetails, isFetching } = useRolloutSession(
+    isExpanded ? session.id : 0,
+    { includeDays: true, includeWorkplaces: true }
+  );
+
+  // Show loading if expanded and either loading or we don't have the detailed session yet
+  const isActivityLoading = isExpanded && (isLoadingDetails || isFetching || !sessionDetails);
+
   const getStatusBadge = () => {
     if (isComplete) {
       return (
@@ -864,7 +875,7 @@ const SessionRow = ({
               theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
           }}
         >
-          <ActivityList session={session} />
+          <ActivityList session={sessionDetails || session} isLoading={isActivityLoading} />
         </Box>
       </Collapse>
     </Paper>
@@ -875,9 +886,10 @@ const SessionRow = ({
 
 interface ActivityListProps {
   session: RolloutSession;
+  isLoading?: boolean;
 }
 
-const ActivityList = ({ session }: ActivityListProps) => {
+const ActivityList = ({ session, isLoading }: ActivityListProps) => {
   // Extract real activities from session data
   const activities = useMemo(() => {
     const items: Array<{
@@ -907,7 +919,7 @@ const ActivityList = ({ session }: ActivityListProps) => {
           });
         } else if (workplace.status === 'Completed') {
           // Completed workplace - show swap info
-          const laptopPlan = workplace.assetPlans.find((p) => p.equipmentType === 'laptop' || p.equipmentType === 'desktop');
+          const laptopPlan = workplace.assetPlans?.find((p) => p.equipmentType === 'laptop' || p.equipmentType === 'desktop');
           if (laptopPlan?.oldAssetCode && laptopPlan?.existingAssetCode) {
             items.push({
               type: 'swap',
@@ -917,16 +929,34 @@ const ActivityList = ({ session }: ActivityListProps) => {
               timestamp: formatRelativeTime(workplace.completedAt || workplace.updatedAt),
               status: 'completed',
             });
-          } else if (workplace.isLaptopSetup) {
-            // Setup without swap
+          } else if (laptopPlan?.existingAssetCode) {
+            // Setup with new device
             items.push({
               type: 'setup',
               userName: workplace.userName,
-              device: laptopPlan?.existingAssetCode || 'Nieuw toestel',
+              device: laptopPlan.existingAssetCode,
+              timestamp: formatRelativeTime(workplace.completedAt || workplace.updatedAt),
+              status: 'completed',
+            });
+          } else {
+            // Completed but no specific device info
+            items.push({
+              type: 'setup',
+              userName: workplace.userName,
+              device: 'Werkplek voltooid',
               timestamp: formatRelativeTime(workplace.completedAt || workplace.updatedAt),
               status: 'completed',
             });
           }
+        } else if (workplace.status === 'InProgress') {
+          // In progress workplace
+          items.push({
+            type: 'setup',
+            userName: workplace.userName,
+            device: 'Bezig met installatie',
+            timestamp: formatRelativeTime(workplace.updatedAt),
+            status: 'in_progress',
+          });
         } else if (workplace.status === 'Pending' || workplace.status === 'Ready') {
           // Pending workplace
           items.push({
@@ -957,6 +987,31 @@ const ActivityList = ({ session }: ActivityListProps) => {
     if (diffDays === 1) return 'Gisteren';
     if (diffDays < 7) return `${diffDays} dagen geleden`;
     return date.toLocaleDateString('nl-NL');
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Box>
+        <Typography variant="subtitle2" fontWeight={700} mb={2} color="text.secondary">
+          Recente Activiteit
+        </Typography>
+        <Box
+          sx={{
+            p: 3,
+            textAlign: 'center',
+            borderRadius: 2,
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)',
+          }}
+        >
+          <CircularProgress size={24} sx={{ color: '#FF7700', mb: 1 }} />
+          <Typography variant="body2" color="text.secondary">
+            Activiteit laden...
+          </Typography>
+        </Box>
+      </Box>
+    );
   }
 
   return (

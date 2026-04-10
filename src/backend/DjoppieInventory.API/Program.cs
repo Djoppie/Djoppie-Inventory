@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using DjoppieInventory.API.Extensions;
 using DjoppieInventory.API.Middleware;
+using DjoppieInventory.API.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,16 @@ builder.Configuration.AddAzureKeyVaultConfiguration(builder.Environment);
 builder.Services.AddApplicationInsightsTelemetry();
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Ensure camel case property naming (e.g., EventDate -> eventDate)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Use custom DateTime converter to ensure UTC with 'Z' suffix (prevents "Invalid Date" in JavaScript)
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+        // Use ISO 8601 date format for enums
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // Configure Authentication and Authorization with Microsoft Entra ID
 builder.Services.AddEntraIdAuthentication(builder.Configuration);
@@ -106,6 +116,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     // Add JWT Bearer authentication to Swagger
+    var tenantId = builder.Configuration["AzureAd:TenantId"] ?? "7db28d6f-d542-40c1-b529-5e5ed2aad545";
+    var audience = builder.Configuration["AzureAd:Audience"] ?? "api://eb5bcf06-8032-494f-a363-92b6802c44bf";
+
     c.AddSecurityDefinition("oauth2", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.OAuth2,
@@ -113,11 +126,11 @@ builder.Services.AddSwaggerGen(c =>
         {
             AuthorizationCode = new Microsoft.OpenApi.Models.OpenApiOAuthFlow
             {
-                AuthorizationUrl = new Uri($"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/oauth2/v2.0/authorize"),
-                TokenUrl = new Uri($"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/oauth2/v2.0/token"),
+                AuthorizationUrl = new Uri($"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/authorize"),
+                TokenUrl = new Uri($"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token"),
                 Scopes = new Dictionary<string, string>
                 {
-                    { builder.Configuration["AzureAd:Audience"] + "/access_as_user", "Access the API as a user" }
+                    { audience + "/access_as_user", "Access the API as a user" }
                 }
             }
         }
@@ -149,17 +162,15 @@ app.UseCorrelationId();
 // Global exception handling middleware (must be early in pipeline)
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger (always enabled, secured by authentication)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Djoppie Inventory API v1");
-        c.OAuthClientId(builder.Configuration["AzureAd:ClientId"]);
-        c.OAuthUsePkce();
-        c.OAuthScopeSeparator(" ");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Djoppie Inventory API v1");
+    c.OAuthClientId(builder.Configuration["AzureAd:ClientId"]);
+    c.OAuthUsePkce();
+    c.OAuthScopeSeparator(" ");
+});
 
 app.UseHttpsRedirection();
 
