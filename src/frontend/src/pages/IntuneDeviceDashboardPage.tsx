@@ -35,7 +35,11 @@ const isNonCompliant = (device: IntuneDevice): boolean => {
   return state === 'noncompliant' || state === 'error' || state === 'conflict';
 };
 
-const IntuneDeviceDashboardPage = () => {
+interface IntuneDeviceDashboardPageProps {
+  embedded?: boolean;
+}
+
+const IntuneDeviceDashboardPage = ({ embedded = false }: IntuneDeviceDashboardPageProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { bgBase } = getNeumorphColors(isDark);
@@ -108,43 +112,10 @@ const IntuneDeviceDashboardPage = () => {
     return result;
   }, [devices, searchQuery, activeFilters]);
 
-  return (
-    <Box
-      sx={{
-        bgcolor: bgBase,
-        borderRadius: 3,
-        boxShadow: getNeumorph(isDark, 'medium'),
-        overflow: 'hidden',
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ px: { xs: 1.5, sm: 2 }, pt: { xs: 1.5, sm: 2 }, pb: 0 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 800,
-            color: isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)',
-            mb: 0.35,
-            letterSpacing: '-0.02em',
-            fontSize: { xs: '1.35rem', sm: '1.6rem', md: '1.85rem' },
-          }}
-        >
-          Intune Device Dashboard
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-            mb: 1.5,
-            fontSize: '0.8rem',
-          }}
-        >
-          Microsoft Intune managed device overview and diagnostics
-        </Typography>
-      </Box>
-
+  const content = (
+    <>
       {/* Stats Bar */}
-      <Box sx={{ px: { xs: 1.5, sm: 2 }, mb: 1.5 }}>
+      <Box sx={{ px: { xs: 1.5, sm: 2 }, pt: embedded ? 1.5 : 0, mb: 1.5 }}>
         <DeviceOverviewStats
           totalDevices={stats.total}
           compliantCount={stats.compliant}
@@ -205,6 +176,48 @@ const IntuneDeviceDashboardPage = () => {
           </Typography>
         )}
       </Box>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <Box
+      sx={{
+        bgcolor: bgBase,
+        borderRadius: 3,
+        boxShadow: getNeumorph(isDark, 'medium'),
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header — only shown in standalone mode */}
+      <Box sx={{ px: { xs: 1.5, sm: 2 }, pt: { xs: 1.5, sm: 2 }, pb: 0 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 800,
+            color: isDark ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.9)',
+            mb: 0.35,
+            letterSpacing: '-0.02em',
+            fontSize: { xs: '1.35rem', sm: '1.6rem', md: '1.85rem' },
+          }}
+        >
+          Intune Device Dashboard
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
+            mb: 1.5,
+            fontSize: '0.8rem',
+          }}
+        >
+          Microsoft Intune managed device overview and diagnostics
+        </Typography>
+      </Box>
+      {content}
     </Box>
   );
 };

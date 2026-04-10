@@ -40,7 +40,7 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import StyleIcon from '@mui/icons-material/Style';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+
 
 // Icons - Operations sub-items
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -106,7 +106,7 @@ const navigationItems: NavItem[] = [
     label: 'Inventory',
     icon: <InventoryIcon />,
     path: ROUTES.DASHBOARD,
-    matchPaths: ['/devices', '/assets', '/devices/intune-dashboard'],
+    matchPaths: ['/devices', '/assets'],
     highlighted: true,
     subItems: [
       {
@@ -126,12 +126,6 @@ const navigationItems: NavItem[] = [
         icon: <StyleIcon />,
         path: ROUTES.TEMPLATES,
         matchPaths: ['/templates'],
-      },
-      {
-        label: 'Intune Dashboard',
-        icon: <MonitorHeartIcon />,
-        path: ROUTES.INTUNE_DASHBOARD,
-        matchPaths: ['/devices/intune-dashboard'],
       },
       {
         label: 'Reports',

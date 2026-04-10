@@ -12,6 +12,7 @@ import {
   Inventory as InventoryIcon,
   RocketLaunch,
   SwapHoriz,
+  MonitorHeart as MonitorHeartIcon,
 } from '@mui/icons-material';
 import {
   OverviewTab,
@@ -19,8 +20,9 @@ import {
   RolloutPlanningTab,
   SwapManagementTab,
 } from '../components/dashboard-tabs';
+import IntuneDeviceDashboardPage from './IntuneDeviceDashboardPage';
 
-type TabValue = 'overview' | 'inventory' | 'rollout' | 'swaps';
+type TabValue = 'overview' | 'inventory' | 'intune' | 'rollout' | 'swaps';
 
 const DashboardOverviewPage = () => {
   const theme = useTheme();
@@ -129,6 +131,12 @@ const DashboardOverviewPage = () => {
             iconPosition="start"
           />
           <Tab
+            value="intune"
+            label="Intune Devices"
+            icon={<MonitorHeartIcon sx={{ fontSize: 16 }} />}
+            iconPosition="start"
+          />
+          <Tab
             value="rollout"
             label="Rollout Planning"
             icon={<RocketLaunch sx={{ fontSize: 16 }} />}
@@ -152,6 +160,7 @@ const DashboardOverviewPage = () => {
       >
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'inventory' && <InventoryTab />}
+        {activeTab === 'intune' && <IntuneDeviceDashboardPage embedded />}
         {activeTab === 'rollout' && <RolloutPlanningTab />}
         {activeTab === 'swaps' && <SwapManagementTab />}
       </Box>
