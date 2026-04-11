@@ -668,7 +668,7 @@ const OverviewTab = () => {
                 upcomingRollouts.map((rollout) => (
                   <Box
                     key={rollout.sessionId}
-                    onClick={() => navigate(`${ROUTES.ROLLOUTS}?session=${rollout.sessionId}`)}
+                    onClick={() => navigate(`${ROUTES.OPERATIONS_ROLLOUTS}?session=${rollout.sessionId}`)}
                     sx={{
                       p: 1,
                       borderRadius: 1.5,

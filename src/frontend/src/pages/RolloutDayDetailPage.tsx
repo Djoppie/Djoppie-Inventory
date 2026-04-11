@@ -236,7 +236,7 @@ const RolloutDayDetailPage = () => {
               component="button"
               underline="hover"
               color="text.secondary"
-              onClick={() => navigate(ROUTES.ROLLOUTS)}
+              onClick={() => navigate(ROUTES.OPERATIONS_ROLLOUTS)}
               sx={{
                 display: 'flex',
                 alignItems: 'center',

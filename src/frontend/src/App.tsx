@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DjoppieThemeProvider } from './theme/ThemeContext';
 import { ROUTES } from './constants/routes';
@@ -8,6 +8,7 @@ import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
 const DashboardOverviewPage = lazy(() => import('./pages/DashboardOverviewPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
 const ScanPage = lazy(() => import('./pages/ScanPage'));
 const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage'));
 const AddAssetPage = lazy(() => import('./pages/AddAssetPage'));
@@ -26,7 +27,6 @@ const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
 const RolloutDayDetailPage = lazy(() => import('./pages/RolloutDayDetailPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
-const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
 const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
 const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
 const WorkplaceReportsPage = lazy(() => import('./pages/WorkplaceReportsPage'));
@@ -56,39 +56,67 @@ function App() {
             <Layout>
               <Suspense fallback={<Loading />}>
                 <Routes>
+                  {/* Dashboard */}
                   <Route path={ROUTES.DASHBOARD} element={<DashboardOverviewPage />} />
                   <Route path={ROUTES.SCAN} element={<ScanPage />} />
-                  <Route path={ROUTES.DEVICE_MANAGEMENT} element={<DeviceManagementPage />} />
+
+                  {/* Inventory */}
+                  <Route path={ROUTES.INVENTORY} element={<InventoryPage />} />
+                  <Route path={ROUTES.INVENTORY_NEW} element={<AddAssetPage />} />
+                  <Route path={ROUTES.INVENTORY_BULK_CREATE} element={<BulkCreateAssetPage />} />
+                  <Route path={ROUTES.INVENTORY_TEMPLATES} element={<AssetTemplatesPage />} />
+                  <Route path={ROUTES.INVENTORY_CLOUD} element={<IntuneDeviceDashboardPage />} />
+                  <Route path={ROUTES.INVENTORY_CLOUD_AUTOPILOT} element={<AutopilotDevicesPage />} />
+                  <Route path={ROUTES.INVENTORY_CLOUD_AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
+                  <Route path={ROUTES.INVENTORY_REPORTS} element={<ReportsPage />} />
+
+                  {/* Asset detail (cross-cutting) */}
                   <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />
-                  <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
-                  <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />
                   <Route path={ROUTES.ASSET_EDIT} element={<EditAssetPage />} />
                   <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
                   <Route path={ROUTES.ASSET_INTUNE} element={<AssetIntunePage />} />
-                  <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
-                  <Route path={ROUTES.ADMIN_ASSETS} element={<AdminAssetsPage />} />
-                  <Route path={ROUTES.ADMIN_ORGANISATION} element={<AdminOrganisationPage />} />
-                  <Route path={ROUTES.ADMIN_LOCATIONS} element={<AdminLocationsPage />} />
-                  <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />
-                  <Route path={ROUTES.ROLLOUTS_NEW} element={<RolloutPlannerPage />} />
-                  <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
-                  <Route path={ROUTES.ROLLOUT_EXECUTE} element={<RolloutExecutionPage />} />
-                  <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
-                  <Route path={ROUTES.ROLLOUT_DAY_DETAIL} element={<RolloutDayDetailPage />} />
-                  <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
-                  <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
-                  <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
-                  <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />
-                  <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
+
+                  {/* Workplaces */}
                   <Route path={ROUTES.WORKPLACE_REPORTS} element={<WorkplaceReportsPage />} />
+                  <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
+
+                  {/* Operations */}
+                  <Route path={ROUTES.OPERATIONS_ROLLOUTS} element={<RolloutListPage />} />
+                  <Route path={ROUTES.OPERATIONS_ROLLOUTS_NEW} element={<RolloutPlannerPage />} />
+                  <Route path={ROUTES.OPERATIONS_ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
+                  <Route path={ROUTES.OPERATIONS_ROLLOUT_EXECUTE} element={<RolloutExecutionPage />} />
+                  <Route path={ROUTES.OPERATIONS_ROLLOUT_REPORT} element={<RolloutReportPage />} />
+                  <Route path={ROUTES.OPERATIONS_ROLLOUT_DAY_DETAIL} element={<RolloutDayDetailPage />} />
+                  <Route path={ROUTES.OPERATIONS_ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
+                  <Route path={ROUTES.OPERATIONS_DEPLOYMENTS} element={<LaptopSwapPage />} />
+                  <Route path={ROUTES.OPERATIONS_HISTORY} element={<DeploymentHistoryPage />} />
+
+                  {/* Requests */}
                   <Route path={ROUTES.REQUESTS} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_ONBOARDING} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_REPORTS} element={<RequestsReportsPage />} />
-                  <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
-                  <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
-                  <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+
+                  {/* Admin */}
+                  <Route path={ROUTES.ADMIN_ASSETS} element={<AdminAssetsPage />} />
+                  <Route path={ROUTES.ADMIN_ORGANISATION} element={<AdminOrganisationPage />} />
+                  <Route path={ROUTES.ADMIN_LOCATIONS} element={<AdminLocationsPage />} />
+
+                  {/* Backward-compatible redirects from old routes */}
+                  <Route path="/devices/new" element={<Navigate to={ROUTES.INVENTORY_NEW} replace />} />
+                  <Route path="/devices/bulk-create" element={<Navigate to={ROUTES.INVENTORY_BULK_CREATE} replace />} />
+                  <Route path="/devices/intune-dashboard" element={<Navigate to={ROUTES.INVENTORY_CLOUD} replace />} />
+                  <Route path="/devices/autopilot/timeline/:serialNumber" element={<Navigate to="/inventory/cloud/autopilot/timeline/:serialNumber" replace />} />
+                  <Route path="/devices/autopilot" element={<Navigate to={ROUTES.INVENTORY_CLOUD_AUTOPILOT} replace />} />
+                  <Route path="/devices" element={<Navigate to={ROUTES.INVENTORY} replace />} />
+                  <Route path="/templates" element={<Navigate to={ROUTES.INVENTORY_TEMPLATES} replace />} />
+                  <Route path="/reports" element={<Navigate to={ROUTES.INVENTORY_REPORTS} replace />} />
+                  <Route path="/rollouts/new" element={<Navigate to={ROUTES.OPERATIONS_ROLLOUTS_NEW} replace />} />
+                  <Route path="/rollouts" element={<Navigate to={ROUTES.OPERATIONS_ROLLOUTS} replace />} />
+                  <Route path="/laptop-swap/history" element={<Navigate to={ROUTES.OPERATIONS_HISTORY} replace />} />
+                  <Route path="/laptop-swap" element={<Navigate to={ROUTES.OPERATIONS_DEPLOYMENTS} replace />} />
+                  <Route path="/admin" element={<Navigate to={ROUTES.ADMIN_ASSETS} replace />} />
                 </Routes>
               </Suspense>
             </Layout>

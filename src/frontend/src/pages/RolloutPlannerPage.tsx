@@ -23,7 +23,7 @@ import {
 } from '../components/rollout/planner';
 
 // Constants
-import { ROUTES } from '../constants/routes';
+import { ROUTES, buildRoute } from '../constants/routes';
 
 // Types
 import type { RolloutWorkplace, RolloutDay, CreateRolloutSession, UpdateRolloutSession } from '../types/rollout';
@@ -145,7 +145,7 @@ const RolloutPlannerPage = () => {
 
   // Handlers
   const handleBack = useCallback(() => {
-    navigate(ROUTES.ROLLOUTS);
+    navigate(ROUTES.OPERATIONS_ROLLOUTS);
   }, [navigate]);
 
   const handleSave = useCallback(async () => {
@@ -162,7 +162,7 @@ const RolloutPlannerPage = () => {
         await data.updateSession(sessionData as UpdateRolloutSession);
       } else {
         const newSession = await data.createSession(sessionData as CreateRolloutSession);
-        navigate(`/rollouts/${newSession.id}`);
+        navigate(buildRoute.rolloutEdit(newSession.id));
       }
     } catch (error) {
       console.error('Failed to save session:', error);

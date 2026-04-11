@@ -269,7 +269,7 @@ const DeploymentHistoryPage = () => {
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Tooltip title={t('common.back')} arrow>
           <IconButton
-            onClick={() => navigate(ROUTES.LAPTOP_SWAP)}
+            onClick={() => navigate(ROUTES.OPERATIONS_DEPLOYMENTS)}
             sx={{
               width: 36,
               height: 36,
@@ -291,7 +291,7 @@ const DeploymentHistoryPage = () => {
         </Tooltip>
         <Button
           startIcon={<AddIcon />}
-          onClick={() => navigate(ROUTES.LAPTOP_SWAP)}
+          onClick={() => navigate(ROUTES.OPERATIONS_DEPLOYMENTS)}
           variant="contained"
           size="small"
         >
@@ -442,7 +442,7 @@ const DeploymentHistoryPage = () => {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => navigate(ROUTES.LAPTOP_SWAP)}
+            onClick={() => navigate(ROUTES.OPERATIONS_DEPLOYMENTS)}
             size="large"
             sx={{ mt: 2 }}
           >

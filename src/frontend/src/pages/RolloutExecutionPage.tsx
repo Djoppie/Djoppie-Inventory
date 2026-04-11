@@ -45,7 +45,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
-import LaptopIcon from '@mui/icons-material/Laptop';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
@@ -59,6 +58,7 @@ import {
   useUpdateItemDetails,
   useCompleteRolloutWorkplace,
   useReopenRolloutWorkplace,
+  useUpdateWorkplaceStatus,
   rolloutKeys,
 } from '../hooks/useRollout';
 import { useRolloutExecutionFilters } from '../hooks/rollout/useRolloutFilters';
@@ -67,6 +67,7 @@ import { TemplateSelector } from '../components/rollout/TemplateSelector';
 import WorkplaceCompletionDialog from '../components/rollout/WorkplaceCompletionDialog';
 import { RolloutExecutionToolbar } from '../components/rollout/execution';
 import { ROUTES, buildRoute } from '../constants/routes';
+import WorkplaceStatusChip from '../components/rollout/WorkplaceStatusChip';
 import Loading from '../components/common/Loading';
 import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../types/rollout';
 import type { Asset, AssetTemplate } from '../types/asset.types';
@@ -131,6 +132,7 @@ const RolloutExecutionPage = () => {
   const isDark = theme.palette.mode === 'dark';
   const sessionId = Number(id);
   const initialDayId = searchParams.get('dayId') ? Number(searchParams.get('dayId')) : null;
+  const initialWorkplaceId = searchParams.get('workplaceId') ? Number(searchParams.get('workplaceId')) : null;
 
   // Filter state from URL
   const filters = useRolloutExecutionFilters();
@@ -229,7 +231,7 @@ const RolloutExecutionPage = () => {
   }, [expandedWorkplace, filteredWorkplaces]);
 
   const handleBack = () => {
-    navigate(ROUTES.ROLLOUTS);
+    navigate(ROUTES.OPERATIONS_ROLLOUTS);
   };
 
   const handleBackToPlanning = async () => {
@@ -247,6 +249,21 @@ const RolloutExecutionPage = () => {
   const handleToggleWorkplace = (workplaceId: number) => {
     setExpandedWorkplace(effectiveExpanded === workplaceId ? null : workplaceId);
   };
+
+  // Auto-expand and scroll to workplace from URL param
+  useEffect(() => {
+    if (initialWorkplaceId && workplaces && workplaces.length > 0) {
+      const targetWorkplace = workplaces.find(wp => wp.id === initialWorkplaceId);
+      if (targetWorkplace) {
+        setExpandedWorkplace(initialWorkplaceId);
+        // Scroll to workplace after render
+        setTimeout(() => {
+          const el = document.getElementById(`workplace-${initialWorkplaceId}`);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    }
+  }, [initialWorkplaceId, workplaces]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -514,6 +531,7 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   const itemStatusMutation = useUpdateItemStatus();
   const completeMutation = useCompleteRolloutWorkplace();
   const reopenMutation = useReopenRolloutWorkplace();
+  const statusMutation = useUpdateWorkplaceStatus();
 
   const handleStart = async () => {
     try {
@@ -577,12 +595,11 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     (p) => p.status === 'installed' || p.status === 'skipped'
   );
 
-  const statusColor = isComplete ? 'success' : isInProgress ? 'warning' : isReady ? 'info' : 'default';
-  const statusLabel = isComplete ? 'Voltooid' : isInProgress ? 'Bezig' : isReady ? 'Gereed' : 'Wachtend';
 
   return (
     <>
       <Card
+        id={`workplace-${workplace.id}`}
         elevation={0}
         sx={{
           position: 'relative',
@@ -688,16 +705,10 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
                 </Box>
               )}
             </Box>
-            {/* Only show status chip for non-completed workplaces (completed ones have Done stamp) */}
-            {!isComplete && (
-              <Chip
-                label={statusLabel}
-                size="small"
-                color={statusColor as 'success' | 'warning' | 'default'}
-                icon={isInProgress ? <LaptopIcon /> : undefined}
-                sx={{ ml: 1, flexShrink: 0 }}
-              />
-            )}
+            {/* Workplace status chip */}
+            <Box sx={{ ml: 1, flexShrink: 0 }}>
+              <WorkplaceStatusChip status={workplace.status} />
+            </Box>
           </Box>
 
           {/* Progress */}
@@ -782,6 +793,32 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
                 <Alert severity="info" sx={{ mt: 2, fontSize: '0.85rem' }}>
                   Configureer alle items om de werkplek te voltooien.
                 </Alert>
+              )}
+
+              {/* Back to planning button for InProgress workplaces */}
+              {isInProgress && (
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  fullWidth
+                  startIcon={<ReplayIcon />}
+                  onClick={async () => {
+                    try {
+                      await statusMutation.mutateAsync({
+                        workplaceId: workplace.id,
+                        dayId: workplace.rolloutDayId,
+                        status: 'Pending',
+                      });
+                      onSnackbar(`"${workplace.userName}" teruggezet naar planning`);
+                    } catch {
+                      onSnackbar('Fout bij teruggaan naar planning', 'error');
+                    }
+                  }}
+                  disabled={statusMutation.isPending}
+                  sx={{ mt: 1, fontSize: '0.8rem' }}
+                >
+                  {statusMutation.isPending ? 'Teruggaan...' : 'Terug naar Planning'}
+                </Button>
               )}
 
               {isComplete && workplace.completedAt && (
@@ -1014,7 +1051,9 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
   const isInstalled = plan.status === 'installed';
   const isSkipped = plan.status === 'skipped';
   const isDone = isInstalled || isSkipped;
-  const needsSerial = plan.requiresSerialNumber && !plan.metadata?.serialNumber && !isDone;
+  // Only laptop, desktop, and docking require serial numbers (not monitors, keyboards, mice)
+  const serialRequired = ['laptop', 'desktop', 'docking'].includes(plan.equipmentType) && plan.requiresSerialNumber;
+  const needsSerial = serialRequired && !plan.metadata?.serialNumber && !isDone;
   const needsBrand = plan.equipmentType === 'monitor' && plan.metadata?.brandPending === 'true' && !plan.brand && !isDone;
 
   // Check if this is an old device being returned
@@ -1169,6 +1208,11 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
                 <LinkIcon sx={{ fontSize: '0.85rem', color: isInstalled ? 'success.contrastText' : 'success.main' }} />
                 <Box component="span" sx={{ fontSize: '0.75rem', color: isInstalled ? 'success.contrastText' : 'success.main', fontWeight: 500 }}>
                   {plan.existingAssetCode}
+                  {hasSerial && (
+                    <Box component="span" sx={{ color: isInstalled ? 'success.contrastText' : 'text.secondary', fontWeight: 400, ml: 0.5 }}>
+                      — {plan.metadata.serialNumber}
+                    </Box>
+                  )}
                 </Box>
               </Box>
             )}
@@ -1267,7 +1311,8 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
 
   const label = EQUIPMENT_LABELS[plan.equipmentType] || plan.equipmentType;
   const icon = EQUIPMENT_ICONS[plan.equipmentType] || '📦';
-  const needsSerial = plan.requiresSerialNumber;
+  // Only laptop, desktop, and docking require serial numbers
+  const needsSerial = ['laptop', 'desktop', 'docking'].includes(plan.equipmentType) && plan.requiresSerialNumber;
   const isComputerType = plan.equipmentType === 'laptop' || plan.equipmentType === 'desktop';
   const needsTemplate = ['docking', 'monitor', 'keyboard', 'mouse'].includes(plan.equipmentType);
 

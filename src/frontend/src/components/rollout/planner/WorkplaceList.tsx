@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Chip, IconButton, Tooltip, useTheme, Button, Stack } from '@mui/material';
+import WorkplaceStatusChip from '../WorkplaceStatusChip';
 import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -23,6 +24,7 @@ import {
 import { WORKPLACE_STATUS_SORT_ORDER } from '../../../constants/rollout.constants';
 import type { RolloutWorkplace } from '../../../types/rollout';
 import { ASSET_COLOR, SERVICE_COLOR, SECTOR_COLOR } from '../../../constants/filterColors';
+import { buildRoute } from '../../../constants/routes';
 
 interface WorkplaceListProps {
   dayId: number;
@@ -45,61 +47,8 @@ interface WorkplaceListProps {
 }
 
 const getStatusChip = (status: string) => {
-  switch (status) {
-    case 'Ready':
-      return (
-        <Chip
-          label="Gereed"
-          size="small"
-          sx={{
-            bgcolor: 'transparent',
-            border: '1px solid rgba(34, 197, 94, 0.5)',
-            color: '#22c55e',
-            fontWeight: 600,
-            textShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
-          }}
-          component="span"
-        />
-      );
-    case 'InProgress':
-      return (
-        <Chip
-          label="Bezig"
-          size="small"
-          sx={{
-            bgcolor: 'rgba(245, 158, 11, 0.15)',
-            border: '1px solid rgba(245, 158, 11, 0.5)',
-            color: '#f59e0b',
-            fontWeight: 600,
-          }}
-          component="span"
-        />
-      );
-    case 'Completed':
-      return (
-        <Chip
-          label="Voltooid"
-          size="small"
-          sx={{
-            bgcolor: 'transparent',
-            border: '1px solid rgba(22, 163, 74, 0.5)',
-            color: '#16a34a',
-            fontWeight: 600,
-          }}
-          component="span"
-        />
-      );
-    case 'Skipped':
-      return (
-        <Chip label="Overgeslagen" size="small" color="default" component="span" />
-      );
-    case 'Failed':
-      return (
-        <Chip label="Mislukt" size="small" color="error" component="span" />
-      );
-    default:
-      return null;
-  }
+  if (status === 'Pending') return null; // Don't show chip for pending (default state)
+  return <WorkplaceStatusChip status={status} />;
 };
 
 export default function WorkplaceList({
@@ -370,25 +319,32 @@ export default function WorkplaceList({
                 </Box>
 
                 {/* Asset Progress indicator */}
-                <Tooltip title={`${workplace.completedItems} van ${workplace.totalItems} assets`}>
-                  <Chip
-                    icon={<InventoryIcon sx={{ fontSize: 14 }} />}
-                    label={`${workplace.completedItems}/${workplace.totalItems}`}
-                    size="small"
-                    sx={{
-                      minWidth: 60,
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      ...(workplace.totalItems === 0
-                        ? { bgcolor: 'grey.200', color: 'grey.600', border: '1px solid rgba(100, 100, 100, 0.2)', '& .MuiChip-icon': { color: 'grey.500' } }
-                        : workplace.completedItems === workplace.totalItems
-                          ? { bgcolor: 'rgba(22, 163, 74, 0.15)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.3)', '& .MuiChip-icon': { color: '#16a34a' } }
-                          : workplace.completedItems > 0
-                            ? { bgcolor: 'rgba(234, 179, 8, 0.15)', color: '#ca8a04', border: '1px solid rgba(234, 179, 8, 0.3)', '& .MuiChip-icon': { color: '#ca8a04' } }
-                            : { bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.2)', '& .MuiChip-icon': { color: '#dc2626' } }),
-                    }}
-                  />
-                </Tooltip>
+                {(() => {
+                  // Use assetPlans.length as fallback when totalItems is 0 but plans exist
+                  const total = workplace.totalItems || workplace.assetPlans?.length || 0;
+                  const completed = workplace.completedItems || 0;
+                  return (
+                    <Tooltip title={`${completed} van ${total} assets`}>
+                      <Chip
+                        icon={<InventoryIcon sx={{ fontSize: 14 }} />}
+                        label={`${completed}/${total}`}
+                        size="small"
+                        sx={{
+                          minWidth: 60,
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          ...(total === 0
+                            ? { bgcolor: 'grey.200', color: 'grey.600', border: '1px solid rgba(100, 100, 100, 0.2)', '& .MuiChip-icon': { color: 'grey.500' } }
+                            : completed === total
+                              ? { bgcolor: 'rgba(22, 163, 74, 0.15)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.3)', '& .MuiChip-icon': { color: '#16a34a' } }
+                              : completed > 0
+                                ? { bgcolor: 'rgba(234, 179, 8, 0.15)', color: '#ca8a04', border: '1px solid rgba(234, 179, 8, 0.3)', '& .MuiChip-icon': { color: '#ca8a04' } }
+                                : { bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.2)', '& .MuiChip-icon': { color: '#dc2626' } }),
+                        }}
+                      />
+                    </Tooltip>
+                  );
+                })()}
 
                 {/* Action buttons - hidden for ghost entries */}
                 {!isGhost && (
@@ -443,7 +399,7 @@ export default function WorkplaceList({
                       <Tooltip title="Ga naar uitvoering">
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/rollouts/${sessionId}/execute?workplaceId=${workplace.id}`)}
+                          onClick={() => navigate(`${buildRoute.rolloutExecute(sessionId)}?dayId=${dayId}&workplaceId=${workplace.id}`)}
                           sx={{
                             color: ASSET_COLOR,
                             bgcolor: 'rgba(255, 119, 0, 0.1)',
