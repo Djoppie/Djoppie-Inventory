@@ -52,7 +52,7 @@ export function buildAssetPlans({
 
   // Add all configured items from unified WorkplaceConfigSection
   configItems.forEach((item) => {
-    const requiresSerial = item.equipmentType === 'laptop' || item.equipmentType === 'desktop';
+    const requiresSerial = item.equipmentType === 'laptop' || item.equipmentType === 'desktop' || item.equipmentType === 'docking';
 
     if (item.mode === 'link' && item.linkedAsset) {
       // Linking existing asset from inventory

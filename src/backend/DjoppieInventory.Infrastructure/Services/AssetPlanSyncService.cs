@@ -379,7 +379,6 @@ public class AssetPlanSyncService
             "laptop" => true,
             "desktop" => true,
             "docking" => true,
-            "monitor" => true,
             _ => false
         };
     }
