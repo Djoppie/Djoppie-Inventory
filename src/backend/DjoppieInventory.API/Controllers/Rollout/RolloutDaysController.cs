@@ -2,7 +2,6 @@ using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
-using DjoppieInventory.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +19,6 @@ public class RolloutDaysController : ControllerBase
     private readonly IRolloutRepository _rolloutRepository;
     private readonly IServiceRepository _serviceRepository;
     private readonly IWorkplaceAssetAssignmentService _assignmentService;
-    private readonly AssetPlanSyncService _syncService;
     private readonly IGraphUserService _graphUserService;
     private readonly ILogger<RolloutDaysController> _logger;
 
@@ -28,14 +26,12 @@ public class RolloutDaysController : ControllerBase
         IRolloutRepository rolloutRepository,
         IServiceRepository serviceRepository,
         IWorkplaceAssetAssignmentService assignmentService,
-        AssetPlanSyncService syncService,
         IGraphUserService graphUserService,
         ILogger<RolloutDaysController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _serviceRepository = serviceRepository;
         _assignmentService = assignmentService;
-        _syncService = syncService;
         _graphUserService = graphUserService;
         _logger = logger;
     }
@@ -406,11 +402,8 @@ public class RolloutDaysController : ControllerBase
                 var assignments = await _assignmentService.GetByWorkplaceIdAsync(workplace.Id, cancellationToken);
                 dto.AssetAssignments = assignments.ToList();
 
-                // Convert to AssetPlans for frontend compatibility
-                dto.AssetPlans = await _syncService.ConvertToAssetPlansAsync(workplace.Id, cancellationToken);
-
-                // Fallback to legacy JSON if no relational assignments exist
-                if (dto.AssetPlans.Count == 0 && !string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+                // Parse AssetPlans from legacy JSON
+                if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
                 {
                     try
                     {

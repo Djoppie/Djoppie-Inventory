@@ -20,8 +20,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<Service> Services { get; set; }
     public DbSet<Employee> Employees { get; set; }
     public DbSet<AssetEvent> AssetEvents { get; set; }
-    public DbSet<LeaseContract> LeaseContracts { get; set; }
-
     // Rollout workflow (simplified architecture)
     public DbSet<RolloutSession> RolloutSessions { get; set; }
     public DbSet<RolloutDay> RolloutDays { get; set; }
@@ -274,25 +272,9 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade); // Delete events when asset deleted
         });
 
-        // LeaseContract configuration
-        modelBuilder.Entity<LeaseContract>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.AssetId);
-            entity.HasIndex(e => e.EndDate);
-            entity.Property(e => e.ContractNumber).HasMaxLength(100);
-            entity.Property(e => e.Vendor).HasMaxLength(200);
-            entity.Property(e => e.MonthlyRate).HasPrecision(18, 2);
-            entity.Property(e => e.TotalValue).HasPrecision(18, 2);
-            entity.Property(e => e.Notes).HasMaxLength(2000);
-            entity.Property(e => e.Status).HasConversion<int>();
-
-            // Foreign key to Asset (required, cascade delete)
-            entity.HasOne(e => e.Asset)
-                .WithMany(a => a.LeaseContracts)
-                .HasForeignKey(e => e.AssetId)
-                .OnDelete(DeleteBehavior.Cascade); // Delete lease contracts when asset deleted
-        });
+        // NOTE: LeaseContract table config removed (entity deleted as dead code).
+        // The LeaseContracts table remains in the database via existing migrations.
+        // A future migration should drop the table when ready.
 
         // RolloutSession configuration
         modelBuilder.Entity<RolloutSession>(entity =>
