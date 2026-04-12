@@ -4,7 +4,7 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Admin;
 
 /// <summary>
 /// API controller for managing asset types.

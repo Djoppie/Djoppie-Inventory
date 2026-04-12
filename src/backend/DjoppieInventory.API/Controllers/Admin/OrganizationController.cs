@@ -5,14 +5,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Admin;
 
 /// <summary>
 /// Controller for organization hierarchy operations.
 /// Provides tree view of Sectors > Services > Workplaces > Employees.
 /// </summary>
 [ApiController]
-[Route("api/organization")]
+[Route("api/admin/organization")]
 [Authorize]
 public class OrganizationController : ControllerBase
 {

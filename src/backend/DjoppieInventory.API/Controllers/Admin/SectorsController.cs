@@ -5,7 +5,7 @@ using DjoppieInventory.Core.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Admin;
 
 /// <summary>
 /// API controller for managing sectors.
