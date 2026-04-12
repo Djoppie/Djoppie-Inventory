@@ -5,14 +5,14 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Inventory;
 
 /// <summary>
 /// API controller for managing asset events (audit trail and notes).
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/events")]
 public class AssetEventsController : ControllerBase
 {
     private readonly IAssetEventRepository _assetEventRepository;

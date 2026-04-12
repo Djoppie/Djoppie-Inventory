@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Inventory;
 
 /// <summary>
 /// API controller for managing asset inventory operations.
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/assets")]
 [EnableRateLimiting("fixed")]
 public class AssetsController : ControllerBase
 {

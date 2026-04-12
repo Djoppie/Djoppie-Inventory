@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using QRCoder;
 using System.ComponentModel.DataAnnotations;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Inventory;
 
 /// <summary>
 /// API controller for generating QR codes for asset identification.
@@ -11,7 +11,7 @@ namespace DjoppieInventory.API.Controllers;
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/qrcode")]
 public class QRCodeController : ControllerBase
 {
     private readonly ILogger<QRCodeController> _logger;

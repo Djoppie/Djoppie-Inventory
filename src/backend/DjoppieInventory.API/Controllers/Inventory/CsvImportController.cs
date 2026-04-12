@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Inventory;
 
 /// <summary>
 /// API controller for CSV import operations.
@@ -13,7 +13,7 @@ namespace DjoppieInventory.API.Controllers;
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/import")]
 [EnableRateLimiting("bulk")]
 public class CsvImportController : ControllerBase
 {

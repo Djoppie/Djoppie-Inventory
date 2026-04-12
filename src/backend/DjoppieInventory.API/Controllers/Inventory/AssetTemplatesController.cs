@@ -5,11 +5,11 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Inventory;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/templates")]
 public class AssetTemplatesController : ControllerBase
 {
     private readonly IAssetTemplateRepository _templateRepository;
