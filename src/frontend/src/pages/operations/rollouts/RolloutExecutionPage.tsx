@@ -475,7 +475,7 @@ const RolloutExecutionPage = () => {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        autoHideDuration={snackbar.severity === 'error' ? 8000 : 3000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         sx={{ mb: 8 }}
@@ -537,7 +537,8 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
     try {
       await startMutation.mutateAsync(workplace.id);
       onSnackbar(`Werkplek "${workplace.userName}" gestart`);
-    } catch {
+    } catch (err) {
+      console.error('Failed to start workplace:', err);
       onSnackbar('Fout bij starten werkplek', 'error');
     }
   };
@@ -549,8 +550,10 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
         itemIndex: index,
         status: 'skipped',
       });
-    } catch {
-      onSnackbar('Fout bij overslaan item', 'error');
+    } catch (err) {
+      console.error('Failed to skip item:', err);
+      const msg = err instanceof Error ? err.message : 'Onbekende fout';
+      onSnackbar(`Fout bij overslaan item: ${msg}`, 'error');
     }
   };
 
@@ -562,8 +565,10 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
       });
       setCompleteDialogOpen(false);
       onSnackbar(`Werkplek "${workplace.userName}" voltooid! Assets zijn bijgewerkt.`);
-    } catch {
-      onSnackbar('Fout bij voltooien werkplek', 'error');
+    } catch (err) {
+      console.error('Failed to complete workplace:', err);
+      const msg = err instanceof Error ? err.message : 'Onbekende fout';
+      onSnackbar(`Fout bij voltooien werkplek: ${msg}`, 'error');
     }
   };
 
@@ -576,8 +581,10 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
       setReopenDialogOpen(false);
       setReverseAssets(false);
       onSnackbar(`Werkplek "${workplace.userName}" heropend voor bewerking.`);
-    } catch {
-      onSnackbar('Fout bij heropenen werkplek', 'error');
+    } catch (err) {
+      console.error('Failed to reopen workplace:', err);
+      const msg = err instanceof Error ? err.message : 'Onbekende fout';
+      onSnackbar(`Fout bij heropenen werkplek: ${msg}`, 'error');
     }
   };
 
@@ -1407,8 +1414,10 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
       });
       onSnackbar(`${label} geconfigureerd en geïnstalleerd`);
       onSaved();
-    } catch {
-      onSnackbar(`Fout bij opslaan ${label}`, 'error');
+    } catch (err) {
+      console.error('Failed to save & install item:', err);
+      const msg = err instanceof Error ? err.message : 'Onbekende fout';
+      onSnackbar(`Fout bij opslaan ${label}: ${msg}`, 'error');
     }
   };
 
@@ -1427,8 +1436,10 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
       });
       onSnackbar(`${label} opgeslagen`);
       onSaved();
-    } catch {
-      onSnackbar(`Fout bij opslaan ${label}`, 'error');
+    } catch (err) {
+      console.error('Failed to save item:', err);
+      const msg = err instanceof Error ? err.message : 'Onbekende fout';
+      onSnackbar(`Fout bij opslaan ${label}: ${msg}`, 'error');
     }
   };
 

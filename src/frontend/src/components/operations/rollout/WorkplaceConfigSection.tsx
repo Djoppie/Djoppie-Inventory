@@ -604,11 +604,6 @@ export const WorkplaceConfigSection = ({
     setShowAddWorkplaceMenu(false);
   }, [items, onChange]);
 
-  // Count configured items
-  const configuredCount = items.filter(item =>
-    item.mode === 'link' ? !!item.linkedAsset : !!(item.template || (item.brand && item.model))
-  ).length;
-
   // Filter available assets to exclude already linked ones
   const filteredAssets = useMemo(() => {
     const linkedIds = new Set(items.filter(i => i.linkedAsset).map(i => i.linkedAsset!.id));
