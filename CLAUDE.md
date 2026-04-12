@@ -56,25 +56,52 @@ The system uses the following status values (defined in `DjoppieInventory.Core/E
 
 ### Backend Structure (Clean Architecture)
 
+Controllers are organized into feature-based vertical slices under `Controllers/`:
+
 ```
 src/backend/
 ├── DjoppieInventory.API/           # API Layer
-│   ├── Controllers/                # API endpoints
-│   │   ├── AssetsController.cs     # Asset CRUD + sorting/filtering
-│   │   ├── RolloutsController.cs   # Rollout session/day/workplace management (70KB)
-│   │   ├── IntuneController.cs     # Intune device sync & lookup
-│   │   ├── GraphController.cs      # Azure AD users/groups for bulk import
-│   │   ├── ServicesController.cs   # Organization services (Dienst ICT, etc.)
-│   │   ├── SectorsController.cs    # Organization sectors
-│   │   ├── BuildingsController.cs  # Building/location management
-│   │   ├── CategoriesController.cs # Asset categories
-│   │   ├── AssetTypesController.cs # Asset types (laptop, monitor, etc.)
-│   │   ├── AssetTemplatesController.cs
-│   │   ├── AssetEventsController.cs # Asset history/audit events
-│   │   ├── LeaseContractsController.cs
-│   │   ├── CsvImportController.cs  # Bulk CSV import
-│   │   ├── QRCodeController.cs     # QR code generation
-│   │   └── UserController.cs       # User profile
+│   ├── Controllers/                # API endpoints (feature-based)
+│   │   ├── Admin/                  # /api/admin/*
+│   │   │   ├── AdminOrganizationController.cs   # Organization CRUD
+│   │   │   ├── AdminSectorsController.cs         # Organization sectors
+│   │   │   ├── AdminServicesController.cs        # Organization services (Dienst ICT, etc.)
+│   │   │   ├── AdminBuildingsController.cs       # Building/location management
+│   │   │   ├── AdminCategoriesController.cs      # Asset categories
+│   │   │   ├── AdminAssetTypesController.cs      # Asset types (laptop, monitor, etc.)
+│   │   │   └── AdminEmployeesController.cs       # Employee management
+│   │   ├── Devices/                # /api/devices/*
+│   │   │   ├── IntuneDevicesController.cs        # Intune device lookup
+│   │   │   ├── IntuneSyncController.cs           # Intune sync operations
+│   │   │   └── IntuneHealthController.cs         # Intune connection health
+│   │   ├── Graph/                  # /api/graph
+│   │   │   └── GraphController.cs                # Azure AD users/groups for bulk import
+│   │   ├── Inventory/              # /api/inventory/*
+│   │   │   ├── AssetsController.cs               # Asset CRUD + sorting/filtering
+│   │   │   ├── AssetTemplatesController.cs       # Asset template library
+│   │   │   ├── AssetEventsController.cs          # Asset history/audit events
+│   │   │   ├── CsvImportController.cs            # Bulk CSV import
+│   │   │   └── QRCodeController.cs               # QR code generation
+│   │   ├── Operations/             # /api/operations/*
+│   │   │   ├── Rollout/            # /api/operations/rollouts/*
+│   │   │   │   ├── RolloutSessionsController.cs  # Session CRUD, start/complete
+│   │   │   │   ├── RolloutDaysController.cs      # Day management, service scheduling
+│   │   │   │   ├── RolloutWorkplacesController.cs # Workplace CRUD, asset assignments
+│   │   │   │   ├── RolloutGraphController.cs     # Entra group import for rollouts
+│   │   │   │   └── RolloutReportsController.cs   # Progress reports, asset movement exports
+│   │   │   ├── RequestsController.cs             # Asset requests
+│   │   │   └── DeploymentController.cs           # Deployment tracking
+│   │   ├── Reports/                # /api/reports/*
+│   │   │   ├── InventoryReportsController.cs
+│   │   │   ├── WorkplaceReportsController.cs
+│   │   │   ├── OperationsReportsController.cs
+│   │   │   └── DeviceReportsController.cs
+│   │   ├── User/                   # /api/user
+│   │   │   └── UserController.cs                 # User profile
+│   │   └── Workplaces/             # /api/workplaces/*
+│   │       ├── WorkplacesController.cs           # Physical workplace CRUD
+│   │       ├── WorkplaceSearchController.cs      # Workplace search
+│   │       └── WorkplaceAssetsController.cs      # Workplace asset management
 │   ├── Program.cs                  # Application entry point & DI configuration
 │   └── appsettings.*.json          # Environment-specific configuration
 │
@@ -84,14 +111,16 @@ src/backend/
 │   │   ├── RolloutSession.cs      # Rollout planning session
 │   │   ├── RolloutDay.cs          # Single rollout day
 │   │   ├── RolloutWorkplace.cs    # Workplace with AssetPlansJson
+│   │   ├── WorkplaceAssetAssignment.cs  # Relational asset assignments
+│   │   ├── RolloutAssetMovement.cs      # Asset movement audit trail
+│   │   ├── RolloutDayService.cs         # Day-service junction table
 │   │   ├── Service.cs             # Organization service unit
 │   │   ├── Sector.cs              # Organization sector
 │   │   ├── Building.cs            # Physical location
 │   │   ├── Category.cs            # Asset category
 │   │   ├── AssetType.cs           # Asset type classification
 │   │   ├── AssetTemplate.cs       # Quick-create templates
-│   │   ├── AssetEvent.cs          # Audit trail events
-│   │   └── LeaseContract.cs       # Lease management
+│   │   └── AssetEvent.cs          # Audit trail events
 │   ├── DTOs/                      # Data transfer objects
 │   └── Interfaces/                # Repository & service contracts
 │
@@ -100,10 +129,39 @@ src/backend/
     │   └── ApplicationDbContext.cs # EF Core DbContext
     ├── Repositories/              # Data access implementations
     └── Services/
-        └── IntuneService.cs       # Microsoft Graph/Intune integration
+        ├── IntuneService.cs       # Microsoft Graph/Intune integration
+        ├── OrganizationSyncService.cs  # Entra mail group sync
+        ├── AssetMovementService.cs     # Asset deployment/decommission tracking
+        └── WorkplaceAssetAssignmentService.cs  # Workplace asset assignment management
 ```
 
+### API Routes
+
+| Feature | Route |
+|---------|-------|
+| Assets | `/api/inventory/assets` |
+| Asset Templates | `/api/inventory/templates` |
+| Asset Events | `/api/inventory/events` |
+| CSV Import | `/api/inventory/import` |
+| QR Code | `/api/inventory/qrcode` |
+| Workplaces | `/api/workplaces` |
+| Rollout Sessions | `/api/operations/rollouts/sessions` |
+| Rollout Days | `/api/operations/rollouts/days` |
+| Rollout Workplaces | `/api/operations/rollouts/workplaces` |
+| Rollout Graph | `/api/operations/rollouts/graph` |
+| Rollout Reports | `/api/operations/rollouts/reports` |
+| Asset Requests | `/api/operations/requests` |
+| Deployment | `/api/operations/deployments` |
+| Intune Devices | `/api/devices/intune` |
+| Reports | `/api/reports` |
+| Admin | `/api/admin/[controller]` |
+| Organization | `/api/admin/organization` |
+| User | `/api/user` |
+| Graph | `/api/graph` |
+
 ### Frontend Structure
+
+Pages and components are organized into feature-based vertical slices:
 
 ```
 src/frontend/
@@ -114,11 +172,35 @@ src/frontend/
 │   │   ├── assets.api.ts      # Asset CRUD operations
 │   │   ├── rollout.api.ts     # Rollout workflow API
 │   │   ├── intune.api.ts      # Intune device lookup
+│   │   ├── organization.api.ts # Organization/admin data
 │   │   └── graph.api.ts       # Azure AD users/groups
-│   ├── components/    # Reusable UI components
-│   │   └── rollout/   # Rollout-specific components (dialogs, sections)
-│   ├── pages/         # Page-level components
-│   ├── hooks/         # Custom React hooks (useRollout.ts, useAssets.ts)
+│   ├── components/    # Reusable UI components (feature-based)
+│   │   ├── admin/         # Admin data tables and tabs per entity
+│   │   ├── common/        # Shared: Loading, ErrorMessage, etc.
+│   │   ├── dashboard/     # Dashboard widgets and components
+│   │   ├── devices/
+│   │   │   └── intune/    # Intune dashboard and device management components
+│   │   ├── inventory/     # AssetCard, AssetForm, AssetList, CsvImportDialog, ExportDialog, etc.
+│   │   ├── layout/        # Layout, Sidebar, NavigationGroup, Breadcrumbs, Navigation
+│   │   ├── operations/
+│   │   │   └── rollout/   # All rollout components (execution, planner, planning, reporting, etc.)
+│   │   ├── print/         # BulkPrintLabelDialog
+│   │   └── workplaces/    # WorkplaceCard, EditDialog, EquipmentChip, etc.
+│   ├── pages/         # Page-level components (feature-based)
+│   │   ├── admin/         # AdminAssetsPage, AdminOrganisationPage, AdminLocationsPage
+│   │   ├── dashboard/     # DashboardOverviewPage
+│   │   ├── devices/       # IntuneDeviceDashboardPage, AutopilotDevicesPage, AutopilotTimelinePage
+│   │   ├── inventory/     # AssetsPage, AssetDetailPage, AddAssetPage, EditAssetPage,
+│   │   │                  # BulkCreateAssetPage, AssetTemplatesPage, ScanPage,
+│   │   │                  # InventoryPage, InstalledSoftwarePage, AssetIntunePage
+│   │   ├── operations/
+│   │   │   ├── rollouts/  # RolloutListPage, RolloutPlannerPage, RolloutExecutionPage,
+│   │   │   │              # RolloutReportPage, RolloutDayDetailPage
+│   │   │   ├── requests/  # RequestsDashboardPage, RequestsReportsPage
+│   │   │   └── swaps/     # LaptopSwapPage, DeploymentHistoryPage
+│   │   ├── reports/       # ReportsPage
+│   │   └── workplaces/    # WorkplacesPage, WorkplaceDetailPage, WorkplaceReportsPage
+│   ├── hooks/         # Custom React hooks (useRollout.ts, useAssets.ts, etc.)
 │   ├── types/         # TypeScript type definitions
 │   ├── config/        # MSAL and app configuration
 │   ├── utils/         # Helper functions
@@ -129,6 +211,25 @@ src/frontend/
 ├── package.json
 └── vite.config.ts
 ```
+
+### Frontend Routes
+
+| Page | Route |
+|------|-------|
+| Dashboard | `/` |
+| Assets | `/inventory/assets` |
+| Add Asset | `/inventory/assets/new` |
+| Asset Detail | `/inventory/assets/:id` |
+| Asset Templates | `/inventory/templates` |
+| QR Scan | `/inventory/scan` |
+| Inventory Overview | `/inventory` |
+| Intune Dashboard | `/devices/intune` |
+| Rollouts | `/operations/rollouts` |
+| Asset Requests | `/operations/requests` |
+| Laptop Swap | `/operations/swaps` |
+| Reports | `/reports` |
+| Workplaces | `/workplaces` |
+| Admin | `/admin` |
 
 ### Authentication Architecture
 
@@ -531,18 +632,27 @@ Completion Transaction:
 
 ### Key Files
 
-**Backend Controllers** (split from original 70KB RolloutsController):
+**Backend Controllers**:
 
-- `Controllers/Rollout/RolloutSessionsController.cs` - Session CRUD, start/complete
-- `Controllers/Rollout/RolloutDaysController.cs` - Day management, service scheduling
-- `Controllers/Rollout/RolloutWorkplacesController.cs` - Workplace CRUD, asset assignments
-- `Controllers/Rollout/RolloutReportsController.cs` - Progress reports, asset movement exports
+- `Controllers/Operations/Rollout/RolloutSessionsController.cs` - Session CRUD, start/complete
+- `Controllers/Operations/Rollout/RolloutDaysController.cs` - Day management, service scheduling
+- `Controllers/Operations/Rollout/RolloutWorkplacesController.cs` - Workplace CRUD, asset assignments
+- `Controllers/Operations/Rollout/RolloutGraphController.cs` - Entra group import for rollouts
+- `Controllers/Operations/Rollout/RolloutReportsController.cs` - Progress reports, asset movement exports
 
 **Backend Services**:
 
 - `Services/OrganizationSyncService.cs` - Entra mail group sync
 - `Services/AssetMovementService.cs` - Asset deployment/decommission tracking
 - `Services/WorkplaceAssetAssignmentService.cs` - Workplace asset assignment management
+
+**Frontend Pages**:
+
+- `pages/operations/rollouts/RolloutListPage.tsx` - Session list
+- `pages/operations/rollouts/RolloutPlannerPage.tsx` - Planning view
+- `pages/operations/rollouts/RolloutExecutionPage.tsx` - Execution view
+- `pages/operations/rollouts/RolloutReportPage.tsx` - Reports
+- `pages/operations/rollouts/RolloutDayDetailPage.tsx` - Day detail view
 
 **Frontend Hooks**:
 
@@ -553,10 +663,10 @@ Completion Transaction:
 
 **Frontend Components**:
 
-- `components/rollout/planning/PlanningViewToggle.tsx` - View mode toggle
-- `components/rollout/planning/PlanningListView.tsx` - List view with sorting/filtering
-- `components/rollout/reporting/AssetMovementTable.tsx` - Movement audit table
-- `components/rollout/reporting/ProgressDashboard.tsx` - Session progress visualization
+- `components/operations/rollout/planning/PlanningViewToggle.tsx` - View mode toggle
+- `components/operations/rollout/planning/PlanningListView.tsx` - List view with sorting/filtering
+- `components/operations/rollout/reporting/AssetMovementTable.tsx` - Movement audit table
+- `components/operations/rollout/reporting/ProgressDashboard.tsx` - Session progress visualization
 
 **Entities**:
 
@@ -652,7 +762,7 @@ az ad app permission admin-consent --id <backend-api-client-id>
 
 The system generates QR codes containing asset codes:
 
-- Backend: `QRCodeController.cs` generates SVG format QR codes
+- Backend: `Controllers/Inventory/QRCodeController.cs` generates SVG format QR codes
 - Frontend: `qrcode.react` library renders QR codes in UI
 - Download: Users can download SVG files for printing (format: `{AssetCode}-QR.svg`)
 
@@ -668,15 +778,23 @@ The system generates QR codes containing asset codes:
 6. Register repository in `Program.cs` DI container
 7. Create migration: `dotnet ef migrations add Add{EntityName}`
 8. Apply migration: `dotnet ef database update`
-9. Create controller in `DjoppieInventory.API/Controllers/`
+9. Create controller in the appropriate `DjoppieInventory.API/Controllers/{Feature}/` directory
 
 ### Adding a New API Endpoint
 
-1. Add method to appropriate controller or create new controller
-2. Define request/response DTOs if needed
-3. Add authorization attribute if required: `[Authorize]` or `[Authorize(Policy = "RequireAdminRole")]`
-4. Test endpoint via Swagger at <http://localhost:5052/swagger>
-5. Update frontend service layer to call new endpoint
+1. Identify the feature area (Inventory, Admin, Operations, Devices, Reports, Workplaces)
+2. Add method to the appropriate controller under `Controllers/{Feature}/` or create a new controller there
+3. Define request/response DTOs if needed
+4. Add authorization attribute if required: `[Authorize]` or `[Authorize(Policy = "RequireAdminRole")]`
+5. Test endpoint via Swagger at <http://localhost:5052/swagger>
+6. Update frontend API layer (e.g., `api/assets.api.ts`) to call the new endpoint
+
+### Adding a New Frontend Page
+
+1. Create the page component under `pages/{feature}/` (e.g., `pages/inventory/NewPage.tsx`)
+2. Add the corresponding route in `App.tsx`
+3. Add any reusable components under `components/{feature}/`
+4. Add navigation entry in the sidebar if needed
 
 ### Modifying Asset Status Enum
 
