@@ -91,7 +91,7 @@ const EQUIPMENT_ICONS: Record<string, string> = {
 };
 
 // Assignment type constants - match WorkplaceConfigSection
-const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop', 'desktop'];
+const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop'];
 
 type AssignmentType = 'user' | 'workplace';
 

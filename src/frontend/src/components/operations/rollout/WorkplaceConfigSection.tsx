@@ -80,7 +80,7 @@ export interface AssetConfigItem {
 type AssignmentType = 'user' | 'workplace';
 
 // Equipment types that are assigned to the user (employee takes it with them)
-const USER_ASSIGNED_EQUIPMENT: EquipmentType[] = ['laptop', 'desktop'];
+const USER_ASSIGNED_EQUIPMENT: EquipmentType[] = ['laptop'];
 
 // Get assignment type for equipment
 const getAssignmentType = (equipmentType: EquipmentType): AssignmentType => {
@@ -626,8 +626,8 @@ export const WorkplaceConfigSection = ({
   );
 
   // User equipment types (for add menu)
-  const USER_EQUIPMENT_TYPES: EquipmentType[] = ['laptop', 'desktop'];
-  const WORKPLACE_EQUIPMENT_TYPES: EquipmentType[] = ['docking', 'monitor', 'keyboard', 'mouse'];
+  const USER_EQUIPMENT_TYPES: EquipmentType[] = ['laptop'];
+  const WORKPLACE_EQUIPMENT_TYPES: EquipmentType[] = ['desktop', 'docking', 'monitor', 'keyboard', 'mouse'];
 
   // Render a group of items
   const renderItemCards = (groupItems: AssetConfigItem[]) => (
@@ -742,8 +742,8 @@ export const WorkplaceConfigSection = ({
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
                 {userName
-                  ? `Laptop/desktop voor ${userName}`
-                  : 'Persoonlijk toestel dat meegaat met de werknemer'}
+                  ? `Laptop voor ${userName}`
+                  : 'Persoonlijke laptop die meegaat met de werknemer'}
               </Typography>
             </Box>
           </Stack>
@@ -771,7 +771,7 @@ export const WorkplaceConfigSection = ({
         {renderAddMenu(showAddUserMenu, USER_EQUIPMENT_TYPES, USER_ACCENT)}
 
         {userItems.length === 0
-          ? renderEmpty('Geen laptop of desktop toegevoegd. Klik op "Toevoegen" om een toestel toe te kennen.')
+          ? renderEmpty('Geen laptop toegevoegd. Klik op "Toevoegen" om een laptop toe te kennen.')
           : renderItemCards(userItems)
         }
       </Box>
