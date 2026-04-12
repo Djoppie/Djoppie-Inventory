@@ -34,7 +34,7 @@ const RequestsDashboardPage = lazy(() => import('./pages/operations/requests/Req
 const RequestsReportsPage = lazy(() => import('./pages/operations/requests/RequestsReportsPage'));
 const LaptopSwapPage = lazy(() => import('./pages/operations/swaps/LaptopSwapPage'));
 const DeploymentHistoryPage = lazy(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
-const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const IntuneDeviceDashboardPage = lazy(() => import('./pages/devices/IntuneDeviceDashboardPage'));
 
 const queryClient = new QueryClient({

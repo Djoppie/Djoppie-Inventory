@@ -24,11 +24,11 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { ROUTES } from '../constants/routes';
-import { getNeumorph, getNeumorphColors } from '../utils/neumorphicStyles';
-import { getFadeInUpAnimation } from '../utils/designSystem';
-import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SECTOR_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../constants/filterColors';
-import type { ReportTab } from '../types/report.types';
+import { ROUTES } from '../../constants/routes';
+import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
+import { getFadeInUpAnimation } from '../../utils/designSystem';
+import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SECTOR_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../../constants/filterColors';
+import type { ReportTab } from '../../types/report.types';
 import {
   HardwareTab,
   RolloutTab,
@@ -37,7 +37,7 @@ import {
   LicensesTab,
   LeasingTab,
   SerialNumbersTab,
-} from '../components/reports';
+} from '../../components/reports';
 
 // Report tab configuration
 const REPORT_TABS: { id: ReportTab; label: string; icon: ReactElement; description: string }[] = [
