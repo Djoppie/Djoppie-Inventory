@@ -53,7 +53,7 @@ const TodaysRolloutWidget = () => {
   });
 
   const handleDayClick = (dayId: number, sessionId: number) => {
-    navigate(`/rollouts/${sessionId}/days/${dayId}`);
+    navigate(`/operations/rollouts/${sessionId}/days/${dayId}`);
   };
 
   // Loading state
@@ -349,7 +349,7 @@ const TodaysRolloutWidget = () => {
           cursor: 'pointer',
           '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) },
         }}
-        onClick={() => navigate('/rollouts')}
+        onClick={() => navigate('/operations/rollouts')}
       >
         <Typography
           variant="caption"

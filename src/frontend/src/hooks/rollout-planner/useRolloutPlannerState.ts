@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { RolloutDay, RolloutWorkplace } from '../../types/rollout';
-import { PlanningStatusFilterValue } from '../../components/rollout/PlanningStatusFilter';
+import { PlanningStatusFilterValue } from '../../components/operations/rollout/PlanningStatusFilter';
 
 export interface DialogState {
   dayDialogOpen: boolean;

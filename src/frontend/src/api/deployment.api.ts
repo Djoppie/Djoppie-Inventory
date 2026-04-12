@@ -18,7 +18,7 @@ export const executeDeployment = async (
   forceOccupantUpdate = false
 ): Promise<DeploymentResult> => {
   const response = await apiClient.post<DeploymentResult>(
-    '/deployment/execute',
+    '/operations/deployments/execute',
     request,
     { params: { forceOccupantUpdate } }
   );
@@ -35,7 +35,7 @@ export const checkOccupantConflict = async (
   ownerEmail: string
 ): Promise<OccupantConflict | null> => {
   const response = await apiClient.get<OccupantConflict | null>(
-    '/deployment/check-occupant-conflict',
+    '/operations/deployments/check-occupant-conflict',
     {
       params: {
         physicalWorkplaceId,
@@ -56,7 +56,7 @@ export const getDeploymentHistory = async (
   params: DeploymentHistoryParams = {}
 ): Promise<DeploymentHistoryResult> => {
   const response = await apiClient.get<DeploymentHistoryResult>(
-    '/deployment/history',
+    '/operations/deployments/history',
     { params }
   );
   return response.data;

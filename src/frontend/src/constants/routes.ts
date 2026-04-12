@@ -47,25 +47,25 @@ export const ROUTES = {
   ASSET_INTUNE: '/inventory/assets/:id/intune',
 
   /** Rollout list page */
-  ROLLOUTS: '/rollouts',
+  ROLLOUTS: '/operations/rollouts',
 
   /** New rollout planner page */
-  ROLLOUTS_NEW: '/rollouts/new',
+  ROLLOUTS_NEW: '/operations/rollouts/new',
 
   /** Edit rollout planner page (requires :id parameter) */
-  ROLLOUT_EDIT: '/rollouts/:id',
+  ROLLOUT_EDIT: '/operations/rollouts/:id',
 
   /** Rollout execution page (requires :id parameter) */
-  ROLLOUT_EXECUTE: '/rollouts/:id/execute',
+  ROLLOUT_EXECUTE: '/operations/rollouts/:id/execute',
 
   /** Rollout report page (requires :id parameter) */
-  ROLLOUT_REPORT: '/rollouts/:id/report',
+  ROLLOUT_REPORT: '/operations/rollouts/:id/report',
 
   /** Rollout day detail page (requires :id and :dayId parameters) */
-  ROLLOUT_DAY_DETAIL: '/rollouts/:id/days/:dayId',
+  ROLLOUT_DAY_DETAIL: '/operations/rollouts/:id/days/:dayId',
 
   /** Rollout day edit page (requires :id and :dayId parameters) */
-  ROLLOUT_DAY_EDIT: '/rollouts/:id/days/:dayId/edit',
+  ROLLOUT_DAY_EDIT: '/operations/rollouts/:id/days/:dayId/edit',
 
   /** Autopilot devices list page */
   AUTOPILOT_DEVICES: '/devices/autopilot',
@@ -86,22 +86,22 @@ export const ROUTES = {
   WORKPLACE_REPORTS: '/workplaces/reports',
 
   /** Requests dashboard page */
-  REQUESTS: '/requests',
+  REQUESTS: '/operations/requests',
 
   /** Onboarding requests page */
-  REQUESTS_ONBOARDING: '/requests/onboarding',
+  REQUESTS_ONBOARDING: '/operations/requests/onboarding',
 
   /** Offboarding requests page */
-  REQUESTS_OFFBOARDING: '/requests/offboarding',
+  REQUESTS_OFFBOARDING: '/operations/requests/offboarding',
 
   /** Requests reports (history of swaps, onboarding, offboarding) */
-  REQUESTS_REPORTS: '/requests/reports',
+  REQUESTS_REPORTS: '/operations/requests/reports',
 
   /** Laptop swap / Device deployment page */
-  LAPTOP_SWAP: '/laptop-swap',
+  LAPTOP_SWAP: '/operations/swaps',
 
   /** Deployment history page */
-  DEPLOYMENT_HISTORY: '/laptop-swap/history',
+  DEPLOYMENT_HISTORY: '/operations/swaps/history',
 
   /** Reports hub page */
   REPORTS: '/reports',
@@ -144,21 +144,21 @@ export const buildRoute = {
    * @param id - The rollout ID
    * @returns The full route path
    */
-  rolloutEdit: (id: number | string) => `/rollouts/${id}`,
+  rolloutEdit: (id: number | string) => `/operations/rollouts/${id}`,
 
   /**
    * Builds the rollout execution route with the specified rollout ID.
    * @param id - The rollout ID
    * @returns The full route path
    */
-  rolloutExecute: (id: number | string) => `/rollouts/${id}/execute`,
+  rolloutExecute: (id: number | string) => `/operations/rollouts/${id}/execute`,
 
   /**
    * Builds the rollout report route with the specified rollout ID.
    * @param id - The rollout ID
    * @returns The full route path
    */
-  rolloutReport: (id: number | string) => `/rollouts/${id}/report`,
+  rolloutReport: (id: number | string) => `/operations/rollouts/${id}/report`,
 
   /**
    * Builds the rollout day detail route.
@@ -166,7 +166,7 @@ export const buildRoute = {
    * @param dayId - The rollout day ID
    * @returns The full route path
    */
-  rolloutDayDetail: (sessionId: number | string, dayId: number | string) => `/rollouts/${sessionId}/days/${dayId}`,
+  rolloutDayDetail: (sessionId: number | string, dayId: number | string) => `/operations/rollouts/${sessionId}/days/${dayId}`,
 
   /**
    * Builds the rollout day edit route.
@@ -174,7 +174,7 @@ export const buildRoute = {
    * @param dayId - The rollout day ID
    * @returns The full route path
    */
-  rolloutDayEdit: (sessionId: number | string, dayId: number | string) => `/rollouts/${sessionId}/days/${dayId}/edit`,
+  rolloutDayEdit: (sessionId: number | string, dayId: number | string) => `/operations/rollouts/${sessionId}/days/${dayId}/edit`,
 
   /**
    * Builds the Autopilot timeline route with the specified serial number.
