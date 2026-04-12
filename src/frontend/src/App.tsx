@@ -7,7 +7,7 @@ import Layout from './components/layout/Layout';
 import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
-const DashboardOverviewPage = lazy(() => import('./pages/DashboardOverviewPage'));
+const DashboardOverviewPage = lazy(() => import('./pages/dashboard/DashboardOverviewPage'));
 const ScanPage = lazy(() => import('./pages/inventory/ScanPage'));
 const AssetDetailPage = lazy(() => import('./pages/inventory/AssetDetailPage'));
 const AddAssetPage = lazy(() => import('./pages/inventory/AddAssetPage'));

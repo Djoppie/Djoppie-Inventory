@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Box, useTheme, Tabs, Tab, alpha } from '@mui/material';
 import { useSearchParams } from 'react-router-dom';
-import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../utils/neumorphicStyles';
+import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 import {
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
@@ -14,14 +14,14 @@ import {
   SwapHoriz,
   MonitorHeart as MonitorHeartIcon,
 } from '@mui/icons-material';
-import { ASSET_COLOR } from '../constants/filterColors';
+import { ASSET_COLOR } from '../../constants/filterColors';
 import {
   OverviewTab,
   InventoryTab,
   RolloutPlanningTab,
   SwapManagementTab,
-} from '../components/dashboard-tabs';
-import IntuneDeviceDashboardPage from './devices/IntuneDeviceDashboardPage';
+} from '../../components/dashboard-tabs';
+import IntuneDeviceDashboardPage from '../devices/IntuneDeviceDashboardPage';
 
 type TabValue = 'overview' | 'inventory' | 'intune' | 'rollout' | 'swaps';
 
