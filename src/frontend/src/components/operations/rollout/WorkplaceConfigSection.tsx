@@ -579,8 +579,9 @@ export const WorkplaceConfigSection = ({
       .finally(() => setIsLoadingAssets(false));
   });
 
-  // Equipment type selection for adding new items
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  // Equipment type selection for adding new items — separate per section
+  const [showAddUserMenu, setShowAddUserMenu] = useState(false);
+  const [showAddWorkplaceMenu, setShowAddWorkplaceMenu] = useState(false);
 
   const updateItem = useCallback((itemId: string, updates: Partial<AssetConfigItem>) => {
     onChange(items.map(item =>
@@ -599,7 +600,8 @@ export const WorkplaceConfigSection = ({
       mode: 'create',
     };
     onChange([...items, newItem]);
-    setShowAddMenu(false);
+    setShowAddUserMenu(false);
+    setShowAddWorkplaceMenu(false);
   }, [items, onChange]);
 
   // Count configured items
@@ -613,129 +615,250 @@ export const WorkplaceConfigSection = ({
     return availableAssets.filter(a => !linkedIds.has(a.id));
   }, [availableAssets, items]);
 
-  return (
-    <Box
-      sx={{
-        p: 2.5,
-        borderRadius: 3,
-        bgcolor: neuBg,
-        boxShadow: `8px 8px 16px ${neuShadowDark}, -8px -8px 16px ${neuShadowLight}`,
-      }}
-    >
-      {/* Section Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2.5 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: neuBg,
-              boxShadow: `3px 3px 6px ${neuShadowDark}, -3px -3px 6px ${neuShadowLight}`,
-            }}
-          >
-            <InventoryIcon sx={{ color: ASSET_COLOR, fontSize: '1.2rem' }} />
-          </Box>
-          <Box>
-            <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
-              Werkplek Configuratie
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {configuredCount} van {items.length} items geconfigureerd
-            </Typography>
-          </Box>
-        </Stack>
+  // Split items into user-assigned and workplace-fixed groups
+  const userItems = useMemo(() =>
+    items.filter(item => USER_ASSIGNED_EQUIPMENT.includes(item.equipmentType)),
+    [items]
+  );
+  const workplaceItems = useMemo(() =>
+    items.filter(item => !USER_ASSIGNED_EQUIPMENT.includes(item.equipmentType)),
+    [items]
+  );
 
-        <Button
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={() => setShowAddMenu(!showAddMenu)}
-          sx={{
-            borderRadius: 2,
-            bgcolor: neuBg,
-            color: ASSET_COLOR,
-            fontWeight: 600,
-            boxShadow: `3px 3px 6px ${neuShadowDark}, -3px -3px 6px ${neuShadowLight}`,
-            '&:hover': {
-              boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
-            },
-          }}
-        >
-          Toevoegen
-        </Button>
-      </Stack>
+  // User equipment types (for add menu)
+  const USER_EQUIPMENT_TYPES: EquipmentType[] = ['laptop', 'desktop'];
+  const WORKPLACE_EQUIPMENT_TYPES: EquipmentType[] = ['docking', 'monitor', 'keyboard', 'mouse'];
 
-      {/* Add Menu */}
-      <Collapse in={showAddMenu}>
-        <Box
-          sx={{
-            mb: 2.5,
-            p: 2,
-            borderRadius: 2,
-            bgcolor: neuBg,
-            boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}`,
-          }}
-        >
-          <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
-            Selecteer apparaattype
-          </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {Object.entries(EQUIPMENT_LABELS).map(([type, label]) => (
-              <Chip
-                key={type}
-                icon={EQUIPMENT_ICONS[type as EquipmentType]}
-                label={label}
-                onClick={() => addItem(type as EquipmentType)}
-                sx={{
-                  bgcolor: neuBg,
-                  boxShadow: `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}`,
-                  '&:hover': {
-                    boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
-                  },
-                  '& .MuiChip-icon': { color: ASSET_COLOR },
-                }}
-              />
-            ))}
-          </Stack>
-        </Box>
-      </Collapse>
+  // Render a group of items
+  const renderItemCards = (groupItems: AssetConfigItem[]) => (
+    <Stack spacing={2}>
+      {groupItems.map((item) => (
+        <AssetConfigItemCard
+          key={item.id}
+          item={item}
+          onUpdate={(updates) => updateItem(item.id, updates)}
+          onRemove={() => removeItem(item.id)}
+          onScanRequest={() => onScanRequest(item.id)}
+          availableAssets={filteredAssets}
+          isLoadingAssets={isLoadingAssets}
+          userName={userName}
+          physicalWorkplaceName={physicalWorkplaceName}
+        />
+      ))}
+    </Stack>
+  );
 
-      {/* Asset Config Items */}
-      {items.length === 0 ? (
-        <Box
-          sx={{
-            p: 3,
-            textAlign: 'center',
-            borderRadius: 2,
-            bgcolor: neuBg,
-            boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}`,
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            Geen apparaten geconfigureerd. Klik op "Toevoegen" om te beginnen.
-          </Typography>
-        </Box>
-      ) : (
-        <Stack spacing={2}>
-          {items.map((item) => (
-            <AssetConfigItemCard
-              key={item.id}
-              item={item}
-              onUpdate={(updates) => updateItem(item.id, updates)}
-              onRemove={() => removeItem(item.id)}
-              onScanRequest={() => onScanRequest(item.id)}
-              availableAssets={filteredAssets}
-              isLoadingAssets={isLoadingAssets}
-              userName={userName}
-              physicalWorkplaceName={physicalWorkplaceName}
+  // Render add menu for a specific set of equipment types
+  const renderAddMenu = (
+    isOpen: boolean,
+    types: EquipmentType[],
+    accentColor: string,
+  ) => (
+    <Collapse in={isOpen}>
+      <Box
+        sx={{
+          mb: 2,
+          p: 1.5,
+          borderRadius: 2,
+          bgcolor: neuBg,
+          boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}`,
+        }}
+      >
+        <Stack direction="row" flexWrap="wrap" gap={1}>
+          {types.map((type) => (
+            <Chip
+              key={type}
+              icon={EQUIPMENT_ICONS[type]}
+              label={EQUIPMENT_LABELS[type]}
+              onClick={() => addItem(type)}
+              sx={{
+                bgcolor: neuBg,
+                boxShadow: `2px 2px 4px ${neuShadowDark}, -2px -2px 4px ${neuShadowLight}`,
+                '&:hover': {
+                  boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
+                },
+                '& .MuiChip-icon': { color: accentColor },
+              }}
             />
           ))}
         </Stack>
-      )}
+      </Box>
+    </Collapse>
+  );
+
+  // Empty state for a section
+  const renderEmpty = (message: string) => (
+    <Box
+      sx={{
+        p: 2.5,
+        textAlign: 'center',
+        borderRadius: 2,
+        bgcolor: neuBg,
+        boxShadow: `inset 3px 3px 6px ${neuShadowDark}, inset -3px -3px 6px ${neuShadowLight}`,
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem' }}>
+        {message}
+      </Typography>
     </Box>
+  );
+
+  // Accent colors for the two sections
+  const USER_ACCENT = '#9c27b0';
+  const WORKPLACE_ACCENT = SERVICE_COLOR; // #009688
+
+  return (
+    <Stack spacing={2.5}>
+      {/* ===== Section 1: Laptop/Desktop toekenning (User-assigned) ===== */}
+      <Box
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          bgcolor: neuBg,
+          boxShadow: `8px 8px 16px ${neuShadowDark}, -8px -8px 16px ${neuShadowLight}`,
+          borderLeft: `4px solid ${USER_ACCENT}`,
+        }}
+      >
+        {/* Section Header */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: `rgba(156, 39, 176, 0.12)`,
+                color: USER_ACCENT,
+              }}
+            >
+              <PersonIcon sx={{ fontSize: '1.2rem' }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333', lineHeight: 1.3 }}>
+                Toestel bezetter
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+                {userName
+                  ? `Laptop/desktop voor ${userName}`
+                  : 'Persoonlijk toestel dat meegaat met de werknemer'}
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Button
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() => { setShowAddUserMenu(!showAddUserMenu); setShowAddWorkplaceMenu(false); }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: neuBg,
+              color: USER_ACCENT,
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              boxShadow: `3px 3px 6px ${neuShadowDark}, -3px -3px 6px ${neuShadowLight}`,
+              '&:hover': {
+                boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
+              },
+            }}
+          >
+            Toevoegen
+          </Button>
+        </Stack>
+
+        {renderAddMenu(showAddUserMenu, USER_EQUIPMENT_TYPES, USER_ACCENT)}
+
+        {userItems.length === 0
+          ? renderEmpty('Geen laptop of desktop toegevoegd. Klik op "Toevoegen" om een toestel toe te kennen.')
+          : renderItemCards(userItems)
+        }
+      </Box>
+
+      {/* ===== Section 2: Werkplek-uitrusting (Workplace-fixed) ===== */}
+      <Box
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          bgcolor: neuBg,
+          boxShadow: `8px 8px 16px ${neuShadowDark}, -8px -8px 16px ${neuShadowLight}`,
+          borderLeft: `4px solid ${WORKPLACE_ACCENT}`,
+        }}
+      >
+        {/* Section Header */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: `rgba(0, 150, 136, 0.12)`,
+                color: WORKPLACE_ACCENT,
+              }}
+            >
+              <PlaceIcon sx={{ fontSize: '1.2rem' }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333', lineHeight: 1.3 }}>
+                Werkplek-uitrusting
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem' }}>
+                {physicalWorkplaceName
+                  ? `Vaste uitrusting op ${physicalWorkplaceName}`
+                  : 'Docking, schermen, toetsenbord en muis op de werkplek'}
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Stack direction="row" alignItems="center" spacing={1}>
+            {workplaceItems.length > 0 && (
+              <Chip
+                label={`${workplaceItems.filter(i => i.mode === 'link' ? !!i.linkedAsset : !!(i.template || (i.brand && i.model))).length}/${workplaceItems.length}`}
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  bgcolor: `rgba(0, 150, 136, 0.12)`,
+                  color: WORKPLACE_ACCENT,
+                  border: 'none',
+                }}
+              />
+            )}
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => { setShowAddWorkplaceMenu(!showAddWorkplaceMenu); setShowAddUserMenu(false); }}
+              sx={{
+                borderRadius: 2,
+                bgcolor: neuBg,
+                color: WORKPLACE_ACCENT,
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                boxShadow: `3px 3px 6px ${neuShadowDark}, -3px -3px 6px ${neuShadowLight}`,
+                '&:hover': {
+                  boxShadow: `inset 2px 2px 4px ${neuShadowDark}, inset -2px -2px 4px ${neuShadowLight}`,
+                },
+              }}
+            >
+              Toevoegen
+            </Button>
+          </Stack>
+        </Stack>
+
+        {renderAddMenu(showAddWorkplaceMenu, WORKPLACE_EQUIPMENT_TYPES, WORKPLACE_ACCENT)}
+
+        {workplaceItems.length === 0
+          ? renderEmpty('Geen werkplek-uitrusting toegevoegd. Klik op "Toevoegen" om apparaten te configureren.')
+          : renderItemCards(workplaceItems)
+        }
+      </Box>
+    </Stack>
   );
 };
 
