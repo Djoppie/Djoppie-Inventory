@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -27,7 +27,6 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import DescriptionIcon from '@mui/icons-material/Description';
 import AppsIcon from '@mui/icons-material/Apps';
 import { QRCodeSVG } from 'qrcode.react';
 import PrintIcon from '@mui/icons-material/Print';
@@ -38,19 +37,9 @@ import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
 import PrintLabelDialog from '../components/print/PrintLabelDialog';
 import AssetEventHistory from '../components/assets/AssetEventHistory';
-import LeaseContractCard from '../components/assets/LeaseContractCard';
-import LeaseContractDialog from '../components/assets/LeaseContractDialog';
 import DevicesIcon from '@mui/icons-material/Devices';
 import PlaceIcon from '@mui/icons-material/Place';
 import BusinessIcon from '@mui/icons-material/Business';
-import {
-  getActiveLeaseContract,
-  createLeaseContract,
-  updateLeaseContract,
-  LeaseContract,
-  CreateLeaseContract,
-  UpdateLeaseContract,
-} from '../api/leaseContracts.api';
 import { buildRoute } from '../constants/routes';
 
 // Helper: check if an asset code has a number >= 9000 (dummy/test asset)
@@ -153,10 +142,6 @@ const AssetDetailPage = () => {
   const deleteAsset = useDeleteAsset();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
-  const [leaseDialogOpen, setLeaseDialogOpen] = useState(false);
-  const [activeLease, setActiveLease] = useState<LeaseContract | null>(null);
-  const [isEditingLease, setIsEditingLease] = useState(false);
-  const [isLoadingLease, setIsLoadingLease] = useState(false);
 
   const handleEdit = () => {
     navigate(`/assets/${id}/edit`);
@@ -168,51 +153,6 @@ const AssetDetailPage = () => {
       navigate('/');
     } catch (error) {
       logger.error('Error deleting asset:', error);
-    }
-  };
-
-  // Fetch active lease contract
-  useEffect(() => {
-    const fetchLease = async () => {
-      if (id) {
-        setIsLoadingLease(true);
-        try {
-          const lease = await getActiveLeaseContract(Number(id));
-          setActiveLease(lease); // null if no active lease (404)
-        } catch (error) {
-          // Only logs actual errors (404s are handled gracefully by the API)
-          logger.error('Unexpected error fetching lease contract:', error);
-          setActiveLease(null);
-        } finally {
-          setIsLoadingLease(false);
-        }
-      }
-    };
-    fetchLease();
-  }, [id]);
-
-  const handleAddLease = () => {
-    setIsEditingLease(false);
-    setLeaseDialogOpen(true);
-  };
-
-  const handleEditLease = () => {
-    setIsEditingLease(true);
-    setLeaseDialogOpen(true);
-  };
-
-  const handleSaveLease = async (data: CreateLeaseContract | UpdateLeaseContract) => {
-    try {
-      if (isEditingLease && activeLease) {
-        const updated = await updateLeaseContract(activeLease.id, data as UpdateLeaseContract);
-        setActiveLease(updated);
-      } else {
-        const created = await createLeaseContract(data as CreateLeaseContract);
-        setActiveLease(created);
-      }
-    } catch (error) {
-      logger.error('Error saving lease contract:', error);
-      throw error;
     }
   };
 
@@ -621,29 +561,6 @@ const AssetDetailPage = () => {
             </CardContent>
           </Card>
 
-          {/* Lease Information */}
-          <Card elevation={0} sx={scannerCardSx}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <SectionHeader
-                icon={<DescriptionIcon />}
-                title={t('lease.sectionTitle')}
-              />
-              {isLoadingLease ? (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('common.loading')}
-                  </Typography>
-                </Box>
-              ) : (
-                <LeaseContractCard
-                  leaseContract={activeLease}
-                  onEdit={handleEditLease}
-                  onAdd={handleAddLease}
-                />
-              )}
-            </CardContent>
-          </Card>
-
           {/* Event History */}
           <Card elevation={0} sx={scannerCardSx}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
@@ -802,15 +719,6 @@ const AssetDetailPage = () => {
         assetName={asset.assetName}
       />
 
-      {/* Lease Contract Dialog */}
-      <LeaseContractDialog
-        open={leaseDialogOpen}
-        onClose={() => setLeaseDialogOpen(false)}
-        onSave={handleSaveLease}
-        assetId={asset.id}
-        leaseContract={activeLease}
-        isEdit={isEditingLease}
-      />
     </Box>
   );
 };

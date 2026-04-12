@@ -1,5 +1,3 @@
-export { default as NeumorphicButton } from './NeumorphicButton';
-export { default as AnimatedStatusChip } from './AnimatedStatusChip';
 export { default as StatusBadge } from './StatusBadge';
 export { default as ServiceSelect } from './ServiceSelect';
 export { default as BuildingSelect } from './BuildingSelect';
@@ -13,7 +11,6 @@ export { default as LanguageSwitcher } from './LanguageSwitcher';
 export { default as ViewToggle } from './ViewToggle';
 export { default as UserAutocomplete } from './UserAutocomplete';
 export { default as EmployeeAutocomplete } from './EmployeeAutocomplete';
-export { default as DeviceAutocomplete } from './DeviceAutocomplete';
 export { default as PhysicalWorkplaceSelect } from './PhysicalWorkplaceSelect';
 export { default as CategorySwitcher } from './CategorySwitcher';
 export { default as ApiErrorDisplay } from './ApiErrorDisplay';

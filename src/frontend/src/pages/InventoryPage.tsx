@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Box, Typography, Paper, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../utils/neumorphicStyles';
@@ -22,12 +22,10 @@ import {
 } from '../components/dashboard';
 
 // API
-import { getExpiringLeaseContracts } from '../api/leaseContracts.api';
 import { bulkDeleteAssets } from '../api/assets.api';
 
 // Utils & Constants
 import { logger } from '../utils/logger';
-import { EXPIRING_LEASES_DAYS } from '../constants/dashboard.constants';
 
 const DashboardPage = () => {
   const { t } = useTranslation();
@@ -72,28 +70,11 @@ const DashboardPage = () => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Popover anchors
-  const [leasesAnchor, setLeasesAnchor] = useState<null | HTMLElement>(null);
   const [notesAnchor, setNotesAnchor] = useState<null | HTMLElement>(null);
   const [alarmsAnchor, setAlarmsAnchor] = useState<null | HTMLElement>(null);
 
   // Notes state
   const [discussionText, setDiscussionText] = useState('');
-
-  // Expiring leases count
-  const [expiringLeasesCount, setExpiringLeasesCount] = useState(0);
-
-  // Fetch expiring leases count for badge
-  useEffect(() => {
-    const fetchLeaseCount = async () => {
-      try {
-        const leases = await getExpiringLeaseContracts(EXPIRING_LEASES_DAYS);
-        setExpiringLeasesCount(leases.length);
-      } catch (err) {
-        logger.error('Error fetching lease count:', err);
-      }
-    };
-    fetchLeaseCount();
-  }, []);
 
   // Selection handlers
   const handleSelectionChange = useCallback((assetId: number, selected: boolean) => {
@@ -180,13 +161,10 @@ const DashboardPage = () => {
       <DashboardHeader
         statusCounts={statusCounts}
         statusFilter={filters.statusFilter}
-        expiringLeasesCount={expiringLeasesCount}
         hasNotes={Boolean(discussionText)}
         onStatusClick={filters.handleStatusChipClick}
-        onLeasesClick={(e) => setLeasesAnchor(e.currentTarget)}
         onNotesClick={(e) => setNotesAnchor(e.currentTarget)}
         onAlarmsClick={(e) => setAlarmsAnchor(e.currentTarget)}
-        leasesOpen={Boolean(leasesAnchor)}
         notesOpen={Boolean(notesAnchor)}
         alarmsOpen={Boolean(alarmsAnchor)}
       />
@@ -243,8 +221,6 @@ const DashboardPage = () => {
 
       {/* Popovers */}
       <DashboardPopovers
-        leasesAnchor={leasesAnchor}
-        onLeasesClose={() => setLeasesAnchor(null)}
         notesAnchor={notesAnchor}
         onNotesClose={() => setNotesAnchor(null)}
         discussionText={discussionText}

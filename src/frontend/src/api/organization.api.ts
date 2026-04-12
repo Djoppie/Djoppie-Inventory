@@ -69,23 +69,3 @@ export const getOrganizationNodeChildren = async (
   return response.data;
 };
 
-/**
- * Helper to parse node ID into type and database ID
- */
-export const parseNodeId = (
-  nodeId: string
-): { type: string; id: number } | null => {
-  const parts = nodeId.split('-');
-  if (parts.length < 2) return null;
-  const type = parts[0];
-  const id = parseInt(parts.slice(1).join('-'), 10);
-  if (isNaN(id)) return null;
-  return { type, id };
-};
-
-/**
- * Helper to create a node ID from type and database ID
- */
-export const createNodeId = (type: string, id: number): string => {
-  return `${type}-${id}`;
-};
