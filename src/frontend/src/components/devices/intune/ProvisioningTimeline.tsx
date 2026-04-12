@@ -26,12 +26,12 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AppsIcon from '@mui/icons-material/Apps';
 import DownloadIcon from '@mui/icons-material/Download';
 import DoneIcon from '@mui/icons-material/Done';
-import { useProvisioningTimeline } from '../../hooks/useProvisioningTimeline';
+import { useProvisioningTimeline } from '../../../hooks/useProvisioningTimeline';
 import {
   ProvisioningEvent,
   ProvisioningStatus,
   AppInstallationStatus,
-} from '../../types/provisioning.types';
+} from '../../../types/provisioning.types';
 
 // Scanner-style card wrapper - consistent with other sections
 const scannerCardSx = {

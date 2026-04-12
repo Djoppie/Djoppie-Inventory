@@ -21,7 +21,7 @@ import {
   RolloutPlanningTab,
   SwapManagementTab,
 } from '../components/dashboard-tabs';
-import IntuneDeviceDashboardPage from './IntuneDeviceDashboardPage';
+import IntuneDeviceDashboardPage from './devices/IntuneDeviceDashboardPage';
 
 type TabValue = 'overview' | 'inventory' | 'intune' | 'rollout' | 'swaps';
 

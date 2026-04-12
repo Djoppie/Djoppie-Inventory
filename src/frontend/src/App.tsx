@@ -24,8 +24,8 @@ const RolloutPlannerPage = lazy(() => import('./pages/operations/rollouts/Rollou
 const RolloutExecutionPage = lazy(() => import('./pages/operations/rollouts/RolloutExecutionPage'));
 const RolloutReportPage = lazy(() => import('./pages/operations/rollouts/RolloutReportPage'));
 const RolloutDayDetailPage = lazy(() => import('./pages/operations/rollouts/RolloutDayDetailPage'));
-const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
-const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
+const AutopilotDevicesPage = lazy(() => import('./pages/devices/AutopilotDevicesPage'));
+const AutopilotTimelinePage = lazy(() => import('./pages/devices/AutopilotTimelinePage'));
 const AssetsPage = lazy(() => import('./pages/inventory/AssetsPage'));
 const WorkplacesPage = lazy(() => import('./pages/workplaces/WorkplacesPage'));
 const WorkplaceDetailPage = lazy(() => import('./pages/workplaces/WorkplaceDetailPage'));
@@ -35,7 +35,7 @@ const RequestsReportsPage = lazy(() => import('./pages/operations/requests/Reque
 const LaptopSwapPage = lazy(() => import('./pages/operations/swaps/LaptopSwapPage'));
 const DeploymentHistoryPage = lazy(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
-const IntuneDeviceDashboardPage = lazy(() => import('./pages/IntuneDeviceDashboardPage'));
+const IntuneDeviceDashboardPage = lazy(() => import('./pages/devices/IntuneDeviceDashboardPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -12,8 +12,8 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import { useTranslation } from 'react-i18next';
-import ProvisioningTimeline from '../components/intune/ProvisioningTimeline';
-import { ROUTES } from '../constants/routes';
+import ProvisioningTimeline from '../../components/devices/intune/ProvisioningTimeline';
+import { ROUTES } from '../../constants/routes';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {

@@ -32,8 +32,8 @@ import SyncIcon from '@mui/icons-material/Sync';
 import PersonIcon from '@mui/icons-material/Person';
 import AppsIcon from '@mui/icons-material/Apps';
 import DevicesIcon from '@mui/icons-material/Devices';
-import { useIntuneLiveStatus } from '../../hooks/useIntuneLiveStatus';
-import { buildRoute } from '../../constants/routes';
+import { useIntuneLiveStatus } from '../../../hooks/useIntuneLiveStatus';
+import { buildRoute } from '../../../constants/routes';
 
 // Scanner-style card wrapper - consistent with AssetDetailPage
 const scannerCardSx = {

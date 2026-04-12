@@ -6,8 +6,8 @@ import {
   VpnKey as CertIcon,
   SyncProblem as SyncIcon,
 } from '@mui/icons-material';
-import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
-import { SUCCESS_COLOR, DANGER_COLOR } from '../../constants/filterColors';
+import { getNeumorphColors, getNeumorph } from '../../../utils/neumorphicStyles';
+import { SUCCESS_COLOR, DANGER_COLOR } from '../../../constants/filterColors';
 
 const AMBER_COLOR = '#FF9800';
 

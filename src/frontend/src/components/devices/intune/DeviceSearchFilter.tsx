@@ -1,8 +1,8 @@
 import { Box, TextField, Chip, useTheme, alpha, InputAdornment } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
-import { getNeumorphColors, getNeumorphTextField } from '../../utils/neumorphicStyles';
-import { DANGER_COLOR } from '../../constants/filterColors';
-import type { DashboardFilter } from '../../types/intune-dashboard.types';
+import { getNeumorphColors, getNeumorphTextField } from '../../../utils/neumorphicStyles';
+import { DANGER_COLOR } from '../../../constants/filterColors';
+import type { DashboardFilter } from '../../../types/intune-dashboard.types';
 
 const AMBER_COLOR = '#FF9800';
 

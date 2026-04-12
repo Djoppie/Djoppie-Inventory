@@ -15,10 +15,10 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import { useTranslation } from 'react-i18next';
 import { useAsset } from '../../hooks/useAssets';
 import Loading from '../../components/common/Loading';
-import LiveStatusSection from '../../components/intune/LiveStatusSection';
-import ConfigurationStatusSection from '../../components/intune/ConfigurationStatusSection';
-import ProvisioningTimeline from '../../components/intune/ProvisioningTimeline';
-import DeviceTerminal from '../../components/intune/DeviceTerminal';
+import LiveStatusSection from '../../components/devices/intune/LiveStatusSection';
+import ConfigurationStatusSection from '../../components/devices/intune/ConfigurationStatusSection';
+import ProvisioningTimeline from '../../components/devices/intune/ProvisioningTimeline';
+import DeviceTerminal from '../../components/devices/intune/DeviceTerminal';
 import { buildRoute } from '../../constants/routes';
 
 // Scanner-style card wrapper - consistent with other pages

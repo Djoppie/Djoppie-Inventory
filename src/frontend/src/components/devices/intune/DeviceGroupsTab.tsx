@@ -1,7 +1,7 @@
 import { Box, Typography, useTheme, CircularProgress, Chip } from '@mui/material';
-import { getNeumorphColors } from '../../utils/neumorphicStyles';
-import { SECTOR_COLOR, EMPLOYEE_COLOR } from '../../constants/filterColors';
-import type { DeviceGroupMembership, GroupInfo } from '../../types/intune-dashboard.types';
+import { getNeumorphColors } from '../../../utils/neumorphicStyles';
+import { SECTOR_COLOR, EMPLOYEE_COLOR } from '../../../constants/filterColors';
+import type { DeviceGroupMembership, GroupInfo } from '../../../types/intune-dashboard.types';
 
 interface DeviceGroupsTabProps {
   data: DeviceGroupMembership | undefined;

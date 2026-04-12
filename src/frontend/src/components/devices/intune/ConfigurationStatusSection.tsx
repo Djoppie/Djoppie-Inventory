@@ -32,8 +32,8 @@ import ErrorIcon from '@mui/icons-material/Error';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PersonIcon from '@mui/icons-material/Person';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import { intuneApi } from '../../api/intune.api';
-import type { ConfigurationProfileStatus } from '../../types/graph.types';
+import { intuneApi } from '../../../api/intune.api';
+import type { ConfigurationProfileStatus } from '../../../types/graph.types';
 
 const scannerCardSx = {
   mb: 3,

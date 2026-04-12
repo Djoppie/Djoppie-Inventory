@@ -17,8 +17,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import MinimizeIcon from '@mui/icons-material/Minimize';
-import { useIntuneLiveStatus } from '../../hooks/useIntuneLiveStatus';
-import { useProvisioningTimeline } from '../../hooks/useProvisioningTimeline';
+import { useIntuneLiveStatus } from '../../../hooks/useIntuneLiveStatus';
+import { useProvisioningTimeline } from '../../../hooks/useProvisioningTimeline';
 
 // Retro terminal colors
 const TERMINAL_COLORS = {

@@ -1,8 +1,8 @@
 import { Box, Typography, useTheme, CircularProgress, Chip, IconButton, Tooltip } from '@mui/material';
 import { ContentCopy as CopyIcon } from '@mui/icons-material';
-import { getNeumorphColors } from '../../utils/neumorphicStyles';
-import { DANGER_COLOR } from '../../constants/filterColors';
-import type { DeviceConfigurationStatus, ConfigurationProfileStatus } from '../../types/graph.types';
+import { getNeumorphColors } from '../../../utils/neumorphicStyles';
+import { DANGER_COLOR } from '../../../constants/filterColors';
+import type { DeviceConfigurationStatus, ConfigurationProfileStatus } from '../../../types/graph.types';
 
 const AMBER_COLOR = '#FF9800';
 

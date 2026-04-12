@@ -1,7 +1,7 @@
 import { Box, Typography, useTheme, CircularProgress, Grid, Chip } from '@mui/material';
-import { getNeumorphColors } from '../../utils/neumorphicStyles';
-import { DANGER_COLOR } from '../../constants/filterColors';
-import type { DeviceHealthInfo } from '../../types/intune-dashboard.types';
+import { getNeumorphColors } from '../../../utils/neumorphicStyles';
+import { DANGER_COLOR } from '../../../constants/filterColors';
+import type { DeviceHealthInfo } from '../../../types/intune-dashboard.types';
 
 interface DeviceInfoTabProps {
   health: DeviceHealthInfo | undefined;

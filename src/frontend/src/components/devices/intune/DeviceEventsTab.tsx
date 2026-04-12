@@ -1,7 +1,7 @@
 import { Box, Typography, useTheme, CircularProgress, Tooltip } from '@mui/material';
-import { getNeumorphColors } from '../../utils/neumorphicStyles';
-import { DANGER_COLOR, SUCCESS_COLOR } from '../../constants/filterColors';
-import type { DeviceEventsResponse, DeviceEvent } from '../../types/intune-dashboard.types';
+import { getNeumorphColors } from '../../../utils/neumorphicStyles';
+import { DANGER_COLOR, SUCCESS_COLOR } from '../../../constants/filterColors';
+import type { DeviceEventsResponse, DeviceEvent } from '../../../types/intune-dashboard.types';
 
 const AMBER_COLOR = '#FF9800';
 

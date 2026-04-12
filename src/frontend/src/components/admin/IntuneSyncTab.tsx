@@ -31,7 +31,7 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { useMutation } from '@tanstack/react-query';
 import { intuneApi, IntuneSyncResult } from '../../api/intune.api';
-import IntuneImportDialog from '../intune/IntuneImportDialog';
+import IntuneImportDialog from '../devices/intune/IntuneImportDialog';
 
 const IntuneSyncTab = () => {
   const [syncResult, setSyncResult] = useState<IntuneSyncResult | null>(null);

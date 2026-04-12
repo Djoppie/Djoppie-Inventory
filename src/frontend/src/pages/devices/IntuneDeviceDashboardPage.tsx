@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
-import { getNeumorphColors, getNeumorph } from '../utils/neumorphicStyles';
-import { useIntuneDevices } from '../hooks/useIntuneDeviceDashboard';
-import type { IntuneDevice } from '../types/graph.types';
-import type { DashboardFilter } from '../types/intune-dashboard.types';
-import DeviceOverviewStats from '../components/intune-dashboard/DeviceOverviewStats';
-import DeviceSearchFilter from '../components/intune-dashboard/DeviceSearchFilter';
-import DeviceListItem from '../components/intune-dashboard/DeviceListItem';
+import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
+import { useIntuneDevices } from '../../hooks/useIntuneDeviceDashboard';
+import type { IntuneDevice } from '../../types/graph.types';
+import type { DashboardFilter } from '../../types/intune-dashboard.types';
+import DeviceOverviewStats from '../../components/devices/intune/DeviceOverviewStats';
+import DeviceSearchFilter from '../../components/devices/intune/DeviceSearchFilter';
+import DeviceListItem from '../../components/devices/intune/DeviceListItem';
 
 const LAPTOP_KEYWORDS = ['laptop', 'book', 'elitebook', 'latitude', 'thinkpad', 'surface', 'probook', 'zbook', 'inspiron'];
 

@@ -37,8 +37,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { intuneApi, ImportIntuneDevicesResult } from '../../api/intune.api';
-import { assetTypesApi } from '../../api/admin.api';
+import { intuneApi, ImportIntuneDevicesResult } from '../../../api/intune.api';
+import { assetTypesApi } from '../../../api/admin.api';
 
 interface Props {
   open: boolean;

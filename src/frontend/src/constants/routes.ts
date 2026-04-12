@@ -74,7 +74,7 @@ export const ROUTES = {
   AUTOPILOT_TIMELINE: '/devices/autopilot/timeline/:serialNumber',
 
   /** Intune Device Dashboard page */
-  INTUNE_DASHBOARD: '/devices/intune-dashboard',
+  INTUNE_DASHBOARD: '/devices/intune',
 
   /** Physical workplaces management page */
   PHYSICAL_WORKPLACES: '/workplaces',

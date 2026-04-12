@@ -25,12 +25,12 @@ import SearchIcon from '@mui/icons-material/Search';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useTranslation } from 'react-i18next';
-import { intuneApi } from '../api/intune.api';
-import { AutopilotDevice } from '../types/graph.types';
-import Loading from '../components/common/Loading';
-import { buildRoute } from '../constants/routes';
-import { ASSET_COLOR } from '../constants/filterColors';
-import NeumorphicDataGrid from '../components/admin/NeumorphicDataGrid';
+import { intuneApi } from '../../api/intune.api';
+import { AutopilotDevice } from '../../types/graph.types';
+import Loading from '../../components/common/Loading';
+import { buildRoute } from '../../constants/routes';
+import { ASSET_COLOR } from '../../constants/filterColors';
+import NeumorphicDataGrid from '../../components/admin/NeumorphicDataGrid';
 
 // Scanner-style card wrapper - consistent with other pages
 const scannerCardSx = {

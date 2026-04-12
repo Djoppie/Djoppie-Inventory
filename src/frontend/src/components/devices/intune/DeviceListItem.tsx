@@ -17,12 +17,12 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getNeumorphColors, getNeumorphInset } from '../../utils/neumorphicStyles';
-import { DANGER_COLOR, ASSET_COLOR } from '../../constants/filterColors';
-import { useDeviceHealth, useDeviceGroups, useDeviceConfigStatus, useDeviceEvents } from '../../hooks/useIntuneDeviceDashboard';
-import { getAssetBySerialNumber } from '../../api/assets.api';
-import { buildRoute } from '../../constants/routes';
-import type { IntuneDevice } from '../../types/graph.types';
+import { getNeumorphColors, getNeumorphInset } from '../../../utils/neumorphicStyles';
+import { DANGER_COLOR, ASSET_COLOR } from '../../../constants/filterColors';
+import { useDeviceHealth, useDeviceGroups, useDeviceConfigStatus, useDeviceEvents } from '../../../hooks/useIntuneDeviceDashboard';
+import { getAssetBySerialNumber } from '../../../api/assets.api';
+import { buildRoute } from '../../../constants/routes';
+import type { IntuneDevice } from '../../../types/graph.types';
 import DeviceInfoTab from './DeviceInfoTab';
 import DeviceGroupsTab from './DeviceGroupsTab';
 import DeviceCertificatesTab from './DeviceCertificatesTab';
