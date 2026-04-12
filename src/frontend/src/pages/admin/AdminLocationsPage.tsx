@@ -4,34 +4,31 @@ import { Box, Tabs, Tab, Paper, alpha, useTheme, Fade, Typography } from '@mui/m
 import { useQuery } from '@tanstack/react-query';
 
 // Components
-import CategoriesTab from '../components/admin/CategoriesTab';
-import AssetTypesTab from '../components/admin/AssetTypesTab';
-import IntuneSyncTab from '../components/admin/IntuneSyncTab';
+import PhysicalWorkplacesTab from '../../components/admin/PhysicalWorkplacesTab';
+import BuildingsTab from '../../components/admin/BuildingsTab';
 
 // Icons
-import FolderIcon from '@mui/icons-material/Folder';
-import CategoryIcon from '@mui/icons-material/Category';
-import SyncIcon from '@mui/icons-material/Sync';
+import PlaceIcon from '@mui/icons-material/Place';
+import BusinessIcon from '@mui/icons-material/Business';
 
 // API
-import { categoriesApi, assetTypesApi } from '../api/admin.api';
-import { getNeumorphColors } from '../utils/neumorphicStyles';
-import { ADMIN_ASSET_COLOR } from '../constants/filterColors';
+import { buildingsApi } from '../../api/admin.api';
+import { getNeumorphColors } from '../../utils/neumorphicStyles';
+import { ADMIN_LOCATION_COLOR } from '../../constants/filterColors';
+import { usePhysicalWorkplaces } from '../../hooks/usePhysicalWorkplaces';
 
-type AdminAssetTab = 'categories' | 'asset-types' | 'intune-sync';
+type AdminLocationTab = 'workplaces' | 'buildings';
 
-const AdminAssetsPage = () => {
+const AdminLocationsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { bgSurface } = getNeumorphColors(isDark);
 
-  // Get active tab from URL or default to 'categories'
-  const tabParam = searchParams.get('tab') as AdminAssetTab | null;
-  const [activeTab, setActiveTab] = useState<AdminAssetTab>(
-    tabParam && ['categories', 'asset-types', 'intune-sync'].includes(tabParam)
-      ? tabParam
-      : 'categories'
+  // Get active tab from URL or default to 'workplaces'
+  const tabParam = searchParams.get('tab') as AdminLocationTab | null;
+  const [activeTab, setActiveTab] = useState<AdminLocationTab>(
+    tabParam && ['workplaces', 'buildings'].includes(tabParam) ? tabParam : 'workplaces'
   );
 
   // Sync URL with active tab
@@ -43,18 +40,15 @@ const AdminAssetsPage = () => {
   }, [activeTab, searchParams, setSearchParams]);
 
   // Fetch data for badges
-  const { data: categories = [], isError: categoriesError } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll(true),
-  });
+  const { data: workplaces = [], isError: workplacesError } = usePhysicalWorkplaces();
 
-  const { data: assetTypes = [], isError: assetTypesError } = useQuery({
-    queryKey: ['assetTypes'],
-    queryFn: () => assetTypesApi.getAll(true),
+  const { data: buildings = [], isError: buildingsError } = useQuery({
+    queryKey: ['buildings'],
+    queryFn: () => buildingsApi.getAll(true),
   });
 
   // Handle tab change
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: AdminAssetTab) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: AdminLocationTab) => {
     setActiveTab(newValue);
   };
 
@@ -69,11 +63,11 @@ const AdminAssetsPage = () => {
             p: 3,
             borderRadius: 3,
             background: isDark
-              ? `linear-gradient(135deg, ${alpha(ADMIN_ASSET_COLOR, 0.15)} 0%, ${alpha(ADMIN_ASSET_COLOR, 0.05)} 100%)`
-              : `linear-gradient(135deg, ${alpha(ADMIN_ASSET_COLOR, 0.08)} 0%, ${alpha(ADMIN_ASSET_COLOR, 0.02)} 100%)`,
+              ? `linear-gradient(135deg, ${alpha(ADMIN_LOCATION_COLOR, 0.15)} 0%, ${alpha(ADMIN_LOCATION_COLOR, 0.05)} 100%)`
+              : `linear-gradient(135deg, ${alpha(ADMIN_LOCATION_COLOR, 0.08)} 0%, ${alpha(ADMIN_LOCATION_COLOR, 0.02)} 100%)`,
             border: '1px solid',
-            borderColor: alpha(ADMIN_ASSET_COLOR, 0.2),
-            boxShadow: `0 4px 20px ${alpha(ADMIN_ASSET_COLOR, 0.1)}`,
+            borderColor: alpha(ADMIN_LOCATION_COLOR, 0.2),
+            boxShadow: `0 4px 20px ${alpha(ADMIN_LOCATION_COLOR, 0.1)}`,
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -83,7 +77,7 @@ const AdminAssetsPage = () => {
               left: 0,
               right: 0,
               height: '4px',
-              background: `linear-gradient(90deg, ${ADMIN_ASSET_COLOR}, ${alpha(ADMIN_ASSET_COLOR, 0.6)})`,
+              background: `linear-gradient(90deg, ${ADMIN_LOCATION_COLOR}, ${alpha(ADMIN_LOCATION_COLOR, 0.6)})`,
             },
           }}
         >
@@ -96,28 +90,28 @@ const AdminAssetsPage = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: alpha(ADMIN_ASSET_COLOR, isDark ? 0.2 : 0.1),
-                boxShadow: `inset 0 2px 8px ${alpha(ADMIN_ASSET_COLOR, 0.2)}`,
+                bgcolor: alpha(ADMIN_LOCATION_COLOR, isDark ? 0.2 : 0.1),
+                boxShadow: `inset 0 2px 8px ${alpha(ADMIN_LOCATION_COLOR, 0.2)}`,
               }}
             >
-              <CategoryIcon sx={{ color: ADMIN_ASSET_COLOR, fontSize: 32 }} />
+              <PlaceIcon sx={{ color: ADMIN_LOCATION_COLOR, fontSize: 32 }} />
             </Box>
             <Box>
               <Typography
                 variant="h4"
                 fontWeight={800}
                 sx={{
-                  background: `linear-gradient(135deg, ${ADMIN_ASSET_COLOR}, ${alpha(ADMIN_ASSET_COLOR, 0.7)})`,
+                  background: `linear-gradient(135deg, ${ADMIN_LOCATION_COLOR}, ${alpha(ADMIN_LOCATION_COLOR, 0.7)})`,
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   mb: 0.5,
                 }}
               >
-                Asset Beheer
+                Locatie Beheer
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
-                Categorieën, asset types en Intune synchronisatie
+                Fysieke werkplekken en gebouwen
               </Typography>
             </Box>
           </Box>
@@ -130,7 +124,7 @@ const AdminAssetsPage = () => {
           elevation={0}
           sx={{
             bgcolor: bgSurface,
-            boxShadow: `0 8px 32px ${alpha(isDark ? '#000' : ADMIN_ASSET_COLOR, isDark ? 0.3 : 0.08)}`,
+            boxShadow: `0 8px 32px ${alpha(isDark ? '#000' : ADMIN_LOCATION_COLOR, isDark ? 0.3 : 0.08)}`,
             borderRadius: 3,
             mb: 3,
             overflow: 'hidden',
@@ -138,7 +132,7 @@ const AdminAssetsPage = () => {
             borderColor: 'divider',
             transition: 'all 0.3s ease',
             '&:hover': {
-              boxShadow: `0 12px 40px ${alpha(isDark ? '#000' : ADMIN_ASSET_COLOR, isDark ? 0.4 : 0.12)}`,
+              boxShadow: `0 12px 40px ${alpha(isDark ? '#000' : ADMIN_LOCATION_COLOR, isDark ? 0.4 : 0.12)}`,
             },
           }}
         >
@@ -158,38 +152,32 @@ const AdminAssetsPage = () => {
                 gap: 1,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&.Mui-selected': {
-                  color: ADMIN_ASSET_COLOR,
+                  color: ADMIN_LOCATION_COLOR,
                   fontWeight: 700,
                   transform: 'translateY(-2px)',
                 },
                 '&:hover': {
-                  bgcolor: alpha(ADMIN_ASSET_COLOR, 0.05),
+                  bgcolor: alpha(ADMIN_LOCATION_COLOR, 0.05),
                 },
               },
               '& .MuiTabs-indicator': {
                 height: 3,
                 borderRadius: '3px 3px 0 0',
-                background: `linear-gradient(90deg, ${ADMIN_ASSET_COLOR}, ${alpha(ADMIN_ASSET_COLOR, 0.7)})`,
-                boxShadow: `0 0 8px ${alpha(ADMIN_ASSET_COLOR, 0.5)}`,
+                background: `linear-gradient(90deg, ${ADMIN_LOCATION_COLOR}, ${alpha(ADMIN_LOCATION_COLOR, 0.7)})`,
+                boxShadow: `0 0 8px ${alpha(ADMIN_LOCATION_COLOR, 0.5)}`,
               },
             }}
           >
           <Tab
-            value="categories"
-            label={`Categorieën (${categoriesError ? '?' : categories.filter((c) => c.isActive).length})`}
-            icon={<FolderIcon />}
+            value="workplaces"
+            label={`Fysieke Werkplekken (${workplacesError ? '?' : workplaces.length})`}
+            icon={<PlaceIcon />}
             iconPosition="start"
           />
           <Tab
-            value="asset-types"
-            label={`Asset Types (${assetTypesError ? '?' : assetTypes.filter((a) => a.isActive).length})`}
-            icon={<CategoryIcon />}
-            iconPosition="start"
-          />
-          <Tab
-            value="intune-sync"
-            label="Intune Sync"
-            icon={<SyncIcon />}
+            value="buildings"
+            label={`Gebouwen (${buildingsError ? '?' : buildings.filter((b) => b.isActive).length})`}
+            icon={<BusinessIcon />}
             iconPosition="start"
           />
           </Tabs>
@@ -198,12 +186,11 @@ const AdminAssetsPage = () => {
 
       {/* Tab Content */}
       <Box>
-        {activeTab === 'categories' && <CategoriesTab />}
-        {activeTab === 'asset-types' && <AssetTypesTab />}
-        {activeTab === 'intune-sync' && <IntuneSyncTab />}
+        {activeTab === 'workplaces' && <PhysicalWorkplacesTab />}
+        {activeTab === 'buildings' && <BuildingsTab />}
       </Box>
     </Box>
   );
 };
 
-export default AdminAssetsPage;
+export default AdminLocationsPage;

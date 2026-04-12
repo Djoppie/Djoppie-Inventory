@@ -8,7 +8,7 @@ import type {
   OrganizationTreeNode,
 } from '../types/organization.types';
 
-const BASE_URL = '/organization';
+const BASE_URL = '/admin/organization';
 
 /**
  * Get the full organization hierarchy as a tree

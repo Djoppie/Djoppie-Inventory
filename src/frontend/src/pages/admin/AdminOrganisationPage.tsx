@@ -4,9 +4,9 @@ import { Box, Tabs, Tab, Paper, alpha, useTheme, Fade, Typography } from '@mui/m
 import { useQuery } from '@tanstack/react-query';
 
 // Components
-import SectorsTab from '../components/admin/SectorsTab';
-import ServicesTab from '../components/admin/ServicesTab';
-import EmployeesTab from '../components/admin/EmployeesTab';
+import SectorsTab from '../../components/admin/SectorsTab';
+import ServicesTab from '../../components/admin/ServicesTab';
+import EmployeesTab from '../../components/admin/EmployeesTab';
 
 // Icons
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -14,9 +14,9 @@ import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices
 import PeopleIcon from '@mui/icons-material/People';
 
 // API
-import { sectorsApi, servicesApi } from '../api/admin.api';
-import { getNeumorphColors } from '../utils/neumorphicStyles';
-import { ADMIN_ORGANIZATION_COLOR } from '../constants/filterColors';
+import { sectorsApi, servicesApi } from '../../api/admin.api';
+import { getNeumorphColors } from '../../utils/neumorphicStyles';
+import { ADMIN_ORGANIZATION_COLOR } from '../../constants/filterColors';
 
 type AdminOrganisationTab = 'sectors' | 'services' | 'employees';
 
