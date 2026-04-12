@@ -90,23 +90,6 @@ public class RolloutWorkplacesController : ControllerBase
         {
             var assignments = await _assignmentService.GetByWorkplaceIdAsync(id, cancellationToken);
             dto.AssetAssignments = assignments.ToList();
-
-            // Parse AssetPlans from legacy JSON
-            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
-            {
-                try
-                {
-                    var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
-                    if (legacyPlans != null && legacyPlans.Count > 0)
-                    {
-                        dto.AssetPlans = legacyPlans;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", id);
-                }
-            }
         }
 
         return Ok(dto);
@@ -958,8 +941,26 @@ public class RolloutWorkplacesController : ControllerBase
 
     #region Private Mapping Methods
 
-    private static RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)
+    private RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)
     {
+        // Parse AssetPlans from legacy JSON
+        var assetPlans = new List<AssetPlanDto>();
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+                if (parsed != null && parsed.Count > 0)
+                {
+                    assetPlans = parsed;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", workplace.Id);
+            }
+        }
+
         return new RolloutWorkplaceDto
         {
             Id = workplace.Id,
@@ -977,6 +978,7 @@ public class RolloutWorkplacesController : ControllerBase
             PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             ScheduledDate = workplace.ScheduledDate,
             IsLaptopSetup = workplace.IsLaptopSetup,
+            AssetPlans = assetPlans,
             Status = workplace.Status.ToString(),
             TotalItems = workplace.TotalItems,
             CompletedItems = workplace.CompletedItems,
