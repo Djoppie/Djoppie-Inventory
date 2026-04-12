@@ -6,7 +6,6 @@ import { useAssets } from '../../hooks/useAssets';
 import { useWorkplaceStatistics, useWorkplaceEquipmentStatistics } from '../../hooks/usePhysicalWorkplaces';
 import { useRolloutSessions } from '../../hooks/rollout';
 import { assetEventsApi } from '../../api/assetEvents.api';
-import { getExpiringLeaseContracts } from '../../api/leaseContracts.api';
 import { ASSET_COLOR } from '../../constants/filterColors';
 import { buildRoute } from '../../constants/routes';
 
@@ -32,12 +31,6 @@ const DashboardHome = () => {
     queryFn: () => assetEventsApi.getRecent(15),
     staleTime: 30000,
   });
-  const { data: expiringLeases = [] } = useQuery({
-    queryKey: ['expiring-leases'],
-    queryFn: () => getExpiringLeaseContracts(90),
-    staleTime: 60000,
-  });
-
   // KPI computations
   const kpiData = useMemo(() => {
     const inGebruik = assets.filter((a) => a.status === 'InGebruik').length;
@@ -87,15 +80,8 @@ const DashboardHome = () => {
       .filter(([, count]) => count < 5)
       .map(([typeName, count]) => ({ typeName, count }));
 
-    const leaseAlerts = expiringLeases.slice(0, 5).map((l) => ({
-      id: l.id,
-      assetCode: l.contractNumber || `Lease #${l.id}`,
-      provider: l.vendor || 'Onbekend',
-      endDate: l.endDate,
-    }));
-
-    return { expiringLeases: leaseAlerts, expiringCerts, lowStockTypes };
-  }, [assets, expiringLeases]);
+    return { expiringCerts, lowStockTypes };
+  }, [assets]);
 
   if (assetsLoading) {
     return (
@@ -186,7 +172,6 @@ const DashboardHome = () => {
             onSessionClick={(id) => navigate(buildRoute.rolloutEdit(id))}
           />
           <AlertsWarningsWidget
-            expiringLeases={alertsData.expiringLeases}
             expiringCerts={alertsData.expiringCerts}
             lowStockTypes={alertsData.lowStockTypes}
           />

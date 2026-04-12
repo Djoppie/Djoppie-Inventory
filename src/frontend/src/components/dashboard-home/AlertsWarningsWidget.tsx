@@ -1,19 +1,11 @@
 import React from 'react';
 import { Box, Typography, Fade, useTheme, alpha, Chip } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
-import DescriptionIcon from '@mui/icons-material/Description';
 import SecurityIcon from '@mui/icons-material/Security';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { getNeumorph } from '../../utils/neumorphicStyles';
 import { DANGER_COLOR } from '../../constants/filterColors';
-
-interface ExpiringLease {
-  id: number;
-  assetCode: string;
-  provider: string;
-  endDate: string;
-}
 
 interface ExpiringCert {
   id: number;
@@ -27,7 +19,6 @@ interface LowStockType {
 }
 
 interface AlertsWarningsWidgetProps {
-  expiringLeases: ExpiringLease[];
   expiringCerts: ExpiringCert[];
   lowStockTypes: LowStockType[];
 }
@@ -36,12 +27,6 @@ const getDaysRemainingColor = (days: number): string => {
   if (days < 30) return '#f44336';
   if (days < 60) return '#FF9800';
   return '#FDD835';
-};
-
-const getDaysFromEndDate = (endDate: string): number => {
-  const now = new Date();
-  const end = new Date(endDate);
-  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 };
 
 interface AlertSectionProps {
@@ -97,14 +82,13 @@ const AlertSection: React.FC<AlertSectionProps> = ({ title, icon, isDark, childr
 );
 
 export const AlertsWarningsWidget: React.FC<AlertsWarningsWidgetProps> = ({
-  expiringLeases,
   expiringCerts,
   lowStockTypes,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  const totalAlerts = expiringLeases.length + expiringCerts.length + lowStockTypes.length;
+  const totalAlerts = expiringCerts.length + lowStockTypes.length;
   const allClear = totalAlerts === 0;
 
   return (
@@ -220,73 +204,6 @@ export const AlertsWarningsWidget: React.FC<AlertsWarningsWidgetProps> = ({
             </Box>
           ) : (
             <>
-              {/* Lease Contracts Section */}
-              <AlertSection
-                title="Lease Contracten"
-                icon={<DescriptionIcon sx={{ fontSize: 16 }} />}
-                isDark={isDark}
-                isEmpty={expiringLeases.length === 0}
-              >
-                {expiringLeases.map((lease, index) => {
-                  const daysLeft = getDaysFromEndDate(lease.endDate);
-                  const dayColor = getDaysRemainingColor(daysLeft);
-                  return (
-                    <Fade in timeout={300 + index * 80} key={lease.id}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          py: 0.5,
-                          px: 1,
-                          borderRadius: 1,
-                          '&:hover': {
-                            bgcolor: isDark ? alpha('#fff', 0.03) : alpha('#000', 0.02),
-                          },
-                        }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontWeight: 600,
-                              color: isDark ? '#fff' : '#1a1a2e',
-                              fontSize: '0.78rem',
-                              display: 'block',
-                            }}
-                          >
-                            {lease.assetCode}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: isDark ? alpha('#fff', 0.4) : alpha('#000', 0.4),
-                              fontSize: '0.68rem',
-                            }}
-                          >
-                            {lease.provider}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={`${daysLeft}d`}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: '0.68rem',
-                            fontWeight: 700,
-                            bgcolor: alpha(dayColor, 0.15),
-                            color: dayColor,
-                            border: 'none',
-                            ml: 1,
-                            flexShrink: 0,
-                          }}
-                        />
-                      </Box>
-                    </Fade>
-                  );
-                })}
-              </AlertSection>
-
               {/* Intune Certificates Section */}
               <AlertSection
                 title="Intune Certificaten"
