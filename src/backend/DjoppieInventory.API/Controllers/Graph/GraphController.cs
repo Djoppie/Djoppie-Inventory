@@ -3,7 +3,7 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Graph;
 
 /// <summary>
 /// API controller for Microsoft Graph operations.
@@ -11,7 +11,7 @@ namespace DjoppieInventory.API.Controllers;
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/graph")]
 public class GraphController : ControllerBase
 {
     private readonly IGraphUserService _graphUserService;
