@@ -18,8 +18,8 @@ import type {
   CreateRolloutSession,
   UpdateRolloutSession,
 } from '../../types/rollout';
-import type { RescheduledWorkplace } from '../../components/rollout/PlanningCalendar';
-import { PlanningStatusFilterValue } from '../../components/rollout/PlanningStatusFilter';
+import type { RescheduledWorkplace } from '../../components/operations/rollout/PlanningCalendar';
+import { PlanningStatusFilterValue } from '../../components/operations/rollout/PlanningStatusFilter';
 
 interface UseRolloutPlannerDataParams {
   sessionId: number | undefined;
@@ -275,7 +275,7 @@ export function useRolloutPlannerData({
       },
     });
     if (newStatus === 'InProgress') {
-      navigate(`/rollouts/${session.id}/execute`);
+      navigate(`/operations/rollouts/${session.id}/execute`);
     }
   }, [session, updateMutation, navigate]);
 

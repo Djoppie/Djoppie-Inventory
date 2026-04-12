@@ -27,7 +27,7 @@ export const physicalWorkplacesApi = {
    * Get all physical workplaces with optional filtering
    */
   getAll: async (filters?: PhysicalWorkplaceFilters): Promise<PhysicalWorkplace[]> => {
-    const response = await apiClient.get<PhysicalWorkplace[]>('/physicalworkplaces', {
+    const response = await apiClient.get<PhysicalWorkplace[]>('/workplaces', {
       params: filters,
     });
     return response.data;
@@ -41,7 +41,7 @@ export const physicalWorkplacesApi = {
     serviceId?: number,
     activeOnly = true
   ): Promise<PhysicalWorkplaceSummary[]> => {
-    const response = await apiClient.get<PhysicalWorkplaceSummary[]>('/physicalworkplaces/summary', {
+    const response = await apiClient.get<PhysicalWorkplaceSummary[]>('/workplaces/summary', {
       params: { buildingId, serviceId, activeOnly },
     });
     return response.data;
@@ -51,7 +51,7 @@ export const physicalWorkplacesApi = {
    * Get a specific physical workplace by ID
    */
   getById: async (id: number): Promise<PhysicalWorkplace> => {
-    const response = await apiClient.get<PhysicalWorkplace>(`/physicalworkplaces/${id}`);
+    const response = await apiClient.get<PhysicalWorkplace>(`/workplaces/${id}`);
     return response.data;
   },
 
@@ -59,7 +59,7 @@ export const physicalWorkplacesApi = {
    * Create a new physical workplace
    */
   create: async (data: CreatePhysicalWorkplaceDto): Promise<PhysicalWorkplace> => {
-    const response = await apiClient.post<PhysicalWorkplace>('/physicalworkplaces', data);
+    const response = await apiClient.post<PhysicalWorkplace>('/workplaces', data);
     return response.data;
   },
 
@@ -67,7 +67,7 @@ export const physicalWorkplacesApi = {
    * Update an existing physical workplace
    */
   update: async (id: number, data: UpdatePhysicalWorkplaceDto): Promise<PhysicalWorkplace> => {
-    const response = await apiClient.put<PhysicalWorkplace>(`/physicalworkplaces/${id}`, data);
+    const response = await apiClient.put<PhysicalWorkplace>(`/workplaces/${id}`, data);
     return response.data;
   },
 
@@ -75,7 +75,7 @@ export const physicalWorkplacesApi = {
    * Update the current occupant of a physical workplace
    */
   updateOccupant: async (id: number, data: UpdateOccupantDto): Promise<PhysicalWorkplace> => {
-    const response = await apiClient.put<PhysicalWorkplace>(`/physicalworkplaces/${id}/occupant`, data);
+    const response = await apiClient.put<PhysicalWorkplace>(`/workplaces/${id}/occupant`, data);
     return response.data;
   },
 
@@ -83,7 +83,7 @@ export const physicalWorkplacesApi = {
    * Clear the current occupant from a physical workplace
    */
   clearOccupant: async (id: number): Promise<PhysicalWorkplace> => {
-    const response = await apiClient.put<PhysicalWorkplace>(`/physicalworkplaces/${id}/occupant`, {
+    const response = await apiClient.put<PhysicalWorkplace>(`/workplaces/${id}/occupant`, {
       occupantEntraId: null,
       occupantName: null,
       occupantEmail: null,
@@ -95,7 +95,7 @@ export const physicalWorkplacesApi = {
    * Update equipment slots of a physical workplace
    */
   updateEquipment: async (id: number, data: UpdateEquipmentSlotsDto): Promise<PhysicalWorkplace> => {
-    const response = await apiClient.put<PhysicalWorkplace>(`/physicalworkplaces/${id}/equipment`, data);
+    const response = await apiClient.put<PhysicalWorkplace>(`/workplaces/${id}/equipment`, data);
     return response.data;
   },
 
@@ -103,7 +103,7 @@ export const physicalWorkplacesApi = {
    * Delete a physical workplace (soft delete by default)
    */
   delete: async (id: number, hardDelete = false): Promise<void> => {
-    await apiClient.delete(`/physicalworkplaces/${id}`, {
+    await apiClient.delete(`/workplaces/${id}`, {
       params: { hardDelete },
     });
   },
@@ -112,7 +112,7 @@ export const physicalWorkplacesApi = {
    * Get fixed assets assigned to a physical workplace
    */
   getFixedAssets: async (id: number): Promise<WorkplaceFixedAsset[]> => {
-    const response = await apiClient.get<WorkplaceFixedAsset[]>(`/physicalworkplaces/${id}/assets`);
+    const response = await apiClient.get<WorkplaceFixedAsset[]>(`/workplaces/${id}/assets`);
     return response.data;
   },
 
@@ -121,7 +121,7 @@ export const physicalWorkplacesApi = {
    */
   assignAsset: async (workplaceId: number, assetId: number): Promise<AssetAssignmentResult> => {
     const response = await apiClient.post<AssetAssignmentResult>(
-      `/physicalworkplaces/${workplaceId}/assets/${assetId}`
+      `/workplaces/${workplaceId}/assets/${assetId}`
     );
     return response.data;
   },
@@ -130,7 +130,7 @@ export const physicalWorkplacesApi = {
    * Unassign an asset from a physical workplace
    */
   unassignAsset: async (workplaceId: number, assetId: number): Promise<void> => {
-    await apiClient.delete(`/physicalworkplaces/${workplaceId}/assets/${assetId}`);
+    await apiClient.delete(`/workplaces/${workplaceId}/assets/${assetId}`);
   },
 };
 
@@ -216,7 +216,7 @@ export const physicalWorkplacesBulkApi = {
    * Delete all physical workplaces (requires confirm=true)
    */
   deleteAll: async (): Promise<DeleteAllResult> => {
-    const response = await apiClient.delete<DeleteAllResult>('/physicalworkplaces/all', {
+    const response = await apiClient.delete<DeleteAllResult>('/workplaces/all', {
       params: { confirm: true },
     });
     return response.data;
@@ -229,7 +229,7 @@ export const physicalWorkplacesBulkApi = {
     const results = { deleted: 0, errors: [] as string[] };
     for (const id of ids) {
       try {
-        await apiClient.delete(`/physicalworkplaces/${id}`, { params: { hardDelete: true } });
+        await apiClient.delete(`/workplaces/${id}`, { params: { hardDelete: true } });
         results.deleted++;
       } catch (error) {
         results.errors.push(`ID ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -242,7 +242,7 @@ export const physicalWorkplacesBulkApi = {
    * Download CSV template for bulk workplace import
    */
   downloadTemplate: async (): Promise<Blob> => {
-    const response = await apiClient.get('/physicalworkplaces/template', {
+    const response = await apiClient.get('/workplaces/template', {
       responseType: 'blob',
     });
     return response.data;
@@ -252,7 +252,7 @@ export const physicalWorkplacesBulkApi = {
    * Export workplaces to CSV file (compatible with import format)
    */
   exportCsv: async (params?: ExportWorkplacesParams): Promise<Blob> => {
-    const response = await apiClient.get('/physicalworkplaces/export', {
+    const response = await apiClient.get('/workplaces/export', {
       params,
       responseType: 'blob',
     });
@@ -266,7 +266,7 @@ export const physicalWorkplacesBulkApi = {
     const formData = new FormData();
     formData.append('file', file);
     const response = await apiClient.post<WorkplaceCsvImportResult>(
-      '/physicalworkplaces/import',
+      '/workplaces/import',
       formData,
       {
         headers: {
@@ -282,7 +282,7 @@ export const physicalWorkplacesBulkApi = {
    */
   bulkCreate: async (dto: BulkCreateWorkplacesDto): Promise<BulkCreateWorkplacesResult> => {
     const response = await apiClient.post<BulkCreateWorkplacesResult>(
-      '/physicalworkplaces/bulk',
+      '/workplaces/bulk',
       dto
     );
     return response.data;
@@ -299,7 +299,7 @@ export const physicalWorkplacesStatisticsApi = {
    * Used for the main dashboard workplace overview widget.
    */
   getStatistics: async (): Promise<WorkplaceStatistics> => {
-    const response = await apiClient.get<WorkplaceStatistics>('/physicalworkplaces/statistics');
+    const response = await apiClient.get<WorkplaceStatistics>('/workplaces/statistics');
     return response.data;
   },
 
@@ -308,7 +308,7 @@ export const physicalWorkplacesStatisticsApi = {
    * Used for the building occupancy distribution widget.
    */
   getStatisticsByBuilding: async (): Promise<BuildingOccupancy[]> => {
-    const response = await apiClient.get<BuildingOccupancy[]>('/physicalworkplaces/statistics/by-building');
+    const response = await apiClient.get<BuildingOccupancy[]>('/workplaces/statistics/by-building');
     return response.data;
   },
 
@@ -317,7 +317,7 @@ export const physicalWorkplacesStatisticsApi = {
    * Used for the service occupancy distribution widget.
    */
   getStatisticsByService: async (): Promise<ServiceOccupancy[]> => {
-    const response = await apiClient.get<ServiceOccupancy[]>('/physicalworkplaces/statistics/by-service');
+    const response = await apiClient.get<ServiceOccupancy[]>('/workplaces/statistics/by-service');
     return response.data;
   },
 
@@ -326,7 +326,7 @@ export const physicalWorkplacesStatisticsApi = {
    * Used for the equipment distribution widget.
    */
   getEquipmentStatistics: async (): Promise<EquipmentTypeStatus[]> => {
-    const response = await apiClient.get<EquipmentTypeStatus[]>('/physicalworkplaces/statistics/equipment');
+    const response = await apiClient.get<EquipmentTypeStatus[]>('/workplaces/statistics/equipment');
     return response.data;
   },
 
@@ -335,7 +335,7 @@ export const physicalWorkplacesStatisticsApi = {
    * Used for the activity feed widget on the dashboard.
    */
   getRecentChanges: async (limit = 10, buildingId?: number): Promise<WorkplaceChange[]> => {
-    const response = await apiClient.get<WorkplaceChange[]>('/physicalworkplaces/recent-changes', {
+    const response = await apiClient.get<WorkplaceChange[]>('/workplaces/recent-changes', {
       params: { limit, buildingId },
     });
     return response.data;
@@ -352,7 +352,7 @@ export const workplaceGapAnalysisApi = {
    * Finds laptop owners (InGebruik) who don't have a corresponding PhysicalWorkplace.
    */
   getGapAnalysis: async (serviceId?: number, limit = 100): Promise<WorkplaceGapAnalysis> => {
-    const response = await apiClient.get<WorkplaceGapAnalysis>('/physicalworkplaces/workplace-gap-analysis', {
+    const response = await apiClient.get<WorkplaceGapAnalysis>('/workplaces/workplace-gap-analysis', {
       params: { serviceId, limit },
     });
     return response.data;
@@ -364,7 +364,7 @@ export const workplaceGapAnalysisApi = {
    */
   autoCreateMissing: async (dto: AutoCreateMissingWorkplacesDto): Promise<AutoCreateWorkplacesResult> => {
     const response = await apiClient.post<AutoCreateWorkplacesResult>(
-      '/physicalworkplaces/auto-create-missing',
+      '/workplaces/auto-create-missing',
       dto
     );
     return response.data;

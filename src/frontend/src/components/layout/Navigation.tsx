@@ -20,9 +20,9 @@ const Navigation = () => {
   // Derive value from current location instead of using state
   const getValue = () => {
     if (location.pathname === ROUTES.DASHBOARD) return 0;
-    if (location.pathname.startsWith('/devices') || location.pathname === ROUTES.TEMPLATES || location.pathname.startsWith('/rollouts')) return 1; // Device Management hub, sub-pages, templates, and rollouts
+    if (location.pathname.startsWith('/inventory') || location.pathname.startsWith('/operations/rollouts')) return 1; // Inventory pages, templates, and rollouts
     if (location.pathname === ROUTES.SCAN) return 2;
-    if (location.pathname.startsWith('/laptop-swap') || location.pathname.startsWith('/deployment')) return 3; // Laptop Swap / Deployment
+    if (location.pathname.startsWith('/operations/swaps') || location.pathname.startsWith('/operations/deployments')) return 3; // Laptop Swap / Deployment
     if (location.pathname === ROUTES.ADMIN || location.pathname === ROUTES.PHYSICAL_WORKPLACES) return 4; // Admin section includes workplaces
     return 0;
   };
@@ -33,7 +33,7 @@ const Navigation = () => {
         navigate(ROUTES.DASHBOARD);
         break;
       case 1:
-        navigate(ROUTES.DEVICE_MANAGEMENT);
+        navigate(ROUTES.INVENTORY_ASSETS);
         break;
       case 2:
         navigate(ROUTES.SCAN);

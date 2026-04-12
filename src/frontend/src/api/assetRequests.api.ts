@@ -12,13 +12,13 @@ import type {
 
 // Get all asset requests
 export const getAllAssetRequests = async (): Promise<AssetRequestDto[]> => {
-  const { data } = await apiClient.get<AssetRequestDto[]>('/assetrequests');
+  const { data } = await apiClient.get<AssetRequestDto[]>('/operations/requests');
   return data;
 };
 
 // Get asset request by ID
 export const getAssetRequestById = async (id: number): Promise<AssetRequestDto> => {
-  const { data } = await apiClient.get<AssetRequestDto>(`/assetrequests/${id}`);
+  const { data } = await apiClient.get<AssetRequestDto>(`/operations/requests/${id}`);
   return data;
 };
 
@@ -27,7 +27,7 @@ export const getAssetRequestsByDateRange = async (
   startDate: Date,
   endDate: Date
 ): Promise<AssetRequestDto[]> => {
-  const { data } = await apiClient.get<AssetRequestDto[]>('/assetrequests/date-range', {
+  const { data } = await apiClient.get<AssetRequestDto[]>('/operations/requests/date-range', {
     params: {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
@@ -40,7 +40,7 @@ export const getAssetRequestsByDateRange = async (
 export const createAssetRequest = async (
   request: CreateAssetRequestDto
 ): Promise<AssetRequestDto> => {
-  const { data } = await apiClient.post<AssetRequestDto>('/assetrequests', request);
+  const { data } = await apiClient.post<AssetRequestDto>('/operations/requests', request);
   return data;
 };
 
@@ -49,11 +49,11 @@ export const updateAssetRequest = async (
   id: number,
   request: UpdateAssetRequestDto
 ): Promise<AssetRequestDto> => {
-  const { data } = await apiClient.put<AssetRequestDto>(`/assetrequests/${id}`, request);
+  const { data } = await apiClient.put<AssetRequestDto>(`/operations/requests/${id}`, request);
   return data;
 };
 
 // Delete asset request
 export const deleteAssetRequest = async (id: number): Promise<void> => {
-  await apiClient.delete(`/assetrequests/${id}`);
+  await apiClient.delete(`/operations/requests/${id}`);
 };

@@ -39,10 +39,8 @@ public class UpdateRolloutWorkplaceDto
     public bool IsLaptopSetup { get; set; }
 
     /// <summary>
-    /// List of assets to be installed at this workplace
+    /// List of assets to be installed at this workplace (can be empty during planning)
     /// </summary>
-    [Required(ErrorMessage = "At least one asset plan is required")]
-    [MinLength(1, ErrorMessage = "At least one asset plan is required")]
     public List<AssetPlanDto> AssetPlans { get; set; } = new();
 
     [Required(ErrorMessage = "Status is required")]
