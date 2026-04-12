@@ -5,19 +5,19 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Operations;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
-public class AssetRequestsController : ControllerBase
+[Route("api/operations/requests")]
+public class RequestsController : ControllerBase
 {
     private readonly IAssetRequestRepository _repository;
-    private readonly ILogger<AssetRequestsController> _logger;
+    private readonly ILogger<RequestsController> _logger;
 
-    public AssetRequestsController(
+    public RequestsController(
         IAssetRequestRepository repository,
-        ILogger<AssetRequestsController> logger)
+        ILogger<RequestsController> logger)
     {
         _repository = repository;
         _logger = logger;

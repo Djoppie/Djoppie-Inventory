@@ -5,14 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Operations;
 
 /// <summary>
 /// API controller for device deployment operations (onboarding and laptop swaps).
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/operations/deployments")]
 [EnableRateLimiting("fixed")]
 public class DeploymentController : ControllerBase
 {

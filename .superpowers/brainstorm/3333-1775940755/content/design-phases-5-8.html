@@ -1,0 +1,202 @@
+<h2>Design: Fase 5-8 - Reports, Admin, Dashboard & Docs</h2>
+<p class="subtitle">Laatste fasen van de herorganisatie</p>
+
+<!-- FASE 5: REPORTS -->
+<div class="section" style="border-left:3px solid #4dd0e1; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#4dd0e1">Fase 5: Reports</h3>
+  <p style="color:#aaa">ReportsController (2052 regels, ~162 methods) splitsen naar domein-specifieke report controllers</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend - Monolith Split</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Reports/<br>
+        &nbsp;&nbsp;InventoryReportsController.cs <span style="color:#aaa">(asset stats, types)</span><br>
+        &nbsp;&nbsp;DeviceReportsController.cs <span style="color:#aaa">(hardware, Intune)</span><br>
+        &nbsp;&nbsp;WorkplaceReportsController.cs <span style="color:#aaa">(workplace stats)</span><br>
+        &nbsp;&nbsp;OperationsReportsController.cs <span style="color:#aaa">(rollout, swap history)</span><br>
+        &nbsp;&nbsp;LeaseReportsController.cs <span style="color:#aaa">(lease/warranty)</span><br>
+        <br>
+        Services/<br>
+        &nbsp;&nbsp;ReportService.cs &rarr; opgesplitst in lijn met controllers
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/reports/inventory</code><br>
+        <code>/api/reports/devices</code><br>
+        <code>/api/reports/workplaces</code><br>
+        <code>/api/reports/operations</code><br>
+        <code>/api/reports/leases</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/reports/<br>
+        &nbsp;&nbsp;ReportsOverviewPage.tsx<br>
+        &nbsp;&nbsp;InventoryReportsPage.tsx<br>
+        &nbsp;&nbsp;DeviceReportsPage.tsx<br>
+        &nbsp;&nbsp;WorkplaceReportsPage.tsx<br>
+        &nbsp;&nbsp;OperationsReportsPage.tsx<br>
+        <br>
+        components/reports/<br>
+        &nbsp;&nbsp;ReportCard.tsx<br>
+        &nbsp;&nbsp;ExportDialog.tsx <span style="color:#aaa">(herbruikbaar)</span><br>
+        &nbsp;&nbsp;...
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Routes:</strong> <code>/reports</code>, <code>/reports/inventory</code>, <code>/reports/devices</code>, ...
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:8px; padding:8px 12px; border-radius:6px; background:rgba(77,208,225,0.1); font-size:13px; color:#4dd0e1">
+    Grootste monolith in het project. CSV/Excel export functionaliteit wordt een shared utility.
+  </div>
+</div>
+
+<!-- FASE 6: ADMIN -->
+<div class="section" style="border-left:3px solid #fff176; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#fff176">Fase 6: Admin</h3>
+  <p style="color:#aaa">Organization sync, locaties, asset types/categories + voorbereiden op toekomstige RBAC</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Admin/<br>
+        &nbsp;&nbsp;OrganizationController.cs<br>
+        &nbsp;&nbsp;SectorsController.cs<br>
+        &nbsp;&nbsp;ServicesController.cs<br>
+        &nbsp;&nbsp;BuildingsController.cs<br>
+        &nbsp;&nbsp;CategoriesController.cs<br>
+        &nbsp;&nbsp;AssetTypesController.cs<br>
+        &nbsp;&nbsp;EmployeesController.cs
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/admin/organization</code><br>
+        <code>/api/admin/sectors</code><br>
+        <code>/api/admin/services</code><br>
+        <code>/api/admin/buildings</code><br>
+        <code>/api/admin/categories</code><br>
+        <code>/api/admin/asset-types</code><br>
+        <code>/api/admin/employees</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/admin/<br>
+        &nbsp;&nbsp;AdminPage.tsx <span style="color:#aaa">(tab container)</span><br>
+        <br>
+        components/admin/<br>
+        &nbsp;&nbsp;OrganizationTab.tsx <span style="color:#aaa">(nieuw, actief)</span><br>
+        &nbsp;&nbsp;LocationsTab.tsx<br>
+        &nbsp;&nbsp;AssetTypesTab.tsx<br>
+        &nbsp;&nbsp;CategoriesTab.tsx<br>
+        &nbsp;&nbsp;EmployeesTab.tsx<br>
+        &nbsp;&nbsp;ServicesTab.tsx <span style="color:#e57373">(1408 regels - split!)</span>
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Routes:</strong> <code>/admin</code> met tabs, <code>/admin/organization</code>, ...
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:8px; padding:8px 12px; border-radius:6px; background:rgba(255,241,118,0.1); font-size:13px; color:#fff176">
+    RBAC voorbereiding: AuthenticationExtensions.cs TODO afwerken, admin policy consistent toepassen
+  </div>
+</div>
+
+<!-- FASE 7: DASHBOARD + USER -->
+<div class="section" style="border-left:3px solid #64b5f6; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#64b5f6">Fase 7: Dashboard & Cross-cutting</h3>
+  <p style="color:#aaa">Dashboard herorganiseren, navigatie/sidebar updaten, shared componenten</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Dashboard/<br>
+        &nbsp;&nbsp;DashboardController.cs <span style="color:#aaa">(KPI aggregatie)</span><br>
+        <br>
+        Controllers/User/<br>
+        &nbsp;&nbsp;UserController.cs<br>
+        <br>
+        Controllers/Graph/<br>
+        &nbsp;&nbsp;GraphController.cs <span style="color:#aaa">(Entra users/groups)</span>
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/dashboard</code><br>
+        <code>/api/user</code><br>
+        <code>/api/graph</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/dashboard/<br>
+        &nbsp;&nbsp;DashboardPage.tsx<br>
+        <br>
+        components/layout/<br>
+        &nbsp;&nbsp;Sidebar.tsx <span style="color:#e57373">(982 regels - refactor!)</span><br>
+        &nbsp;&nbsp;AppLayout.tsx<br>
+        &nbsp;&nbsp;NavigationGroup.tsx <span style="color:#aaa">(nieuw)</span><br>
+        <br>
+        components/common/<br>
+        &nbsp;&nbsp;(shared componenten opkuisen)
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Sidebar navigatie gegroepeerd per feature-pijler</strong><br>
+        met collapsible secties
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FASE 8: DOCS -->
+<div class="section" style="border-left:3px solid #90a4ae; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#90a4ae">Fase 8: Documentatie & Afronding</h3>
+  <p style="color:#aaa">Alle documentatie updaten naar nieuwe structuur, CLAUDE.md herschrijven</p>
+
+  <div style="margin-top:12px">
+    <div style="font-size:13px; color:#ccc; line-height:2">
+      <strong>Documentatie cleanup:</strong>
+      <ul>
+        <li>CLAUDE.md volledig herschrijven met nieuwe structuur</li>
+        <li>README.md updaten</li>
+        <li>ARCHITECTURE.md updaten met feature-gegroepeerde architectuur</li>
+        <li>docs/ opkuisen - alleen actieve, up-to-date docs behouden</li>
+        <li>Per feature een korte .md instructie voor toekomstige ontwikkeling</li>
+        <li>API reference updaten met nieuwe routes</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <div style="font-size:13px; color:#ccc; line-height:2">
+      <strong>Final checks:</strong>
+      <ul>
+        <li>Build verificatie (backend + frontend)</li>
+        <li>Alle routes testen</li>
+        <li>Navigatie doorlopen</li>
+        <li>Security review (CORS, auth policies, secrets)</li>
+        <li>Performance check (bundle size, lazy loading)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:24px; padding:16px; border-radius:12px; background:rgba(100,181,246,0.1); border:1px solid rgba(100,181,246,0.2)">
+  <h3 style="margin:0 0 8px 0; color:#64b5f6">Totaaloverzicht</h3>
+  <div style="font-size:14px; color:#ccc; line-height:2">
+    <strong>Fase 0:</strong> Dead code cleanup (laag risico)<br>
+    <strong>Fase 1:</strong> Inventory herorganisatie<br>
+    <strong>Fase 2:</strong> Workplaces + monolith split<br>
+    <strong>Fase 3:</strong> Operations (rollouts, requests, swaps)<br>
+    <strong>Fase 4:</strong> Devices + Intune monolith split<br>
+    <strong>Fase 5:</strong> Reports monolith split<br>
+    <strong>Fase 6:</strong> Admin + RBAC prep<br>
+    <strong>Fase 7:</strong> Dashboard + navigatie + cross-cutting<br>
+    <strong>Fase 8:</strong> Docs + CLAUDE.md + final checks
+  </div>
+</div>

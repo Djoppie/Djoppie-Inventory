@@ -10,14 +10,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text.Json;
 
-namespace DjoppieInventory.API.Controllers.Rollout;
+namespace DjoppieInventory.API.Controllers.Operations.Rollout;
 
 /// <summary>
 /// API controller for managing rollout workplaces and their asset assignments.
 /// Handles workplace CRUD, execution workflow, and asset assignment operations.
 /// </summary>
 [ApiController]
-[Route("api/rollout/workplaces")]
+[Route("api/operations/rollouts/workplaces")]
 [Authorize]
 public class RolloutWorkplacesController : ControllerBase
 {

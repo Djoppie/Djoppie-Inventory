@@ -8,14 +8,14 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 
-namespace DjoppieInventory.API.Controllers.Rollout;
+namespace DjoppieInventory.API.Controllers.Operations.Rollout;
 
 /// <summary>
 /// API controller for managing rollout sessions.
 /// Handles CRUD operations for rollout sessions.
 /// </summary>
 [ApiController]
-[Route("api/rollout/sessions")]
+[Route("api/operations/rollouts/sessions")]
 [Authorize]
 public class RolloutSessionsController : ControllerBase
 {

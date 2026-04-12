@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 
-namespace DjoppieInventory.API.Controllers.Rollout;
+namespace DjoppieInventory.API.Controllers.Operations.Rollout;
 
 /// <summary>
 /// API controller for rollout statistics, reporting, and exports.
 /// Provides session progress, movement reports, and CSV exports.
 /// </summary>
 [ApiController]
-[Route("api/rollout/reports")]
+[Route("api/operations/rollouts/reports")]
 [Authorize]
 public class RolloutReportsController : ControllerBase
 {

@@ -3,7 +3,7 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers.Rollout;
+namespace DjoppieInventory.API.Controllers.Operations.Rollout;
 
 /// <summary>
 /// API controller for Microsoft Graph operations in rollout workflow.
@@ -11,7 +11,7 @@ namespace DjoppieInventory.API.Controllers.Rollout;
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("api/rollout/graph")]
+[Route("api/operations/rollouts/graph")]
 public class RolloutGraphController : ControllerBase
 {
     private readonly IGraphUserService _graphUserService;

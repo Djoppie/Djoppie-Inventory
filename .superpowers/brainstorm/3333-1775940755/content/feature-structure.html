@@ -1,0 +1,41 @@
+<h2>Voorgestelde Feature-Structuur</h2>
+<p class="subtitle">Hoe de navigatie en code georganiseerd worden rondom de 7 hoofd-features</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Volledige Herorganisatie (Aanbevolen)</h3>
+      <p>Routing, mappenstructuur en navigatie allemaal herorganiseren naar feature-groepen. Eenmalig meer werk, maar resulteert in een consistente, schaalbare structuur.</p>
+      <div style="margin-top:12px; font-size:14px; color:#aaa; font-family:monospace; line-height:1.8">
+        <strong style="color:#64b5f6">/dashboard</strong> &mdash; KPI's, overzicht<br>
+        <strong style="color:#81c784">/inventory</strong>/assets, /templates, /import<br>
+        <strong style="color:#ffb74d">/workplaces</strong>/overview, /:id<br>
+        <strong style="color:#e57373">/operations</strong>/rollouts, /requests, /swaps<br>
+        <strong style="color:#ba68c8">/devices</strong>/overview, /intune, /licenses, /software<br>
+        <strong style="color:#4dd0e1">/reports</strong>/hardware, /workplaces, /operations<br>
+        <strong style="color:#fff176">/admin</strong>/organization, /locations, /asset-types
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Alleen Code-Structuur</h3>
+      <p>Mappenstructuur in de code herorganiseren (pages/inventory/, pages/operations/, etc.) maar de huidige URL-routes behouden. Minder risico, maar mismatch tussen URL en code.</p>
+      <div style="margin-top:12px; font-size:14px; color:#aaa;">
+        URLs blijven: /assets, /rollouts, /workplaces, /templates, etc.<br>
+        Code wordt: pages/inventory/AssetsPage.tsx, pages/operations/RolloutPage.tsx
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Minimaal - Alleen Cleanup</h3>
+      <p>Huidige structuur behouden, alleen dead code verwijderen en monolithen splitsen. Snelst, maar lost de organisatie-problemen niet op.</p>
+    </div>
+  </div>
+</div>

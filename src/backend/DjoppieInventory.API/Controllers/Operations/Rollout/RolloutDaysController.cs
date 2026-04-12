@@ -5,14 +5,14 @@ using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DjoppieInventory.API.Controllers.Rollout;
+namespace DjoppieInventory.API.Controllers.Operations.Rollout;
 
 /// <summary>
 /// API controller for managing rollout days.
 /// Handles CRUD operations for rollout days within sessions.
 /// </summary>
 [ApiController]
-[Route("api/rollout/days")]
+[Route("api/operations/rollouts/days")]
 [Authorize]
 public class RolloutDaysController : ControllerBase
 {
