@@ -44,6 +44,13 @@ public class RolloutWorkplacesController : ControllerBase
         _logger = logger;
     }
 
+    // Shared JSON options for AssetPlansJson (camelCase to match frontend, case-insensitive for legacy data)
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     // ===== WORKPLACE CRUD =====
 
     /// <summary>
@@ -130,7 +137,7 @@ public class RolloutWorkplacesController : ControllerBase
             IsLaptopSetup = dto.IsLaptopSetup,
             Status = RolloutWorkplaceStatus.Pending,
             Notes = dto.Notes,
-            AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans),
+            AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans, _jsonOptions),
             TotalItems = dto.AssetPlans.Count,
         };
 
@@ -205,7 +212,7 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.Status = Enum.Parse<RolloutWorkplaceStatus>(dto.Status);
 
         // Update AssetPlansJson from DTO and recalculate TotalItems
-        workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
+        workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans, _jsonOptions);
         workplace.TotalItems = dto.AssetPlans.Count;
 
         workplace.UpdatedAt = DateTime.UtcNow;
@@ -797,7 +804,7 @@ public class RolloutWorkplacesController : ControllerBase
             {
                 try
                 {
-                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new();
+                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
                 }
                 catch
                 {
@@ -834,7 +841,7 @@ public class RolloutWorkplacesController : ControllerBase
                 plan.Status = "installed";
             }
 
-            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
             workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
         }
 
@@ -906,7 +913,7 @@ public class RolloutWorkplacesController : ControllerBase
             {
                 try
                 {
-                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new();
+                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
                 }
                 catch
                 {
@@ -920,7 +927,7 @@ public class RolloutWorkplacesController : ControllerBase
             }
 
             assetPlans[itemIndex].Status = dto.Status.ToLowerInvariant();
-            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
             workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed" || p.Status == "skipped");
         }
 
@@ -949,7 +956,7 @@ public class RolloutWorkplacesController : ControllerBase
         {
             try
             {
-                var parsed = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+                var parsed = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
                 if (parsed != null && parsed.Count > 0)
                 {
                     assetPlans = parsed;
