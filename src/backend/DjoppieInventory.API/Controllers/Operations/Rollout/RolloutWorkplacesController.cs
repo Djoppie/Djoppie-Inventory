@@ -146,7 +146,9 @@ public class RolloutWorkplacesController : ControllerBase
             PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             Status = RolloutWorkplaceStatus.Pending,
-            Notes = dto.Notes
+            Notes = dto.Notes,
+            AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans),
+            TotalItems = dto.AssetPlans.Count,
         };
 
         var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace, cancellationToken);
@@ -219,8 +221,9 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.Notes = dto.Notes;
         workplace.Status = Enum.Parse<RolloutWorkplaceStatus>(dto.Status);
 
-        // Update AssetPlansJson from DTO
+        // Update AssetPlansJson from DTO and recalculate TotalItems
         workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
+        workplace.TotalItems = dto.AssetPlans.Count;
 
         workplace.UpdatedAt = DateTime.UtcNow;
 
@@ -323,6 +326,44 @@ public class RolloutWorkplacesController : ControllerBase
         _logger.LogInformation("Deleted workplace {WorkplaceId}", id);
 
         return NoContent();
+    }
+
+    // ===== STATUS MANAGEMENT =====
+
+    /// <summary>
+    /// Updates the status of a workplace (e.g. Pending → Ready, Ready → Pending).
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="dto">Status update data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/status")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateStatus(
+        int id,
+        [FromBody] UpdateWorkplaceStatusDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        if (!Enum.TryParse<RolloutWorkplaceStatus>(dto.Status, out var newStatus))
+        {
+            return BadRequest(new { message = $"Invalid status: '{dto.Status}'" });
+        }
+
+        workplace.Status = newStatus;
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Updated workplace {WorkplaceId} status to {Status}", id, newStatus);
+
+        return Ok(MapToDto(updatedWorkplace));
     }
 
     // ===== EXECUTION WORKFLOW =====
@@ -721,7 +762,7 @@ public class RolloutWorkplacesController : ControllerBase
             return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
         }
 
-        // Get assignments ordered by position
+        // Get assignments ordered by position (relational model)
         var assignments = await _context.WorkplaceAssetAssignments
             .Include(a => a.AssetType)
             .Include(a => a.NewAsset)
@@ -730,47 +771,182 @@ public class RolloutWorkplacesController : ControllerBase
             .OrderBy(a => a.Position)
             .ToListAsync(cancellationToken);
 
-        // Check if index is valid
-        if (itemIndex < 0 || itemIndex >= assignments.Count)
-        {
-            return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
-        }
-
-        var assignment = assignments[itemIndex];
         var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
         var performedByEmail = User.FindFirstValue(ClaimTypes.Email);
 
-        // Update assignment details
-        if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+        if (assignments.Count > 0)
         {
-            assignment.SerialNumberCaptured = dto.SerialNumber;
-            assignment.SerialNumberRequired = true;
-
-            // Update linked asset if it exists
-            if (assignment.NewAsset != null)
+            // Use relational model
+            if (itemIndex < 0 || itemIndex >= assignments.Count)
             {
-                assignment.NewAsset.SerialNumber = dto.SerialNumber;
-                assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
             }
-        }
 
-        // Handle installation status
-        if (dto.MarkAsInstalled == true)
+            var assignment = assignments[itemIndex];
+
+            if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+            {
+                assignment.SerialNumberCaptured = dto.SerialNumber;
+                assignment.SerialNumberRequired = true;
+
+                if (assignment.NewAsset != null)
+                {
+                    assignment.NewAsset.SerialNumber = dto.SerialNumber;
+                    assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            if (dto.MarkAsInstalled == true)
+            {
+                assignment.Status = AssetAssignmentStatus.Installed;
+                assignment.InstalledAt = DateTime.UtcNow;
+                assignment.InstalledBy = performedBy;
+                assignment.InstalledByEmail = performedByEmail;
+            }
+
+            assignment.UpdatedAt = DateTime.UtcNow;
+        }
+        else
         {
-            assignment.Status = AssetAssignmentStatus.Installed;
-            assignment.InstalledAt = DateTime.UtcNow;
-            assignment.InstalledBy = performedBy;
-            assignment.InstalledByEmail = performedByEmail;
+            // Fallback to legacy AssetPlansJson
+            var assetPlans = new List<AssetPlanDto>();
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new();
+                }
+                catch
+                {
+                    return BadRequest(new { message = "Failed to parse asset plans." });
+                }
+            }
+
+            if (itemIndex < 0 || itemIndex >= assetPlans.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assetPlans.Count} asset plans." });
+            }
+
+            var plan = assetPlans[itemIndex];
+
+            if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+            {
+                plan.Metadata ??= new Dictionary<string, string>();
+                plan.Metadata["serialNumber"] = dto.SerialNumber;
+
+                // Update linked asset if exists
+                if (plan.ExistingAssetId.HasValue)
+                {
+                    var asset = await _context.Assets.FindAsync(new object[] { plan.ExistingAssetId.Value }, cancellationToken);
+                    if (asset != null)
+                    {
+                        asset.SerialNumber = dto.SerialNumber;
+                        asset.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            if (dto.MarkAsInstalled == true)
+            {
+                plan.Status = "installed";
+            }
+
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
         }
 
-        assignment.UpdatedAt = DateTime.UtcNow;
-
+        workplace.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Updated item {ItemIndex} details for workplace {WorkplaceId} by {PerformedBy}",
             itemIndex, workplaceId, performedBy);
 
         // Return updated workplace
+        var updatedWorkplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        return Ok(MapToDto(updatedWorkplace!));
+    }
+
+    /// <summary>
+    /// Updates the status of a single asset plan item (e.g. skip or mark installed).
+    /// </summary>
+    [HttpPost("{workplaceId}/items/{itemIndex}/status")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemStatus(
+        int workplaceId,
+        int itemIndex,
+        [FromBody] UpdateWorkplaceStatusDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        // Try relational model first
+        var assignments = await _context.WorkplaceAssetAssignments
+            .Where(a => a.RolloutWorkplaceId == workplaceId)
+            .OrderBy(a => a.Position)
+            .ToListAsync(cancellationToken);
+
+        if (assignments.Count > 0)
+        {
+            if (itemIndex < 0 || itemIndex >= assignments.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+            }
+
+            var assignment = assignments[itemIndex];
+            if (Enum.TryParse<AssetAssignmentStatus>(dto.Status, true, out var assignmentStatus))
+            {
+                assignment.Status = assignmentStatus;
+            }
+            assignment.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            // Fallback to legacy AssetPlansJson
+            var assetPlans = new List<AssetPlanDto>();
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson) ?? new();
+                }
+                catch
+                {
+                    return BadRequest(new { message = "Failed to parse asset plans." });
+                }
+            }
+
+            if (itemIndex < 0 || itemIndex >= assetPlans.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assetPlans.Count} asset plans." });
+            }
+
+            assetPlans[itemIndex].Status = dto.Status.ToLowerInvariant();
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans);
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed" || p.Status == "skipped");
+        }
+
+        workplace.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated item {ItemIndex} status to {Status} for workplace {WorkplaceId}",
+            itemIndex, dto.Status, workplaceId);
+
         var updatedWorkplace = await _context.RolloutWorkplaces
             .Include(w => w.Service)
             .Include(w => w.Building)

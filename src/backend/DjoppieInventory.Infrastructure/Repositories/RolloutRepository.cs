@@ -340,12 +340,17 @@ public class RolloutRepository : IRolloutRepository
             return;
         }
 
-        var workplaces = await _context.RolloutWorkplaces
+        var allWorkplaces = await _context.RolloutWorkplaces
             .Where(w => w.RolloutDayId == dayId)
             .ToListAsync();
 
-        day.TotalWorkplaces = workplaces.Count;
-        day.CompletedWorkplaces = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Completed);
+        // Exclude rescheduled workplaces (those with ScheduledDate on a different day)
+        var activeWorkplaces = allWorkplaces
+            .Where(w => w.ScheduledDate == null || w.ScheduledDate.Value.Date == day.Date.Date)
+            .ToList();
+
+        day.TotalWorkplaces = activeWorkplaces.Count;
+        day.CompletedWorkplaces = activeWorkplaces.Count(w => w.Status == RolloutWorkplaceStatus.Completed);
         day.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

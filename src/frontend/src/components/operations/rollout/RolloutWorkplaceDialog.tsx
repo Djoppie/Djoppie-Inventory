@@ -301,48 +301,62 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
     form.setOldDevices(updatedOldDevices);
   };
 
+  // Save error state
+  const [saveError, setSaveError] = useState<string>('');
+
   // Handle save
   const handleSave = async () => {
-    const assetPlans = buildAssetPlans({
-      oldDevices: form.state.oldDevices,
-      configItems: form.state.configItems,
-      returningOldDevice: form.state.returningOldDevice,
-    });
+    try {
+      setSaveError('');
 
-    const hasLaptop = hasLaptopConfig(form.state.configItems);
+      const assetPlans = buildAssetPlans({
+        oldDevices: form.state.oldDevices,
+        configItems: form.state.configItems,
+        returningOldDevice: form.state.returningOldDevice,
+      });
 
-    if (isEditMode && workplace) {
-      const updateData: UpdateRolloutWorkplace = {
-        userName: form.state.userName,
-        userEmail: form.state.userEmail || null,
-        userEntraId: form.state.userEntraId || null,
-        location: form.state.location || null,
-        scheduledDate: form.state.scheduledDate || null,
-        serviceId: form.state.serviceId || null,
-        physicalWorkplaceId: form.state.physicalWorkplaceId || null,
-        isLaptopSetup: hasLaptop,
-        assetPlans,
-        status: form.state.workplaceStatus,
-        notes: workplace.notes || null,
-      };
-      await updateMutation.mutateAsync({ workplaceId: workplace.id, data: updateData });
-    } else {
-      const createData: CreateRolloutWorkplace = {
-        rolloutDayId: dayId,
-        userName: form.state.userName,
-        userEmail: form.state.userEmail || undefined,
-        userEntraId: form.state.userEntraId || undefined,
-        location: form.state.location || undefined,
-        scheduledDate: form.state.scheduledDate || undefined,
-        serviceId: form.state.serviceId,
-        physicalWorkplaceId: form.state.physicalWorkplaceId,
-        isLaptopSetup: hasLaptop,
-        assetPlans,
-      };
-      await createMutation.mutateAsync({ dayId, data: createData });
+      const hasLaptop = hasLaptopConfig(form.state.configItems);
+
+      if (isEditMode && workplace) {
+        const updateData: UpdateRolloutWorkplace = {
+          userName: form.state.userName,
+          userEmail: form.state.userEmail || null,
+          userEntraId: form.state.userEntraId || null,
+          location: form.state.location || null,
+          scheduledDate: form.state.scheduledDate || null,
+          serviceId: form.state.serviceId || null,
+          physicalWorkplaceId: form.state.physicalWorkplaceId || null,
+          isLaptopSetup: hasLaptop,
+          assetPlans,
+          status: form.state.workplaceStatus,
+          notes: workplace.notes || null,
+        };
+        await updateMutation.mutateAsync({ workplaceId: workplace.id, data: updateData });
+      } else {
+        const createData: CreateRolloutWorkplace = {
+          rolloutDayId: dayId,
+          userName: form.state.userName,
+          userEmail: form.state.userEmail || undefined,
+          userEntraId: form.state.userEntraId || undefined,
+          location: form.state.location || undefined,
+          scheduledDate: form.state.scheduledDate || undefined,
+          serviceId: form.state.serviceId,
+          physicalWorkplaceId: form.state.physicalWorkplaceId,
+          isLaptopSetup: hasLaptop,
+          assetPlans,
+        };
+        await createMutation.mutateAsync({ dayId, data: createData });
+      }
+
+      onClose();
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error
+        ? ((error as { response?: { data?: { title?: string; errors?: Record<string, string[]> } } }).response?.data?.title
+          || Object.values((error as { response?: { data?: { errors?: Record<string, string[]> } } }).response?.data?.errors || {}).flat().join(', ')
+          || 'Opslaan mislukt')
+        : 'Opslaan mislukt. Controleer de gegevens en probeer opnieuw.';
+      setSaveError(message);
     }
-
-    onClose();
   };
 
   return (
@@ -810,6 +824,31 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           }}
         >
           {scanner.scanSuccess}
+        </Alert>
+      </Snackbar>
+
+      {/* Save Error Snackbar */}
+      <Snackbar
+        open={!!saveError}
+        autoHideDuration={6000}
+        onClose={() => setSaveError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ mb: 8 }}
+      >
+        <Alert
+          severity="error"
+          onClose={() => setSaveError('')}
+          sx={{
+            fontWeight: 600,
+            borderRadius: 2,
+            bgcolor: isDark ? '#2a1f1f' : '#fef2f2',
+            boxShadow: isDark
+              ? '6px 6px 12px #161a1d, -6px -6px 12px #262c33'
+              : '6px 6px 12px #c5cad0, -6px -6px 12px #ffffff',
+            border: 'none',
+          }}
+        >
+          {saveError}
         </Alert>
       </Snackbar>
 
