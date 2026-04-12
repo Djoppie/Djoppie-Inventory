@@ -8,350 +8,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 
-namespace DjoppieInventory.API.Controllers;
+namespace DjoppieInventory.API.Controllers.Reports;
 
 /// <summary>
-/// API controller for generating various reports.
-/// Provides hardware inventory, workplace, swap history, licenses, and lease reports.
+/// API controller for operations reports: swap history and rollout reports.
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/reports")]
 [Authorize]
-public class ReportsController : ControllerBase
+public class OperationsReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
-    private readonly ApplicationDbContext _context; // Keep for endpoints not yet migrated to service
-    private readonly ILicenseService _licenseService;
-    private readonly ILogger<ReportsController> _logger;
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<OperationsReportsController> _logger;
 
-    public ReportsController(
+    public OperationsReportsController(
         IReportService reportService,
         ApplicationDbContext context,
-        ILicenseService licenseService,
-        ILogger<ReportsController> logger)
+        ILogger<OperationsReportsController> logger)
     {
         _reportService = reportService;
         _context = context;
-        _licenseService = licenseService;
         _logger = logger;
-    }
-
-    // ========================================
-    // Hardware Inventory Report
-    // ========================================
-
-    /// <summary>
-    /// Gets hardware inventory report with optional filters.
-    /// </summary>
-    [HttpGet("hardware")]
-    [ProducesResponseType(typeof(IEnumerable<HardwareReportItemDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<HardwareReportItemDto>>> GetHardwareReport(
-        [FromQuery] string? status = null,
-        [FromQuery] int? assetTypeId = null,
-        [FromQuery] int? categoryId = null,
-        [FromQuery] int? serviceId = null,
-        [FromQuery] int? buildingId = null,
-        [FromQuery] string? search = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _context.Assets
-            .Include(a => a.AssetType)
-            .Include(a => a.Service)
-            .Include(a => a.Building)
-            .Include(a => a.Employee)
-            .AsNoTracking();
-
-        // Apply filters
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse<AssetStatus>(status, true, out var statusEnum))
-        {
-            query = query.Where(a => a.Status == statusEnum);
-        }
-
-        if (assetTypeId.HasValue)
-        {
-            query = query.Where(a => a.AssetTypeId == assetTypeId.Value);
-        }
-
-        if (serviceId.HasValue)
-        {
-            query = query.Where(a => a.ServiceId == serviceId.Value);
-        }
-
-        if (buildingId.HasValue)
-        {
-            query = query.Where(a => a.BuildingId == buildingId.Value);
-        }
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            var searchLower = search.ToLower();
-            query = query.Where(a =>
-                a.AssetCode.ToLower().Contains(searchLower) ||
-                (a.AssetName != null && a.AssetName.ToLower().Contains(searchLower)) ||
-                (a.SerialNumber != null && a.SerialNumber.ToLower().Contains(searchLower)) ||
-                (a.Owner != null && a.Owner.ToLower().Contains(searchLower)));
-        }
-
-        var assets = await query
-            .OrderBy(a => a.AssetCode)
-            .Select(a => new HardwareReportItemDto
-            {
-                Id = a.Id,
-                AssetCode = a.AssetCode,
-                Name = a.AssetName ?? "",
-                AssetTypeName = a.AssetType != null ? a.AssetType.Name : a.Category ?? "",
-                CategoryName = a.Category,
-                Brand = a.Brand,
-                Model = a.Model,
-                SerialNumber = a.SerialNumber,
-                Status = a.Status.ToString(),
-                OwnerName = a.Owner,
-                OwnerEmail = a.Owner,
-                ServiceName = a.Service != null ? a.Service.Name : null,
-                BuildingName = a.Building != null ? a.Building.Name : null,
-                Location = a.OfficeLocation,
-                PurchaseDate = a.PurchaseDate,
-                InstallationDate = a.InstallationDate,
-                WarrantyExpiration = a.WarrantyExpiry,
-                CreatedAt = a.CreatedAt,
-                UpdatedAt = a.UpdatedAt
-            })
-            .ToListAsync(cancellationToken);
-
-        _logger.LogInformation("Hardware report generated with {Count} assets", assets.Count);
-        return Ok(assets);
-    }
-
-    /// <summary>
-    /// Gets hardware inventory summary statistics.
-    /// </summary>
-    [HttpGet("hardware/summary")]
-    [ProducesResponseType(typeof(HardwareReportSummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<HardwareReportSummaryDto>> GetHardwareReportSummary(
-        CancellationToken cancellationToken = default)
-    {
-        var assets = await _context.Assets
-            .Include(a => a.AssetType)
-            .Include(a => a.Service)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        var summary = new HardwareReportSummaryDto
-        {
-            TotalAssets = assets.Count,
-            ByStatus = assets
-                .GroupBy(a => a.Status.ToString())
-                .ToDictionary(g => g.Key, g => g.Count()),
-            ByAssetType = assets
-                .Where(a => a.AssetType != null)
-                .GroupBy(a => a.AssetType!.Name)
-                .ToDictionary(g => g.Key, g => g.Count()),
-            ByService = assets
-                .Where(a => a.Service != null)
-                .GroupBy(a => a.Service!.Name)
-                .ToDictionary(g => g.Key, g => g.Count())
-        };
-
-        return Ok(summary);
-    }
-
-    /// <summary>
-    /// Exports hardware report as CSV.
-    /// </summary>
-    [HttpGet("hardware/export")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ExportHardwareReport(
-        [FromQuery] string? status = null,
-        [FromQuery] int? assetTypeId = null,
-        [FromQuery] int? serviceId = null,
-        [FromQuery] int? buildingId = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _context.Assets
-            .Include(a => a.AssetType)
-            .Include(a => a.Service)
-            .Include(a => a.Building)
-            .AsNoTracking();
-
-        // Apply filters
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse<AssetStatus>(status, true, out var statusEnum))
-        {
-            query = query.Where(a => a.Status == statusEnum);
-        }
-
-        if (assetTypeId.HasValue)
-        {
-            query = query.Where(a => a.AssetTypeId == assetTypeId.Value);
-        }
-
-        if (serviceId.HasValue)
-        {
-            query = query.Where(a => a.ServiceId == serviceId.Value);
-        }
-
-        if (buildingId.HasValue)
-        {
-            query = query.Where(a => a.BuildingId == buildingId.Value);
-        }
-
-        var assets = await query.OrderBy(a => a.AssetCode).ToListAsync(cancellationToken);
-
-        var sb = new StringBuilder();
-        sb.AppendLine("AssetCode,Name,Type,Status,Owner,SerialNumber,Brand,Model,Service,Building,InstallationDate");
-
-        foreach (var a in assets)
-        {
-            sb.AppendLine(string.Join(",",
-                EscapeCsv(a.AssetCode),
-                EscapeCsv(a.AssetName ?? ""),
-                EscapeCsv(a.AssetType?.Name ?? a.Category ?? ""),
-                a.Status.ToString(),
-                EscapeCsv(a.Owner ?? ""),
-                EscapeCsv(a.SerialNumber ?? ""),
-                EscapeCsv(a.Brand ?? ""),
-                EscapeCsv(a.Model ?? ""),
-                EscapeCsv(a.Service?.Name ?? ""),
-                EscapeCsv(a.Building?.Name ?? ""),
-                a.InstallationDate?.ToString("yyyy-MM-dd") ?? ""
-            ));
-        }
-
-        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-        var fileName = $"hardware-inventaris-{DateTime.UtcNow:yyyyMMdd}.csv";
-
-        _logger.LogInformation("Exported hardware report with {Count} assets", assets.Count);
-        return File(bytes, "text/csv", fileName);
-    }
-
-    // ========================================
-    // Workplace Report
-    // ========================================
-
-    /// <summary>
-    /// Gets workplace report.
-    /// </summary>
-    [HttpGet("workplaces")]
-    [ProducesResponseType(typeof(IEnumerable<WorkplaceReportItemDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<WorkplaceReportItemDto>>> GetWorkplaceReport(
-        CancellationToken cancellationToken = default)
-    {
-        var workplaces = await _context.PhysicalWorkplaces
-            .Include(pw => pw.Building)
-            .Include(pw => pw.Service)
-            .Where(pw => pw.IsActive)
-            .AsNoTracking()
-            .OrderBy(pw => pw.Building.Name)
-            .ThenBy(pw => pw.Code)
-            .Select(pw => new WorkplaceReportItemDto
-            {
-                Id = pw.Id,
-                Code = pw.Code,
-                Name = pw.Name,
-                BuildingName = pw.Building != null ? pw.Building.Name : null,
-                Floor = pw.Floor,
-                Room = pw.Room,
-                OccupantName = pw.CurrentOccupantName,
-                OccupantEmail = pw.CurrentOccupantEmail,
-                ServiceName = pw.Service != null ? pw.Service.Name : null,
-                IsOccupied = pw.CurrentOccupantName != null || pw.CurrentOccupantEmail != null,
-                EquipmentCount = (pw.DockingStationAssetId.HasValue ? 1 : 0) +
-                    (pw.Monitor1AssetId.HasValue ? 1 : 0) +
-                    (pw.Monitor2AssetId.HasValue ? 1 : 0) +
-                    (pw.Monitor3AssetId.HasValue ? 1 : 0) +
-                    (pw.KeyboardAssetId.HasValue ? 1 : 0) +
-                    (pw.MouseAssetId.HasValue ? 1 : 0),
-                CreatedAt = pw.CreatedAt,
-                UpdatedAt = pw.UpdatedAt
-            })
-            .ToListAsync(cancellationToken);
-
-        _logger.LogInformation("Workplace report generated with {Count} workplaces", workplaces.Count);
-        return Ok(workplaces);
-    }
-
-    /// <summary>
-    /// Gets workplace report summary (occupancy stats).
-    /// </summary>
-    [HttpGet("workplaces/summary")]
-    [ProducesResponseType(typeof(WorkplaceReportSummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<WorkplaceReportSummaryDto>> GetWorkplaceReportSummary(
-        CancellationToken cancellationToken = default)
-    {
-        var workplaces = await _context.PhysicalWorkplaces
-            .Include(pw => pw.Building)
-            .Where(pw => pw.IsActive)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        var totalWorkplaces = workplaces.Count;
-        var occupiedWorkplaces = workplaces.Count(pw =>
-            pw.CurrentOccupantName != null || pw.CurrentOccupantEmail != null);
-        var availableWorkplaces = totalWorkplaces - occupiedWorkplaces;
-
-        var summary = new WorkplaceReportSummaryDto
-        {
-            TotalWorkplaces = totalWorkplaces,
-            OccupiedWorkplaces = occupiedWorkplaces,
-            AvailableWorkplaces = availableWorkplaces,
-            OccupancyRate = totalWorkplaces > 0
-                ? (int)Math.Round((double)occupiedWorkplaces / totalWorkplaces * 100)
-                : 0,
-            ByBuilding = workplaces
-                .Where(pw => pw.Building != null)
-                .GroupBy(pw => pw.Building!.Name)
-                .ToDictionary(
-                    g => g.Key,
-                    g => new BuildingOccupancyData
-                    {
-                        Total = g.Count(),
-                        Occupied = g.Count(pw => pw.CurrentOccupantName != null || pw.CurrentOccupantEmail != null)
-                    })
-        };
-
-        return Ok(summary);
-    }
-
-    /// <summary>
-    /// Exports workplace report as CSV.
-    /// </summary>
-    [HttpGet("workplaces/export")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ExportWorkplaceReport(
-        CancellationToken cancellationToken = default)
-    {
-        var workplaces = await _context.PhysicalWorkplaces
-            .Include(pw => pw.Building)
-            .Include(pw => pw.Service)
-            .Where(pw => pw.IsActive)
-            .AsNoTracking()
-            .OrderBy(pw => pw.Building.Name)
-            .ThenBy(pw => pw.Code)
-            .ToListAsync(cancellationToken);
-
-        var sb = new StringBuilder();
-        sb.AppendLine("Code,Name,Building,Floor,Room,Occupant,Email,Service,HasDocking,MonitorCount");
-
-        foreach (var pw in workplaces)
-        {
-            sb.AppendLine(string.Join(",",
-                EscapeCsv(pw.Code),
-                EscapeCsv(pw.Name),
-                EscapeCsv(pw.Building?.Name ?? ""),
-                EscapeCsv(pw.Floor ?? ""),
-                EscapeCsv(pw.Room ?? ""),
-                EscapeCsv(pw.CurrentOccupantName ?? ""),
-                EscapeCsv(pw.CurrentOccupantEmail ?? ""),
-                EscapeCsv(pw.Service?.Name ?? ""),
-                pw.HasDockingStation,
-                pw.MonitorCount
-            ));
-        }
-
-        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-        var fileName = $"werkplekken-{DateTime.UtcNow:yyyyMMdd}.csv";
-
-        _logger.LogInformation("Exported workplace report with {Count} workplaces", workplaces.Count);
-        return File(bytes, "text/csv", fileName);
     }
 
     // ========================================
@@ -489,27 +167,6 @@ public class ReportsController : ControllerBase
 
         _logger.LogInformation("Asset change history report generated with {Count} events", events.Count);
         return Ok(events);
-    }
-
-    /// <summary>
-    /// Helper method to get display-friendly event type names
-    /// </summary>
-    private static string GetEventTypeDisplay(AssetEventType eventType)
-    {
-        return eventType switch
-        {
-            AssetEventType.StatusChanged => "Status Wijziging",
-            AssetEventType.OwnerChanged => "Eigenaar Wijziging",
-            AssetEventType.LocationChanged => "Locatie Wijziging",
-            AssetEventType.LaptopSwapped => "Laptop Swap",
-            AssetEventType.DeviceOnboarded => "Onboarding",
-            AssetEventType.DeviceOffboarded => "Offboarding",
-            AssetEventType.LeaseStarted => "Lease Gestart",
-            AssetEventType.LeaseEnded => "Lease Beëindigd",
-            AssetEventType.Maintenance => "Onderhoud",
-            AssetEventType.Created => "Aangemaakt",
-            _ => eventType.ToString()
-        };
     }
 
     /// <summary>
@@ -661,186 +318,6 @@ public class ReportsController : ControllerBase
 
         _logger.LogInformation("Exported asset change history with {Count} events", events.Count);
         return File(bytes, "text/csv", fileName);
-    }
-
-    // ========================================
-    // License Report (MS365)
-    // ========================================
-
-    /// <summary>
-    /// Gets MS365 license summary (E3, E5, F1 licenses).
-    /// Retrieves real-time data from Microsoft Graph API.
-    /// </summary>
-    [HttpGet("licenses/summary")]
-    [ProducesResponseType(typeof(LicenseSummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<LicenseSummaryDto>> GetLicenseSummary(
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            _logger.LogInformation("Fetching MS365 license summary");
-            var summary = await _licenseService.GetLicenseSummaryAsync(cancellationToken);
-
-            if (!string.IsNullOrEmpty(summary.ErrorMessage))
-            {
-                _logger.LogWarning("License summary returned with error: {Error}", summary.ErrorMessage);
-            }
-
-            return Ok(summary);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve license summary from Graph API");
-            return Ok(new LicenseSummaryDto
-            {
-                ErrorMessage = "Failed to retrieve license data. Please check Graph API permissions."
-            });
-        }
-    }
-
-    /// <summary>
-    /// Gets users with assigned licenses.
-    /// Retrieves real-time data from Microsoft Graph API.
-    /// </summary>
-    [HttpGet("licenses/users")]
-    [ProducesResponseType(typeof(IEnumerable<LicenseUserDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<LicenseUserDto>>> GetLicenseUsers(
-        [FromQuery] string? skuId = null,
-        [FromQuery] string? department = null,
-        [FromQuery] string? search = null,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            _logger.LogInformation("Fetching license users. SKU: {SkuId}, Department: {Department}, Search: {Search}",
-                skuId, department, search);
-
-            var users = await _licenseService.GetLicenseUsersAsync(skuId, department, cancellationToken);
-            var userList = users.ToList();
-
-            // Apply client-side search filter if provided
-            if (!string.IsNullOrEmpty(search))
-            {
-                var searchLower = search.ToLower();
-                userList = userList
-                    .Where(u =>
-                        u.DisplayName.ToLower().Contains(searchLower) ||
-                        u.UserPrincipalName.ToLower().Contains(searchLower) ||
-                        (u.Department?.ToLower().Contains(searchLower) ?? false) ||
-                        (u.JobTitle?.ToLower().Contains(searchLower) ?? false))
-                    .ToList();
-            }
-
-            _logger.LogInformation("Returning {Count} license users", userList.Count);
-            return Ok(userList);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve license users from Graph API");
-            return Ok(new List<LicenseUserDto>());
-        }
-    }
-
-    /// <summary>
-    /// Gets license statistics breakdown by department.
-    /// </summary>
-    [HttpGet("licenses/statistics")]
-    [ProducesResponseType(typeof(LicenseStatisticsDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<LicenseStatisticsDto>> GetLicenseStatistics(
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            _logger.LogInformation("Fetching license statistics");
-            var statistics = await _licenseService.GetLicenseStatisticsAsync(cancellationToken);
-            return Ok(statistics);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "Failed to retrieve license statistics from Graph API");
-            return Ok(new LicenseStatisticsDto
-            {
-                ErrorMessage = "Failed to retrieve license statistics. Please check Graph API permissions."
-            });
-        }
-    }
-
-    /// <summary>
-    /// Exports license report as CSV.
-    /// </summary>
-    [HttpGet("licenses/export")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ExportLicenseReport(
-        [FromQuery] string? skuId = null,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            _logger.LogInformation("Exporting license report. SKU filter: {SkuId}", skuId);
-
-            var users = await _licenseService.GetLicenseUsersAsync(skuId, cancellationToken: cancellationToken);
-            var userList = users.ToList();
-
-            var sb = new StringBuilder();
-            sb.AppendLine("Naam,Email,Afdeling,Functie,Licenties");
-
-            foreach (var user in userList)
-            {
-                var licenses = string.Join("; ", user.AssignedLicenses.Select(l => l.DisplayName));
-                sb.AppendLine(string.Join(",",
-                    EscapeCsv(user.DisplayName),
-                    EscapeCsv(user.UserPrincipalName),
-                    EscapeCsv(user.Department ?? ""),
-                    EscapeCsv(user.JobTitle ?? ""),
-                    EscapeCsv(licenses)
-                ));
-            }
-
-            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-            var fileName = $"ms365-licenties-{DateTime.UtcNow:yyyyMMdd}.csv";
-
-            _logger.LogInformation("Exported license report with {Count} users", userList.Count);
-            return File(bytes, "text/csv", fileName);
-        }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogError(ex, "Failed to export license report");
-            var errorBytes = Encoding.UTF8.GetBytes("Error: Failed to retrieve license data. Please check Graph API permissions.");
-            return File(errorBytes, "text/plain", "error.txt");
-        }
-    }
-
-    /// <summary>
-    /// Gets license optimization analysis with recommendations for cost savings.
-    /// Identifies inactive users and potential license downgrades.
-    /// </summary>
-    /// <param name="inactiveDaysThreshold">Days since last sign-in to consider user inactive (default: 90)</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Optimization analysis with inactive users, downgrade recommendations, and potential savings</returns>
-    [HttpGet("licenses/optimization")]
-    [ProducesResponseType(typeof(LicenseOptimizationDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<LicenseOptimizationDto>> GetLicenseOptimization(
-        [FromQuery] int inactiveDaysThreshold = 90,
-        CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Retrieving license optimization analysis. Inactive threshold: {Days} days", inactiveDaysThreshold);
-
-        var result = await _licenseService.GetLicenseOptimizationAsync(inactiveDaysThreshold, cancellationToken);
-
-        if (!string.IsNullOrEmpty(result.ErrorMessage))
-        {
-            _logger.LogWarning("License optimization returned error: {Error}", result.ErrorMessage);
-        }
-        else
-        {
-            _logger.LogInformation(
-                "License optimization: {Inactive} inactive, {Downgrades} downgrades, €{Savings}/month savings",
-                result.Summary.InactiveUserCount,
-                result.Summary.DowngradeCandidateCount,
-                result.Summary.EstimatedMonthlySavings);
-        }
-
-        return Ok(result);
     }
 
     // ========================================
@@ -1234,6 +711,163 @@ public class ReportsController : ControllerBase
         return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
+    /// <summary>
+    /// Gets all assets linked to a rollout session for serial number management.
+    /// Returns all new assets (both assigned via assignments and directly linked).
+    /// </summary>
+    [HttpGet("rollout/sessions/{sessionId}/serial-numbers")]
+    [ProducesResponseType(typeof(List<RolloutAssetSerialDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<RolloutAssetSerialDto>>> GetRolloutAssetSerials(
+        int sessionId,
+        [FromQuery] bool onlyMissing = false,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await _context.RolloutSessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
+
+        if (session == null)
+            return NotFound($"Session {sessionId} not found");
+
+        // Get all assignments with new assets for this session
+        var assignmentsWithAssets = await _context.WorkplaceAssetAssignments
+            .Include(a => a.NewAsset).ThenInclude(asset => asset!.AssetType)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.Service)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.Building)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.RolloutDay)
+            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.PhysicalWorkplace)
+            .Include(a => a.AssetType)
+            .Where(a => a.RolloutWorkplace.RolloutDay.RolloutSessionId == sessionId)
+            .Where(a => a.NewAssetId.HasValue)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var results = assignmentsWithAssets
+            .Where(a => a.NewAsset != null)
+            .Select(a => new RolloutAssetSerialDto
+            {
+                AssetId = a.NewAsset!.Id,
+                AssetCode = a.NewAsset.AssetCode,
+                AssetName = a.NewAsset.AssetName,
+                EquipmentType = a.AssetType?.Name ?? a.NewAsset.AssetType?.Name ?? "Unknown",
+                CurrentSerialNumber = a.NewAsset.SerialNumber ?? a.SerialNumberCaptured,
+                Brand = a.NewAsset.Brand,
+                Model = a.NewAsset.Model,
+                WorkplaceName = a.RolloutWorkplace.PhysicalWorkplace?.Name ?? a.RolloutWorkplace.UserName ?? $"Workplace {a.RolloutWorkplace.Id}",
+                UserDisplayName = a.RolloutWorkplace.UserName,
+                ServiceName = a.RolloutWorkplace.Service?.Name ?? "",
+                BuildingName = a.RolloutWorkplace.Building?.Name ?? "",
+                Date = a.RolloutWorkplace.RolloutDay?.Date,
+                Status = a.NewAsset.Status.ToString(),
+                IsMissingSerial = string.IsNullOrEmpty(a.NewAsset.SerialNumber) && string.IsNullOrEmpty(a.SerialNumberCaptured)
+            })
+            .DistinctBy(a => a.AssetId) // Remove duplicates if same asset in multiple assignments
+            .OrderBy(a => a.ServiceName)
+            .ThenBy(a => a.Date)
+            .ThenBy(a => a.WorkplaceName)
+            .ToList();
+
+        if (onlyMissing)
+        {
+            results = results.Where(a => a.IsMissingSerial).ToList();
+        }
+
+        _logger.LogInformation("Found {Count} assets for serial number management in session {SessionId} (missing only: {OnlyMissing})",
+            results.Count, sessionId, onlyMissing);
+
+        return Ok(results);
+    }
+
+    /// <summary>
+    /// Bulk update serial numbers for assets.
+    /// </summary>
+    [HttpPatch("rollout/sessions/{sessionId}/serial-numbers/bulk")]
+    [ProducesResponseType(typeof(BulkSerialNumberUpdateResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkSerialNumberUpdateResult>> BulkUpdateSerialNumbers(
+        int sessionId,
+        [FromBody] BulkSerialNumberUpdateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Updates == null || request.Updates.Count == 0)
+        {
+            return BadRequest(new { message = "No updates provided" });
+        }
+
+        var successCount = 0;
+        var errors = new List<string>();
+
+        foreach (var update in request.Updates)
+        {
+            if (string.IsNullOrWhiteSpace(update.SerialNumber))
+            {
+                errors.Add($"Asset {update.AssetId}: Serienummer mag niet leeg zijn");
+                continue;
+            }
+
+            var asset = await _context.Assets.FindAsync(new object[] { update.AssetId }, cancellationToken);
+            if (asset == null)
+            {
+                errors.Add($"Asset {update.AssetId}: Niet gevonden");
+                continue;
+            }
+
+            asset.SerialNumber = update.SerialNumber.Trim();
+            asset.UpdatedAt = DateTime.UtcNow;
+
+            // Also update any assignments that reference this asset
+            var assignments = await _context.WorkplaceAssetAssignments
+                .Where(a => a.NewAssetId == update.AssetId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var assignment in assignments)
+            {
+                assignment.SerialNumberCaptured = update.SerialNumber.Trim();
+                assignment.UpdatedAt = DateTime.UtcNow;
+            }
+
+            successCount++;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Bulk updated {SuccessCount} serial numbers for session {SessionId}. Errors: {ErrorCount}",
+            successCount, sessionId, errors.Count);
+
+        return Ok(new BulkSerialNumberUpdateResult
+        {
+            SuccessCount = successCount,
+            FailedCount = errors.Count,
+            Errors = errors
+        });
+    }
+
+    // ========================================
+    // Private Helper Methods
+    // ========================================
+
+    /// <summary>
+    /// Helper method to get display-friendly event type names
+    /// </summary>
+    private static string GetEventTypeDisplay(AssetEventType eventType)
+    {
+        return eventType switch
+        {
+            AssetEventType.StatusChanged => "Status Wijziging",
+            AssetEventType.OwnerChanged => "Eigenaar Wijziging",
+            AssetEventType.LocationChanged => "Locatie Wijziging",
+            AssetEventType.LaptopSwapped => "Laptop Swap",
+            AssetEventType.DeviceOnboarded => "Onboarding",
+            AssetEventType.DeviceOffboarded => "Offboarding",
+            AssetEventType.LeaseStarted => "Lease Gestart",
+            AssetEventType.LeaseEnded => "Lease Beëindigd",
+            AssetEventType.Maintenance => "Onderhoud",
+            AssetEventType.Created => "Aangemaakt",
+            _ => eventType.ToString()
+        };
+    }
+
     private RolloutWorkplaceChecklistDto MapToWorkplaceChecklist(RolloutWorkplace w)
     {
         var equipmentRows = new List<RolloutEquipmentRowDto>();
@@ -1508,191 +1142,6 @@ public class ReportsController : ControllerBase
         sheet.SheetView.FreezeRows(1);
     }
 
-    // ========================================
-    // Serial Number Management
-    // ========================================
-
-    /// <summary>
-    /// Gets all assets linked to a rollout session for serial number management.
-    /// Returns all new assets (both assigned via assignments and directly linked).
-    /// </summary>
-    [HttpGet("rollout/sessions/{sessionId}/serial-numbers")]
-    [ProducesResponseType(typeof(List<RolloutAssetSerialDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<RolloutAssetSerialDto>>> GetRolloutAssetSerials(
-        int sessionId,
-        [FromQuery] bool onlyMissing = false,
-        CancellationToken cancellationToken = default)
-    {
-        var session = await _context.RolloutSessions
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == sessionId, cancellationToken);
-
-        if (session == null)
-            return NotFound($"Session {sessionId} not found");
-
-        // Get all assignments with new assets for this session
-        var assignmentsWithAssets = await _context.WorkplaceAssetAssignments
-            .Include(a => a.NewAsset).ThenInclude(asset => asset!.AssetType)
-            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.Service)
-            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.Building)
-            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.RolloutDay)
-            .Include(a => a.RolloutWorkplace).ThenInclude(w => w.PhysicalWorkplace)
-            .Include(a => a.AssetType)
-            .Where(a => a.RolloutWorkplace.RolloutDay.RolloutSessionId == sessionId)
-            .Where(a => a.NewAssetId.HasValue)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        var results = assignmentsWithAssets
-            .Where(a => a.NewAsset != null)
-            .Select(a => new RolloutAssetSerialDto
-            {
-                AssetId = a.NewAsset!.Id,
-                AssetCode = a.NewAsset.AssetCode,
-                AssetName = a.NewAsset.AssetName,
-                EquipmentType = a.AssetType?.Name ?? a.NewAsset.AssetType?.Name ?? "Unknown",
-                CurrentSerialNumber = a.NewAsset.SerialNumber ?? a.SerialNumberCaptured,
-                Brand = a.NewAsset.Brand,
-                Model = a.NewAsset.Model,
-                WorkplaceName = a.RolloutWorkplace.PhysicalWorkplace?.Name ?? a.RolloutWorkplace.UserName ?? $"Workplace {a.RolloutWorkplace.Id}",
-                UserDisplayName = a.RolloutWorkplace.UserName,
-                ServiceName = a.RolloutWorkplace.Service?.Name ?? "",
-                BuildingName = a.RolloutWorkplace.Building?.Name ?? "",
-                Date = a.RolloutWorkplace.RolloutDay?.Date,
-                Status = a.NewAsset.Status.ToString(),
-                IsMissingSerial = string.IsNullOrEmpty(a.NewAsset.SerialNumber) && string.IsNullOrEmpty(a.SerialNumberCaptured)
-            })
-            .DistinctBy(a => a.AssetId) // Remove duplicates if same asset in multiple assignments
-            .OrderBy(a => a.ServiceName)
-            .ThenBy(a => a.Date)
-            .ThenBy(a => a.WorkplaceName)
-            .ToList();
-
-        if (onlyMissing)
-        {
-            results = results.Where(a => a.IsMissingSerial).ToList();
-        }
-
-        _logger.LogInformation("Found {Count} assets for serial number management in session {SessionId} (missing only: {OnlyMissing})",
-            results.Count, sessionId, onlyMissing);
-
-        return Ok(results);
-    }
-
-    /// <summary>
-    /// Bulk update serial numbers for assets.
-    /// </summary>
-    [HttpPatch("rollout/sessions/{sessionId}/serial-numbers/bulk")]
-    [ProducesResponseType(typeof(BulkSerialNumberUpdateResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<BulkSerialNumberUpdateResult>> BulkUpdateSerialNumbers(
-        int sessionId,
-        [FromBody] BulkSerialNumberUpdateRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        if (request.Updates == null || request.Updates.Count == 0)
-        {
-            return BadRequest(new { message = "No updates provided" });
-        }
-
-        var successCount = 0;
-        var errors = new List<string>();
-
-        foreach (var update in request.Updates)
-        {
-            if (string.IsNullOrWhiteSpace(update.SerialNumber))
-            {
-                errors.Add($"Asset {update.AssetId}: Serienummer mag niet leeg zijn");
-                continue;
-            }
-
-            var asset = await _context.Assets.FindAsync(new object[] { update.AssetId }, cancellationToken);
-            if (asset == null)
-            {
-                errors.Add($"Asset {update.AssetId}: Niet gevonden");
-                continue;
-            }
-
-            asset.SerialNumber = update.SerialNumber.Trim();
-            asset.UpdatedAt = DateTime.UtcNow;
-
-            // Also update any assignments that reference this asset
-            var assignments = await _context.WorkplaceAssetAssignments
-                .Where(a => a.NewAssetId == update.AssetId)
-                .ToListAsync(cancellationToken);
-
-            foreach (var assignment in assignments)
-            {
-                assignment.SerialNumberCaptured = update.SerialNumber.Trim();
-                assignment.UpdatedAt = DateTime.UtcNow;
-            }
-
-            successCount++;
-        }
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Bulk updated {SuccessCount} serial numbers for session {SessionId}. Errors: {ErrorCount}",
-            successCount, sessionId, errors.Count);
-
-        return Ok(new BulkSerialNumberUpdateResult
-        {
-            SuccessCount = successCount,
-            FailedCount = errors.Count,
-            Errors = errors
-        });
-    }
-
-    /// <summary>
-    /// Update a single asset's serial number.
-    /// </summary>
-    [HttpPatch("assets/{assetId}/serial")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> UpdateAssetSerialNumber(
-        int assetId,
-        [FromBody] SerialNumberUpdateDto request,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(request.SerialNumber))
-        {
-            return BadRequest(new { message = "Serienummer mag niet leeg zijn" });
-        }
-
-        var asset = await _context.Assets.FindAsync(new object[] { assetId }, cancellationToken);
-        if (asset == null)
-        {
-            return NotFound(new { message = $"Asset {assetId} niet gevonden" });
-        }
-
-        asset.SerialNumber = request.SerialNumber.Trim();
-        asset.UpdatedAt = DateTime.UtcNow;
-
-        // Also update any assignments that reference this asset
-        var assignments = await _context.WorkplaceAssetAssignments
-            .Where(a => a.NewAssetId == assetId)
-            .ToListAsync(cancellationToken);
-
-        foreach (var assignment in assignments)
-        {
-            assignment.SerialNumberCaptured = request.SerialNumber.Trim();
-            assignment.UpdatedAt = DateTime.UtcNow;
-        }
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Updated serial number for asset {AssetId} to {SerialNumber}",
-            assetId, request.SerialNumber);
-
-        return Ok(new { message = "Serienummer bijgewerkt", serialNumber = request.SerialNumber.Trim() });
-    }
-
-    // ========================================
-    // Helper Methods
-    // ========================================
-
     private static string EscapeCsv(string field)
     {
         if (string.IsNullOrEmpty(field))
@@ -1706,140 +1155,3 @@ public class ReportsController : ControllerBase
         return field;
     }
 }
-
-// ========================================
-// DTO Classes
-// ========================================
-
-public class HardwareReportItemDto
-{
-    public int Id { get; set; }
-    public string AssetCode { get; set; } = "";
-    public string Name { get; set; } = "";
-    public string AssetTypeName { get; set; } = "";
-    public string? CategoryName { get; set; }
-    public string? Brand { get; set; }
-    public string? Model { get; set; }
-    public string? SerialNumber { get; set; }
-    public string Status { get; set; } = "";
-    public string? OwnerName { get; set; }
-    public string? OwnerEmail { get; set; }
-    public string? ServiceName { get; set; }
-    public string? BuildingName { get; set; }
-    public string? Location { get; set; }
-    public string? IntuneDeviceId { get; set; }
-    public string? IntuneComplianceState { get; set; }
-    public DateTime? IntuneLastSync { get; set; }
-    public DateTime? PurchaseDate { get; set; }
-    public DateTime? InstallationDate { get; set; }
-    public DateTime? WarrantyExpiration { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-public class HardwareReportSummaryDto
-{
-    public int TotalAssets { get; set; }
-    public Dictionary<string, int> ByStatus { get; set; } = new();
-    public Dictionary<string, int> ByAssetType { get; set; } = new();
-    public Dictionary<string, int> ByService { get; set; } = new();
-}
-
-public class WorkplaceReportItemDto
-{
-    public int Id { get; set; }
-    public string Code { get; set; } = "";
-    public string Name { get; set; } = "";
-    public string? BuildingName { get; set; }
-    public string? Floor { get; set; }
-    public string? Room { get; set; }
-    public string? OccupantName { get; set; }
-    public string? OccupantEmail { get; set; }
-    public string? ServiceName { get; set; }
-    public bool IsOccupied { get; set; }
-    public int EquipmentCount { get; set; }
-    public List<WorkplaceEquipmentItemDto> Equipment { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-}
-
-public class WorkplaceEquipmentItemDto
-{
-    public int AssetId { get; set; }
-    public string AssetCode { get; set; } = "";
-    public string? AssetName { get; set; }
-    public string EquipmentType { get; set; } = "";
-    public string? Brand { get; set; }
-    public string? Model { get; set; }
-}
-
-public class WorkplaceReportSummaryDto
-{
-    public int TotalWorkplaces { get; set; }
-    public int OccupiedWorkplaces { get; set; }
-    public int AvailableWorkplaces { get; set; }
-    public int OccupancyRate { get; set; }
-    public Dictionary<string, BuildingOccupancyData> ByBuilding { get; set; } = new();
-}
-
-public class BuildingOccupancyData
-{
-    public int Total { get; set; }
-    public int Occupied { get; set; }
-}
-
-/// <summary>
-/// DTO for asset change history items - each record represents one asset status or owner change
-/// </summary>
-public class AssetChangeHistoryItemDto
-{
-    public int Id { get; set; }
-    public DateTime EventDate { get; set; }
-    public int AssetId { get; set; }
-    public string AssetCode { get; set; } = "";
-    public string? AssetName { get; set; }
-    public string? AssetTypeName { get; set; }
-    public string? SerialNumber { get; set; }
-    public string EventType { get; set; } = "";
-    public string EventTypeDisplay { get; set; } = "";
-    public string Description { get; set; } = "";
-    public string? OldValue { get; set; }
-    public string? NewValue { get; set; }
-    public string? CurrentOwner { get; set; }
-    public string? CurrentOwnerDisplayName { get; set; }
-    public string? CurrentStatus { get; set; }
-    public string? ServiceName { get; set; }
-    public string? BuildingName { get; set; }
-    public string? Location { get; set; }
-    public string? WorkplaceCode { get; set; }
-    public string? WorkplaceBuilding { get; set; }
-    public string? WorkplaceService { get; set; }
-    public string? WorkplaceRoom { get; set; }
-    public string? PerformedBy { get; set; }
-    public string? PerformedByEmail { get; set; }
-    public string? Notes { get; set; }
-}
-
-/// <summary>
-/// DTO for asset change history summary with asset-focused metrics
-/// </summary>
-public class AssetChangeHistorySummaryDto
-{
-    public int TotalChanges { get; set; }
-    public int StatusChanges { get; set; }
-    public int OwnerChanges { get; set; }
-    public int LocationChanges { get; set; }
-    public int UniqueAssetsChanged { get; set; }
-    public int ActiveAssets { get; set; }
-    public Dictionary<string, int> ByEventType { get; set; } = new();
-    public Dictionary<string, int> ByService { get; set; } = new();
-    public List<MonthlyCount> ByMonth { get; set; } = new();
-}
-
-public class MonthlyCount
-{
-    public string Month { get; set; } = "";
-    public int Count { get; set; }
-}
-
-// License DTOs are defined in DjoppieInventory.Core.DTOs.LicenseDtos
