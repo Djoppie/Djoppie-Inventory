@@ -49,24 +49,24 @@ import {
   useDeletePhysicalWorkplace,
   useClearOccupant,
   useWorkplaceStatistics,
-} from '../hooks/usePhysicalWorkplaces';
+} from '../../hooks/usePhysicalWorkplaces';
 import {
   PhysicalWorkplace,
   WorkplaceType,
   WorkplaceTypeLabels,
   PhysicalWorkplaceFilters,
-} from '../types/physicalWorkplace.types';
-import Loading from '../components/common/Loading';
-import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
-import { useServicesBySector } from '../hooks/useOrganization';
-import { buildingsApi } from '../api/admin.api';
-import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
-import BulkImportWorkplacesDialog from '../components/physicalWorkplaces/BulkImportWorkplacesDialog';
-import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
-import NeomorphConfirmDialog from '../components/physicalWorkplaces/NeomorphConfirmDialog';
-import EquipmentChip from '../components/physicalWorkplaces/EquipmentChip';
-import WorkplaceOccupantChip from '../components/physicalWorkplaces/WorkplaceOccupantChip';
-import AdminDataTable, { Column } from '../components/admin/AdminDataTable';
+} from '../../types/physicalWorkplace.types';
+import Loading from '../../components/common/Loading';
+import ApiErrorDisplay from '../../components/common/ApiErrorDisplay';
+import { useServicesBySector } from '../../hooks/useOrganization';
+import { buildingsApi } from '../../api/admin.api';
+import WorkplaceAssetsDialog from '../../components/workplaces/WorkplaceAssetsDialog';
+import BulkImportWorkplacesDialog from '../../components/workplaces/BulkImportWorkplacesDialog';
+import EditPhysicalWorkplaceDialog from '../../components/workplaces/EditPhysicalWorkplaceDialog';
+import NeomorphConfirmDialog from '../../components/workplaces/NeomorphConfirmDialog';
+import EquipmentChip from '../../components/workplaces/EquipmentChip';
+import WorkplaceOccupantChip from '../../components/workplaces/WorkplaceOccupantChip';
+import AdminDataTable, { Column } from '../../components/admin/AdminDataTable';
 import {
   WORKPLACE_COLOR,
   EMPLOYEE_COLOR,
@@ -74,8 +74,8 @@ import {
   SERVICE_COLOR,
   BUILDING_COLOR,
   SECTOR_COLOR,
-} from '../constants/filterColors';
-import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
+} from '../../constants/filterColors';
+import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
 
 // Workplace accent color (teal - aligned with sector-service-workplace hierarchy)
 const workplaceAccent = WORKPLACE_COLOR;

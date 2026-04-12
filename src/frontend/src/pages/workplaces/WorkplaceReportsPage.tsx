@@ -31,17 +31,17 @@ import {
   useWorkplaceStatistics,
   useWorkplaceStatisticsByBuilding,
   useWorkplaceStatisticsByService,
-} from '../hooks/usePhysicalWorkplaces';
-import { getNeumorph } from '../utils/neumorphicStyles';
+} from '../../hooks/usePhysicalWorkplaces';
+import { getNeumorph } from '../../utils/neumorphicStyles';
 import {
   getEnhancedStatCard,
   getEnhancedIconContainer,
   getEnhancedProgressBar,
   getEnhancedTypography,
-} from '../utils/designSystem';
-import { WORKPLACE_COLOR, BUILDING_COLOR, SERVICE_COLOR } from '../constants/filterColors';
-import Loading from '../components/common/Loading';
-import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
+} from '../../utils/designSystem';
+import { WORKPLACE_COLOR, BUILDING_COLOR, SERVICE_COLOR } from '../../constants/filterColors';
+import Loading from '../../components/common/Loading';
+import ApiErrorDisplay from '../../components/common/ApiErrorDisplay';
 
 // Report accent color
 const reportAccent = WORKPLACE_COLOR;

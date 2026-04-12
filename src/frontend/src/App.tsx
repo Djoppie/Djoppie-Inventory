@@ -27,9 +27,9 @@ const RolloutDayDetailPage = lazy(() => import('./pages/RolloutDayDetailPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
 const AssetsPage = lazy(() => import('./pages/inventory/AssetsPage'));
-const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
-const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
-const WorkplaceReportsPage = lazy(() => import('./pages/WorkplaceReportsPage'));
+const WorkplacesPage = lazy(() => import('./pages/workplaces/WorkplacesPage'));
+const WorkplaceDetailPage = lazy(() => import('./pages/workplaces/WorkplaceDetailPage'));
+const WorkplaceReportsPage = lazy(() => import('./pages/workplaces/WorkplaceReportsPage'));
 const RequestsDashboardPage = lazy(() => import('./pages/RequestsDashboardPage'));
 const RequestsReportsPage = lazy(() => import('./pages/RequestsReportsPage'));
 const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
@@ -81,7 +81,7 @@ function App() {
                   <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />
                   <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
                   <Route path={ROUTES.WORKPLACE_REPORTS} element={<WorkplaceReportsPage />} />
-                  <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
+                  <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<WorkplacesPage />} />
                   <Route path={ROUTES.REQUESTS} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_ONBOARDING} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<RequestsDashboardPage />} />

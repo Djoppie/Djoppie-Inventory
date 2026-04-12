@@ -53,24 +53,24 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 
 // Hooks
-import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant, useUpdateOccupant } from '../hooks/usePhysicalWorkplaces';
+import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant, useUpdateOccupant } from '../../hooks/usePhysicalWorkplaces';
 
 // Common components
-import UserAutocomplete from '../components/common/UserAutocomplete';
+import UserAutocomplete from '../../components/common/UserAutocomplete';
 
 // Types
-import { GraphUser } from '../types/graph.types';
+import { GraphUser } from '../../types/graph.types';
 
 // Dialogs
-import EditPhysicalWorkplaceDialog from '../components/physicalWorkplaces/EditPhysicalWorkplaceDialog';
-import WorkplaceAssetsDialog from '../components/physicalWorkplaces/WorkplaceAssetsDialog';
-import DeviceAssignmentDialog from '../components/physicalWorkplaces/DeviceAssignmentDialog';
+import EditPhysicalWorkplaceDialog from '../../components/workplaces/EditPhysicalWorkplaceDialog';
+import WorkplaceAssetsDialog from '../../components/workplaces/WorkplaceAssetsDialog';
+import DeviceAssignmentDialog from '../../components/workplaces/DeviceAssignmentDialog';
 
 // Neumorphic utilities
-import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../utils/neumorphicStyles';
+import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
 
 // Types
-import { WorkplaceType, WorkplaceTypeLabels, PhysicalWorkplace } from '../types/physicalWorkplace.types';
+import { WorkplaceType, WorkplaceTypeLabels, PhysicalWorkplace } from '../../types/physicalWorkplace.types';
 
 // Constants
 const WORKPLACE_COLOR = '#009688'; // Teal - consistent with workplaces
