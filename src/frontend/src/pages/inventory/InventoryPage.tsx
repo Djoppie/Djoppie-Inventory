@@ -1,31 +1,31 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Box, Typography, Paper, useTheme } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../utils/neumorphicStyles';
+import { getNeumorphColors, getNeumorph, getNeumorphInset } from '../../utils/neumorphicStyles';
 
 // Hooks
-import { useDashboardFilters, useDashboardAssets } from '../hooks/dashboard';
+import { useDashboardFilters, useDashboardAssets } from '../../hooks/dashboard';
 
 // Components
-import AssetList from '../components/assets/AssetList';
-import Loading from '../components/common/Loading';
-import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
-import CategorySwitcher from '../components/common/CategorySwitcher';
-import ExportDialog from '../components/export/ExportDialog';
-import BulkPrintLabelDialog from '../components/print/BulkPrintLabelDialog';
-import BulkEditDialog from '../components/assets/BulkEditDialog';
+import AssetList from '../../components/inventory/AssetList';
+import Loading from '../../components/common/Loading';
+import ApiErrorDisplay from '../../components/common/ApiErrorDisplay';
+import CategorySwitcher from '../../components/common/CategorySwitcher';
+import ExportDialog from '../../components/inventory/ExportDialog';
+import BulkPrintLabelDialog from '../../components/print/BulkPrintLabelDialog';
+import BulkEditDialog from '../../components/inventory/BulkEditDialog';
 import {
   DashboardHeader,
   DashboardToolbar,
   DashboardPopovers,
   BulkDeleteDialog,
-} from '../components/dashboard';
+} from '../../components/dashboard';
 
 // API
-import { bulkDeleteAssets } from '../api/assets.api';
+import { bulkDeleteAssets } from '../../api/assets.api';
 
 // Utils & Constants
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 
 const DashboardPage = () => {
   const { t } = useTranslation();

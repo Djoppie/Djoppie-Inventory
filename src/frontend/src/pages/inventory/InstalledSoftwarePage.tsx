@@ -19,9 +19,9 @@ import {
   alpha,
 } from '@mui/material';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import { useAsset } from '../hooks/useAssets';
-import Loading from '../components/common/Loading';
-import NeumorphicDataGrid from '../components/admin/NeumorphicDataGrid';
+import { useAsset } from '../../hooks/useAssets';
+import Loading from '../../components/common/Loading';
+import NeumorphicDataGrid from '../../components/admin/NeumorphicDataGrid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AppsIcon from '@mui/icons-material/Apps';
 import SearchIcon from '@mui/icons-material/Search';
@@ -47,10 +47,10 @@ import {
   SoftwareCategory,
   SoftwareFilters,
   DeviceHealth,
-} from '../types/software.types';
-import { softwareApi } from '../api/software.api';
-import { logger } from '../utils/logger';
-import { ASSET_COLOR } from '../constants/filterColors';
+} from '../../types/software.types';
+import { softwareApi } from '../../api/software.api';
+import { logger } from '../../utils/logger';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage and AssetDetailPage
 const scannerCardSx = {
@@ -547,7 +547,7 @@ const InstalledSoftwarePage = () => {
       {/* Back Button */}
       <Tooltip title="Back to Asset Details" arrow>
         <IconButton
-          onClick={() => navigate(`/assets/${id}`)}
+          onClick={() => navigate(`/inventory/assets/${id}`)}
           sx={{
             mb: 2,
             width: 36,

@@ -71,7 +71,7 @@ export const getAssetsByOwner = async (
   status = 'InGebruik'
 ): Promise<Asset[]> => {
   const response = await apiClient.get<Asset[]>(
-    `/assets/by-owner/${encodeURIComponent(ownerName)}`,
+    `/inventory/assets/by-owner/${encodeURIComponent(ownerName)}`,
     { params: { assetTypeCode, status } }
   );
   return response.data;
@@ -83,7 +83,7 @@ export const getAssetsByOwner = async (
 export const getAvailableLaptops = async (
   search?: string
 ): Promise<Asset[]> => {
-  const response = await apiClient.get<Asset[]>('/assets/available-laptops', {
+  const response = await apiClient.get<Asset[]>('/inventory/assets/available-laptops', {
     params: search ? { search } : {},
   });
   return response.data;

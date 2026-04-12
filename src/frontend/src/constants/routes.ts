@@ -8,25 +8,25 @@ export const ROUTES = {
   DASHBOARD: '/',
 
   /** QR code scanner page */
-  SCAN: '/scan',
+  SCAN: '/inventory/scan',
 
-  /** Device management hub page */
-  DEVICE_MANAGEMENT: '/devices',
+  /** Inventory assets list page */
+  INVENTORY_ASSETS: '/inventory/assets',
 
   /** Create new asset page */
-  ASSETS_NEW: '/devices/new',
+  ASSETS_NEW: '/inventory/assets/new',
 
   /** Bulk create assets page */
-  ASSETS_BULK_NEW: '/devices/bulk-create',
+  ASSETS_BULK_NEW: '/inventory/assets/bulk-create',
 
   /** Asset detail page (requires :id parameter) */
-  ASSET_DETAIL: '/assets/:id',
+  ASSET_DETAIL: '/inventory/assets/:id',
 
   /** Edit asset page (requires :id parameter) */
-  ASSET_EDIT: '/assets/:id/edit',
+  ASSET_EDIT: '/inventory/assets/:id/edit',
 
   /** Asset templates management page */
-  TEMPLATES: '/templates',
+  TEMPLATES: '/inventory/templates',
 
   /** Admin management page */
   ADMIN: '/admin',
@@ -41,10 +41,10 @@ export const ROUTES = {
   ADMIN_LOCATIONS: '/admin/locations',
 
   /** Installed software page (requires :id parameter) */
-  ASSET_SOFTWARE: '/assets/:id/software',
+  ASSET_SOFTWARE: '/inventory/assets/:id/software',
 
   /** Asset Intune management page (requires :id parameter) */
-  ASSET_INTUNE: '/assets/:id/intune',
+  ASSET_INTUNE: '/inventory/assets/:id/intune',
 
   /** Rollout list page */
   ROLLOUTS: '/rollouts',
@@ -116,28 +116,28 @@ export const buildRoute = {
    * @param id - The asset ID
    * @returns The full route path
    */
-  assetDetail: (id: number | string) => `/assets/${id}`,
+  assetDetail: (id: number | string) => `/inventory/assets/${id}`,
 
   /**
    * Builds the asset edit route with the specified asset ID.
    * @param id - The asset ID
    * @returns The full route path
    */
-  assetEdit: (id: number | string) => `/assets/${id}/edit`,
+  assetEdit: (id: number | string) => `/inventory/assets/${id}/edit`,
 
   /**
    * Builds the installed software route with the specified asset ID.
    * @param id - The asset ID
    * @returns The full route path
    */
-  assetSoftware: (id: number | string) => `/assets/${id}/software`,
+  assetSoftware: (id: number | string) => `/inventory/assets/${id}/software`,
 
   /**
    * Builds the Intune management route with the specified asset ID.
    * @param id - The asset ID
    * @returns The full route path
    */
-  assetIntune: (id: number | string) => `/assets/${id}/intune`,
+  assetIntune: (id: number | string) => `/inventory/assets/${id}/intune`,
 
   /**
    * Builds the rollout edit route with the specified rollout ID.

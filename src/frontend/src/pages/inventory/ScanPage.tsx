@@ -11,12 +11,12 @@ import {
 } from '@mui/material';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
-import QRScanner from '../components/scanner/QRScanner';
-import ManualEntry from '../components/scanner/ManualEntry';
-import ErrorBoundary from '../components/common/ErrorBoundary';
-import { getAssetByCode } from '../api/assets.api';
-import { logger } from '../utils/logger';
-import { validateAssetCode, normalizeAssetCode } from '../utils/validation';
+import QRScanner from '../../components/scanner/QRScanner';
+import ManualEntry from '../../components/scanner/ManualEntry';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { getAssetByCode } from '../../api/assets.api';
+import { logger } from '../../utils/logger';
+import { validateAssetCode, normalizeAssetCode } from '../../utils/validation';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -75,7 +75,7 @@ const ScanPage = () => {
       if (asset) {
         logger.info('[ScanPage] Asset found, navigating to detail page:', asset.id);
         // Navigate to asset detail page
-        navigate(`/assets/${asset.id}`);
+        navigate(`/inventory/assets/${asset.id}`);
       } else {
         logger.warn('[ScanPage] No data returned for asset code:', normalizedCode);
         setErrorMessage(`Asset "${normalizedCode}" not found in the system. Please verify the code and try again.`);
@@ -118,7 +118,7 @@ const ScanPage = () => {
       const asset = await getAssetByCode(normalizedCode);
 
       if (asset) {
-        navigate(`/assets/${asset.id}`);
+        navigate(`/inventory/assets/${asset.id}`);
       } else {
         setErrorMessage(`Asset "${normalizedCode}" not found in the system`);
       }

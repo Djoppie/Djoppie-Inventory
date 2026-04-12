@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Alert, Snackbar, Card, CardContent, Button, Stack, IconButton, Tooltip } from '@mui/material';
 import { useState } from 'react';
@@ -6,10 +6,10 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import AssetForm from '../components/assets/AssetForm';
-import { useCreateAsset } from '../hooks/useAssets';
-import { CreateAssetDto, UpdateAssetDto } from '../types/asset.types';
-import { ROUTES } from '../constants/routes';
+import AssetForm from '../../components/inventory/AssetForm';
+import { useCreateAsset } from '../../hooks/useAssets';
+import { CreateAssetDto, UpdateAssetDto } from '../../types/asset.types';
+import { ROUTES } from '../../constants/routes';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {

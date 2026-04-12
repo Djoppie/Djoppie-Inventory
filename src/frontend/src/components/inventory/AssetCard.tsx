@@ -113,7 +113,7 @@ const AssetCard = React.memo(function AssetCard({ asset, selectable = false, sel
       }}
     >
       <CardActionArea
-        onClick={() => navigate(`/assets/${asset.id}`)}
+        onClick={() => navigate(`/inventory/assets/${asset.id}`)}
         sx={{ height: '100%' }}
       >
         <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -166,7 +166,7 @@ const AssetCard = React.memo(function AssetCard({ asset, selectable = false, sel
                 <Box
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/assets/${asset.id}/software`);
+                    navigate(`/inventory/assets/${asset.id}/software`);
                   }}
                   sx={{
                     display: 'flex',

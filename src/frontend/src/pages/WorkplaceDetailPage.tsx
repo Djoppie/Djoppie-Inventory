@@ -720,7 +720,7 @@ const WorkplaceDetailPage = () => {
                       {workplace.occupantDeviceAssetCode ? (
                         <Typography
                           component={Link}
-                          to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
+                          to={`/inventory/assets?search=${workplace.occupantDeviceAssetCode}`}
                           sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {workplace.occupantDeviceAssetCode}
@@ -728,7 +728,7 @@ const WorkplaceDetailPage = () => {
                       ) : sharedDevice ? (
                         <Typography
                           component={Link}
-                          to={`/assets/${sharedDevice.id}`}
+                          to={`/inventory/assets/${sharedDevice.id}`}
                           sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {sharedDevice.assetCode}
@@ -760,7 +760,7 @@ const WorkplaceDetailPage = () => {
                       {workplace.dockingStationAssetId ? (
                         <Typography
                           component={Link}
-                          to={`/assets/${workplace.dockingStationAssetId}`}
+                          to={`/inventory/assets/${workplace.dockingStationAssetId}`}
                           sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {workplace.dockingStationAssetCode}
@@ -792,7 +792,7 @@ const WorkplaceDetailPage = () => {
                       {workplace.monitor1AssetId ? (
                         <Typography
                           component={Link}
-                          to={`/assets/${workplace.monitor1AssetId}`}
+                          to={`/inventory/assets/${workplace.monitor1AssetId}`}
                           sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {workplace.monitor1AssetCode}
@@ -824,7 +824,7 @@ const WorkplaceDetailPage = () => {
                       {workplace.monitor2AssetId ? (
                         <Typography
                           component={Link}
-                          to={`/assets/${workplace.monitor2AssetId}`}
+                          to={`/inventory/assets/${workplace.monitor2AssetId}`}
                           sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {workplace.monitor2AssetCode}
@@ -856,7 +856,7 @@ const WorkplaceDetailPage = () => {
                       {workplace.monitor3AssetId ? (
                         <Typography
                           component={Link}
-                          to={`/assets/${workplace.monitor3AssetId}`}
+                          to={`/inventory/assets/${workplace.monitor3AssetId}`}
                           sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {workplace.monitor3AssetCode}
@@ -887,7 +887,7 @@ const WorkplaceDetailPage = () => {
                     {workplace.keyboardAssetId ? (
                       <Typography
                         component={Link}
-                        to={`/assets/${workplace.keyboardAssetId}`}
+                        to={`/inventory/assets/${workplace.keyboardAssetId}`}
                         sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                       >
                         {workplace.keyboardAssetCode}
@@ -917,7 +917,7 @@ const WorkplaceDetailPage = () => {
                     {workplace.mouseAssetId ? (
                       <Typography
                         component={Link}
-                        to={`/assets/${workplace.mouseAssetId}`}
+                        to={`/inventory/assets/${workplace.mouseAssetId}`}
                         sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                       >
                         {workplace.mouseAssetCode}
@@ -960,7 +960,7 @@ const WorkplaceDetailPage = () => {
                       {workplace.occupantDeviceAssetCode ? (
                         <Typography
                           component={Link}
-                          to={`/assets?search=${workplace.occupantDeviceAssetCode}`}
+                          to={`/inventory/assets?search=${workplace.occupantDeviceAssetCode}`}
                           sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {workplace.occupantDeviceAssetCode}
@@ -968,7 +968,7 @@ const WorkplaceDetailPage = () => {
                       ) : sharedDevice ? (
                         <Typography
                           component={Link}
-                          to={`/assets/${sharedDevice.id}`}
+                          to={`/inventory/assets/${sharedDevice.id}`}
                           sx={{ fontFamily: 'monospace', color: OCCUPANT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                         >
                           {sharedDevice.assetCode}
@@ -993,7 +993,7 @@ const WorkplaceDetailPage = () => {
                     <TableCell>
                       <Typography
                         component={Link}
-                        to={`/assets/${asset.id}`}
+                        to={`/inventory/assets/${asset.id}`}
                         sx={{ fontFamily: 'monospace', color: EQUIPMENT_COLOR, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                       >
                         {asset.assetCode}

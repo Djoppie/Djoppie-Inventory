@@ -16,15 +16,15 @@ import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import CategoryIcon from '@mui/icons-material/Category';
 import BusinessIcon from '@mui/icons-material/Business';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import { ROUTES } from '../constants/routes';
-import { WORKPLACE_COLOR } from '../constants/filterColors';
-import { useAssets } from '../hooks/useAssets';
+import { ROUTES } from '../../constants/routes';
+import { WORKPLACE_COLOR } from '../../constants/filterColors';
+import { useAssets } from '../../hooks/useAssets';
 import {
   WorkplaceOccupancyWidget,
   EquipmentStatusWidget,
   RecentWorkplaceChangesWidget,
   TodaysRolloutWidget,
-} from '../components/dashboard';
+} from '../../components/dashboard';
 
 interface NavigationCardProps {
   title: string;

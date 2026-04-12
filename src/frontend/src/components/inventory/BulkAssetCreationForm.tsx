@@ -48,7 +48,7 @@ import { BulkCreateAssetDto, AssetTemplate } from '../../types/asset.types';
 import UserAutocomplete from '../common/UserAutocomplete';
 import AssetTypeSelect from '../common/AssetTypeSelect';
 import ServiceSelect from '../common/ServiceSelect';
-import CsvImportDialog from '../import/CsvImportDialog';
+import CsvImportDialog from './CsvImportDialog';
 import { csvImportApi } from '../../api/csvImport.api';
 
 type BulkMode = 'template' | 'csv';

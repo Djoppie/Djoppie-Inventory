@@ -36,16 +36,16 @@ import {
   useCreateAssetTemplate,
   useUpdateAssetTemplate,
   useDeleteAssetTemplate,
-} from '../hooks/useAssetTemplates';
+} from '../../hooks/useAssetTemplates';
 import {
   AssetTemplate,
   CreateAssetTemplateDto,
-} from '../types/asset.types';
-import Loading from '../components/common/Loading';
-import ApiErrorDisplay from '../components/common/ApiErrorDisplay';
-import AssetTypeSelect from '../components/common/AssetTypeSelect';
-import ServiceSelect from '../components/common/ServiceSelect';
-import NeumorphicDataGrid from '../components/admin/NeumorphicDataGrid';
+} from '../../types/asset.types';
+import Loading from '../../components/common/Loading';
+import ApiErrorDisplay from '../../components/common/ApiErrorDisplay';
+import AssetTypeSelect from '../../components/common/AssetTypeSelect';
+import ServiceSelect from '../../components/common/ServiceSelect';
+import NeumorphicDataGrid from '../../components/admin/NeumorphicDataGrid';
 import CategoryIcon from '@mui/icons-material/Category';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -55,7 +55,7 @@ import QrCodeIcon from '@mui/icons-material/QrCode';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import BusinessIcon from '@mui/icons-material/Business';
-import { ASSET_COLOR } from '../constants/filterColors';
+import { ASSET_COLOR } from '../../constants/filterColors';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {

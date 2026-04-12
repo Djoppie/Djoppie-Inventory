@@ -8,17 +8,17 @@ import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
 const DashboardOverviewPage = lazy(() => import('./pages/DashboardOverviewPage'));
-const ScanPage = lazy(() => import('./pages/ScanPage'));
-const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage'));
-const AddAssetPage = lazy(() => import('./pages/AddAssetPage'));
-const EditAssetPage = lazy(() => import('./pages/EditAssetPage'));
-const BulkCreateAssetPage = lazy(() => import('./pages/BulkCreateAssetPage'));
-const AssetTemplatesPage = lazy(() => import('./pages/AssetTemplatesPage'));
+const ScanPage = lazy(() => import('./pages/inventory/ScanPage'));
+const AssetDetailPage = lazy(() => import('./pages/inventory/AssetDetailPage'));
+const AddAssetPage = lazy(() => import('./pages/inventory/AddAssetPage'));
+const EditAssetPage = lazy(() => import('./pages/inventory/EditAssetPage'));
+const BulkCreateAssetPage = lazy(() => import('./pages/inventory/BulkCreateAssetPage'));
+const AssetTemplatesPage = lazy(() => import('./pages/inventory/AssetTemplatesPage'));
 const AdminAssetsPage = lazy(() => import('./pages/AdminAssetsPage'));
 const AdminOrganisationPage = lazy(() => import('./pages/AdminOrganisationPage'));
 const AdminLocationsPage = lazy(() => import('./pages/AdminLocationsPage'));
-const InstalledSoftwarePage = lazy(() => import('./pages/InstalledSoftwarePage'));
-const AssetIntunePage = lazy(() => import('./pages/AssetIntunePage'));
+const InstalledSoftwarePage = lazy(() => import('./pages/inventory/InstalledSoftwarePage'));
+const AssetIntunePage = lazy(() => import('./pages/inventory/AssetIntunePage'));
 const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
 const RolloutPlannerPage = lazy(() => import('./pages/RolloutPlannerPage'));
 const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
@@ -26,7 +26,7 @@ const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
 const RolloutDayDetailPage = lazy(() => import('./pages/RolloutDayDetailPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
-const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
+const AssetsPage = lazy(() => import('./pages/inventory/AssetsPage'));
 const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
 const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
 const WorkplaceReportsPage = lazy(() => import('./pages/WorkplaceReportsPage'));
@@ -58,7 +58,7 @@ function App() {
                 <Routes>
                   <Route path={ROUTES.DASHBOARD} element={<DashboardOverviewPage />} />
                   <Route path={ROUTES.SCAN} element={<ScanPage />} />
-                  <Route path={ROUTES.DEVICE_MANAGEMENT} element={<DeviceManagementPage />} />
+                  <Route path={ROUTES.INVENTORY_ASSETS} element={<AssetsPage />} />
                   <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />
                   <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
                   <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />

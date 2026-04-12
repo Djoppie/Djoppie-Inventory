@@ -7,7 +7,7 @@ import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAs
  */
 export const getAssets = async (statusFilter?: string): Promise<Asset[]> => {
   const params = statusFilter ? { status: statusFilter } : {};
-  const response = await apiClient.get<Asset[]>('/assets/all', { params });
+  const response = await apiClient.get<Asset[]>('/inventory/assets/all', { params });
   return response.data;
 };
 
@@ -33,17 +33,17 @@ export const getAssetsPaged = async (
     params.pageSize = pagination.pageSize;
   }
 
-  const response = await apiClient.get<PagedResult<Asset>>('/assets', { params });
+  const response = await apiClient.get<PagedResult<Asset>>('/inventory/assets', { params });
   return response.data;
 };
 
 export const getAssetById = async (id: number): Promise<Asset> => {
-  const response = await apiClient.get<Asset>(`/assets/${id}`);
+  const response = await apiClient.get<Asset>(`/inventory/assets/${id}`);
   return response.data;
 };
 
 export const getAssetByCode = async (code: string): Promise<Asset> => {
-  const response = await apiClient.get<Asset>(`/assets/by-code/${code}`);
+  const response = await apiClient.get<Asset>(`/inventory/assets/by-code/${code}`);
   return response.data;
 };
 
@@ -55,7 +55,7 @@ export const createAsset = async (data: CreateAssetDto): Promise<Asset> => {
     warrantyExpiry: data.warrantyExpiry || undefined,
     installationDate: data.installationDate || undefined,
   };
-  const response = await apiClient.post<Asset>('/assets', cleanedData);
+  const response = await apiClient.post<Asset>('/inventory/assets', cleanedData);
   return response.data;
 };
 
@@ -67,12 +67,12 @@ export const updateAsset = async (id: number, data: UpdateAssetDto): Promise<Ass
     warrantyExpiry: data.warrantyExpiry || undefined,
     installationDate: data.installationDate || undefined,
   };
-  const response = await apiClient.put<Asset>(`/assets/${id}`, cleanedData);
+  const response = await apiClient.put<Asset>(`/inventory/assets/${id}`, cleanedData);
   return response.data;
 };
 
 export const deleteAsset = async (id: number): Promise<void> => {
-  await apiClient.delete(`/assets/${id}`);
+  await apiClient.delete(`/inventory/assets/${id}`);
 };
 
 export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCreateAssetResultDto> => {
@@ -95,12 +95,12 @@ export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCr
     model: data.model || undefined,
   };
 
-  const response = await apiClient.post<BulkCreateAssetResultDto>('/assets/bulk', cleanedData);
+  const response = await apiClient.post<BulkCreateAssetResultDto>('/inventory/assets/bulk', cleanedData);
   return response.data;
 };
 
 export const assetCodeExists = async (code: string): Promise<boolean> => {
-  const response = await apiClient.get<boolean>('/assets/code-exists', { params: { code } });
+  const response = await apiClient.get<boolean>('/inventory/assets/code-exists', { params: { code } });
   return response.data;
 };
 
@@ -109,12 +109,12 @@ export const serialNumberExists = async (serialNumber: string, excludeAssetId?: 
   if (excludeAssetId !== undefined) {
     params.excludeAssetId = excludeAssetId;
   }
-  const response = await apiClient.get<boolean>('/assets/serial-exists', { params });
+  const response = await apiClient.get<boolean>('/inventory/assets/serial-exists', { params });
   return response.data;
 };
 
 export const getAssetBySerialNumber = async (serialNumber: string): Promise<Asset> => {
-  const response = await apiClient.get<Asset>(`/assets/by-serial/${serialNumber}`);
+  const response = await apiClient.get<Asset>(`/inventory/assets/by-serial/${serialNumber}`);
   return response.data;
 };
 
@@ -132,12 +132,12 @@ export const bulkUpdateAssets = async (data: BulkUpdateAssetsDto): Promise<BulkU
     serviceId: data.updateServiceId ? data.serviceId : undefined,
   };
 
-  const response = await apiClient.put<BulkUpdateAssetsResultDto>('/assets/bulk', cleanedData);
+  const response = await apiClient.put<BulkUpdateAssetsResultDto>('/inventory/assets/bulk', cleanedData);
   return response.data;
 };
 
 export const bulkDeleteAssets = async (data: BulkDeleteAssetsDto): Promise<BulkDeleteAssetsResultDto> => {
-  const response = await apiClient.delete<BulkDeleteAssetsResultDto>('/assets/bulk', { data });
+  const response = await apiClient.delete<BulkDeleteAssetsResultDto>('/inventory/assets/bulk', { data });
   return response.data;
 };
 
@@ -147,6 +147,6 @@ export const bulkDeleteAssets = async (data: BulkDeleteAssetsDto): Promise<BulkD
  * @returns List of assets owned by the user
  */
 export const getAssetsByOwner = async (email: string): Promise<Asset[]> => {
-  const response = await apiClient.get<Asset[]>(`/assets/by-owner/${encodeURIComponent(email)}`);
+  const response = await apiClient.get<Asset[]>(`/inventory/assets/by-owner/${encodeURIComponent(email)}`);
   return response.data;
 };

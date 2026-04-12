@@ -105,27 +105,27 @@ const navigationItems: NavItem[] = [
   {
     label: 'Inventory',
     icon: <InventoryIcon />,
-    path: ROUTES.DASHBOARD,
-    matchPaths: ['/devices', '/assets'],
+    path: ROUTES.INVENTORY_ASSETS,
+    matchPaths: ['/inventory/assets', '/inventory/scan', '/inventory/templates'],
     highlighted: true,
     subItems: [
       {
         label: 'Create Asset',
         icon: <AddBoxIcon />,
         path: ROUTES.ASSETS_NEW,
-        matchPaths: ['/devices/new'],
+        matchPaths: ['/inventory/assets/new'],
       },
       {
         label: 'Bulk Create Asset',
         icon: <PlaylistAddIcon />,
         path: ROUTES.ASSETS_BULK_NEW,
-        matchPaths: ['/devices/bulk-create'],
+        matchPaths: ['/inventory/assets/bulk-create'],
       },
       {
         label: 'Templates',
         icon: <StyleIcon />,
         path: ROUTES.TEMPLATES,
-        matchPaths: ['/templates'],
+        matchPaths: ['/inventory/templates'],
       },
       {
         label: 'Reports',

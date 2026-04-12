@@ -1,13 +1,13 @@
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Alert, Snackbar, Card, CardContent, Stack, IconButton, Tooltip } from '@mui/material';
 import { useState } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import AssetForm from '../components/assets/AssetForm';
-import { useAsset, useUpdateAsset } from '../hooks/useAssets';
-import { CreateAssetDto, UpdateAssetDto } from '../types/asset.types';
-import Loading from '../components/common/Loading';
+import AssetForm from '../../components/inventory/AssetForm';
+import { useAsset, useUpdateAsset } from '../../hooks/useAssets';
+import { CreateAssetDto, UpdateAssetDto } from '../../types/asset.types';
+import Loading from '../../components/common/Loading';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -54,14 +54,14 @@ const EditAssetPage = () => {
       await updateAsset.mutateAsync({ id: Number(id), data: data as UpdateAssetDto });
       setSuccessMessage('Asset updated successfully!');
       // Redirect to detail page after short delay
-      setTimeout(() => navigate(`/assets/${id}`), 1500);
+      setTimeout(() => navigate(`/inventory/assets/${id}`), 1500);
     } catch (error) {
       logger.error('Error updating asset:', error);
     }
   };
 
   const handleCancel = () => {
-    navigate(`/assets/${id}`);
+    navigate(`/inventory/assets/${id}`);
   };
 
   if (isLoading) return <Loading />;
@@ -88,7 +88,7 @@ const EditAssetPage = () => {
       {/* Back Button - Outside card */}
       <Tooltip title="Back to Asset Details">
         <IconButton
-          onClick={() => navigate(`/assets/${id}`)}
+          onClick={() => navigate(`/inventory/assets/${id}`)}
           sx={{
             ...iconButtonSx,
             mb: 2,

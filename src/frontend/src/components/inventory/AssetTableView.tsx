@@ -172,7 +172,7 @@ const AssetTableView = ({
   };
 
   const handleRowClick = (assetId: number) => {
-    navigate(`/assets/${assetId}`);
+    navigate(`/inventory/assets/${assetId}`);
   };
 
   if (assets.length === 0) {
@@ -935,7 +935,7 @@ const AssetTableView = ({
                           size="small"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/assets/${asset.id}/software`);
+                            navigate(`/inventory/assets/${asset.id}/software`);
                           }}
                           sx={{
                             width: { xs: 26, sm: 28 },
@@ -965,7 +965,7 @@ const AssetTableView = ({
                           size="small"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/assets/${asset.id}/intune`);
+                            navigate(`/inventory/assets/${asset.id}/intune`);
                           }}
                           sx={{
                             width: { xs: 26, sm: 28 },

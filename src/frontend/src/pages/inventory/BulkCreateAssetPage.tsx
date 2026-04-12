@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,9 +30,9 @@ import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
-import BulkAssetCreationForm from '../components/assets/BulkAssetCreationForm';
-import { useBulkCreateAssets } from '../hooks/useAssets';
-import { BulkCreateAssetDto, BulkCreateAssetResultDto } from '../types/asset.types';
+import BulkAssetCreationForm from '../../components/inventory/BulkAssetCreationForm';
+import { useBulkCreateAssets } from '../../hooks/useAssets';
+import { BulkCreateAssetDto, BulkCreateAssetResultDto } from '../../types/asset.types';
 
 // Scanner-style card wrapper - consistent with ScanPage
 const scannerCardSx = {
@@ -160,7 +160,7 @@ const BulkCreateAssetPage = () => {
       {/* Back Button - Outside card */}
       <Tooltip title="Back to Add Asset">
         <IconButton
-          onClick={() => navigate('/assets/new')}
+          onClick={() => navigate('/inventory/assets/new')}
           sx={{
             ...iconButtonSx,
             mb: 2,

@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger';
+import { logger } from '../../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import {
@@ -32,15 +32,15 @@ import { QRCodeSVG } from 'qrcode.react';
 import PrintIcon from '@mui/icons-material/Print';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
-import { useAsset, useDeleteAsset } from '../hooks/useAssets';
-import Loading from '../components/common/Loading';
-import StatusBadge from '../components/common/StatusBadge';
-import PrintLabelDialog from '../components/print/PrintLabelDialog';
-import AssetEventHistory from '../components/assets/AssetEventHistory';
+import { useAsset, useDeleteAsset } from '../../hooks/useAssets';
+import Loading from '../../components/common/Loading';
+import StatusBadge from '../../components/common/StatusBadge';
+import PrintLabelDialog from '../../components/print/PrintLabelDialog';
+import AssetEventHistory from '../../components/inventory/AssetEventHistory';
 import DevicesIcon from '@mui/icons-material/Devices';
 import PlaceIcon from '@mui/icons-material/Place';
 import BusinessIcon from '@mui/icons-material/Business';
-import { buildRoute } from '../constants/routes';
+import { buildRoute } from '../../constants/routes';
 
 // Helper: check if an asset code has a number >= 9000 (dummy/test asset)
 const isDummyAsset = (assetCode: string): boolean => {
@@ -144,7 +144,7 @@ const AssetDetailPage = () => {
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
   const handleEdit = () => {
-    navigate(`/assets/${id}/edit`);
+    navigate(`/inventory/assets/${id}/edit`);
   };
 
   const handleDelete = async () => {
