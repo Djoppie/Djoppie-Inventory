@@ -22,15 +22,6 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-  <!-- TODO: Update these test files to use current entity schema (AssignmentCategory, AssetSourceType, RolloutDay.Date, etc.) -->
-  <ItemGroup>
-    <Compile Remove="Fixtures\RolloutTestFixture.cs" />
-    <Compile Remove="Fixtures\RolloutTestFixtureTests.cs" />
-    <Compile Remove="Integration\RolloutWorkplacesControllerTests.cs" />
-    <Compile Remove="Services\AssetMovementServiceTests.cs" />
-    <Compile Remove="Services\RolloutEdgeCaseTests.cs" />
-    <Compile Remove="Services\WorkplaceAssetAssignmentServiceTests.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DjoppieInventory.API\DjoppieInventory.API.csproj" />

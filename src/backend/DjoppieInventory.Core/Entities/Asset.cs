@@ -210,10 +210,6 @@ public class Asset
     /// </summary>
     public ICollection<AssetEvent> Events { get; set; } = new List<AssetEvent>();
 
-    /// <summary>
-    /// Lease contracts associated with this asset
-    /// </summary>
-    public ICollection<LeaseContract> LeaseContracts { get; set; } = new List<LeaseContract>();
 
     /// <summary>
     /// The current workplace assignment for this asset (optional)

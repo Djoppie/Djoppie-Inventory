@@ -1,0 +1,197 @@
+<h2>Design: Fase 1-4 - Feature Herorganisatie</h2>
+<p class="subtitle">Backend controllers, services, frontend pages, API routes per feature</p>
+
+<!-- FASE 1: INVENTORY -->
+<div class="section" style="border-left:3px solid #81c784; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#81c784">Fase 1: Inventory</h3>
+  <p style="color:#aaa">Assets, templates, QR codes, CSV import/export, asset events</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Inventory/<br>
+        &nbsp;&nbsp;AssetsController.cs<br>
+        &nbsp;&nbsp;AssetTemplatesController.cs<br>
+        &nbsp;&nbsp;AssetEventsController.cs<br>
+        &nbsp;&nbsp;CsvImportController.cs<br>
+        &nbsp;&nbsp;QRCodeController.cs
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/inventory/assets</code><br>
+        <code>/api/inventory/templates</code><br>
+        <code>/api/inventory/events</code><br>
+        <code>/api/inventory/import</code><br>
+        <code>/api/inventory/qrcode</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/inventory/<br>
+        &nbsp;&nbsp;AssetsPage.tsx<br>
+        &nbsp;&nbsp;AssetDetailPage.tsx<br>
+        &nbsp;&nbsp;AssetCreatePage.tsx<br>
+        &nbsp;&nbsp;AssetTemplatesPage.tsx<br>
+        <br>
+        components/inventory/<br>
+        &nbsp;&nbsp;AssetForm.tsx<br>
+        &nbsp;&nbsp;AssetTableView.tsx<br>
+        &nbsp;&nbsp;CsvImportDialog.tsx<br>
+        &nbsp;&nbsp;ExportDialog.tsx<br>
+        &nbsp;&nbsp;...
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Routes:</strong> <code>/inventory/assets</code>, <code>/inventory/templates</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FASE 2: WORKPLACES -->
+<div class="section" style="border-left:3px solid #ffb74d; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#ffb74d">Fase 2: Workplaces</h3>
+  <p style="color:#aaa">Physical workplaces beheer + monolith splitsen (1816 regels &rarr; meerdere controllers)</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend - Monolith Split</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Workplaces/<br>
+        &nbsp;&nbsp;WorkplacesController.cs <span style="color:#aaa">(CRUD)</span><br>
+        &nbsp;&nbsp;WorkplaceSearchController.cs <span style="color:#aaa">(zoek/filter)</span><br>
+        &nbsp;&nbsp;WorkplaceAssetsController.cs <span style="color:#aaa">(equipment)</span>
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/workplaces</code><br>
+        <code>/api/workplaces/search</code><br>
+        <code>/api/workplaces/{id}/assets</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend - Page Split</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/workplaces/<br>
+        &nbsp;&nbsp;WorkplacesPage.tsx <span style="color:#aaa">(lijst)</span><br>
+        &nbsp;&nbsp;WorkplaceDetailPage.tsx<br>
+        <br>
+        components/workplaces/<br>
+        &nbsp;&nbsp;WorkplaceForm.tsx<br>
+        &nbsp;&nbsp;WorkplaceAssetList.tsx<br>
+        &nbsp;&nbsp;...
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Routes:</strong> <code>/workplaces</code>, <code>/workplaces/:id</code>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:8px; padding:8px 12px; border-radius:6px; background:rgba(255,183,77,0.1); font-size:13px; color:#ffb74d">
+    PhysicalWorkplaceService.cs (21.7K) wordt ook opgesplitst in lijn met de controller-split
+  </div>
+</div>
+
+<!-- FASE 3: OPERATIONS -->
+<div class="section" style="border-left:3px solid #e57373; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#e57373">Fase 3: Operations</h3>
+  <p style="color:#aaa">Rollouts (bestaande 5 controllers blijven), requests (on/offboarding), laptop swaps</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Operations/<br>
+        &nbsp;&nbsp;Rollout/ <span style="color:#aaa">(5 bestaande controllers)</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutSessionsController.cs<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutDaysController.cs<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutWorkplacesController.cs<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutGraphController.cs<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutReportsController.cs<br>
+        &nbsp;&nbsp;RequestsController.cs<br>
+        &nbsp;&nbsp;DeploymentController.cs<br>
+        &nbsp;&nbsp;LaptopSwapController.cs
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/operations/rollouts/...</code><br>
+        <code>/api/operations/requests</code><br>
+        <code>/api/operations/deployments</code><br>
+        <code>/api/operations/swaps</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/operations/<br>
+        &nbsp;&nbsp;rollouts/<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutListPage.tsx<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutPlannerPage.tsx<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RolloutExecutionPage.tsx <span style="color:#e57373">(split!)</span><br>
+        &nbsp;&nbsp;requests/<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;RequestsDashboardPage.tsx<br>
+        &nbsp;&nbsp;swaps/<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;LaptopSwapPage.tsx
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Routes:</strong> <code>/operations/rollouts/...</code>, <code>/operations/requests</code>, <code>/operations/swaps</code>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:8px; padding:8px 12px; border-radius:6px; background:rgba(229,115,115,0.1); font-size:13px; color:#e57373">
+    RolloutExecutionPage.tsx (1727 regels) wordt opgesplitst in subcomponenten
+  </div>
+</div>
+
+<!-- FASE 4: DEVICES -->
+<div class="section" style="border-left:3px solid #ba68c8; padding-left:16px; margin-bottom:32px">
+  <h3 style="color:#ba68c8">Fase 4: Devices</h3>
+  <p style="color:#aaa">Intune device management + monolith splitsen (IntuneController 979 regels, IntuneService 2054 regels), licenses, installed software</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px">
+    <div>
+      <h4>Backend - Monolith Split</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        Controllers/Devices/<br>
+        &nbsp;&nbsp;IntuneDevicesController.cs <span style="color:#aaa">(CRUD/lookup)</span><br>
+        &nbsp;&nbsp;IntuneSyncController.cs <span style="color:#aaa">(sync ops)</span><br>
+        &nbsp;&nbsp;IntuneHealthController.cs <span style="color:#aaa">(health/config)</span><br>
+        &nbsp;&nbsp;LicensesController.cs<br>
+        <br>
+        Services/<br>
+        &nbsp;&nbsp;IntuneDeviceService.cs <span style="color:#aaa">(device ops)</span><br>
+        &nbsp;&nbsp;IntuneSyncService.cs <span style="color:#aaa">(sync logic)</span><br>
+        &nbsp;&nbsp;IntuneHealthService.cs <span style="color:#aaa">(health queries)</span><br>
+        &nbsp;&nbsp;LicenseService.cs
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>API Routes:</strong><br>
+        <code>/api/devices/intune</code><br>
+        <code>/api/devices/intune/sync</code><br>
+        <code>/api/devices/intune/health</code><br>
+        <code>/api/devices/licenses</code>
+      </div>
+    </div>
+    <div>
+      <h4>Frontend</h4>
+      <div style="font-size:13px; color:#ccc; font-family:monospace; line-height:2">
+        pages/devices/<br>
+        &nbsp;&nbsp;DevicesDashboardPage.tsx<br>
+        &nbsp;&nbsp;DeviceDetailPage.tsx<br>
+        &nbsp;&nbsp;IntuneDashboardPage.tsx<br>
+        &nbsp;&nbsp;LicensesPage.tsx<br>
+        &nbsp;&nbsp;InstalledSoftwarePage.tsx<br>
+        &nbsp;&nbsp;AutopilotPage.tsx<br>
+        <br>
+        components/devices/<br>
+        &nbsp;&nbsp;(Intune tabs opgesplitst)
+      </div>
+      <div style="font-size:13px; color:#aaa; margin-top:8px">
+        <strong>Routes:</strong> <code>/devices</code>, <code>/devices/intune</code>, <code>/devices/licenses</code>, <code>/devices/software</code>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:8px; padding:8px 12px; border-radius:6px; background:rgba(186,104,200,0.1); font-size:13px; color:#ba68c8">
+    IntuneService.cs (2054 regels) is de grootste monolith - wordt opgesplitst in 3 focused services
+  </div>
+</div>

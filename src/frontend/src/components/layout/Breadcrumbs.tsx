@@ -14,7 +14,7 @@ import { ROUTES } from '../../constants/routes';
 // Route segment to label mapping
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',
-  'devices': 'Assets',
+  'inventory': 'Inventory',
   'assets': 'Assets',
   'new': 'Nieuw',
   'edit': 'Bewerken',
@@ -24,13 +24,14 @@ const routeLabels: Record<string, string> = {
   'admin': 'Beheer',
   'organisation': 'Organisatie',
   'locations': 'Locaties',
+  'operations': 'Operaties',
   'rollouts': 'Rollout Sessies',
   'execute': 'Uitvoering',
   'report': 'Rapport',
   'reports': 'Rapporten',
   'days': 'Dagen',
   'workplaces': 'Werkplekken',
-  'laptop-swap': 'Laptop Swap',
+  'swaps': 'Swaps',
   'requests': 'Aanvragen',
   'onboarding': 'Onboarding',
   'offboarding': 'Offboarding',
@@ -43,12 +44,12 @@ const routeLabels: Record<string, string> = {
 
 // Routes that should link to specific paths
 const routeLinks: Record<string, string> = {
-  'devices': ROUTES.DEVICE_MANAGEMENT,
-  'assets': ROUTES.DEVICE_MANAGEMENT,
+  'assets': ROUTES.INVENTORY_ASSETS,
+  'inventory': ROUTES.INVENTORY_ASSETS,
   'rollouts': ROUTES.ROLLOUTS,
   'workplaces': ROUTES.PHYSICAL_WORKPLACES,
-  'laptop-swap': ROUTES.LAPTOP_SWAP,
-  'requests': ROUTES.LAPTOP_SWAP,
+  'swaps': ROUTES.LAPTOP_SWAP,
+  'requests': ROUTES.REQUESTS,
   'autopilot': ROUTES.AUTOPILOT_DEVICES,
   'admin': ROUTES.ADMIN,
 };
@@ -96,7 +97,7 @@ const Breadcrumbs = () => {
       if (isNumeric || isParam) {
         // For IDs, show a more descriptive label
         const prevSegment = pathSegments[index - 1];
-        if (prevSegment === 'assets' || prevSegment === 'devices') {
+        if (prevSegment === 'assets') {
           label = `Asset #${segment}`;
         } else if (prevSegment === 'rollouts') {
           label = `Sessie #${segment}`;

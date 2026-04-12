@@ -76,23 +76,6 @@ public interface IReportService
         DateTime? toDate = null,
         CancellationToken cancellationToken = default);
 
-    // ===== LEASE REPORTS =====
-
-    /// <summary>
-    /// Gets lease contracts report with expiration filtering
-    /// </summary>
-    Task<LeaseContractsReport> GetLeaseContractsReportAsync(
-        bool? isActive = null,
-        int? daysUntilExpiration = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Exports lease contracts to CSV
-    /// </summary>
-    Task<byte[]> ExportLeaseContractsCsvAsync(
-        bool? isActive = null,
-        CancellationToken cancellationToken = default);
-
     // ===== ROLLOUT REPORTS =====
 
     /// <summary>
@@ -172,13 +155,6 @@ public record AssetSwapDto(
     string? PreviousOwner,
     string? NewOwner,
     string? Notes
-);
-
-public record LeaseContractsReport(
-    int TotalContracts,
-    int ActiveContracts,
-    int ExpiringContracts,
-    List<LeaseContractDto> Contracts
 );
 
 public record RolloutSessionSummaryReport(

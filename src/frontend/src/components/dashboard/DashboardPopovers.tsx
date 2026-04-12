@@ -3,12 +3,7 @@ import { useTranslation } from 'react-i18next';
 import CommentIcon from '@mui/icons-material/Comment';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ClearIcon from '@mui/icons-material/Clear';
-import ExpiringLeasesWidget from './ExpiringLeasesWidget';
-
 interface DashboardPopoversProps {
-  // Leases popover
-  leasesAnchor: HTMLElement | null;
-  onLeasesClose: () => void;
   // Notes popover
   notesAnchor: HTMLElement | null;
   onNotesClose: () => void;
@@ -20,8 +15,6 @@ interface DashboardPopoversProps {
 }
 
 export default function DashboardPopovers({
-  leasesAnchor,
-  onLeasesClose,
   notesAnchor,
   onNotesClose,
   discussionText,
@@ -44,27 +37,6 @@ export default function DashboardPopovers({
 
   return (
     <>
-      {/* Leasing Contracts Popover */}
-      <Popover
-        open={Boolean(leasesAnchor)}
-        anchorEl={leasesAnchor}
-        onClose={onLeasesClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{
-          paper: {
-            sx: {
-              ...popoverPaperSx,
-              width: { xs: 340, sm: 420 },
-              maxHeight: 480,
-              overflow: 'auto',
-            },
-          },
-        }}
-      >
-        <ExpiringLeasesWidget />
-      </Popover>
-
       {/* Discussion & Notes Popover */}
       <Popover
         open={Boolean(notesAnchor)}

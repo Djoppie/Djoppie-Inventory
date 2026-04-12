@@ -20,7 +20,7 @@ export const softwareApi = {
    */
   getInstalledSoftwareBySerial: async (serialNumber: string): Promise<DeviceDetectedAppsResponse> => {
     const response = await apiClient.get<DeviceDetectedAppsResponse>(
-      `/intune/devices/serial/${encodeURIComponent(serialNumber)}/apps`
+      `/devices/intune/devices/serial/${encodeURIComponent(serialNumber)}/apps`
     );
     return response.data;
   },
@@ -77,7 +77,7 @@ export const softwareApi = {
 
     try {
       const response = await apiClient.get<DeviceHealth>(
-        `/intune/devices/serial/${encodeURIComponent(serialNumber)}/health`
+        `/devices/intune/devices/serial/${encodeURIComponent(serialNumber)}/health`
       );
       return response.data;
     } catch (error) {
@@ -99,7 +99,7 @@ export const softwareApi = {
 
     try {
       const response = await apiClient.get<DeviceLiveStatus>(
-        `/intune/devices/serial/${encodeURIComponent(serialNumber)}/live-status`
+        `/devices/intune/devices/serial/${encodeURIComponent(serialNumber)}/live-status`
       );
       return response.data;
     } catch (error) {
@@ -121,7 +121,7 @@ export const softwareApi = {
 
     try {
       const response = await apiClient.get<ProvisioningTimeline>(
-        `/intune/devices/serial/${encodeURIComponent(serialNumber)}/provisioning-timeline`
+        `/devices/intune/devices/serial/${encodeURIComponent(serialNumber)}/provisioning-timeline`
       );
       return response.data;
     } catch (error) {

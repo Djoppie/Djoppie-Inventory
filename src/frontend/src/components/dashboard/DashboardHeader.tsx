@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CommentIcon from '@mui/icons-material/Comment';
-import EventIcon from '@mui/icons-material/Event';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import BusinessIcon from '@mui/icons-material/Business';
 import StatusCardGrid from './StatusCardGrid';
@@ -14,13 +13,10 @@ import { ROUTES } from '../../constants/routes';
 interface DashboardHeaderProps {
   statusCounts: StatusCounts;
   statusFilter: string;
-  expiringLeasesCount: number;
   hasNotes: boolean;
   onStatusClick: (status: string) => void;
-  onLeasesClick: (event: React.MouseEvent<HTMLElement>) => void;
   onNotesClick: (event: React.MouseEvent<HTMLElement>) => void;
   onAlarmsClick: (event: React.MouseEvent<HTMLElement>) => void;
-  leasesOpen: boolean;
   notesOpen: boolean;
   alarmsOpen: boolean;
 }
@@ -28,13 +24,10 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({
   statusCounts,
   statusFilter,
-  expiringLeasesCount,
   hasNotes,
   onStatusClick,
-  onLeasesClick,
   onNotesClick,
   onAlarmsClick,
-  leasesOpen,
   notesOpen,
   alarmsOpen,
 }: DashboardHeaderProps) {
@@ -91,35 +84,6 @@ export default function DashboardHeader({
 
         {/* Right side: icon buttons + total count */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Leasing contracts */}
-          <Tooltip title={t('lease.expiringLeases')}>
-            <IconButton
-              onClick={onLeasesClick}
-              size="small"
-              sx={{
-                border: '1px solid',
-                borderColor: leasesOpen ? 'primary.main' : 'divider',
-                borderRadius: 1.5,
-                color: leasesOpen ? 'primary.main' : 'text.secondary',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
-                  bgcolor: alpha(theme.palette.primary.main, 0.05),
-                },
-              }}
-            >
-              <Badge
-                badgeContent={expiringLeasesCount}
-                color="warning"
-                max={99}
-                sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', minWidth: 16, height: 16 } }}
-              >
-                <EventIcon fontSize="small" />
-              </Badge>
-            </IconButton>
-          </Tooltip>
-
           {/* Discussion & Notes */}
           <Tooltip title="Discussion & Notes">
             <IconButton
