@@ -181,6 +181,20 @@ const OperationsDashboardPage = () => {
     });
   };
 
+  // Format asset display - Primary: AssetCode - SerieNummer (workplace - bezetter)
+  const formatAssetPrimary = (asset: { assetCode: string; serialNumber?: string | null; physicalWorkplace?: { name: string } | null; owner?: string | null }) => {
+    const codeSn = [asset.assetCode, asset.serialNumber].filter(Boolean).join(' - ');
+    const location = [asset.physicalWorkplace?.name, asset.owner].filter(Boolean).join(' - ');
+    return location ? `${codeSn} (${location})` : codeSn;
+  };
+
+  // Format asset display - Secondary: type -- Brand Model
+  const formatAssetSecondary = (asset: { category?: string | null; assetType?: { name: string } | null; brand?: string | null; model?: string | null }) => {
+    const type = asset.assetType?.name || asset.category || '';
+    const brandModel = [asset.brand, asset.model].filter(Boolean).join(' ');
+    return [type, brandModel].filter(Boolean).join(' -- ') || '-';
+  };
+
   if (isLoading) {
     return <Loading message="Loading operations data..." />;
   }
@@ -662,15 +676,10 @@ const OperationsDashboardPage = () => {
                     onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                   >
                     <ListItemText
-                      primary={`${asset.assetCode}${asset.serialNumber ? ` -- ${asset.serialNumber}` : ''}`}
-                      secondary={`${asset.brand || ''} ${asset.model || ''}`.trim() || '-'}
+                      primary={formatAssetPrimary(asset)}
+                      secondary={formatAssetSecondary(asset)}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
                       secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
-                    />
-                    <Chip
-                      label={asset.assetType?.name || asset.category}
-                      size="small"
-                      sx={{ bgcolor: alpha('#22c55e', 0.12), color: '#22c55e', fontWeight: 600 }}
                     />
                   </ListItem>
                 ))}
@@ -764,19 +773,15 @@ const OperationsDashboardPage = () => {
                         primary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography fontWeight={600} fontSize="0.875rem">
-                              {asset.assetCode}{asset.serialNumber ? ` -- ${asset.serialNumber}` : ''}
+                              {formatAssetPrimary(asset)}
                             </Typography>
                             {daysUntilExpiry <= 7 && (
                               <WarningAmberIcon sx={{ fontSize: 16, color: '#EF4444' }} />
                             )}
                           </Box>
                         }
-                        secondary={
-                          <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-                            {`${asset.brand || ''} ${asset.model || ''}`.trim() || '-'}
-                            {asset.owner && ` (${asset.owner})`}
-                          </Typography>
-                        }
+                        secondary={formatAssetSecondary(asset)}
+                        secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
                       />
                       <Box sx={{ textAlign: 'right' }}>
                         <Chip
@@ -866,18 +871,19 @@ const OperationsDashboardPage = () => {
                     onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                   >
                     <ListItemText
-                      primary={`${asset.assetCode}${asset.serialNumber ? ` -- ${asset.serialNumber}` : ''}`}
+                      primary={formatAssetPrimary(asset)}
                       secondary={
-                        <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-                          {`${asset.brand || ''} ${asset.model || ''}`.trim() || '-'}
+                        <>
+                          {formatAssetSecondary(asset)}
                           {asset.leaseEndDate && (
                             <Typography component="span" sx={{ ml: 1, color: '#EF4444', fontSize: '0.7rem' }}>
                               (Lease: {formatDate(asset.leaseEndDate)})
                             </Typography>
                           )}
-                        </Typography>
+                        </>
                       }
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
                     />
                     <Chip
                       label="UitDienst"
