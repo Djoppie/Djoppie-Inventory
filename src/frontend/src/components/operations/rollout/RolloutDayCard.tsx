@@ -495,14 +495,14 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
             </Tooltip>
           )}
 
-          {/* Delete - Hide for rescheduled cards */}
+          {/* Delete - Hide for rescheduled cards, disable for completed days */}
           {!isRescheduledCard && (
-            <Tooltip title="Verwijderen">
+            <Tooltip title={day.status === 'Completed' ? 'Voltooide planning kan niet verwijderd worden' : 'Verwijderen'}>
               <span>
                 <IconButton
                   size="small"
                   onClick={onDelete}
-                  disabled={!isEditable}
+                  disabled={!isEditable || day.status === 'Completed'}
                   sx={{
                     color: 'rgba(239, 68, 68, 0.6)',
                     '&:hover:not(:disabled)': {

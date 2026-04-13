@@ -75,25 +75,24 @@ export function buildAssetPlans({
       });
     } else if (item.mode === 'create') {
       // Creating new asset or configured for creation
+      // Always include the item even without brand/model/serial — user may fill in later
       const brand = item.template?.brand || item.brand;
       const model = item.template?.model || item.model;
 
-      if (brand || model || item.serialNumber) {
-        plans.push({
-          equipmentType: item.equipmentType,
-          createNew: true,
-          requiresSerialNumber: requiresSerial,
-          requiresQRCode: true,
-          // Preserve original status for completed items, otherwise use 'pending'
-          status: item.originalStatus || 'pending',
-          brand,
-          model,
-          metadata: {
-            ...(item.serialNumber && { serialNumber: item.serialNumber }),
-            ...item.metadata,
-          },
-        });
-      }
+      plans.push({
+        equipmentType: item.equipmentType,
+        createNew: true,
+        requiresSerialNumber: requiresSerial,
+        requiresQRCode: true,
+        // Preserve original status for completed items, otherwise use 'pending'
+        status: item.originalStatus || 'pending',
+        brand,
+        model,
+        metadata: {
+          ...(item.serialNumber && { serialNumber: item.serialNumber }),
+          ...item.metadata,
+        },
+      });
     }
   });
 
