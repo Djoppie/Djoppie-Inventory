@@ -33,6 +33,7 @@ public class EmployeeRepository : IEmployeeRepository
 
         return await query
             .Include(e => e.Service)
+            .Include(e => e.CurrentWorkplace)
             .OrderBy(e => e.DisplayName)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
@@ -42,6 +43,7 @@ public class EmployeeRepository : IEmployeeRepository
     {
         return await _context.Employees
             .Include(e => e.Service)
+            .Include(e => e.CurrentWorkplace)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
@@ -49,6 +51,7 @@ public class EmployeeRepository : IEmployeeRepository
     {
         return await _context.Employees
             .Include(e => e.Service)
+            .Include(e => e.CurrentWorkplace)
             .FirstOrDefaultAsync(e => e.EntraId == entraId, cancellationToken);
     }
 
@@ -56,6 +59,7 @@ public class EmployeeRepository : IEmployeeRepository
     {
         return await _context.Employees
             .Include(e => e.Service)
+            .Include(e => e.CurrentWorkplace)
             .FirstOrDefaultAsync(e => e.UserPrincipalName == upn, cancellationToken);
     }
 
@@ -68,6 +72,7 @@ public class EmployeeRepository : IEmployeeRepository
 
         return await _context.Employees
             .Include(e => e.Service)
+            .Include(e => e.CurrentWorkplace)
             .Where(e => e.IsActive &&
                 (e.DisplayName.ToLower().Contains(normalizedSearch) ||
                  (e.Email != null && e.Email.ToLower().Contains(normalizedSearch)) ||

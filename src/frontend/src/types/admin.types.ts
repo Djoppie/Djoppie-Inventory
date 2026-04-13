@@ -242,6 +242,8 @@ export interface Employee {
   companyName?: string;
   serviceId?: number;
   service?: ServiceInfo;
+  physicalWorkplaceId?: number;
+  physicalWorkplaceCode?: string;
   isActive: boolean;
   sortOrder: number;
   assetCount: number;

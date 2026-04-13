@@ -69,6 +69,7 @@ public record PhysicalWorkplaceSummaryDto(
     string? Floor,
     string? CurrentOccupantName,
     string? CurrentOccupantEmail,
+    int? CurrentOccupantEmployeeId,
     bool IsActive,
     // Equipment summary
     int FixedAssetCount,

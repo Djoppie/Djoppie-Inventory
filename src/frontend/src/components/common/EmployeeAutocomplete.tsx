@@ -123,10 +123,10 @@ const EmployeeAutocomplete = ({
         />
       )}
       renderOption={(props, option) => {
-        // Remove key from props and pass it separately
-        const { key, ...restProps } = props as { key: string; [k: string]: unknown };
+        // Use employee id as key to avoid duplicate key issues with same names
+        const { key: _unusedKey, ...restProps } = props as { key: string; [k: string]: unknown };
         return (
-          <li key={key} {...restProps}>
+          <li key={option.id} {...restProps}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
               <Avatar
                 sx={{

@@ -544,6 +544,8 @@ public class EmployeesController : ControllerBase
             employee.Service != null
                 ? new ServiceInfoDto(employee.Service.Id, employee.Service.Code, employee.Service.Name)
                 : null,
+            employee.CurrentWorkplace?.Id,
+            employee.CurrentWorkplace?.Code,
             employee.IsActive,
             employee.SortOrder,
             assetCount,

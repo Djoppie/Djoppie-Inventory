@@ -24,7 +24,6 @@ import {
 import {
   Person,
   Business,
-  LocationOn,
   Work,
   Computer,
   QrCode,
@@ -51,6 +50,7 @@ import BuildingSelect from '../common/BuildingSelect';
 import PhysicalWorkplaceSelect from '../common/PhysicalWorkplaceSelect';
 import { intuneApi } from '../../api/intune.api';
 import { serialNumberExists } from '../../api/assets.api';
+import { employeesApi } from '../../api/admin.api';
 
 interface AssetFormProps {
   initialData?: Asset;
@@ -651,7 +651,7 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
 
           <PhysicalWorkplaceSelect
             value={formData.physicalWorkplaceId ?? null}
-            onChange={(value, workplace) => {
+            onChange={async (value, workplace) => {
               setFormData(prev => ({
                 ...prev,
                 physicalWorkplaceId: value ?? undefined,
@@ -659,26 +659,35 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 buildingId: workplace?.buildingId ?? prev.buildingId,
                 serviceId: workplace?.serviceId ?? prev.serviceId,
               }));
+
+              // Auto-fill employee from workplace's current occupant
+              if (workplace?.currentOccupantEmployeeId) {
+                try {
+                  const employee = await employeesApi.getById(workplace.currentOccupantEmployeeId);
+                  setSelectedEmployee(employee);
+                  setFormData(prev => ({
+                    ...prev,
+                    employeeId: employee.id,
+                    owner: employee.displayName,
+                    jobTitle: employee.jobTitle ?? prev.jobTitle,
+                    officeLocation: employee.officeLocation ?? prev.officeLocation,
+                  }));
+                  markFieldAsAutoFilled('employeeId');
+                  if (employee.jobTitle) {
+                    markFieldAsAutoFilled('jobTitle');
+                  }
+                  if (employee.officeLocation) {
+                    markFieldAsAutoFilled('officeLocation');
+                  }
+                } catch {
+                  // Ignore error if employee lookup fails
+                }
+              }
             }}
             label={t('assetForm.physicalWorkplace')}
             helperText={t('assetForm.physicalWorkplaceHint')}
             buildingId={formData.buildingId}
             serviceId={formData.serviceId}
-          />
-
-          <TextField
-            fullWidth
-            label={t('assetForm.installationLocation')}
-            value={formData.installationLocation}
-            onChange={(e) => handleChange('installationLocation', e.target.value)}
-            helperText={t('assetForm.installationLocationHint')}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <LocationOn sx={{ color: 'primary.main' }} />
-                </InputAdornment>
-              ),
-            }}
           />
         </Stack>
       </SectionCard>
@@ -693,23 +702,35 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
           <EmployeeAutocomplete
             value={formData.employeeId}
             onChange={(employeeId: number | null, employee: Employee | null) => {
-              setFormData(prev => ({ ...prev, employeeId: employeeId ?? undefined }));
               setSelectedEmployee(employee);
-              // Auto-fill legacy fields for backwards compatibility
+              // Auto-fill fields from employee
               if (employee) {
-                handleChange('owner', employee.displayName);
+                setFormData(prev => ({
+                  ...prev,
+                  employeeId: employeeId ?? undefined,
+                  owner: employee.displayName,
+                  jobTitle: employee.jobTitle ?? prev.jobTitle,
+                  officeLocation: employee.officeLocation ?? prev.officeLocation,
+                  // Auto-fill physical workplace from employee's current workplace
+                  physicalWorkplaceId: employee.physicalWorkplaceId ?? prev.physicalWorkplaceId,
+                }));
                 if (employee.jobTitle) {
-                  handleChange('jobTitle', employee.jobTitle);
                   markFieldAsAutoFilled('jobTitle');
                 }
                 if (employee.officeLocation) {
-                  handleChange('officeLocation', employee.officeLocation);
                   markFieldAsAutoFilled('officeLocation');
                 }
+                if (employee.physicalWorkplaceId) {
+                  markFieldAsAutoFilled('physicalWorkplaceId');
+                }
               } else {
-                handleChange('owner', '');
-                handleChange('jobTitle', '');
-                handleChange('officeLocation', '');
+                setFormData(prev => ({
+                  ...prev,
+                  employeeId: undefined,
+                  owner: '',
+                  jobTitle: '',
+                  officeLocation: '',
+                }));
               }
             }}
             label={t('assetDetail.primaryUser')}

@@ -91,6 +91,13 @@ public class WorkplacesController : ControllerBase
                 pw.Floor,
                 pw.CurrentOccupantName,
                 pw.CurrentOccupantEmail,
+                // Lookup employee ID by EntraId
+                pw.CurrentOccupantEntraId != null
+                    ? _context.Employees
+                        .Where(e => e.EntraId == pw.CurrentOccupantEntraId)
+                        .Select(e => (int?)e.Id)
+                        .FirstOrDefault()
+                    : null,
                 pw.IsActive,
                 // Equipment summary - count filled slots
                 (pw.DockingStationAssetId.HasValue ? 1 : 0) +
