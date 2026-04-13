@@ -446,6 +446,14 @@ export const completeRolloutSession = async (sessionId: number): Promise<Rollout
   return response.data;
 };
 
+/**
+ * Cancel a rollout session (any status except Completed → Cancelled)
+ */
+export const cancelRolloutSession = async (sessionId: number): Promise<RolloutSession> => {
+  const response = await apiClient.post<RolloutSession>(`/operations/rollouts/sessions/${sessionId}/cancel`);
+  return response.data;
+};
+
 // ===== HELPER FUNCTIONS =====
 
 /**

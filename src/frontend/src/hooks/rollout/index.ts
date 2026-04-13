@@ -19,6 +19,7 @@ export {
   useDeleteRolloutSession,
   useStartRolloutSession,
   useCompleteRolloutSession,
+  useCancelRolloutSession,
 } from './useRolloutSessions';
 
 // Day Hooks

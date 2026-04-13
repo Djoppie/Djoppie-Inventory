@@ -17,6 +17,7 @@ export {
   useCreateRolloutSession,
   useUpdateRolloutSession,
   useDeleteRolloutSession,
+  useCancelRolloutSession,
 
   // Day Hooks
   useRolloutDays,
