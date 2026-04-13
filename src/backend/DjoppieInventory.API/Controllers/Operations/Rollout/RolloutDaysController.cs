@@ -516,10 +516,18 @@ public class RolloutDaysController : ControllerBase
             PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             Status = RolloutWorkplaceStatus.Pending,
-            Notes = dto.Notes
+            Notes = dto.Notes,
+            AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans, _jsonOptions),
+            TotalItems = dto.AssetPlans.Count,
         };
 
         var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace, cancellationToken);
+
+        // Bridge: also create relational assignments from asset plans
+        if (dto.AssetPlans.Count > 0)
+        {
+            await SyncAssignmentsFromPlansAsync(createdWorkplace.Id, dto.AssetPlans, cancellationToken);
+        }
 
         _logger.LogInformation("Created rollout workplace {WorkplaceId} for day {DayId}", createdWorkplace.Id, id);
 
@@ -652,6 +660,19 @@ public class RolloutDaysController : ControllerBase
         // Assignments will be created manually or automatically during rollout execution.
         // This allows the bulk import to focus on creating workplaces for users.
 
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Syncs relational assignments from asset plans (bridge from JSON to relational model).
+    /// NOTE: This is a placeholder - full sync happens when workplace is updated via RolloutWorkplacesController.
+    /// The AssetPlansJson remains the source of truth.
+    /// </summary>
+    private Task SyncAssignmentsFromPlansAsync(int workplaceId, List<AssetPlanDto> plans, CancellationToken ct)
+    {
+        // Relational assignments will be synced when the workplace is updated via the main update endpoint.
+        // For now, AssetPlansJson is the authoritative source.
+        _logger.LogInformation("Workplace {WorkplaceId} created with {Count} asset plans", workplaceId, plans.Count);
         return Task.CompletedTask;
     }
 

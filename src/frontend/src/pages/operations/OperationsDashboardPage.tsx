@@ -403,6 +403,7 @@ const OperationsDashboardPage = () => {
                           />
                         </Box>
                       }
+                      primaryTypographyProps={{ component: 'div' }}
                       secondary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
                           <Typography variant="caption" color="text.secondary">
@@ -415,6 +416,7 @@ const OperationsDashboardPage = () => {
                           </Typography>
                         </Box>
                       }
+                      secondaryTypographyProps={{ component: 'div' }}
                     />
                     <Box sx={{ textAlign: 'right' }}>
                       <Typography variant="h6" fontWeight={700} color={session.completionPercentage === 100 ? '#22c55e' : '#FF7700'}>
