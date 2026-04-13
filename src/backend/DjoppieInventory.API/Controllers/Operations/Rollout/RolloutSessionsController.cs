@@ -523,6 +523,9 @@ public class RolloutSessionsController : ControllerBase
 
     private static RolloutSessionDto MapToDto(RolloutSession session)
     {
+        var totalWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count ?? 0) ?? 0;
+        var completedWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count(w => w.Status == RolloutWorkplaceStatus.Completed) ?? 0) ?? 0;
+
         return new RolloutSessionDto
         {
             Id = session.Id,
@@ -538,8 +541,11 @@ public class RolloutSessionsController : ControllerBase
             CreatedAt = session.CreatedAt,
             UpdatedAt = session.UpdatedAt,
             TotalDays = session.Days?.Count ?? 0,
-            TotalWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count ?? 0) ?? 0,
-            CompletedWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count(w => w.Status == RolloutWorkplaceStatus.Completed) ?? 0) ?? 0
+            TotalWorkplaces = totalWorkplaces,
+            CompletedWorkplaces = completedWorkplaces,
+            CompletionPercentage = totalWorkplaces > 0
+                ? Math.Round((decimal)completedWorkplaces / totalWorkplaces * 100, 1)
+                : 0
         };
     }
 
