@@ -25,6 +25,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EditIcon from '@mui/icons-material/Edit';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CancelIcon from '@mui/icons-material/Cancel';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonIcon from '@mui/icons-material/Person';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -39,7 +40,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import BuildIcon from '@mui/icons-material/Build';
-import { useRolloutSessions, useRolloutSession, useDeleteRolloutSession, useUpdateRolloutSession } from '../../../hooks/useRollout';
+import { useRolloutSessions, useRolloutSession, useDeleteRolloutSession, useUpdateRolloutSession, useCancelRolloutSession } from '../../../hooks/useRollout';
 import { getStatusColor } from '../../../api/rollout.api';
 import { ROUTES, buildRoute } from '../../../constants/routes';
 import Loading from '../../../components/common/Loading';
@@ -97,6 +98,7 @@ const RolloutListPage = () => {
     statusFilter ? { status: statusFilter } : undefined
   );
   const deleteSessionMutation = useDeleteRolloutSession();
+  const cancelSessionMutation = useCancelRolloutSession();
   const updateMutation = useUpdateRolloutSession();
 
   // Calculate global statistics
@@ -186,6 +188,13 @@ const RolloutListPage = () => {
   const handleDelete = async (sessionId: number) => {
     if (window.confirm(t('rollout.confirmations.deleteSession'))) {
       await deleteSessionMutation.mutateAsync(sessionId);
+    }
+    handleMenuClose();
+  };
+
+  const handleCancel = async (sessionId: number) => {
+    if (window.confirm(t('rollout.confirmations.cancelSession', 'Are you sure you want to cancel this session?'))) {
+      await cancelSessionMutation.mutateAsync(sessionId);
     }
     handleMenuClose();
   };
@@ -592,7 +601,16 @@ const RolloutListPage = () => {
         </MenuItem>
         <Divider sx={{ my: 1 }} />
         <MenuItem
+          onClick={() => menuAnchor && handleCancel(menuAnchor.sessionId)}
+          disabled={!menuAnchor || ['Completed', 'Cancelled'].includes(sessions?.find(s => s.id === menuAnchor.sessionId)?.status || '')}
+          sx={{ color: 'warning.main' }}
+        >
+          <CancelIcon fontSize="small" sx={{ mr: 1.5 }} />
+          Annuleren
+        </MenuItem>
+        <MenuItem
           onClick={() => menuAnchor && handleDelete(menuAnchor.sessionId)}
+          disabled={!menuAnchor || ['InProgress', 'Completed'].includes(sessions?.find(s => s.id === menuAnchor.sessionId)?.status || '')}
           sx={{ color: 'error.main' }}
         >
           <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} />

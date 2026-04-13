@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
@@ -523,6 +524,9 @@ public class RolloutSessionsController : ControllerBase
 
     private static RolloutSessionDto MapToDto(RolloutSession session)
     {
+        var totalWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count ?? 0) ?? 0;
+        var completedWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count(w => w.Status == RolloutWorkplaceStatus.Completed) ?? 0) ?? 0;
+
         return new RolloutSessionDto
         {
             Id = session.Id,
@@ -538,8 +542,11 @@ public class RolloutSessionsController : ControllerBase
             CreatedAt = session.CreatedAt,
             UpdatedAt = session.UpdatedAt,
             TotalDays = session.Days?.Count ?? 0,
-            TotalWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count ?? 0) ?? 0,
-            CompletedWorkplaces = session.Days?.Sum(d => d.Workplaces?.Count(w => w.Status == RolloutWorkplaceStatus.Completed) ?? 0) ?? 0
+            TotalWorkplaces = totalWorkplaces,
+            CompletedWorkplaces = completedWorkplaces,
+            CompletionPercentage = totalWorkplaces > 0
+                ? Math.Round((decimal)completedWorkplaces / totalWorkplaces * 100, 1)
+                : 0
         };
     }
 
@@ -576,8 +583,33 @@ public class RolloutSessionsController : ControllerBase
             .ToList();
     }
 
+    // Shared JSON options for AssetPlansJson parsing
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     private static RolloutWorkplaceDto MapToWorkplaceDto(RolloutWorkplace workplace)
     {
+        // Parse AssetPlans from JSON
+        var assetPlans = new List<AssetPlanDto>();
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
+                if (parsed != null && parsed.Count > 0)
+                {
+                    assetPlans = parsed;
+                }
+            }
+            catch
+            {
+                // Ignore parse errors — return empty list
+            }
+        }
+
         return new RolloutWorkplaceDto
         {
             Id = workplace.Id,
@@ -592,6 +624,7 @@ public class RolloutSessionsController : ControllerBase
             BuildingName = workplace.Building?.Name,
             ScheduledDate = workplace.ScheduledDate,
             IsLaptopSetup = workplace.IsLaptopSetup,
+            AssetPlans = assetPlans,
             Status = workplace.Status.ToString(),
             TotalItems = workplace.TotalItems,
             CompletedItems = workplace.CompletedItems,

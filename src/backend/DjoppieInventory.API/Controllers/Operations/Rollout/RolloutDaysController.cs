@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
@@ -20,6 +21,7 @@ public class RolloutDaysController : ControllerBase
     private readonly IServiceRepository _serviceRepository;
     private readonly IWorkplaceAssetAssignmentService _assignmentService;
     private readonly IGraphUserService _graphUserService;
+    private readonly IAssetRepository _assetRepository;
     private readonly ILogger<RolloutDaysController> _logger;
 
     public RolloutDaysController(
@@ -27,12 +29,14 @@ public class RolloutDaysController : ControllerBase
         IServiceRepository serviceRepository,
         IWorkplaceAssetAssignmentService assignmentService,
         IGraphUserService graphUserService,
+        IAssetRepository assetRepository,
         ILogger<RolloutDaysController> logger)
     {
         _rolloutRepository = rolloutRepository;
         _serviceRepository = serviceRepository;
         _assignmentService = assignmentService;
         _graphUserService = graphUserService;
+        _assetRepository = assetRepository;
         _logger = logger;
     }
 
@@ -183,7 +187,7 @@ public class RolloutDaysController : ControllerBase
     /// <param name="id">Day ID</param>
     /// <param name="dto">Status update data</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    [HttpPut("{id}/status")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(RolloutDayDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -427,6 +431,58 @@ public class RolloutDaysController : ControllerBase
     }
 
     /// <summary>
+    /// Gets new assets assigned to workplaces for a specific day.
+    /// Used for QR code printing and verification before rollout execution.
+    /// Returns assets with status "Nieuw" that are assigned to workplaces in this day.
+    /// </summary>
+    /// <param name="id">Day ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpGet("{id}/new-assets")]
+    [ProducesResponseType(typeof(IEnumerable<AssetDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<AssetDto>>> GetNewAssets(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        // Verify day exists
+        var day = await _rolloutRepository.GetDayByIdAsync(id, false, cancellationToken);
+        if (day == null)
+        {
+            return NotFound(new { message = $"Rollout day with ID {id} not found" });
+        }
+
+        // Get all workplaces for this day
+        var workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(id, cancellationToken);
+
+        // Collect all NewAssetIds from assignments
+        var assetIds = new HashSet<int>();
+        foreach (var workplace in workplaces)
+        {
+            var assignments = await _assignmentService.GetByWorkplaceIdAsync(workplace.Id, cancellationToken);
+            foreach (var assignment in assignments.Where(a => a.NewAssetId.HasValue))
+            {
+                assetIds.Add(assignment.NewAssetId!.Value);
+            }
+        }
+
+        if (assetIds.Count == 0)
+        {
+            return Ok(Array.Empty<AssetDto>());
+        }
+
+        // Get the actual assets
+        var assets = await _assetRepository.GetByIdsAsync(assetIds, cancellationToken);
+
+        // Filter to only "Nieuw" status assets and map to DTOs
+        var newAssets = assets
+            .Where(a => a.Status == AssetStatus.Nieuw)
+            .Select(MapToAssetDto)
+            .ToList();
+
+        return Ok(newAssets);
+    }
+
+    /// <summary>
     /// Creates a new workplace for a day.
     /// </summary>
     /// <param name="id">Day ID</param>
@@ -656,8 +712,33 @@ public class RolloutDaysController : ControllerBase
             .ToList();
     }
 
+    // Shared JSON options for AssetPlansJson parsing (must match RolloutWorkplacesController)
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     private static RolloutWorkplaceDto MapToWorkplaceDto(RolloutWorkplace workplace)
     {
+        // Parse AssetPlans from JSON
+        var assetPlans = new List<AssetPlanDto>();
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
+                if (parsed != null && parsed.Count > 0)
+                {
+                    assetPlans = parsed;
+                }
+            }
+            catch
+            {
+                // Ignore parse errors — return empty list
+            }
+        }
+
         return new RolloutWorkplaceDto
         {
             Id = workplace.Id,
@@ -675,6 +756,7 @@ public class RolloutDaysController : ControllerBase
             PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             ScheduledDate = workplace.ScheduledDate,
             IsLaptopSetup = workplace.IsLaptopSetup,
+            AssetPlans = assetPlans,
             Status = workplace.Status.ToString(),
             TotalItems = workplace.TotalItems,
             CompletedItems = workplace.CompletedItems,
@@ -686,6 +768,61 @@ public class RolloutDaysController : ControllerBase
             MovedFromWorkplaceId = workplace.MovedFromWorkplaceId,
             CreatedAt = workplace.CreatedAt,
             UpdatedAt = workplace.UpdatedAt
+        };
+    }
+
+    private static AssetDto MapToAssetDto(Asset asset)
+    {
+        return new AssetDto
+        {
+            Id = asset.Id,
+            AssetCode = asset.AssetCode,
+            AssetName = asset.AssetName,
+            Alias = asset.Alias,
+            Category = asset.Category ?? string.Empty,
+            IsDummy = asset.IsDummy,
+            AssetTypeId = asset.AssetTypeId,
+            AssetType = asset.AssetType != null ? new AssetTypeInfo
+            {
+                Id = asset.AssetType.Id,
+                Code = asset.AssetType.Code,
+                Name = asset.AssetType.Name
+            } : null,
+            ServiceId = asset.ServiceId,
+            Service = asset.Service != null ? new ServiceInfo
+            {
+                Id = asset.Service.Id,
+                Code = asset.Service.Code,
+                Name = asset.Service.Name
+            } : null,
+            InstallationLocation = asset.InstallationLocation,
+            PhysicalWorkplaceId = asset.PhysicalWorkplaceId,
+            BuildingId = asset.BuildingId,
+            Building = asset.Building != null ? new BuildingInfo
+            {
+                Id = asset.Building.Id,
+                Code = asset.Building.Code,
+                Name = asset.Building.Name
+            } : null,
+            LegacyBuilding = asset.LegacyBuilding,
+            LegacyDepartment = asset.LegacyDepartment,
+            EmployeeId = asset.EmployeeId,
+            Owner = asset.Owner,
+            JobTitle = asset.JobTitle,
+            OfficeLocation = asset.OfficeLocation,
+            Status = asset.Status.ToString(),
+            Brand = asset.Brand,
+            Model = asset.Model,
+            SerialNumber = asset.SerialNumber,
+            PurchaseDate = asset.PurchaseDate,
+            WarrantyExpiry = asset.WarrantyExpiry,
+            InstallationDate = asset.InstallationDate,
+            IntuneEnrollmentDate = asset.IntuneEnrollmentDate,
+            IntuneLastCheckIn = asset.IntuneLastCheckIn,
+            IntuneCertificateExpiry = asset.IntuneCertificateExpiry,
+            IntuneSyncedAt = asset.IntuneSyncedAt,
+            CreatedAt = asset.CreatedAt,
+            UpdatedAt = asset.UpdatedAt
         };
     }
 

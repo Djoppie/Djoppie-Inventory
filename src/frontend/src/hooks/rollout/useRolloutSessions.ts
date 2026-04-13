@@ -129,3 +129,22 @@ export const useCompleteRolloutSession = (): UseMutationResult<
     },
   });
 };
+
+/**
+ * Cancel a rollout session (any status except Completed → Cancelled)
+ */
+export const useCancelRolloutSession = (): UseMutationResult<
+  RolloutSession,
+  Error,
+  number
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: rolloutApi.cancelRolloutSession,
+    onSuccess: (_, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.session(sessionId) });
+      queryClient.invalidateQueries({ queryKey: rolloutKeys.sessions() });
+    },
+  });
+};

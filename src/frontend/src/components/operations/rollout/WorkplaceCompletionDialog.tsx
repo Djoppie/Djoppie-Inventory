@@ -38,7 +38,7 @@ interface WorkplaceCompletionDialogProps {
 }
 
 // Assignment type constants - match RolloutExecutionPage
-const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop', 'desktop'];
+const USER_ASSIGNED_EQUIPMENT: string[] = ['laptop'];
 
 // Assignment colors
 const ASSIGNMENT_COLORS = {

@@ -127,6 +127,9 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
         id: p.existingAssetId,
         assetCode: p.existingAssetCode || '',
         assetName: p.existingAssetName || '',
+        brand: p.brand || '',
+        model: p.model || '',
+        serialNumber: p.metadata?.serialNumber || '',
       } as AssetConfigItem['linkedAsset'] : null,
       template: p.brand ? { brand: p.brand, model: p.model } as AssetConfigItem['template'] : null,
       brand: p.brand,
@@ -173,7 +176,7 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   // Equipment types that are assigned to the user (employee takes it with them)
   // All other equipment types are workplace-fixed (docking, monitor, keyboard, mouse)
-  const USER_ASSIGNED_EQUIPMENT = ['laptop', 'desktop'];
+  const USER_ASSIGNED_EQUIPMENT = ['laptop'];
 
   // Check if workplace-fixed assets are configured but no physical workplace is selected
   const hasWorkplaceFixedWithoutPhysicalWorkplace = state.configItems.some(item => {

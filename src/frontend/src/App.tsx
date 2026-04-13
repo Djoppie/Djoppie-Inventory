@@ -14,6 +14,7 @@ const AddAssetPage = lazy(() => import('./pages/inventory/AddAssetPage'));
 const EditAssetPage = lazy(() => import('./pages/inventory/EditAssetPage'));
 const BulkCreateAssetPage = lazy(() => import('./pages/inventory/BulkCreateAssetPage'));
 const AssetTemplatesPage = lazy(() => import('./pages/inventory/AssetTemplatesPage'));
+const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'));
 const AdminAssetsPage = lazy(() => import('./pages/admin/AdminAssetsPage'));
 const AdminOrganisationPage = lazy(() => import('./pages/admin/AdminOrganisationPage'));
 const AdminLocationsPage = lazy(() => import('./pages/admin/AdminLocationsPage'));
@@ -36,6 +37,7 @@ const LaptopSwapPage = lazy(() => import('./pages/operations/swaps/LaptopSwapPag
 const DeploymentHistoryPage = lazy(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 const IntuneDeviceDashboardPage = lazy(() => import('./pages/devices/IntuneDeviceDashboardPage'));
+const OperationsDashboardPage = lazy(() => import('./pages/operations/OperationsDashboardPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,9 +68,11 @@ function App() {
                   <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
                   <Route path={ROUTES.ASSET_INTUNE} element={<AssetIntunePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
+                  <Route path={ROUTES.INVENTORY} element={<InventoryPage />} />
                   <Route path={ROUTES.ADMIN_ASSETS} element={<AdminAssetsPage />} />
                   <Route path={ROUTES.ADMIN_ORGANISATION} element={<AdminOrganisationPage />} />
                   <Route path={ROUTES.ADMIN_LOCATIONS} element={<AdminLocationsPage />} />
+                  <Route path={ROUTES.OPERATIONS} element={<OperationsDashboardPage />} />
                   <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />
                   <Route path={ROUTES.ROLLOUTS_NEW} element={<RolloutPlannerPage />} />
                   <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />

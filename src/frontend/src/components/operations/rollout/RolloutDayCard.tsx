@@ -80,8 +80,19 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
     setExpanded(prev => !prev);
   }, []);
 
-  const completionPercentage = day.totalWorkplaces > 0
-    ? (day.completedWorkplaces / day.totalWorkplaces) * 100
+  // Compute counts from actual workplaces, excluding rescheduled ones
+  const dayDateKey = day.date?.split('T')[0];
+  const activeWorkplaces = day.workplaces?.filter(wp => {
+    if (!wp.scheduledDate) return true; // No custom date = belongs to this day
+    return wp.scheduledDate.split('T')[0] === dayDateKey;
+  }) || [];
+  const effectiveTotalWorkplaces = activeWorkplaces.length > 0 ? activeWorkplaces.length : day.totalWorkplaces;
+  const effectiveCompletedWorkplaces = activeWorkplaces.length > 0
+    ? activeWorkplaces.filter(wp => wp.status === 'Completed').length
+    : day.completedWorkplaces;
+
+  const completionPercentage = effectiveTotalWorkplaces > 0
+    ? (effectiveCompletedWorkplaces / effectiveTotalWorkplaces) * 100
     : 0;
 
   const isComplete = day.status === 'Completed';
@@ -220,12 +231,12 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <GroupsIcon sx={{ fontSize: '0.95rem', color: 'text.secondary' }} />
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
-                {day.totalWorkplaces}
+                {effectiveTotalWorkplaces}
               </Typography>
             </Box>
 
             {/* Progress Indicator - Compact */}
-            {day.totalWorkplaces > 0 && (
+            {effectiveTotalWorkplaces > 0 && (
               <Box
                 sx={{
                   display: 'flex',
@@ -245,7 +256,7 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
                     color: completionPercentage === 100 ? '#16a34a' : 'text.secondary',
                   }}
                 >
-                  {day.completedWorkplaces}/{day.totalWorkplaces}
+                  {effectiveCompletedWorkplaces}/{effectiveTotalWorkplaces}
                 </Typography>
                 <Box
                   sx={{
@@ -484,14 +495,14 @@ const RolloutDayCard = React.memo(function RolloutDayCard({
             </Tooltip>
           )}
 
-          {/* Delete - Hide for rescheduled cards */}
+          {/* Delete - Hide for rescheduled cards, disable for completed days */}
           {!isRescheduledCard && (
-            <Tooltip title="Verwijderen">
+            <Tooltip title={day.status === 'Completed' ? 'Voltooide planning kan niet verwijderd worden' : 'Verwijderen'}>
               <span>
                 <IconButton
                   size="small"
                   onClick={onDelete}
-                  disabled={!isEditable}
+                  disabled={!isEditable || day.status === 'Completed'}
                   sx={{
                     color: 'rgba(239, 68, 68, 0.6)',
                     '&:hover:not(:disabled)': {

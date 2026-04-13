@@ -44,6 +44,13 @@ public class RolloutWorkplacesController : ControllerBase
         _logger = logger;
     }
 
+    // Shared JSON options for AssetPlansJson (camelCase to match frontend, case-insensitive for legacy data)
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     // ===== WORKPLACE CRUD =====
 
     /// <summary>
@@ -90,23 +97,6 @@ public class RolloutWorkplacesController : ControllerBase
         {
             var assignments = await _assignmentService.GetByWorkplaceIdAsync(id, cancellationToken);
             dto.AssetAssignments = assignments.ToList();
-
-            // Parse AssetPlans from legacy JSON
-            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
-            {
-                try
-                {
-                    var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
-                    if (legacyPlans != null && legacyPlans.Count > 0)
-                    {
-                        dto.AssetPlans = legacyPlans;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", id);
-                }
-            }
         }
 
         return Ok(dto);
@@ -146,10 +136,18 @@ public class RolloutWorkplacesController : ControllerBase
             PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
             IsLaptopSetup = dto.IsLaptopSetup,
             Status = RolloutWorkplaceStatus.Pending,
-            Notes = dto.Notes
+            Notes = dto.Notes,
+            AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans, _jsonOptions),
+            TotalItems = dto.AssetPlans.Count,
         };
 
         var createdWorkplace = await _rolloutRepository.CreateWorkplaceAsync(workplace, cancellationToken);
+
+        // Bridge: also create relational assignments from asset plans
+        if (dto.AssetPlans.Count > 0)
+        {
+            await SyncAssignmentsFromPlans(createdWorkplace.Id, dto.AssetPlans, cancellationToken);
+        }
 
         // If a physical workplace is assigned, update its occupant
         if (dto.PhysicalWorkplaceId.HasValue)
@@ -219,12 +217,24 @@ public class RolloutWorkplacesController : ControllerBase
         workplace.Notes = dto.Notes;
         workplace.Status = Enum.Parse<RolloutWorkplaceStatus>(dto.Status);
 
-        // Update AssetPlansJson from DTO
-        workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans);
+        // Update AssetPlansJson from DTO and recalculate TotalItems
+        workplace.AssetPlansJson = JsonSerializer.Serialize(dto.AssetPlans, _jsonOptions);
+        workplace.TotalItems = dto.AssetPlans.Count;
 
         workplace.UpdatedAt = DateTime.UtcNow;
 
         var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        // Bridge: re-sync relational assignments from updated asset plans
+        if (dto.AssetPlans.Count > 0)
+        {
+            await SyncAssignmentsFromPlans(updatedWorkplace.Id, dto.AssetPlans, cancellationToken);
+        }
+        else
+        {
+            // If no plans, clear assignments
+            await _assignmentService.DeleteByWorkplaceIdAsync(updatedWorkplace.Id, cancellationToken);
+        }
 
         // If a physical workplace is assigned, update its occupant
         if (dto.PhysicalWorkplaceId.HasValue)
@@ -325,6 +335,44 @@ public class RolloutWorkplacesController : ControllerBase
         return NoContent();
     }
 
+    // ===== STATUS MANAGEMENT =====
+
+    /// <summary>
+    /// Updates the status of a workplace (e.g. Pending → Ready, Ready → Pending).
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="dto">Status update data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/status")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateStatus(
+        int id,
+        [FromBody] UpdateWorkplaceStatusDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        if (!Enum.TryParse<RolloutWorkplaceStatus>(dto.Status, out var newStatus))
+        {
+            return BadRequest(new { message = $"Invalid status: '{dto.Status}'" });
+        }
+
+        workplace.Status = newStatus;
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        var updatedWorkplace = await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+
+        _logger.LogInformation("Updated workplace {WorkplaceId} status to {Status}", id, newStatus);
+
+        return Ok(MapToDto(updatedWorkplace));
+    }
+
     // ===== EXECUTION WORKFLOW =====
 
     /// <summary>
@@ -391,9 +439,35 @@ public class RolloutWorkplacesController : ControllerBase
         var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
         var performedByEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown@example.com";
 
-        // Complete all pending assignments
+        // Complete all pending assignments (relational model)
         var completedCount = await _assignmentService.CompleteWorkplaceAssignmentsAsync(
             id, performedBy, performedByEmail, cancellationToken);
+
+        // Also mark all JSON asset plans as installed (keep JSON in sync)
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+        {
+            try
+            {
+                var assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
+                if (assetPlans != null)
+                {
+                    foreach (var plan in assetPlans)
+                    {
+                        if (plan.Status == "pending")
+                            plan.Status = "installed";
+                    }
+                    workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
+                    workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed" || p.Status == "skipped");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to update AssetPlansJson during completion for workplace {WorkplaceId}", id);
+            }
+        }
+
+        // Sync JSON from assignments for accurate state (assignments are source of truth after completion)
+        await SyncJsonFromAssignments(workplace, cancellationToken);
 
         // Update workplace status
         workplace.Status = RolloutWorkplaceStatus.Completed;
@@ -432,6 +506,130 @@ public class RolloutWorkplacesController : ControllerBase
             id, completedCount, performedBy);
 
         return Ok(MapToDto(updatedWorkplace));
+    }
+
+    /// <summary>
+    /// Reopens a completed workplace for further editing.
+    /// Optionally reverses asset status changes made during completion.
+    /// </summary>
+    /// <param name="id">Workplace ID</param>
+    /// <param name="reverseAssets">If true, reverses asset status changes</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    [HttpPost("{id}/reopen")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> Reopen(
+        int id,
+        [FromQuery] bool reverseAssets = false,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {id} not found" });
+        }
+
+        if (workplace.Status != RolloutWorkplaceStatus.Completed)
+        {
+            return BadRequest(new { message = $"Cannot reopen workplace with status '{workplace.Status}'. Must be Completed." });
+        }
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        if (reverseAssets)
+        {
+            // Reverse relational assignments
+            var assignments = await _context.WorkplaceAssetAssignments
+                .Include(a => a.NewAsset)
+                .Include(a => a.OldAsset)
+                .Where(a => a.RolloutWorkplaceId == id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var assignment in assignments)
+            {
+                if (assignment.Status == AssetAssignmentStatus.Installed)
+                {
+                    assignment.Status = AssetAssignmentStatus.Pending;
+                    assignment.InstalledAt = null;
+                    assignment.InstalledBy = null;
+                    assignment.InstalledByEmail = null;
+                    assignment.UpdatedAt = DateTime.UtcNow;
+
+                    // Reverse new asset: InGebruik → Nieuw
+                    if (assignment.NewAsset != null && assignment.NewAsset.Status == AssetStatus.InGebruik)
+                    {
+                        assignment.NewAsset.Status = AssetStatus.Nieuw;
+                        assignment.NewAsset.Owner = null;
+                        assignment.NewAsset.InstallationDate = null;
+                        assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+                    }
+
+                    // Reverse old asset: UitDienst → InGebruik
+                    if (assignment.OldAsset != null && assignment.OldAsset.Status == AssetStatus.UitDienst)
+                    {
+                        assignment.OldAsset.Status = AssetStatus.InGebruik;
+                        assignment.OldAsset.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            // Also reverse JSON plans
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    var assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
+                    if (assetPlans != null)
+                    {
+                        foreach (var plan in assetPlans)
+                        {
+                            if (plan.Status == "installed")
+                                plan.Status = "pending";
+                        }
+                        workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
+                        workplace.CompletedItems = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse AssetPlansJson during reopen for workplace {WorkplaceId}", id);
+                }
+            }
+        }
+
+        // Reset workplace status
+        workplace.Status = RolloutWorkplaceStatus.InProgress;
+        workplace.CompletedAt = null;
+        workplace.CompletedBy = null;
+        workplace.CompletedByEmail = null;
+        workplace.Notes = string.IsNullOrEmpty(workplace.Notes)
+            ? $"Reopened by {performedBy}"
+            : $"{workplace.Notes}\nReopened by {performedBy}";
+        workplace.UpdatedAt = DateTime.UtcNow;
+
+        await _rolloutRepository.UpdateWorkplaceAsync(workplace, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // Update day completed count
+        var day = await _rolloutRepository.GetDayByIdAsync(workplace.RolloutDayId, false, cancellationToken);
+        if (day != null)
+        {
+            if (day.CompletedWorkplaces > 0)
+                day.CompletedWorkplaces--;
+
+            if (day.Status == RolloutDayStatus.Completed)
+                day.Status = RolloutDayStatus.Ready;
+
+            day.UpdatedAt = DateTime.UtcNow;
+            await _rolloutRepository.UpdateDayAsync(day, cancellationToken);
+        }
+
+        _logger.LogInformation("Reopened workplace {WorkplaceId} by {PerformedBy} (reverseAssets={ReverseAssets})",
+            id, performedBy, reverseAssets);
+
+        var updatedWorkplace = await _rolloutRepository.GetWorkplaceByIdAsync(id, cancellationToken);
+        return Ok(MapToDto(updatedWorkplace!));
     }
 
     /// <summary>
@@ -721,7 +919,7 @@ public class RolloutWorkplacesController : ControllerBase
             return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
         }
 
-        // Get assignments ordered by position
+        // Get assignments ordered by position (relational model)
         var assignments = await _context.WorkplaceAssetAssignments
             .Include(a => a.AssetType)
             .Include(a => a.NewAsset)
@@ -730,41 +928,94 @@ public class RolloutWorkplacesController : ControllerBase
             .OrderBy(a => a.Position)
             .ToListAsync(cancellationToken);
 
-        // Check if index is valid
-        if (itemIndex < 0 || itemIndex >= assignments.Count)
-        {
-            return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
-        }
-
-        var assignment = assignments[itemIndex];
         var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
         var performedByEmail = User.FindFirstValue(ClaimTypes.Email);
 
-        // Update assignment details
-        if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+        if (assignments.Count > 0)
         {
-            assignment.SerialNumberCaptured = dto.SerialNumber;
-            assignment.SerialNumberRequired = true;
-
-            // Update linked asset if it exists
-            if (assignment.NewAsset != null)
+            // Use relational model
+            if (itemIndex < 0 || itemIndex >= assignments.Count)
             {
-                assignment.NewAsset.SerialNumber = dto.SerialNumber;
-                assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
             }
-        }
 
-        // Handle installation status
-        if (dto.MarkAsInstalled == true)
+            var assignment = assignments[itemIndex];
+
+            if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+            {
+                assignment.SerialNumberCaptured = dto.SerialNumber;
+                assignment.SerialNumberRequired = true;
+
+                if (assignment.NewAsset != null)
+                {
+                    assignment.NewAsset.SerialNumber = dto.SerialNumber;
+                    assignment.NewAsset.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            if (dto.MarkAsInstalled == true)
+            {
+                assignment.Status = AssetAssignmentStatus.Installed;
+                assignment.InstalledAt = DateTime.UtcNow;
+                assignment.InstalledBy = performedBy;
+                assignment.InstalledByEmail = performedByEmail;
+            }
+
+            assignment.UpdatedAt = DateTime.UtcNow;
+
+            // Keep JSON in sync with relational model
+            await SyncJsonFromAssignments(workplace, cancellationToken);
+        }
+        else
         {
-            assignment.Status = AssetAssignmentStatus.Installed;
-            assignment.InstalledAt = DateTime.UtcNow;
-            assignment.InstalledBy = performedBy;
-            assignment.InstalledByEmail = performedByEmail;
+            // Fallback to legacy AssetPlansJson
+            var assetPlans = new List<AssetPlanDto>();
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
+                }
+                catch
+                {
+                    return BadRequest(new { message = "Failed to parse asset plans." });
+                }
+            }
+
+            if (itemIndex < 0 || itemIndex >= assetPlans.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assetPlans.Count} asset plans." });
+            }
+
+            var plan = assetPlans[itemIndex];
+
+            if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+            {
+                plan.Metadata ??= new Dictionary<string, string>();
+                plan.Metadata["serialNumber"] = dto.SerialNumber;
+
+                // Update linked asset if exists
+                if (plan.ExistingAssetId.HasValue)
+                {
+                    var asset = await _context.Assets.FindAsync(new object[] { plan.ExistingAssetId.Value }, cancellationToken);
+                    if (asset != null)
+                    {
+                        asset.SerialNumber = dto.SerialNumber;
+                        asset.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            if (dto.MarkAsInstalled == true)
+            {
+                plan.Status = "installed";
+            }
+
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed");
         }
 
-        assignment.UpdatedAt = DateTime.UtcNow;
-
+        workplace.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Updated item {ItemIndex} details for workplace {WorkplaceId} by {PerformedBy}",
@@ -780,10 +1031,300 @@ public class RolloutWorkplacesController : ControllerBase
         return Ok(MapToDto(updatedWorkplace!));
     }
 
+    /// <summary>
+    /// Updates the status of a single asset plan item (e.g. skip or mark installed).
+    /// </summary>
+    [HttpPost("{workplaceId}/items/{itemIndex}/status")]
+    [ProducesResponseType(typeof(RolloutWorkplaceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RolloutWorkplaceDto>> UpdateItemStatus(
+        int workplaceId,
+        int itemIndex,
+        [FromBody] UpdateWorkplaceStatusDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var workplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        if (workplace == null)
+        {
+            return NotFound(new { message = $"Workplace with ID {workplaceId} not found" });
+        }
+
+        // Try relational model first
+        var assignments = await _context.WorkplaceAssetAssignments
+            .Where(a => a.RolloutWorkplaceId == workplaceId)
+            .OrderBy(a => a.Position)
+            .ToListAsync(cancellationToken);
+
+        if (assignments.Count > 0)
+        {
+            if (itemIndex < 0 || itemIndex >= assignments.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+            }
+
+            var assignment = assignments[itemIndex];
+            if (Enum.TryParse<AssetAssignmentStatus>(dto.Status, true, out var assignmentStatus))
+            {
+                assignment.Status = assignmentStatus;
+            }
+            assignment.UpdatedAt = DateTime.UtcNow;
+
+            // Keep JSON in sync with relational model
+            await SyncJsonFromAssignments(workplace, cancellationToken);
+        }
+        else
+        {
+            // Fallback to legacy AssetPlansJson
+            var assetPlans = new List<AssetPlanDto>();
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
+                }
+                catch
+                {
+                    return BadRequest(new { message = "Failed to parse asset plans." });
+                }
+            }
+
+            if (itemIndex < 0 || itemIndex >= assetPlans.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assetPlans.Count} asset plans." });
+            }
+
+            assetPlans[itemIndex].Status = dto.Status.ToLowerInvariant();
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed" || p.Status == "skipped");
+        }
+
+        workplace.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated item {ItemIndex} status to {Status} for workplace {WorkplaceId}",
+            itemIndex, dto.Status, workplaceId);
+
+        var updatedWorkplace = await _context.RolloutWorkplaces
+            .Include(w => w.Service)
+            .Include(w => w.Building)
+            .Include(w => w.PhysicalWorkplace)
+            .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
+
+        return Ok(MapToDto(updatedWorkplace!));
+    }
+
     #region Private Mapping Methods
 
-    private static RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)
+    /// <summary>
+    /// Equipment type string → AssetType ID mapping (seeded in ApplicationDbContext)
+    /// </summary>
+    private static readonly Dictionary<string, int> _equipmentTypeToAssetTypeId = new(StringComparer.OrdinalIgnoreCase)
     {
+        ["laptop"] = 1,   // LAP
+        ["desktop"] = 2,  // DESK
+        ["monitor"] = 3,  // MON
+        ["docking"] = 8,  // DOCK
+        ["keyboard"] = 9, // KEYB
+        ["mouse"] = 10,   // MOUSE
+    };
+
+    private static readonly HashSet<string> _userAssignedEquipment = new(StringComparer.OrdinalIgnoreCase) { "laptop" };
+
+    /// <summary>
+    /// Maps AssetPlanDto array to CreateWorkplaceAssetAssignmentRequest array.
+    /// This bridges the legacy JSON model to the relational model.
+    /// </summary>
+    private List<CreateWorkplaceAssetAssignmentRequest> MapAssetPlansToAssignments(
+        int workplaceId, List<AssetPlanDto> plans)
+    {
+        var requests = new List<CreateWorkplaceAssetAssignmentRequest>();
+        for (int i = 0; i < plans.Count; i++)
+        {
+            var plan = plans[i];
+
+            // Skip old device plans (they're tracked as OldAssetId on the main assignment)
+            if (plan.Metadata.TryGetValue("isOldDevice", out var isOld) && isOld == "true")
+                continue;
+
+            if (!_equipmentTypeToAssetTypeId.TryGetValue(plan.EquipmentType, out var assetTypeId))
+            {
+                _logger.LogWarning("Unknown equipment type '{EquipmentType}' in asset plan, skipping", plan.EquipmentType);
+                continue;
+            }
+
+            var isUserAssigned = _userAssignedEquipment.Contains(plan.EquipmentType);
+
+            // Determine source type
+            AssetSourceType sourceType;
+            if (plan.ExistingAssetId.HasValue)
+                sourceType = AssetSourceType.ExistingInventory;
+            else if (plan.CreateNew && !string.IsNullOrEmpty(plan.Brand))
+                sourceType = AssetSourceType.NewFromTemplate;
+            else
+                sourceType = AssetSourceType.CreateOnSite;
+
+            var request = new CreateWorkplaceAssetAssignmentRequest
+            {
+                RolloutWorkplaceId = workplaceId,
+                AssetTypeId = assetTypeId,
+                AssignmentCategory = isUserAssigned ? AssignmentCategory.UserAssigned : AssignmentCategory.WorkplaceFixed,
+                SourceType = sourceType,
+                NewAssetId = plan.ExistingAssetId,
+                OldAssetId = plan.OldAssetId,
+                Position = i + 1,
+                SerialNumberRequired = plan.RequiresSerialNumber,
+                QRCodeRequired = plan.RequiresQRCode,
+                MetadataJson = plan.Metadata.Count > 0
+                    ? JsonSerializer.Serialize(plan.Metadata, _jsonOptions)
+                    : null,
+            };
+
+            requests.Add(request);
+        }
+        return requests;
+    }
+
+    /// <summary>
+    /// Creates relational assignments from AssetPlansJson.
+    /// Called during Create and Update to bridge the models.
+    /// </summary>
+    private async Task SyncAssignmentsFromPlans(int workplaceId, List<AssetPlanDto> plans, CancellationToken ct)
+    {
+        try
+        {
+            // Delete existing assignments first
+            await _assignmentService.DeleteByWorkplaceIdAsync(workplaceId, ct);
+
+            // Create new assignments
+            var requests = MapAssetPlansToAssignments(workplaceId, plans);
+            if (requests.Count > 0)
+            {
+                await _assignmentService.BulkCreateAsync(workplaceId, requests, ct);
+                _logger.LogInformation("Synced {Count} assignments for workplace {WorkplaceId}", requests.Count, workplaceId);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail — JSON remains source of truth for now
+            _logger.LogWarning(ex, "Failed to sync assignments for workplace {WorkplaceId}", workplaceId);
+        }
+    }
+
+    /// <summary>
+    /// Syncs AssetPlansJson from relational assignments (reverse direction).
+    /// Called after execution operations that modify assignments.
+    /// </summary>
+    private async Task SyncJsonFromAssignments(RolloutWorkplace workplace, CancellationToken ct)
+    {
+        var assignments = await _context.WorkplaceAssetAssignments
+            .Include(a => a.AssetType)
+            .Include(a => a.NewAsset)
+            .Include(a => a.OldAsset)
+            .Include(a => a.AssetTemplate)
+            .Where(a => a.RolloutWorkplaceId == workplace.Id)
+            .OrderBy(a => a.Position)
+            .ToListAsync(ct);
+
+        if (assignments.Count == 0) return;
+
+        // Also get old device plans from existing JSON (they're not in assignments)
+        var existingPlans = new List<AssetPlanDto>();
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+        {
+            try
+            {
+                existingPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
+            }
+            catch { /* ignore parse errors */ }
+        }
+        var oldDevicePlans = existingPlans.Where(p =>
+            p.Metadata.TryGetValue("isOldDevice", out var isOld) && isOld == "true").ToList();
+
+        var plans = new List<AssetPlanDto>();
+
+        foreach (var a in assignments)
+        {
+            var equipmentType = a.AssetType?.Code?.ToLowerInvariant() switch
+            {
+                "lap" => "laptop",
+                "desk" => "desktop",
+                "mon" => "monitor",
+                "dock" => "docking",
+                "keyb" => "keyboard",
+                "mouse" => "mouse",
+                _ => a.AssetType?.Name?.ToLowerInvariant() ?? "unknown"
+            };
+
+            var metadata = new Dictionary<string, string>();
+            if (!string.IsNullOrEmpty(a.MetadataJson))
+            {
+                try
+                {
+                    metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(a.MetadataJson, _jsonOptions) ?? new();
+                }
+                catch { /* ignore */ }
+            }
+            if (!string.IsNullOrEmpty(a.SerialNumberCaptured))
+                metadata["serialNumber"] = a.SerialNumberCaptured;
+
+            plans.Add(new AssetPlanDto
+            {
+                EquipmentType = equipmentType,
+                ExistingAssetId = a.NewAssetId,
+                ExistingAssetCode = a.NewAsset?.AssetCode,
+                ExistingAssetName = a.NewAsset?.AssetName,
+                OldAssetId = a.OldAssetId,
+                OldAssetCode = a.OldAsset?.AssetCode,
+                OldAssetName = a.OldAsset?.AssetName,
+                CreateNew = a.SourceType != AssetSourceType.ExistingInventory,
+                Brand = a.AssetTemplate?.Brand ?? a.NewAsset?.Brand,
+                Model = a.AssetTemplate?.Model ?? a.NewAsset?.Model,
+                Metadata = metadata,
+                Status = a.Status switch
+                {
+                    AssetAssignmentStatus.Installed => "installed",
+                    AssetAssignmentStatus.Skipped => "skipped",
+                    AssetAssignmentStatus.Failed => "failed",
+                    _ => "pending"
+                },
+                RequiresSerialNumber = a.SerialNumberRequired,
+                RequiresQRCode = a.QRCodeRequired,
+            });
+        }
+
+        // Add old device plans back
+        plans.AddRange(oldDevicePlans);
+
+        workplace.AssetPlansJson = JsonSerializer.Serialize(plans, _jsonOptions);
+        workplace.CompletedItems = plans.Count(p => p.Status == "installed" || p.Status == "skipped");
+    }
+
+    private RolloutWorkplaceDto MapToDto(RolloutWorkplace workplace)
+    {
+        // Parse AssetPlans from legacy JSON
+        var assetPlans = new List<AssetPlanDto>();
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
+                if (parsed != null && parsed.Count > 0)
+                {
+                    assetPlans = parsed;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", workplace.Id);
+            }
+        }
+
         return new RolloutWorkplaceDto
         {
             Id = workplace.Id,
@@ -801,6 +1342,7 @@ public class RolloutWorkplacesController : ControllerBase
             PhysicalWorkplaceName = workplace.PhysicalWorkplace?.Name,
             ScheduledDate = workplace.ScheduledDate,
             IsLaptopSetup = workplace.IsLaptopSetup,
+            AssetPlans = assetPlans,
             Status = workplace.Status.ToString(),
             TotalItems = workplace.TotalItems,
             CompletedItems = workplace.CompletedItems,
