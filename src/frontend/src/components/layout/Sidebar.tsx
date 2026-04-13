@@ -434,9 +434,10 @@ const Sidebar = ({
           <NavigationGroup
             label="Inventory"
             icon={<InventoryIcon />}
-            path={ROUTES.INVENTORY_ASSETS}
-            matchPaths={['/inventory/assets', '/inventory/scan', '/inventory/templates']}
+            path={ROUTES.INVENTORY}
+            matchPaths={['/inventory', '/inventory/assets', '/inventory/scan', '/inventory/templates']}
             subItems={[
+              { label: 'Assets', icon: <InventoryIcon />, path: ROUTES.INVENTORY_ASSETS, matchPaths: ['/inventory/assets'] },
               { label: 'Create Asset', icon: <AddBoxIcon />, path: ROUTES.ASSETS_NEW, matchPaths: ['/inventory/assets/new'] },
               { label: 'Bulk Create Asset', icon: <PlaylistAddIcon />, path: ROUTES.ASSETS_BULK_NEW, matchPaths: ['/inventory/assets/bulk-create'] },
               { label: 'Templates', icon: <StyleIcon />, path: ROUTES.TEMPLATES, matchPaths: ['/inventory/templates'] },
@@ -467,8 +468,8 @@ const Sidebar = ({
           <NavigationGroup
             label="Operations"
             icon={<SettingsApplicationsIcon />}
-            path={ROUTES.ROLLOUTS}
-            matchPaths={['/operations/rollouts', '/operations/swaps']}
+            path={ROUTES.OPERATIONS}
+            matchPaths={['/operations', '/operations/rollouts', '/operations/swaps']}
             subItems={[
               { label: 'Rollout Sessions', icon: <RocketLaunchIcon />, path: ROUTES.ROLLOUTS, matchPaths: ['/operations/rollouts'] },
               { label: 'Swaps', icon: <SwapHorizIcon />, path: ROUTES.LAPTOP_SWAP, matchPaths: ['/operations/swaps'] },

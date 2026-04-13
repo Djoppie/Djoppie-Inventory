@@ -10,6 +10,9 @@ export const ROUTES = {
   /** QR code scanner page */
   SCAN: '/inventory/scan',
 
+  /** Inventory overview/dashboard page */
+  INVENTORY: '/inventory',
+
   /** Inventory assets list page */
   INVENTORY_ASSETS: '/inventory/assets',
 
@@ -45,6 +48,9 @@ export const ROUTES = {
 
   /** Asset Intune management page (requires :id parameter) */
   ASSET_INTUNE: '/inventory/assets/:id/intune',
+
+  /** Operations dashboard page */
+  OPERATIONS: '/operations',
 
   /** Rollout list page */
   ROLLOUTS: '/operations/rollouts',
