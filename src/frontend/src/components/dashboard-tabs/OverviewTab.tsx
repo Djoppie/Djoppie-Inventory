@@ -28,7 +28,7 @@ import { useAssets } from '../../hooks/useAssets';
 import { useRolloutSessions } from '../../hooks/rollout/useRolloutSessions';
 import { physicalWorkplacesStatisticsApi } from '../../api/physicalWorkplaces.api';
 import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
-import { ROUTES } from '../../constants/routes';
+import { ROUTES, buildRoute } from '../../constants/routes';
 import { AssetPlanningCalendar } from '../dashboard/AssetPlanningCalendar';
 import type { EquipmentTypeStatus } from '../../types/physicalWorkplace.types';
 
@@ -814,7 +814,7 @@ const OverviewTab = () => {
               {stockMetrics.laptopsInStock.slice(0, 5).map((asset) => (
                 <Box
                   key={asset.id}
-                  onClick={() => navigate(`${ROUTES.ASSET_DETAIL}/${asset.id}`)}
+                  onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                   sx={{
                     p: 0.75,
                     mb: 0.5,
@@ -845,7 +845,7 @@ const OverviewTab = () => {
               {stockMetrics.desktopsInStock.slice(0, 3).map((asset) => (
                 <Box
                   key={asset.id}
-                  onClick={() => navigate(`${ROUTES.ASSET_DETAIL}/${asset.id}`)}
+                  onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                   sx={{
                     p: 0.75,
                     mb: 0.5,

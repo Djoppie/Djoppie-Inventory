@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IServiceRepository, ServiceRepository>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IAssetEventRepository, AssetEventRepository>();
-        services.AddScoped<ILeaseContractRepository, LeaseContractRepository>();
+
         services.AddScoped<IRolloutRepository, RolloutRepository>();
         services.AddScoped<IAssetRequestRepository, AssetRequestRepository>();
 
@@ -45,7 +45,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrganizationSyncService, OrganizationSyncService>();
         services.AddScoped<IAssetMovementService, AssetMovementService>();
         services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
-        services.AddScoped<AssetPlanSyncService>();
 
         // Device Deployment Services (Laptop Swap / Onboarding)
         services.AddScoped<IDeploymentService, DeploymentService>();

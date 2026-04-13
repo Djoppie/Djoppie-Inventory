@@ -16,13 +16,13 @@ export interface AssetEvent {
 
 export const assetEventsApi = {
   getByAssetId: async (assetId: number): Promise<AssetEvent[]> => {
-    const response = await apiClient.get<AssetEvent[]>(`/assetevents/by-asset/${assetId}`);
+    const response = await apiClient.get<AssetEvent[]>(`/inventory/events/by-asset/${assetId}`);
     return response.data;
   },
 
   getRecent: async (limit?: number): Promise<AssetEvent[]> => {
     const params = limit ? { limit } : {};
-    const response = await apiClient.get<AssetEvent[]>('/assetevents/recent', { params });
+    const response = await apiClient.get<AssetEvent[]>('/inventory/events/recent', { params });
     return response.data;
   },
 };

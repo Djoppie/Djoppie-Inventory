@@ -7,35 +7,37 @@ import Layout from './components/layout/Layout';
 import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
-const DashboardOverviewPage = lazy(() => import('./pages/DashboardOverviewPage'));
-const ScanPage = lazy(() => import('./pages/ScanPage'));
-const AssetDetailPage = lazy(() => import('./pages/AssetDetailPage'));
-const AddAssetPage = lazy(() => import('./pages/AddAssetPage'));
-const EditAssetPage = lazy(() => import('./pages/EditAssetPage'));
-const BulkCreateAssetPage = lazy(() => import('./pages/BulkCreateAssetPage'));
-const AssetTemplatesPage = lazy(() => import('./pages/AssetTemplatesPage'));
-const AdminAssetsPage = lazy(() => import('./pages/AdminAssetsPage'));
-const AdminOrganisationPage = lazy(() => import('./pages/AdminOrganisationPage'));
-const AdminLocationsPage = lazy(() => import('./pages/AdminLocationsPage'));
-const InstalledSoftwarePage = lazy(() => import('./pages/InstalledSoftwarePage'));
-const AssetIntunePage = lazy(() => import('./pages/AssetIntunePage'));
-const RolloutListPage = lazy(() => import('./pages/RolloutListPage'));
-const RolloutPlannerPage = lazy(() => import('./pages/RolloutPlannerPage'));
-const RolloutExecutionPage = lazy(() => import('./pages/RolloutExecutionPage'));
-const RolloutReportPage = lazy(() => import('./pages/RolloutReportPage'));
-const RolloutDayDetailPage = lazy(() => import('./pages/RolloutDayDetailPage'));
-const AutopilotDevicesPage = lazy(() => import('./pages/AutopilotDevicesPage'));
-const AutopilotTimelinePage = lazy(() => import('./pages/AutopilotTimelinePage'));
-const DeviceManagementPage = lazy(() => import('./pages/DeviceManagementPage'));
-const PhysicalWorkplacesPage = lazy(() => import('./pages/PhysicalWorkplacesPage'));
-const WorkplaceDetailPage = lazy(() => import('./pages/WorkplaceDetailPage'));
-const WorkplaceReportsPage = lazy(() => import('./pages/WorkplaceReportsPage'));
-const RequestsDashboardPage = lazy(() => import('./pages/RequestsDashboardPage'));
-const RequestsReportsPage = lazy(() => import('./pages/RequestsReportsPage'));
-const LaptopSwapPage = lazy(() => import('./pages/LaptopSwapPage'));
-const DeploymentHistoryPage = lazy(() => import('./pages/DeploymentHistoryPage'));
-const ReportsPage = lazy(() => import('./pages/ReportsPage'));
-const IntuneDeviceDashboardPage = lazy(() => import('./pages/IntuneDeviceDashboardPage'));
+const DashboardOverviewPage = lazy(() => import('./pages/dashboard/DashboardOverviewPage'));
+const ScanPage = lazy(() => import('./pages/inventory/ScanPage'));
+const AssetDetailPage = lazy(() => import('./pages/inventory/AssetDetailPage'));
+const AddAssetPage = lazy(() => import('./pages/inventory/AddAssetPage'));
+const EditAssetPage = lazy(() => import('./pages/inventory/EditAssetPage'));
+const BulkCreateAssetPage = lazy(() => import('./pages/inventory/BulkCreateAssetPage'));
+const AssetTemplatesPage = lazy(() => import('./pages/inventory/AssetTemplatesPage'));
+const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'));
+const AdminAssetsPage = lazy(() => import('./pages/admin/AdminAssetsPage'));
+const AdminOrganisationPage = lazy(() => import('./pages/admin/AdminOrganisationPage'));
+const AdminLocationsPage = lazy(() => import('./pages/admin/AdminLocationsPage'));
+const InstalledSoftwarePage = lazy(() => import('./pages/inventory/InstalledSoftwarePage'));
+const AssetIntunePage = lazy(() => import('./pages/inventory/AssetIntunePage'));
+const RolloutListPage = lazy(() => import('./pages/operations/rollouts/RolloutListPage'));
+const RolloutPlannerPage = lazy(() => import('./pages/operations/rollouts/RolloutPlannerPage'));
+const RolloutExecutionPage = lazy(() => import('./pages/operations/rollouts/RolloutExecutionPage'));
+const RolloutReportPage = lazy(() => import('./pages/operations/rollouts/RolloutReportPage'));
+const RolloutDayDetailPage = lazy(() => import('./pages/operations/rollouts/RolloutDayDetailPage'));
+const AutopilotDevicesPage = lazy(() => import('./pages/devices/AutopilotDevicesPage'));
+const AutopilotTimelinePage = lazy(() => import('./pages/devices/AutopilotTimelinePage'));
+const AssetsPage = lazy(() => import('./pages/inventory/AssetsPage'));
+const WorkplacesPage = lazy(() => import('./pages/workplaces/WorkplacesPage'));
+const WorkplaceDetailPage = lazy(() => import('./pages/workplaces/WorkplaceDetailPage'));
+const WorkplaceReportsPage = lazy(() => import('./pages/workplaces/WorkplaceReportsPage'));
+const RequestsDashboardPage = lazy(() => import('./pages/operations/requests/RequestsDashboardPage'));
+const RequestsReportsPage = lazy(() => import('./pages/operations/requests/RequestsReportsPage'));
+const LaptopSwapPage = lazy(() => import('./pages/operations/swaps/LaptopSwapPage'));
+const DeploymentHistoryPage = lazy(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
+const IntuneDeviceDashboardPage = lazy(() => import('./pages/devices/IntuneDeviceDashboardPage'));
+const OperationsDashboardPage = lazy(() => import('./pages/operations/OperationsDashboardPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,7 +60,7 @@ function App() {
                 <Routes>
                   <Route path={ROUTES.DASHBOARD} element={<DashboardOverviewPage />} />
                   <Route path={ROUTES.SCAN} element={<ScanPage />} />
-                  <Route path={ROUTES.DEVICE_MANAGEMENT} element={<DeviceManagementPage />} />
+                  <Route path={ROUTES.INVENTORY_ASSETS} element={<AssetsPage />} />
                   <Route path={ROUTES.ASSET_DETAIL} element={<AssetDetailPage />} />
                   <Route path={ROUTES.ASSETS_NEW} element={<AddAssetPage />} />
                   <Route path={ROUTES.ASSETS_BULK_NEW} element={<BulkCreateAssetPage />} />
@@ -66,9 +68,11 @@ function App() {
                   <Route path={ROUTES.ASSET_SOFTWARE} element={<InstalledSoftwarePage />} />
                   <Route path={ROUTES.ASSET_INTUNE} element={<AssetIntunePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
+                  <Route path={ROUTES.INVENTORY} element={<InventoryPage />} />
                   <Route path={ROUTES.ADMIN_ASSETS} element={<AdminAssetsPage />} />
                   <Route path={ROUTES.ADMIN_ORGANISATION} element={<AdminOrganisationPage />} />
                   <Route path={ROUTES.ADMIN_LOCATIONS} element={<AdminLocationsPage />} />
+                  <Route path={ROUTES.OPERATIONS} element={<OperationsDashboardPage />} />
                   <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />
                   <Route path={ROUTES.ROLLOUTS_NEW} element={<RolloutPlannerPage />} />
                   <Route path={ROUTES.ROLLOUT_EDIT} element={<RolloutPlannerPage />} />
@@ -81,7 +85,7 @@ function App() {
                   <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />
                   <Route path={ROUTES.WORKPLACE_DETAIL} element={<WorkplaceDetailPage />} />
                   <Route path={ROUTES.WORKPLACE_REPORTS} element={<WorkplaceReportsPage />} />
-                  <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<PhysicalWorkplacesPage />} />
+                  <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<WorkplacesPage />} />
                   <Route path={ROUTES.REQUESTS} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_ONBOARDING} element={<RequestsDashboardPage />} />
                   <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<RequestsDashboardPage />} />

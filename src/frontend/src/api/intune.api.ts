@@ -13,7 +13,7 @@ export const intuneApi = {
    * Get all managed devices from Intune
    */
   getAllDevices: async (): Promise<IntuneDevice[]> => {
-    const response = await apiClient.get<IntuneDevice[]>('/intune/devices');
+    const response = await apiClient.get<IntuneDevice[]>('/devices/intune/devices');
     return response.data;
   },
 
@@ -22,7 +22,7 @@ export const intuneApi = {
    * @param deviceId - The Intune device identifier
    */
   getDeviceById: async (deviceId: string): Promise<IntuneDevice> => {
-    const response = await apiClient.get<IntuneDevice>(`/intune/devices/${deviceId}`);
+    const response = await apiClient.get<IntuneDevice>(`/devices/intune/devices/${deviceId}`);
     return response.data;
   },
 
@@ -31,7 +31,7 @@ export const intuneApi = {
    * @param serialNumber - The device serial number
    */
   getDeviceBySerialNumber: async (serialNumber: string): Promise<IntuneDevice> => {
-    const response = await apiClient.get<IntuneDevice>(`/intune/devices/serial/${serialNumber}`);
+    const response = await apiClient.get<IntuneDevice>(`/devices/intune/devices/serial/${serialNumber}`);
     return response.data;
   },
 
@@ -40,7 +40,7 @@ export const intuneApi = {
    * @param name - The device name (partial match supported)
    */
   searchDevicesByName: async (name: string): Promise<IntuneDevice[]> => {
-    const response = await apiClient.get<IntuneDevice[]>('/intune/devices/search', {
+    const response = await apiClient.get<IntuneDevice[]>('/devices/intune/devices/search', {
       params: { name }
     });
     return response.data;
@@ -51,7 +51,7 @@ export const intuneApi = {
    * @param upn - The user principal name (email)
    */
   getDevicesByUser: async (upn: string): Promise<IntuneDevice[]> => {
-    const response = await apiClient.get<IntuneDevice[]>(`/intune/devices/user/${encodeURIComponent(upn)}`);
+    const response = await apiClient.get<IntuneDevice[]>(`/devices/intune/devices/user/${encodeURIComponent(upn)}`);
     return response.data;
   },
 
@@ -60,7 +60,7 @@ export const intuneApi = {
    * @param os - The operating system (e.g., "Windows", "iOS", "Android")
    */
   getDevicesByOS: async (os: string): Promise<IntuneDevice[]> => {
-    const response = await apiClient.get<IntuneDevice[]>(`/intune/devices/os/${os}`);
+    const response = await apiClient.get<IntuneDevice[]>(`/devices/intune/devices/os/${os}`);
     return response.data;
   },
 
@@ -70,7 +70,7 @@ export const intuneApi = {
    */
   checkDeviceCompliance: async (deviceId: string): Promise<{ deviceId: string; isCompliant: boolean; checkedAt: string }> => {
     const response = await apiClient.get<{ deviceId: string; isCompliant: boolean; checkedAt: string }>(
-      `/intune/devices/${deviceId}/compliance`
+      `/devices/intune/devices/${deviceId}/compliance`
     );
     return response.data;
   },
@@ -79,7 +79,7 @@ export const intuneApi = {
    * Get device statistics
    */
   getStatistics: async (): Promise<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }> => {
-    const response = await apiClient.get<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }>('/intune/statistics');
+    const response = await apiClient.get<{ totalDevices: number; compliantDevices: number; nonCompliantDevices: number }>('/devices/intune/statistics');
     return response.data;
   },
 
@@ -87,7 +87,7 @@ export const intuneApi = {
    * Get all Windows Autopilot devices
    */
   getAutopilotDevices: async (): Promise<AutopilotDevice[]> => {
-    const response = await apiClient.get<AutopilotDevice[]>('/intune/autopilot-devices');
+    const response = await apiClient.get<AutopilotDevice[]>('/devices/intune/autopilot-devices');
     return response.data;
   },
 
@@ -96,7 +96,7 @@ export const intuneApi = {
    * @param serialNumber - The device serial number
    */
   getProvisioningTimeline: async (serialNumber: string): Promise<ProvisioningTimeline> => {
-    const response = await apiClient.get<ProvisioningTimeline>(`/intune/devices/serial/${serialNumber}/provisioning-timeline`);
+    const response = await apiClient.get<ProvisioningTimeline>(`/devices/intune/devices/serial/${serialNumber}/provisioning-timeline`);
     return response.data;
   },
 
@@ -107,7 +107,7 @@ export const intuneApi = {
    * @param deviceId - The Intune device identifier
    */
   getDeviceConfigurationStatus: async (deviceId: string): Promise<DeviceConfigurationStatus> => {
-    const response = await apiClient.get<DeviceConfigurationStatus>(`/intune/devices/${deviceId}/configuration-status`);
+    const response = await apiClient.get<DeviceConfigurationStatus>(`/devices/intune/devices/${deviceId}/configuration-status`);
     return response.data;
   },
 
@@ -116,7 +116,7 @@ export const intuneApi = {
    * @param serialNumber - The device serial number
    */
   getDeviceConfigurationStatusBySerial: async (serialNumber: string): Promise<DeviceConfigurationStatus> => {
-    const response = await apiClient.get<DeviceConfigurationStatus>(`/intune/devices/serial/${serialNumber}/configuration-status`);
+    const response = await apiClient.get<DeviceConfigurationStatus>(`/devices/intune/devices/serial/${serialNumber}/configuration-status`);
     return response.data;
   },
 
@@ -126,7 +126,7 @@ export const intuneApi = {
    */
   syncIntuneDataToAssets: async (assetIds?: number[]): Promise<IntuneSyncResult> => {
     const params = assetIds?.length ? { assetIds } : undefined;
-    const response = await apiClient.post<IntuneSyncResult>('/intune/sync-to-assets', null, { params });
+    const response = await apiClient.post<IntuneSyncResult>('/devices/intune/sync-to-assets', null, { params });
     return response.data;
   },
 
@@ -135,22 +135,22 @@ export const intuneApi = {
    * @param request - Import request with device IDs and asset type
    */
   importDevicesAsAssets: async (request: ImportIntuneDevicesRequest): Promise<ImportIntuneDevicesResult> => {
-    const response = await apiClient.post<ImportIntuneDevicesResult>('/intune/import-devices', request);
+    const response = await apiClient.post<ImportIntuneDevicesResult>('/devices/intune/import-devices', request);
     return response.data;
   },
 
   getDeviceGroups: async (deviceId: string): Promise<DeviceGroupMembership> => {
-    const response = await apiClient.get<DeviceGroupMembership>(`/intune/devices/${deviceId}/groups`);
+    const response = await apiClient.get<DeviceGroupMembership>(`/devices/intune/devices/${deviceId}/groups`);
     return response.data;
   },
 
   getDeviceEvents: async (deviceId: string): Promise<DeviceEventsResponse> => {
-    const response = await apiClient.get<DeviceEventsResponse>(`/intune/devices/${deviceId}/events`);
+    const response = await apiClient.get<DeviceEventsResponse>(`/devices/intune/devices/${deviceId}/events`);
     return response.data;
   },
 
   getDeviceHealth: async (serialNumber: string): Promise<DeviceHealthInfo> => {
-    const response = await apiClient.get<DeviceHealthInfo>(`/intune/devices/serial/${serialNumber}/health`);
+    const response = await apiClient.get<DeviceHealthInfo>(`/devices/intune/devices/serial/${serialNumber}/health`);
     return response.data;
   },
 };

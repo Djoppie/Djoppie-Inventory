@@ -18,8 +18,8 @@ import type {
   CreateRolloutSession,
   UpdateRolloutSession,
 } from '../../types/rollout';
-import type { RescheduledWorkplace } from '../../components/rollout/PlanningCalendar';
-import { PlanningStatusFilterValue } from '../../components/rollout/PlanningStatusFilter';
+import type { RescheduledWorkplace } from '../../components/operations/rollout/PlanningCalendar';
+import { PlanningStatusFilterValue } from '../../components/operations/rollout/PlanningStatusFilter';
 
 interface UseRolloutPlannerDataParams {
   sessionId: number | undefined;
@@ -244,13 +244,27 @@ export function useRolloutPlannerData({
 
   const deleteDay = useCallback(async (day: RolloutDay) => {
     if (!sessionId) return;
+
+    // Prevent deletion of completed days
+    if (day.status === 'Completed') {
+      alert('Een voltooide planning kan niet verwijderd worden.');
+      return;
+    }
+
     const workplaceCount = day.totalWorkplaces;
     const planningLabel = day.name || `Planning ${day.dayNumber}`;
     const message = workplaceCount > 0
       ? `"${planningLabel}" verwijderen? Dit verwijdert ook ${workplaceCount} werkplek(ken).`
       : `"${planningLabel}" verwijderen?`;
     if (!window.confirm(message)) return;
-    await deleteDayMutation.mutateAsync({ dayId: day.id, sessionId });
+
+    try {
+      await deleteDayMutation.mutateAsync({ dayId: day.id, sessionId });
+    } catch (err) {
+      console.error('Failed to delete day:', err);
+      const msg = err instanceof Error ? err.message : 'Onbekende fout';
+      alert(`Fout bij verwijderen van planning: ${msg}`);
+    }
   }, [deleteDayMutation, sessionId]);
 
   const updateDayStatus = useCallback(async (day: RolloutDay, status: string) => {
@@ -275,7 +289,7 @@ export function useRolloutPlannerData({
       },
     });
     if (newStatus === 'InProgress') {
-      navigate(`/rollouts/${session.id}/execute`);
+      navigate(`/operations/rollouts/${session.id}/execute`);
     }
   }, [session, updateMutation, navigate]);
 
