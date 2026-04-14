@@ -42,6 +42,8 @@ public record EmployeeDto(
     string? CompanyName,
     int? ServiceId,
     ServiceInfoDto? Service,
+    int? PhysicalWorkplaceId,
+    string? PhysicalWorkplaceCode,
     bool IsActive,
     int SortOrder,
     int AssetCount,

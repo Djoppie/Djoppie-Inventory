@@ -87,6 +87,7 @@ export interface PhysicalWorkplaceSummary {
   floor?: string;
   currentOccupantName?: string;
   currentOccupantEmail?: string;
+  currentOccupantEmployeeId?: number;
   isActive: boolean;
   // Equipment summary
   fixedAssetCount?: number;

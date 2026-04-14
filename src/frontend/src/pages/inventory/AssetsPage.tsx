@@ -1,41 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
   Paper,
   Chip,
-  IconButton,
-  Tooltip,
   Button,
   Stack,
   useTheme,
   alpha,
   Avatar,
-  LinearProgress,
-  Divider,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemText,
-  ListItemSecondaryAction,
-  TextField,
-  Card,
-  CardContent,
-  CardHeader,
 } from '@mui/material';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import AddIcon from '@mui/icons-material/Add';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import EventIcon from '@mui/icons-material/Event';
 import HistoryIcon from '@mui/icons-material/History';
-import ComputerIcon from '@mui/icons-material/Computer';
-import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
-import NotesIcon from '@mui/icons-material/Notes';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import BuildIcon from '@mui/icons-material/Build';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -46,7 +30,6 @@ import StorageIcon from '@mui/icons-material/Storage';
 import { ROUTES, buildRoute } from '../../constants/routes';
 import { useAssets } from '../../hooks/useAssets';
 import Loading from '../../components/common/Loading';
-import type { Asset } from '../../types/asset.types';
 
 // Widget card styles
 const widgetCardSx = {
@@ -59,12 +42,10 @@ const widgetCardSx = {
 };
 
 const AssetsPage = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { data: assets, isLoading, error } = useAssets();
-  const [notes, setNotes] = useState('');
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -123,16 +104,6 @@ const AssetsPage = () => {
       .slice(0, 5);
   }, [assets]);
 
-  // Recently updated assets (last 7 days)
-  const recentlyUpdated = useMemo(() => {
-    if (!assets) return [];
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-    return assets
-      .filter(a => new Date(a.updatedAt) >= sevenDaysAgo && new Date(a.updatedAt).getTime() !== new Date(a.createdAt).getTime())
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, 5);
-  }, [assets]);
 
   // Assets needing attention (defect or in repair)
   const needsAttention = useMemo(() => {
@@ -143,18 +114,6 @@ const AssetsPage = () => {
       .slice(0, 5);
   }, [assets]);
 
-  // Assets by category
-  const categoryBreakdown = useMemo(() => {
-    if (!assets) return [];
-    const categories = assets.reduce((acc, asset) => {
-      const cat = asset.category || 'Uncategorized';
-      acc[cat] = (acc[cat] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    return Object.entries(categories)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [assets]);
 
   // Format relative time
   const formatRelativeTime = (dateString: string): string => {
@@ -167,6 +126,20 @@ const AssetsPage = () => {
     if (diffDays === 1) return 'Gisteren';
     if (diffDays < 7) return `${diffDays} dagen geleden`;
     return date.toLocaleDateString('nl-NL');
+  };
+
+  // Format asset display - Primary: AssetCode - SerieNummer (workplace - bezetter)
+  const formatAssetPrimary = (asset: { assetCode: string; serialNumber?: string | null; physicalWorkplace?: { name: string } | null; owner?: string | null }) => {
+    const codeSn = [asset.assetCode, asset.serialNumber].filter(Boolean).join(' - ');
+    const location = [asset.physicalWorkplace?.name, asset.owner].filter(Boolean).join(' - ');
+    return location ? `${codeSn} (${location})` : codeSn;
+  };
+
+  // Format asset display - Secondary: type -- Brand Model
+  const formatAssetSecondary = (asset: { category?: string | null; assetType?: { name: string } | null; brand?: string | null; model?: string | null }) => {
+    const type = asset.assetType?.name || asset.category || '';
+    const brandModel = [asset.brand, asset.model].filter(Boolean).join(' ');
+    return [type, brandModel].filter(Boolean).join(' -- ') || '-';
   };
 
   // Format days until
@@ -306,12 +279,83 @@ const AssetsPage = () => {
           gridTemplateColumns: {
             xs: '1fr',
             md: 'repeat(2, 1fr)',
-            lg: 'repeat(3, 1fr)',
           },
           gap: 2.5,
         }}
       >
-        {/* Upcoming Certificate Expirations */}
+        {/* 1. Assets Needing Attention - Most Urgent */}
+        <Paper
+          elevation={0}
+          sx={{
+            ...widgetCardSx,
+            bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
+            boxShadow: isDark ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
+          }}
+        >
+          <Box sx={{ p: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Avatar sx={{ bgcolor: alpha('#F97316', 0.12), width: 40, height: 40 }}>
+                <WarningAmberIcon sx={{ color: '#F97316' }} />
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  Actie Vereist
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Defect of in herstelling
+                </Typography>
+              </Box>
+              {needsAttention.length > 0 && (
+                <Chip
+                  label={stats.defect + stats.repair}
+                  size="small"
+                  sx={{ ml: 'auto', fontWeight: 700, bgcolor: '#F97316', color: 'white' }}
+                />
+              )}
+            </Box>
+
+            {needsAttention.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <CheckCircleIcon sx={{ fontSize: 40, color: '#22c55e', opacity: 0.5, mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Alle assets zijn operationeel
+                </Typography>
+              </Box>
+            ) : (
+              <List dense disablePadding>
+                {needsAttention.map((asset) => (
+                  <ListItem
+                    key={asset.id}
+                    sx={{
+                      px: 1.5,
+                      py: 1,
+                      borderRadius: 1,
+                      mb: 0.5,
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: alpha('#F97316', 0.08) },
+                    }}
+                    onClick={() => navigate(buildRoute.assetDetail(asset.id))}
+                  >
+                    <ListItemText
+                      primary={formatAssetPrimary(asset)}
+                      secondary={formatAssetSecondary(asset)}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
+                    />
+                    <Chip
+                      label={asset.status === 'Defect' ? 'Defect' : 'Herstelling'}
+                      size="small"
+                      color={asset.status === 'Defect' ? 'error' : 'warning'}
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
+        </Paper>
+
+        {/* 2. Certificate Expirations - Security Critical */}
         <Paper
           elevation={0}
           sx={{
@@ -368,10 +412,10 @@ const AssetsPage = () => {
                       onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                     >
                       <ListItemText
-                        primary={asset.assetCode}
-                        secondary={asset.assetName || asset.serialNumber}
+                        primary={formatAssetPrimary(asset)}
+                        secondary={formatAssetSecondary(asset)}
                         primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
-                        secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                        secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
                       />
                       <Chip
                         label={daysUntil.text}
@@ -387,7 +431,7 @@ const AssetsPage = () => {
           </Box>
         </Paper>
 
-        {/* Warranty Expirations */}
+        {/* 3. Warranty Expirations - Business Critical */}
         <Paper
           elevation={0}
           sx={{
@@ -444,10 +488,10 @@ const AssetsPage = () => {
                       onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                     >
                       <ListItemText
-                        primary={asset.assetCode}
-                        secondary={`${asset.brand || ''} ${asset.model || ''}`.trim() || asset.assetName}
+                        primary={formatAssetPrimary(asset)}
+                        secondary={formatAssetSecondary(asset)}
                         primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
-                        secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                        secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
                       />
                       <Chip
                         label={daysUntil.text}
@@ -463,79 +507,7 @@ const AssetsPage = () => {
           </Box>
         </Paper>
 
-        {/* Assets Needing Attention */}
-        <Paper
-          elevation={0}
-          sx={{
-            ...widgetCardSx,
-            bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
-            boxShadow: isDark ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
-          }}
-        >
-          <Box sx={{ p: 2.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Avatar sx={{ bgcolor: alpha('#F97316', 0.12), width: 40, height: 40 }}>
-                <WarningAmberIcon sx={{ color: '#F97316' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Actie Vereist
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Defect of in herstelling
-                </Typography>
-              </Box>
-              {needsAttention.length > 0 && (
-                <Chip
-                  label={stats.defect + stats.repair}
-                  size="small"
-                  sx={{ ml: 'auto', fontWeight: 700, bgcolor: '#F97316', color: 'white' }}
-                />
-              )}
-            </Box>
-
-            {needsAttention.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <CheckCircleIcon sx={{ fontSize: 40, color: '#22c55e', opacity: 0.5, mb: 1 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Alle assets zijn operationeel
-                </Typography>
-              </Box>
-            ) : (
-              <List dense disablePadding>
-                {needsAttention.map((asset) => (
-                  <ListItem
-                    key={asset.id}
-                    sx={{
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: 1,
-                      mb: 0.5,
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: alpha('#F97316', 0.08) },
-                    }}
-                    onClick={() => navigate(buildRoute.assetDetail(asset.id))}
-                  >
-                    <ListItemText
-                      primary={asset.assetCode}
-                      secondary={asset.owner || asset.service?.name || '-'}
-                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.75rem' }}
-                    />
-                    <Chip
-                      label={asset.status === 'Defect' ? 'Defect' : 'Herstelling'}
-                      size="small"
-                      color={asset.status === 'Defect' ? 'error' : 'warning'}
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
-        </Paper>
-
-        {/* Recently Added */}
+        {/* 4. Recently Added - Tracking */}
         <Paper
           elevation={0}
           sx={{
@@ -590,10 +562,10 @@ const AssetsPage = () => {
                     onClick={() => navigate(buildRoute.assetDetail(asset.id))}
                   >
                     <ListItemText
-                      primary={asset.assetCode}
-                      secondary={asset.category}
+                      primary={formatAssetPrimary(asset)}
+                      secondary={formatAssetSecondary(asset)}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.75rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.7rem', color: 'text.secondary' }}
                     />
                     <Typography variant="caption" color="text.secondary">
                       {formatRelativeTime(asset.createdAt)}
@@ -605,167 +577,7 @@ const AssetsPage = () => {
           </Box>
         </Paper>
 
-        {/* Recently Updated */}
-        <Paper
-          elevation={0}
-          sx={{
-            ...widgetCardSx,
-            bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
-            boxShadow: isDark ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
-          }}
-        >
-          <Box sx={{ p: 2.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Avatar sx={{ bgcolor: alpha('#3B82F6', 0.12), width: 40, height: 40 }}>
-                <HistoryIcon sx={{ color: '#3B82F6' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Laatste Wijzigingen
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Recent bijgewerkt
-                </Typography>
-              </Box>
-            </Box>
-
-            {recentlyUpdated.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <HistoryIcon sx={{ fontSize: 40, color: 'text.secondary', opacity: 0.3, mb: 1 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Geen recente wijzigingen
-                </Typography>
-              </Box>
-            ) : (
-              <List dense disablePadding>
-                {recentlyUpdated.map((asset) => (
-                  <ListItem
-                    key={asset.id}
-                    sx={{
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: 1,
-                      mb: 0.5,
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: alpha('#3B82F6', 0.08) },
-                    }}
-                    onClick={() => navigate(buildRoute.assetDetail(asset.id))}
-                  >
-                    <ListItemText
-                      primary={asset.assetCode}
-                      secondary={asset.assetName || asset.category}
-                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.875rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.75rem' }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {formatRelativeTime(asset.updatedAt)}
-                    </Typography>
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Box>
-        </Paper>
-
-        {/* Category Breakdown */}
-        <Paper
-          elevation={0}
-          sx={{
-            ...widgetCardSx,
-            bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
-            boxShadow: isDark ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
-          }}
-        >
-          <Box sx={{ p: 2.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Avatar sx={{ bgcolor: alpha('#8B5CF6', 0.12), width: 40, height: 40 }}>
-                <TrendingUpIcon sx={{ color: '#8B5CF6' }} />
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Per Categorie
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Verdeling assets
-                </Typography>
-              </Box>
-            </Box>
-
-            <Stack spacing={1.5}>
-              {categoryBreakdown.slice(0, 6).map((cat, index) => {
-                const percentage = stats.total > 0 ? (cat.count / stats.total) * 100 : 0;
-                const colors = ['#FF7700', '#3B82F6', '#22c55e', '#8B5CF6', '#eab308', '#EF4444'];
-                const color = colors[index % colors.length];
-                return (
-                  <Box key={cat.name}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight={500}>
-                        {cat.name}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700} sx={{ color }}>
-                        {cat.count}
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={percentage}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                        bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: color,
-                          borderRadius: 3,
-                        },
-                      }}
-                    />
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Box>
-        </Paper>
       </Box>
-
-      {/* Notes Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2.5,
-          borderRadius: 3,
-          bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
-          boxShadow: isDark ? 'var(--neu-shadow-dark-md)' : 'var(--neu-shadow-light-md)',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-          <Avatar sx={{ bgcolor: alpha('#FF7700', 0.12), width: 40, height: 40 }}>
-            <NotesIcon sx={{ color: '#FF7700' }} />
-          </Avatar>
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700}>
-              Notities
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Persoonlijke aantekeningen voor inventarisbeheer
-            </Typography>
-          </Box>
-        </Box>
-        <TextField
-          multiline
-          rows={3}
-          fullWidth
-          placeholder="Schrijf hier je notities... (bv. te bestellen items, opvolgpunten, etc.)"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          variant="outlined"
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-              bgcolor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
-            },
-          }}
-        />
-      </Paper>
     </Box>
   );
 };

@@ -38,6 +38,8 @@ interface UseWorkplaceFormReturn {
   hasTemplateErrors: boolean;
   hasDeviceConfigured: boolean;
   hasWorkplaceFixedWithoutPhysicalWorkplace: boolean;
+  /** Number of items that have no configuration (empty equipmentType or no brand/template) */
+  unconfiguredItemsCount: number;
 }
 
 const initialState: WorkplaceFormState = {
@@ -119,25 +121,36 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
       } as OldDeviceConfig['linkedAsset'] : null,
     }));
 
-    const configItems: AssetConfigItem[] = devicePlans.map((p, idx) => ({
-      id: `config-edit-${idx}`,
-      equipmentType: p.equipmentType as AssetConfigItem['equipmentType'],
-      mode: p.existingAssetId ? 'link' : 'create',
-      linkedAsset: p.existingAssetId ? {
-        id: p.existingAssetId,
-        assetCode: p.existingAssetCode || '',
-        assetName: p.existingAssetName || '',
-        brand: p.brand || '',
-        model: p.model || '',
+    const configItems: AssetConfigItem[] = devicePlans.map((p, idx) => {
+      // Restore template with ID if available in metadata
+      const templateId = p.metadata?.templateId ? Number(p.metadata.templateId) : undefined;
+      const template = p.brand ? {
+        id: templateId || 0, // ID will be 0 if not saved, but brand/model still work for display
+        templateName: `${p.brand} ${p.model || ''}`.trim(),
+        brand: p.brand,
+        model: p.model,
+      } as AssetConfigItem['template'] : null;
+
+      return {
+        id: `config-edit-${idx}`,
+        equipmentType: p.equipmentType as AssetConfigItem['equipmentType'],
+        mode: p.existingAssetId ? 'link' : 'create',
+        linkedAsset: p.existingAssetId ? {
+          id: p.existingAssetId,
+          assetCode: p.existingAssetCode || '',
+          assetName: p.existingAssetName || '',
+          brand: p.brand || '',
+          model: p.model || '',
+          serialNumber: p.metadata?.serialNumber || '',
+        } as AssetConfigItem['linkedAsset'] : null,
+        template,
+        brand: p.brand,
+        model: p.model,
         serialNumber: p.metadata?.serialNumber || '',
-      } as AssetConfigItem['linkedAsset'] : null,
-      template: p.brand ? { brand: p.brand, model: p.model } as AssetConfigItem['template'] : null,
-      brand: p.brand,
-      model: p.model,
-      serialNumber: p.metadata?.serialNumber || '',
-      metadata: p.metadata,
-      originalStatus: p.status,
-    }));
+        metadata: p.metadata,
+        originalStatus: p.status,
+      };
+    });
 
     setState({
       userName: workplace.userName,
@@ -188,6 +201,17 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const isFormValid = state.userName.trim() !== '' && !hasTemplateErrors;
 
+  // Count items that exist but have no proper configuration (empty equipmentType or missing brand/template)
+  const unconfiguredItemsCount = state.configItems.filter(item => {
+    // Item has no equipment type - this shouldn't happen but check anyway
+    if (!item.equipmentType) return true;
+    // Item is in create mode but has no template or brand
+    if (item.mode === 'create' && !item.linkedAsset && !item.template && !item.brand) return true;
+    // Item is in link mode but has no linked asset
+    if (item.mode === 'link' && !item.linkedAsset) return true;
+    return false;
+  }).length;
+
   return {
     state,
     setUserName,
@@ -207,5 +231,6 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     hasTemplateErrors,
     hasDeviceConfigured,
     hasWorkplaceFixedWithoutPhysicalWorkplace,
+    unconfiguredItemsCount,
   };
 }
