@@ -38,6 +38,8 @@ interface UseWorkplaceFormReturn {
   hasTemplateErrors: boolean;
   hasDeviceConfigured: boolean;
   hasWorkplaceFixedWithoutPhysicalWorkplace: boolean;
+  /** Number of items that have no configuration (empty equipmentType or no brand/template) */
+  unconfiguredItemsCount: number;
 }
 
 const initialState: WorkplaceFormState = {
@@ -199,6 +201,17 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
 
   const isFormValid = state.userName.trim() !== '' && !hasTemplateErrors;
 
+  // Count items that exist but have no proper configuration (empty equipmentType or missing brand/template)
+  const unconfiguredItemsCount = state.configItems.filter(item => {
+    // Item has no equipment type - this shouldn't happen but check anyway
+    if (!item.equipmentType) return true;
+    // Item is in create mode but has no template or brand
+    if (item.mode === 'create' && !item.linkedAsset && !item.template && !item.brand) return true;
+    // Item is in link mode but has no linked asset
+    if (item.mode === 'link' && !item.linkedAsset) return true;
+    return false;
+  }).length;
+
   return {
     state,
     setUserName,
@@ -218,5 +231,6 @@ export function useWorkplaceForm(): UseWorkplaceFormReturn {
     hasTemplateErrors,
     hasDeviceConfigured,
     hasWorkplaceFixedWithoutPhysicalWorkplace,
+    unconfiguredItemsCount,
   };
 }

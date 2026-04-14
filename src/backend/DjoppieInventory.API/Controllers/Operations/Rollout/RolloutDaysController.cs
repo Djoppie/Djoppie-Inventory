@@ -406,12 +406,12 @@ public class RolloutDaysController : ControllerBase
                 var assignments = await _assignmentService.GetByWorkplaceIdAsync(workplace.Id, cancellationToken);
                 dto.AssetAssignments = assignments.ToList();
 
-                // Parse AssetPlans from legacy JSON
+                // Parse AssetPlans from legacy JSON (use _jsonOptions for case-insensitive parsing)
                 if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
                 {
                     try
                     {
-                        var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson);
+                        var legacyPlans = System.Text.Json.JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
                         if (legacyPlans != null && legacyPlans.Count > 0)
                         {
                             dto.AssetPlans = legacyPlans;

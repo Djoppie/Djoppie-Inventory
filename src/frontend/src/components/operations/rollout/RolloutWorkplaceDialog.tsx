@@ -437,6 +437,22 @@ const RolloutWorkplaceDialog = ({ open, onClose, dayId, workplace }: RolloutWork
           zIndex: 2,
           transform: 'translateZ(5px)',
         }}>
+          {/* Warning for unconfigured items */}
+          {isEditMode && form.unconfiguredItemsCount > 0 && (
+            <Alert
+              severity="warning"
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="body2">
+                <strong>{form.unconfiguredItemsCount} item(s)</strong> hebben geen geldige configuratie en worden niet toegevoegd.
+                Configureer deze items opnieuw of verwijder ze.
+              </Typography>
+            </Alert>
+          )}
+
           {/* Status Change Section - Only for completed/ready workplaces */}
           {isEditMode && workplace && (workplace.status === 'Completed' || workplace.status === 'Ready') && (
             <Alert
