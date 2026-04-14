@@ -76,9 +76,10 @@ const DeviceAssignmentDialog = ({
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(asset || null);
   const [assetSearch, setAssetSearch] = useState('');
 
-  // Reset form when dialog opens/closes
+  // Reset form when dialog opens/closes - intentional state reset on prop change
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAssignmentType(workplace ? 'workplace' : 'user');
       setSelectedUser(null);
       setSelectedUserName('');
@@ -181,7 +182,7 @@ const DeviceAssignmentDialog = ({
       }
 
       onClose();
-    } catch (error) {
+    } catch {
       onError?.(t('deviceAssignment.error'));
     }
   }, [

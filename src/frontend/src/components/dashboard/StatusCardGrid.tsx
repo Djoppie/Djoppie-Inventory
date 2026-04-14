@@ -105,7 +105,7 @@ const StatusCard = ({ config, count, isSelected, isAnySelected, onClick, index }
             filter: isSelected ? `drop-shadow(0 0 8px ${config.shadowColor})` : 'none',
             transition: 'filter 0.3s ease',
           },
-        } as any)}
+        } as Record<string, unknown>)}
       </Box>
 
       {/* Text Content */}

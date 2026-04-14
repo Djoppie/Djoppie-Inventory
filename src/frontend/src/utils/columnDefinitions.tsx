@@ -219,15 +219,15 @@ export const createChipColumn = (
 /**
  * Creates a tooltip column with rich content
  */
-export const createTooltipColumn = (
+export const createTooltipColumn = <T extends Record<string, unknown> = Record<string, unknown>>(
   field: string,
   headerName: string,
-  renderTooltip: (value: any, row: any) => React.ReactNode,
+  renderTooltip: (value: unknown, row: T) => React.ReactNode,
   options?: {
     width?: number;
-    displayValue?: (value: any) => string;
+    displayValue?: (value: unknown) => string;
   }
-): GridColDef => ({
+): GridColDef<T> => ({
   field,
   headerName,
   width: options?.width || 150,

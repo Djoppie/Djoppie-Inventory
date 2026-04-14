@@ -124,7 +124,7 @@ const SwapsTab = () => {
   }, [history]);
 
   // Format date helper
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '-';
@@ -135,7 +135,7 @@ const SwapsTab = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
 
   // Export handler
   const handleExport = useCallback(() => {
@@ -287,16 +287,7 @@ const SwapsTab = () => {
     },
   ], [formatDate]);
 
-  // Error state
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Fout bij laden van asset geschiedenis: {(error as Error).message}
-      </Alert>
-    );
-  }
-
-  // Statistics cards
+  // Statistics cards - moved before error return
   const statisticsCards = useMemo(() => (
     <Grid container spacing={0.75}>
       {STAT_CARDS.map((card) => {
@@ -580,6 +571,15 @@ const SwapsTab = () => {
       </Paper>
     );
   }, [dateFrom, dateTo, eventTypeFilter, searchQuery, eventTypes, filtersExpanded, bgBase, isDark]);
+
+  // Error state - after all hooks
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Fout bij laden van asset geschiedenis: {(error as Error).message}
+      </Alert>
+    );
+  }
 
   return (
     <>

@@ -393,7 +393,7 @@ const WorkplaceAssetsDialog = ({
                           {asset.assetCode}
                         </Typography>
                       </TableCell>
-                      <TableCell>{asset.assetType}</TableCell>
+                      <TableCell>{typeof asset.assetType === 'object' ? asset.assetType?.name : asset.assetType}</TableCell>
                       <TableCell>
                         {asset.brand}
                         {asset.model && ` ${asset.model}`}

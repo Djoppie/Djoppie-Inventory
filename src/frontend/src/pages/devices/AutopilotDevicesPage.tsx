@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -124,9 +124,9 @@ const AutopilotDevicesPage = () => {
     );
   });
 
-  const handleViewTimeline = (serialNumber: string) => {
+  const handleViewTimeline = useCallback((serialNumber: string) => {
     navigate(buildRoute.autopilotTimeline(serialNumber));
-  };
+  }, [navigate]);
 
   // Column definitions for DataGrid
   const columns: GridColDef[] = useMemo(() => [
@@ -265,7 +265,7 @@ const AutopilotDevicesPage = () => {
         </Tooltip>
       ),
     },
-  ], [t]);
+  ], [t, handleViewTimeline]);
 
   if (isLoading) return <Loading />;
 

@@ -256,10 +256,10 @@ export const getDefaultExportColumns = (): ExportColumn[] => [
 // Generic Export Utilities (for all tables)
 // ========================================
 
-export interface GenericExportColumn {
+export interface GenericExportColumn<T = unknown> {
   field: string;
   headerName: string;
-  valueFormatter?: (value: any) => string;
+  valueFormatter?: (value: T) => string;
 }
 
 /**
@@ -268,7 +268,7 @@ export interface GenericExportColumn {
  * @param filename - Name of the file to download
  * @param columns - Column definitions with field names and headers
  */
-export const exportToCsv = <T extends Record<string, any>>(
+export const exportToCsv = <T extends Record<string, unknown>>(
   data: T[],
   filename: string,
   columns: GenericExportColumn[]

@@ -250,11 +250,12 @@ const RolloutExecutionPage = () => {
     setExpandedWorkplace(effectiveExpanded === workplaceId ? null : workplaceId);
   };
 
-  // Auto-expand and scroll to workplace from URL param
+  // Auto-expand and scroll to workplace from URL param - intentional sync from URL
   useEffect(() => {
     if (initialWorkplaceId && workplaces && workplaces.length > 0) {
       const targetWorkplace = workplaces.find(wp => wp.id === initialWorkplaceId);
       if (targetWorkplace) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setExpandedWorkplace(initialWorkplaceId);
         // Scroll to workplace after render
         setTimeout(() => {

@@ -96,6 +96,7 @@ const AssetsPage = () => {
   // Recently added assets (last 7 days)
   const recentlyAdded = useMemo(() => {
     if (!assets) return [];
+    // eslint-disable-next-line react-hooks/purity -- Date.now() is intentionally used for relative date filtering
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     return assets

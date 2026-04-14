@@ -76,14 +76,15 @@ export const AssetDistributionChart: React.FC<AssetDistributionChartProps> = ({ 
   const circumference = 2 * Math.PI * radius;
 
   const segmentArcs = useMemo(() => {
-    let cumulativeOffset = 0;
-    return segments.map((seg) => {
+    // Using reduce to accumulate offset without reassignment
+    return segments.reduce<Array<typeof segments[0] & { dashLength: number; dashOffset: number; rotation: number }>>((acc, seg, index) => {
+      const cumulativeOffset = segments.slice(0, index).reduce((sum, s) => sum + s.percentage, 0);
       const dashLength = (seg.percentage / 100) * circumference;
       const dashOffset = circumference - dashLength;
       const rotation = (cumulativeOffset / 100) * 360 - 90; // start at top
-      cumulativeOffset += seg.percentage;
-      return { ...seg, dashLength, dashOffset, rotation };
-    });
+      acc.push({ ...seg, dashLength, dashOffset, rotation });
+      return acc;
+    }, []);
   }, [segments, circumference]);
 
   return (

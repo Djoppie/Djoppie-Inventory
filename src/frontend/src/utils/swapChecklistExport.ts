@@ -405,7 +405,7 @@ export const exportSessionSwapChecklist = async (
     const dateShort = format(new Date(day.date), 'dd-MM');
 
     // Create base sheet name and ensure uniqueness
-    let baseSheetName = (day.name || `Dag ${day.dayNumber}`).substring(0, 25); // Leave room for suffix
+    const baseSheetName = (day.name || `Dag ${day.dayNumber}`).substring(0, 25); // Leave room for suffix
     let sheetName = baseSheetName;
     let counter = 1;
 

@@ -13,12 +13,13 @@ import {
 import {
   DataGrid,
   GridColDef,
-  GridRowsProp,
   GridToolbarContainer,
   GridToolbarQuickFilter,
   GridRenderCellParams,
   GridRowParams,
   GridPaginationModel,
+  GridRowSelectionModel,
+  GridColumnVisibilityModel,
 } from '@mui/x-data-grid';
 
 import EditIcon from '@mui/icons-material/Edit';
@@ -40,6 +41,7 @@ interface CustomToolbarProps {
 }
 
 declare module '@mui/x-data-grid' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface ToolbarPropsOverrides extends CustomToolbarProps {}
 }
 
@@ -52,8 +54,8 @@ export interface NeumorphicDataGridProps<T extends { id: number | string }> {
   accentColor?: string;
   loading?: boolean;
   checkboxSelection?: boolean;
-  rowSelectionModel?: any;
-  onRowSelectionModelChange?: any;
+  rowSelectionModel?: GridRowSelectionModel;
+  onRowSelectionModelChange?: (newSelection: GridRowSelectionModel) => void;
   toolbarActions?: React.ReactNode;
   initialPageSize?: number;
   autoHeight?: boolean;
@@ -78,7 +80,7 @@ export interface NeumorphicDataGridProps<T extends { id: number | string }> {
   maxHeight?: number | string;
 
   // NEW: Column visibility model for responsive columns
-  columnVisibilityModel?: any;
+  columnVisibilityModel?: GridColumnVisibilityModel;
 }
 
 const CustomToolbar = memo(function CustomToolbar({
@@ -177,7 +179,8 @@ const CustomToolbar = memo(function CustomToolbar({
 });
 
 // Status column definition helper
-export function getStatusColumn(_accentColor: string = ASSET_COLOR): GridColDef {
+// eslint-disable-next-line react-refresh/only-export-components
+export function getStatusColumn(): GridColDef {
   return {
     field: 'isActive',
     headerName: 'Status',
@@ -200,6 +203,7 @@ export function getStatusColumn(_accentColor: string = ASSET_COLOR): GridColDef 
 }
 
 // Actions column definition helper
+// eslint-disable-next-line react-refresh/only-export-components
 export function getActionsColumn<T extends { id: number | string }>(
   onEdit?: (item: T) => void,
   onDelete?: (item: T) => void,
@@ -288,7 +292,6 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   statisticsCards,
   advancedFilters,
   onRowClick,
-  stickyHeader: _stickyHeader = false,
   maxHeight,
   columnVisibilityModel,
 }: NeumorphicDataGridProps<T>) {
@@ -300,7 +303,7 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   const finalColumns = useMemo(() => {
     const cols: GridColDef[] = [...columns];
     if (showActiveStatus) {
-      cols.push(getStatusColumn(accentColor));
+      cols.push(getStatusColumn());
     }
     if (onEdit || onDelete) {
       cols.push(getActionsColumn<T>(onEdit, onDelete, accentColor));
@@ -360,15 +363,15 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         }}
       >
       <DataGrid
-        rows={rows as GridRowsProp}
+        rows={rows}
         columns={finalColumns}
         loading={loading}
         autoHeight={autoHeight}
         density="compact"
         getRowHeight={() => 'auto'}
         checkboxSelection={checkboxSelection}
-        rowSelectionModel={checkboxSelection ? (rowSelectionModel ?? []) : undefined}
-        onRowSelectionModelChange={checkboxSelection ? (onRowSelectionModelChange ?? (() => {})) : undefined}
+        rowSelectionModel={checkboxSelection ? rowSelectionModel : undefined}
+        onRowSelectionModelChange={checkboxSelection ? onRowSelectionModelChange : undefined}
         {...(columnVisibilityModel && { columnVisibilityModel })}
         disableRowSelectionOnClick={!onRowClick}
         {...(onRowClick && { onRowClick: handleRowClick })}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Autocomplete,
   TextField,
@@ -35,7 +35,6 @@ const EmployeeAutocomplete = ({
   size = 'medium',
 }: EmployeeAutocompleteProps) => {
   const [inputValue, setInputValue] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // Fetch all active employees for quick selection
   const { data: employees = [], isLoading: isLoadingEmployees } = useQuery({
@@ -52,29 +51,30 @@ const EmployeeAutocomplete = ({
     staleTime: 30 * 1000, // 30 seconds
   });
 
-  // Load selected employee when value prop changes
-  useEffect(() => {
-    if (value) {
-      const found = employees.find((e) => e.id === value);
-      if (found) {
-        setSelectedEmployee(found);
-      } else {
-        // Fetch the specific employee if not in cache
-        employeesApi.getById(value).then(setSelectedEmployee).catch(() => {
-          setSelectedEmployee(null);
-        });
-      }
-    } else {
-      setSelectedEmployee(null);
-    }
-  }, [value, employees]);
+  // Fetch specific employee when value is provided but not in cache
+  const { data: fetchedEmployee } = useQuery({
+    queryKey: ['employee', value],
+    queryFn: () => (value ? employeesApi.getById(value) : null),
+    enabled: !!value && !employees.find((e) => e.id === value),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Derive selected employee from available data
+  const selectedEmployee = useMemo(() => {
+    if (!value) return null;
+    // First check in loaded employees list
+    const found = employees.find((e) => e.id === value);
+    if (found) return found;
+    // Then check fetched employee
+    if (fetchedEmployee) return fetchedEmployee;
+    return null;
+  }, [value, employees, fetchedEmployee]);
 
   // Combine employees list with search results, prioritizing search results
   const options = inputValue.length >= 2 ? searchResults : employees;
 
   // Handle selection change
   const handleChange = (_event: React.SyntheticEvent, newValue: Employee | null) => {
-    setSelectedEmployee(newValue);
     onChange(newValue?.id ?? null, newValue);
   };
 
@@ -122,11 +122,11 @@ const EmployeeAutocomplete = ({
           }}
         />
       )}
-      renderOption={(props, option) => {
+      renderOption={({ key, ...props }, option) => {
         // Use employee id as key to avoid duplicate key issues with same names
-        const { key: _unusedKey, ...restProps } = props as { key: string; [k: string]: unknown };
+        void key; // Suppress unused variable warning
         return (
-          <li key={option.id} {...restProps}>
+          <li key={option.id} {...props}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5 }}>
               <Avatar
                 sx={{

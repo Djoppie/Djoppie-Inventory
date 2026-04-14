@@ -122,13 +122,14 @@ const PhysicalWorkplacesPage = () => {
   const [serviceFilterExpanded, setServiceFilterExpanded] = useState(!!initialServiceFilter);
   const [buildingFilterExpanded, setBuildingFilterExpanded] = useState(false);
 
-  // Sync URL params with filter state (for navigation from other pages)
+  // Sync URL params with filter state (for navigation from other pages) - intentional URL sync
   useEffect(() => {
     const serviceParam = searchParams.get('service');
     if (serviceParam && serviceParam !== serviceFilter) {
       setServiceFilter(serviceParam);
       setServiceFilterExpanded(true); // Auto-expand filter panel when filtering via URL
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Dialog states
@@ -168,9 +169,12 @@ const PhysicalWorkplacesPage = () => {
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   // Parse selected service IDs from comma-separated string
-  const selectedServiceIds = serviceFilter
-    ? serviceFilter.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id))
-    : [];
+  const selectedServiceIds = useMemo(() =>
+    serviceFilter
+      ? serviceFilter.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id))
+      : [],
+    [serviceFilter]
+  );
 
   // Get selected service names for chip display
   const selectedServices = sectors
@@ -178,9 +182,12 @@ const PhysicalWorkplacesPage = () => {
     .filter(s => selectedServiceIds.includes(s.id)) || [];
 
   // Parse selected building IDs from comma-separated string
-  const selectedBuildingIds = buildingFilter
-    ? buildingFilter.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id))
-    : [];
+  const selectedBuildingIds = useMemo(() =>
+    buildingFilter
+      ? buildingFilter.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id))
+      : [],
+    [buildingFilter]
+  );
 
   // Get selected building names for chip display
   const selectedBuildings = activeBuildings.filter(b => selectedBuildingIds.includes(b.id));

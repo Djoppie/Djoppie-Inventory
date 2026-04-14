@@ -199,15 +199,7 @@ const WorkplacesTab = () => {
     },
   ], []);
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Fout bij laden van werkplekken rapport: {(error as Error).message}
-      </Alert>
-    );
-  }
-
-  // Statistics cards component
+  // Statistics cards component - moved before error return
   const statisticsCards = useMemo(() => (
     <Grid container spacing={0.75}>
       {STAT_CARDS.map((card) => {
@@ -377,6 +369,15 @@ const WorkplacesTab = () => {
       </Grid>
     </Paper>
   ), [searchQuery, buildingFilter, occupancyFilter, buildings, bgBase, isDark]);
+
+  // Error state - after all hooks
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Fout bij laden van werkplekken rapport: {(error as Error).message}
+      </Alert>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>

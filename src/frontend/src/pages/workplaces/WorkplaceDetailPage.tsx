@@ -155,10 +155,12 @@ const WorkplaceDetailPage = () => {
     // Look for a laptop or desktop type asset assigned to this workplace
     // Check asset code prefix (LAP0002, DESK-26-XXXX), asset type name, and asset type code
     const devicePrefixes = ['lap', 'desk', 'laptop', 'desktop', 'pc', 'computer', 'notebook'];
-    return allFixedAssets.find((asset: any) => {
+    return allFixedAssets.find((asset) => {
       const assetCode = asset.assetCode?.toLowerCase() || '';
-      const typeName = asset.assetType?.name?.toLowerCase() || '';
-      const typeCode = asset.assetType?.code?.toLowerCase() || '';
+      // Handle assetType being either string or object
+      const assetTypeObj = typeof asset.assetType === 'object' ? asset.assetType : null;
+      const typeName = assetTypeObj?.name?.toLowerCase() || (typeof asset.assetType === 'string' ? asset.assetType.toLowerCase() : '');
+      const typeCode = assetTypeObj?.code?.toLowerCase() || '';
       return devicePrefixes.some(prefix =>
         assetCode.startsWith(prefix) || typeName.includes(prefix) || typeCode.includes(prefix)
       );
@@ -179,7 +181,7 @@ const WorkplaceDetailPage = () => {
       sharedDevice?.id, // Also filter out the shared device shown in Desktop/Laptop row
     ].filter(Boolean));
 
-    return allFixedAssets.filter((asset: any) => !equipmentAssetIds.has(asset.id));
+    return allFixedAssets.filter((asset) => !equipmentAssetIds.has(asset.id));
   }, [workplace, allFixedAssets, sharedDevice]);
 
   // Calculate equipment status
@@ -982,12 +984,12 @@ const WorkplaceDetailPage = () => {
                 )}
 
                 {/* Additional Fixed Assets */}
-                {fixedAssets.map((asset: any) => (
+                {fixedAssets.map((asset) => (
                   <TableRow key={asset.id} hover>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <InventoryIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                        {asset.assetType?.name || 'Overig'}
+                        {typeof asset.assetType === 'object' ? asset.assetType?.name : asset.assetType || 'Overig'}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -1100,7 +1102,7 @@ const WorkplaceDetailPage = () => {
                 await clearOccupantMutation.mutateAsync(workplaceId);
                 showSuccess(t('physicalWorkplaces.occupantCleared'));
                 setClearOccupantDialogOpen(false);
-              } catch (error) {
+              } catch {
                 showError(t('physicalWorkplaces.occupantClearError'));
               }
             }}
@@ -1172,7 +1174,7 @@ const WorkplaceDetailPage = () => {
                 setAssignOccupantDialogOpen(false);
                 setSelectedUser(null);
                 setSelectedUserName('');
-              } catch (error) {
+              } catch {
                 showError(t('physicalWorkplaces.occupier.assignError'));
               }
             }}
