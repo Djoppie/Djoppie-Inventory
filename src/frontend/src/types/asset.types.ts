@@ -69,6 +69,7 @@ export interface Asset {
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
+  leaseEndDate?: string; // Lease expiration date for tracking device replacements
 
   // Intune integration fields (synced from Microsoft Intune for laptops/desktops)
   intuneEnrollmentDate?: string;

@@ -90,6 +90,8 @@ export function buildAssetPlans({
         model,
         metadata: {
           ...(item.serialNumber && { serialNumber: item.serialNumber }),
+          // Save template ID for restoration
+          ...(item.template?.id && { templateId: String(item.template.id) }),
           ...item.metadata,
         },
       });

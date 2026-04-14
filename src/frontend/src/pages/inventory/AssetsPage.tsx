@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import {
   Box,
   Typography,
@@ -43,7 +42,6 @@ const widgetCardSx = {
 };
 
 const AssetsPage = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
