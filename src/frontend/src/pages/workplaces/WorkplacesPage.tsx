@@ -46,9 +46,6 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckIcon from '@mui/icons-material/Check';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import {
   usePhysicalWorkplaces,
   useDeletePhysicalWorkplace,
@@ -78,7 +75,6 @@ import {
   ASSET_COLOR,
   SERVICE_COLOR,
   BUILDING_COLOR,
-  SECTOR_COLOR,
 } from '../../constants/filterColors';
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
 
@@ -181,11 +177,6 @@ const PhysicalWorkplacesPage = () => {
       : [],
     [serviceFilter]
   );
-
-  // Get selected service names for chip display
-  const selectedServices = sectors
-    ?.flatMap(s => s.services)
-    .filter(s => selectedServiceIds.includes(s.id)) || [];
 
   // Parse selected building IDs from comma-separated string
   const selectedBuildingIds = useMemo(() =>
