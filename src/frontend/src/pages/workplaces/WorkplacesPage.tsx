@@ -21,6 +21,7 @@ import {
   TextField,
   InputAdornment,
   Skeleton,
+  Checkbox,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -43,7 +44,11 @@ import ClearAllIcon from '@mui/icons-material/ClearAll';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckIcon from '@mui/icons-material/Check';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import {
   usePhysicalWorkplaces,
   useDeletePhysicalWorkplace,
@@ -121,6 +126,7 @@ const PhysicalWorkplacesPage = () => {
   const [buildingFilter, setBuildingFilter] = useState(() => searchParams.get('building') || '');
   const [serviceFilterExpanded, setServiceFilterExpanded] = useState(!!initialServiceFilter);
   const [buildingFilterExpanded, setBuildingFilterExpanded] = useState(false);
+  const [expandedSectors, setExpandedSectors] = useState<Set<number>>(new Set());
 
   // Sync URL params with filter state (for navigation from other pages) - intentional URL sync
   useEffect(() => {
@@ -310,7 +316,6 @@ const PhysicalWorkplacesPage = () => {
   // Service filter handlers
   const handleServiceToggle = () => {
     setServiceFilterExpanded(!serviceFilterExpanded);
-    if (buildingFilterExpanded) setBuildingFilterExpanded(false);
   };
 
   const handleServiceSelect = (serviceId: number) => {
@@ -329,10 +334,41 @@ const PhysicalWorkplacesPage = () => {
     setServiceFilterExpanded(false);
   };
 
+  // Sector expand/collapse handler
+  const toggleSectorExpand = (sectorId: number) => {
+    setExpandedSectors(prev => {
+      const next = new Set(prev);
+      if (next.has(sectorId)) {
+        next.delete(sectorId);
+      } else {
+        next.add(sectorId);
+      }
+      return next;
+    });
+  };
+
+  // Toggle all services in a sector
+  const toggleSectorServices = (sectorId: number) => {
+    const sector = sectors?.find(s => s.id === sectorId);
+    if (!sector) return;
+
+    const sectorServiceIds = sector.services.filter(s => s.isActive).map(s => s.id);
+    const allSelected = sectorServiceIds.every(id => selectedServiceIds.includes(id));
+
+    if (allSelected) {
+      // Deselect all services in this sector
+      const newIds = selectedServiceIds.filter(id => !sectorServiceIds.includes(id));
+      setServiceFilter(newIds.length > 0 ? newIds.join(',') : '');
+    } else {
+      // Select all services in this sector
+      const newIds = [...new Set([...selectedServiceIds, ...sectorServiceIds])];
+      setServiceFilter(newIds.join(','));
+    }
+  };
+
   // Building filter handlers
   const handleBuildingToggle = () => {
     setBuildingFilterExpanded(!buildingFilterExpanded);
-    if (serviceFilterExpanded) setServiceFilterExpanded(false);
   };
 
   const handleBuildingSelect = (buildingId: number) => {
@@ -919,24 +955,6 @@ const PhysicalWorkplacesPage = () => {
           />
 
           {/* Active Filter Chips */}
-          {serviceFilter && selectedServices.length > 0 && (
-            <Chip
-              icon={<BusinessIcon sx={{ fontSize: 14 }} />}
-              label={selectedServices.length === 1 ? selectedServices[0].name : `${selectedServices.length} diensten`}
-              onDelete={handleClearServiceFilter}
-              size="small"
-              sx={{
-                height: 24,
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                bgcolor: alpha(SERVICE_COLOR, 0.15),
-                color: SERVICE_COLOR,
-                border: `1px solid ${alpha(SERVICE_COLOR, 0.3)}`,
-                '& .MuiChip-icon': { color: SERVICE_COLOR },
-                '& .MuiChip-deleteIcon': { color: SERVICE_COLOR, fontSize: 14 },
-              }}
-            />
-          )}
           {buildingFilter && selectedBuildings.length > 0 && (
             <Chip
               icon={<ApartmentIcon sx={{ fontSize: 14 }} />}
@@ -1015,7 +1033,7 @@ const PhysicalWorkplacesPage = () => {
         </Stack>
       </Paper>
 
-      {/* Expandable Service Filter Panel */}
+      {/* Expandable Service Filter Panel - Sector Grouped */}
       <Collapse in={serviceFilterExpanded} timeout={250}>
         <Paper
           elevation={0}
@@ -1031,109 +1049,196 @@ const PhysicalWorkplacesPage = () => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <BusinessIcon sx={{ fontSize: 18, color: SECTOR_COLOR }} />
+              <BusinessIcon sx={{ fontSize: 18, color: SERVICE_COLOR }} />
               Filter op Dienst
             </Typography>
             {serviceFilter && (
               <Chip
-                label="Wis selectie"
+                label={`${selectedServiceIds.length} geselecteerd`}
                 size="small"
-                onClick={handleClearServiceFilter}
+                onDelete={handleClearServiceFilter}
                 sx={{
                   height: 22,
                   fontSize: '0.7rem',
-                  bgcolor: alpha('#f44336', 0.1),
-                  color: '#f44336',
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: alpha('#f44336', 0.2) },
+                  fontWeight: 600,
+                  bgcolor: alpha(SERVICE_COLOR, 0.12),
+                  color: SERVICE_COLOR,
+                  '& .MuiChip-deleteIcon': {
+                    fontSize: 14,
+                    color: alpha(SERVICE_COLOR, 0.6),
+                    '&:hover': { color: SERVICE_COLOR },
+                  },
                 }}
               />
             )}
           </Box>
           {servicesLoading ? (
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              {[1, 2, 3].map((i) => <Skeleton key={i} variant="rounded" width={280} height={120} />)}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {[1, 2, 3].map((i) => <Skeleton key={i} variant="rounded" width={200} height={60} />)}
             </Box>
           ) : (
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
-              {sectors?.filter(s => s.services.some(svc => svc.isActive)).map((sector) => (
-                <Box
-                  key={sector.id}
-                  sx={{
-                    bgcolor: isDark ? alpha('#fff', 0.02) : '#fff',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    border: '1px solid',
-                    borderColor: isDark ? alpha('#fff', 0.08) : alpha('#000', 0.08),
-                  }}
-                >
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+                gap: 1,
+                maxHeight: 280,
+                overflowY: 'auto',
+                '&::-webkit-scrollbar': { width: 4 },
+                '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+                '&::-webkit-scrollbar-thumb': {
+                  bgcolor: alpha(SERVICE_COLOR, 0.2),
+                  borderRadius: 2,
+                },
+              }}
+            >
+              {sectors?.filter(s => s.services.some(svc => svc.isActive)).map((sector, sectorIndex) => {
+                const sectorServices = sector.services.filter(s => s.isActive);
+                const selectedInSector = sectorServices.filter(s => selectedServiceIds.includes(s.id)).length;
+                const allSelected = selectedInSector === sectorServices.length;
+                const someSelected = selectedInSector > 0 && !allSelected;
+
+                return (
                   <Box
+                    key={sector.id}
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      px: 1.5,
-                      py: 1,
-                      bgcolor: isDark ? alpha(SECTOR_COLOR, 0.15) : alpha(SECTOR_COLOR, 0.08),
-                      borderBottom: '2px solid',
-                      borderColor: SECTOR_COLOR,
+                      borderRadius: 1.5,
+                      border: '1px solid',
+                      borderColor: selectedInSector > 0
+                        ? alpha(SERVICE_COLOR, 0.25)
+                        : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                      bgcolor: selectedInSector > 0
+                        ? alpha(SERVICE_COLOR, 0.03)
+                        : 'transparent',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s ease',
+                      opacity: 0,
+                      animation: serviceFilterExpanded ? `fadeIn 0.2s ease forwards ${sectorIndex * 0.05}s` : 'none',
+                      '@keyframes fadeIn': {
+                        from: { opacity: 0, transform: 'translateY(5px)' },
+                        to: { opacity: 1, transform: 'translateY(0)' },
+                      },
                     }}
                   >
-                    <BusinessIcon sx={{ fontSize: 16, color: SECTOR_COLOR }} />
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: SECTOR_COLOR, textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>
-                      {sector.name}
-                    </Typography>
-                    <Chip
-                      label={sector.services.filter(s => s.isActive).length}
-                      size="small"
-                      sx={{ height: 20, minWidth: 28, fontSize: '0.7rem', fontWeight: 700, bgcolor: isDark ? alpha(SECTOR_COLOR, 0.3) : alpha(SECTOR_COLOR, 0.15), color: SECTOR_COLOR }}
-                    />
-                  </Box>
-                  <Box sx={{ p: 1 }}>
-                    {sector.services.filter(s => s.isActive).map((service) => {
-                      const isSelected = selectedServiceIds.includes(service.id);
-                      return (
-                        <Box
-                          key={service.id}
-                          onClick={() => handleServiceSelect(service.id)}
+                    {/* Sector Header */}
+                    <Box
+                      onClick={() => toggleSectorExpand(sector.id)}
+                      sx={{
+                        px: 1.5,
+                        py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        cursor: 'pointer',
+                        bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                        '&:hover': {
+                          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                        },
+                      }}
+                    >
+                      <Checkbox
+                        size="small"
+                        checked={allSelected}
+                        indeterminate={someSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSectorServices(sector.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          p: 0.25,
+                          color: alpha(SERVICE_COLOR, 0.3),
+                          '&.Mui-checked, &.MuiCheckbox-indeterminate': {
+                            color: SERVICE_COLOR,
+                          },
+                        }}
+                      />
+                      <Typography
+                        variant="caption"
+                        fontWeight={700}
+                        sx={{
+                          flex: 1,
+                          color: selectedInSector > 0 ? SERVICE_COLOR : 'text.primary',
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                          fontSize: '0.65rem',
+                        }}
+                      >
+                        {sector.name}
+                      </Typography>
+                      {selectedInSector > 0 && (
+                        <Chip
+                          label={selectedInSector}
+                          size="small"
                           sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            py: 0.75,
-                            px: 1,
-                            borderRadius: 1,
-                            cursor: 'pointer',
-                            bgcolor: isSelected ? alpha(SERVICE_COLOR, 0.12) : 'transparent',
-                            border: '1px solid',
-                            borderColor: isSelected ? SERVICE_COLOR : 'transparent',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { bgcolor: isSelected ? alpha(SERVICE_COLOR, 0.18) : (isDark ? alpha('#fff', 0.05) : alpha('#000', 0.04)) },
+                            height: 16,
+                            minWidth: 16,
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            bgcolor: SERVICE_COLOR,
+                            color: 'white',
+                            '& .MuiChip-label': { px: 0.5 },
                           }}
-                        >
-                          <Chip
-                            label={service.code}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontSize: '0.7rem',
-                              fontWeight: 600,
-                              bgcolor: isSelected ? SERVICE_COLOR : (isDark ? alpha(SERVICE_COLOR, 0.2) : alpha(SERVICE_COLOR, 0.1)),
-                              color: isSelected ? '#fff' : SERVICE_COLOR,
-                              minWidth: 50,
-                              '& .MuiChip-label': { px: 1 },
-                            }}
-                          />
-                          <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: isSelected ? 600 : 400, color: isSelected ? SERVICE_COLOR : 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                            {service.name}
-                          </Typography>
-                          {isSelected && <CheckIcon sx={{ fontSize: 18, color: SERVICE_COLOR }} />}
+                        />
+                      )}
+                      <IconButton
+                        size="small"
+                        sx={{ p: 0 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSectorExpand(sector.id);
+                        }}
+                      >
+                        {expandedSectors.has(sector.id) ? (
+                          <ExpandLessIcon sx={{ fontSize: 14 }} />
+                        ) : (
+                          <ExpandMoreIcon sx={{ fontSize: 14 }} />
+                        )}
+                      </IconButton>
+                    </Box>
+
+                    {/* Services within Sector */}
+                    <Collapse in={expandedSectors.has(sector.id)}>
+                      <Box sx={{ px: 1, pb: 1, pt: 0.5 }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {sectorServices.map((service) => {
+                            const isSelected = selectedServiceIds.includes(service.id);
+                            return (
+                              <Chip
+                                key={service.id}
+                                label={service.name}
+                                size="small"
+                                onClick={() => handleServiceSelect(service.id)}
+                                sx={{
+                                  height: 24,
+                                  fontSize: '0.68rem',
+                                  fontWeight: isSelected ? 600 : 500,
+                                  cursor: 'pointer',
+                                  bgcolor: isSelected
+                                    ? alpha(SERVICE_COLOR, 0.15)
+                                    : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                  color: isSelected ? SERVICE_COLOR : 'text.secondary',
+                                  border: '1px solid',
+                                  borderColor: isSelected
+                                    ? alpha(SERVICE_COLOR, 0.3)
+                                    : 'transparent',
+                                  transition: 'all 0.15s ease',
+                                  '&:hover': {
+                                    bgcolor: isSelected
+                                      ? alpha(SERVICE_COLOR, 0.2)
+                                      : alpha(SERVICE_COLOR, 0.08),
+                                    borderColor: alpha(SERVICE_COLOR, 0.3),
+                                  },
+                                }}
+                              />
+                            );
+                          })}
                         </Box>
-                      );
-                    })}
+                      </Box>
+                    </Collapse>
                   </Box>
-                </Box>
-              ))}
+                );
+              })}
             </Box>
           )}
         </Paper>
