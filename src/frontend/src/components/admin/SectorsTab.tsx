@@ -73,8 +73,8 @@ const SectorsTab = () => {
   });
 
   const { data: sectors = [], isLoading } = useQuery({
-    queryKey: ['admin', 'sectors', 'active'],
-    queryFn: () => sectorsApi.getAll(false),
+    queryKey: ['admin', 'sectors', 'all'],
+    queryFn: () => sectorsApi.getAll(true), // Include inactive for admin management
   });
 
   const createMutation = useMutation({

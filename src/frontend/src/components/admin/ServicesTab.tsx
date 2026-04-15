@@ -102,13 +102,13 @@ const ServicesTab = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ['admin', 'services', 'active'],
-    queryFn: () => servicesApi.getAll(false), // Only active services
+    queryKey: ['admin', 'services', 'all'],
+    queryFn: () => servicesApi.getAll(true), // Include inactive for admin management
   });
 
   const { data: sectors = [] } = useQuery({
-    queryKey: ['admin', 'sectors', 'active'],
-    queryFn: () => sectorsApi.getAll(false), // Only active sectors
+    queryKey: ['admin', 'sectors', 'all'],
+    queryFn: () => sectorsApi.getAll(true), // Include inactive for sector dropdown
   });
 
   const { groupedServices, ungroupedServices } = useMemo(() => {
