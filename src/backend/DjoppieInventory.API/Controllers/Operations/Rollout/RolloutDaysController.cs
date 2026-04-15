@@ -431,9 +431,10 @@ public class RolloutDaysController : ControllerBase
     }
 
     /// <summary>
-    /// Gets new assets assigned to workplaces for a specific day.
+    /// Gets all assets assigned to workplaces for a specific day.
     /// Used for QR code printing and verification before rollout execution.
-    /// Returns assets with status "Nieuw" that are assigned to workplaces in this day.
+    /// Returns all assets that are assigned to workplaces in this day (from both
+    /// relational WorkplaceAssetAssignment and legacy AssetPlansJson).
     /// </summary>
     /// <param name="id">Day ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
@@ -454,14 +455,35 @@ public class RolloutDaysController : ControllerBase
         // Get all workplaces for this day
         var workplaces = await _rolloutRepository.GetWorkplacesByDayIdAsync(id, cancellationToken);
 
-        // Collect all NewAssetIds from assignments
+        // Collect all asset IDs from both relational assignments and legacy JSON
         var assetIds = new HashSet<int>();
         foreach (var workplace in workplaces)
         {
+            // Check relational assignments first
             var assignments = await _assignmentService.GetByWorkplaceIdAsync(workplace.Id, cancellationToken);
             foreach (var assignment in assignments.Where(a => a.NewAssetId.HasValue))
             {
                 assetIds.Add(assignment.NewAssetId!.Value);
+            }
+
+            // Also check legacy AssetPlansJson field
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            {
+                try
+                {
+                    var legacyPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions);
+                    if (legacyPlans != null)
+                    {
+                        foreach (var plan in legacyPlans.Where(p => p.ExistingAssetId.HasValue))
+                        {
+                            assetIds.Add(plan.ExistingAssetId!.Value);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId} when getting new assets", workplace.Id);
+                }
             }
         }
 
@@ -473,13 +495,12 @@ public class RolloutDaysController : ControllerBase
         // Get the actual assets
         var assets = await _assetRepository.GetByIdsAsync(assetIds, cancellationToken);
 
-        // Filter to only "Nieuw" status assets and map to DTOs
-        var newAssets = assets
-            .Where(a => a.Status == AssetStatus.Nieuw)
+        // Return all assigned assets (no status filter - user can print labels for any assigned asset)
+        var assignedAssets = assets
             .Select(MapToAssetDto)
             .ToList();
 
-        return Ok(newAssets);
+        return Ok(assignedAssets);
     }
 
     /// <summary>
