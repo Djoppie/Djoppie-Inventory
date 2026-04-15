@@ -8,6 +8,7 @@ import {
 import type {
   OrganizationTreeParams,
   OrganizationFlatParams,
+  SectorWithServices,
 } from '../types/organization.types';
 
 export const organizationKeys = {
@@ -43,6 +44,38 @@ export const useOrganizationFlatList = (params: OrganizationFlatParams = {}) => 
 };
 
 /**
+ * Deduplicate sectors by name, merging services from duplicate sectors
+ */
+const deduplicateSectors = (sectors: SectorWithServices[]): SectorWithServices[] => {
+  const sectorByName = new Map<string, SectorWithServices & { serviceIds: Set<number> }>();
+
+  sectors.forEach(sector => {
+    const normalizedName = sector.name.trim().toUpperCase();
+
+    if (!sectorByName.has(normalizedName)) {
+      // First occurrence - initialize with this sector's data
+      sectorByName.set(normalizedName, {
+        ...sector,
+        services: [...sector.services],
+        serviceIds: new Set(sector.services.map(s => s.id)),
+      });
+    } else {
+      // Duplicate sector - merge services (avoiding duplicates)
+      const existing = sectorByName.get(normalizedName)!;
+      sector.services.forEach(service => {
+        if (!existing.serviceIds.has(service.id)) {
+          existing.services.push(service);
+          existing.serviceIds.add(service.id);
+        }
+      });
+    }
+  });
+
+  // Return deduplicated sectors without the temporary serviceIds set
+  return Array.from(sectorByName.values()).map(({ serviceIds, ...sector }) => sector);
+};
+
+/**
  * Hook to fetch services grouped by sector
  */
 export const useServicesBySector = (includeInactive = false) => {
@@ -50,6 +83,7 @@ export const useServicesBySector = (includeInactive = false) => {
     queryKey: organizationKeys.servicesBySector(includeInactive),
     queryFn: () => getServicesBySector(includeInactive),
     staleTime: 5 * 60 * 1000,
+    select: deduplicateSectors, // Deduplicate sectors by name to handle database duplicates
   });
 };
 
