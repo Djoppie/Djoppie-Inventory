@@ -37,15 +37,13 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import type {
   PlanningViewMode,
   PlanningSortOption,
   DayStatusFilter,
 } from '../../../../hooks/rollout/useRolloutFilters';
-import { SERVICE_COLOR, BUILDING_COLOR, SECTOR_COLOR } from '../../../../constants/filterColors';
+import { SERVICE_COLOR, BUILDING_COLOR } from '../../../../constants/filterColors';
 
 // Status filter configurations
 interface StatusChipConfig {
