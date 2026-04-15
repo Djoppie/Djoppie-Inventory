@@ -81,9 +81,10 @@ const IntuneImportDialog = ({ open, onClose }: Props) => {
     },
   });
 
-  // Reset state when dialog opens
+  // Reset state when dialog opens - intentional state reset triggered by prop change
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveStep(0);
       setSelectedDevices([]);
       setSearchTerm('');
@@ -93,13 +94,14 @@ const IntuneImportDialog = ({ open, onClose }: Props) => {
     }
   }, [open]);
 
-  // Set default asset type to first laptop type
+  // Set default asset type to first laptop type - one-time initialization when data loads
   useEffect(() => {
     if (assetTypesQuery.data && assetTypeId === 0) {
       const laptopType = assetTypesQuery.data.find(
         (t) => t.name.toLowerCase().includes('laptop')
       );
       if (laptopType) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setAssetTypeId(laptopType.id);
       } else if (assetTypesQuery.data.length > 0) {
         setAssetTypeId(assetTypesQuery.data[0].id);

@@ -7,6 +7,8 @@ export const useAnimatedCounter = (target: number, duration = 1200): number => {
 
   useEffect(() => {
     if (target === 0) {
+      // Animation reset when target changes to 0 - intentional sync behavior
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(0);
       return;
     }

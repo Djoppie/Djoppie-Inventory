@@ -115,6 +115,9 @@ builder.Services.AddSwaggerGen(c =>
         Contact = new() { Name = "Djoppie Team", Email = "jo.wijnen@diepenbeek.be" }
     });
 
+    // Use full type names to avoid conflicts (e.g., Microsoft.Graph has multiple "Group" types)
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "_") ?? type.Name);
+
     // Add JWT Bearer authentication to Swagger
     var tenantId = builder.Configuration["AzureAd:TenantId"] ?? "7db28d6f-d542-40c1-b529-5e5ed2aad545";
     var audience = builder.Configuration["AzureAd:Audience"] ?? "api://eb5bcf06-8032-494f-a363-92b6802c44bf";

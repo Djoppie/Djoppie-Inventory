@@ -215,15 +215,7 @@ const HardwareTab = () => {
     },
   ], []);
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Fout bij laden van hardware rapport: {(error as Error).message}
-      </Alert>
-    );
-  }
-
-  // Ultra-compact horizontal statistics cards
+  // Ultra-compact horizontal statistics cards - moved before error return
   const statisticsCards = useMemo(() => (
     <Box
       sx={{
@@ -655,6 +647,15 @@ const HardwareTab = () => {
       </Paper>
     );
   }, [selectedStatuses, selectedAssetTypeIds, selectedServiceIds, selectedBuildingIds, searchQuery, services, assetTypes, buildings, bgBase, isDark, filtersExpanded]);
+
+  // Error check after all hooks
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Fout bij laden van hardware rapport: {(error as Error).message}
+      </Alert>
+    );
+  }
 
   return (
     <NeumorphicDataGrid

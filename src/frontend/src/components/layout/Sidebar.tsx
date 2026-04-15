@@ -28,8 +28,6 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 
 // Icons - Inventory sub-items
-import AddBoxIcon from '@mui/icons-material/AddBox';
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import StyleIcon from '@mui/icons-material/Style';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
@@ -438,8 +436,6 @@ const Sidebar = ({
             matchPaths={['/inventory', '/inventory/assets', '/inventory/scan', '/inventory/templates']}
             subItems={[
               { label: 'Assets', icon: <InventoryIcon />, path: ROUTES.INVENTORY_ASSETS, matchPaths: ['/inventory/assets'] },
-              { label: 'Create Asset', icon: <AddBoxIcon />, path: ROUTES.ASSETS_NEW, matchPaths: ['/inventory/assets/new'] },
-              { label: 'Bulk Create Asset', icon: <PlaylistAddIcon />, path: ROUTES.ASSETS_BULK_NEW, matchPaths: ['/inventory/assets/bulk-create'] },
               { label: 'Templates', icon: <StyleIcon />, path: ROUTES.TEMPLATES, matchPaths: ['/inventory/templates'] },
               { label: 'Reports', icon: <AssessmentIcon />, path: ROUTES.REPORTS, matchPaths: ['/reports'] },
             ]}

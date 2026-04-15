@@ -362,8 +362,6 @@ const EmployeesTab = () => {
         headerAlign: 'center',
       },
     ],
-    // handleOpenAssetsDialog is stable enough; it depends on setState which never changes identity
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

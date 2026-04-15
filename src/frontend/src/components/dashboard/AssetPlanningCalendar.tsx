@@ -283,7 +283,12 @@ export const AssetPlanningCalendar = () => {
   // Get all rollout days from sessions
   const allRolloutDays = useMemo(() => {
     if (!sessions) return [];
-    const days: any[] = [];
+    type SessionDayType = NonNullable<(typeof sessions)[number]['days']>[number];
+    type RolloutDayWithSession = SessionDayType & {
+      sessionName: string;
+      sessionId: number;
+    };
+    const days: RolloutDayWithSession[] = [];
     sessions.forEach((session) => {
       if (session.days) {
         session.days.forEach((day) => {

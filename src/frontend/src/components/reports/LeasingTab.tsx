@@ -209,15 +209,7 @@ const LeasingTab = () => {
     },
   ], []);
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        Fout bij laden van lease contracten: {(error as Error).message}
-      </Alert>
-    );
-  }
-
-  // Statistics cards component
+  // Statistics cards component - moved before error return
   const statisticsCards = useMemo(() => (
     <Grid container spacing={1}>
       {STAT_CARDS.map((card) => {
@@ -375,6 +367,15 @@ const LeasingTab = () => {
       </Grid>
     </Paper>
   ), [searchQuery, filters.status, filteredItems.length, bgBase, isDark]);
+
+  // Error check after all hooks
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        Fout bij laden van lease contracten: {(error as Error).message}
+      </Alert>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

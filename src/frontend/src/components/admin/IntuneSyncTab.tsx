@@ -50,7 +50,7 @@ const IntuneSyncTab = () => {
     syncMutation.mutate();
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
       case 'Success':
         return 'success';
@@ -308,7 +308,7 @@ const IntuneSyncTab = () => {
                           <Chip
                             icon={getStatusIcon(item.status) || undefined}
                             label={item.status}
-                            color={getStatusColor(item.status) as any}
+                            color={getStatusColor(item.status)}
                             size="small"
                             variant="outlined"
                           />

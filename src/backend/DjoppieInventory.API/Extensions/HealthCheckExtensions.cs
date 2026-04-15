@@ -62,11 +62,12 @@ public static class HealthCheckExtensions
     public static WebApplication MapHealthCheckEndpoints(this WebApplication app)
     {
         // Detailed health check endpoint (for monitoring systems)
+        // AllowAnonymous: Health checks must be accessible without auth for monitoring
         app.MapHealthChecks("/health", new HealthCheckOptions
         {
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
             AllowCachingResponses = false
-        });
+        }).AllowAnonymous();
 
         // Ready check - only passes when all "ready" tagged checks pass
         // Used by Kubernetes/Azure to know when the app can receive traffic
@@ -75,7 +76,7 @@ public static class HealthCheckExtensions
             Predicate = check => check.Tags.Contains("ready"),
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
             AllowCachingResponses = false
-        });
+        }).AllowAnonymous();
 
         // Live check - basic check to see if the app is running
         // No health checks are run, just returns 200 if the app is alive
@@ -92,7 +93,7 @@ public static class HealthCheckExtensions
                 });
             },
             AllowCachingResponses = false
-        });
+        }).AllowAnonymous();
 
         return app;
     }

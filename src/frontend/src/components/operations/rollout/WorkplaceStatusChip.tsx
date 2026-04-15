@@ -107,6 +107,7 @@ const WorkplaceStatusChip = ({
 export default WorkplaceStatusChip;
 
 /** Get the status color for a workplace status (for progress bars, borders, etc.) */
+// eslint-disable-next-line react-refresh/only-export-components
 export const getWorkplaceStatusColor = (status: string): string => {
   return STATUS_CONFIG[status as WorkplaceStatus]?.color || STATUS_CONFIG.Pending.color;
 };

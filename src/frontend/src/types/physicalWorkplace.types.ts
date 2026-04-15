@@ -163,7 +163,8 @@ export interface WorkplaceFixedAsset {
   id: number;
   assetCode: string;
   assetName: string;
-  assetType: string;
+  // assetType can be a string (legacy) or full object from backend
+  assetType?: string | { id: number; code: string; name: string; categoryId?: number };
   brand?: string;
   model?: string;
   serialNumber?: string;

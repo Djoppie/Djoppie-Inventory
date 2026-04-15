@@ -85,38 +85,36 @@ export const OrganizationTree: React.FC<OrganizationTreeProps> = ({
 
   const { data, isLoading, error, refetch } = useOrganizationTree(params);
 
-  // Filter nodes based on search term
-  const filterNodes = useCallback(
-    (nodes: OrganizationTreeNode[], term: string): OrganizationTreeNode[] => {
-      if (!term) return nodes;
-      const lowerTerm = term.toLowerCase();
+  // Filter nodes based on search term - pure function, no dependencies
+  const filterNodes = (nodes: OrganizationTreeNode[], term: string): OrganizationTreeNode[] => {
+    if (!term) return nodes;
+    const lowerTerm = term.toLowerCase();
 
-      const result: OrganizationTreeNode[] = [];
-      for (const node of nodes) {
-        const matchesSelf =
-          node.code.toLowerCase().includes(lowerTerm) ||
-          node.name.toLowerCase().includes(lowerTerm);
-        const filteredChildren = node.children
-          ? filterNodes(node.children, term)
-          : [];
+    const result: OrganizationTreeNode[] = [];
+    for (const node of nodes) {
+      const matchesSelf =
+        node.code.toLowerCase().includes(lowerTerm) ||
+        node.name.toLowerCase().includes(lowerTerm);
+      const filteredChildren = node.children
+        ? filterNodes(node.children, term)
+        : [];
 
-        if (matchesSelf || filteredChildren.length > 0) {
-          result.push({
-            ...node,
-            children:
-              filteredChildren.length > 0 ? filteredChildren : node.children,
-          });
-        }
+      if (matchesSelf || filteredChildren.length > 0) {
+        result.push({
+          ...node,
+          children:
+            filteredChildren.length > 0 ? filteredChildren : node.children,
+        });
       }
-      return result;
-    },
-    []
-  );
+    }
+    return result;
+  };
 
   const filteredRoots = useMemo(() => {
     if (!data?.roots) return [];
     return filterNodes(data.roots, searchTerm);
-  }, [data?.roots, searchTerm, filterNodes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.roots, searchTerm]);
 
   // Auto-expand when searching
   React.useEffect(() => {
@@ -177,8 +175,9 @@ export const OrganizationTree: React.FC<OrganizationTreeProps> = ({
     [onSelectionChange, data?.roots, selectableTypes]
   );
 
-  const renderTreeItem = useCallback(
-    (node: OrganizationTreeNode) => {
+  // Render tree item - defined as a function that captures current props
+  const renderTreeItem = useMemo(() => {
+    const render = (node: OrganizationTreeNode): React.ReactNode => {
       const isSelectable =
         !selectableTypes || selectableTypes.includes(node.nodeType);
 
@@ -241,12 +240,12 @@ export const OrganizationTree: React.FC<OrganizationTreeProps> = ({
             },
           }}
         >
-          {node.children?.map(renderTreeItem)}
+          {node.children?.map(render)}
         </TreeItem>
       );
-    },
-    [compact, selectableTypes]
-  );
+    };
+    return render;
+  }, [compact, selectableTypes]);
 
   if (isLoading) {
     return (

@@ -41,9 +41,10 @@ export const useSidebarState = (): UseSidebarStateReturn => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
   }, [isCollapsed]);
 
-  // Close mobile drawer when switching to desktop
+  // Close mobile drawer when switching to desktop - intentional sync with media query
   useEffect(() => {
     if (isDesktop && mobileOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMobileOpen(false);
     }
   }, [isDesktop, mobileOpen]);
