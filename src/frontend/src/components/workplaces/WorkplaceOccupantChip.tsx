@@ -32,7 +32,6 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
 
   // Purple accent for person (using centralized EMPLOYEE_COLOR)
   const purpleColor = EMPLOYEE_COLOR;
-  const purpleLight = alpha(EMPLOYEE_COLOR, 0.7);
 
   if (!isOccupied && !showVacant) {
     return null;
@@ -119,7 +118,7 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
         }}>
           <LaptopIcon sx={{ fontSize: '0.75rem' }} />
           <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-            {workplace.occupantDeviceAssetCode || workplace.occupantDeviceSerial}
+            {workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode}
           </Box>
         </Box>
       )}
@@ -137,8 +136,7 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
           color: isDark ? '#fff' : purpleColor,
           fontWeight: 700,
           letterSpacing: '0.02em',
-          border: '1px solid',
-          borderColor: isDark ? purpleLight : purpleColor,
+          border: 'none',
           height: (workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode) ? 'auto' : undefined,
           '& .MuiChip-label': {
             py: (workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode) ? 0.5 : undefined,
