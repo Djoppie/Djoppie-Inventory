@@ -16,6 +16,14 @@ import {
   LinearProgress,
   Avatar,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  ListItemSecondaryAction,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +48,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import BuildIcon from '@mui/icons-material/Build';
+import CloseIcon from '@mui/icons-material/Close';
+import PlaceIcon from '@mui/icons-material/Place';
 import { useRolloutSessions, useRolloutSession, useDeleteRolloutSession, useUpdateRolloutSession, useCancelRolloutSession } from '../../../hooks/useRollout';
 import { getStatusColor } from '../../../api/rollout.api';
 import { ROUTES, buildRoute } from '../../../constants/routes';
@@ -93,6 +103,7 @@ const RolloutListPage = () => {
   const [statusFilter, setStatusFilter] = useState<RolloutSessionStatus | ''>('');
   const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; sessionId: number } | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<Set<number>>(new Set());
+  const [pendingDialogOpen, setPendingDialogOpen] = useState(false);
 
   const { data: sessions, isLoading, error } = useRolloutSessions(
     statusFilter ? { status: statusFilter } : undefined
@@ -137,6 +148,12 @@ const RolloutListPage = () => {
       pendingWorkplaces,
       avgCompletion,
     };
+  }, [sessions]);
+
+  // Get active sessions (Planning, Ready, InProgress) for pending dialog
+  const activeSessions = useMemo(() => {
+    if (!sessions) return [];
+    return sessions.filter(s => ['Planning', 'Ready', 'InProgress'].includes(s.status));
   }, [sessions]);
 
   const handleStatusFilterChange = (status: RolloutSessionStatus | '') => {
@@ -412,8 +429,20 @@ const RolloutListPage = () => {
             </Box>
           </Box>
 
-          {/* Pending Workplaces */}
-          <Box sx={statBoxSx}>
+          {/* Pending Workplaces - Clickable */}
+          <Box
+            sx={{
+              ...statBoxSx,
+              cursor: globalStats.pendingWorkplaces > 0 ? 'pointer' : 'default',
+              transition: 'all 0.2s ease',
+              '&:hover': globalStats.pendingWorkplaces > 0 ? {
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.08)',
+                transform: 'translateY(-2px)',
+              } : {},
+            }}
+            onClick={() => globalStats.pendingWorkplaces > 0 && setPendingDialogOpen(true)}
+          >
             <ScheduleIcon sx={{ fontSize: 28, color: '#eab308' }} />
             <Box>
               <Typography variant="h5" fontWeight={800} color="#eab308">
@@ -617,6 +646,17 @@ const RolloutListPage = () => {
           Verwijderen
         </MenuItem>
       </Menu>
+
+      {/* Pending Workplaces Dialog */}
+      <PendingWorkplacesDialog
+        open={pendingDialogOpen}
+        onClose={() => setPendingDialogOpen(false)}
+        sessions={activeSessions}
+        onNavigateToExecution={(sessionId) => {
+          setPendingDialogOpen(false);
+          navigate(buildRoute.rolloutExecute(sessionId));
+        }}
+      />
     </Box>
   );
 };
@@ -1172,6 +1212,284 @@ const ActivityList = ({ session, isLoading }: ActivityListProps) => {
         </Stack>
       )}
     </Box>
+  );
+};
+
+// ===== PENDING WORKPLACES DIALOG COMPONENT =====
+
+interface PendingWorkplacesDialogProps {
+  open: boolean;
+  onClose: () => void;
+  sessions: RolloutSession[];
+  onNavigateToExecution: (sessionId: number) => void;
+}
+
+const PendingWorkplacesDialog = ({ open, onClose, sessions, onNavigateToExecution }: PendingWorkplacesDialogProps) => {
+  // Fetch details for each active session when dialog is open
+  const sessionQueries = sessions.map(session =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useRolloutSession(open ? session.id : 0, { includeDays: true, includeWorkplaces: true })
+  );
+
+  const isLoading = sessionQueries.some(q => q.isLoading || q.isFetching);
+
+  // Collect all pending workplaces
+  const pendingWorkplaces = useMemo(() => {
+    const items: Array<{
+      sessionId: number;
+      sessionName: string;
+      dayDate: string;
+      userName: string;
+      location: string;
+      scheduledDate?: string;
+      status: string;
+    }> = [];
+
+    sessionQueries.forEach((query, index) => {
+      const sessionData = query.data;
+      if (!sessionData?.days) return;
+
+      const sessionInfo = sessions[index];
+      if (!sessionInfo) return;
+
+      sessionData.days.forEach((day) => {
+        day.workplaces?.forEach((workplace) => {
+          if (workplace.status !== 'Completed' && workplace.status !== 'Skipped') {
+            items.push({
+              sessionId: sessionInfo.id,
+              sessionName: sessionInfo.sessionName,
+              dayDate: day.date,
+              userName: workplace.userName,
+              location: workplace.physicalWorkplaceCode || workplace.location || '-',
+              scheduledDate: workplace.scheduledDate,
+              status: workplace.status,
+            });
+          }
+        });
+      });
+    });
+
+    // Sort by date
+    return items.sort((a, b) => {
+      const dateA = a.scheduledDate || a.dayDate;
+      const dateB = b.scheduledDate || b.dayDate;
+      return new Date(dateA).getTime() - new Date(dateB).getTime();
+    });
+  }, [sessionQueries, sessions]);
+
+  // Group by session
+  const groupedBySession = useMemo(() => {
+    const groups = new Map<number, { sessionName: string; workplaces: typeof pendingWorkplaces }>();
+
+    pendingWorkplaces.forEach(wp => {
+      if (!groups.has(wp.sessionId)) {
+        groups.set(wp.sessionId, { sessionName: wp.sessionName, workplaces: [] });
+      }
+      groups.get(wp.sessionId)!.workplaces.push(wp);
+    });
+
+    return Array.from(groups.entries());
+  }, [pendingWorkplaces]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('nl-NL', { weekday: 'short', day: '2-digit', month: 'short' });
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          ...neuCardSx,
+          maxHeight: '80vh',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          pb: 2,
+        }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Avatar
+            sx={{
+              bgcolor: 'rgba(234, 179, 8, 0.12)',
+              color: '#eab308',
+            }}
+          >
+            <ScheduleIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Openstaande Werkplekken
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {pendingWorkplaces.length} medewerker{pendingWorkplaces.length !== 1 ? 's' : ''} nog te doen
+            </Typography>
+          </Box>
+        </Stack>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 0 }}>
+        {isLoading ? (
+          <Box sx={{ p: 4, textAlign: 'center' }}>
+            <CircularProgress size={32} sx={{ color: '#FF7700', mb: 2 }} />
+            <Typography color="text.secondary">Werkplekken laden...</Typography>
+          </Box>
+        ) : pendingWorkplaces.length === 0 ? (
+          <Box sx={{ p: 4, textAlign: 'center' }}>
+            <CheckCircleIcon sx={{ fontSize: 48, color: '#16a34a', mb: 2 }} />
+            <Typography variant="h6" fontWeight={600} color="#16a34a">
+              Alles is afgerond!
+            </Typography>
+            <Typography color="text.secondary">
+              Er zijn geen openstaande werkplekken meer.
+            </Typography>
+          </Box>
+        ) : (
+          <Box>
+            {groupedBySession.map(([sessionId, group]) => (
+              <Box key={sessionId}>
+                {/* Session Header */}
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark' ? 'rgba(255, 119, 0, 0.08)' : 'rgba(255, 119, 0, 0.05)',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <RocketLaunchIcon sx={{ fontSize: 18, color: '#FF7700' }} />
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      {group.sessionName}
+                    </Typography>
+                    <Chip
+                      label={`${group.workplaces.length} te doen`}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        bgcolor: 'rgba(234, 179, 8, 0.15)',
+                        color: '#eab308',
+                      }}
+                    />
+                  </Stack>
+                  <Button
+                    size="small"
+                    startIcon={<PlayArrowIcon />}
+                    onClick={() => onNavigateToExecution(sessionId)}
+                    sx={{
+                      fontSize: '0.75rem',
+                      color: '#22c55e',
+                      '&:hover': { bgcolor: 'rgba(34, 197, 94, 0.08)' },
+                    }}
+                  >
+                    Uitvoeren
+                  </Button>
+                </Box>
+
+                {/* Workplaces List */}
+                <List dense sx={{ py: 0 }}>
+                  {group.workplaces.map((workplace, idx) => (
+                    <ListItem
+                      key={`${sessionId}-${idx}`}
+                      sx={{
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        '&:last-child': { borderBottom: 'none' },
+                        '&:hover': {
+                          bgcolor: (theme) =>
+                            theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                        },
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: workplace.status === 'InProgress'
+                              ? 'rgba(59, 130, 246, 0.12)'
+                              : 'rgba(108, 117, 125, 0.12)',
+                            color: workplace.status === 'InProgress' ? '#3B82F6' : '#6C757D',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {workplace.userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Typography variant="body2" fontWeight={600}>
+                            {workplace.userName}
+                          </Typography>
+                        }
+                        secondary={
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.25 }}>
+                            <PlaceIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+                            <Typography variant="caption" color="text.secondary">
+                              {workplace.location}
+                            </Typography>
+                          </Stack>
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip
+                            label={formatDate(workplace.scheduledDate || workplace.dayDate)}
+                            size="small"
+                            sx={{
+                              height: 22,
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              bgcolor: (theme) =>
+                                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                            }}
+                          />
+                          {workplace.status === 'InProgress' && (
+                            <Chip
+                              label="Bezig"
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                bgcolor: 'rgba(59, 130, 246, 0.15)',
+                                color: '#3B82F6',
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
