@@ -942,8 +942,19 @@ public class RolloutWorkplacesController : ControllerBase
             catch { /* continue */ }
         }
 
+        // Validate serial number length to prevent database truncation errors
+        if (!string.IsNullOrEmpty(dto.SerialNumber) && dto.SerialNumber.Length > 100)
+        {
+            return BadRequest(new { message = "Serial number exceeds maximum length of 100 characters." });
+        }
+        if (!string.IsNullOrEmpty(dto.OldSerialNumber) && dto.OldSerialNumber.Length > 100)
+        {
+            return BadRequest(new { message = "Old serial number exceeds maximum length of 100 characters." });
+        }
+
         // Check if the requested item is an old device entry (handled in JSON only)
         bool isOldDeviceEntry = itemIndex >= 0 && itemIndex < assetPlans.Count &&
+            assetPlans[itemIndex].Metadata != null &&
             assetPlans[itemIndex].Metadata.TryGetValue("isOldDevice", out var isOld) && isOld == "true";
 
         if (isOldDeviceEntry)
@@ -978,7 +989,12 @@ public class RolloutWorkplacesController : ControllerBase
                     if (oldAsset != null)
                     {
                         var returnStatus = plan.Metadata.TryGetValue("returnStatus", out var status) ? status : "UitDienst";
-                        oldAsset.Status = returnStatus == "Defect" ? AssetStatus.Defect : AssetStatus.UitDienst;
+                        oldAsset.Status = returnStatus switch
+                        {
+                            "Defect" => AssetStatus.Defect,
+                            "Stock" => AssetStatus.Stock,
+                            _ => AssetStatus.UitDienst
+                        };
                         oldAsset.UpdatedAt = DateTime.UtcNow;
                     }
                 }
@@ -994,6 +1010,13 @@ public class RolloutWorkplacesController : ControllerBase
             if (assignment == null)
             {
                 // Fallback: try finding by array index if Position doesn't match
+                _logger.LogWarning(
+                    "Position lookup failed for workplace {WorkplaceId}, itemIndex {ItemIndex}. " +
+                    "Expected Position {ExpectedPosition}. " +
+                    "Available positions: [{Positions}]",
+                    workplaceId, itemIndex, itemIndex + 1,
+                    string.Join(", ", assignments.Select(a => a.Position)));
+
                 if (itemIndex < 0 || itemIndex >= assignments.Count)
                 {
                     return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
@@ -1001,8 +1024,36 @@ public class RolloutWorkplacesController : ControllerBase
                 assignment = assignments[itemIndex];
             }
 
+            _logger.LogDebug(
+                "Updating assignment {AssignmentId} for workplace {WorkplaceId}. " +
+                "Position: {Position}, AssetTypeId: {AssetTypeId}, NewAssetId: {NewAssetId}",
+                assignment.Id, workplaceId, assignment.Position, assignment.AssetTypeId, assignment.NewAssetId);
+
             if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
             {
+                // Check if serial number is already used by another asset
+                var existingAssetWithSerial = await _context.Assets
+                    .FirstOrDefaultAsync(a => a.SerialNumber == dto.SerialNumber, cancellationToken);
+
+                if (existingAssetWithSerial != null)
+                {
+                    // If the serial number belongs to a different asset, return error
+                    if (assignment.NewAssetId == null || existingAssetWithSerial.Id != assignment.NewAssetId)
+                    {
+                        _logger.LogWarning(
+                            "Serial number {SerialNumber} already exists on asset {AssetId} ({AssetCode}). " +
+                            "Cannot assign to workplace {WorkplaceId} assignment {AssignmentId}.",
+                            dto.SerialNumber, existingAssetWithSerial.Id, existingAssetWithSerial.AssetCode,
+                            workplaceId, assignment.Id);
+
+                        return BadRequest(new
+                        {
+                            message = $"Het serienummer '{dto.SerialNumber}' is al in gebruik door asset {existingAssetWithSerial.AssetCode} ({existingAssetWithSerial.AssetName}). " +
+                                     "Gebruik een ander serienummer of selecteer het bestaande asset."
+                        });
+                    }
+                }
+
                 assignment.SerialNumberCaptured = dto.SerialNumber;
                 assignment.SerialNumberRequired = true;
 
@@ -1043,6 +1094,29 @@ public class RolloutWorkplacesController : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
             {
+                // Check if serial number is already used by another asset
+                var existingAssetWithSerial = await _context.Assets
+                    .FirstOrDefaultAsync(a => a.SerialNumber == dto.SerialNumber, cancellationToken);
+
+                if (existingAssetWithSerial != null)
+                {
+                    // If the serial number belongs to a different asset than the one linked, return error
+                    if (!plan.ExistingAssetId.HasValue || existingAssetWithSerial.Id != plan.ExistingAssetId.Value)
+                    {
+                        _logger.LogWarning(
+                            "Serial number {SerialNumber} already exists on asset {AssetId} ({AssetCode}). " +
+                            "Cannot assign to workplace {WorkplaceId} item index {ItemIndex}.",
+                            dto.SerialNumber, existingAssetWithSerial.Id, existingAssetWithSerial.AssetCode,
+                            workplaceId, itemIndex);
+
+                        return BadRequest(new
+                        {
+                            message = $"Het serienummer '{dto.SerialNumber}' is al in gebruik door asset {existingAssetWithSerial.AssetCode} ({existingAssetWithSerial.AssetName}). " +
+                                     "Gebruik een ander serienummer of selecteer het bestaande asset."
+                        });
+                    }
+                }
+
                 plan.Metadata ??= new Dictionary<string, string>();
                 plan.Metadata["serialNumber"] = dto.SerialNumber;
 
@@ -1068,7 +1142,24 @@ public class RolloutWorkplacesController : ControllerBase
         }
 
         workplace.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex,
+                "Database error updating item {ItemIndex} for workplace {WorkplaceId}. " +
+                "Inner exception: {InnerMessage}. " +
+                "Assignments count: {AssignmentsCount}. " +
+                "AssetPlans count: {PlansCount}.",
+                itemIndex, workplaceId,
+                ex.InnerException?.Message ?? ex.Message,
+                assignments.Count,
+                assetPlans.Count);
+            throw;
+        }
 
         _logger.LogInformation("Updated item {ItemIndex} details for workplace {WorkplaceId} by {PerformedBy}",
             itemIndex, workplaceId, performedBy);
@@ -1296,7 +1387,7 @@ public class RolloutWorkplacesController : ControllerBase
             catch { /* ignore parse errors */ }
         }
         var oldDevicePlans = existingPlans.Where(p =>
-            p.Metadata.TryGetValue("isOldDevice", out var isOld) && isOld == "true").ToList();
+            p.Metadata != null && p.Metadata.TryGetValue("isOldDevice", out var isOld) && isOld == "true").ToList();
 
         var plans = new List<AssetPlanDto>();
 

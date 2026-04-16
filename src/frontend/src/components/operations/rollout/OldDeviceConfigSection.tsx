@@ -32,11 +32,12 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HistoryIcon from '@mui/icons-material/History';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import type { Asset } from '../../../types/asset.types';
 import { ROLLOUT_TIMING, ROLLOUT_UI } from '../../../constants/rollout.constants';
 
 // Status options for returned devices
-export type ReturnDeviceStatus = 'Defect' | 'UitDienst';
+export type ReturnDeviceStatus = 'Defect' | 'UitDienst' | 'Stock';
 
 // Old device configuration interface
 export interface OldDeviceConfig {
@@ -72,7 +73,7 @@ export const OldDeviceConfigSection = ({
       id: `old-device-${Date.now()}-${Math.random()}`,
       serialNumber: '',
       linkedAsset: null,
-      returnStatus: 'UitDienst', // Default to swap/retirement
+      returnStatus: 'Stock', // Default to returning to stock
     };
     onChange([...devices, newDevice]);
   };
@@ -466,6 +467,12 @@ export const OldDeviceConfigSection = ({
                   },
                 }}
               >
+                <MenuItem value="Stock">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Inventory2Icon sx={{ fontSize: '1rem', color: '#2196f3' }} />
+                    <span>Stock (terug in voorraad)</span>
+                  </Stack>
+                </MenuItem>
                 <MenuItem value="Defect">
                   <Stack direction="row" spacing={1} alignItems="center">
                     <ReportProblemIcon sx={{ fontSize: '1rem', color: '#f44336' }} />
@@ -475,7 +482,7 @@ export const OldDeviceConfigSection = ({
                 <MenuItem value="UitDienst">
                   <Stack direction="row" spacing={1} alignItems="center">
                     <SwapHorizIcon sx={{ fontSize: '1rem', color: '#9e9e9e' }} />
-                    <span>Uit Dienst (swap)</span>
+                    <span>Uit Dienst (afvoeren)</span>
                   </Stack>
                 </MenuItem>
               </Select>

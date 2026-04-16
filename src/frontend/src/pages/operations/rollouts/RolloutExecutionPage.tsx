@@ -1237,13 +1237,19 @@ const AssetChecklistItem = ({ plan, interactive, onConfigure, onSkip, loading }:
             )}
             {isOldDevice && returnStatus && (
               <Chip
-                label={returnStatus === 'Defect' ? '🔧 Defect' : '🔄 Uit Dienst'}
+                label={
+                  returnStatus === 'Defect' ? '🔧 Defect' :
+                  returnStatus === 'Stock' ? '📦 Stock' :
+                  '🔄 Uit Dienst'
+                }
                 size="small"
                 sx={{
                   height: 20,
                   fontSize: '0.65rem',
                   fontWeight: 600,
-                  bgcolor: returnStatus === 'Defect' ? 'error.main' : 'grey.500',
+                  bgcolor: returnStatus === 'Defect' ? 'error.main' :
+                           returnStatus === 'Stock' ? 'info.main' :
+                           'grey.500',
                   color: 'white',
                 }}
                 component="span"
@@ -1378,6 +1384,7 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
   const needsTemplate = ['docking', 'monitor', 'keyboard', 'mouse'].includes(plan.equipmentType);
   // Check if this is an old device being returned (not a new device being installed)
   const isOldDevice = plan.metadata?.isOldDevice === 'true';
+  const returnStatus = plan.metadata?.returnStatus as string | undefined;
 
   // Assignment type for styling
   const assignmentType = getAssignmentType(plan.equipmentType);
@@ -1843,10 +1850,14 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
             {isOldDevice && (
               <>
                 {foundOldAsset ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'warning.main' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: returnStatus === 'Stock' ? 'info.main' : 'warning.main' }}>
                     <RemoveCircleOutlineIcon sx={{ fontSize: 18 }} />
-                    <Typography variant="body2" color="warning.main">
-                      Asset <strong>{foundOldAsset.assetCode}</strong> wordt gemarkeerd als uit dienst
+                    <Typography variant="body2" color={returnStatus === 'Stock' ? 'info.main' : 'warning.main'}>
+                      Asset <strong>{foundOldAsset.assetCode}</strong> wordt {
+                        returnStatus === 'Stock' ? 'teruggezet naar stock' :
+                        returnStatus === 'Defect' ? 'gemarkeerd als defect' :
+                        'gemarkeerd als uit dienst'
+                      }
                     </Typography>
                   </Box>
                 ) : oldSerialNumber.trim() ? (
@@ -1861,7 +1872,11 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
                   <ArrowForwardIcon sx={{ fontSize: 18 }} />
                   <Typography variant="body2" color="text.secondary">
-                    Status: <strong>InGebruik</strong> → <strong>UitDienst</strong>
+                    Status: <strong>InGebruik</strong> → <strong>{
+                      returnStatus === 'Stock' ? 'Stock' :
+                      returnStatus === 'Defect' ? 'Defect' :
+                      'UitDienst'
+                    }</strong>
                   </Typography>
                 </Box>
               </>

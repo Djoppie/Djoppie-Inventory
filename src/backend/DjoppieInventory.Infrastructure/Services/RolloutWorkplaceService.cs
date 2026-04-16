@@ -414,7 +414,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 }
             }
 
-            // Old asset -> UitDienst (full cleanup)
+            // Old asset -> target status based on returnStatus metadata
             if (plan.OldAssetId.HasValue)
             {
                 var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
@@ -423,8 +423,17 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                     var oldStatus = oldAsset.Status;
                     var previousOwner = oldAsset.Owner;
 
-                    // Full decommission: clear all assignment data
-                    oldAsset.Status = AssetStatus.UitDienst;
+                    // Determine target status from metadata (default to UitDienst for backwards compatibility)
+                    var returnStatusStr = plan.Metadata?.GetValueOrDefault("returnStatus", "UitDienst") ?? "UitDienst";
+                    var targetStatus = returnStatusStr switch
+                    {
+                        "Stock" => AssetStatus.Stock,
+                        "Defect" => AssetStatus.Defect,
+                        _ => AssetStatus.UitDienst
+                    };
+
+                    // Clear assignment data (owner, service, workplace, location)
+                    oldAsset.Status = targetStatus;
                     oldAsset.Owner = null;
                     oldAsset.ServiceId = null;
                     oldAsset.PhysicalWorkplaceId = null;
@@ -432,18 +441,24 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                     oldAsset.UpdatedAt = DateTime.UtcNow;
                     await _assetRepository.UpdateAsync(oldAsset);
 
-                    // Create audit event for decommissioning
+                    // Create audit event for status change
+                    var eventDescription = targetStatus switch
+                    {
+                        AssetStatus.Stock => $"Rollout werkplek: {workplace.UserName} (terug naar stock, vorige eigenaar: {previousOwner ?? "onbekend"})",
+                        AssetStatus.Defect => $"Rollout werkplek: {workplace.UserName} (defect gemeld, vorige eigenaar: {previousOwner ?? "onbekend"})",
+                        _ => $"Rollout werkplek: {workplace.UserName} (vervangen, vorige eigenaar: {previousOwner ?? "onbekend"})"
+                    };
                     await _assetEventService.CreateStatusChangedEventAsync(
                         oldAsset.Id,
                         oldStatus,
-                        AssetStatus.UitDienst,
+                        targetStatus,
                         completedBy,
                         completedByEmail,
-                        $"Rollout werkplek: {workplace.UserName} (vervangen, vorige eigenaar: {previousOwner ?? "onbekend"})");
+                        eventDescription);
 
                     _logger.LogInformation(
-                        "Old asset {AssetCode} decommissioned (UitDienst), cleared owner: {PreviousOwner}",
-                        oldAsset.AssetCode, previousOwner ?? "none");
+                        "Old asset {AssetCode} transitioned to {TargetStatus}, cleared owner: {PreviousOwner}",
+                        oldAsset.AssetCode, targetStatus, previousOwner ?? "none");
                 }
             }
 
@@ -506,17 +521,22 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 }
             }
 
-            // Reverse: UitDienst -> InGebruik
+            // Reverse: UitDienst/Stock/Defect -> InGebruik
             if (plan.OldAssetId.HasValue)
             {
                 var oldAsset = await _assetRepository.GetByIdAsync(plan.OldAssetId.Value);
-                if (oldAsset != null && oldAsset.Status == AssetStatus.UitDienst)
+                // Reverse any of the possible return statuses back to InGebruik
+                if (oldAsset != null && (oldAsset.Status == AssetStatus.UitDienst ||
+                                          oldAsset.Status == AssetStatus.Stock ||
+                                          oldAsset.Status == AssetStatus.Defect))
                 {
+                    var previousStatus = oldAsset.Status;
                     oldAsset.Status = AssetStatus.InGebruik;
                     oldAsset.UpdatedAt = DateTime.UtcNow;
                     await _assetRepository.UpdateAsync(oldAsset);
 
-                    _logger.LogInformation("Old asset {AssetCode} reversed to InGebruik", oldAsset.AssetCode);
+                    _logger.LogInformation("Old asset {AssetCode} reversed from {PreviousStatus} to InGebruik",
+                        oldAsset.AssetCode, previousStatus);
                 }
             }
 
