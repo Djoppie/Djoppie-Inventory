@@ -64,21 +64,22 @@ public class PhysicalWorkplaceService : IPhysicalWorkplaceService
         var workplaces = await query.ToListAsync(cancellationToken);
 
         // Get occupant device information for all occupied workplaces
-        var occupantEmails = workplaces
-            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantEmail))
-            .Select(pw => pw.CurrentOccupantEmail!.ToLower())
+        // Note: Asset.Owner stores the user's NAME (not email), so we match by CurrentOccupantName
+        var occupantNames = workplaces
+            .Where(pw => !string.IsNullOrEmpty(pw.CurrentOccupantName))
+            .Select(pw => pw.CurrentOccupantName!.ToLower())
             .Distinct()
             .ToList();
 
         var occupantDevices = new Dictionary<string, Asset>();
-        if (occupantEmails.Any())
+        if (occupantNames.Any())
         {
-            // Load assets into memory first, then group by owner to handle duplicate emails
+            // Load assets into memory first, then group by owner to handle duplicate names
             var assets = await _context.Assets
-                .Where(a => occupantEmails.Contains(a.Owner!.ToLower()) && a.Status == AssetStatus.InGebruik)
+                .Where(a => !string.IsNullOrEmpty(a.Owner) && occupantNames.Contains(a.Owner!.ToLower()) && a.Status == AssetStatus.InGebruik)
                 .ToListAsync(cancellationToken);
 
-            // Group by owner email and take first asset per owner (handles users with multiple laptops)
+            // Group by owner name and take first asset per owner (handles users with multiple laptops)
             occupantDevices = assets
                 .GroupBy(a => a.Owner!.ToLower())
                 .ToDictionary(
@@ -88,11 +89,11 @@ public class PhysicalWorkplaceService : IPhysicalWorkplaceService
 
         return workplaces.Select(pw =>
         {
-            // Get occupant's device if applicable
+            // Get occupant's device if applicable (match by name since Asset.Owner stores name)
             Asset? occupantDevice = null;
-            if (!string.IsNullOrEmpty(pw.CurrentOccupantEmail))
+            if (!string.IsNullOrEmpty(pw.CurrentOccupantName))
             {
-                occupantDevices.TryGetValue(pw.CurrentOccupantEmail.ToLower(), out occupantDevice);
+                occupantDevices.TryGetValue(pw.CurrentOccupantName.ToLower(), out occupantDevice);
             }
 
             return new PhysicalWorkplaceDto(
@@ -165,13 +166,14 @@ public class PhysicalWorkplaceService : IPhysicalWorkplaceService
         if (workplace == null)
             return null;
 
-        // Get occupant's device if applicable
+        // Get occupant's device if applicable (match by name since Asset.Owner stores name)
         Asset? occupantDevice = null;
-        if (!string.IsNullOrEmpty(workplace.CurrentOccupantEmail))
+        if (!string.IsNullOrEmpty(workplace.CurrentOccupantName))
         {
             occupantDevice = await _context.Assets
                 .FirstOrDefaultAsync(
-                    a => a.Owner!.ToLower() == workplace.CurrentOccupantEmail.ToLower() &&
+                    a => !string.IsNullOrEmpty(a.Owner) &&
+                         a.Owner!.ToLower() == workplace.CurrentOccupantName.ToLower() &&
                          a.Status == AssetStatus.InGebruik,
                     cancellationToken);
         }
