@@ -198,12 +198,74 @@ public class AssetRepository : IAssetRepository
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var asset = await _context.Assets.FindAsync(new object[] { id }, cancellationToken);
-        if (asset == null)
+        // Check if asset exists first
+        var exists = await _context.Assets.AnyAsync(a => a.Id == id, cancellationToken);
+        if (!exists)
             return false;
 
-        _context.Assets.Remove(asset);
-        await _context.SaveChangesAsync(cancellationToken);
+        // Use raw SQL for all operations to avoid EF Core complexity with FK constraints
+        // Order matters: clear FKs first, then delete related records, finally delete asset
+
+        // Step 1: Clear all nullable FK references pointing to this asset
+        await _context.Database.ExecuteSqlRawAsync(
+            @"UPDATE PhysicalWorkplaces SET
+                DockingStationAssetId = CASE WHEN DockingStationAssetId = {0} THEN NULL ELSE DockingStationAssetId END,
+                Monitor1AssetId = CASE WHEN Monitor1AssetId = {0} THEN NULL ELSE Monitor1AssetId END,
+                Monitor2AssetId = CASE WHEN Monitor2AssetId = {0} THEN NULL ELSE Monitor2AssetId END,
+                Monitor3AssetId = CASE WHEN Monitor3AssetId = {0} THEN NULL ELSE Monitor3AssetId END,
+                KeyboardAssetId = CASE WHEN KeyboardAssetId = {0} THEN NULL ELSE KeyboardAssetId END,
+                MouseAssetId = CASE WHEN MouseAssetId = {0} THEN NULL ELSE MouseAssetId END,
+                UpdatedAt = {1}
+              WHERE DockingStationAssetId = {0} OR Monitor1AssetId = {0} OR Monitor2AssetId = {0}
+                 OR Monitor3AssetId = {0} OR KeyboardAssetId = {0} OR MouseAssetId = {0}",
+            new object[] { id, DateTime.UtcNow }, cancellationToken);
+
+        await _context.Database.ExecuteSqlRawAsync(
+            "UPDATE WorkplaceAssetAssignments SET NewAssetId = NULL, UpdatedAt = {1} WHERE NewAssetId = {0}",
+            new object[] { id, DateTime.UtcNow }, cancellationToken);
+
+        await _context.Database.ExecuteSqlRawAsync(
+            "UPDATE WorkplaceAssetAssignments SET OldAssetId = NULL, UpdatedAt = {1} WHERE OldAssetId = {0}",
+            new object[] { id, DateTime.UtcNow }, cancellationToken);
+
+        // AssetRequests table may not exist in all environments - handle gracefully
+        try
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE AssetRequests SET AssignedAssetId = NULL WHERE AssignedAssetId = {0}",
+                new object[] { id }, cancellationToken);
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Message.Contains("Invalid object name"))
+        {
+            // Table doesn't exist yet - ignore
+        }
+
+        // Step 2: Delete all related records that reference this asset
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM RolloutAssetMovements WHERE AssetId = {0}",
+            new object[] { id }, cancellationToken);
+
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM AssetEvents WHERE AssetId = {0}",
+            new object[] { id }, cancellationToken);
+
+        // LeaseContracts table may not exist in all environments - handle gracefully
+        try
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                "DELETE FROM LeaseContracts WHERE AssetId = {0}",
+                new object[] { id }, cancellationToken);
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Message.Contains("Invalid object name"))
+        {
+            // Table doesn't exist yet - ignore
+        }
+
+        // Step 3: Delete the asset itself
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM Assets WHERE Id = {0}",
+            new object[] { id }, cancellationToken);
+
         return true;
     }
 

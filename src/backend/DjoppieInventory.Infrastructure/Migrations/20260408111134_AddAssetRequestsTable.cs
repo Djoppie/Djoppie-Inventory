@@ -15,20 +15,21 @@ namespace DjoppieInventory.Infrastructure.Migrations
                 name: "AssetRequests",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    RequestedDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    RequestType = table.Column<int>(type: "INTEGER", nullable: false),
-                    EmployeeName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    AssetType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
-                    Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    AssignedAssetId = table.Column<int>(type: "INTEGER", nullable: true),
-                    CreatedBy = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    ModifiedBy = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
-                    ModifiedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    CompletedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RequestedDate = table.Column<DateTime>(nullable: false),
+                    RequestType = table.Column<int>(nullable: false),
+                    EmployeeName = table.Column<string>(maxLength: 200, nullable: false),
+                    AssetType = table.Column<string>(maxLength: 100, nullable: false),
+                    Notes = table.Column<string>(maxLength: 2000, nullable: true),
+                    Status = table.Column<int>(nullable: false),
+                    AssignedAssetId = table.Column<int>(nullable: true),
+                    CreatedBy = table.Column<string>(maxLength: 200, nullable: false),
+                    CreatedAt = table.Column<DateTime>(nullable: false),
+                    ModifiedBy = table.Column<string>(maxLength: 200, nullable: true),
+                    ModifiedAt = table.Column<DateTime>(nullable: true),
+                    CompletedAt = table.Column<DateTime>(nullable: true)
                 },
                 constraints: table =>
                 {
