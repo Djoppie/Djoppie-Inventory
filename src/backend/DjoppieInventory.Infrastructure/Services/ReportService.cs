@@ -40,12 +40,12 @@ public class ReportService : IReportService
             .Include(a => a.Service)
             .Include(a => a.Building)
             .Include(a => a.Employee)
-                .ThenInclude(e => e.CurrentWorkplace)
+                .ThenInclude(e => e!.CurrentWorkplace)
             .Include(a => a.PhysicalWorkplace)
-                .ThenInclude(pw => pw.Building)
+                .ThenInclude(pw => pw!.Building)
             .Include(a => a.PhysicalWorkplace)
-                .ThenInclude(pw => pw.Service)
-                    .ThenInclude(s => s.Sector)
+                .ThenInclude(pw => pw!.Service)
+                    .ThenInclude(s => s!.Sector)
             .AsNoTracking();
 
         // Apply filters
