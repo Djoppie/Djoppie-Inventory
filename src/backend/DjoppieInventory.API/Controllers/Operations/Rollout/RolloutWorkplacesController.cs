@@ -931,15 +931,75 @@ public class RolloutWorkplacesController : ControllerBase
         var performedBy = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
         var performedByEmail = User.FindFirstValue(ClaimTypes.Email);
 
-        if (assignments.Count > 0)
+        // Parse JSON plans to check if this is an old device entry (not in assignments)
+        var assetPlans = new List<AssetPlanDto>();
+        if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
         {
-            // Use relational model
-            if (itemIndex < 0 || itemIndex >= assignments.Count)
+            try
             {
-                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+                assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
+            }
+            catch { /* continue */ }
+        }
+
+        // Check if the requested item is an old device entry (handled in JSON only)
+        bool isOldDeviceEntry = itemIndex >= 0 && itemIndex < assetPlans.Count &&
+            assetPlans[itemIndex].Metadata.TryGetValue("isOldDevice", out var isOld) && isOld == "true";
+
+        if (isOldDeviceEntry)
+        {
+            // Handle old device entry - these are stored in JSON only, not in assignments
+            var plan = assetPlans[itemIndex];
+
+            if (!string.IsNullOrWhiteSpace(dto.OldSerialNumber))
+            {
+                plan.Metadata ??= new Dictionary<string, string>();
+                plan.Metadata["oldSerial"] = dto.OldSerialNumber;
+
+                // Try to find and link the old asset by serial number
+                var oldAsset = await _context.Assets
+                    .FirstOrDefaultAsync(a => a.SerialNumber == dto.OldSerialNumber, cancellationToken);
+                if (oldAsset != null)
+                {
+                    plan.OldAssetId = oldAsset.Id;
+                    plan.OldAssetCode = oldAsset.AssetCode;
+                    plan.OldAssetName = oldAsset.AssetName;
+                }
             }
 
-            var assignment = assignments[itemIndex];
+            if (dto.MarkAsInstalled == true)
+            {
+                plan.Status = "installed";
+
+                // Update the old asset status if linked
+                if (plan.OldAssetId.HasValue)
+                {
+                    var oldAsset = await _context.Assets.FindAsync(new object[] { plan.OldAssetId.Value }, cancellationToken);
+                    if (oldAsset != null)
+                    {
+                        var returnStatus = plan.Metadata.TryGetValue("returnStatus", out var status) ? status : "UitDienst";
+                        oldAsset.Status = returnStatus == "Defect" ? AssetStatus.Defect : AssetStatus.UitDienst;
+                        oldAsset.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+            }
+
+            workplace.AssetPlansJson = JsonSerializer.Serialize(assetPlans, _jsonOptions);
+            workplace.CompletedItems = assetPlans.Count(p => p.Status == "installed" || p.Status == "skipped");
+        }
+        else if (assignments.Count > 0)
+        {
+            // Use relational model - find assignment by Position (which equals itemIndex + 1)
+            var assignment = assignments.FirstOrDefault(a => a.Position == itemIndex + 1);
+            if (assignment == null)
+            {
+                // Fallback: try finding by array index if Position doesn't match
+                if (itemIndex < 0 || itemIndex >= assignments.Count)
+                {
+                    return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+                }
+                assignment = assignments[itemIndex];
+            }
 
             if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
             {
@@ -968,18 +1028,10 @@ public class RolloutWorkplacesController : ControllerBase
         }
         else
         {
-            // Fallback to legacy AssetPlansJson
-            var assetPlans = new List<AssetPlanDto>();
-            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
+            // Fallback to legacy AssetPlansJson (assetPlans already parsed above)
+            if (assetPlans.Count == 0)
             {
-                try
-                {
-                    assetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
-                }
-                catch
-                {
-                    return BadRequest(new { message = "Failed to parse asset plans." });
-                }
+                return BadRequest(new { message = "No asset plans found for this workplace." });
             }
 
             if (itemIndex < 0 || itemIndex >= assetPlans.Count)

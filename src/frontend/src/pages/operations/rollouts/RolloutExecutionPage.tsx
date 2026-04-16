@@ -49,6 +49,12 @@ import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import LinkIcon from '@mui/icons-material/Link';
 import ReplayIcon from '@mui/icons-material/Replay';
+import PrintIcon from '@mui/icons-material/Print';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import {
   useRolloutSession,
   useRolloutDays,
@@ -69,6 +75,7 @@ import { RolloutExecutionToolbar } from '../../../components/operations/rollout/
 import { ROUTES, buildRoute } from '../../../constants/routes';
 import WorkplaceStatusChip from '../../../components/operations/rollout/WorkplaceStatusChip';
 import Loading from '../../../components/common/Loading';
+import BulkPrintLabelDialog from '../../../components/print/BulkPrintLabelDialog';
 import type { RolloutWorkplace, AssetPlan, EquipmentType } from '../../../types/rollout';
 import type { Asset, AssetTemplate } from '../../../types/asset.types';
 
@@ -527,6 +534,26 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
   const [reverseAssets, setReverseAssets] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+
+  // Get printable assets from the workplace (assets that have been linked to inventory)
+  const printableAssets = useMemo(() => {
+    const assets: Asset[] = [];
+    workplace.assetPlans?.forEach((plan) => {
+      // New assets that were installed (have existingAssetId)
+      if (plan.existingAssetId && plan.existingAssetCode) {
+        assets.push({
+          id: plan.existingAssetId,
+          assetCode: plan.existingAssetCode,
+          assetName: plan.existingAssetName || '',
+          brand: plan.brand,
+          model: plan.model,
+          serialNumber: plan.metadata?.serialNumber,
+        } as Asset);
+      }
+    });
+    return assets;
+  }, [workplace.assetPlans]);
 
   const startMutation = useStartRolloutWorkplace();
   const itemStatusMutation = useUpdateItemStatus();
@@ -836,6 +863,25 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
                     Voltooid op {new Date(workplace.completedAt).toLocaleString('nl-NL')}
                     {workplace.completedBy && ` door ${workplace.completedBy}`}
                   </Alert>
+                  {/* Print QR codes button - only show if there are printable assets */}
+                  {printableAssets.length > 0 && (
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      startIcon={<PrintIcon />}
+                      onClick={() => setPrintDialogOpen(true)}
+                      sx={{
+                        mb: 1.5,
+                        bgcolor: '#FF7700',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: '#e66a00',
+                        },
+                      }}
+                    >
+                      QR-codes Printen ({printableAssets.length})
+                    </Button>
+                  )}
                   <Button
                     variant="outlined"
                     color="warning"
@@ -1038,6 +1084,13 @@ const WorkplaceCard = ({ workplace, expanded, onToggle, onSnackbar }: WorkplaceC
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Print QR Labels Dialog */}
+      <BulkPrintLabelDialog
+        open={printDialogOpen}
+        onClose={() => setPrintDialogOpen(false)}
+        assets={printableAssets}
+      />
     </>
   );
 };
@@ -1324,6 +1377,8 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
   const needsSerial = ['laptop', 'desktop', 'docking'].includes(plan.equipmentType) && plan.requiresSerialNumber;
   const isComputerType = plan.equipmentType === 'laptop' || plan.equipmentType === 'desktop';
   const needsTemplate = ['docking', 'monitor', 'keyboard', 'mouse'].includes(plan.equipmentType);
+  // Check if this is an old device being returned (not a new device being installed)
+  const isOldDevice = plan.metadata?.isOldDevice === 'true';
 
   // Assignment type for styling
   const assignmentType = getAssignmentType(plan.equipmentType);
@@ -1445,10 +1500,13 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
   };
 
   // Check if save is allowed:
-  // 1. Serial is required and must be provided
-  // 2. For monitors with brandPending, a template must be selected
+  // 1. Serial is required and must be provided (for new devices)
+  // 2. Old serial is required for old devices being returned
+  // 3. For monitors with brandPending, a template must be selected
   const monitorNeedsBrand = plan.equipmentType === 'monitor' && plan.metadata?.brandPending === 'true' && !plan.brand;
-  const canSave = (!needsSerial || serialNumber.trim().length > 0) && (!monitorNeedsBrand || selectedTemplate);
+  const newDeviceValid = !isOldDevice ? (!needsSerial || serialNumber.trim().length > 0) : true;
+  const oldDeviceValid = isOldDevice ? oldSerialNumber.trim().length > 0 : true;
+  const canSave = newDeviceValid && oldDeviceValid && (!monitorNeedsBrand || selectedTemplate);
 
   return (
     <Dialog
@@ -1503,10 +1561,10 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
           {icon}
         </Box>
         <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333' }}>
+          <Typography component="span" variant="h6" fontWeight={700} sx={{ color: isDark ? '#fff' : '#333', display: 'block' }}>
             {label} Configureren
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography component="span" variant="caption" color="text.secondary">
             {workplace.userName}
           </Typography>
         </Box>
@@ -1523,71 +1581,72 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
       </DialogTitle>
       <DialogContent sx={{ pt: 3, overflow: 'visible' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 0.5 }}>
-          {/* Computer type: old serial + new serial */}
+          {/* Computer type: show only relevant serial field based on whether it's new or being returned */}
           {isComputerType && (
             <>
-              {/* Old computer serial (being replaced) */}
-              <Box>
-                <TextField
-                  fullWidth
-                  label="Oud serienummer (wordt vervangen)"
-                  value={oldSerialNumber}
-                  onChange={(e) => { setOldSerialNumber(e.target.value); setFoundOldAsset(null); setOldSearchError(null); }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(oldSerialNumber, true)}
-                  helperText="Optioneel — serienummer van het oude toestel"
-                  sx={inputSx}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => handleSearchSerial(oldSerialNumber, true)} disabled={!oldSerialNumber || searching} edge="end">
-                          {searching ? <CircularProgress size={20} /> : <SearchIcon />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                {foundOldAsset && (
-                  <Alert severity="success" sx={{ mt: 1 }} icon={<LinkIcon />}>
-                    <strong>Gevonden:</strong> {foundOldAsset.assetCode} — {foundOldAsset.assetName}
-                  </Alert>
-                )}
-                {oldSearchError && (
-                  <Alert severity="warning" sx={{ mt: 1 }}>{oldSearchError}</Alert>
-                )}
-              </Box>
-
-              <Divider />
-
-              {/* New computer serial */}
-              <Box>
-                <TextField
-                  fullWidth
-                  required
-                  label="Nieuw serienummer"
-                  value={serialNumber}
-                  onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
-                  helperText="Serienummer van het nieuwe toestel"
-                  sx={inputSx}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => handleSearchSerial(serialNumber, false)} disabled={!serialNumber || searching} edge="end">
-                          {searching ? <CircularProgress size={20} /> : <SearchIcon />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                {foundAsset && (
-                  <Alert severity="success" sx={{ mt: 1 }} icon={<LinkIcon />}>
-                    <strong>Gevonden:</strong> {foundAsset.assetCode} — {foundAsset.assetName}
-                  </Alert>
-                )}
-                {searchError && (
-                  <Alert severity="info" sx={{ mt: 1 }}>{searchError}</Alert>
-                )}
-              </Box>
+              {isOldDevice ? (
+                /* Old device being returned - only ask for the device's serial number */
+                <Box>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Serienummer"
+                    value={oldSerialNumber}
+                    onChange={(e) => { setOldSerialNumber(e.target.value); setFoundOldAsset(null); setOldSearchError(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(oldSerialNumber, true)}
+                    helperText="Serienummer van het toestel dat wordt ingeleverd"
+                    sx={inputSx}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => handleSearchSerial(oldSerialNumber, true)} disabled={!oldSerialNumber || searching} edge="end">
+                            {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  {foundOldAsset && (
+                    <Alert severity="success" sx={{ mt: 1 }} icon={<LinkIcon />}>
+                      <strong>Gevonden:</strong> {foundOldAsset.assetCode} — {foundOldAsset.assetName}
+                    </Alert>
+                  )}
+                  {oldSearchError && (
+                    <Alert severity="warning" sx={{ mt: 1 }}>{oldSearchError}</Alert>
+                  )}
+                </Box>
+              ) : (
+                /* New device being installed - only ask for the new device's serial number */
+                <Box>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Serienummer"
+                    value={serialNumber}
+                    onChange={(e) => { setSerialNumber(e.target.value); setFoundAsset(null); setSearchError(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchSerial(serialNumber, false)}
+                    helperText="Serienummer van het nieuwe toestel"
+                    sx={inputSx}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => handleSearchSerial(serialNumber, false)} disabled={!serialNumber || searching} edge="end">
+                            {searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  {foundAsset && (
+                    <Alert severity="success" sx={{ mt: 1 }} icon={<LinkIcon />}>
+                      <strong>Gevonden:</strong> {foundAsset.assetCode} — {foundAsset.assetName}
+                    </Alert>
+                  )}
+                  {searchError && (
+                    <Alert severity="info" sx={{ mt: 1 }}>{searchError}</Alert>
+                  )}
+                </Box>
+              )}
             </>
           )}
 
@@ -1700,6 +1759,125 @@ const ItemConfigDialog = ({ open, onClose, workplace, itemIndex, plan, onSaved, 
               {plan.existingAssetName && ` — ${plan.existingAssetName}`}
             </Alert>
           )}
+
+          {/* Validation Summary - shows what will happen when saving */}
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              borderRadius: 2,
+              bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              fontWeight={600}
+              sx={{
+                display: 'block',
+                mb: 1.5,
+                color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)',
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}
+            >
+              Bij opslaan & installeren
+            </Typography>
+
+            {/* Validation warnings */}
+            {needsSerial && !serialNumber.trim() && !isOldDevice && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'warning.main' }}>
+                <WarningAmberIcon sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="warning.main">
+                  Serienummer is vereist voor {label.toLowerCase()}
+                </Typography>
+              </Box>
+            )}
+
+            {isOldDevice && !oldSerialNumber.trim() && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'warning.main' }}>
+                <WarningAmberIcon sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="warning.main">
+                  Voer het serienummer in van het in te leveren toestel
+                </Typography>
+              </Box>
+            )}
+
+            {monitorNeedsBrand && !selectedTemplate && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'warning.main' }}>
+                <WarningAmberIcon sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="warning.main">
+                  Selecteer een monitor model
+                </Typography>
+              </Box>
+            )}
+
+            {/* Action summary for new devices */}
+            {!isOldDevice && isComputerType && (
+              <>
+                {foundAsset ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'success.main' }}>
+                    <LinkIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2" color="success.main">
+                      Asset <strong>{foundAsset.assetCode}</strong> wordt gekoppeld aan {workplace.userName}
+                    </Typography>
+                  </Box>
+                ) : serialNumber.trim() ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'info.main' }}>
+                    <AddCircleOutlineIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2" color="info.main">
+                      Nieuw asset wordt aangemaakt met serienummer <strong>{serialNumber}</strong>
+                    </Typography>
+                  </Box>
+                ) : null}
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'text.secondary' }}>
+                  <ArrowForwardIcon sx={{ fontSize: 18 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Status: <strong>Nieuw</strong> → <strong>InGebruik</strong>
+                  </Typography>
+                </Box>
+              </>
+            )}
+
+            {/* Action summary for old devices being returned */}
+            {isOldDevice && (
+              <>
+                {foundOldAsset ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'warning.main' }}>
+                    <RemoveCircleOutlineIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2" color="warning.main">
+                      Asset <strong>{foundOldAsset.assetCode}</strong> wordt gemarkeerd als uit dienst
+                    </Typography>
+                  </Box>
+                ) : oldSerialNumber.trim() ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'info.main' }}>
+                    <InfoOutlinedIcon sx={{ fontSize: 18 }} />
+                    <Typography variant="body2" color="info.main">
+                      Serienummer <strong>{oldSerialNumber}</strong> wordt geregistreerd (asset niet gevonden in inventaris)
+                    </Typography>
+                  </Box>
+                ) : null}
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                  <ArrowForwardIcon sx={{ fontSize: 18 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Status: <strong>InGebruik</strong> → <strong>UitDienst</strong>
+                  </Typography>
+                </Box>
+              </>
+            )}
+
+            {/* Action summary for peripherals */}
+            {!isComputerType && !isOldDevice && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                <CheckCircleIcon sx={{ fontSize: 18 }} />
+                <Typography variant="body2" color="text.secondary">
+                  {label} wordt geïnstalleerd op werkplek
+                </Typography>
+              </Box>
+            )}
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions

@@ -11,11 +11,14 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import BadgeIcon from '@mui/icons-material/Badge';
-import InventoryIcon from '@mui/icons-material/Inventory';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import PlaceIcon from '@mui/icons-material/Place';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import LaptopIcon from '@mui/icons-material/Laptop';
+import DeskIcon from '@mui/icons-material/Desk';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import {
   useRolloutWorkplaces,
   useDeleteRolloutWorkplace,
@@ -48,6 +51,69 @@ interface WorkplaceListProps {
 const getStatusChip = (status: string) => {
   if (status === 'Pending') return null; // Don't show chip for pending (default state)
   return <WorkplaceStatusChip status={status} />;
+};
+
+// Equipment types that are user-assigned (typically laptops)
+const USER_ASSIGNED_TYPES = ['laptop', 'desktop'];
+
+// Check if an asset plan is ONLY for an old device being returned (not a new asset with old device swap)
+const isOldDeviceOnly = (plan: RolloutWorkplace['assetPlans'][0]) => {
+  // Only entries marked explicitly as old devices (separate entry for device being returned)
+  return plan.metadata?.isOldDevice === 'true';
+};
+
+// Check if plan has a valid oldAssetId (not null, not undefined)
+const hasOldAssetId = (plan: RolloutWorkplace['assetPlans'][0]) => {
+  return plan.oldAssetId != null && plan.oldAssetId > 0;
+};
+
+// Check if plan has a valid existingAssetId (not null, not undefined)
+const hasExistingAssetId = (plan: RolloutWorkplace['assetPlans'][0]) => {
+  return plan.existingAssetId != null && plan.existingAssetId > 0;
+};
+
+// Categorize asset plans with +/- counts for user and workplace assets
+const categorizeAssetPlans = (assetPlans: RolloutWorkplace['assetPlans']) => {
+  const plans = assetPlans || [];
+
+  // User-assigned: new laptops/desktops being deployed (excluding old-device-only entries)
+  const userNew = plans.filter(p =>
+    USER_ASSIGNED_TYPES.includes(p.equipmentType) && !isOldDeviceOnly(p)
+  );
+
+  // User-assigned: old laptops/desktops being returned
+  // Either separate old device entries OR plans with actual oldAssetId value
+  const userOldEntries = plans.filter(p =>
+    USER_ASSIGNED_TYPES.includes(p.equipmentType) && isOldDeviceOnly(p)
+  );
+  const userOldFromSwap = plans.filter(p =>
+    USER_ASSIGNED_TYPES.includes(p.equipmentType) && !isOldDeviceOnly(p) && hasOldAssetId(p)
+  );
+
+  // Workplace-fixed: new assets being added (docking, monitors, etc.)
+  const workplaceNew = plans.filter(p =>
+    !USER_ASSIGNED_TYPES.includes(p.equipmentType) && !isOldDeviceOnly(p)
+  );
+
+  // Workplace-fixed: old assets being removed
+  const workplaceOldEntries = plans.filter(p =>
+    !USER_ASSIGNED_TYPES.includes(p.equipmentType) && isOldDeviceOnly(p)
+  );
+  const workplaceOldFromSwap = plans.filter(p =>
+    !USER_ASSIGNED_TYPES.includes(p.equipmentType) && !isOldDeviceOnly(p) && hasOldAssetId(p)
+  );
+
+  // Printable = assets with valid existingAssetId (linked to inventory)
+  const printable = plans.filter(p => hasExistingAssetId(p));
+
+  return {
+    userNewCount: userNew.length,
+    userOldCount: userOldEntries.length + userOldFromSwap.length,
+    workplaceNewCount: workplaceNew.length,
+    workplaceOldCount: workplaceOldEntries.length + workplaceOldFromSwap.length,
+    printableCount: printable.length,
+    totalCount: plans.length,
+  };
 };
 
 export default function WorkplaceList({
@@ -212,131 +278,187 @@ export default function WorkplaceList({
                   },
                 }}
               >
-                {/* User info - flexible width */}
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    {/* Role-based icon */}
-                    {workplace.serviceName?.toLowerCase().includes('sector') ? (
-                      <SupervisorAccountIcon sx={{ fontSize: 18, color: '#6366f1' }} />
-                    ) : workplace.serviceName?.toLowerCase().includes('team') ? (
-                      <BadgeIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
-                    ) : (
-                      <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                    )}
-                    <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
-                      {workplace.userName}
-                    </Typography>
-                    {!isGhost && getStatusChip(workplace.status)}
-                    {/* Ghost entry - show as "Uitgesteld" */}
-                    {isGhost && (
+                {/* User info and asset indicators - flexible width */}
+                {(() => {
+                  const cats = categorizeAssetPlans(workplace.assetPlans);
+                  return (
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      {/* First line: Name + user asset indicators (+/- laptops) */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        {/* Role-based icon */}
+                        {workplace.serviceName?.toLowerCase().includes('sector') ? (
+                          <SupervisorAccountIcon sx={{ fontSize: 18, color: '#6366f1' }} />
+                        ) : workplace.serviceName?.toLowerCase().includes('team') ? (
+                          <BadgeIcon sx={{ fontSize: 18, color: '#0ea5e9' }} />
+                        ) : (
+                          <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        )}
+                        <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                          {workplace.userName}
+                        </Typography>
+
+                        {/* User asset indicators: +X new laptops, -X returning */}
+                        {cats.userNewCount > 0 && (
+                          <Tooltip title={`${cats.userNewCount} nieuwe laptop/desktop toekennen`}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, bgcolor: 'rgba(22, 163, 74, 0.1)', borderRadius: 1, px: 0.5, py: 0.25 }}>
+                              <LaptopIcon sx={{ fontSize: 14, color: '#16a34a' }} />
+                              <AddIcon sx={{ fontSize: 12, color: '#16a34a' }} />
+                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#16a34a' }}>{cats.userNewCount}</Typography>
+                            </Box>
+                          </Tooltip>
+                        )}
+                        {cats.userOldCount > 0 && (
+                          <Tooltip title={`${cats.userOldCount} laptop/desktop inleveren`}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, bgcolor: 'rgba(239, 68, 68, 0.1)', borderRadius: 1, px: 0.5, py: 0.25 }}>
+                              <LaptopIcon sx={{ fontSize: 14, color: '#dc2626' }} />
+                              <RemoveIcon sx={{ fontSize: 12, color: '#dc2626' }} />
+                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#dc2626' }}>{cats.userOldCount}</Typography>
+                            </Box>
+                          </Tooltip>
+                        )}
+
+                        {!isGhost && getStatusChip(workplace.status)}
+                        {/* Ghost entry - show as "Uitgesteld" */}
+                        {isGhost && (
+                          <Chip
+                            label="Uitgesteld"
+                            size="small"
+                            sx={{
+                              height: 22,
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              bgcolor: 'rgba(239, 68, 68, 0.12)',
+                              color: '#dc2626',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                            }}
+                            component="span"
+                          />
+                        )}
+                        {/* Show new date for rescheduled workplaces */}
+                        {isGhost && workplace.scheduledDate && (
+                          <Tooltip title={`Verplaatst naar ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                            <Chip
+                              icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
+                              label={`→ ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.65rem',
+                                fontWeight: 500,
+                                bgcolor: 'rgba(100, 100, 100, 0.08)',
+                                color: 'text.secondary',
+                                border: '1px solid rgba(100, 100, 100, 0.15)',
+                                '& .MuiChip-icon': { color: 'text.secondary' },
+                              }}
+                              component="span"
+                            />
+                          </Tooltip>
+                        )}
+                        {/* Rescheduled indicator - shown on target date */}
+                        {showRescheduledIndicator && originalDayDate && (
+                          <Tooltip title={`Herplanning van ${new Date(originalDayDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
+                            <Chip
+                              icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
+                              label={`← ${new Date(originalDayDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                bgcolor: 'rgba(33, 150, 243, 0.1)',
+                                color: SECTOR_COLOR,
+                                border: '1px solid rgba(33, 150, 243, 0.3)',
+                                '& .MuiChip-icon': { color: SECTOR_COLOR },
+                              }}
+                              component="span"
+                            />
+                          </Tooltip>
+                        )}
+                      </Box>
+
+                      {/* Second line: Physical workplace + workplace asset indicators */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        {/* Physical Workplace indicator */}
+                        {workplace.physicalWorkplaceCode && (
+                          <Tooltip title={`Fysieke werkplek: ${workplace.physicalWorkplaceName || workplace.physicalWorkplaceCode}`}>
+                            <Chip
+                              icon={<PlaceIcon sx={{ fontSize: '12px !important' }} />}
+                              label={workplace.physicalWorkplaceCode}
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: '0.65rem',
+                                fontWeight: 600,
+                                bgcolor: 'rgba(0, 150, 136, 0.12)',
+                                color: SERVICE_COLOR,
+                                border: '1px solid rgba(0, 150, 136, 0.3)',
+                                '& .MuiChip-icon': {
+                                  color: SERVICE_COLOR,
+                                  marginLeft: '4px',
+                                },
+                                '& .MuiChip-label': {
+                                  paddingRight: '6px',
+                                },
+                              }}
+                              component="span"
+                            />
+                          </Tooltip>
+                        )}
+
+                        {/* Workplace asset indicators: +X new (green), -X removing (red) */}
+                        {cats.workplaceNewCount > 0 && (
+                          <Tooltip title={`${cats.workplaceNewCount} werkplek-asset(s) toevoegen (docking, monitor, etc.)`}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, bgcolor: 'rgba(22, 163, 74, 0.1)', borderRadius: 1, px: 0.5, py: 0.25 }}>
+                              <DeskIcon sx={{ fontSize: 14, color: '#16a34a' }} />
+                              <AddIcon sx={{ fontSize: 12, color: '#16a34a' }} />
+                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#16a34a' }}>{cats.workplaceNewCount}</Typography>
+                            </Box>
+                          </Tooltip>
+                        )}
+                        {cats.workplaceOldCount > 0 && (
+                          <Tooltip title={`${cats.workplaceOldCount} werkplek-asset(s) verwijderen`}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, bgcolor: 'rgba(239, 68, 68, 0.1)', borderRadius: 1, px: 0.5, py: 0.25 }}>
+                              <DeskIcon sx={{ fontSize: 14, color: '#dc2626' }} />
+                              <RemoveIcon sx={{ fontSize: 12, color: '#dc2626' }} />
+                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#dc2626' }}>{cats.workplaceOldCount}</Typography>
+                            </Box>
+                          </Tooltip>
+                        )}
+
+                        {/* Show location if no physical workplace */}
+                        {!workplace.physicalWorkplaceCode && workplace.location && (
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {workplace.location}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })()}
+
+                {/* Printable count indicator */}
+                {(() => {
+                  const cats = categorizeAssetPlans(workplace.assetPlans);
+                  const total = cats.totalCount;
+                  return (
+                    <Tooltip title={cats.printableCount > 0
+                      ? `${cats.printableCount} van ${total} assets printbaar (gekoppeld aan inventory)`
+                      : 'Geen assets gekoppeld aan inventory - QR codes worden aangemaakt bij uitvoering'
+                    }>
                       <Chip
-                        label="Uitgesteld"
+                        icon={<PrintIcon sx={{ fontSize: 12 }} />}
+                        label={`${cats.printableCount}/${total}`}
                         size="small"
                         sx={{
                           height: 22,
+                          minWidth: 50,
+                          fontWeight: 600,
                           fontSize: '0.7rem',
-                          fontWeight: 600,
-                          bgcolor: 'rgba(239, 68, 68, 0.12)',
-                          color: '#dc2626',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                        }}
-                        component="span"
-                      />
-                    )}
-                    {/* Show new date for rescheduled workplaces */}
-                    {isGhost && workplace.scheduledDate && (
-                      <Tooltip title={`Verplaatst naar ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
-                        <Chip
-                          icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
-                          label={`→ ${new Date(workplace.scheduledDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: '0.65rem',
-                            fontWeight: 500,
-                            bgcolor: 'rgba(100, 100, 100, 0.08)',
-                            color: 'text.secondary',
-                            border: '1px solid rgba(100, 100, 100, 0.15)',
-                            '& .MuiChip-icon': { color: 'text.secondary' },
-                          }}
-                          component="span"
-                        />
-                      </Tooltip>
-                    )}
-                    {/* Rescheduled indicator - shown on target date */}
-                    {showRescheduledIndicator && originalDayDate && (
-                      <Tooltip title={`Herplanning van ${new Date(originalDayDate).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}`}>
-                        <Chip
-                          icon={<EventRepeatIcon sx={{ fontSize: '12px !important' }} />}
-                          label={`← ${new Date(originalDayDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`}
-                          size="small"
-                          sx={{
-                            height: 22,
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            bgcolor: 'rgba(33, 150, 243, 0.1)',
-                            color: SECTOR_COLOR,
-                            border: '1px solid rgba(33, 150, 243, 0.3)',
-                            '& .MuiChip-icon': { color: SECTOR_COLOR },
-                          }}
-                          component="span"
-                        />
-                      </Tooltip>
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography variant="caption" color="text.secondary" noWrap>
-                      {workplace.userEmail || workplace.location || '-'}
-                    </Typography>
-                    {/* Physical Workplace indicator */}
-                    {workplace.physicalWorkplaceCode && (
-                      <Tooltip title={`Fysieke werkplek: ${workplace.physicalWorkplaceName || workplace.physicalWorkplaceCode}`}>
-                        <Chip
-                          icon={<PlaceIcon sx={{ fontSize: '12px !important' }} />}
-                          label={workplace.physicalWorkplaceCode}
-                          size="small"
-                          sx={{
-                            height: 18,
-                            fontSize: '0.65rem',
-                            fontWeight: 600,
-                            bgcolor: 'rgba(0, 150, 136, 0.12)',
-                            color: SERVICE_COLOR,
-                            border: '1px solid rgba(0, 150, 136, 0.3)',
-                            '& .MuiChip-icon': {
-                              color: SERVICE_COLOR,
-                              marginLeft: '4px',
-                            },
-                            '& .MuiChip-label': {
-                              paddingRight: '6px',
-                            },
-                          }}
-                          component="span"
-                        />
-                      </Tooltip>
-                    )}
-                  </Box>
-                </Box>
-
-                {/* Asset Progress indicator */}
-                {(() => {
-                  // Use assetPlans.length as fallback when totalItems is 0 but plans exist
-                  const total = workplace.totalItems || workplace.assetPlans?.length || 0;
-                  const completed = workplace.completedItems || 0;
-                  return (
-                    <Tooltip title={`${completed} van ${total} assets`}>
-                      <Chip
-                        icon={<InventoryIcon sx={{ fontSize: 14 }} />}
-                        label={`${completed}/${total}`}
-                        size="small"
-                        sx={{
-                          minWidth: 60,
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
                           ...(total === 0
                             ? { bgcolor: 'grey.200', color: 'grey.600', border: '1px solid rgba(100, 100, 100, 0.2)', '& .MuiChip-icon': { color: 'grey.500' } }
-                            : completed === total
+                            : cats.printableCount === total
                               ? { bgcolor: 'rgba(22, 163, 74, 0.15)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.3)', '& .MuiChip-icon': { color: '#16a34a' } }
-                              : completed > 0
+                              : cats.printableCount > 0
                                 ? { bgcolor: 'rgba(234, 179, 8, 0.15)', color: '#ca8a04', border: '1px solid rgba(234, 179, 8, 0.3)', '& .MuiChip-icon': { color: '#ca8a04' } }
                                 : { bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.2)', '& .MuiChip-icon': { color: '#dc2626' } }),
                         }}
@@ -419,17 +541,26 @@ export default function WorkplaceList({
                         </IconButton>
                       </span>
                     </Tooltip>
-                    <Tooltip title="Print">
-                      <span>
-                        <IconButton
-                          size="small"
-                          onClick={() => onPrintWorkplace(workplace)}
-                          disabled={!workplace.assetPlans?.some(p => p.existingAssetId)}
-                        >
-                          <PrintIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
+                    {(() => {
+                      const cats = categorizeAssetPlans(workplace.assetPlans);
+                      const canPrint = cats.printableCount > 0;
+                      return (
+                        <Tooltip title={canPrint
+                          ? `Print QR labels (${cats.printableCount} assets gekoppeld)`
+                          : 'Geen assets gekoppeld aan inventory - koppel eerst assets of print na uitvoering'
+                        }>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => onPrintWorkplace(workplace)}
+                              disabled={!canPrint}
+                            >
+                              <PrintIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      );
+                    })()}
                     <Tooltip title="Verwijderen">
                       <span>
                         <IconButton size="small" onClick={() => handleDelete(workplace)} disabled={!isEditable}>
