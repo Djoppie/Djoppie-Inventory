@@ -15,8 +15,17 @@ import PersonIcon from '@mui/icons-material/Person';
 import DeskIcon from '@mui/icons-material/Desk';
 import ComputerIcon from '@mui/icons-material/Computer';
 import LaptopIcon from '@mui/icons-material/Laptop';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { PhysicalWorkplace, WorkplaceType } from '../../types/physicalWorkplace.types';
 import { EMPLOYEE_COLOR } from '../../constants/filterColors';
+
+// Short labels for workplace types
+const WorkplaceTypeShortLabels: Record<WorkplaceType, string> = {
+  [WorkplaceType.Desktop]: 'Desktop',
+  [WorkplaceType.Laptop]: 'Laptop',
+  [WorkplaceType.HotDesk]: 'Flex',
+  [WorkplaceType.MeetingRoom]: 'Vergader',
+};
 
 interface WorkplaceOccupantChipProps {
   workplace: PhysicalWorkplace;
@@ -102,26 +111,48 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
     </Box>
   );
 
-  // Custom label with name and device info (laptop prominently displayed)
+  // Get the appropriate icon for workplace type
+  const getTypeIcon = () => {
+    switch (workplace.type) {
+      case WorkplaceType.Desktop:
+        return <ComputerIcon sx={{ fontSize: '0.75rem' }} />;
+      case WorkplaceType.Laptop:
+        return <LaptopIcon sx={{ fontSize: '0.75rem' }} />;
+      case WorkplaceType.HotDesk:
+        return <DeskIcon sx={{ fontSize: '0.75rem' }} />;
+      case WorkplaceType.MeetingRoom:
+        return <MeetingRoomIcon sx={{ fontSize: '0.75rem' }} />;
+      default:
+        return <LaptopIcon sx={{ fontSize: '0.75rem' }} />;
+    }
+  };
+
+  // Custom label with name, type, and device info
   const chipLabel = (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 0.25 }}>
       <Box sx={{ lineHeight: 1.2 }}>{workplace.currentOccupantName}</Box>
-      {(workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode) && (
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          fontSize: '0.65rem',
-          opacity: 0.9,
-          lineHeight: 1.2,
-          mt: 0.25,
-        }}>
-          <LaptopIcon sx={{ fontSize: '0.75rem' }} />
-          <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-            {workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode}
-          </Box>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        fontSize: '0.65rem',
+        opacity: 0.9,
+        lineHeight: 1.2,
+        mt: 0.25,
+      }}>
+        {getTypeIcon()}
+        <Box component="span" sx={{ fontWeight: 600 }}>
+          {WorkplaceTypeShortLabels[workplace.type]}
         </Box>
-      )}
+        {(workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode) && (
+          <>
+            <Box component="span" sx={{ opacity: 0.6 }}>•</Box>
+            <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+              {workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode}
+            </Box>
+          </>
+        )}
+      </Box>
     </Box>
   );
 
@@ -137,9 +168,9 @@ const WorkplaceOccupantChip = ({ workplace, showVacant = true }: WorkplaceOccupa
           fontWeight: 700,
           letterSpacing: '0.02em',
           border: 'none',
-          height: (workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode) ? 'auto' : undefined,
+          height: 'auto',
           '& .MuiChip-label': {
-            py: (workplace.occupantDeviceSerial || workplace.occupantDeviceAssetCode) ? 0.5 : undefined,
+            py: 0.5,
           },
           boxShadow: isDark
             ? '0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
