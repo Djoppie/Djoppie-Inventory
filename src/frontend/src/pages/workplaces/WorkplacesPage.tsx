@@ -55,7 +55,6 @@ import {
 import {
   PhysicalWorkplace,
   WorkplaceType,
-  WorkplaceTypeLabels,
   PhysicalWorkplaceFilters,
 } from '../../types/physicalWorkplace.types';
 import Loading from '../../components/common/Loading';
@@ -457,26 +456,6 @@ const PhysicalWorkplacesPage = () => {
             </Typography>
           )}
         </Box>
-      ),
-    },
-    {
-      id: 'type',
-      label: 'Type',
-      minWidth: 100,
-      format: (item) => (
-        <Chip
-          label={WorkplaceTypeLabels[item.type]}
-          size="small"
-          sx={{
-            height: 22,
-            fontSize: '0.7rem',
-            fontWeight: 600,
-            bgcolor: isDark ? alpha(workplaceAccent, 0.15) : alpha(workplaceAccent, 0.08),
-            color: workplaceAccent,
-            border: '1px solid',
-            borderColor: alpha(workplaceAccent, 0.3),
-          }}
-        />
       ),
     },
     {
