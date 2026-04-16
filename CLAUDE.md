@@ -825,6 +825,79 @@ When adding/removing status values from `AssetStatus` enum:
 az ad app permission admin-consent --id <backend-client-id>
 ```
 
+## UI Component Patterns
+
+### Service/Sector Filter Component
+
+Use this **compact hierarchical filter design** consistently throughout the project when filtering by services/sectors. Reference implementation: `src/frontend/src/pages/inventory/AssetsPage.tsx`
+
+**Design Principles:**
+
+1. **Compact Header Bar**
+   - Filter icon + title on the left
+   - "X geselecteerd" chip with delete button on the right (only when selections exist)
+   - Expand/collapse arrow
+   - Subtle hover effect
+
+2. **Sector Grouping (3-column grid on large screens)**
+   - Services grouped under their parent sectors
+   - Each sector is a collapsible card with:
+     - Checkbox (supports indeterminate state for partial selection)
+     - Sector name in UPPERCASE, small font (0.65rem), letter-spacing
+     - Badge showing count of selected services in that sector
+     - Expand/collapse toggle
+
+3. **Service Chips (within expanded sectors)**
+   - Compact clickable chips (height: 24px, font: 0.68rem)
+   - Selected state: orange background, orange border, bold text
+   - Unselected state: subtle gray background, no border
+   - Hover: orange tint
+
+4. **Color Scheme**
+   - Primary accent: `#FF7700` (Djoppie orange)
+   - Selected backgrounds: `alpha('#FF7700', 0.15)`
+   - Selected borders: `alpha('#FF7700', 0.3)`
+   - Sector badges: solid `#FF7700` with white text
+
+5. **Animations**
+   - Fade-in with slight translateY on filter open
+   - Smooth collapse transitions
+   - Subtle hover transitions (0.15s ease)
+
+**Required Data & State:**
+
+```typescript
+// Fetch sectors and services
+const { data: services = [] } = useQuery<Service[]>({ queryKey: ['services'], queryFn: () => servicesApi.getAll(true) });
+const { data: sectors = [] } = useQuery<Sector[]>({ queryKey: ['sectors'], queryFn: () => sectorsApi.getAll(true) });
+
+// Group services by sector
+const servicesBySector = useMemo(() => {
+  const grouped = new Map<number, { sector: Sector; services: Service[] }>();
+  sectors.forEach(sector => grouped.set(sector.id, { sector, services: [] }));
+  services.forEach(service => {
+    if (service.sectorId) {
+      const group = grouped.get(service.sectorId);
+      if (group) group.services.push(service);
+    }
+  });
+  return Array.from(grouped.values()).filter(g => g.services.length > 0).sort((a, b) => a.sector.sortOrder - b.sector.sortOrder);
+}, [services, sectors]);
+
+// State
+const [serviceFilterOpen, setServiceFilterOpen] = useState(false);
+const [selectedServiceIds, setSelectedServiceIds] = useState<Set<number>>(new Set());
+const [expandedSectors, setExpandedSectors] = useState<Set<number>>(new Set());
+```
+
+**Key Functions:**
+
+- `toggleServiceFilter()` - Open/close filter panel
+- `toggleService(serviceId)` - Select/deselect single service
+- `toggleSectorExpand(sectorId)` - Expand/collapse sector
+- `toggleSectorServices(sectorId)` - Select/deselect all services in sector
+- `clearServiceFilter()` - Clear all selections
+
 ## Repository Information
 
 - **Remote**: <https://github.com/Djoppie/Djoppie-Inventory.git>
