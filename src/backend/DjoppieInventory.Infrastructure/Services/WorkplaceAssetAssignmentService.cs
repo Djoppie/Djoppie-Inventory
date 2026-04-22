@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
@@ -228,6 +229,20 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
             {
                 assignment.RolloutWorkplace.CompletedItems++;
                 assignment.RolloutWorkplace.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // Ensure a real Asset row exists for template-based assignments. Without this
+            // the complete-workplace flow (bulk install of still-pending items) leaves
+            // dock/monitor/keyboard/mouse assignments with NewAssetId=null, which excludes
+            // them from the PhysicalWorkplace slot update and from the completion dialog.
+            if (!assignment.NewAssetId.HasValue)
+            {
+                await EnsureAssetFromTemplateAsync(
+                    assignment,
+                    request.SerialNumberCaptured ?? assignment.SerialNumberCaptured ?? string.Empty,
+                    performedBy,
+                    performedByEmail,
+                    cancellationToken);
             }
 
             // Record deployment movement if new asset is assigned
@@ -583,6 +598,59 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
         return MapToDto(assignment);
     }
 
+    /// <summary>
+    /// Ensures a template-based assignment has a linked NewAsset. If the assignment has
+    /// no NewAssetId but has template info (via AssetTemplateId or a "templateId" entry in
+    /// MetadataJson), creates an Asset row from the template and links it. No-op if the
+    /// assignment already has a NewAssetId or has no resolvable template.
+    /// Swallows "template not found" cases; other exceptions propagate.
+    /// </summary>
+    private async Task EnsureAssetFromTemplateAsync(
+        WorkplaceAssetAssignment assignment,
+        string serialNumber,
+        string performedBy,
+        string performedByEmail,
+        CancellationToken cancellationToken)
+    {
+        if (assignment.NewAssetId.HasValue) return;
+
+        // Resolve templateId: prefer FK, fall back to metadata (legacy data).
+        int? templateId = assignment.AssetTemplateId;
+        if (!templateId.HasValue && !string.IsNullOrEmpty(assignment.MetadataJson))
+        {
+            try
+            {
+                var metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(assignment.MetadataJson);
+                if (metadata != null
+                    && metadata.TryGetValue("templateId", out var tidStr)
+                    && int.TryParse(tidStr, out var tid))
+                {
+                    templateId = tid;
+                }
+            }
+            catch { /* malformed metadata — not recoverable here */ }
+        }
+
+        if (!templateId.HasValue)
+        {
+            _logger.LogDebug(
+                "Assignment {AssignmentId} has no NewAssetId and no resolvable template; skipping asset creation",
+                assignment.Id);
+            return;
+        }
+
+        // Persist AssetTemplateId so CreateAssetFromTemplateAsync (which requires the FK)
+        // can proceed.
+        if (!assignment.AssetTemplateId.HasValue)
+        {
+            assignment.AssetTemplateId = templateId.Value;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        await CreateAssetFromTemplateAsync(
+            assignment.Id, serialNumber, performedBy, performedByEmail, cancellationToken);
+    }
+
     /// <inheritdoc/>
     public async Task<WorkplaceAssignmentSummaryDto> GetSummaryAsync(
         int workplaceId,
@@ -655,6 +723,37 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
                 cancellationToken);
 
             completedCount++;
+        }
+
+        // Retroactive healing: find assignments already marked Installed but missing a
+        // linked NewAsset (workplaces completed before template-asset creation was wired up)
+        // and create the asset now so PhysicalWorkplace slots can be populated.
+        var orphanedInstalled = await _context.WorkplaceAssetAssignments
+            .Include(a => a.AssetType)
+            .Include(a => a.AssetTemplate)
+            .Include(a => a.RolloutWorkplace)
+            .Where(a => a.RolloutWorkplaceId == workplaceId
+                && a.Status == AssetAssignmentStatus.Installed
+                && a.NewAssetId == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var assignment in orphanedInstalled)
+        {
+            try
+            {
+                await EnsureAssetFromTemplateAsync(
+                    assignment,
+                    assignment.SerialNumberCaptured ?? string.Empty,
+                    performedBy,
+                    performedByEmail,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to heal orphaned installed assignment {AssignmentId} for workplace {WorkplaceId}",
+                    assignment.Id, workplaceId);
+            }
         }
 
         // Update PhysicalWorkplace with occupant and fixed assets
