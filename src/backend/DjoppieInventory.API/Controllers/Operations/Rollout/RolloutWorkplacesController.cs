@@ -1033,31 +1033,86 @@ public class RolloutWorkplacesController : ControllerBase
                 "Position: {Position}, AssetTypeId: {AssetTypeId}, NewAssetId: {NewAssetId}",
                 assignment.Id, workplaceId, assignment.Position, assignment.AssetTypeId, assignment.NewAssetId);
 
+            // Fail fast on duplicate serials before any creation attempt.
             if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
             {
-                // Check if serial number is already used by another asset
                 var existingAssetWithSerial = await _context.Assets
                     .FirstOrDefaultAsync(a => a.SerialNumber == dto.SerialNumber, cancellationToken);
 
-                if (existingAssetWithSerial != null)
+                if (existingAssetWithSerial != null
+                    && (assignment.NewAssetId == null || existingAssetWithSerial.Id != assignment.NewAssetId))
                 {
-                    // If the serial number belongs to a different asset, return error
-                    if (assignment.NewAssetId == null || existingAssetWithSerial.Id != assignment.NewAssetId)
-                    {
-                        _logger.LogWarning(
-                            "Serial number {SerialNumber} already exists on asset {AssetId} ({AssetCode}). " +
-                            "Cannot assign to workplace {WorkplaceId} assignment {AssignmentId}.",
-                            dto.SerialNumber, existingAssetWithSerial.Id, existingAssetWithSerial.AssetCode,
-                            workplaceId, assignment.Id);
+                    _logger.LogWarning(
+                        "Serial number {SerialNumber} already exists on asset {AssetId} ({AssetCode}). " +
+                        "Cannot assign to workplace {WorkplaceId} assignment {AssignmentId}.",
+                        dto.SerialNumber, existingAssetWithSerial.Id, existingAssetWithSerial.AssetCode,
+                        workplaceId, assignment.Id);
 
-                        return BadRequest(new
-                        {
-                            message = $"Het serienummer '{dto.SerialNumber}' is al in gebruik door asset {existingAssetWithSerial.AssetCode} ({existingAssetWithSerial.AssetName}). " +
-                                     "Gebruik een ander serienummer of selecteer het bestaande asset."
-                        });
+                    return BadRequest(new
+                    {
+                        message = $"Het serienummer '{dto.SerialNumber}' is al in gebruik door asset {existingAssetWithSerial.AssetCode} ({existingAssetWithSerial.AssetName}). " +
+                                 "Gebruik een ander serienummer of selecteer het bestaande asset."
+                    });
+                }
+            }
+
+            // Resolve template: prefer FK, fall back to metadata for assignments created
+            // before the templateId was persisted as a real FK.
+            int? resolvedTemplateId = assignment.AssetTemplateId;
+            if (!resolvedTemplateId.HasValue && !string.IsNullOrEmpty(assignment.MetadataJson))
+            {
+                try
+                {
+                    var assignmentMeta = JsonSerializer.Deserialize<Dictionary<string, string>>(assignment.MetadataJson, _jsonOptions);
+                    if (assignmentMeta != null
+                        && assignmentMeta.TryGetValue("templateId", out var mtid)
+                        && int.TryParse(mtid, out var tid))
+                    {
+                        resolvedTemplateId = tid;
                     }
                 }
+                catch { /* ignore malformed metadata */ }
+            }
 
+            // Template-based assignments (dock, monitor, keyboard, mouse configured via
+            // template) have no linked Asset until first install. Create that Asset now
+            // so PhysicalWorkplace equipment slots actually get populated on completion.
+            bool shouldCreateFromTemplate = !assignment.NewAssetId.HasValue
+                && resolvedTemplateId.HasValue
+                && (dto.MarkAsInstalled == true || !string.IsNullOrWhiteSpace(dto.SerialNumber));
+
+            if (shouldCreateFromTemplate)
+            {
+                if (!assignment.AssetTemplateId.HasValue)
+                {
+                    assignment.AssetTemplateId = resolvedTemplateId!.Value;
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                try
+                {
+                    await _assignmentService.CreateAssetFromTemplateAsync(
+                        assignment.Id,
+                        dto.SerialNumber ?? string.Empty,
+                        performedBy,
+                        performedByEmail ?? string.Empty,
+                        cancellationToken);
+
+                    // Reload so the tracked entity sees the new NewAssetId/NewAsset.
+                    await _context.Entry(assignment).ReloadAsync(cancellationToken);
+                    await _context.Entry(assignment).Reference(a => a.NewAsset).LoadAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to create asset from template for assignment {AssignmentId}, template {TemplateId}",
+                        assignment.Id, resolvedTemplateId!.Value);
+                    return BadRequest(new { message = $"Kon asset niet aanmaken uit template: {ex.Message}" });
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.SerialNumber))
+            {
                 assignment.SerialNumberCaptured = dto.SerialNumber;
                 assignment.SerialNumberRequired = true;
 
@@ -1343,6 +1398,16 @@ public class RolloutWorkplacesController : ControllerBase
             else
                 sourceType = AssetSourceType.CreateOnSite;
 
+            // Extract templateId from plan metadata — frontend stores it as a string key.
+            // Without this the AssetTemplateId FK never gets persisted and
+            // CreateAssetFromTemplateAsync (called at install time) can't find the template.
+            int? assetTemplateId = null;
+            if (plan.Metadata.TryGetValue("templateId", out var templateIdStr)
+                && int.TryParse(templateIdStr, out var parsedTemplateId))
+            {
+                assetTemplateId = parsedTemplateId;
+            }
+
             position++;
             var request = new CreateWorkplaceAssetAssignmentRequest
             {
@@ -1352,6 +1417,7 @@ public class RolloutWorkplacesController : ControllerBase
                 SourceType = sourceType,
                 NewAssetId = plan.ExistingAssetId,
                 OldAssetId = plan.OldAssetId,
+                AssetTemplateId = assetTemplateId,
                 Position = position,
                 SerialNumberRequired = plan.RequiresSerialNumber,
                 QRCodeRequired = plan.RequiresQRCode,
