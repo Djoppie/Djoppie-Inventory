@@ -1005,16 +1005,28 @@ public class RolloutWorkplacesController : ControllerBase
         }
         else if (assignments.Count > 0)
         {
-            // itemIndex is the array index within the non-old-device plans the frontend sees,
-            // which matches assignments ordered by Position. Do NOT look up by Position value:
-            // legacy data may have non-contiguous Position numbers (when old-device plans were
-            // present during assignment creation), and that lookup would silently return the
-            // wrong assignment.
-            if (itemIndex < 0 || itemIndex >= assignments.Count)
+            // itemIndex is the array index the frontend sees in AssetPlansJson. That JSON
+            // may contain old-device plans (a) interspersed with real plans (fresh-create
+            // order: [oldDevice, laptop, dock]) or (b) appended at the end after a prior
+            // SyncJsonFromAssignments call ([laptop, dock, oldDevice]). Old-device plans
+            // aren't in the assignments table, so neither Position==itemIndex+1 nor
+            // assignments[itemIndex] maps correctly across both layouts. Instead, count
+            // non-old-device plans up to itemIndex to get the real assignment index.
+            int assignmentIndex = 0;
+            for (int i = 0; i < itemIndex && i < assetPlans.Count; i++)
             {
-                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+                var p = assetPlans[i];
+                bool isOldPlan = p.Metadata != null
+                    && p.Metadata.TryGetValue("isOldDevice", out var oldFlag)
+                    && oldFlag == "true";
+                if (!isOldPlan) assignmentIndex++;
             }
-            var assignment = assignments[itemIndex];
+
+            if (assignmentIndex < 0 || assignmentIndex >= assignments.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex} (resolved to assignment index {assignmentIndex}). Workplace has {assignments.Count} assignments." });
+            }
+            var assignment = assignments[assignmentIndex];
 
             _logger.LogDebug(
                 "Updating assignment {AssignmentId} for workplace {WorkplaceId}. " +
@@ -1198,12 +1210,35 @@ public class RolloutWorkplacesController : ControllerBase
 
         if (assignments.Count > 0)
         {
-            if (itemIndex < 0 || itemIndex >= assignments.Count)
+            // Same mapping logic as UpdateItemDetails: itemIndex is the position in
+            // AssetPlansJson which may contain old-device plans (not in assignments).
+            // Count non-old-device plans up to itemIndex to resolve to the right assignment.
+            var statusAssetPlans = new List<AssetPlanDto>();
+            if (!string.IsNullOrEmpty(workplace.AssetPlansJson) && workplace.AssetPlansJson != "[]")
             {
-                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
+                try
+                {
+                    statusAssetPlans = JsonSerializer.Deserialize<List<AssetPlanDto>>(workplace.AssetPlansJson, _jsonOptions) ?? new();
+                }
+                catch { /* fall back to raw itemIndex below */ }
             }
 
-            var assignment = assignments[itemIndex];
+            int assignmentIndex = 0;
+            for (int i = 0; i < itemIndex && i < statusAssetPlans.Count; i++)
+            {
+                var p = statusAssetPlans[i];
+                bool isOldPlan = p.Metadata != null
+                    && p.Metadata.TryGetValue("isOldDevice", out var oldFlag)
+                    && oldFlag == "true";
+                if (!isOldPlan) assignmentIndex++;
+            }
+
+            if (assignmentIndex < 0 || assignmentIndex >= assignments.Count)
+            {
+                return BadRequest(new { message = $"Invalid item index {itemIndex} (resolved to assignment index {assignmentIndex}). Workplace has {assignments.Count} assignments." });
+            }
+
+            var assignment = assignments[assignmentIndex];
             if (Enum.TryParse<AssetAssignmentStatus>(dto.Status, true, out var assignmentStatus))
             {
                 assignment.Status = assignmentStatus;
