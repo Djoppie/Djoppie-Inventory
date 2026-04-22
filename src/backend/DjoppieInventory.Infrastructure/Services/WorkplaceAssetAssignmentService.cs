@@ -434,6 +434,33 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
             .Where(a => a.RolloutWorkplaceId == workplaceId)
             .ToListAsync(cancellationToken);
 
+        if (assignments.Count > 0)
+        {
+            // RolloutAssetMovements reference these assignments with OnDelete=NoAction,
+            // so the SQL DELETE would fail with an FK violation whenever the workplace
+            // has been completed at least once. Null out the (nullable) FK on the
+            // movement rows first — we keep the movement audit trail intact, we just
+            // unlink it from the assignment we're about to delete.
+            var assignmentIds = assignments.Select(a => a.Id).ToList();
+            var movementsToUnlink = await _context.RolloutAssetMovements
+                .Where(m => m.WorkplaceAssetAssignmentId.HasValue
+                    && assignmentIds.Contains(m.WorkplaceAssetAssignmentId.Value))
+                .ToListAsync(cancellationToken);
+
+            foreach (var movement in movementsToUnlink)
+            {
+                movement.WorkplaceAssetAssignmentId = null;
+            }
+
+            if (movementsToUnlink.Count > 0)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "Unlinked {Count} asset movements before deleting assignments for workplace {WorkplaceId}",
+                    movementsToUnlink.Count, workplaceId);
+            }
+        }
+
         var workplace = await _context.RolloutWorkplaces
             .FirstOrDefaultAsync(w => w.Id == workplaceId, cancellationToken);
 
