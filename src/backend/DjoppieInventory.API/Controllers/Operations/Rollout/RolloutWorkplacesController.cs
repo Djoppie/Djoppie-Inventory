@@ -1005,24 +1005,16 @@ public class RolloutWorkplacesController : ControllerBase
         }
         else if (assignments.Count > 0)
         {
-            // Use relational model - find assignment by Position (which equals itemIndex + 1)
-            var assignment = assignments.FirstOrDefault(a => a.Position == itemIndex + 1);
-            if (assignment == null)
+            // itemIndex is the array index within the non-old-device plans the frontend sees,
+            // which matches assignments ordered by Position. Do NOT look up by Position value:
+            // legacy data may have non-contiguous Position numbers (when old-device plans were
+            // present during assignment creation), and that lookup would silently return the
+            // wrong assignment.
+            if (itemIndex < 0 || itemIndex >= assignments.Count)
             {
-                // Fallback: try finding by array index if Position doesn't match
-                _logger.LogWarning(
-                    "Position lookup failed for workplace {WorkplaceId}, itemIndex {ItemIndex}. " +
-                    "Expected Position {ExpectedPosition}. " +
-                    "Available positions: [{Positions}]",
-                    workplaceId, itemIndex, itemIndex + 1,
-                    string.Join(", ", assignments.Select(a => a.Position)));
-
-                if (itemIndex < 0 || itemIndex >= assignments.Count)
-                {
-                    return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
-                }
-                assignment = assignments[itemIndex];
+                return BadRequest(new { message = $"Invalid item index {itemIndex}. Workplace has {assignments.Count} assignments." });
             }
+            var assignment = assignments[itemIndex];
 
             _logger.LogDebug(
                 "Updating assignment {AssignmentId} for workplace {WorkplaceId}. " +
@@ -1287,6 +1279,10 @@ public class RolloutWorkplacesController : ControllerBase
         int workplaceId, List<AssetPlanDto> plans)
     {
         var requests = new List<CreateWorkplaceAssetAssignmentRequest>();
+        // Position must be a contiguous counter across non-skipped plans so it matches the
+        // array index the frontend sends back (old-device plans aren't in assignments and
+        // must not leave gaps in Position numbering).
+        var position = 0;
         for (int i = 0; i < plans.Count; i++)
         {
             var plan = plans[i];
@@ -1312,6 +1308,7 @@ public class RolloutWorkplacesController : ControllerBase
             else
                 sourceType = AssetSourceType.CreateOnSite;
 
+            position++;
             var request = new CreateWorkplaceAssetAssignmentRequest
             {
                 RolloutWorkplaceId = workplaceId,
@@ -1320,7 +1317,7 @@ public class RolloutWorkplacesController : ControllerBase
                 SourceType = sourceType,
                 NewAssetId = plan.ExistingAssetId,
                 OldAssetId = plan.OldAssetId,
-                Position = i + 1,
+                Position = position,
                 SerialNumberRequired = plan.RequiresSerialNumber,
                 QRCodeRequired = plan.RequiresQRCode,
                 MetadataJson = plan.Metadata.Count > 0
