@@ -235,14 +235,26 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
             // the complete-workplace flow (bulk install of still-pending items) leaves
             // dock/monitor/keyboard/mouse assignments with NewAssetId=null, which excludes
             // them from the PhysicalWorkplace slot update and from the completion dialog.
+            // Wrap in try/catch so one bad assignment doesn't fail the whole completion —
+            // status/movement bookkeeping below should still run.
             if (!assignment.NewAssetId.HasValue)
             {
-                await EnsureAssetFromTemplateAsync(
-                    assignment,
-                    request.SerialNumberCaptured ?? assignment.SerialNumberCaptured ?? string.Empty,
-                    performedBy,
-                    performedByEmail,
-                    cancellationToken);
+                try
+                {
+                    await EnsureAssetFromTemplateAsync(
+                        assignment,
+                        request.SerialNumberCaptured ?? assignment.SerialNumberCaptured ?? string.Empty,
+                        performedBy,
+                        performedByEmail,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to create asset from template for assignment {AssignmentId} during status update. " +
+                        "Continuing with status change; asset can be created later.",
+                        assignment.Id);
+                }
             }
 
             // Record deployment movement if new asset is assigned
@@ -558,6 +570,11 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
             false,
             cancellationToken);
 
+        // SerialNumber has a unique index filtered on IS NOT NULL — empty strings would
+        // collide across multiple optional-serial items (monitor, keyboard, mouse) being
+        // created in the same completion flow. Normalize empty/whitespace to null.
+        var normalizedSerial = string.IsNullOrWhiteSpace(serialNumber) ? null : serialNumber;
+
         // Create new asset from template
         var asset = new Asset
         {
@@ -567,7 +584,7 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
             AssetTypeId = assignment.AssetTypeId,
             Brand = template.Brand,
             Model = template.Model,
-            SerialNumber = serialNumber,
+            SerialNumber = normalizedSerial,
             Owner = assignment.RolloutWorkplace.UserName,
             ServiceId = assignment.RolloutWorkplace.ServiceId,
             InstallationLocation = assignment.RolloutWorkplace.Location,
@@ -582,7 +599,7 @@ public class WorkplaceAssetAssignmentService : IWorkplaceAssetAssignmentService
 
         // Link to assignment
         assignment.NewAssetId = asset.Id;
-        assignment.SerialNumberCaptured = serialNumber;
+        assignment.SerialNumberCaptured = normalizedSerial;
         assignment.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
