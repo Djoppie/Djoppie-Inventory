@@ -72,6 +72,7 @@ const deduplicateSectors = (sectors: SectorWithServices[]): SectorWithServices[]
   });
 
   // Return deduplicated sectors without the temporary serviceIds set
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   return Array.from(sectorByName.values()).map(({ serviceIds, ...sector }) => sector);
 };
 
