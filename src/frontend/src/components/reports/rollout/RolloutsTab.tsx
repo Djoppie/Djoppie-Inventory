@@ -1,11 +1,13 @@
 /**
  * RolloutsTab - Comprehensive Rollout Session Report
- * @updated 2026-04-04
+ * @updated 2026-04-23
  *
  * Enterprise-level data visualization for rollout sessions with:
  * - Neumorphic Djoppy Admin styling
  * - Session selector with progress indicators
  * - KPI overview cards (workplaces, assets, QR codes)
+ * - Movement-type KPI cards with click-to-filter
+ * - GroupBy toggle: per Dag / per Dienst / per Gebouw
  * - Multi-select slide-down filters for Services and Buildings
  * - Day-by-day SWAP checklist with workplace details
  * - Yellow highlighting for missing serial numbers
@@ -15,6 +17,7 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
@@ -25,6 +28,8 @@ import {
   Alert,
   Collapse,
   Skeleton,
+  ToggleButtonGroup,
+  ToggleButton,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -48,11 +53,13 @@ import {
   getNeumorph,
   getNeumorphColors,
 } from '../../../utils/neumorphicStyles';
-import type { RolloutReportFilters } from '../../../types/report.types';
+import type { RolloutReportFilters, RolloutMovementType } from '../../../types/report.types';
+import { groupWorkplacesBy, type GroupBy } from './groupWorkplacesBy';
 
 import RolloutSessionSelector from './RolloutSessionSelector';
 import RolloutKpiBar from './RolloutKpiBar';
 import RolloutFilterBar from './RolloutFilterBar';
+import RolloutTypeBreakdown from './RolloutTypeBreakdown';
 import UnscheduledAssetsPanel from './UnscheduledAssetsPanel';
 import RolloutGroupCard from './RolloutGroupCard';
 
@@ -65,10 +72,31 @@ const RolloutsTab = () => {
   const neumorphColors = getNeumorphColors(isDark);
   const queryClient = useQueryClient();
 
-  // State
+  // URL-driven state: groupBy + type filter
+  const [searchParams, setSearchParams] = useSearchParams();
+  const groupBy = ((searchParams.get('groupBy') as GroupBy) ?? 'day');
+  const typeFilter = useMemo(
+    () => ((searchParams.get('types')?.split(',').filter(Boolean) as RolloutMovementType[]) ?? []),
+    [searchParams]
+  );
+
+  const setGroupBy = (next: GroupBy) => {
+    const p = new URLSearchParams(searchParams);
+    p.set('groupBy', next);
+    setSearchParams(p, { replace: true });
+  };
+
+  const toggleType = (t: RolloutMovementType) => {
+    const next = typeFilter.includes(t) ? typeFilter.filter(x => x !== t) : [...typeFilter, t];
+    const p = new URLSearchParams(searchParams);
+    if (next.length === 0) p.delete('types'); else p.set('types', next.join(','));
+    setSearchParams(p, { replace: true });
+  };
+
+  // Component state
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedDays, setExpandedDays] = useState<number[]>([]);
+  const [expandedDays, setExpandedDays] = useState<(string | number)[]>([]);
   const [showUnscheduled, setShowUnscheduled] = useState(false);
 
   // Multi-select filter states
@@ -142,6 +170,32 @@ const RolloutsTab = () => {
     })).filter(day => day.workplaces.length > 0);
   }, [checklist, searchQuery]);
 
+  // Total type counts (computed from full search-filtered list, before type filter)
+  const totalTypeCounts = useMemo(() => {
+    const allWps = filteredChecklist.flatMap(d => d.workplaces);
+    return {
+      Onboarding: allWps.filter(w => w.movementType === 'Onboarding').length,
+      Offboarding: allWps.filter(w => w.movementType === 'Offboarding').length,
+      Swap: allWps.filter(w => w.movementType === 'Swap').length,
+      Other: allWps.filter(w => w.movementType === 'Other').length,
+    };
+  }, [filteredChecklist]);
+
+  // Apply type filter
+  const typeFilteredChecklist = useMemo(() => {
+    if (typeFilter.length === 0) return filteredChecklist;
+    return filteredChecklist.map(d => ({
+      ...d,
+      workplaces: d.workplaces.filter(w => typeFilter.includes(w.movementType)),
+    })).filter(d => d.workplaces.length > 0);
+  }, [filteredChecklist, typeFilter]);
+
+  // Compute groups for rendering
+  const groups = useMemo(
+    () => groupWorkplacesBy(typeFilteredChecklist, groupBy),
+    [typeFilteredChecklist, groupBy]
+  );
+
   // Filter handlers
   const handleServiceToggle = (serviceId: number) => {
     setSelectedServiceIds(prev =>
@@ -206,17 +260,17 @@ const RolloutsTab = () => {
     setEditSerialNumber('');
   };
 
-  // Day expansion handlers
-  const handleDayExpand = (dayId: number) => {
+  // Group expansion handlers
+  const handleDayExpand = (id: string | number) => {
     setExpandedDays(prev =>
-      prev.includes(dayId)
-        ? prev.filter(id => id !== dayId)
-        : [...prev, dayId]
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
     );
   };
 
   const expandAllDays = () => {
-    setExpandedDays(filteredChecklist.map(d => d.dayId));
+    setExpandedDays(groups.map(g => g.id));
   };
 
   const collapseAllDays = () => {
@@ -271,6 +325,13 @@ const RolloutsTab = () => {
       {/* Overview KPI Cards */}
       {overview && <RolloutKpiBar overview={overview} />}
 
+      {/* Type Breakdown KPI (click-to-filter) */}
+      <RolloutTypeBreakdown
+        counts={totalTypeCounts}
+        selected={typeFilter}
+        onToggle={toggleType}
+      />
+
       {/* Filter Toolbar + Collapse Panels */}
       <RolloutFilterBar
         searchQuery={searchQuery}
@@ -305,6 +366,20 @@ const RolloutsTab = () => {
         neumorphColors={neumorphColors}
       />
 
+      {/* GroupBy Toggle */}
+      <Box sx={{ mb: 1 }}>
+        <ToggleButtonGroup
+          exclusive
+          size="small"
+          value={groupBy}
+          onChange={(_, v) => v && setGroupBy(v)}
+        >
+          <ToggleButton value="day">Per Dag</ToggleButton>
+          <ToggleButton value="service">Per Dienst</ToggleButton>
+          <ToggleButton value="building">Per Gebouw</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+
       {/* Unscheduled Assets Section */}
       <Collapse in={showUnscheduled} timeout={300}>
         <UnscheduledAssetsPanel
@@ -315,14 +390,14 @@ const RolloutsTab = () => {
         />
       </Collapse>
 
-      {/* Day Checklists */}
+      {/* Group Checklists */}
       {checklistLoading ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
           {[1, 2, 3].map(i => (
             <Skeleton key={i} variant="rounded" height={80} />
           ))}
         </Box>
-      ) : filteredChecklist.length === 0 ? (
+      ) : groups.length === 0 ? (
         <Paper
           elevation={0}
           sx={{
@@ -339,14 +414,15 @@ const RolloutsTab = () => {
         </Paper>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.85 }}>
-          {filteredChecklist.map((day) => (
+          {groups.map(g => (
             <RolloutGroupCard
-              key={day.dayId}
-              day={day}
-              isExpanded={expandedDays.includes(day.dayId)}
-              onToggle={() => handleDayExpand(day.dayId)}
+              key={g.id}
+              group={g}
+              isExpanded={expandedDays.includes(g.id)}
+              onToggle={() => handleDayExpand(g.id)}
               isDark={isDark}
               neumorphColors={neumorphColors}
+              showDateColumn={groupBy !== 'day'}
               onEditSerialNumber={handleEditSerialNumber}
             />
           ))}
