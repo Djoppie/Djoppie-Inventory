@@ -13,3 +13,4 @@ export { OverviewTab } from './overview';
 export { AssetsTab } from './assets';
 export { IntuneTab } from './intune';
 export { RolloutsTab } from './rollout';
+export { WerkplekkenTab } from './werkplekken';
