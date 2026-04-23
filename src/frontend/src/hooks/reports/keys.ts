@@ -50,4 +50,10 @@ export const reportKeys = {
     [...reportKeys.rollout(), 'unscheduled', sessionId, limit] as const,
   rolloutFilterOptions: (sessionId: number) =>
     [...reportKeys.rollout(), 'filter-options', sessionId] as const,
+
+  overview: () => [...reportKeys.all, 'overview'] as const,
+  intuneSummary: () => [...reportKeys.all, 'intune', 'summary'] as const,
+  employees: () => [...reportKeys.all, 'employees'] as const,
+  employeeTimeline: (id: number) => [...reportKeys.all, 'employees', id, 'timeline'] as const,
+  assetTimeline: (id: number) => [...reportKeys.all, 'assets', id, 'timeline'] as const,
 };

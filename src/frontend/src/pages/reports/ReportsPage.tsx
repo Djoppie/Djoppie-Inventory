@@ -14,86 +14,46 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory2';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import BusinessIcon from '@mui/icons-material/Business';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import BadgeIcon from '@mui/icons-material/Badge';
+import CloudIcon from '@mui/icons-material/Cloud';
 import DescriptionIcon from '@mui/icons-material/Description';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import QrCode2Icon from '@mui/icons-material/QrCode2';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { ROUTES } from '../../constants/routes';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import { getFadeInUpAnimation } from '../../utils/designSystem';
-import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SECTOR_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../../constants/filterColors';
 import type { ReportTab } from '../../types/report.types';
 import {
-  HardwareTab,
+  OverviewTab,
+  AssetsTab,
+  IntuneTab,
   RolloutTab,
   WorkplacesTab,
-  SwapsTab,
-  LicensesTab,
   LeasingTab,
-  SerialNumbersTab,
 } from '../../components/reports';
 
 // Report tab configuration
 const REPORT_TABS: { id: ReportTab; label: string; icon: ReactElement; description: string }[] = [
-  {
-    id: 'hardware',
-    label: 'Hardware Inventaris',
-    icon: <InventoryIcon />,
-    description: 'Compleet overzicht van alle IT-assets',
-  },
-  {
-    id: 'rollout',
-    label: 'Rollout Rapporten',
-    icon: <RocketLaunchIcon />,
-    description: 'Sessie rapporten en swap checklists',
-  },
-  {
-    id: 'workplaces',
-    label: 'Werkplekken',
-    icon: <BusinessIcon />,
-    description: 'Fysieke werkplek overzicht en bezetting',
-  },
-  {
-    id: 'swaps',
-    label: 'Asset Geschiedenis',
-    icon: <SwapHorizIcon />,
-    description: 'Asset wijzigingen, status- en eigenaar historie',
-  },
-  {
-    id: 'licenses',
-    label: 'MS365 Licenties',
-    icon: <BadgeIcon />,
-    description: 'Licentie toewijzingen (E3/E5/F1)',
-  },
-  {
-    id: 'leasing',
-    label: 'Leasing',
-    icon: <DescriptionIcon />,
-    description: 'Lease contracten en vervaldatums',
-  },
-  {
-    id: 'serialnumbers',
-    label: 'Serienummers',
-    icon: <QrCode2Icon />,
-    description: 'Beheer serienummers van rollout assets',
-  },
+  { id: 'overview',    label: 'Overview',    icon: <DashboardIcon />,    description: 'Cross-domein KPIs en trend' },
+  { id: 'assets',      label: 'Assets',      icon: <InventoryIcon />,    description: 'Inventaris nu en historiek' },
+  { id: 'rollouts',    label: 'Rollouts',    icon: <RocketLaunchIcon />, description: 'Sessie-rapporten en checklist' },
+  { id: 'werkplekken', label: 'Werkplekken', icon: <BusinessIcon />,     description: 'Bezetting en equipment' },
+  { id: 'intune',      label: 'Intune',      icon: <CloudIcon />,        description: 'Intune device analyses' },
+  { id: 'leasing',     label: 'Leasing',     icon: <DescriptionIcon />,  description: 'Lease contracten en vervaldatums' },
 ];
 
-// Tab colors (using centralized filterColors)
+// Tab colors
 const TAB_COLORS: Record<ReportTab, string> = {
-  hardware: ASSET_COLOR, // Djoppie Orange
-  rollout: DANGER_COLOR, // Red
-  workplaces: BUILDING_COLOR, // Purple
-  swaps: SERVICE_COLOR, // Teal
-  licenses: SECTOR_COLOR, // Blue
-  leasing: ASSET_COLOR, // Dark Orange (using ASSET_COLOR)
-  serialnumbers: SUCCESS_COLOR, // Green
+  overview: '#FF7700',
+  assets: '#FF7700',
+  rollouts: '#F44336',
+  werkplekken: '#9C27B0',
+  intune: '#2196F3',
+  leasing: '#FF9800',
 };
 
 const ReportsPage = () => {
@@ -106,18 +66,39 @@ const ReportsPage = () => {
 
   const { bgBase, bgSurface } = getNeumorphColors(isDark);
 
-  // Get active tab from URL or default to 'hardware'
-  const tabParam = searchParams.get('tab') as ReportTab | null;
-  const [activeTab, setActiveTab] = useState<ReportTab>(
-    tabParam && REPORT_TABS.some(t => t.id === tabParam) ? tabParam : 'hardware'
-  );
+  // Legacy tab migrations (defined outside effect so it can be reused for initial state)
+  const legacyMap: Record<string, { tab: ReportTab; extraParams?: Record<string, string> }> = {
+    hardware:      { tab: 'assets',      extraParams: { view: 'nu' } },
+    swaps:         { tab: 'assets',      extraParams: { view: 'history' } },
+    workplaces:    { tab: 'werkplekken' },
+    rollout:       { tab: 'rollouts' },
+    serialnumbers: { tab: 'overview' }, // will be redirected externally in PR4
+  };
 
-  // Sync URL with active tab
+  // Get active tab from URL (resolve legacy params at init), default to 'overview'
+  const rawTabParam = searchParams.get('tab');
+  const resolvedInitialTab: ReportTab = rawTabParam
+    ? (legacyMap[rawTabParam]?.tab ?? (REPORT_TABS.some(t => t.id === rawTabParam) ? rawTabParam as ReportTab : 'overview'))
+    : 'overview';
+  const [activeTab, setActiveTab] = useState<ReportTab>(resolvedInitialTab);
+
+  // Sync URL with active tab, handling legacy redirects
   useEffect(() => {
     const tabParam = searchParams.get('tab');
+
+    if (tabParam && legacyMap[tabParam]) {
+      const { tab, extraParams } = legacyMap[tabParam];
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', tab);
+      Object.entries(extraParams ?? {}).forEach(([k, v]) => next.set(k, v));
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
     if (tabParam !== activeTab) {
       setSearchParams({ tab: activeTab }, { replace: true });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, searchParams, setSearchParams]);
 
   // Handle tab change
@@ -131,29 +112,13 @@ const ReportsPage = () => {
 
   // Handle refresh for current tab
   const handleRefresh = () => {
-    // Invalidate queries based on active tab
     switch (activeTab) {
-      case 'hardware':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'hardware'] });
-        break;
-      case 'workplaces':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'workplaces'] });
-        break;
-      case 'swaps':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'swaps'] });
-        break;
-      case 'licenses':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'licenses'] });
-        break;
-      case 'leasing':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'leases'] });
-        break;
-      case 'rollout':
-        queryClient.invalidateQueries({ queryKey: ['rollouts'] });
-        break;
-      case 'serialnumbers':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'serial-numbers'] });
-        break;
+      case 'overview':    queryClient.invalidateQueries({ queryKey: ['reports', 'overview'] }); break;
+      case 'assets':      queryClient.invalidateQueries({ queryKey: ['reports', 'assets'] }); break;
+      case 'rollouts':    queryClient.invalidateQueries({ queryKey: ['rollouts'] }); break;
+      case 'werkplekken': queryClient.invalidateQueries({ queryKey: ['reports', 'werkplekken'] }); break;
+      case 'intune':      queryClient.invalidateQueries({ queryKey: ['reports', 'intune'] }); break;
+      case 'leasing':     queryClient.invalidateQueries({ queryKey: ['reports', 'leases'] }); break;
     }
   };
 
@@ -337,13 +302,12 @@ const ReportsPage = () => {
           ...getFadeInUpAnimation(0.06),
         }}
       >
-        {activeTab === 'hardware' && <HardwareTab />}
-        {activeTab === 'rollout' && <RolloutTab />}
-        {activeTab === 'workplaces' && <WorkplacesTab />}
-        {activeTab === 'swaps' && <SwapsTab />}
-        {activeTab === 'licenses' && <LicensesTab />}
+        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'assets' && <AssetsTab />}
+        {activeTab === 'rollouts' && <RolloutTab />}
+        {activeTab === 'werkplekken' && <WorkplacesTab />}
+        {activeTab === 'intune' && <IntuneTab />}
         {activeTab === 'leasing' && <LeasingTab />}
-        {activeTab === 'serialnumbers' && <SerialNumbersTab />}
       </Paper>
     </Container>
   );

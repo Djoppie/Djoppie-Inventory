@@ -1,6 +1,9 @@
 /**
- * SwapsTab - Asset Change History Report
+ * AssetsHistoryView - Asset Change History Report
  * @updated 2026-04-07
+ *
+ * Ported from SwapsTab.tsx (reports/SwapsTab.tsx → reports/assets/AssetsHistoryView.tsx).
+ * Import paths bumped one level deeper to reflect new location.
  *
  * Modern, compact redesign with:
  * - Neumorphic design system
@@ -8,6 +11,11 @@
  * - Streamlined filter section with grouped layout
  * - NeumorphicDataGrid for professional table display
  * - Event type badges with semantic colors
+ *
+ * DEFERRED:
+ * - Rollout-context column: requires backend DTO (AssetChangeHistoryItemDto) to expose
+ *   rolloutSessionId / rolloutDayId, which don't exist yet. Add in a later task.
+ * - ExportMenu substitution: keep existing IconButton/mutation export flow (Batch 4 task).
  */
 
 import { useState, useMemo, useCallback } from 'react';
@@ -38,14 +46,13 @@ import {
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import { useQuery } from '@tanstack/react-query';
-import type { AssetChangeHistoryItem, AssetChangeHistorySummary } from '../../types/report.types';
-import { getAssetChangeHistory, getAssetChangeHistorySummary, exportAssetChangeHistory } from '../../api/reports.api';
-import { ASSET_COLOR } from '../../constants/filterColors';
-import { getNeumorph, getNeumorphColors, getNeumorphInset } from '../../utils/neumorphicStyles';
-import NeumorphicDataGrid from '../admin/NeumorphicDataGrid';
-import StatisticsCard from '../common/StatisticsCard';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import type { AssetChangeHistoryItem, AssetChangeHistorySummary } from '../../../types/report.types';
+import { getAssetChangeHistory, getAssetChangeHistorySummary, exportAssetChangeHistory } from '../../../api/reports.api';
+import { ASSET_COLOR } from '../../../constants/filterColors';
+import { getNeumorph, getNeumorphColors, getNeumorphInset } from '../../../utils/neumorphicStyles';
+import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
+import StatisticsCard from '../../common/StatisticsCard';
 
 // Event type color mapping
 const getEventTypeColor = (eventType?: string): string => {
@@ -66,7 +73,7 @@ const STAT_CARDS = [
   { key: 'active', label: 'Actief', icon: TrendingUpIcon, color: '#4CAF50' },
 ];
 
-const SwapsTab = () => {
+const AssetsHistoryView = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { bgBase } = getNeumorphColors(isDark);
@@ -609,4 +616,4 @@ const SwapsTab = () => {
   );
 };
 
-export default SwapsTab;
+export default AssetsHistoryView;
