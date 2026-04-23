@@ -293,6 +293,43 @@ public class AssetHistoryReportsController : ControllerBase
         return File(bytes, "text/csv", fileName);
     }
 
+    /// <summary>
+    /// Returns paged timeline events for a single asset (for expandable-row UI in Assets tab).
+    /// </summary>
+    [HttpGet("/api/reports/assets/{assetId:int}/timeline")]
+    [ProducesResponseType(typeof(List<AssetChangeHistoryItemDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<AssetChangeHistoryItemDto>>> GetAssetTimeline(
+        int assetId,
+        [FromQuery] int take = 50,
+        [FromQuery] int skip = 0,
+        CancellationToken ct = default)
+    {
+        var events = await _context.AssetEvents
+            .AsNoTracking()
+            .Where(e => e.AssetId == assetId)
+            .OrderByDescending(e => e.EventDate)
+            .Skip(skip).Take(Math.Min(take, 200))
+            .Select(e => new AssetChangeHistoryItemDto
+            {
+                Id = e.Id,
+                EventDate = e.EventDate,
+                AssetId = e.AssetId,
+                AssetCode = e.Asset != null ? e.Asset.AssetCode : string.Empty,
+                AssetName = e.Asset != null ? e.Asset.AssetName : null,
+                EventType = e.EventType.ToString(),
+                EventTypeDisplay = GetEventTypeDisplay(e.EventType),
+                Description = e.Description ?? string.Empty,
+                OldValue = e.OldValue,
+                NewValue = e.NewValue,
+                PerformedBy = e.PerformedBy,
+                PerformedByEmail = e.PerformedByEmail,
+                Notes = e.Notes
+            })
+            .ToListAsync(ct);
+
+        return Ok(events);
+    }
+
     // ========================================
     // Private Helper Methods
     // ========================================
