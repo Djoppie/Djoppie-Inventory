@@ -60,6 +60,8 @@ public class OperationsReportsController : ControllerBase
     /// Gets asset change history (status and owner changes).
     /// Every time an asset changes status or owner, a record is included.
     /// </summary>
+    /// <remarks>Deprecated: Use /api/reports/assets/change-history instead.</remarks>
+    [Obsolete("Use /api/reports/assets/change-history")]
     [HttpGet("swaps")]
     [ProducesResponseType(typeof(IEnumerable<AssetChangeHistoryItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<AssetChangeHistoryItemDto>>> GetSwapHistory(
@@ -70,6 +72,8 @@ public class OperationsReportsController : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogWarning("Deprecated endpoint /api/reports/swaps{Sub} called; use /api/reports/assets/change-history", "");
+
         var query = _context.AssetEvents
             .Include(e => e.Asset)
                 .ThenInclude(a => a!.AssetType)
@@ -172,6 +176,8 @@ public class OperationsReportsController : ControllerBase
     /// <summary>
     /// Gets asset change history summary with asset-focused metrics.
     /// </summary>
+    /// <remarks>Deprecated: Use /api/reports/assets/change-history/summary instead.</remarks>
+    [Obsolete("Use /api/reports/assets/change-history/summary")]
     [HttpGet("swaps/summary")]
     [ProducesResponseType(typeof(AssetChangeHistorySummaryDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<AssetChangeHistorySummaryDto>> GetSwapHistorySummary(
@@ -179,6 +185,8 @@ public class OperationsReportsController : ControllerBase
         [FromQuery] string? dateTo = null,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogWarning("Deprecated endpoint /api/reports/swaps{Sub} called; use /api/reports/assets/change-history", "/summary");
+
         var query = _context.AssetEvents
             .Include(e => e.Asset)
             .ThenInclude(a => a!.Service)
@@ -245,6 +253,8 @@ public class OperationsReportsController : ControllerBase
     /// <summary>
     /// Exports asset change history as CSV.
     /// </summary>
+    /// <remarks>Deprecated: Use /api/reports/assets/change-history/export instead.</remarks>
+    [Obsolete("Use /api/reports/assets/change-history/export")]
     [HttpGet("swaps/export")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> ExportSwapHistory(
@@ -253,6 +263,8 @@ public class OperationsReportsController : ControllerBase
         [FromQuery] int? serviceId = null,
         CancellationToken cancellationToken = default)
     {
+        _logger.LogWarning("Deprecated endpoint /api/reports/swaps{Sub} called; use /api/reports/assets/change-history", "/export");
+
         var query = _context.AssetEvents
             .Include(e => e.Asset)
                 .ThenInclude(a => a!.AssetType)
