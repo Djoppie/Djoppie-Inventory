@@ -3,6 +3,7 @@ using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
+using DjoppieInventory.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,15 +22,18 @@ public class OperationsReportsController : ControllerBase
     private readonly IReportService _reportService;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OperationsReportsController> _logger;
+    private readonly RolloutMovementClassifierService _classifier;
 
     public OperationsReportsController(
         IReportService reportService,
         ApplicationDbContext context,
-        ILogger<OperationsReportsController> logger)
+        ILogger<OperationsReportsController> logger,
+        RolloutMovementClassifierService classifier)
     {
         _reportService = reportService;
         _context = context;
         _logger = logger;
+        _classifier = classifier;
     }
 
     // ========================================
@@ -934,6 +938,7 @@ public class OperationsReportsController : ControllerBase
         }
 
         var hasMissing = equipmentRows.Any(e => e.IsMissingSerialNumber);
+        var movementType = _classifier.Classify(w.AssetAssignments);
 
         return new RolloutWorkplaceChecklistDto
         {
@@ -951,6 +956,7 @@ public class OperationsReportsController : ControllerBase
             CompletedAt = w.CompletedAt,
             Notes = w.Notes,
             HasMissingSerialNumbers = hasMissing,
+            MovementType = movementType,
             EquipmentRows = equipmentRows
         };
     }
