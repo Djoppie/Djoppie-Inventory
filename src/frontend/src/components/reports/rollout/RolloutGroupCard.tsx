@@ -31,18 +31,23 @@ import { getNeumorph, getNeumorphColors } from '../../../utils/neumorphicStyles'
 import {
   getWorkplaceStatusColor,
   getWorkplaceStatusLabel,
-  formatRolloutDate,
 } from '../../../hooks/reports';
-import type {
-  RolloutDayChecklist,
-  RolloutWorkplaceChecklist,
-  RolloutEquipmentRow,
-} from '../../../types/report.types';
+import type { RolloutMovementType, RolloutEquipmentRow } from '../../../types/report.types';
+import type { GroupedChecklist, RolloutWorkplaceChecklistWithDate } from './groupWorkplacesBy';
 
 const ROLLOUT_COLOR = '#FF7700';
 const SUCCESS_COLOR = '#4CAF50';
 const WARNING_COLOR = '#FF9800';
 const INFO_COLOR = '#2196F3';
+
+// ===== Type color helper =====
+
+const typeColor = (t: RolloutMovementType): string => ({
+  Onboarding: '#4CAF50',
+  Offboarding: '#F44336',
+  Swap: '#FF7700',
+  Other: '#9E9E9E',
+}[t]);
 
 // ===== EquipmentRowChip (private helper) =====
 
@@ -152,13 +157,15 @@ const EquipmentRowChip: React.FC<EquipmentRowChipProps> = ({ row, isDark, onEdit
 // ===== WorkplaceRow (private helper) =====
 
 interface WorkplaceRowProps {
-  workplace: RolloutWorkplaceChecklist;
+  workplace: RolloutWorkplaceChecklistWithDate;
   isDark: boolean;
+  showDateColumn?: boolean;
   onEditSerialNumber?: (assignmentId: number, currentSerial: string | undefined) => void;
 }
 
-const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark, onEditSerialNumber }) => {
+const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark, showDateColumn, onEditSerialNumber }) => {
   const statusColor = getWorkplaceStatusColor(workplace.status);
+  const color = typeColor(workplace.movementType);
 
   return (
     <TableRow
@@ -171,6 +178,13 @@ const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark, onEditSe
         },
       }}
     >
+      {showDateColumn && (
+        <TableCell sx={{ fontSize: '0.75rem' }}>
+          {workplace._dayDate
+            ? new Date(workplace._dayDate).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit' })
+            : '-'}
+        </TableCell>
+      )}
       <TableCell>
         <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
           {workplace.workplaceName}
@@ -199,6 +213,19 @@ const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark, onEditSe
       <TableCell sx={{ fontSize: '0.8rem' }}>{workplace.serviceName}</TableCell>
       <TableCell sx={{ fontSize: '0.8rem' }}>{workplace.buildingName}</TableCell>
       <TableCell>
+        <Chip
+          size="small"
+          label={workplace.movementType}
+          sx={{
+            height: 20,
+            fontSize: '0.65rem',
+            fontWeight: 600,
+            bgcolor: alpha(color, 0.12),
+            color,
+          }}
+        />
+      </TableCell>
+      <TableCell>
         <Stack spacing={0.5}>
           {workplace.equipmentRows.map((row, idx) => (
             <EquipmentRowChip key={idx} row={row} isDark={isDark} onEditSerialNumber={onEditSerialNumber} />
@@ -222,28 +249,28 @@ const WorkplaceRow: React.FC<WorkplaceRowProps> = ({ workplace, isDark, onEditSe
   );
 };
 
-// ===== RolloutGroupCard (DayChecklistCard) =====
+// ===== RolloutGroupCard =====
 
 interface RolloutGroupCardProps {
-  day: RolloutDayChecklist;
+  group: GroupedChecklist;
   isExpanded: boolean;
   onToggle: () => void;
+  showDateColumn?: boolean;
   isDark: boolean;
   neumorphColors: ReturnType<typeof getNeumorphColors>;
   onEditSerialNumber?: (assignmentId: number, currentSerial: string | undefined) => void;
 }
 
 const RolloutGroupCard: React.FC<RolloutGroupCardProps> = ({
-  day,
+  group,
   isExpanded,
   onToggle,
+  showDateColumn = false,
   isDark,
   neumorphColors,
   onEditSerialNumber,
 }) => {
-  const progress = day.totalWorkplaces > 0
-    ? Math.round((day.completedWorkplaces / day.totalWorkplaces) * 100)
-    : 0;
+  const progress = group.completionPercentage;
 
   return (
     <Accordion
@@ -282,10 +309,10 @@ const RolloutGroupCard: React.FC<RolloutGroupCardProps> = ({
           </Box>
           <Box sx={{ flex: 1 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              {formatRolloutDate(day.date)}
+              {group.title}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {day.completedWorkplaces}/{day.totalWorkplaces} werkplekken
+              {group.subtitle}
             </Typography>
           </Box>
           <LinearProgress
@@ -308,29 +335,34 @@ const RolloutGroupCard: React.FC<RolloutGroupCardProps> = ({
         </Stack>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 0 }}>
-        {day.workplaces.length === 0 ? (
+        {group.workplaces.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography color="text.secondary">Geen werkplekken voor deze dag</Typography>
+            <Typography color="text.secondary">Geen werkplekken voor deze groep</Typography>
           </Box>
         ) : (
           <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: alpha(ROLLOUT_COLOR, isDark ? 0.05 : 0.03) }}>
+                  {showDateColumn && (
+                    <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 100 }}>Datum</TableCell>
+                  )}
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 180 }}>Werkplek</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 180 }}>Medewerker</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 120 }}>Dienst</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 120 }}>Gebouw</TableCell>
+                  <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 100 }}>Type</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem' }}>SWAP Details</TableCell>
                   <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', width: 100 }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {day.workplaces.map((workplace) => (
+                {group.workplaces.map((workplace) => (
                   <WorkplaceRow
                     key={workplace.workplaceId}
                     workplace={workplace}
                     isDark={isDark}
+                    showDateColumn={showDateColumn}
                     onEditSerialNumber={onEditSerialNumber}
                   />
                 ))}
