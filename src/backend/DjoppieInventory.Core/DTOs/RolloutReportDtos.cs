@@ -1,6 +1,6 @@
 namespace DjoppieInventory.Core.DTOs;
 
-using DjoppieInventory.Core.Enums;
+using DjoppieInventory.Core.Entities.Enums;
 
 /// <summary>
 /// Complete rollout session report with overview, checklist, and unscheduled assets

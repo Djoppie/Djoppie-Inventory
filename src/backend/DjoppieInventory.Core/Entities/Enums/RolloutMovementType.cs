@@ -1,4 +1,4 @@
-namespace DjoppieInventory.Core.Enums;
+namespace DjoppieInventory.Core.Entities.Enums;
 
 public enum RolloutMovementType
 {
