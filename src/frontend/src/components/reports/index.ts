@@ -12,3 +12,4 @@ export { default as SerialNumbersTab } from './SerialNumbersTab';
 export { OverviewTab } from './overview';
 export { AssetsTab } from './assets';
 export { IntuneTab } from './intune';
+export { RolloutsTab } from './rollout';

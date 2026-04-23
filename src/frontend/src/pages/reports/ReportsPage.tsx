@@ -31,7 +31,7 @@ import {
   OverviewTab,
   AssetsTab,
   IntuneTab,
-  RolloutTab,
+  RolloutsTab,
   WorkplacesTab,
   LeasingTab,
 } from '../../components/reports';
@@ -304,7 +304,7 @@ const ReportsPage = () => {
       >
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'assets' && <AssetsTab />}
-        {activeTab === 'rollouts' && <RolloutTab />}
+        {activeTab === 'rollouts' && <RolloutsTab />}
         {activeTab === 'werkplekken' && <WorkplacesTab />}
         {activeTab === 'intune' && <IntuneTab />}
         {activeTab === 'leasing' && <LeasingTab />}
