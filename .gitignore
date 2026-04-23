@@ -69,3 +69,4 @@ appsettings.Production.local.json
 .feature-dev/
 azure-logs/
 azure-logs.zip
+.superpowers/
