@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrganizationSyncService, OrganizationSyncService>();
         services.AddScoped<IAssetMovementService, AssetMovementService>();
         services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
+        services.AddScoped<RolloutMovementClassifierService>();
 
         // Device Deployment Services (Laptop Swap / Onboarding)
         services.AddScoped<IDeploymentService, DeploymentService>();
@@ -54,6 +55,8 @@ public static class ServiceCollectionExtensions
 
         // Report Services (Clean Architecture)
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<ReportsOverviewService>();
+        services.AddScoped<EmployeeReportsService>();
 
         // Configure AutoMapper (v13+ API - AddAutoMapper is now in core package)
         services.AddAutoMapper(cfg => { }, typeof(Profiles.MappingProfile).Assembly);
