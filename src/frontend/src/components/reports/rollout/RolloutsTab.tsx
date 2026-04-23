@@ -286,6 +286,7 @@ const RolloutsTab = () => {
       includeSwapChecklist: true,
       includeUnscheduledAssets: showUnscheduled,
       includeSectorBreakdown: true,
+      groupBy,
     });
   };
 

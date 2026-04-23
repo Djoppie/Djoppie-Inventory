@@ -666,6 +666,8 @@ export interface RolloutExcelExportRequest {
   includeSwapChecklist?: boolean;
   includeUnscheduledAssets?: boolean;
   includeSectorBreakdown?: boolean;
+  /** Grouping for workplace sheets: "day" (default), "service", or "building". */
+  groupBy?: 'day' | 'service' | 'building';
 }
 
 /**

@@ -223,6 +223,11 @@ public record RolloutExcelExportRequest
     public bool IncludeSwapChecklist { get; init; } = true;
     public bool IncludeUnscheduledAssets { get; init; } = true;
     public bool IncludeSectorBreakdown { get; init; } = true;
+
+    /// <summary>
+    /// Grouping for workplace sheets: "day" (default), "service", or "building".
+    /// </summary>
+    public string? GroupBy { get; init; } = "day";
 }
 
 // ===== SERIAL NUMBER MANAGEMENT =====

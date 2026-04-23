@@ -677,6 +677,7 @@ public class OperationsReportsController : ControllerBase
         int sessionId,
         [FromQuery] List<int>? serviceIds = null,
         [FromQuery] List<int>? buildingIds = null,
+        [FromQuery] string? groupBy = "day",
         CancellationToken cancellationToken = default)
     {
         var session = await _context.RolloutSessions
@@ -698,23 +699,41 @@ public class OperationsReportsController : ControllerBase
         var unscheduledResult = await GetUnscheduledAssets(sessionId, 100, cancellationToken);
         var unscheduled = (unscheduledResult.Result as OkObjectResult)?.Value as List<UnscheduledAssetDto>;
 
+        var normalizedGroupBy = (groupBy ?? "day").ToLowerInvariant();
+
         using var workbook = new ClosedXML.Excel.XLWorkbook();
 
         // Sheet 1: Overview
         var overviewSheet = workbook.Worksheets.Add("Overzicht");
         CreateOverviewSheet(overviewSheet, session, overview);
 
-        // Sheet 2: SWAP Checklist
-        var checklistSheet = workbook.Worksheets.Add("SWAP Checklist");
-        CreateChecklistSheet(checklistSheet, checklist);
+        // Sheet 2: Checklist — either flat or grouped depending on groupBy
+        if (normalizedGroupBy == "service")
+        {
+            CreateChecklistSheetsGroupedByService(workbook, checklist);
+        }
+        else if (normalizedGroupBy == "building")
+        {
+            CreateChecklistSheetsGroupedByBuilding(workbook, checklist);
+        }
+        else
+        {
+            // Default: single flat "SWAP Checklist" sheet grouped by day
+            var checklistSheet = workbook.Worksheets.Add("SWAP Checklist");
+            CreateChecklistSheet(checklistSheet, checklist);
+        }
 
-        // Sheet 3: Unscheduled Assets
+        // Sheet: Unscheduled Assets
         var unscheduledSheet = workbook.Worksheets.Add("Niet Gepland");
         CreateUnscheduledSheet(unscheduledSheet, unscheduled);
 
-        // Sheet 4: Sector Breakdown
+        // Sheet: Sector Breakdown
         var sectorSheet = workbook.Worksheets.Add("Per Sector");
         CreateSectorSheet(sectorSheet, overview?.SectorBreakdown);
+
+        // Sheet: Type Breakdown (always added)
+        var typeBreakdownSheet = workbook.Worksheets.Add("Type Breakdown");
+        CreateTypeBreakdownSheet(typeBreakdownSheet, checklist);
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
@@ -722,7 +741,7 @@ public class OperationsReportsController : ControllerBase
 
         var fileName = $"rollout-rapport-{session.SessionName.Replace(" ", "-")}-{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
-        _logger.LogInformation("Exported rollout report for session {SessionId} to Excel", sessionId);
+        _logger.LogInformation("Exported rollout report for session {SessionId} to Excel (groupBy={GroupBy})", sessionId, normalizedGroupBy);
 
         return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
@@ -1158,6 +1177,210 @@ public class OperationsReportsController : ControllerBase
 
         sheet.Columns().AdjustToContents();
         sheet.SheetView.FreezeRows(1);
+    }
+
+    /// <summary>
+    /// Creates one checklist sheet per service (groupBy=service).
+    /// </summary>
+    private void CreateChecklistSheetsGroupedByService(
+        ClosedXML.Excel.XLWorkbook workbook,
+        List<RolloutDayChecklistDto>? checklist)
+    {
+        if (checklist == null) return;
+
+        var allWorkplaces = checklist
+            .SelectMany(d => d.Workplaces.Select(w => (Day: d, Workplace: w)))
+            .ToList();
+
+        var groups = allWorkplaces
+            .GroupBy(x => x.Workplace.ServiceName)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        foreach (var group in groups)
+        {
+            var sheetName = SanitizeSheetName(group.Key.Length > 0 ? group.Key : "Geen Dienst");
+            var sheet = workbook.Worksheets.Add(sheetName);
+            var row = 1;
+
+            var headers = new[] { "Datum", "Dienst", "Gebouw", "Werkplek", "Medewerker", "Laptop SN", "QR", "Docking SN", "QR", "Status", "Notities" };
+            for (var col = 1; col <= headers.Length; col++)
+            {
+                sheet.Cell(row, col).Value = headers[col - 1];
+                sheet.Cell(row, col).Style.Font.Bold = true;
+                sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0078D4");
+                sheet.Cell(row, col).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            }
+            row++;
+
+            foreach (var (day, wp) in group.OrderBy(x => x.Day.Date).ThenBy(x => x.Workplace.WorkplaceName))
+            {
+                row = WriteWorkplaceChecklistRow(sheet, row, day.Date, wp);
+            }
+
+            sheet.Columns().AdjustToContents();
+            sheet.SheetView.FreezeRows(1);
+        }
+    }
+
+    /// <summary>
+    /// Creates one checklist sheet per building (groupBy=building).
+    /// </summary>
+    private void CreateChecklistSheetsGroupedByBuilding(
+        ClosedXML.Excel.XLWorkbook workbook,
+        List<RolloutDayChecklistDto>? checklist)
+    {
+        if (checklist == null) return;
+
+        var allWorkplaces = checklist
+            .SelectMany(d => d.Workplaces.Select(w => (Day: d, Workplace: w)))
+            .ToList();
+
+        var groups = allWorkplaces
+            .GroupBy(x => x.Workplace.BuildingName)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        foreach (var group in groups)
+        {
+            var sheetName = SanitizeSheetName(group.Key.Length > 0 ? group.Key : "Geen Gebouw");
+            var sheet = workbook.Worksheets.Add(sheetName);
+            var row = 1;
+
+            var headers = new[] { "Datum", "Dienst", "Gebouw", "Werkplek", "Medewerker", "Laptop SN", "QR", "Docking SN", "QR", "Status", "Notities" };
+            for (var col = 1; col <= headers.Length; col++)
+            {
+                sheet.Cell(row, col).Value = headers[col - 1];
+                sheet.Cell(row, col).Style.Font.Bold = true;
+                sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0078D4");
+                sheet.Cell(row, col).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            }
+            row++;
+
+            foreach (var (day, wp) in group.OrderBy(x => x.Day.Date).ThenBy(x => x.Workplace.ServiceName).ThenBy(x => x.Workplace.WorkplaceName))
+            {
+                row = WriteWorkplaceChecklistRow(sheet, row, day.Date, wp);
+            }
+
+            sheet.Columns().AdjustToContents();
+            sheet.SheetView.FreezeRows(1);
+        }
+    }
+
+    /// <summary>
+    /// Writes a single workplace row into a checklist sheet. Returns the next row index.
+    /// </summary>
+    private static int WriteWorkplaceChecklistRow(
+        ClosedXML.Excel.IXLWorksheet sheet,
+        int row,
+        DateTime date,
+        RolloutWorkplaceChecklistDto wp)
+    {
+        var laptop = wp.EquipmentRows.FirstOrDefault(e => e.EquipmentType == "Desktop/Laptop");
+        var docking = wp.EquipmentRows.FirstOrDefault(e => e.EquipmentType == "Docking");
+
+        sheet.Cell(row, 1).Value = date.ToString("dd-MM-yyyy");
+        sheet.Cell(row, 2).Value = wp.ServiceName;
+        sheet.Cell(row, 3).Value = wp.BuildingName;
+        sheet.Cell(row, 4).Value = wp.WorkplaceName;
+        sheet.Cell(row, 5).Value = wp.UserDisplayName ?? "";
+        sheet.Cell(row, 6).Value = laptop?.NewSerialNumber ?? "";
+        sheet.Cell(row, 7).Value = laptop?.QrCodeApplied == true ? "✓" : "";
+        sheet.Cell(row, 8).Value = docking?.NewSerialNumber ?? "";
+        sheet.Cell(row, 9).Value = docking?.QrCodeApplied == true ? "✓" : "";
+        sheet.Cell(row, 10).Value = wp.Status;
+        sheet.Cell(row, 11).Value = wp.Notes ?? "";
+
+        if (laptop?.IsMissingSerialNumber == true)
+            sheet.Cell(row, 6).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.Yellow;
+        if (docking?.IsMissingSerialNumber == true)
+            sheet.Cell(row, 8).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.Yellow;
+        if (wp.Status == "Completed")
+            sheet.Cell(row, 10).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGreen;
+
+        return row + 1;
+    }
+
+    /// <summary>
+    /// Creates the "Type Breakdown" sheet: counts per day broken down by movement type.
+    /// </summary>
+    private static void CreateTypeBreakdownSheet(
+        ClosedXML.Excel.IXLWorksheet sheet,
+        List<RolloutDayChecklistDto>? checklist)
+    {
+        var row = 1;
+
+        var headers = new[] { "Datum", "Onboarding", "Offboarding", "Swap", "Overig", "Totaal" };
+        for (var col = 1; col <= headers.Length; col++)
+        {
+            sheet.Cell(row, col).Value = headers[col - 1];
+            sheet.Cell(row, col).Style.Font.Bold = true;
+            sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0078D4");
+            sheet.Cell(row, col).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+        }
+        row++;
+
+        if (checklist == null)
+        {
+            sheet.Columns().AdjustToContents();
+            return;
+        }
+
+        // Aggregate by day
+        var byDay = checklist
+            .OrderBy(d => d.Date)
+            .Select(d => new
+            {
+                d.Date,
+                Onboarding = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Onboarding),
+                Offboarding = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Offboarding),
+                Swap = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Swap),
+                Other = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Other),
+                Total = d.Workplaces.Count
+            })
+            .ToList();
+
+        foreach (var day in byDay)
+        {
+            sheet.Cell(row, 1).Value = day.Date.ToString("dd-MM-yyyy");
+            sheet.Cell(row, 2).Value = day.Onboarding;
+            sheet.Cell(row, 3).Value = day.Offboarding;
+            sheet.Cell(row, 4).Value = day.Swap;
+            sheet.Cell(row, 5).Value = day.Other;
+            sheet.Cell(row, 6).Value = day.Total;
+            row++;
+        }
+
+        // Totals row
+        if (byDay.Count > 0)
+        {
+            sheet.Cell(row, 1).Value = "TOTAAL";
+            sheet.Cell(row, 1).Style.Font.Bold = true;
+            sheet.Cell(row, 2).Value = byDay.Sum(d => d.Onboarding);
+            sheet.Cell(row, 3).Value = byDay.Sum(d => d.Offboarding);
+            sheet.Cell(row, 4).Value = byDay.Sum(d => d.Swap);
+            sheet.Cell(row, 5).Value = byDay.Sum(d => d.Other);
+            sheet.Cell(row, 6).Value = byDay.Sum(d => d.Total);
+            for (var col = 1; col <= 6; col++)
+            {
+                sheet.Cell(row, col).Style.Font.Bold = true;
+                sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGray;
+            }
+        }
+
+        sheet.Columns().AdjustToContents();
+        sheet.SheetView.FreezeRows(1);
+    }
+
+    /// <summary>
+    /// Sanitizes a string to be a valid Excel sheet name (max 31 chars, no special chars).
+    /// </summary>
+    private static string SanitizeSheetName(string name)
+    {
+        // Excel sheet name invalid chars: \ / * ? [ ] :
+        var invalidChars = new[] { '\\', '/', '*', '?', '[', ']', ':' };
+        var sanitized = string.Concat(name.Select(c => invalidChars.Contains(c) ? '_' : c));
+        return sanitized.Length > 31 ? sanitized[..31] : sanitized;
     }
 
     private static string EscapeCsv(string field)

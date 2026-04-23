@@ -637,6 +637,9 @@ export const exportRolloutReport = async (
   if (options?.includeSectorBreakdown !== undefined) {
     params.includeSectorBreakdown = options.includeSectorBreakdown;
   }
+  if (options?.groupBy) {
+    params.groupBy = options.groupBy;
+  }
 
   const response = await apiClient.get(`/reports/rollout/sessions/${sessionId}/export`, {
     params,
