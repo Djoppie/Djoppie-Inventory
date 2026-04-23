@@ -70,3 +70,4 @@ appsettings.Production.local.json
 azure-logs/
 azure-logs.zip
 .superpowers/
+.claude/worktrees/
