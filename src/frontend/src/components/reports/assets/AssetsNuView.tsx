@@ -148,18 +148,12 @@ const AssetsNuView = () => {
     {
       field: 'assetCode',
       headerName: 'Asset Code',
-      width: 140,
+      width: 180,
       renderCell: (params: GridRenderCellParams) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={{
-            fontWeight: 600,
-            bgcolor: alpha('#FF7700', 0.1),
-            color: '#FF7700',
-            fontSize: '0.75rem',
-          }}
-        />
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#FF7700', fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}>
+          <InventoryIcon sx={{ fontSize: 14 }} />
+          {params.value}
+        </Box>
       ),
     },
     {

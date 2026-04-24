@@ -28,7 +28,6 @@ import {
   IconButton,
   Tooltip,
   Badge,
-  Chip,
   Alert,
   alpha,
   useTheme,
@@ -160,21 +159,11 @@ const AssetsHistoryView = () => {
     {
       field: 'assetCode',
       headerName: 'Asset Code',
-      width: 130,
+      width: 160,
       renderCell: (params: GridRenderCellParams) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <InventoryIcon sx={{ fontSize: 16, color: 'action.active' }} />
-          <Chip
-            label={params.value}
-            size="small"
-            sx={{
-              fontWeight: 600,
-              bgcolor: alpha(ASSET_COLOR, 0.1),
-              color: ASSET_COLOR,
-              fontSize: '0.7rem',
-              height: 22,
-            }}
-          />
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: ASSET_COLOR, fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}>
+          <InventoryIcon sx={{ fontSize: 14 }} />
+          {params.value}
         </Box>
       ),
     },
@@ -192,22 +181,16 @@ const AssetsHistoryView = () => {
     {
       field: 'eventTypeDisplay',
       headerName: 'Gebeurtenis',
-      width: 160,
-      renderCell: (params: GridRenderCellParams) => (
-        <Chip
-          size="small"
-          label={params.value}
-          sx={{
-            bgcolor: alpha(getEventTypeColor(params.value), 0.12),
-            color: getEventTypeColor(params.value),
-            fontWeight: 600,
-            fontSize: '0.7rem',
-            border: '1px solid',
-            borderColor: alpha(getEventTypeColor(params.value), 0.35),
-            height: 22,
-          }}
-        />
-      ),
+      width: 170,
+      renderCell: (params: GridRenderCellParams) => {
+        const c = getEventTypeColor(params.value);
+        return (
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: c, fontWeight: 600, fontSize: '0.74rem' }}>
+            <TrendingUpIcon sx={{ fontSize: 14 }} />
+            {params.value}
+          </Box>
+        );
+      },
     },
     {
       field: 'oldValue',
@@ -361,25 +344,21 @@ const AssetsHistoryView = () => {
             Per Gebeurtenis Type
           </Box>
         </Box>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, rowGap: 0.75 }}>
           {Object.entries(summary.byEventType)
             .sort(([, a], [, b]) => b - a)
-            .map(([type, count]) => (
-              <Chip
-                key={type}
-                label={`${type}: ${count}`}
-                size="small"
-                sx={{
-                  height: 24,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  bgcolor: alpha(getEventTypeColor(type), 0.12),
-                  color: getEventTypeColor(type),
-                  border: '1px solid',
-                  borderColor: alpha(getEventTypeColor(type), 0.3),
-                }}
-              />
-            ))}
+            .map(([type, count]) => {
+              const c = getEventTypeColor(type);
+              return (
+                <Box
+                  key={type}
+                  sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: c, fontWeight: 600, fontSize: '0.72rem' }}
+                >
+                  <TrendingUpIcon sx={{ fontSize: 13 }} />
+                  {type}: <span style={{ fontWeight: 700, marginLeft: 2 }}>{count}</span>
+                </Box>
+              );
+            })}
         </Box>
       </Paper>
     );

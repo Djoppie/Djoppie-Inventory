@@ -16,7 +16,6 @@ import {
   Paper,
   TextField,
   InputAdornment,
-  Chip,
   Alert,
   LinearProgress,
   alpha,
@@ -30,6 +29,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import DevicesIcon from '@mui/icons-material/Devices';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import PlaceIcon from '@mui/icons-material/Place';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 import { useWorkplaceReport, useWorkplaceReportSummary, useExportWorkplaceReport } from '../../../hooks/reports';
 import { buildRoute } from '../../../constants/routes';
@@ -114,17 +115,12 @@ const WerkplekkenWorkplaceView = () => {
     {
       field: 'code',
       headerName: 'Code',
-      width: 120,
+      width: 140,
       renderCell: (params: GridRenderCellParams) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={{
-            fontWeight: 600,
-            bgcolor: alpha('#7E57C2', 0.1),
-            color: '#7E57C2',
-          }}
-        />
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#7E57C2', fontWeight: 600, fontSize: '0.78rem' }}>
+          <PlaceIcon sx={{ fontSize: 14 }} />
+          {params.value}
+        </Box>
       ),
     },
     {
@@ -172,15 +168,10 @@ const WerkplekkenWorkplaceView = () => {
           );
         }
         return (
-          <Chip
-            label="Beschikbaar"
-            size="small"
-            sx={{
-              bgcolor: alpha('#2196F3', 0.1),
-              color: '#2196F3',
-              fontSize: '0.7rem',
-            }}
-          />
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#2196F3', fontWeight: 500, fontSize: '0.74rem' }}>
+            <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />
+            Beschikbaar
+          </Box>
         );
       },
     },

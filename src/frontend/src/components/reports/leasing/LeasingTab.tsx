@@ -16,9 +16,7 @@ import {
   Paper,
   TextField,
   InputAdornment,
-  Chip,
   Alert,
-  alpha,
   useTheme,
   Grid
 } from '@mui/material';
@@ -30,6 +28,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import EuroIcon from '@mui/icons-material/Euro';
 import DevicesIcon from '@mui/icons-material/Devices';
+import BusinessIcon from '@mui/icons-material/Business';
 
 import {
   useLeaseReport,
@@ -110,17 +109,12 @@ const LeasingTab = () => {
     {
       field: 'contractNumber',
       headerName: 'Contract Nr.',
-      width: 140,
+      width: 160,
       renderCell: (params: GridRenderCellParams) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={{
-            fontWeight: 600,
-            bgcolor: alpha('#F57C00', 0.1),
-            color: '#F57C00',
-          }}
-        />
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#F57C00', fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}>
+          <DescriptionIcon sx={{ fontSize: 14 }} />
+          {params.value}
+        </Box>
       ),
     },
     {
@@ -194,17 +188,10 @@ const LeasingTab = () => {
         const statusConfig = STATUS_CONFIG[params.value as keyof typeof STATUS_CONFIG];
         const StatusIcon = statusConfig.icon;
         return (
-          <Chip
-            icon={<StatusIcon sx={{ fontSize: 16 }} />}
-            label={statusConfig.label}
-            size="small"
-            sx={{
-              bgcolor: alpha(statusConfig.color, 0.15),
-              color: statusConfig.color,
-              fontWeight: 600,
-              '& .MuiChip-icon': { color: statusConfig.color },
-            }}
-          />
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: statusConfig.color, fontWeight: 600, fontSize: '0.76rem' }}>
+            <StatusIcon sx={{ fontSize: 14 }} />
+            {statusConfig.label}
+          </Box>
         );
       },
     },
@@ -279,18 +266,17 @@ const LeasingTab = () => {
         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
           Per Leverancier
         </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, rowGap: 0.75 }}>
           {Object.entries(summary.contractsByVendor)
             .sort(([, a], [, b]) => b - a)
             .map(([vendor, count]) => (
-              <Chip
+              <Box
                 key={vendor}
-                label={`${vendor}: ${count}`}
-                sx={{
-                  bgcolor: alpha('#F57C00', 0.1),
-                  color: '#F57C00',
-                }}
-              />
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#F57C00', fontWeight: 600, fontSize: '0.78rem' }}
+              >
+                <BusinessIcon sx={{ fontSize: 14 }} />
+                {vendor}: <span style={{ fontWeight: 700, marginLeft: 2 }}>{count}</span>
+              </Box>
             ))}
         </Box>
       </Paper>
