@@ -12,6 +12,10 @@ interface DashboardSectionProps {
   children: React.ReactNode;
   span?: 1 | 2;
   delay?: number;
+  /** When true, highlights the section to indicate the dashboard filter is narrowing its data */
+  filterActive?: boolean;
+  /** If true, the section is not affected by the dashboard filter — rendered dimmed */
+  filterIgnored?: boolean;
 }
 
 const DashboardSection: React.FC<DashboardSectionProps> = ({
@@ -22,6 +26,8 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({
   children,
   span = 1,
   delay = 0,
+  filterActive = false,
+  filterIgnored = false,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -41,19 +47,34 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({
           bgcolor: bgSurface,
           boxShadow: getNeumorph(isDark, 'medium'),
           overflow: 'hidden',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.3s ease, opacity 0.3s ease, filter 0.3s ease',
+          opacity: filterIgnored ? 0.55 : 1,
+          filter: filterIgnored ? 'saturate(0.5)' : 'none',
+          // Subtle ring when the filter actively narrows this section's data
+          ...(filterActive && !filterIgnored && {
+            outline: `1px solid ${alpha(accentColor, 0.35)}`,
+            outlineOffset: -1,
+          }),
           '&:hover': {
+            opacity: 1,
+            filter: 'none',
             boxShadow: isDark
               ? `8px 8px 20px rgba(0,0,0,0.5), -4px -4px 12px rgba(255,255,255,0.05)`
               : `8px 8px 20px rgba(0,0,0,0.12), -4px -4px 12px rgba(255,255,255,0.9)`,
           },
         }}
       >
-        {/* Colored Top Border */}
+        {/* Colored Top Border — brighter + thicker when filter is focusing this section */}
         <Box
           sx={{
-            height: 4,
-            background: `linear-gradient(90deg, ${accentColor}, ${alpha(accentColor, 0.6)})`,
+            height: filterActive && !filterIgnored ? 5 : 4,
+            background: filterActive && !filterIgnored
+              ? `linear-gradient(90deg, ${accentColor}, ${alpha(accentColor, 0.9)}, ${accentColor})`
+              : `linear-gradient(90deg, ${accentColor}, ${alpha(accentColor, 0.6)})`,
+            boxShadow: filterActive && !filterIgnored
+              ? `0 0 12px ${alpha(accentColor, 0.5)}`
+              : 'none',
+            transition: 'all 0.3s ease',
           }}
         />
 
@@ -106,6 +127,45 @@ const DashboardSection: React.FC<DashboardSectionProps> = ({
           >
             {title}
           </Typography>
+
+          {/* Filter badges */}
+          {filterActive && !filterIgnored && (
+            <Box
+              sx={{
+                fontSize: '0.58rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                px: 0.85,
+                py: 0.25,
+                borderRadius: 999,
+                bgcolor: alpha(accentColor, 0.18),
+                color: accentColor,
+                border: `1px solid ${alpha(accentColor, 0.35)}`,
+              }}
+            >
+              Gefilterd
+            </Box>
+          )}
+          {filterIgnored && (
+            <Box
+              sx={{
+                fontSize: '0.58rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                px: 0.85,
+                py: 0.25,
+                borderRadius: 999,
+                bgcolor: isDark ? alpha('#ffffff', 0.05) : alpha('#000000', 0.05),
+                color: isDark ? alpha('#ffffff', 0.5) : alpha('#000000', 0.5),
+                border: '1px solid',
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+              }}
+            >
+              Niet beïnvloed
+            </Box>
+          )}
 
           {/* Chevron */}
           <ChevronRightIcon

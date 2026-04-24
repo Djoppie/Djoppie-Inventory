@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, useTheme, alpha } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useAnimatedCounter } from '../useAnimatedCounter';
 import { getNeumorphInset } from '../../../utils/neumorphicStyles';
 
@@ -11,6 +12,7 @@ interface SectionKPICardProps {
   subtitle?: string;
   pulse?: boolean;
   isPercentage?: boolean;
+  onClick?: () => void;
 }
 
 const SectionKPICard: React.FC<SectionKPICardProps> = ({
@@ -21,22 +23,53 @@ const SectionKPICard: React.FC<SectionKPICardProps> = ({
   subtitle,
   pulse = false,
   isPercentage = false,
+  onClick,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const animatedValue = useAnimatedCounter(value);
+  const clickable = typeof onClick === 'function';
 
   return (
     <Box
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
       sx={{
+        position: 'relative',
         p: 1.5,
         borderRadius: 2,
         bgcolor: isDark ? alpha('#1a1f2e', 0.6) : alpha('#f5f5f5', 0.8),
         boxShadow: getNeumorphInset(isDark),
         borderLeft: `3px solid ${color}`,
         transition: 'all 0.2s ease',
-        '&:hover': {
-          bgcolor: isDark ? alpha('#1a1f2e', 0.8) : alpha('#f0f0f0', 0.9),
+        cursor: clickable ? 'pointer' : 'default',
+        '&:hover': clickable
+          ? {
+              bgcolor: isDark ? alpha(color, 0.08) : alpha(color, 0.05),
+              transform: 'translateY(-1px)',
+              boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 1px ${alpha(color, 0.25)}`,
+              '& .kpi-chevron': {
+                opacity: 1,
+                transform: 'translateX(2px)',
+              },
+            }
+          : {
+              bgcolor: isDark ? alpha('#1a1f2e', 0.8) : alpha('#f0f0f0', 0.9),
+            },
+        '&:focus-visible': {
+          outline: 'none',
+          boxShadow: `${getNeumorphInset(isDark)}, 0 0 0 2px ${alpha(color, 0.5)}`,
         },
       }}
     >
@@ -110,6 +143,19 @@ const SectionKPICard: React.FC<SectionKPICardProps> = ({
             </Typography>
           )}
         </Box>
+        {clickable && (
+          <ChevronRightIcon
+            className="kpi-chevron"
+            sx={{
+              fontSize: '0.95rem',
+              color: alpha(color, 0.7),
+              opacity: 0.35,
+              transition: 'all 0.2s ease',
+              alignSelf: 'center',
+              flexShrink: 0,
+            }}
+          />
+        )}
       </Box>
     </Box>
   );

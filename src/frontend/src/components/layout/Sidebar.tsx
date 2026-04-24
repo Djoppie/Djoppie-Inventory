@@ -22,6 +22,9 @@ import InventoryIcon from '@mui/icons-material/Inventory2';
 import BusinessIcon from '@mui/icons-material/Business';
 import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import SettingsIcon from '@mui/icons-material/Settings';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import AppsIcon from '@mui/icons-material/Apps';
+import BadgeIcon from '@mui/icons-material/Badge';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -64,7 +67,7 @@ interface SidebarProps {
 }
 
 // Section keys for expansion state
-const SECTION_KEYS = ['Inventory', 'Workplaces', 'Operations', 'Requests', 'Admin'] as const;
+const SECTION_KEYS = ['Inventory', 'Workplaces', 'Operations', 'Requests', 'Monitoring', 'Admin'] as const;
 type SectionKey = (typeof SECTION_KEYS)[number];
 
 const Sidebar = ({
@@ -89,6 +92,7 @@ const Sidebar = ({
     Workplaces: false,
     Operations: false,
     Requests: false,
+    Monitoring: false,
     Admin: false,
   });
 
@@ -416,6 +420,22 @@ const Sidebar = ({
             isCollapsed={isCollapsed}
             isExpanded={false}
             onToggle={() => {}}
+            onNavigate={handleNavigation}
+          />
+
+          {/* Monitoring (grouped with Dashboard as overview section) */}
+          <NavigationGroup
+            label="Monitoring"
+            icon={<MonitorHeartIcon />}
+            path={ROUTES.MONITORING_APPLICATIONS}
+            matchPaths={['/monitoring']}
+            subItems={[
+              { label: 'Applicaties', icon: <AppsIcon />, path: ROUTES.MONITORING_APPLICATIONS, matchPaths: ['/monitoring/applications'] },
+              { label: 'Users', icon: <BadgeIcon />, path: ROUTES.MONITORING_USERS, matchPaths: ['/monitoring/users'] },
+            ]}
+            isCollapsed={isCollapsed}
+            isExpanded={expandedSections.Monitoring}
+            onToggle={() => toggleSection('Monitoring')}
             onNavigate={handleNavigation}
             extraBottomMargin
           />

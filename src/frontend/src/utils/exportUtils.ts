@@ -1,6 +1,16 @@
-import ExcelJS from 'exceljs';
+// Lazy-load exceljs (~270KB gzip) only when the user actually triggers an Excel export.
+// Prevents this heavy dependency from landing in the initial bundle.
+import type ExcelJSType from 'exceljs';
 import { Asset, AssetStatus } from '../types/asset.types';
 import { format } from 'date-fns';
+
+let _excelJs: typeof ExcelJSType | null = null;
+const loadExcelJs = async (): Promise<typeof ExcelJSType> => {
+  if (!_excelJs) {
+    _excelJs = (await import('exceljs')).default;
+  }
+  return _excelJs;
+};
 
 export interface ExportColumn {
   key: keyof Asset;
@@ -102,6 +112,7 @@ const downloadBlob = (blob: Blob, fileName: string): void => {
  * Exports assets to Excel format using ExcelJS
  */
 export const exportToExcel = async (assets: Asset[], config: ExportConfig): Promise<void> => {
+  const ExcelJS = await loadExcelJs();
   const data = prepareExportData(assets, config.columns);
   const enabledColumns = config.columns.filter(col => col.enabled);
 
@@ -185,6 +196,7 @@ export const exportToExcel = async (assets: Asset[], config: ExportConfig): Prom
  * Exports assets to CSV format
  */
 export const exportToCSV = async (assets: Asset[], config: ExportConfig): Promise<void> => {
+  const ExcelJS = await loadExcelJs();
   const data = prepareExportData(assets, config.columns);
   const enabledColumns = config.columns.filter(col => col.enabled);
 

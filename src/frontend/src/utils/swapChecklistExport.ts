@@ -1,7 +1,16 @@
-import ExcelJS from 'exceljs';
+// Lazy-load exceljs (~270KB gzip) only when the user actually exports a checklist.
+import type ExcelJSType from 'exceljs';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import type { RolloutWorkplace, RolloutDay, RolloutSession } from '../types/rollout';
+
+let _excelJs: typeof ExcelJSType | null = null;
+const loadExcelJs = async (): Promise<typeof ExcelJSType> => {
+  if (!_excelJs) {
+    _excelJs = (await import('exceljs')).default;
+  }
+  return _excelJs;
+};
 
 /**
  * Swap Checklist Export Utility
@@ -98,7 +107,7 @@ const downloadBlob = (blob: Blob, fileName: string): void => {
  * Create styled worksheet with checklist data
  */
 const createChecklistWorksheet = (
-  workbook: ExcelJS.Workbook,
+  workbook: ExcelJSType.Workbook,
   sheetName: string,
   data: SwapChecklistRow[],
   title: string,
@@ -229,6 +238,7 @@ export const exportDaySwapChecklist = async (
     throw new Error('Geen werkplekken gevonden voor deze dag');
   }
 
+  const ExcelJS = await loadExcelJs();
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Djoppie Inventory';
   workbook.created = new Date();
@@ -266,6 +276,7 @@ export const exportSessionSwapChecklist = async (
     throw new Error('Geen werkplekken gevonden in deze rollout sessie');
   }
 
+  const ExcelJS = await loadExcelJs();
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Djoppie Inventory';
   workbook.created = new Date();

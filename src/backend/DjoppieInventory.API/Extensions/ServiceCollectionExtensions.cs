@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAssetService, AssetService>();
         services.AddScoped<IAssetEventService, AssetEventService>();
         services.AddScoped<ICsvImportService, CsvImportService>();
+        services.AddScoped<IClientSecretsService, ClientSecretsService>();
         services.AddScoped<IIntuneService, IntuneService>();
         services.AddScoped<IIntuneSyncService, IntuneSyncService>();
         services.AddScoped<IGraphUserService, GraphUserService>();
