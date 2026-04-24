@@ -2,6 +2,7 @@ using System.Text.Json;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Core.DTOs.Rollout;
 using DjoppieInventory.Core.Entities;
+using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -421,6 +422,24 @@ public class RolloutDaysController : ControllerBase
                     {
                         _logger.LogWarning(ex, "Failed to parse AssetPlansJson for workplace {WorkplaceId}", workplace.Id);
                     }
+                }
+
+                // Recompute TotalItems / CompletedItems from the authoritative source every
+                // time the workplace is read. The stored columns on RolloutWorkplace drift
+                // because RolloutWorkplaceService overwrites CompletedItems from the JSON
+                // plan while WorkplaceAssetAssignmentService increments both counters on
+                // the relational table — mixing those two paths produced "7 / 6 items" on
+                // the execution page. Relational assignments are the truth when present;
+                // otherwise fall back to the legacy JSON plans.
+                if (dto.AssetAssignments.Count > 0)
+                {
+                    dto.TotalItems = dto.AssetAssignments.Count;
+                    dto.CompletedItems = dto.AssetAssignments.Count(a => a.Status == AssetAssignmentStatus.Installed);
+                }
+                else if (dto.AssetPlans.Count > 0)
+                {
+                    dto.TotalItems = dto.AssetPlans.Count;
+                    dto.CompletedItems = dto.AssetPlans.Count(p => string.Equals(p.Status, "installed", StringComparison.OrdinalIgnoreCase));
                 }
             }
 
