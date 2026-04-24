@@ -12,22 +12,22 @@ using System.Text;
 namespace DjoppieInventory.API.Controllers.Reports;
 
 /// <summary>
-/// API controller for operations reports: swap history and rollout reports.
+/// API controller for rollout reports.
 /// </summary>
 [ApiController]
 [Route("api/reports")]
 [Authorize]
-public class OperationsReportsController : ControllerBase
+public class RolloutReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<OperationsReportsController> _logger;
+    private readonly ILogger<RolloutReportsController> _logger;
     private readonly RolloutMovementClassifierService _classifier;
 
-    public OperationsReportsController(
+    public RolloutReportsController(
         IReportService reportService,
         ApplicationDbContext context,
-        ILogger<OperationsReportsController> logger,
+        ILogger<RolloutReportsController> logger,
         RolloutMovementClassifierService classifier)
     {
         _reportService = reportService;
