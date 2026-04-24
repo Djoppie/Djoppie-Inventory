@@ -20,6 +20,10 @@ export const msalConfig: Configuration = {
     cacheLocation: 'sessionStorage', // Use sessionStorage for better security
   },
   system: {
+    // BroadcastChannel timeout for hidden-iframe silent token acquisition.
+    // Default is short enough that slow Azure AD responses cause `timed_out`
+    // which then cascades to 401 API calls.
+    iframeBridgeTimeout: 10000,
     loggerOptions: {
       loggerCallback: (level, message, containsPii) => {
         if (containsPii) {
