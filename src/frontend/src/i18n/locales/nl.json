@@ -1212,5 +1212,53 @@
     "successUser": "{{device}} succesvol toegewezen aan {{user}}",
     "successWorkplace": "{{device}} succesvol toegewezen aan werkplek {{workplace}}",
     "error": "Fout bij toewijzen apparaat"
+  },
+  "reports": {
+    "tabs": {
+      "overview": "Overzicht",
+      "assets": "Activa",
+      "rollouts": "Uitrollen",
+      "werkplekken": "Werkplekken",
+      "intune": "Intune",
+      "leasing": "Leasing"
+    },
+    "assets": {
+      "toggle": {
+        "nu": "Nu",
+        "history": "Historiek"
+      }
+    },
+    "rollouts": {
+      "groupBy": {
+        "day": "Per Dag",
+        "service": "Per Dienst",
+        "building": "Per Gebouw"
+      },
+      "movementType": {
+        "Onboarding": "Onboarding",
+        "Offboarding": "Offboarding",
+        "Swap": "Swap",
+        "Other": "Overig"
+      }
+    },
+    "werkplekken": {
+      "toggle": {
+        "workplace": "Per Werkplek",
+        "employee": "Per Medewerker"
+      }
+    },
+    "export": {
+      "csv": "CSV (gefilterd)",
+      "excel": "Excel (gefilterd)"
+    },
+    "empty": {
+      "title": "Geen resultaten",
+      "message": "Geen data gevonden met de huidige filters."
+    },
+    "error": {
+      "title": "Kon rapport niet laden",
+      "retry": "Opnieuw proberen",
+      "home": "Overzicht"
+    }
   }
 }

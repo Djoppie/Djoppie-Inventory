@@ -31,8 +31,8 @@ import {
   OverviewTab,
   AssetsTab,
   IntuneTab,
-  RolloutTab,
-  WorkplacesTab,
+  RolloutsTab,
+  WerkplekkenTab,
   LeasingTab,
 } from '../../components/reports';
 
@@ -81,6 +81,13 @@ const ReportsPage = () => {
     ? (legacyMap[rawTabParam]?.tab ?? (REPORT_TABS.some(t => t.id === rawTabParam) ? rawTabParam as ReportTab : 'overview'))
     : 'overview';
   const [activeTab, setActiveTab] = useState<ReportTab>(resolvedInitialTab);
+
+  // Handle serialnumbers redirect to separate page
+  useEffect(() => {
+    if (searchParams.get('tab') === 'serialnumbers') {
+      navigate('/operations/rollouts/serienummers', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   // Sync URL with active tab, handling legacy redirects
   useEffect(() => {
@@ -304,8 +311,8 @@ const ReportsPage = () => {
       >
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'assets' && <AssetsTab />}
-        {activeTab === 'rollouts' && <RolloutTab />}
-        {activeTab === 'werkplekken' && <WorkplacesTab />}
+        {activeTab === 'rollouts' && <RolloutsTab />}
+        {activeTab === 'werkplekken' && <WerkplekkenTab />}
         {activeTab === 'intune' && <IntuneTab />}
         {activeTab === 'leasing' && <LeasingTab />}
       </Paper>

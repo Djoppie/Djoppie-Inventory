@@ -25,6 +25,7 @@ const RolloutPlannerPage = lazy(() => import('./pages/operations/rollouts/Rollou
 const RolloutExecutionPage = lazy(() => import('./pages/operations/rollouts/RolloutExecutionPage'));
 const RolloutReportPage = lazy(() => import('./pages/operations/rollouts/RolloutReportPage'));
 const RolloutDayDetailPage = lazy(() => import('./pages/operations/rollouts/RolloutDayDetailPage'));
+const SerienummersPage = lazy(() => import('./pages/operations/rollouts/SerienummersPage'));
 const AutopilotDevicesPage = lazy(() => import('./pages/devices/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazy(() => import('./pages/devices/AutopilotTimelinePage'));
 const AssetsPage = lazy(() => import('./pages/inventory/AssetsPage'));
@@ -80,6 +81,7 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
                   <Route path={ROUTES.ROLLOUT_DAY_DETAIL} element={<RolloutDayDetailPage />} />
                   <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
+                  <Route path={ROUTES.ROLLOUT_SERIENUMMERS} element={<SerienummersPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
                   <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />

@@ -36,17 +36,18 @@ import {
   useLeaseReportSummary,
   useExportLeaseReport,
   formatCurrency,
-} from '../../hooks/reports';
-import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
-import NeumorphicDataGrid from '../admin/NeumorphicDataGrid';
-import StatisticsCard from '../common/StatisticsCard';
-import type { LeaseReportFilters } from '../../types/report.types';
+} from '../../../hooks/reports';
+import { getNeumorph, getNeumorphColors } from '../../../utils/neumorphicStyles';
+import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
+import StatisticsCard from '../../common/StatisticsCard';
+import LeasingExpiryTimeline from './LeasingExpiryTimeline';
+import type { LeaseReportFilters } from '../../../types/report.types';
 
-// Statistics card configuration
+// Statistics card configuration with color-coded urgency
 const STAT_CARDS = [
   { key: 'total', label: 'Totaal Contracten', icon: DescriptionIcon, color: '#F57C00' },
   { key: 'active', label: 'Actief', icon: CheckCircleIcon, color: '#4CAF50' },
-  { key: 'expiring', label: 'Bijna Verlopen', icon: WarningIcon, color: '#FF9800' },
+  { key: 'expiring', label: 'Bijna Verlopen', icon: WarningIcon, color: '#FFC107' },
 ];
 
 // Status config for chips
@@ -381,6 +382,9 @@ const LeasingTab = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {/* Statistics Cards */}
       {statisticsCards}
+
+      {/* Expiry Timeline Chart */}
+      <LeasingExpiryTimeline leases={items} />
 
       {/* Vendor Breakdown */}
       {vendorBreakdown}
