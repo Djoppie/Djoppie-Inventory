@@ -18,6 +18,7 @@ public class CsvImportService : ICsvImportService
     private readonly IServiceRepository _serviceRepository;
     private readonly IAssetEventService _assetEventService;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
+    private readonly IEmployeeResolver _employeeResolver;
     private readonly ILogger<CsvImportService> _logger;
 
     // CSV columns - supports both creating new assets and updating existing ones
@@ -55,6 +56,7 @@ public class CsvImportService : ICsvImportService
         IServiceRepository serviceRepository,
         IAssetEventService assetEventService,
         IAssetCodeGenerator assetCodeGenerator,
+        IEmployeeResolver employeeResolver,
         ILogger<CsvImportService> logger)
     {
         _assetRepository = assetRepository;
@@ -62,6 +64,7 @@ public class CsvImportService : ICsvImportService
         _serviceRepository = serviceRepository;
         _assetEventService = assetEventService;
         _assetCodeGenerator = assetCodeGenerator;
+        _employeeResolver = employeeResolver;
         _logger = logger;
     }
 
@@ -453,7 +456,10 @@ public class CsvImportService : ICsvImportService
                     asset.InstallationLocation = csvRow.InstallationLocation;
 
                 if (!string.IsNullOrWhiteSpace(csvRow.Owner))
+                {
                     asset.Owner = csvRow.Owner;
+                    asset.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(csvRow.Owner, cancellationToken);
+                }
 
                 if (!string.IsNullOrWhiteSpace(csvRow.JobTitle))
                     asset.JobTitle = csvRow.JobTitle;

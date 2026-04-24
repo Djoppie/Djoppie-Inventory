@@ -16,6 +16,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly IAssetEventService _assetEventService;
+    private readonly IEmployeeResolver _employeeResolver;
     private readonly ILogger<RolloutWorkplaceService> _logger;
 
     public RolloutWorkplaceService(
@@ -23,12 +24,14 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
         IAssetRepository assetRepository,
         IAssetCodeGenerator assetCodeGenerator,
         IAssetEventService assetEventService,
+        IEmployeeResolver employeeResolver,
         ILogger<RolloutWorkplaceService> logger)
     {
         _rolloutRepository = rolloutRepository;
         _assetRepository = assetRepository;
         _assetCodeGenerator = assetCodeGenerator;
         _assetEventService = assetEventService;
+        _employeeResolver = employeeResolver;
         _logger = logger;
     }
 
@@ -374,6 +377,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                     asset.Status = AssetStatus.InGebruik;
                     asset.InstallationDate = DateTime.UtcNow;
                     asset.Owner = workplace.UserName;
+                    asset.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(workplace.UserName);
                     asset.ServiceId = workplace.ServiceId;
                     asset.InstallationLocation = workplace.Location;
                     asset.UpdatedAt = DateTime.UtcNow;
@@ -432,9 +436,10 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                         _ => AssetStatus.UitDienst
                     };
 
-                    // Clear assignment data (owner, service, workplace, location)
+                    // Clear assignment data (owner, service, workplace, location, employee FK)
                     oldAsset.Status = targetStatus;
                     oldAsset.Owner = null;
+                    oldAsset.EmployeeId = null;
                     oldAsset.ServiceId = null;
                     oldAsset.PhysicalWorkplaceId = null;
                     oldAsset.InstallationLocation = null;
@@ -512,6 +517,7 @@ public class RolloutWorkplaceService : IRolloutWorkplaceService
                 {
                     asset.Status = AssetStatus.Nieuw;
                     asset.Owner = null;
+                    asset.EmployeeId = null;
                     asset.InstallationDate = null;
                     asset.InstallationLocation = null;
                     asset.UpdatedAt = DateTime.UtcNow;

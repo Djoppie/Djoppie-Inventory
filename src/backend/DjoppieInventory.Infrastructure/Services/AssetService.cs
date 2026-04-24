@@ -15,6 +15,7 @@ public class AssetService : IAssetService
     private readonly IAssetEventService _assetEventService;
     private readonly IAssetCodeGenerator _codeGenerator;
     private readonly IAssetTypeRepository _assetTypeRepository;
+    private readonly IEmployeeResolver _employeeResolver;
     private readonly IMapper _mapper;
     private readonly ILogger<AssetService> _logger;
 
@@ -23,6 +24,7 @@ public class AssetService : IAssetService
         IAssetEventService assetEventService,
         IAssetCodeGenerator codeGenerator,
         IAssetTypeRepository assetTypeRepository,
+        IEmployeeResolver employeeResolver,
         IMapper mapper,
         ILogger<AssetService> logger)
     {
@@ -30,6 +32,7 @@ public class AssetService : IAssetService
         _assetEventService = assetEventService;
         _codeGenerator = codeGenerator;
         _assetTypeRepository = assetTypeRepository;
+        _employeeResolver = employeeResolver;
         _mapper = mapper;
         _logger = logger;
     }
@@ -152,6 +155,8 @@ public class AssetService : IAssetService
         // Explicitly handle nullable fields to allow clearing them (AutoMapper ignores null by default)
         // This ensures that when the frontend sends null, we actually set the field to null
         existingAsset.Owner = updateAssetDto.Owner;
+        // Keep EmployeeId FK aligned with Owner string (null owner → null FK, owner match → FK id)
+        existingAsset.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(updateAssetDto.Owner);
         existingAsset.JobTitle = updateAssetDto.JobTitle;
         existingAsset.OfficeLocation = updateAssetDto.OfficeLocation;
         existingAsset.Brand = updateAssetDto.Brand;

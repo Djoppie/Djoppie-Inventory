@@ -16,13 +16,16 @@ namespace DjoppieInventory.Infrastructure.Services;
 public class AssetMovementService : IAssetMovementService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEmployeeResolver _employeeResolver;
     private readonly ILogger<AssetMovementService> _logger;
 
     public AssetMovementService(
         ApplicationDbContext context,
+        IEmployeeResolver employeeResolver,
         ILogger<AssetMovementService> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _employeeResolver = employeeResolver ?? throw new ArgumentNullException(nameof(employeeResolver));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -68,6 +71,7 @@ public class AssetMovementService : IAssetMovementService
         // Update the asset
         asset.Status = AssetStatus.InGebruik;
         asset.Owner = request.NewOwner;
+        asset.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(request.NewOwner, cancellationToken);
         asset.ServiceId = request.NewServiceId;
         asset.InstallationLocation = request.NewLocation;
         asset.InstallationDate = DateTime.UtcNow;
@@ -129,9 +133,10 @@ public class AssetMovementService : IAssetMovementService
             CreatedAt = DateTime.UtcNow
         };
 
-        // Update the asset
+        // Update the asset (clear owner linkage so EmployeeId stays aligned)
         asset.Status = request.TargetStatus;
         asset.Owner = null;
+        asset.EmployeeId = null;
         asset.ServiceId = null;
         asset.InstallationLocation = null;
         asset.LastRolloutSessionId = request.RolloutSessionId;
@@ -186,9 +191,12 @@ public class AssetMovementService : IAssetMovementService
             CreatedAt = DateTime.UtcNow
         };
 
-        // Update the asset
+        // Update the asset (keep EmployeeId aligned with new Owner if changed)
         if (request.NewOwner != null)
+        {
             asset.Owner = request.NewOwner;
+            asset.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(request.NewOwner, cancellationToken);
+        }
         if (request.NewServiceId != null)
             asset.ServiceId = request.NewServiceId;
         if (request.NewLocation != null)
