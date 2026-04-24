@@ -10,6 +10,10 @@ public record EmployeeReportItemDto
     public string? WorkplaceCode { get; init; }
     public int? WorkplaceId { get; init; }
     public int AssetCount { get; init; }
+    /// <summary>Asset code of the employee's primary laptop, if any.</summary>
+    public string? PrimaryLaptopCode { get; init; }
+    /// <summary>Asset code of the employee's primary desktop, if any.</summary>
+    public string? PrimaryDesktopCode { get; init; }
     public int IntuneCompliant { get; init; }
     public int IntuneNonCompliant { get; init; }
     public DateTime? LastEventDate { get; init; }

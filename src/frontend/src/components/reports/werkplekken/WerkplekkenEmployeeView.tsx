@@ -35,6 +35,36 @@ const WerkplekkenEmployeeView = () => {
       valueGetter: (v: unknown) => v || '-',
     },
     {
+      field: 'primaryLaptopCode',
+      headerName: 'Laptop',
+      width: 180,
+      renderCell: (p: GridRenderCellParams) =>
+        p.value ? (
+          <Chip
+            label={p.value}
+            size="small"
+            sx={{ bgcolor: alpha('#2196F3', 0.12), color: '#2196F3', fontWeight: 600, fontSize: '0.7rem' }}
+          />
+        ) : (
+          <span style={{ color: '#999', fontSize: '0.75rem' }}>—</span>
+        ),
+    },
+    {
+      field: 'primaryDesktopCode',
+      headerName: 'Desktop',
+      width: 180,
+      renderCell: (p: GridRenderCellParams) =>
+        p.value ? (
+          <Chip
+            label={p.value}
+            size="small"
+            sx={{ bgcolor: alpha('#4CAF50', 0.12), color: '#4CAF50', fontWeight: 600, fontSize: '0.7rem' }}
+          />
+        ) : (
+          <span style={{ color: '#999', fontSize: '0.75rem' }}>—</span>
+        ),
+    },
+    {
       field: 'assetCount',
       headerName: '# Assets',
       width: 100,

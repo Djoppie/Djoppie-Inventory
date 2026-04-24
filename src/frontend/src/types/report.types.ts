@@ -752,6 +752,10 @@ export interface EmployeeReportItem {
   workplaceCode?: string;
   workplaceId?: number;
   assetCount: number;
+  /** Asset code of the employee's primary laptop, if any. */
+  primaryLaptopCode?: string;
+  /** Asset code of the employee's primary desktop, if any. */
+  primaryDesktopCode?: string;
   intuneCompliant: number;
   intuneNonCompliant: number;
   lastEventDate?: string;
