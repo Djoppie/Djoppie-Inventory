@@ -720,6 +720,8 @@ public class RolloutDaysController : ControllerBase
 
     private static RolloutDayDto MapToDto(RolloutDay day)
     {
+        var (totalWorkplaces, completedWorkplaces) = ResolveWorkplaceCounts(day);
+
         return new RolloutDayDto
         {
             Id = day.Id,
@@ -728,8 +730,8 @@ public class RolloutDaysController : ControllerBase
             Name = day.Name,
             DayNumber = day.DayNumber,
             ScheduledServiceIds = ParseScheduledServiceIds(day.ScheduledServiceIds),
-            TotalWorkplaces = day.TotalWorkplaces,
-            CompletedWorkplaces = day.CompletedWorkplaces,
+            TotalWorkplaces = totalWorkplaces,
+            CompletedWorkplaces = completedWorkplaces,
             Status = day.Status.ToString(),
             Notes = day.Notes,
             CreatedAt = day.CreatedAt,
@@ -740,6 +742,8 @@ public class RolloutDaysController : ControllerBase
 
     private static RolloutDayWithSessionDto MapToDtoWithSession(RolloutDay day)
     {
+        var (totalWorkplaces, completedWorkplaces) = ResolveWorkplaceCounts(day);
+
         return new RolloutDayWithSessionDto
         {
             Id = day.Id,
@@ -748,8 +752,8 @@ public class RolloutDaysController : ControllerBase
             Name = day.Name,
             DayNumber = day.DayNumber,
             ScheduledServiceIds = ParseScheduledServiceIds(day.ScheduledServiceIds),
-            TotalWorkplaces = day.TotalWorkplaces,
-            CompletedWorkplaces = day.CompletedWorkplaces,
+            TotalWorkplaces = totalWorkplaces,
+            CompletedWorkplaces = completedWorkplaces,
             Status = day.Status.ToString(),
             Notes = day.Notes,
             CreatedAt = day.CreatedAt,
@@ -758,6 +762,24 @@ public class RolloutDaysController : ControllerBase
             SessionName = day.RolloutSession?.SessionName ?? string.Empty,
             SessionStatus = day.RolloutSession?.Status.ToString() ?? string.Empty
         };
+    }
+
+    // Prefer the actual Workplaces collection when it is loaded — the stored
+    // RolloutDay.TotalWorkplaces / CompletedWorkplaces columns drift because
+    // they are maintained by ++/-- increments in RolloutWorkplacesController
+    // that are easy to skip in edge paths (reschedule, cancel mid-flow),
+    // producing impossible ratios like 7/5 on the planner. When the
+    // collection is not loaded, fall back to the stored counters.
+    private static (int Total, int Completed) ResolveWorkplaceCounts(RolloutDay day)
+    {
+        if (day.Workplaces is { Count: > 0 } workplaces)
+        {
+            var total = workplaces.Count;
+            var completed = workplaces.Count(w => w.Status == RolloutWorkplaceStatus.Completed);
+            return (total, completed);
+        }
+
+        return (day.TotalWorkplaces, day.CompletedWorkplaces);
     }
 
     private static List<int> ParseScheduledServiceIds(string? scheduledServiceIds)
