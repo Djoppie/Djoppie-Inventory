@@ -2,6 +2,8 @@ using System.Threading.RateLimiting;
 using DjoppieInventory.API.Extensions;
 using DjoppieInventory.API.Middleware;
 using DjoppieInventory.API.Converters;
+using DjoppieInventory.Core.Configuration;
+using DjoppieInventory.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,11 @@ builder.Services.AddDatabaseConfiguration(builder.Configuration, builder.Environ
 
 // Configure Application Services (Repositories, Services, AutoMapper, Validation)
 builder.Services.AddApplicationServices();
+
+// Configure Secret Expiry Notifications (daily scheduled Graph sendMail)
+builder.Services.Configure<SecretExpiryNotificationOptions>(
+    builder.Configuration.GetSection(SecretExpiryNotificationOptions.SectionName));
+builder.Services.AddHostedService<SecretExpiryNotificationService>();
 
 // Configure CORS
 builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);

@@ -16,6 +16,7 @@ interface AdminSectionProps {
   assetTypesCount: number;
   employeesCount: number;
   delay?: number;
+  filterIgnored?: boolean;
 }
 
 const AdminSection: React.FC<AdminSectionProps> = ({
@@ -24,6 +25,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({
   assetTypesCount,
   employeesCount,
   delay = 0,
+  filterIgnored = false,
 }) => {
   return (
     <DashboardSection
@@ -33,6 +35,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({
       route={ROUTES.ADMIN}
       span={2}
       delay={delay}
+      filterIgnored={filterIgnored}
     >
       {/* KPI Cards Grid - Horizontal for wide section */}
       <Box

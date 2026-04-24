@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { ComponentType, lazy, LazyExoticComponent, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DjoppieThemeProvider } from './theme/ThemeContext';
@@ -7,37 +7,70 @@ import Layout from './components/layout/Layout';
 import AuthGuard from './components/auth/AuthGuard';
 import Loading from './components/common/Loading';
 
-const DashboardOverviewPage = lazy(() => import('./pages/dashboard/DashboardOverviewPage'));
-const ScanPage = lazy(() => import('./pages/inventory/ScanPage'));
-const AssetDetailPage = lazy(() => import('./pages/inventory/AssetDetailPage'));
-const AddAssetPage = lazy(() => import('./pages/inventory/AddAssetPage'));
-const EditAssetPage = lazy(() => import('./pages/inventory/EditAssetPage'));
-const BulkCreateAssetPage = lazy(() => import('./pages/inventory/BulkCreateAssetPage'));
-const AssetTemplatesPage = lazy(() => import('./pages/inventory/AssetTemplatesPage'));
-const InventoryPage = lazy(() => import('./pages/inventory/InventoryPage'));
-const AdminAssetsPage = lazy(() => import('./pages/admin/AdminAssetsPage'));
-const AdminOrganisationPage = lazy(() => import('./pages/admin/AdminOrganisationPage'));
-const AdminLocationsPage = lazy(() => import('./pages/admin/AdminLocationsPage'));
-const InstalledSoftwarePage = lazy(() => import('./pages/inventory/InstalledSoftwarePage'));
-const AssetIntunePage = lazy(() => import('./pages/inventory/AssetIntunePage'));
-const RolloutListPage = lazy(() => import('./pages/operations/rollouts/RolloutListPage'));
-const RolloutPlannerPage = lazy(() => import('./pages/operations/rollouts/RolloutPlannerPage'));
-const RolloutExecutionPage = lazy(() => import('./pages/operations/rollouts/RolloutExecutionPage'));
-const RolloutReportPage = lazy(() => import('./pages/operations/rollouts/RolloutReportPage'));
-const RolloutDayDetailPage = lazy(() => import('./pages/operations/rollouts/RolloutDayDetailPage'));
-const AutopilotDevicesPage = lazy(() => import('./pages/devices/AutopilotDevicesPage'));
-const AutopilotTimelinePage = lazy(() => import('./pages/devices/AutopilotTimelinePage'));
-const AssetsPage = lazy(() => import('./pages/inventory/AssetsPage'));
-const WorkplacesPage = lazy(() => import('./pages/workplaces/WorkplacesPage'));
-const WorkplaceDetailPage = lazy(() => import('./pages/workplaces/WorkplaceDetailPage'));
-const WorkplaceReportsPage = lazy(() => import('./pages/workplaces/WorkplaceReportsPage'));
-const RequestsDashboardPage = lazy(() => import('./pages/operations/requests/RequestsDashboardPage'));
-const RequestsReportsPage = lazy(() => import('./pages/operations/requests/RequestsReportsPage'));
-const LaptopSwapPage = lazy(() => import('./pages/operations/swaps/LaptopSwapPage'));
-const DeploymentHistoryPage = lazy(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
-const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
-const IntuneDeviceDashboardPage = lazy(() => import('./pages/devices/IntuneDeviceDashboardPage'));
-const OperationsDashboardPage = lazy(() => import('./pages/operations/OperationsDashboardPage'));
+// Wrap React.lazy so stale-chunk failures after a deploy self-heal. When Vite
+// rebuilds, chunk hashes change; a browser that loaded index.html before the
+// deploy still has references to the old chunk names. Navigating to a
+// lazy-loaded route then 404s the old chunk and throws "Failed to fetch
+// dynamically imported module". Reload once to pick up the new index.html,
+// guarded by sessionStorage so we don't infinite-loop on a real load failure.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyWithRetry<T extends ComponentType<any>>(
+  factory: () => Promise<{ default: T }>,
+): LazyExoticComponent<T> {
+  return lazy(async () => {
+    const RELOAD_FLAG = 'chunk-reload-attempted';
+    try {
+      const mod = await factory();
+      // Success: clear the flag so a future stale-chunk event can trigger another reload.
+      window.sessionStorage.removeItem(RELOAD_FLAG);
+      return mod;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isChunkError = /Failed to fetch dynamically imported module|ChunkLoadError|Importing a module script failed/i.test(message);
+      if (isChunkError && !window.sessionStorage.getItem(RELOAD_FLAG)) {
+        window.sessionStorage.setItem(RELOAD_FLAG, '1');
+        window.location.reload();
+        // Return a never-resolving promise so React doesn't surface the error
+        // while the page is reloading.
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+const DashboardOverviewPage = lazyWithRetry(() => import('./pages/dashboard/DashboardOverviewPage'));
+const ScanPage = lazyWithRetry(() => import('./pages/inventory/ScanPage'));
+const AssetDetailPage = lazyWithRetry(() => import('./pages/inventory/AssetDetailPage'));
+const AddAssetPage = lazyWithRetry(() => import('./pages/inventory/AddAssetPage'));
+const EditAssetPage = lazyWithRetry(() => import('./pages/inventory/EditAssetPage'));
+const BulkCreateAssetPage = lazyWithRetry(() => import('./pages/inventory/BulkCreateAssetPage'));
+const AssetTemplatesPage = lazyWithRetry(() => import('./pages/inventory/AssetTemplatesPage'));
+const InventoryPage = lazyWithRetry(() => import('./pages/inventory/InventoryPage'));
+const AdminAssetsPage = lazyWithRetry(() => import('./pages/admin/AdminAssetsPage'));
+const AdminOrganisationPage = lazyWithRetry(() => import('./pages/admin/AdminOrganisationPage'));
+const AdminLocationsPage = lazyWithRetry(() => import('./pages/admin/AdminLocationsPage'));
+const InstalledSoftwarePage = lazyWithRetry(() => import('./pages/inventory/InstalledSoftwarePage'));
+const AssetIntunePage = lazyWithRetry(() => import('./pages/inventory/AssetIntunePage'));
+const RolloutListPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutListPage'));
+const RolloutPlannerPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutPlannerPage'));
+const RolloutExecutionPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutExecutionPage'));
+const RolloutReportPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutReportPage'));
+const RolloutDayDetailPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutDayDetailPage'));
+const AutopilotDevicesPage = lazyWithRetry(() => import('./pages/devices/AutopilotDevicesPage'));
+const AutopilotTimelinePage = lazyWithRetry(() => import('./pages/devices/AutopilotTimelinePage'));
+const AssetsPage = lazyWithRetry(() => import('./pages/inventory/AssetsPage'));
+const WorkplacesPage = lazyWithRetry(() => import('./pages/workplaces/WorkplacesPage'));
+const WorkplaceDetailPage = lazyWithRetry(() => import('./pages/workplaces/WorkplaceDetailPage'));
+const WorkplaceReportsPage = lazyWithRetry(() => import('./pages/workplaces/WorkplaceReportsPage'));
+const RequestsDashboardPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsDashboardPage'));
+const RequestsReportsPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsReportsPage'));
+const LaptopSwapPage = lazyWithRetry(() => import('./pages/operations/swaps/LaptopSwapPage'));
+const DeploymentHistoryPage = lazyWithRetry(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
+const ReportsPage = lazyWithRetry(() => import('./pages/reports/ReportsPage'));
+const MonitoringPage = lazyWithRetry(() => import('./pages/monitoring/MonitoringPage'));
+const IntuneDeviceDashboardPage = lazyWithRetry(() => import('./pages/devices/IntuneDeviceDashboardPage'));
+const OperationsDashboardPage = lazyWithRetry(() => import('./pages/operations/OperationsDashboardPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +126,9 @@ function App() {
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
                   <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+                  <Route path={ROUTES.MONITORING} element={<MonitoringPage />} />
+                  <Route path={ROUTES.MONITORING_APPLICATIONS} element={<MonitoringPage />} />
+                  <Route path={ROUTES.MONITORING_USERS} element={<MonitoringPage />} />
                 </Routes>
               </Suspense>
             </Layout>

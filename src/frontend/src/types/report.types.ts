@@ -679,7 +679,7 @@ export interface RolloutReportFilters {
 
 // ===== REPORT TAB TYPES =====
 
-export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'licenses' | 'leasing' | 'serialnumbers';
+export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'leasing' | 'serialnumbers';
 
 export interface ReportTabConfig {
   id: ReportTab;

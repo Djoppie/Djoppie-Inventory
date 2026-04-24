@@ -18,7 +18,6 @@ import InventoryIcon from '@mui/icons-material/Inventory2';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import BusinessIcon from '@mui/icons-material/Business';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import BadgeIcon from '@mui/icons-material/Badge';
 import DescriptionIcon from '@mui/icons-material/Description';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
@@ -27,14 +26,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '../../constants/routes';
 import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 import { getFadeInUpAnimation } from '../../utils/designSystem';
-import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SECTOR_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../../constants/filterColors';
+import { ASSET_COLOR, BUILDING_COLOR, SERVICE_COLOR, SUCCESS_COLOR, DANGER_COLOR } from '../../constants/filterColors';
 import type { ReportTab } from '../../types/report.types';
 import {
   HardwareTab,
   RolloutTab,
   WorkplacesTab,
   SwapsTab,
-  LicensesTab,
   LeasingTab,
   SerialNumbersTab,
 } from '../../components/reports';
@@ -66,12 +64,6 @@ const REPORT_TABS: { id: ReportTab; label: string; icon: ReactElement; descripti
     description: 'Asset wijzigingen, status- en eigenaar historie',
   },
   {
-    id: 'licenses',
-    label: 'MS365 Licenties',
-    icon: <BadgeIcon />,
-    description: 'Licentie toewijzingen (E3/E5/F1)',
-  },
-  {
     id: 'leasing',
     label: 'Leasing',
     icon: <DescriptionIcon />,
@@ -91,7 +83,6 @@ const TAB_COLORS: Record<ReportTab, string> = {
   rollout: DANGER_COLOR, // Red
   workplaces: BUILDING_COLOR, // Purple
   swaps: SERVICE_COLOR, // Teal
-  licenses: SECTOR_COLOR, // Blue
   leasing: ASSET_COLOR, // Dark Orange (using ASSET_COLOR)
   serialnumbers: SUCCESS_COLOR, // Green
 };
@@ -141,9 +132,6 @@ const ReportsPage = () => {
         break;
       case 'swaps':
         queryClient.invalidateQueries({ queryKey: ['reports', 'swaps'] });
-        break;
-      case 'licenses':
-        queryClient.invalidateQueries({ queryKey: ['reports', 'licenses'] });
         break;
       case 'leasing':
         queryClient.invalidateQueries({ queryKey: ['reports', 'leases'] });
@@ -341,7 +329,6 @@ const ReportsPage = () => {
         {activeTab === 'rollout' && <RolloutTab />}
         {activeTab === 'workplaces' && <WorkplacesTab />}
         {activeTab === 'swaps' && <SwapsTab />}
-        {activeTab === 'licenses' && <LicensesTab />}
         {activeTab === 'leasing' && <LeasingTab />}
         {activeTab === 'serialnumbers' && <SerialNumbersTab />}
       </Paper>

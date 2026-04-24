@@ -111,6 +111,15 @@ export const ROUTES = {
 
   /** Reports hub page */
   REPORTS: '/reports',
+
+  /** Monitoring hub page */
+  MONITORING: '/monitoring',
+
+  /** Monitoring → Applicaties (Entra ID app registration credentials) */
+  MONITORING_APPLICATIONS: '/monitoring/applications',
+
+  /** Monitoring → Users (MS365 license assignments) */
+  MONITORING_USERS: '/monitoring/users',
 } as const;
 
 /**
