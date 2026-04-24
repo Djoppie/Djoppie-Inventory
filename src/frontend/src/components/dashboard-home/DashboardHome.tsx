@@ -21,6 +21,7 @@ import {
   AdminSection,
 } from './sections';
 import CategoryFilterBar from './CategoryFilterBar';
+import DataQualityWidget from './DataQualityWidget';
 
 const DashboardHome = () => {
   const theme = useTheme();
@@ -292,6 +293,11 @@ const DashboardHome = () => {
           delay={400}
           filterIgnored={hasAnyFilter}
         />
+      </Box>
+
+      {/* Data quality widget — surfaces Asset FK gaps and offers a one-shot backfill */}
+      <Box sx={{ mt: 2.5 }}>
+        <DataQualityWidget />
       </Box>
     </Box>
   );
