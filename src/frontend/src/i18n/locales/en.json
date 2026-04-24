@@ -1212,5 +1212,53 @@
     "successUser": "{{device}} successfully assigned to {{user}}",
     "successWorkplace": "{{device}} successfully assigned to workplace {{workplace}}",
     "error": "Error assigning device"
+  },
+  "reports": {
+    "tabs": {
+      "overview": "Overview",
+      "assets": "Assets",
+      "rollouts": "Rollouts",
+      "werkplekken": "Workplaces",
+      "intune": "Intune",
+      "leasing": "Leasing"
+    },
+    "assets": {
+      "toggle": {
+        "nu": "Current",
+        "history": "History"
+      }
+    },
+    "rollouts": {
+      "groupBy": {
+        "day": "Per Day",
+        "service": "Per Service",
+        "building": "Per Building"
+      },
+      "movementType": {
+        "Onboarding": "Onboarding",
+        "Offboarding": "Offboarding",
+        "Swap": "Swap",
+        "Other": "Other"
+      }
+    },
+    "werkplekken": {
+      "toggle": {
+        "workplace": "Per Workplace",
+        "employee": "Per Employee"
+      }
+    },
+    "export": {
+      "csv": "CSV (filtered)",
+      "excel": "Excel (filtered)"
+    },
+    "empty": {
+      "title": "No results",
+      "message": "No data found with the current filters."
+    },
+    "error": {
+      "title": "Could not load report",
+      "retry": "Retry",
+      "home": "Overview"
+    }
   }
 }
