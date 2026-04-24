@@ -23,13 +23,25 @@ msalInstance.addEventCallback((event: EventMessage) => {
 // Initialize MSAL
 await msalInstance.initialize()
 
-// Set up authentication interceptor for API calls
-setupAuthInterceptor(msalInstance)
+// When MSAL performs silent token refresh it loads this SPA in a hidden iframe
+// at the configured redirectUri. Rendering the full app (React Router, MsalProvider,
+// query setup) inside that iframe races with MSAL's hash processing and triggers
+// `block_iframe_reload` → `timed_out` → 401 cascades. Detect the iframe-with-auth-hash
+// case and skip the render; MSAL's initialize() above handles the token hand-off
+// back to the parent window via the BroadcastChannel.
+const isInMsalAuthIframe =
+  window.self !== window.top &&
+  (window.location.hash.includes('code=') || window.location.hash.includes('error='))
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <App />
-    </MsalProvider>
-  </StrictMode>,
-)
+if (!isInMsalAuthIframe) {
+  // Set up authentication interceptor for API calls
+  setupAuthInterceptor(msalInstance)
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <MsalProvider instance={msalInstance}>
+        <App />
+      </MsalProvider>
+    </StrictMode>,
+  )
+}
