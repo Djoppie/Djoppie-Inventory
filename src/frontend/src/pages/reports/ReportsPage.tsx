@@ -82,6 +82,13 @@ const ReportsPage = () => {
     : 'overview';
   const [activeTab, setActiveTab] = useState<ReportTab>(resolvedInitialTab);
 
+  // Handle serialnumbers redirect to separate page
+  useEffect(() => {
+    if (searchParams.get('tab') === 'serialnumbers') {
+      navigate('/operations/rollouts/serienummers', { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   // Sync URL with active tab, handling legacy redirects
   useEffect(() => {
     const tabParam = searchParams.get('tab');
