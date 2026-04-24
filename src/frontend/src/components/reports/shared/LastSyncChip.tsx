@@ -1,4 +1,4 @@
-import { Chip, Tooltip, alpha } from '@mui/material';
+import { Box, Tooltip } from '@mui/material';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 
 interface LastSyncChipProps {
@@ -17,6 +17,10 @@ const formatRelative = (date: Date): { label: string; isStale: boolean } => {
   return { label: `${Math.floor(ageDays / 365)} j geleden`, isStale: true };
 };
 
+/**
+ * Relative-time indicator rendered as an icon + coloured text (no chip background).
+ * Name kept for backwards-compat with consumers that imported `LastSyncChip`.
+ */
 const LastSyncChip = ({ date, size = 'small' }: LastSyncChipProps) => {
   if (!date) return <span style={{ fontSize: '0.75rem', color: '#999' }}>—</span>;
   const d = new Date(date);
@@ -25,22 +29,15 @@ const LastSyncChip = ({ date, size = 'small' }: LastSyncChipProps) => {
   const { label, isStale } = formatRelative(d);
   const color = isStale ? '#FFC107' : '#2196F3';
   const fullDate = d.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const iconSize = size === 'small' ? 12 : 14;
+  const fontSize = size === 'small' ? '0.7rem' : '0.78rem';
 
   return (
     <Tooltip title={fullDate}>
-      <Chip
-        size={size}
-        icon={<ScheduleIcon sx={{ fontSize: 12, color }} />}
-        label={label}
-        sx={{
-          height: size === 'small' ? 20 : 26,
-          fontSize: '0.68rem',
-          fontWeight: 500,
-          bgcolor: alpha(color, 0.1),
-          color,
-          '& .MuiChip-icon': { color },
-        }}
-      />
+      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, color, fontWeight: 500, fontSize }}>
+        <ScheduleIcon sx={{ fontSize: iconSize }} />
+        {label}
+      </Box>
     </Tooltip>
   );
 };
