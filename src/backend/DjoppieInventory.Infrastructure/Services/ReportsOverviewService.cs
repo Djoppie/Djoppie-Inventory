@@ -19,27 +19,30 @@ public class ReportsOverviewService
 
     public async Task<OverviewKpiDto> GetOverviewAsync(CancellationToken ct = default)
     {
-        var assetsTask    = ComputeAssetsKpiAsync(ct);
-        var rolloutsTask  = ComputeRolloutsKpiAsync(ct);
-        var wpTask        = ComputeWorkplacesKpiAsync(ct);
-        var leasingTask   = ComputeLeasingKpiAsync(ct);
-        var intuneTask    = ComputeIntuneKpiAsync(ct);
-        var activityTask  = ComputeActivityKpiAsync(ct);
-        var attentionTask = ComputeAttentionAsync(ct);
-        var trendTask     = ComputeTrendAsync(ct);
-
-        await Task.WhenAll(assetsTask, rolloutsTask, wpTask, leasingTask, intuneTask, activityTask, attentionTask, trendTask);
+        // DbContext is not thread-safe. Firing these with Task.WhenAll on a single
+        // shared DbContext throws InvalidOperationException ("A second operation was
+        // started on this context instance") against real SQL Server. The EF InMemory
+        // provider used in tests is more tolerant, which is why this shape passed CI
+        // but failed in production. Run sequentially — total latency stays sub-second.
+        var assets     = await ComputeAssetsKpiAsync(ct);
+        var rollouts   = await ComputeRolloutsKpiAsync(ct);
+        var workplaces = await ComputeWorkplacesKpiAsync(ct);
+        var leasing    = await ComputeLeasingKpiAsync(ct);
+        var intune     = await ComputeIntuneKpiAsync(ct);
+        var activity   = await ComputeActivityKpiAsync(ct);
+        var attention  = await ComputeAttentionAsync(ct);
+        var trend      = await ComputeTrendAsync(ct);
 
         return new OverviewKpiDto
         {
-            Assets    = assetsTask.Result,
-            Rollouts  = rolloutsTask.Result,
-            Workplaces = wpTask.Result,
-            Leasing   = leasingTask.Result,
-            Intune    = intuneTask.Result,
-            Activity  = activityTask.Result,
-            Attention = attentionTask.Result,
-            Trend     = trendTask.Result
+            Assets     = assets,
+            Rollouts   = rollouts,
+            Workplaces = workplaces,
+            Leasing    = leasing,
+            Intune     = intune,
+            Activity   = activity,
+            Attention  = attention,
+            Trend      = trend
         };
     }
 
