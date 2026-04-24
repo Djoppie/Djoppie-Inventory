@@ -552,6 +552,16 @@ public class RolloutSessionsController : ControllerBase
 
     private static RolloutDayDto MapToDayDto(RolloutDay day)
     {
+        // Prefer live counts over stored counters when the Workplaces collection
+        // is loaded — the stored RolloutDay.TotalWorkplaces / CompletedWorkplaces
+        // columns drift due to ++/-- increments that are easy to skip in edge
+        // paths (reschedule, cancel mid-flow).
+        var hasWorkplaces = day.Workplaces is { Count: > 0 };
+        var totalWorkplaces = hasWorkplaces ? day.Workplaces!.Count : day.TotalWorkplaces;
+        var completedWorkplaces = hasWorkplaces
+            ? day.Workplaces!.Count(w => w.Status == RolloutWorkplaceStatus.Completed)
+            : day.CompletedWorkplaces;
+
         return new RolloutDayDto
         {
             Id = day.Id,
@@ -560,8 +570,8 @@ public class RolloutSessionsController : ControllerBase
             Name = day.Name,
             DayNumber = day.DayNumber,
             ScheduledServiceIds = ParseScheduledServiceIds(day.ScheduledServiceIds),
-            TotalWorkplaces = day.TotalWorkplaces,
-            CompletedWorkplaces = day.CompletedWorkplaces,
+            TotalWorkplaces = totalWorkplaces,
+            CompletedWorkplaces = completedWorkplaces,
             Status = day.Status.ToString(),
             Notes = day.Notes,
             CreatedAt = day.CreatedAt,
