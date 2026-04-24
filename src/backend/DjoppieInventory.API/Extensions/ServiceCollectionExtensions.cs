@@ -59,6 +59,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ReportsOverviewService>();
         services.AddScoped<EmployeeReportsService>();
         services.AddScoped<DataQualityService>();
+        services.AddScoped<IEmployeeResolver, EmployeeResolver>();
 
         // Configure AutoMapper (v13+ API - AddAutoMapper is now in core package)
         services.AddAutoMapper(cfg => { }, typeof(Profiles.MappingProfile).Assembly);

@@ -13,11 +13,16 @@ namespace DjoppieInventory.Infrastructure.Services;
 public class DeploymentService : IDeploymentService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEmployeeResolver _employeeResolver;
     private readonly ILogger<DeploymentService> _logger;
 
-    public DeploymentService(ApplicationDbContext context, ILogger<DeploymentService> logger)
+    public DeploymentService(
+        ApplicationDbContext context,
+        IEmployeeResolver employeeResolver,
+        ILogger<DeploymentService> logger)
     {
         _context = context;
+        _employeeResolver = employeeResolver;
         _logger = logger;
     }
 
@@ -101,9 +106,10 @@ public class DeploymentService : IDeploymentService
                 var oldLaptopOldStatus = oldLaptop.Status.ToString();
                 var oldLaptopOldOwner = oldLaptop.Owner;
 
-                // Update old laptop - set to target status and clear owner
+                // Update old laptop - set to target status and clear owner linkage
                 oldLaptop.Status = oldLaptopTargetStatus;
                 oldLaptop.Owner = null;
+                oldLaptop.EmployeeId = null;
                 oldLaptop.JobTitle = null;
                 oldLaptop.OfficeLocation = null;
                 oldLaptop.UpdatedAt = timestamp;
@@ -159,9 +165,10 @@ public class DeploymentService : IDeploymentService
                 var newLaptopOldStatus = newLaptop.Status.ToString();
                 var newLaptopOldOwner = newLaptop.Owner;
 
-                // Update new laptop - assign to user
+                // Update new laptop - assign to user (keep EmployeeId FK aligned)
                 newLaptop.Status = AssetStatus.InGebruik;
                 newLaptop.Owner = request.NewOwnerEmail;
+                newLaptop.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(request.NewOwnerEmail, cancellationToken);
                 newLaptop.JobTitle = request.NewOwnerJobTitle;
                 newLaptop.OfficeLocation = request.NewOwnerOfficeLocation;
                 newLaptop.InstallationDate = timestamp;
