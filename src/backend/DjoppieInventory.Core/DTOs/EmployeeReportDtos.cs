@@ -12,8 +12,12 @@ public record EmployeeReportItemDto
     public int AssetCount { get; init; }
     /// <summary>Asset code of the employee's primary laptop, if any.</summary>
     public string? PrimaryLaptopCode { get; init; }
+    /// <summary>Serial number of the employee's primary laptop (shown under the code).</summary>
+    public string? PrimaryLaptopSerial { get; init; }
     /// <summary>Asset code of the employee's primary desktop, if any.</summary>
     public string? PrimaryDesktopCode { get; init; }
+    /// <summary>Serial number of the employee's primary desktop (shown under the code).</summary>
+    public string? PrimaryDesktopSerial { get; init; }
     public int IntuneCompliant { get; init; }
     public int IntuneNonCompliant { get; init; }
     public DateTime? LastEventDate { get; init; }

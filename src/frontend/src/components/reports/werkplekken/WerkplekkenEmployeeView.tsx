@@ -35,16 +35,36 @@ const WerkplekkenEmployeeView = () => {
       valueGetter: (v: unknown) => v || '-',
     },
     {
-      field: 'primaryLaptopCode',
-      headerName: 'Laptop',
-      width: 180,
+      field: 'workplaceCode',
+      headerName: 'Werkplek',
+      width: 130,
       renderCell: (p: GridRenderCellParams) =>
         p.value ? (
           <Chip
             label={p.value}
             size="small"
-            sx={{ bgcolor: alpha('#2196F3', 0.12), color: '#2196F3', fontWeight: 600, fontSize: '0.7rem' }}
+            sx={{ bgcolor: alpha('#9C27B0', 0.12), color: '#9C27B0', fontWeight: 600, fontSize: '0.7rem' }}
           />
+        ) : (
+          <span style={{ color: '#999', fontSize: '0.75rem' }}>—</span>
+        ),
+    },
+    {
+      field: 'primaryLaptopCode',
+      headerName: 'Laptop',
+      width: 200,
+      renderCell: (p: GridRenderCellParams<EmployeeRow>) =>
+        p.value ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.25, lineHeight: 1.2 }}>
+            <Chip
+              label={p.value}
+              size="small"
+              sx={{ bgcolor: alpha('#2196F3', 0.12), color: '#2196F3', fontWeight: 600, fontSize: '0.7rem', alignSelf: 'flex-start' }}
+            />
+            <Box sx={{ fontSize: '0.65rem', color: 'text.secondary', fontFamily: 'monospace', mt: 0.25 }}>
+              {p.row.primaryLaptopSerial || '—'}
+            </Box>
+          </Box>
         ) : (
           <span style={{ color: '#999', fontSize: '0.75rem' }}>—</span>
         ),
@@ -52,14 +72,19 @@ const WerkplekkenEmployeeView = () => {
     {
       field: 'primaryDesktopCode',
       headerName: 'Desktop',
-      width: 180,
-      renderCell: (p: GridRenderCellParams) =>
+      width: 200,
+      renderCell: (p: GridRenderCellParams<EmployeeRow>) =>
         p.value ? (
-          <Chip
-            label={p.value}
-            size="small"
-            sx={{ bgcolor: alpha('#4CAF50', 0.12), color: '#4CAF50', fontWeight: 600, fontSize: '0.7rem' }}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.25, lineHeight: 1.2 }}>
+            <Chip
+              label={p.value}
+              size="small"
+              sx={{ bgcolor: alpha('#4CAF50', 0.12), color: '#4CAF50', fontWeight: 600, fontSize: '0.7rem', alignSelf: 'flex-start' }}
+            />
+            <Box sx={{ fontSize: '0.65rem', color: 'text.secondary', fontFamily: 'monospace', mt: 0.25 }}>
+              {p.row.primaryDesktopSerial || '—'}
+            </Box>
+          </Box>
         ) : (
           <span style={{ color: '#999', fontSize: '0.75rem' }}>—</span>
         ),
