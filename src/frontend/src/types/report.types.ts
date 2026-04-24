@@ -754,8 +754,12 @@ export interface EmployeeReportItem {
   assetCount: number;
   /** Asset code of the employee's primary laptop, if any. */
   primaryLaptopCode?: string;
+  /** Serial number of the employee's primary laptop (shown under the asset code). */
+  primaryLaptopSerial?: string;
   /** Asset code of the employee's primary desktop, if any. */
   primaryDesktopCode?: string;
+  /** Serial number of the employee's primary desktop (shown under the asset code). */
+  primaryDesktopSerial?: string;
   intuneCompliant: number;
   intuneNonCompliant: number;
   lastEventDate?: string;

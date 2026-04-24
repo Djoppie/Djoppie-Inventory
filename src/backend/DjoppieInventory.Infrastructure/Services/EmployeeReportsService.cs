@@ -55,19 +55,25 @@ public class EmployeeReportsService
         }
 
         // 3. Load physical workplaces and their current occupant, so we can resolve
-        //    an Asset with only a PhysicalWorkplaceId to an employee.
+        //    an Asset with only a PhysicalWorkplaceId to an employee AND expose the
+        //    employee's primary workplace code in the report.
         var workplaceOccupants = await _db.PhysicalWorkplaces.AsNoTracking()
             .Where(w => w.CurrentOccupantEntraId != null)
-            .Select(w => new { w.Id, w.CurrentOccupantEntraId })
+            .Select(w => new { w.Id, w.Code, w.CurrentOccupantEntraId })
             .ToListAsync(ct);
 
         var empIdByWorkplaceId = new Dictionary<int, int>();
-        foreach (var wp in workplaceOccupants)
+        // Primary workplace per employee: first occupant-match wins (ordered by workplace
+        // Id ascending so duplicates are deterministic). An employee occupying multiple
+        // workplaces is rare in practice.
+        var workplaceByEmployeeId = new Dictionary<int, (int Id, string Code)>();
+        foreach (var wp in workplaceOccupants.OrderBy(w => w.Id))
         {
             if (wp.CurrentOccupantEntraId != null
                 && empIdByEntraId.TryGetValue(wp.CurrentOccupantEntraId, out var empId))
             {
                 empIdByWorkplaceId[wp.Id] = empId;
+                workplaceByEmployeeId.TryAdd(empId, (wp.Id, wp.Code));
             }
         }
 
@@ -78,6 +84,7 @@ public class EmployeeReportsService
             {
                 Id = a.Id,
                 AssetCode = a.AssetCode,
+                SerialNumber = a.SerialNumber,
                 EmployeeId = a.EmployeeId,
                 Owner = a.Owner,
                 PhysicalWorkplaceId = a.PhysicalWorkplaceId,
@@ -139,6 +146,7 @@ public class EmployeeReportsService
             assetIds ??= new HashSet<int>();
 
             var primary = FindPrimaryDevices(assetIds, assetRowById);
+            workplaceByEmployeeId.TryGetValue(e.Id, out var primaryWorkplace);
 
             DateTime? lastEventDate = assetIds.Count > 0
                 ? assetIds
@@ -155,9 +163,13 @@ public class EmployeeReportsService
                 JobTitle = e.JobTitle,
                 ServiceName = e.Service?.Name,
                 ServiceId = e.ServiceId,
+                WorkplaceId = primaryWorkplace.Id == 0 ? null : primaryWorkplace.Id,
+                WorkplaceCode = primaryWorkplace.Code,
                 AssetCount = assetIds.Count,
                 PrimaryLaptopCode = primary.LaptopCode,
+                PrimaryLaptopSerial = primary.LaptopSerial,
                 PrimaryDesktopCode = primary.DesktopCode,
+                PrimaryDesktopSerial = primary.DesktopSerial,
                 IntuneCompliant = 0,
                 IntuneNonCompliant = 0,
                 LastEventDate = lastEventDate
@@ -227,32 +239,47 @@ public class EmployeeReportsService
     /// asset-type name. First asset of each type wins (ordered by assetId ascending,
     /// which favours the oldest/original assignment).
     /// </summary>
-    private static (string? LaptopCode, string? DesktopCode) FindPrimaryDevices(
+    private static PrimaryDevices FindPrimaryDevices(
         HashSet<int> assetIds,
         Dictionary<int, AssetRow> assetRowById)
     {
-        string? laptop = null;
-        string? desktop = null;
+        string? laptopCode = null;
+        string? laptopSerial = null;
+        string? desktopCode = null;
+        string? desktopSerial = null;
         foreach (var assetId in assetIds.OrderBy(id => id))
         {
             if (!assetRowById.TryGetValue(assetId, out var row)) continue;
             var typeName = row.AssetTypeName;
             if (string.IsNullOrWhiteSpace(typeName)) continue;
 
-            if (laptop == null && typeName.Contains("laptop", StringComparison.OrdinalIgnoreCase))
-                laptop = row.AssetCode;
-            else if (desktop == null && typeName.Contains("desktop", StringComparison.OrdinalIgnoreCase))
-                desktop = row.AssetCode;
+            if (laptopCode == null && typeName.Contains("laptop", StringComparison.OrdinalIgnoreCase))
+            {
+                laptopCode = row.AssetCode;
+                laptopSerial = row.SerialNumber;
+            }
+            else if (desktopCode == null && typeName.Contains("desktop", StringComparison.OrdinalIgnoreCase))
+            {
+                desktopCode = row.AssetCode;
+                desktopSerial = row.SerialNumber;
+            }
 
-            if (laptop != null && desktop != null) break;
+            if (laptopCode != null && desktopCode != null) break;
         }
-        return (laptop, desktop);
+        return new PrimaryDevices(laptopCode, laptopSerial, desktopCode, desktopSerial);
     }
+
+    private readonly record struct PrimaryDevices(
+        string? LaptopCode,
+        string? LaptopSerial,
+        string? DesktopCode,
+        string? DesktopSerial);
 
     private sealed class AssetRow
     {
         public int Id { get; init; }
         public string AssetCode { get; init; } = string.Empty;
+        public string? SerialNumber { get; init; }
         public int? EmployeeId { get; init; }
         public string? Owner { get; init; }
         public int? PhysicalWorkplaceId { get; init; }
