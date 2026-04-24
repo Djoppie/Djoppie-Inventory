@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Box, Chip, alpha, Drawer, Typography, Skeleton, Button } from '@mui/material';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import PlaceIcon from '@mui/icons-material/Place';
+import LaptopIcon from '@mui/icons-material/Laptop';
+import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import { useEmployeesReport, useEmployeeTimeline } from '../../../hooks/reports';
 import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
 import { ReportErrorState } from '../shared';
@@ -37,14 +40,13 @@ const WerkplekkenEmployeeView = () => {
     {
       field: 'workplaceCode',
       headerName: 'Werkplek',
-      width: 130,
+      width: 140,
       renderCell: (p: GridRenderCellParams) =>
         p.value ? (
-          <Chip
-            label={p.value}
-            size="small"
-            sx={{ bgcolor: alpha('#9C27B0', 0.12), color: '#9C27B0', fontWeight: 600, fontSize: '0.7rem' }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#9C27B0', fontWeight: 600, fontSize: '0.8rem' }}>
+            <PlaceIcon sx={{ fontSize: 14 }} />
+            {p.value}
+          </Box>
         ) : (
           <span style={{ color: '#999', fontSize: '0.75rem' }}>—</span>
         ),
@@ -52,17 +54,18 @@ const WerkplekkenEmployeeView = () => {
     {
       field: 'primaryLaptopCode',
       headerName: 'Laptop',
-      width: 200,
+      width: 210,
       renderCell: (p: GridRenderCellParams<EmployeeRow>) =>
         p.value ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.25, lineHeight: 1.2 }}>
-            <Chip
-              label={p.value}
-              size="small"
-              sx={{ bgcolor: alpha('#2196F3', 0.12), color: '#2196F3', fontWeight: 600, fontSize: '0.7rem', alignSelf: 'flex-start' }}
-            />
-            <Box sx={{ fontSize: '0.65rem', color: 'text.secondary', fontFamily: 'monospace', mt: 0.25 }}>
-              {p.row.primaryLaptopSerial || '—'}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.25 }}>
+            <LaptopIcon sx={{ fontSize: 16, color: '#2196F3', flexShrink: 0 }} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0 }}>
+              <Box sx={{ color: '#2196F3', fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                {p.row.primaryLaptopSerial || '—'}
+              </Box>
+              <Box sx={{ fontSize: '0.62rem', color: 'text.secondary', fontFamily: 'monospace', mt: 0.1 }}>
+                {p.value}
+              </Box>
             </Box>
           </Box>
         ) : (
@@ -72,17 +75,18 @@ const WerkplekkenEmployeeView = () => {
     {
       field: 'primaryDesktopCode',
       headerName: 'Desktop',
-      width: 200,
+      width: 210,
       renderCell: (p: GridRenderCellParams<EmployeeRow>) =>
         p.value ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.25, lineHeight: 1.2 }}>
-            <Chip
-              label={p.value}
-              size="small"
-              sx={{ bgcolor: alpha('#4CAF50', 0.12), color: '#4CAF50', fontWeight: 600, fontSize: '0.7rem', alignSelf: 'flex-start' }}
-            />
-            <Box sx={{ fontSize: '0.65rem', color: 'text.secondary', fontFamily: 'monospace', mt: 0.25 }}>
-              {p.row.primaryDesktopSerial || '—'}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.25 }}>
+            <DesktopWindowsIcon sx={{ fontSize: 16, color: '#4CAF50', flexShrink: 0 }} />
+            <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0 }}>
+              <Box sx={{ color: '#4CAF50', fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                {p.row.primaryDesktopSerial || '—'}
+              </Box>
+              <Box sx={{ fontSize: '0.62rem', color: 'text.secondary', fontFamily: 'monospace', mt: 0.1 }}>
+                {p.value}
+              </Box>
             </Box>
           </Box>
         ) : (
