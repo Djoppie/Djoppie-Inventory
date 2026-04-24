@@ -1,5 +1,7 @@
 namespace DjoppieInventory.Core.DTOs;
 
+using DjoppieInventory.Core.Entities.Enums;
+
 /// <summary>
 /// Complete rollout session report with overview, checklist, and unscheduled assets
 /// </summary>
@@ -118,6 +120,7 @@ public record RolloutWorkplaceChecklistDto
     public DateTime? CompletedAt { get; init; }
     public string? Notes { get; init; }
     public bool HasMissingSerialNumbers { get; init; }
+    public RolloutMovementType MovementType { get; init; } = RolloutMovementType.Other;
     public List<RolloutEquipmentRowDto> EquipmentRows { get; init; } = new();
 }
 
@@ -182,6 +185,7 @@ public record FutureSwapDto
     public string ServiceName { get; init; } = string.Empty;
     public string BuildingName { get; init; } = string.Empty;
     public string SwapType { get; init; } = string.Empty; // Onboarding, Offboarding, Swap
+    public RolloutMovementType MovementType { get; init; } = RolloutMovementType.Other;
     public int NewAssetCount { get; init; }
     public int OldAssetCount { get; init; }
 }
@@ -219,6 +223,11 @@ public record RolloutExcelExportRequest
     public bool IncludeSwapChecklist { get; init; } = true;
     public bool IncludeUnscheduledAssets { get; init; } = true;
     public bool IncludeSectorBreakdown { get; init; } = true;
+
+    /// <summary>
+    /// Grouping for workplace sheets: "day" (default), "service", or "building".
+    /// </summary>
+    public string? GroupBy { get; init; } = "day";
 }
 
 // ===== SERIAL NUMBER MANAGEMENT =====

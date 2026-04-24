@@ -37,9 +37,12 @@ public class InventoryReportsController : ControllerBase
     // ========================================
 
     /// <summary>
-    /// Gets hardware inventory report with optional filters.
+    /// Gets hardware inventory snapshot (asset inventory report).
+    /// Primary path: GET /api/reports/assets/snapshot
+    /// Legacy alias: GET /api/reports/hardware (deprecated, removed after 1 release)
     /// </summary>
     [HttpGet("hardware")]
+    [HttpGet("assets/snapshot")]
     [ProducesResponseType(typeof(IEnumerable<HardwareReportItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<HardwareReportItemDto>>> GetHardwareReport(
         [FromQuery] string? status = null,
@@ -119,9 +122,12 @@ public class InventoryReportsController : ControllerBase
     }
 
     /// <summary>
-    /// Gets hardware inventory summary statistics.
+    /// Gets hardware inventory snapshot summary statistics.
+    /// Primary path: GET /api/reports/assets/snapshot/summary
+    /// Legacy alias: GET /api/reports/hardware/summary (deprecated, removed after 1 release)
     /// </summary>
     [HttpGet("hardware/summary")]
+    [HttpGet("assets/snapshot/summary")]
     [ProducesResponseType(typeof(HardwareReportSummaryDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<HardwareReportSummaryDto>> GetHardwareReportSummary(
         CancellationToken cancellationToken = default)
@@ -152,9 +158,12 @@ public class InventoryReportsController : ControllerBase
     }
 
     /// <summary>
-    /// Exports hardware report as CSV.
+    /// Exports hardware inventory snapshot as CSV.
+    /// Primary path: GET /api/reports/assets/snapshot/export
+    /// Legacy alias: GET /api/reports/hardware/export (deprecated, removed after 1 release)
     /// </summary>
     [HttpGet("hardware/export")]
+    [HttpGet("assets/snapshot/export")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> ExportHardwareReport(
         [FromQuery] string? status = null,

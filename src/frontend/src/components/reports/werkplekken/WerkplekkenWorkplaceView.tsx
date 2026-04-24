@@ -1,5 +1,5 @@
 /**
- * WorkplacesTab - Physical Workplaces Report
+ * WerkplekkenWorkplaceView - Physical Workplaces Report (per werkplek)
  *
  * Displays physical workplace overview with:
  * - Occupancy statistics
@@ -31,12 +31,12 @@ import PersonOffIcon from '@mui/icons-material/PersonOff';
 import DevicesIcon from '@mui/icons-material/Devices';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 
-import { useWorkplaceReport, useWorkplaceReportSummary, useExportWorkplaceReport } from '../../hooks/reports';
-import { buildRoute } from '../../constants/routes';
-import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
-import NeumorphicDataGrid from '../admin/NeumorphicDataGrid';
-import StatisticsCard from '../common/StatisticsCard';
-import type { WorkplaceReportItem } from '../../types/report.types';
+import { useWorkplaceReport, useWorkplaceReportSummary, useExportWorkplaceReport } from '../../../hooks/reports';
+import { buildRoute } from '../../../constants/routes';
+import { getNeumorph, getNeumorphColors } from '../../../utils/neumorphicStyles';
+import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
+import StatisticsCard from '../../common/StatisticsCard';
+import type { WorkplaceReportItem } from '../../../types/report.types';
 
 // Statistics card configuration
 const STAT_CARDS = [
@@ -45,7 +45,7 @@ const STAT_CARDS = [
   { key: 'available', label: 'Beschikbaar', icon: PersonOffIcon, color: '#2196F3' },
 ];
 
-const WorkplacesTab = () => {
+const WerkplekkenWorkplaceView = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
@@ -404,4 +404,4 @@ const WorkplacesTab = () => {
   );
 };
 
-export default WorkplacesTab;
+export default WerkplekkenWorkplaceView;

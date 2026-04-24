@@ -14,3 +14,4 @@ export { default as EmployeeAutocomplete } from './EmployeeAutocomplete';
 export { default as PhysicalWorkplaceSelect } from './PhysicalWorkplaceSelect';
 export { default as CategorySwitcher } from './CategorySwitcher';
 export { default as ApiErrorDisplay } from './ApiErrorDisplay';
+export { StatisticsCard } from './StatisticsCard';

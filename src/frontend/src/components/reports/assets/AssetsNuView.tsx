@@ -1,11 +1,12 @@
 /**
- * HardwareTab - Hardware Inventory Report
+ * AssetsNuView - Current Hardware Inventory Report
  *
  * Displays comprehensive hardware inventory with:
  * - Summary statistics cards
  * - Filter bar (status, asset type, service, building, search)
- * - Data table with sortable columns
+ * - Data table with sortable columns + Intune status columns
  * - Export functionality
+ * - Timeline drawer on row click
  */
 
 import { useState, useMemo, useCallback } from 'react';
@@ -26,6 +27,8 @@ import {
   Tooltip,
   Badge,
   Autocomplete,
+  Drawer,
+  Button,
 } from '@mui/material';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
@@ -37,16 +40,18 @@ import ErrorIcon from '@mui/icons-material/Error';
 import FiberNewIcon from '@mui/icons-material/FiberNew';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { useHardwareReport, useHardwareReportSummary, useExportHardwareReport } from '../../hooks/reports';
-import { StatusBadge } from '../common';
-import { buildRoute } from '../../constants/routes';
-import { getNeumorph, getNeumorphColors, getNeumorphInset } from '../../utils/neumorphicStyles';
-import NeumorphicDataGrid from '../admin/NeumorphicDataGrid';
-import StatisticsCard from '../common/StatisticsCard';
-import type { HardwareReportItem, HardwareReportFilters } from '../../types/report.types';
+import { useHardwareReport, useHardwareReportSummary, useExportHardwareReport } from '../../../hooks/reports';
+import { StatusBadge } from '../../common';
+import { buildRoute } from '../../../constants/routes';
+import { getNeumorph, getNeumorphColors, getNeumorphInset } from '../../../utils/neumorphicStyles';
+import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
+import StatisticsCard from '../../common/StatisticsCard';
+import type { HardwareReportItem, HardwareReportFilters } from '../../../types/report.types';
 import { useQuery } from '@tanstack/react-query';
-import { assetTypesApi, buildingsApi, servicesApi } from '../../api/admin.api';
-import type { AssetType, Building, Service } from '../../types/admin.types';
+import { assetTypesApi, buildingsApi, servicesApi } from '../../../api/admin.api';
+import type { AssetType, Building, Service } from '../../../types/admin.types';
+import { IntuneBadge, LastSyncChip } from '../shared';
+import AssetTimelineInline from './AssetTimelineInline';
 
 // Status filter options
 const STATUS_OPTIONS = [
@@ -70,7 +75,7 @@ const STAT_CARDS = [
   { key: 'Nieuw', label: 'Nieuw', icon: FiberNewIcon, color: '#00BCD4' },
 ];
 
-const HardwareTab = () => {
+const AssetsNuView = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
@@ -84,6 +89,9 @@ const HardwareTab = () => {
   const [selectedBuildingIds, setSelectedBuildingIds] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // Timeline drawer state
+  const [timelineAssetId, setTimelineAssetId] = useState<number | null>(null);
 
   // Load filter options
   const { data: services = [] } = useQuery<Service[]>({
@@ -130,10 +138,10 @@ const HardwareTab = () => {
     exportMutation.mutate(filters);
   }, [exportMutation, filters]);
 
-  // Navigate to asset detail
+  // Open timeline drawer on row click
   const handleRowClick = useCallback((item: HardwareReportItem) => {
-    navigate(buildRoute.assetDetail(item.id));
-  }, [navigate]);
+    setTimelineAssetId(item.id);
+  }, []);
 
   // Column definitions
   const columns: GridColDef[] = useMemo(() => [
@@ -212,6 +220,20 @@ const HardwareTab = () => {
       headerName: 'Gebouw',
       width: 140,
       valueGetter: (value, row) => row.physicalWorkplace?.buildingName || value || '-',
+    },
+    {
+      field: 'intuneComplianceState',
+      headerName: 'Intune',
+      width: 130,
+      renderCell: (params: GridRenderCellParams) => (
+        <IntuneBadge state={params.value} lastSync={params.row.intuneLastSync} />
+      ),
+    },
+    {
+      field: 'intuneLastSync',
+      headerName: 'Sync',
+      width: 100,
+      renderCell: (params: GridRenderCellParams) => <LastSyncChip date={params.value} />,
     },
   ], []);
 
@@ -658,20 +680,41 @@ const HardwareTab = () => {
   }
 
   return (
-    <NeumorphicDataGrid
-      rows={items}
-      columns={columns}
-      loading={isLoading}
-      accentColor="#FF7700"
-      onRowClick={handleRowClick}
-      statisticsCards={statisticsCards}
-      advancedFilters={advancedFilters}
-      exportable
-      onExport={handleExport}
-      isExporting={exportMutation.isPending}
-      initialPageSize={25}
-    />
+    <>
+      <NeumorphicDataGrid
+        rows={items}
+        columns={columns}
+        loading={isLoading}
+        accentColor="#FF7700"
+        onRowClick={handleRowClick}
+        statisticsCards={statisticsCards}
+        advancedFilters={advancedFilters}
+        exportable
+        onExport={handleExport}
+        isExporting={exportMutation.isPending}
+        initialPageSize={25}
+      />
+      <Drawer anchor="right" open={!!timelineAssetId} onClose={() => setTimelineAssetId(null)}>
+        <Box sx={{ width: 420, p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>Asset Timeline</Typography>
+          {timelineAssetId && <AssetTimelineInline assetId={timelineAssetId} enabled />}
+          {timelineAssetId && (
+            <Button
+              onClick={() => {
+                navigate(buildRoute.assetDetail(timelineAssetId));
+                setTimelineAssetId(null);
+              }}
+              sx={{ mt: 2 }}
+              fullWidth
+              variant="outlined"
+            >
+              Open asset details
+            </Button>
+          )}
+        </Box>
+      </Drawer>
+    </>
   );
 };
 
-export default HardwareTab;
+export default AssetsNuView;

@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger';
-import { PublicClientApplication } from '@azure/msal-browser';
+import { InteractionRequiredAuthError, PublicClientApplication } from '@azure/msal-browser';
 import { tokenRequest } from '../config/authConfig';
 import { apiClient } from './client';
 
@@ -27,8 +27,16 @@ export const setupAuthInterceptor = (msalInstance: PublicClientApplication) => {
           config.headers.Authorization = `Bearer ${response.accessToken}`;
         } catch (error) {
           logger.warn('Failed to acquire token silently:', error);
-          // Token acquisition failed - request will proceed without token
-          // The backend should return 401, which will trigger user login
+          // If the session truly requires re-authentication, trigger an interactive
+          // redirect so the user is sent through Entra ID instead of cascading 401s.
+          if (error instanceof InteractionRequiredAuthError) {
+            await msalInstance.acquireTokenRedirect({
+              ...tokenRequest,
+              account: accounts[0],
+            });
+          }
+          // Other errors (timeouts, network) — let the request proceed without a
+          // token; the resulting 401 surfaces to the user without hijacking navigation.
         }
       }
 

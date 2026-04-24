@@ -3,6 +3,7 @@ using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Entities.Enums;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
+using DjoppieInventory.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,313 +12,28 @@ using System.Text;
 namespace DjoppieInventory.API.Controllers.Reports;
 
 /// <summary>
-/// API controller for operations reports: swap history and rollout reports.
+/// API controller for rollout reports.
 /// </summary>
 [ApiController]
 [Route("api/reports")]
 [Authorize]
-public class OperationsReportsController : ControllerBase
+public class RolloutReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<OperationsReportsController> _logger;
+    private readonly ILogger<RolloutReportsController> _logger;
+    private readonly RolloutMovementClassifierService _classifier;
 
-    public OperationsReportsController(
+    public RolloutReportsController(
         IReportService reportService,
         ApplicationDbContext context,
-        ILogger<OperationsReportsController> logger)
+        ILogger<RolloutReportsController> logger,
+        RolloutMovementClassifierService classifier)
     {
         _reportService = reportService;
         _context = context;
         _logger = logger;
-    }
-
-    // ========================================
-    // Swap History Report
-    // ========================================
-
-    /// <summary>
-    /// Test endpoint to verify JSON serialization
-    /// </summary>
-    [HttpGet("swaps/test")]
-    [AllowAnonymous]
-    public ActionResult<object> TestJsonSerialization()
-    {
-        var testItem = new AssetChangeHistoryItemDto
-        {
-            Id = 1,
-            EventDate = DateTime.Parse("2024-04-07T10:30:00"),
-            AssetId = 100,
-            AssetCode = "TEST-001",
-            EventType = "StatusChanged",
-            EventTypeDisplay = "Status Wijziging",
-            Description = "Test event"
-        };
-        return Ok(testItem);
-    }
-
-    /// <summary>
-    /// Gets asset change history (status and owner changes).
-    /// Every time an asset changes status or owner, a record is included.
-    /// </summary>
-    [HttpGet("swaps")]
-    [ProducesResponseType(typeof(IEnumerable<AssetChangeHistoryItemDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<AssetChangeHistoryItemDto>>> GetSwapHistory(
-        [FromQuery] string? dateFrom = null,
-        [FromQuery] string? dateTo = null,
-        [FromQuery] int? serviceId = null,
-        [FromQuery] string? eventType = null,
-        [FromQuery] string? search = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _context.AssetEvents
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.AssetType)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.Service)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.Building)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.Employee)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.PhysicalWorkplace)
-                    .ThenInclude(pw => pw!.Building)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.PhysicalWorkplace)
-                    .ThenInclude(pw => pw!.Service)
-            .AsNoTracking();
-
-        // Filter to status and owner change events
-        query = query.Where(e =>
-            e.EventType == AssetEventType.StatusChanged ||
-            e.EventType == AssetEventType.OwnerChanged ||
-            e.EventType == AssetEventType.LocationChanged ||
-            e.EventType == AssetEventType.LaptopSwapped ||
-            e.EventType == AssetEventType.DeviceOnboarded ||
-            e.EventType == AssetEventType.DeviceOffboarded);
-
-        // Apply date filters
-        if (!string.IsNullOrEmpty(dateFrom) && DateTime.TryParse(dateFrom, out var fromDate))
-        {
-            query = query.Where(e => e.EventDate >= fromDate);
-        }
-
-        if (!string.IsNullOrEmpty(dateTo) && DateTime.TryParse(dateTo, out var toDate))
-        {
-            query = query.Where(e => e.EventDate <= toDate.AddDays(1));
-        }
-
-        if (serviceId.HasValue)
-        {
-            query = query.Where(e => e.Asset != null && e.Asset.ServiceId == serviceId.Value);
-        }
-
-        // Filter by event type if specified
-        if (!string.IsNullOrEmpty(eventType) && Enum.TryParse<AssetEventType>(eventType, true, out var eventTypeEnum))
-        {
-            query = query.Where(e => e.EventType == eventTypeEnum);
-        }
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            var searchLower = search.ToLower();
-            query = query.Where(e =>
-                (e.Asset != null && e.Asset.AssetCode.ToLower().Contains(searchLower)) ||
-                (e.Asset != null && e.Asset.AssetName != null && e.Asset.AssetName.ToLower().Contains(searchLower)) ||
-                (e.Asset != null && e.Asset.SerialNumber != null && e.Asset.SerialNumber.ToLower().Contains(searchLower)) ||
-                (e.Asset != null && e.Asset.Owner != null && e.Asset.Owner.ToLower().Contains(searchLower)));
-        }
-
-        var events = await query
-            .OrderByDescending(e => e.EventDate)
-            .Take(1000)
-            .Select(e => new AssetChangeHistoryItemDto
-            {
-                Id = e.Id,
-                EventDate = e.EventDate,
-                AssetId = e.AssetId,
-                AssetCode = e.Asset != null ? e.Asset.AssetCode : "",
-                AssetName = e.Asset != null ? e.Asset.AssetName : null,
-                AssetTypeName = e.Asset != null && e.Asset.AssetType != null ? e.Asset.AssetType.Name : null,
-                SerialNumber = e.Asset != null ? e.Asset.SerialNumber : null,
-                EventType = e.EventType.ToString(),
-                EventTypeDisplay = GetEventTypeDisplay(e.EventType),
-                Description = e.Description,
-                OldValue = e.OldValue,
-                NewValue = e.NewValue,
-                CurrentOwner = e.Asset != null ? e.Asset.Owner : null,
-                CurrentOwnerDisplayName = e.Asset != null && e.Asset.Employee != null
-                    ? e.Asset.Employee.DisplayName
-                    : e.Asset != null ? e.Asset.Owner : null,
-                CurrentStatus = e.Asset != null ? e.Asset.Status.ToString() : null,
-                ServiceName = e.Asset != null && e.Asset.Service != null ? e.Asset.Service.Name : null,
-                BuildingName = e.Asset != null && e.Asset.Building != null ? e.Asset.Building.Name : null,
-                Location = e.Asset != null ? e.Asset.OfficeLocation : null,
-                WorkplaceCode = e.Asset != null && e.Asset.PhysicalWorkplace != null ? e.Asset.PhysicalWorkplace.Code : null,
-                WorkplaceBuilding = e.Asset != null && e.Asset.PhysicalWorkplace != null && e.Asset.PhysicalWorkplace.Building != null
-                    ? e.Asset.PhysicalWorkplace.Building.Name : null,
-                WorkplaceService = e.Asset != null && e.Asset.PhysicalWorkplace != null && e.Asset.PhysicalWorkplace.Service != null
-                    ? e.Asset.PhysicalWorkplace.Service.Name : null,
-                WorkplaceRoom = e.Asset != null && e.Asset.PhysicalWorkplace != null ? e.Asset.PhysicalWorkplace.Room : null,
-                PerformedBy = e.PerformedBy,
-                PerformedByEmail = e.PerformedByEmail,
-                Notes = e.Notes
-            })
-            .ToListAsync(cancellationToken);
-
-        _logger.LogInformation("Asset change history report generated with {Count} events", events.Count);
-        return Ok(events);
-    }
-
-    /// <summary>
-    /// Gets asset change history summary with asset-focused metrics.
-    /// </summary>
-    [HttpGet("swaps/summary")]
-    [ProducesResponseType(typeof(AssetChangeHistorySummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<AssetChangeHistorySummaryDto>> GetSwapHistorySummary(
-        [FromQuery] string? dateFrom = null,
-        [FromQuery] string? dateTo = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _context.AssetEvents
-            .Include(e => e.Asset)
-            .ThenInclude(a => a!.Service)
-            .AsNoTracking();
-
-        // Filter to status and owner change events
-        query = query.Where(e =>
-            e.EventType == AssetEventType.StatusChanged ||
-            e.EventType == AssetEventType.OwnerChanged ||
-            e.EventType == AssetEventType.LocationChanged ||
-            e.EventType == AssetEventType.LaptopSwapped ||
-            e.EventType == AssetEventType.DeviceOnboarded ||
-            e.EventType == AssetEventType.DeviceOffboarded);
-
-        // Apply date filters
-        if (!string.IsNullOrEmpty(dateFrom) && DateTime.TryParse(dateFrom, out var fromDate))
-        {
-            query = query.Where(e => e.EventDate >= fromDate);
-        }
-
-        if (!string.IsNullOrEmpty(dateTo) && DateTime.TryParse(dateTo, out var toDate))
-        {
-            query = query.Where(e => e.EventDate <= toDate.AddDays(1));
-        }
-
-        var events = await query.ToListAsync(cancellationToken);
-
-        // Get count of unique assets that had changes
-        var uniqueAssetsWithChanges = events.Select(e => e.AssetId).Distinct().Count();
-
-        // Get count of active assets (InGebruik status)
-        var activeAssetsCount = await _context.Assets
-            .Where(a => a.Status == AssetStatus.InGebruik)
-            .CountAsync(cancellationToken);
-
-        var summary = new AssetChangeHistorySummaryDto
-        {
-            TotalChanges = events.Count,
-            StatusChanges = events.Count(e => e.EventType == AssetEventType.StatusChanged),
-            OwnerChanges = events.Count(e => e.EventType == AssetEventType.OwnerChanged),
-            LocationChanges = events.Count(e => e.EventType == AssetEventType.LocationChanged),
-            UniqueAssetsChanged = uniqueAssetsWithChanges,
-            ActiveAssets = activeAssetsCount,
-            ByEventType = events
-                .GroupBy(e => e.EventType)
-                .ToDictionary(
-                    g => GetEventTypeDisplay(g.Key),
-                    g => g.Count()
-                ),
-            ByService = events
-                .Where(e => e.Asset?.Service != null)
-                .GroupBy(e => e.Asset!.Service!.Name)
-                .ToDictionary(g => g.Key, g => g.Count()),
-            ByMonth = events
-                .GroupBy(e => e.EventDate.ToString("yyyy-MM"))
-                .OrderBy(g => g.Key)
-                .Select(g => new MonthlyCount { Month = g.Key, Count = g.Count() })
-                .ToList()
-        };
-
-        return Ok(summary);
-    }
-
-    /// <summary>
-    /// Exports asset change history as CSV.
-    /// </summary>
-    [HttpGet("swaps/export")]
-    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ExportSwapHistory(
-        [FromQuery] string? dateFrom = null,
-        [FromQuery] string? dateTo = null,
-        [FromQuery] int? serviceId = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = _context.AssetEvents
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.AssetType)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.Service)
-            .Include(e => e.Asset)
-                .ThenInclude(a => a!.Building)
-            .AsNoTracking();
-
-        query = query.Where(e =>
-            e.EventType == AssetEventType.StatusChanged ||
-            e.EventType == AssetEventType.OwnerChanged ||
-            e.EventType == AssetEventType.LocationChanged ||
-            e.EventType == AssetEventType.LaptopSwapped ||
-            e.EventType == AssetEventType.DeviceOnboarded ||
-            e.EventType == AssetEventType.DeviceOffboarded);
-
-        if (!string.IsNullOrEmpty(dateFrom) && DateTime.TryParse(dateFrom, out var fromDate))
-        {
-            query = query.Where(e => e.EventDate >= fromDate);
-        }
-
-        if (!string.IsNullOrEmpty(dateTo) && DateTime.TryParse(dateTo, out var toDate))
-        {
-            query = query.Where(e => e.EventDate <= toDate.AddDays(1));
-        }
-
-        if (serviceId.HasValue)
-        {
-            query = query.Where(e => e.Asset != null && e.Asset.ServiceId == serviceId.Value);
-        }
-
-        var events = await query
-            .OrderByDescending(e => e.EventDate)
-            .ToListAsync(cancellationToken);
-
-        var sb = new StringBuilder();
-        sb.AppendLine("Datum,Asset Code,Asset Naam,Type,Gebeurtenis,Oude Waarde,Nieuwe Waarde,Huidige Eigenaar,Status,Dienst,Gebouw,Locatie,Serienummer,Uitgevoerd Door,Notities");
-
-        foreach (var e in events)
-        {
-            sb.AppendLine(string.Join(",",
-                e.EventDate.ToString("yyyy-MM-dd HH:mm"),
-                EscapeCsv(e.Asset?.AssetCode ?? ""),
-                EscapeCsv(e.Asset?.AssetName ?? ""),
-                EscapeCsv(e.Asset?.AssetType?.Name ?? ""),
-                EscapeCsv(GetEventTypeDisplay(e.EventType)),
-                EscapeCsv(e.OldValue ?? ""),
-                EscapeCsv(e.NewValue ?? ""),
-                EscapeCsv(e.Asset?.Owner ?? ""),
-                EscapeCsv(e.Asset?.Status.ToString() ?? ""),
-                EscapeCsv(e.Asset?.Service?.Name ?? ""),
-                EscapeCsv(e.Asset?.Building?.Name ?? ""),
-                EscapeCsv(e.Asset?.OfficeLocation ?? ""),
-                EscapeCsv(e.Asset?.SerialNumber ?? ""),
-                EscapeCsv(e.PerformedBy ?? ""),
-                EscapeCsv(e.Notes ?? "")
-            ));
-        }
-
-        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-        var fileName = $"asset-geschiedenis-{DateTime.UtcNow:yyyyMMdd}.csv";
-
-        _logger.LogInformation("Exported asset change history with {Count} events", events.Count);
-        return File(bytes, "text/csv", fileName);
+        _classifier = classifier;
     }
 
     // ========================================
@@ -661,6 +377,7 @@ public class OperationsReportsController : ControllerBase
         int sessionId,
         [FromQuery] List<int>? serviceIds = null,
         [FromQuery] List<int>? buildingIds = null,
+        [FromQuery] string? groupBy = "day",
         CancellationToken cancellationToken = default)
     {
         var session = await _context.RolloutSessions
@@ -682,23 +399,41 @@ public class OperationsReportsController : ControllerBase
         var unscheduledResult = await GetUnscheduledAssets(sessionId, 100, cancellationToken);
         var unscheduled = (unscheduledResult.Result as OkObjectResult)?.Value as List<UnscheduledAssetDto>;
 
+        var normalizedGroupBy = (groupBy ?? "day").ToLowerInvariant();
+
         using var workbook = new ClosedXML.Excel.XLWorkbook();
 
         // Sheet 1: Overview
         var overviewSheet = workbook.Worksheets.Add("Overzicht");
         CreateOverviewSheet(overviewSheet, session, overview);
 
-        // Sheet 2: SWAP Checklist
-        var checklistSheet = workbook.Worksheets.Add("SWAP Checklist");
-        CreateChecklistSheet(checklistSheet, checklist);
+        // Sheet 2: Checklist — either flat or grouped depending on groupBy
+        if (normalizedGroupBy == "service")
+        {
+            CreateChecklistSheetsGroupedByService(workbook, checklist);
+        }
+        else if (normalizedGroupBy == "building")
+        {
+            CreateChecklistSheetsGroupedByBuilding(workbook, checklist);
+        }
+        else
+        {
+            // Default: single flat "SWAP Checklist" sheet grouped by day
+            var checklistSheet = workbook.Worksheets.Add("SWAP Checklist");
+            CreateChecklistSheet(checklistSheet, checklist);
+        }
 
-        // Sheet 3: Unscheduled Assets
+        // Sheet: Unscheduled Assets
         var unscheduledSheet = workbook.Worksheets.Add("Niet Gepland");
         CreateUnscheduledSheet(unscheduledSheet, unscheduled);
 
-        // Sheet 4: Sector Breakdown
+        // Sheet: Sector Breakdown
         var sectorSheet = workbook.Worksheets.Add("Per Sector");
         CreateSectorSheet(sectorSheet, overview?.SectorBreakdown);
+
+        // Sheet: Type Breakdown (always added)
+        var typeBreakdownSheet = workbook.Worksheets.Add("Type Breakdown");
+        CreateTypeBreakdownSheet(typeBreakdownSheet, checklist);
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
@@ -706,7 +441,7 @@ public class OperationsReportsController : ControllerBase
 
         var fileName = $"rollout-rapport-{session.SessionName.Replace(" ", "-")}-{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
-        _logger.LogInformation("Exported rollout report for session {SessionId} to Excel", sessionId);
+        _logger.LogInformation("Exported rollout report for session {SessionId} to Excel (groupBy={GroupBy})", sessionId, normalizedGroupBy);
 
         return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
@@ -847,27 +582,6 @@ public class OperationsReportsController : ControllerBase
     // Private Helper Methods
     // ========================================
 
-    /// <summary>
-    /// Helper method to get display-friendly event type names
-    /// </summary>
-    private static string GetEventTypeDisplay(AssetEventType eventType)
-    {
-        return eventType switch
-        {
-            AssetEventType.StatusChanged => "Status Wijziging",
-            AssetEventType.OwnerChanged => "Eigenaar Wijziging",
-            AssetEventType.LocationChanged => "Locatie Wijziging",
-            AssetEventType.LaptopSwapped => "Laptop Swap",
-            AssetEventType.DeviceOnboarded => "Onboarding",
-            AssetEventType.DeviceOffboarded => "Offboarding",
-            AssetEventType.LeaseStarted => "Lease Gestart",
-            AssetEventType.LeaseEnded => "Lease Beëindigd",
-            AssetEventType.Maintenance => "Onderhoud",
-            AssetEventType.Created => "Aangemaakt",
-            _ => eventType.ToString()
-        };
-    }
-
     private RolloutWorkplaceChecklistDto MapToWorkplaceChecklist(RolloutWorkplace w)
     {
         var equipmentRows = new List<RolloutEquipmentRowDto>();
@@ -922,6 +636,7 @@ public class OperationsReportsController : ControllerBase
         }
 
         var hasMissing = equipmentRows.Any(e => e.IsMissingSerialNumber);
+        var movementType = _classifier.Classify(w.AssetAssignments);
 
         return new RolloutWorkplaceChecklistDto
         {
@@ -939,6 +654,7 @@ public class OperationsReportsController : ControllerBase
             CompletedAt = w.CompletedAt,
             Notes = w.Notes,
             HasMissingSerialNumbers = hasMissing,
+            MovementType = movementType,
             EquipmentRows = equipmentRows
         };
     }
@@ -1142,16 +858,207 @@ public class OperationsReportsController : ControllerBase
         sheet.SheetView.FreezeRows(1);
     }
 
-    private static string EscapeCsv(string field)
+    /// <summary>
+    /// Creates one checklist sheet per service (groupBy=service).
+    /// </summary>
+    private void CreateChecklistSheetsGroupedByService(
+        ClosedXML.Excel.XLWorkbook workbook,
+        List<RolloutDayChecklistDto>? checklist)
     {
-        if (string.IsNullOrEmpty(field))
-            return "";
+        if (checklist == null) return;
 
-        if (field.Contains(',') || field.Contains('"') || field.Contains('\n') || field.Contains('\r'))
+        var allWorkplaces = checklist
+            .SelectMany(d => d.Workplaces.Select(w => (Day: d, Workplace: w)))
+            .ToList();
+
+        var groups = allWorkplaces
+            .GroupBy(x => x.Workplace.ServiceName)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        foreach (var group in groups)
         {
-            return $"\"{field.Replace("\"", "\"\"")}\"";
+            var sheetName = SanitizeSheetName(group.Key.Length > 0 ? group.Key : "Geen Dienst");
+            var sheet = workbook.Worksheets.Add(sheetName);
+            var row = 1;
+
+            var headers = new[] { "Datum", "Dienst", "Gebouw", "Werkplek", "Medewerker", "Laptop SN", "QR", "Docking SN", "QR", "Status", "Notities" };
+            for (var col = 1; col <= headers.Length; col++)
+            {
+                sheet.Cell(row, col).Value = headers[col - 1];
+                sheet.Cell(row, col).Style.Font.Bold = true;
+                sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0078D4");
+                sheet.Cell(row, col).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            }
+            row++;
+
+            foreach (var (day, wp) in group.OrderBy(x => x.Day.Date).ThenBy(x => x.Workplace.WorkplaceName))
+            {
+                row = WriteWorkplaceChecklistRow(sheet, row, day.Date, wp);
+            }
+
+            sheet.Columns().AdjustToContents();
+            sheet.SheetView.FreezeRows(1);
+        }
+    }
+
+    /// <summary>
+    /// Creates one checklist sheet per building (groupBy=building).
+    /// </summary>
+    private void CreateChecklistSheetsGroupedByBuilding(
+        ClosedXML.Excel.XLWorkbook workbook,
+        List<RolloutDayChecklistDto>? checklist)
+    {
+        if (checklist == null) return;
+
+        var allWorkplaces = checklist
+            .SelectMany(d => d.Workplaces.Select(w => (Day: d, Workplace: w)))
+            .ToList();
+
+        var groups = allWorkplaces
+            .GroupBy(x => x.Workplace.BuildingName)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        foreach (var group in groups)
+        {
+            var sheetName = SanitizeSheetName(group.Key.Length > 0 ? group.Key : "Geen Gebouw");
+            var sheet = workbook.Worksheets.Add(sheetName);
+            var row = 1;
+
+            var headers = new[] { "Datum", "Dienst", "Gebouw", "Werkplek", "Medewerker", "Laptop SN", "QR", "Docking SN", "QR", "Status", "Notities" };
+            for (var col = 1; col <= headers.Length; col++)
+            {
+                sheet.Cell(row, col).Value = headers[col - 1];
+                sheet.Cell(row, col).Style.Font.Bold = true;
+                sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0078D4");
+                sheet.Cell(row, col).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            }
+            row++;
+
+            foreach (var (day, wp) in group.OrderBy(x => x.Day.Date).ThenBy(x => x.Workplace.ServiceName).ThenBy(x => x.Workplace.WorkplaceName))
+            {
+                row = WriteWorkplaceChecklistRow(sheet, row, day.Date, wp);
+            }
+
+            sheet.Columns().AdjustToContents();
+            sheet.SheetView.FreezeRows(1);
+        }
+    }
+
+    /// <summary>
+    /// Writes a single workplace row into a checklist sheet. Returns the next row index.
+    /// </summary>
+    private static int WriteWorkplaceChecklistRow(
+        ClosedXML.Excel.IXLWorksheet sheet,
+        int row,
+        DateTime date,
+        RolloutWorkplaceChecklistDto wp)
+    {
+        var laptop = wp.EquipmentRows.FirstOrDefault(e => e.EquipmentType == "Desktop/Laptop");
+        var docking = wp.EquipmentRows.FirstOrDefault(e => e.EquipmentType == "Docking");
+
+        sheet.Cell(row, 1).Value = date.ToString("dd-MM-yyyy");
+        sheet.Cell(row, 2).Value = wp.ServiceName;
+        sheet.Cell(row, 3).Value = wp.BuildingName;
+        sheet.Cell(row, 4).Value = wp.WorkplaceName;
+        sheet.Cell(row, 5).Value = wp.UserDisplayName ?? "";
+        sheet.Cell(row, 6).Value = laptop?.NewSerialNumber ?? "";
+        sheet.Cell(row, 7).Value = laptop?.QrCodeApplied == true ? "✓" : "";
+        sheet.Cell(row, 8).Value = docking?.NewSerialNumber ?? "";
+        sheet.Cell(row, 9).Value = docking?.QrCodeApplied == true ? "✓" : "";
+        sheet.Cell(row, 10).Value = wp.Status;
+        sheet.Cell(row, 11).Value = wp.Notes ?? "";
+
+        if (laptop?.IsMissingSerialNumber == true)
+            sheet.Cell(row, 6).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.Yellow;
+        if (docking?.IsMissingSerialNumber == true)
+            sheet.Cell(row, 8).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.Yellow;
+        if (wp.Status == "Completed")
+            sheet.Cell(row, 10).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGreen;
+
+        return row + 1;
+    }
+
+    /// <summary>
+    /// Creates the "Type Breakdown" sheet: counts per day broken down by movement type.
+    /// </summary>
+    private static void CreateTypeBreakdownSheet(
+        ClosedXML.Excel.IXLWorksheet sheet,
+        List<RolloutDayChecklistDto>? checklist)
+    {
+        var row = 1;
+
+        var headers = new[] { "Datum", "Onboarding", "Offboarding", "Swap", "Overig", "Totaal" };
+        for (var col = 1; col <= headers.Length; col++)
+        {
+            sheet.Cell(row, col).Value = headers[col - 1];
+            sheet.Cell(row, col).Style.Font.Bold = true;
+            sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#0078D4");
+            sheet.Cell(row, col).Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+        }
+        row++;
+
+        if (checklist == null)
+        {
+            sheet.Columns().AdjustToContents();
+            return;
         }
 
-        return field;
+        // Aggregate by day
+        var byDay = checklist
+            .OrderBy(d => d.Date)
+            .Select(d => new
+            {
+                d.Date,
+                Onboarding = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Onboarding),
+                Offboarding = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Offboarding),
+                Swap = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Swap),
+                Other = d.Workplaces.Count(w => w.MovementType == RolloutMovementType.Other),
+                Total = d.Workplaces.Count
+            })
+            .ToList();
+
+        foreach (var day in byDay)
+        {
+            sheet.Cell(row, 1).Value = day.Date.ToString("dd-MM-yyyy");
+            sheet.Cell(row, 2).Value = day.Onboarding;
+            sheet.Cell(row, 3).Value = day.Offboarding;
+            sheet.Cell(row, 4).Value = day.Swap;
+            sheet.Cell(row, 5).Value = day.Other;
+            sheet.Cell(row, 6).Value = day.Total;
+            row++;
+        }
+
+        // Totals row
+        if (byDay.Count > 0)
+        {
+            sheet.Cell(row, 1).Value = "TOTAAL";
+            sheet.Cell(row, 1).Style.Font.Bold = true;
+            sheet.Cell(row, 2).Value = byDay.Sum(d => d.Onboarding);
+            sheet.Cell(row, 3).Value = byDay.Sum(d => d.Offboarding);
+            sheet.Cell(row, 4).Value = byDay.Sum(d => d.Swap);
+            sheet.Cell(row, 5).Value = byDay.Sum(d => d.Other);
+            sheet.Cell(row, 6).Value = byDay.Sum(d => d.Total);
+            for (var col = 1; col <= 6; col++)
+            {
+                sheet.Cell(row, col).Style.Font.Bold = true;
+                sheet.Cell(row, col).Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGray;
+            }
+        }
+
+        sheet.Columns().AdjustToContents();
+        sheet.SheetView.FreezeRows(1);
+    }
+
+    /// <summary>
+    /// Sanitizes a string to be a valid Excel sheet name (max 31 chars, no special chars).
+    /// </summary>
+    private static string SanitizeSheetName(string name)
+    {
+        // Excel sheet name invalid chars: \ / * ? [ ] :
+        var invalidChars = new[] { '\\', '/', '*', '?', '[', ']', ':' };
+        var sanitized = string.Concat(name.Select(c => invalidChars.Contains(c) ? '_' : c));
+        return sanitized.Length > 31 ? sanitized[..31] : sanitized;
     }
 }

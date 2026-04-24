@@ -577,6 +577,7 @@ export interface RolloutWorkplaceChecklist {
   notes?: string;
   hasMissingSerialNumbers: boolean;
   equipmentRows: RolloutEquipmentRow[];
+  movementType: RolloutMovementType;
 }
 
 /**
@@ -632,6 +633,7 @@ export interface FutureSwap {
   swapType: string; // Onboarding, Offboarding, Swap
   newAssetCount: number;
   oldAssetCount: number;
+  movementType: RolloutMovementType;
 }
 
 /**
@@ -664,6 +666,8 @@ export interface RolloutExcelExportRequest {
   includeSwapChecklist?: boolean;
   includeUnscheduledAssets?: boolean;
   includeSectorBreakdown?: boolean;
+  /** Grouping for workplace sheets: "day" (default), "service", or "building". */
+  groupBy?: 'day' | 'service' | 'building';
 }
 
 /**
@@ -679,7 +683,7 @@ export interface RolloutReportFilters {
 
 // ===== REPORT TAB TYPES =====
 
-export type ReportTab = 'hardware' | 'rollout' | 'workplaces' | 'swaps' | 'leasing' | 'serialnumbers';
+export type ReportTab = 'overview' | 'assets' | 'rollouts' | 'werkplekken' | 'intune' | 'leasing';
 
 export interface ReportTabConfig {
   id: ReportTab;
@@ -687,3 +691,84 @@ export interface ReportTabConfig {
   icon: string;
   description: string;
 }
+
+// ===== OVERVIEW TYPES =====
+
+export interface OverviewKpi {
+  assets: OverviewAssetsKpi;
+  rollouts: OverviewRolloutsKpi;
+  workplaces: OverviewWorkplacesKpi;
+  leasing: OverviewLeasingKpi;
+  intune: OverviewIntuneKpi;
+  activity: OverviewActivityKpi;
+  attention: AttentionItem[];
+  trend: ActivityTrendPoint[];
+}
+
+export interface OverviewAssetsKpi { total: number; inUse: number; defect: number; inUsePercentage: number; }
+export interface OverviewRolloutsKpi { activeSessions: number; averageCompletionPercentage: number; workplacesThisWeek: number; }
+export interface OverviewWorkplacesKpi { total: number; occupied: number; occupancyPercentage: number; }
+export interface OverviewLeasingKpi { activeContracts: number; expiringWithin60Days: number; }
+export interface OverviewIntuneKpi { enrolled: number; stale: number; }
+export interface OverviewActivityKpi { eventsLast7Days: number; }
+
+export interface AttentionItem {
+  severity: 'error' | 'warning' | 'info';
+  category: 'action' | 'upcoming';
+  message: string;
+  count: number;
+  deepLinkUrl: string;
+}
+
+export interface ActivityTrendPoint {
+  date: string;
+  onboarding: number;
+  offboarding: number;
+  swap: number;
+  other: number;
+}
+
+// ===== INTUNE SUMMARY =====
+
+export interface IntuneSummary {
+  totalEnrolled: number;
+  compliant: number;
+  nonCompliant: number;
+  stale: number;
+  unenrolled: number;
+  errorState: number;
+  byCompliance: Record<string, number>;
+  retrievedAt?: string;
+}
+
+// ===== EMPLOYEE REPORTS =====
+
+export interface EmployeeReportItem {
+  employeeId: number;
+  displayName: string;
+  jobTitle?: string;
+  serviceName?: string;
+  serviceId?: number;
+  workplaceCode?: string;
+  workplaceId?: number;
+  assetCount: number;
+  intuneCompliant: number;
+  intuneNonCompliant: number;
+  lastEventDate?: string;
+}
+
+export interface EmployeeTimelineItem {
+  eventId: number;
+  eventDate: string;
+  eventType: string;
+  eventTypeDisplay: string;
+  description: string;
+  assetId: number;
+  assetCode: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
+// ===== MOVEMENT TYPE =====
+
+export type RolloutMovementType = 'Onboarding' | 'Offboarding' | 'Swap' | 'Other';

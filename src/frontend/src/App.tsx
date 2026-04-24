@@ -57,6 +57,7 @@ const RolloutPlannerPage = lazyWithRetry(() => import('./pages/operations/rollou
 const RolloutExecutionPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutExecutionPage'));
 const RolloutReportPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutReportPage'));
 const RolloutDayDetailPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutDayDetailPage'));
+const SerienummersPage = lazyWithRetry(() => import('./pages/operations/rollouts/SerienummersPage'));
 const AutopilotDevicesPage = lazyWithRetry(() => import('./pages/devices/AutopilotDevicesPage'));
 const AutopilotTimelinePage = lazyWithRetry(() => import('./pages/devices/AutopilotTimelinePage'));
 const AssetsPage = lazyWithRetry(() => import('./pages/inventory/AssetsPage'));
@@ -113,6 +114,7 @@ function App() {
                   <Route path={ROUTES.ROLLOUT_REPORT} element={<RolloutReportPage />} />
                   <Route path={ROUTES.ROLLOUT_DAY_DETAIL} element={<RolloutDayDetailPage />} />
                   <Route path={ROUTES.ROLLOUT_DAY_EDIT} element={<RolloutDayDetailPage />} />
+                  <Route path={ROUTES.ROLLOUT_SERIENUMMERS} element={<SerienummersPage />} />
                   <Route path={ROUTES.AUTOPILOT_DEVICES} element={<AutopilotDevicesPage />} />
                   <Route path={ROUTES.AUTOPILOT_TIMELINE} element={<AutopilotTimelinePage />} />
                   <Route path={ROUTES.INTUNE_DASHBOARD} element={<IntuneDeviceDashboardPage />} />

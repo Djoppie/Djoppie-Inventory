@@ -369,7 +369,7 @@ export const getAssetChangeHistory = async (
     params.search = filters.searchQuery;
   }
 
-  const response = await apiClient.get<AssetChangeHistoryItem[]>('/reports/swaps', { params });
+  const response = await apiClient.get<AssetChangeHistoryItem[]>('/reports/assets/change-history', { params });
   return response.data;
 };
 
@@ -388,7 +388,7 @@ export const getAssetChangeHistorySummary = async (
     params.dateTo = filters.dateTo;
   }
 
-  const response = await apiClient.get<AssetChangeHistorySummary>('/reports/swaps/summary', { params });
+  const response = await apiClient.get<AssetChangeHistorySummary>('/reports/assets/change-history/summary', { params });
   return response.data;
 };
 
@@ -410,7 +410,7 @@ export const exportAssetChangeHistory = async (
     params.serviceId = filters.serviceId;
   }
 
-  const response = await apiClient.get('/reports/swaps/export', {
+  const response = await apiClient.get('/reports/assets/change-history/export', {
     params,
     responseType: 'blob',
   });
@@ -636,6 +636,9 @@ export const exportRolloutReport = async (
   }
   if (options?.includeSectorBreakdown !== undefined) {
     params.includeSectorBreakdown = options.includeSectorBreakdown;
+  }
+  if (options?.groupBy) {
+    params.groupBy = options.groupBy;
   }
 
   const response = await apiClient.get(`/reports/rollout/sessions/${sessionId}/export`, {

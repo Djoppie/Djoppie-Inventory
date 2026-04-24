@@ -73,6 +73,9 @@ export const ROUTES = {
   /** Rollout day edit page (requires :id and :dayId parameters) */
   ROLLOUT_DAY_EDIT: '/operations/rollouts/:id/days/:dayId/edit',
 
+  /** Rollout serial numbers management page */
+  ROLLOUT_SERIENUMMERS: '/operations/rollouts/serienummers',
+
   /** Autopilot devices list page */
   AUTOPILOT_DEVICES: '/devices/autopilot',
 
