@@ -7,6 +7,39 @@ export enum AssetStatus {
   Nieuw = 'Nieuw'
 }
 
+/**
+ * The kind of location chain currently surfaced for an asset.
+ * Mirrors the backend enum on EffectiveLocationDto.
+ */
+export enum LocationChainKind {
+  None = 'None',
+  Employee = 'Employee',
+  Workplace = 'Workplace',
+  Stock = 'Stock',
+}
+
+export interface EffectiveLocationDto {
+  kind: LocationChainKind;
+
+  employeeId?: number;
+  employeeName?: string;
+  employeeJobTitle?: string;
+
+  physicalWorkplaceId?: number;
+  physicalWorkplaceCode?: string;
+  physicalWorkplaceName?: string;
+
+  buildingId?: number;
+  buildingName?: string;
+  buildingAddress?: string;
+
+  serviceId?: number;
+  serviceName?: string;
+  sectorName?: string;
+
+  installationLocation?: string;
+}
+
 export interface Asset {
   id: number;
   assetCode: string;
@@ -79,74 +112,56 @@ export interface Asset {
 
   createdAt: string;
   updatedAt: string;
+
+  /**
+   * Computed location chain for the UI. Reflects the canonical
+   * Asset → Employee → Workplace → Building (or
+   * Asset → Workplace → Building) graph so the frontend can render one
+   * AssetLocationChain component everywhere.
+   */
+  effectiveLocation?: EffectiveLocationDto;
 }
 
+/**
+ * DTO for creating a single asset. Owner / employee / building /
+ * workplace / status / installation-date are intentionally absent —
+ * those flow through the dedicated assignment endpoints.
+ */
 export interface CreateAssetDto {
-  assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset code
-  serialNumber?: string; // Optional - can be filled in later
-  assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
-  alias?: string; // Optional readable name
-  category: string;
+  assetTypeId: number;          // REQUIRED
+  serialNumber?: string;
+  assetName?: string;
+  alias?: string;
+  category?: string;
   isDummy?: boolean;
-
-  // Relational fields
-  serviceId?: number; // Service is used as location
-  installationLocation?: string; // Specific location details (e.g., room number)
-  buildingId?: number; // Building where the asset is located
-  physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
-
-  // Employee assignment
-  employeeId?: number; // Reference to Employee record (preferred)
-
-  // Legacy user assignment fields
-  owner?: string; // Legacy field - prefer using employeeId
-  officeLocation?: string;
-  jobTitle?: string;
-
-  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
-  installationDate?: string;
 }
 
+/**
+ * DTO for updating an asset's intrinsic properties only. Status,
+ * owner, employee, location must use the assignment endpoints.
+ */
 export interface UpdateAssetDto {
-  assetName?: string; // Official device name (DeviceName) - auto-fetched from Intune
-  alias?: string; // Optional readable name
-
-  // Relational fields
+  assetName?: string;
+  alias?: string;
+  category?: string;
   assetTypeId?: number;
-  serviceId?: number; // Service is used as location
-  installationLocation?: string; // Specific location details (e.g., room number)
-  buildingId?: number; // Building where the asset is located
-  physicalWorkplaceId?: number; // Physical workplace for workplace-fixed assets
-
-  // Employee assignment
-  employeeId?: number; // Reference to Employee record (preferred)
-
-  // Legacy user assignment fields
-  owner?: string; // Legacy field - prefer using employeeId
-  officeLocation?: string;
-  jobTitle?: string;
-
-  status?: AssetStatus | string; // Support both enum and string for flexibility
   brand?: string;
   model?: string;
-  serialNumber?: string; // Can be updated, but must remain unique
-  category?: string;
+  serialNumber?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
-  installationDate?: string;
 }
 
 export interface AssetTemplate {
   id: number;
   templateName: string;
-  assetName?: string;  // Optional - alias/description
-  category?: string;  // Optional - derived from AssetType
+  assetName?: string;
+  category?: string;
 
-  // Relational fields
   assetTypeId?: number;
   assetType?: { id: number; code: string; name: string; categoryId?: number };
   serviceId?: number;
@@ -156,7 +171,7 @@ export interface AssetTemplate {
 
   brand?: string;
   model?: string;
-  owner?: string;  // Optional - default primary user
+  owner?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -164,8 +179,8 @@ export interface AssetTemplate {
 
 export interface CreateAssetTemplateDto {
   templateName: string;
-  assetName?: string;  // Optional - alias/description
-  category?: string;  // Optional - derived from AssetType
+  assetName?: string;
+  category?: string;
 
   assetTypeId?: number;
   serviceId?: number;
@@ -174,7 +189,7 @@ export interface CreateAssetTemplateDto {
 
   brand?: string;
   model?: string;
-  owner?: string;  // Optional - default primary user
+  owner?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
@@ -182,8 +197,8 @@ export interface CreateAssetTemplateDto {
 
 export interface UpdateAssetTemplateDto {
   templateName: string;
-  assetName?: string;  // Optional - alias/description
-  category?: string;  // Optional - derived from AssetType
+  assetName?: string;
+  category?: string;
 
   assetTypeId?: number;
   serviceId?: number;
@@ -192,33 +207,28 @@ export interface UpdateAssetTemplateDto {
 
   brand?: string;
   model?: string;
-  owner?: string;  // Optional - default primary user
+  owner?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
   installationDate?: string;
 }
 
+/**
+ * Bulk-create DTO mirrors single create — no owner / location / status.
+ */
 export interface BulkCreateAssetDto {
-  assetTypeId: number; // REQUIRED - determines TYPE component of auto-generated asset codes
-  serialNumberPrefix?: string; // Optional - prefix for generating serial numbers
+  assetTypeId: number;
   quantity: number;
   isDummy?: boolean;
   templateId?: number;
-  assetName?: string; // Official device name (DeviceName)
-  alias?: string; // Optional readable name
-  category?: string; // Optional - derived from AssetType
-
-  // Relational fields
-  serviceId?: number; // Service/department (optional)
-  installationLocation?: string; // Specific location details (optional)
-
-  owner?: string; // Primary user (optional)
-  status?: AssetStatus | string; // Support both enum and string for flexibility
+  serialNumberPrefix?: string;
+  assetName?: string;
+  alias?: string;
+  category?: string;
   brand?: string;
   model?: string;
   purchaseDate?: string;
   warrantyExpiry?: string;
-  installationDate?: string;
 }
 
 export interface BulkCreateAssetResultDto {
@@ -230,24 +240,21 @@ export interface BulkCreateAssetResultDto {
   isFullySuccessful: boolean;
 }
 
+/**
+ * Bulk update only handles intrinsic properties (brand, model,
+ * purchase / warranty dates). Status / owner / location → assignment
+ * endpoints, called per-asset by the bulk-assign affordances in PR5.
+ */
 export interface BulkUpdateAssetsDto {
   assetIds: number[];
-  serviceId?: number;
-  updateServiceId: boolean;
   purchaseDate?: string;
   updatePurchaseDate: boolean;
-  installationDate?: string;
-  updateInstallationDate: boolean;
   warrantyExpiry?: string;
   updateWarrantyExpiry: boolean;
   brand?: string;
   updateBrand: boolean;
   model?: string;
   updateModel: boolean;
-  status?: string;
-  updateStatus: boolean;
-  installationLocation?: string;
-  updateInstallationLocation: boolean;
 }
 
 export interface BulkUpdateAssetsResultDto {
@@ -268,6 +275,34 @@ export interface BulkDeleteAssetsResultDto {
   deletedIds: number[];
   failedIds: number[];
   errors: string[];
+}
+
+// ===== Assignment-endpoint payloads =====
+
+export interface AssignAssetToEmployeeDto {
+  employeeId: number;
+  installationDate?: string;
+  notes?: string;
+}
+
+export interface AssignAssetToWorkplaceDto {
+  physicalWorkplaceId: number;
+  installationDate?: string;
+  installationLocation?: string;
+  notes?: string;
+}
+
+export interface UnassignAssetDto {
+  /** Defaults to AssetStatus.Stock when omitted. */
+  targetStatus?: AssetStatus;
+  reason?: string;
+}
+
+export interface ChangeAssetStatusDto {
+  newStatus: AssetStatus;
+  /** Honoured only for callers in the admin role — bypasses the state machine. */
+  adminOverride?: boolean;
+  reason?: string;
 }
 
 /**

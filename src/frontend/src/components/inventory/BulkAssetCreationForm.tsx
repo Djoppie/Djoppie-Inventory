@@ -21,7 +21,6 @@ import {
   useTheme,
   ToggleButton,
   ToggleButtonGroup,
-  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,10 +28,7 @@ import {
   ExpandLess as ExpandLessIcon,
   AutoAwesome as AutoAwesomeIcon,
   Science,
-  Business,
   QrCode,
-  Person,
-  LocationOn,
   CloudUpload,
   TableChart,
   Description,
@@ -45,9 +41,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { BulkCreateAssetDto, AssetTemplate } from '../../types/asset.types';
-import UserAutocomplete from '../common/UserAutocomplete';
 import AssetTypeSelect from '../common/AssetTypeSelect';
-import ServiceSelect from '../common/ServiceSelect';
 import CsvImportDialog from './CsvImportDialog';
 import { csvImportApi } from '../../api/csvImport.api';
 
@@ -143,23 +137,20 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
   // Mode selection
   const [bulkMode, setBulkMode] = useState<BulkMode>('template');
 
-  // Template mode state
+  // Template mode state — only intrinsic asset properties. Status,
+  // owner, location, installation date are populated post-creation
+  // via the assignment endpoints (PR5 wires the bulk-assign affordance).
   const [formData, setFormData] = useState<BulkCreateAssetDto>({
     assetTypeId: 0,
-    serialNumberPrefix: '', // REQUIRED
+    serialNumberPrefix: '',
     quantity: 1,
     isDummy: false,
     assetName: '',
     category: '',
-    owner: '',
-    serviceId: undefined,
-    installationLocation: '',
-    status: 'Stock',
     brand: '',
     model: '',
     purchaseDate: '',
     warrantyExpiry: '',
-    installationDate: '',
   });
   const [selectedTemplate, setSelectedTemplate] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -205,20 +196,17 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
 
     const template = templates?.find((t: AssetTemplate) => t.id === templateId);
     if (template) {
+      // Templates may carry legacy owner / status / location fields —
+      // those are intentionally ignored at creation time.
       setFormData(prev => ({
         ...prev,
         assetName: template.assetName || '',
         category: template.category || prev.category,
         assetTypeId: template.assetTypeId ?? prev.assetTypeId,
-        serviceId: template.serviceId ?? prev.serviceId,
-        installationLocation: template.installationLocation || prev.installationLocation || '',
         brand: template.brand || '',
         model: template.model || '',
-        owner: template.owner || prev.owner || '',
-        status: template.status || prev.status,
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
-        installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
         templateId: template.id,
       }));
     }
@@ -428,72 +416,35 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
                   onChange={(e) => handleChange('assetName', e.target.value)}
                   helperText={t('assetForm.aliasHint')}
                 />
-                <FormControl sx={{ flex: '1 1 200px' }} required>
-                  <InputLabel>{t('assetDetail.status')}</InputLabel>
-                  <Select
-                    value={formData.status}
-                    onChange={(e) => handleChange('status', e.target.value)}
-                    label={t('assetDetail.status')}
-                  >
-                    <MenuItem value="Stock">{t('statuses.stock')}</MenuItem>
-                    <MenuItem value="InGebruik">{t('statuses.ingebruik')}</MenuItem>
-                    <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
-                    <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
-                    <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
-                    <MenuItem value="Nieuw">{t('statuses.nieuw')}</MenuItem>
-                  </Select>
-                </FormControl>
+                {/* Status select removed: bulk-created assets always land
+                    on Status = Nieuw. Assignment is a separate explicit
+                    step (PR5 wires the bulk-assign affordance). */}
               </Box>
             </Stack>
           </SectionCard>
 
-          {/* Location Section */}
-          <SectionCard
-            icon={<Business />}
-            title={t('assetForm.locationSection')}
-            description={t('assetForm.locationSectionDesc')}
+          {/* Status notice — the Nieuw chip with a short explainer */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 2,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,119,0,0.08)' : 'rgba(255,119,0,0.06)',
+              border: '1px solid',
+              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,119,0,0.25)' : 'rgba(255,119,0,0.20)',
+            }}
           >
-            <Stack spacing={2.5}>
-              <ServiceSelect
-                value={formData.serviceId ?? null}
-                onChange={(value) => {
-                  setFormData(prev => ({ ...prev, serviceId: value ?? undefined }));
-                }}
-                label={t('assetForm.service')}
-                helperText={t('assetForm.serviceHint')}
-              />
-              <TextField
-                fullWidth
-                label={t('assetForm.installationLocation')}
-                value={formData.installationLocation}
-                onChange={(e) => handleChange('installationLocation', e.target.value)}
-                helperText={t('assetForm.installationLocationHint')}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LocationOn sx={{ color: 'primary.main' }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Stack>
-          </SectionCard>
-
-          {/* Assignment Section */}
-          <SectionCard
-            icon={<Person />}
-            title={t('assetForm.assignmentSection')}
-            description={t('assetForm.assignmentSectionDesc')}
-          >
-            <UserAutocomplete
-              value={formData.owner || ''}
-              onChange={(displayName: string) => {
-                handleChange('owner', displayName);
-              }}
-              label={t('assetDetail.primaryUser')}
-              helperText={t('assetForm.ownerOptionalHint')}
+            <Chip
+              label={t('statuses.nieuw')}
+              size="small"
+              sx={{ bgcolor: '#FF7700', color: 'white', fontWeight: 600 }}
             />
-          </SectionCard>
+            <Box sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+              {t('bulkCreate.statusNieuwExplainer')}
+            </Box>
+          </Box>
 
           {/* Technical Details + Lifecycle (collapsible) */}
           <Card
@@ -610,14 +561,9 @@ const BulkAssetCreationForm = ({ onSubmit, onCancel, onCsvImportSuccess, isLoadi
                         onChange={(e) => handleChange('warrantyExpiry', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                       />
-                      <TextField
-                        sx={{ flex: '1 1 200px' }}
-                        label={t('assetDetail.installationDate')}
-                        type="date"
-                        value={formData.installationDate}
-                        onChange={(e) => handleChange('installationDate', e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                      />
+                      {/* Installation date intentionally not collected at
+                          bulk creation — it is set automatically when the
+                          assignment endpoint transitions Nieuw → InGebruik. */}
                     </Box>
                   </Box>
                 </Stack>

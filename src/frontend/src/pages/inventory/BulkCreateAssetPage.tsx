@@ -76,18 +76,15 @@ const BulkCreateAssetPage = () => {
   const handleSubmit = async (data: BulkCreateAssetDto) => {
     try {
       // Clean up empty strings — ASP.NET Core rejects "" for non-nullable strings and DateTime?
-      const cleanedData = {
+      const cleanedData: BulkCreateAssetDto = {
         ...data,
         assetName: data.assetName || undefined,
         alias: data.alias || undefined,
         category: data.category || undefined,
-        owner: data.owner || undefined,
-        installationLocation: data.installationLocation || undefined,
         brand: data.brand || undefined,
         model: data.model || undefined,
         purchaseDate: data.purchaseDate || undefined,
         warrantyExpiry: data.warrantyExpiry || undefined,
-        installationDate: data.installationDate || undefined,
       };
       const response = await bulkCreate.mutateAsync(cleanedData);
       setResult(response);
@@ -96,7 +93,7 @@ const BulkCreateAssetPage = () => {
       if (response.successfullyCreated > 0) {
         setSuccessMessage(
           response.isFullySuccessful
-            ? `Successfully created all ${response.successfullyCreated} assets!`
+            ? `Successfully created all ${response.successfullyCreated} assets! Volgende stap: koppel ze aan werkplek of medewerker via de asset-lijst.`
             : `Created ${response.successfullyCreated} of ${response.totalRequested} assets`
         );
       }

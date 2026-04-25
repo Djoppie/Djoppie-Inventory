@@ -1,5 +1,21 @@
 import { apiClient } from './client';
-import { Asset, CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkCreateAssetResultDto, BulkUpdateAssetsDto, BulkUpdateAssetsResultDto, BulkDeleteAssetsDto, BulkDeleteAssetsResultDto, PagedResult, PaginationParams } from '../types/asset.types';
+import {
+  Asset,
+  CreateAssetDto,
+  UpdateAssetDto,
+  BulkCreateAssetDto,
+  BulkCreateAssetResultDto,
+  BulkUpdateAssetsDto,
+  BulkUpdateAssetsResultDto,
+  BulkDeleteAssetsDto,
+  BulkDeleteAssetsResultDto,
+  PagedResult,
+  PaginationParams,
+  AssignAssetToEmployeeDto,
+  AssignAssetToWorkplaceDto,
+  UnassignAssetDto,
+  ChangeAssetStatusDto,
+} from '../types/asset.types';
 
 /**
  * Retrieves all assets (unpaginated). Use for client-side filtering/sorting.
@@ -48,24 +64,21 @@ export const getAssetByCode = async (code: string): Promise<Asset> => {
 };
 
 export const createAsset = async (data: CreateAssetDto): Promise<Asset> => {
-  // Clean up data: convert empty strings to undefined for optional date fields
+  // Convert empty strings to undefined for optional date fields
   const cleanedData: CreateAssetDto = {
     ...data,
     purchaseDate: data.purchaseDate || undefined,
     warrantyExpiry: data.warrantyExpiry || undefined,
-    installationDate: data.installationDate || undefined,
   };
   const response = await apiClient.post<Asset>('/inventory/assets', cleanedData);
   return response.data;
 };
 
 export const updateAsset = async (id: number, data: UpdateAssetDto): Promise<Asset> => {
-  // Clean up data: convert empty strings to undefined for optional date fields
   const cleanedData: UpdateAssetDto = {
     ...data,
     purchaseDate: data.purchaseDate || undefined,
     warrantyExpiry: data.warrantyExpiry || undefined,
-    installationDate: data.installationDate || undefined,
   };
   const response = await apiClient.put<Asset>(`/inventory/assets/${id}`, cleanedData);
   return response.data;
@@ -76,21 +89,16 @@ export const deleteAsset = async (id: number): Promise<void> => {
 };
 
 export const bulkCreateAssets = async (data: BulkCreateAssetDto): Promise<BulkCreateAssetResultDto> => {
-  // Clean up data: convert empty strings to undefined for optional fields
-  // This is necessary because the backend expects nullable types and cannot parse empty strings
+  // Convert empty optional strings to undefined so the backend doesn't
+  // see them as "explicit empty" values.
   const cleanedData: BulkCreateAssetDto = {
     ...data,
-    // Convert empty date strings to undefined
     purchaseDate: data.purchaseDate || undefined,
     warrantyExpiry: data.warrantyExpiry || undefined,
-    installationDate: data.installationDate || undefined,
-    // Convert other empty optional strings to undefined
     serialNumberPrefix: data.serialNumberPrefix || undefined,
     assetName: data.assetName || undefined,
     alias: data.alias || undefined,
     category: data.category || undefined,
-    owner: data.owner || undefined,
-    installationLocation: data.installationLocation || undefined,
     brand: data.brand || undefined,
     model: data.model || undefined,
   };
@@ -119,17 +127,15 @@ export const getAssetBySerialNumber = async (serialNumber: string): Promise<Asse
 };
 
 export const bulkUpdateAssets = async (data: BulkUpdateAssetsDto): Promise<BulkUpdateAssetsResultDto> => {
-  // Clean up data: convert empty strings to undefined for optional fields
+  // Bulk update only handles intrinsic properties (status / owner /
+  // location go through the assignment endpoints). Pack only fields
+  // explicitly flagged for update.
   const cleanedData: BulkUpdateAssetsDto = {
     ...data,
     purchaseDate: data.updatePurchaseDate && data.purchaseDate ? data.purchaseDate : undefined,
     warrantyExpiry: data.updateWarrantyExpiry && data.warrantyExpiry ? data.warrantyExpiry : undefined,
-    installationDate: data.updateInstallationDate && data.installationDate ? data.installationDate : undefined,
     brand: data.updateBrand && data.brand ? data.brand : undefined,
     model: data.updateModel && data.model ? data.model : undefined,
-    status: data.updateStatus && data.status ? data.status : undefined,
-    installationLocation: data.updateInstallationLocation && data.installationLocation ? data.installationLocation : undefined,
-    serviceId: data.updateServiceId ? data.serviceId : undefined,
   };
 
   const response = await apiClient.put<BulkUpdateAssetsResultDto>('/inventory/assets/bulk', cleanedData);
@@ -148,5 +154,43 @@ export const bulkDeleteAssets = async (data: BulkDeleteAssetsDto): Promise<BulkD
  */
 export const getAssetsByOwner = async (email: string): Promise<Asset[]> => {
   const response = await apiClient.get<Asset[]>(`/inventory/assets/by-owner/${encodeURIComponent(email)}`);
+  return response.data;
+};
+
+// ===== Assignment endpoints =====
+// The four endpoints below are the only sanctioned paths for changing
+// an asset's status, owner, employee link, building or workplace.
+// Generic createAsset / updateAsset will silently ignore those fields
+// after PR2; use these instead.
+
+export const assignAssetToEmployee = async (
+  assetId: number,
+  data: AssignAssetToEmployeeDto,
+): Promise<Asset> => {
+  const response = await apiClient.post<Asset>(`/inventory/assets/${assetId}/assign-employee`, data);
+  return response.data;
+};
+
+export const assignAssetToWorkplace = async (
+  assetId: number,
+  data: AssignAssetToWorkplaceDto,
+): Promise<Asset> => {
+  const response = await apiClient.post<Asset>(`/inventory/assets/${assetId}/assign-workplace`, data);
+  return response.data;
+};
+
+export const unassignAsset = async (
+  assetId: number,
+  data: UnassignAssetDto = {},
+): Promise<Asset> => {
+  const response = await apiClient.post<Asset>(`/inventory/assets/${assetId}/unassign`, data);
+  return response.data;
+};
+
+export const changeAssetStatus = async (
+  assetId: number,
+  data: ChangeAssetStatusDto,
+): Promise<Asset> => {
+  const response = await apiClient.post<Asset>(`/inventory/assets/${assetId}/status`, data);
   return response.data;
 };

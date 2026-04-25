@@ -203,6 +203,7 @@
     "assetTypeHint": "Select the type of asset"
   },
   "bulkCreate": {
+    "statusNieuwExplainer": "All assets are created with status Nieuw — link them to a workplace or employee afterwards.",
     "title": "Bulk Create Assets",
     "modeDescription": "Choose how you want to add multiple assets",
     "templateMode": "Template Mode",

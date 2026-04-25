@@ -58,12 +58,25 @@ const AddAssetPage = () => {
         serialNumber: (data as CreateAssetDto).serialNumber || undefined,
         purchaseDate: data.purchaseDate || undefined,
         warrantyExpiry: data.warrantyExpiry || undefined,
-        installationDate: data.installationDate || undefined,
       };
-      await createAsset.mutateAsync(cleanedData as CreateAssetDto);
+      const created = await createAsset.mutateAsync(cleanedData as CreateAssetDto);
       setSuccessMessage('Asset created successfully!');
-      // Redirect to dashboard after short delay
-      setTimeout(() => navigate('/'), 1500);
+
+      // Persist a "next-step" flag so AssetDetailPage can render a
+      // guided callout ("Asset aangemaakt — toewijzen aan werkplek of
+      // medewerker"). Full callout component lands in PR4.
+      try {
+        sessionStorage.setItem(
+          `asset-just-created-${created.id}`,
+          JSON.stringify({ at: Date.now(), assetCode: created.assetCode }),
+        );
+      } catch {
+        // sessionStorage can throw in private browsing — non-critical.
+      }
+
+      // Redirect to the asset detail so the user can immediately assign
+      // the asset to a workplace or employee.
+      setTimeout(() => navigate(`/inventory/assets/${created.id}`), 800);
     } catch (error) {
       logger.error('Error creating asset:', error);
     }
