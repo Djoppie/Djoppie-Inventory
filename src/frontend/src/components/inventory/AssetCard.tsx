@@ -13,9 +13,8 @@ import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
 import CodeIcon from '@mui/icons-material/Code';
 import CategoryIcon from '@mui/icons-material/Category';
-import PersonIcon from '@mui/icons-material/Person';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AppsIcon from '@mui/icons-material/Apps';
+import AssetLocationChain from './AssetLocationChain';
 
 interface AssetCardProps {
   asset: Asset;
@@ -234,89 +233,16 @@ const AssetCard = React.memo(function AssetCard({ asset, selectable = false, sel
             />
           </Box>
 
-          {/* Owner and Location Grid */}
+          {/* Location chain (compact) */}
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 2,
               mt: 'auto',
               pt: 2,
               borderTop: '1px solid',
               borderColor: 'divider',
             }}
           >
-            {/* Owner */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                <PersonIcon sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Owner
-                </Typography>
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                }}
-              >
-                {asset.owner}
-              </Typography>
-            </Box>
-
-            {/* Location */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                <LocationOnIcon sx={{ fontSize: '0.9rem', color: 'text.secondary' }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Location
-                </Typography>
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                }}
-              >
-                {asset.service?.name || asset.legacyBuilding || '-'}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                {asset.service?.name || asset.legacyDepartment || '-'}
-              </Typography>
-              {asset.officeLocation && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
-                  {asset.officeLocation}
-                </Typography>
-              )}
-            </Box>
+            <AssetLocationChain asset={asset} variant="compact" />
           </Box>
 
           {/* Brand and Model */}

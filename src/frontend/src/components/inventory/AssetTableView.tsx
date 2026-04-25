@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -26,13 +26,12 @@ import {
 } from '@mui/material';
 import { Asset } from '../../types/asset.types';
 import StatusBadge from '../common/StatusBadge';
-import { ASSET_COLOR, SERVICE_COLOR } from '../../constants/filterColors';
+import { ASSET_COLOR } from '../../constants/filterColors';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import AppsIcon from '@mui/icons-material/Apps';
 import DevicesIcon from '@mui/icons-material/Devices';
-import BusinessIcon from '@mui/icons-material/Business';
-import PersonIcon from '@mui/icons-material/Person';
+import AssetLocationChain from './AssetLocationChain';
 
 interface AssetTableViewProps {
   assets: Asset[];
@@ -544,278 +543,27 @@ const AssetTableView = ({
                   {asset.model || '-'}
                 </TableCell>
 
-                {/* Toewijzing: Employee name with workplace link, or Workplace code with service */}
+                {/* Toewijzing — compact location chain */}
                 <TableCell
                   sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                     py: { xs: 0.75, sm: 1 },
                     px: { xs: 1, sm: 1.5 },
+                    // sr-only label for screen readers
+                    '& .sr-only': {
+                      position: 'absolute',
+                      width: 1,
+                      height: 1,
+                      padding: 0,
+                      margin: -1,
+                      overflow: 'hidden',
+                      clip: 'rect(0,0,0,0)',
+                      whiteSpace: 'nowrap',
+                      borderWidth: 0,
+                    },
                   }}
                 >
-                  {isUserAssignedAsset(asset) ? (
-                    // Laptop/Notebook: Show employee name, click navigates to workplace
-                    asset.employee ? (
-                      <Tooltip
-                        title={
-                          <Box sx={{ p: 0.5 }}>
-                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
-                              <Typography variant="caption">{asset.employee.displayName}</Typography>
-                            </Box>
-                            {asset.employee.email && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Email:</Typography>
-                                <Typography variant="caption">{asset.employee.email}</Typography>
-                              </Box>
-                            )}
-                            {asset.physicalWorkplace && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
-                                <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
-                              </Box>
-                            )}
-                            {asset.installationDate && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
-                                <Typography variant="caption">{new Date(asset.installationDate).toLocaleDateString()}</Typography>
-                              </Box>
-                            )}
-                            {asset.employee.jobTitle && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
-                                <Typography variant="caption">{asset.employee.jobTitle}</Typography>
-                              </Box>
-                            )}
-                            {asset.employee.serviceName && (
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Dienst:</Typography>
-                                <Typography variant="caption">{asset.employee.serviceName}</Typography>
-                              </Box>
-                            )}
-                          </Box>
-                        }
-                        arrow
-                        placement="top"
-                      >
-                        <Box
-                          sx={{
-                            fontWeight: 500,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 0.25,
-                          }}
-                        >
-                          <Link
-                            to={
-                              // Priority: 1) Asset's physical workplace, 2) Employee's workplace, 3) Workplaces list
-                              asset.physicalWorkplace
-                                ? `/workplaces/${asset.physicalWorkplace.id}`
-                                : asset.employee.physicalWorkplaceId
-                                  ? `/workplaces/${asset.employee.physicalWorkplaceId}`
-                                  : '/workplaces'
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              color: '#7B1FA2',
-                              textDecoration: 'none',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                          >
-                            <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
-                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {asset.employee.displayName}
-                            </span>
-                          </Link>
-                          {asset.employee.serviceName && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: 'text.secondary',
-                                fontSize: '0.65rem',
-                                fontWeight: 400,
-                                pl: 2.25,
-                              }}
-                            >
-                              {asset.employee.serviceName}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Tooltip>
-                    ) : asset.owner ? (
-                      // Fallback: Legacy owner field (for backwards compatibility)
-                      <Tooltip
-                        title={
-                          <Box sx={{ p: 0.5 }}>
-                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Hoofdgebruiker:</Typography>
-                              <Typography variant="caption">{asset.owner}</Typography>
-                            </Box>
-                            {asset.physicalWorkplace && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
-                                <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
-                              </Box>
-                            )}
-                            {asset.installationDate && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>In gebruik sinds:</Typography>
-                                <Typography variant="caption">{new Date(asset.installationDate).toLocaleDateString()}</Typography>
-                              </Box>
-                            )}
-                            {asset.jobTitle && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Functie:</Typography>
-                                <Typography variant="caption">{asset.jobTitle}</Typography>
-                              </Box>
-                            )}
-                            {asset.officeLocation && (
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Locatie:</Typography>
-                                <Typography variant="caption">{asset.officeLocation}</Typography>
-                              </Box>
-                            )}
-                          </Box>
-                        }
-                        arrow
-                        placement="top"
-                      >
-                        <Box
-                          sx={{
-                            fontWeight: 500,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 0.25,
-                          }}
-                        >
-                          <Link
-                            to={asset.physicalWorkplace
-                              ? `/workplaces/${asset.physicalWorkplace.id}`
-                              : '/workplaces'}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              color: '#7B1FA2',
-                              textDecoration: 'none',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                          >
-                            <PersonIcon sx={{ fontSize: 14, color: '#7B1FA2' }} />
-                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {asset.owner}
-                            </span>
-                          </Link>
-                          {asset.service?.name && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: 'text.secondary',
-                                fontSize: '0.65rem',
-                                fontWeight: 400,
-                                pl: 2.25,
-                              }}
-                            >
-                              {asset.service.name}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Tooltip>
-                    ) : (
-                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
-                    )
-                  ) : (
-                    // Fixed asset (desktop, monitor, docking, etc.): Show workplace with occupant/service
-                    asset.physicalWorkplace ? (
-                      <Tooltip
-                        title={
-                          <Box sx={{ p: 0.5 }}>
-                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                              <Typography variant="caption" sx={{ fontWeight: 600 }}>Werkplek:</Typography>
-                              <Typography variant="caption">{asset.physicalWorkplace.code}</Typography>
-                            </Box>
-                            {asset.physicalWorkplace.currentOccupantName && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebruiker:</Typography>
-                                <Typography variant="caption">{asset.physicalWorkplace.currentOccupantName}</Typography>
-                              </Box>
-                            )}
-                            {(asset.physicalWorkplace.serviceName || asset.physicalWorkplace.sectorName) && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Dienst:</Typography>
-                                <Typography variant="caption">
-                                  {asset.physicalWorkplace.serviceName}
-                                  {asset.physicalWorkplace.sectorName && ` (${asset.physicalWorkplace.sectorName})`}
-                                </Typography>
-                              </Box>
-                            )}
-                            {asset.physicalWorkplace.buildingName && (
-                              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.3 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Gebouw:</Typography>
-                                <Typography variant="caption">{asset.physicalWorkplace.buildingName}</Typography>
-                              </Box>
-                            )}
-                            {asset.physicalWorkplace.floor && (
-                              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600 }}>Verdieping:</Typography>
-                                <Typography variant="caption">{asset.physicalWorkplace.floor}</Typography>
-                              </Box>
-                            )}
-                          </Box>
-                        }
-                        arrow
-                        placement="top"
-                      >
-                        <Box
-                          sx={{
-                            fontWeight: 500,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 0.25,
-                          }}
-                        >
-                          <Link
-                            to={`/workplaces/${asset.physicalWorkplace.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              color: SERVICE_COLOR,
-                              textDecoration: 'none',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                          >
-                            <BusinessIcon sx={{ fontSize: 14, color: SERVICE_COLOR }} />
-                            <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {asset.physicalWorkplace.currentOccupantName || asset.physicalWorkplace.code}
-                            </span>
-                          </Link>
-                          {asset.physicalWorkplace.serviceName && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: 'text.secondary',
-                                fontSize: '0.65rem',
-                                fontWeight: 400,
-                                pl: 2.25,
-                              }}
-                            >
-                              {asset.physicalWorkplace.serviceName}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Tooltip>
-                    ) : (
-                      <Typography variant="body2" sx={{ color: 'text.disabled' }}>-</Typography>
-                    )
-                  )}
+                  <span className="sr-only">Toewijzing: </span>
+                  <AssetLocationChain asset={asset} variant="compact" />
                 </TableCell>
 
                 {/* Purchase Date (Aankoop) - Moved after Toewijzing */}
