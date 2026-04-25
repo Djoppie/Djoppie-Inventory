@@ -170,3 +170,20 @@ export const useChangeAssetStatus = () => {
     },
   });
 };
+
+/**
+ * Hook to fetch the N most recently created assets with status = Nieuw,
+ * sorted by createdAt descending. Derived client-side from the full asset list.
+ */
+export const useRecentNieuwAssets = (limit = 8) => {
+  const { data: assets = [], isLoading, error } = useAssets('Nieuw');
+  const recent = [...assets]
+    .filter((a) => !a.isDummy)
+    .sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    })
+    .slice(0, limit);
+  return { data: recent, isLoading, error };
+};

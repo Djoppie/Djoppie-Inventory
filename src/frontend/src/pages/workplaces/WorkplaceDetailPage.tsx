@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Paper,
@@ -28,6 +29,7 @@ import {
   DialogActions,
   Grid
 } from '@mui/material';
+import LinkIcon from '@mui/icons-material/Link';
 import { QRCodeSVG } from 'qrcode.react';
 
 // Icons
@@ -65,6 +67,10 @@ import { GraphUser } from '../../types/graph.types';
 import EditPhysicalWorkplaceDialog from '../../components/workplaces/EditPhysicalWorkplaceDialog';
 import WorkplaceAssetsDialog from '../../components/workplaces/WorkplaceAssetsDialog';
 import DeviceAssignmentDialog from '../../components/workplaces/DeviceAssignmentDialog';
+import AssetPickerDrawer from '../../components/workplaces/AssetPickerDrawer';
+
+// Admin API
+import { assetTypesApi } from '../../api/admin.api';
 
 // Neumorphic utilities
 import { getNeumorph, getNeumorphInset, getNeumorphColors } from '../../utils/neumorphicStyles';
@@ -132,6 +138,34 @@ const WorkplaceDetailPage = () => {
   const [assignOccupantDialogOpen, setAssignOccupantDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<GraphUser | null>(null);
   const [selectedUserName, setSelectedUserName] = useState('');
+
+  // Asset picker drawer state
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const [assetPickerSlotLabel, setAssetPickerSlotLabel] = useState('');
+  const [assetPickerTypeFilter, setAssetPickerTypeFilter] = useState<number[]>([]);
+
+  // Fetch assetTypes for slot filtering
+  const { data: allAssetTypes = [] } = useQuery({
+    queryKey: ['assetTypes'],
+    queryFn: () => assetTypesApi.getAll(false),
+    staleTime: 300000,
+  });
+
+  const openAssetPicker = useCallback(
+    (slotLabel: string, typeKeywords: string[]) => {
+      const matchingIds = allAssetTypes
+        .filter((at) => {
+          const code = (at.code ?? '').toLowerCase();
+          const name = (at.name ?? '').toLowerCase();
+          return typeKeywords.some((kw) => code.includes(kw) || name.includes(kw));
+        })
+        .map((at) => at.id);
+      setAssetPickerSlotLabel(slotLabel);
+      setAssetPickerTypeFilter(matchingIds);
+      setAssetPickerOpen(true);
+    },
+    [allAssetTypes],
+  );
 
   // Mutations
   const clearOccupantMutation = useClearOccupant();
@@ -768,7 +802,24 @@ const WorkplaceDetailPage = () => {
                           {workplace.dockingStationAssetCode}
                         </Typography>
                       ) : (
-                        <Typography color="text.disabled">-</Typography>
+                        <Button
+                          size="small"
+                          startIcon={<LinkIcon sx={{ fontSize: 14 }} />}
+                          onClick={() => openAssetPicker('Docking Station', ['dock'])}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            px: 1,
+                            color: EQUIPMENT_COLOR,
+                            bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
+                            border: `1px solid ${alpha(EQUIPMENT_COLOR, 0.2)}`,
+                            borderRadius: 1,
+                            '&:hover': { bgcolor: alpha(EQUIPMENT_COLOR, 0.15) },
+                          }}
+                        >
+                          {t('workplaceDetail.linkAsset.link', 'Koppel asset')}
+                        </Button>
                       )}
                     </TableCell>
                     <TableCell>
@@ -800,7 +851,24 @@ const WorkplaceDetailPage = () => {
                           {workplace.monitor1AssetCode}
                         </Typography>
                       ) : (
-                        <Typography color="text.disabled">-</Typography>
+                        <Button
+                          size="small"
+                          startIcon={<LinkIcon sx={{ fontSize: 14 }} />}
+                          onClick={() => openAssetPicker('Monitor 1', ['mon', 'scherm', 'screen', 'display'])}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            px: 1,
+                            color: EQUIPMENT_COLOR,
+                            bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
+                            border: `1px solid ${alpha(EQUIPMENT_COLOR, 0.2)}`,
+                            borderRadius: 1,
+                            '&:hover': { bgcolor: alpha(EQUIPMENT_COLOR, 0.15) },
+                          }}
+                        >
+                          {t('workplaceDetail.linkAsset.link', 'Koppel asset')}
+                        </Button>
                       )}
                     </TableCell>
                     <TableCell>
@@ -832,7 +900,24 @@ const WorkplaceDetailPage = () => {
                           {workplace.monitor2AssetCode}
                         </Typography>
                       ) : (
-                        <Typography color="text.disabled">-</Typography>
+                        <Button
+                          size="small"
+                          startIcon={<LinkIcon sx={{ fontSize: 14 }} />}
+                          onClick={() => openAssetPicker('Monitor 2', ['mon', 'scherm', 'screen', 'display'])}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            px: 1,
+                            color: EQUIPMENT_COLOR,
+                            bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
+                            border: `1px solid ${alpha(EQUIPMENT_COLOR, 0.2)}`,
+                            borderRadius: 1,
+                            '&:hover': { bgcolor: alpha(EQUIPMENT_COLOR, 0.15) },
+                          }}
+                        >
+                          {t('workplaceDetail.linkAsset.link', 'Koppel asset')}
+                        </Button>
                       )}
                     </TableCell>
                     <TableCell>
@@ -864,7 +949,24 @@ const WorkplaceDetailPage = () => {
                           {workplace.monitor3AssetCode}
                         </Typography>
                       ) : (
-                        <Typography color="text.disabled">-</Typography>
+                        <Button
+                          size="small"
+                          startIcon={<LinkIcon sx={{ fontSize: 14 }} />}
+                          onClick={() => openAssetPicker('Monitor 3', ['mon', 'scherm', 'screen', 'display'])}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            px: 1,
+                            color: EQUIPMENT_COLOR,
+                            bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
+                            border: `1px solid ${alpha(EQUIPMENT_COLOR, 0.2)}`,
+                            borderRadius: 1,
+                            '&:hover': { bgcolor: alpha(EQUIPMENT_COLOR, 0.15) },
+                          }}
+                        >
+                          {t('workplaceDetail.linkAsset.link', 'Koppel asset')}
+                        </Button>
                       )}
                     </TableCell>
                     <TableCell>
@@ -895,7 +997,24 @@ const WorkplaceDetailPage = () => {
                         {workplace.keyboardAssetCode}
                       </Typography>
                     ) : (
-                      <Typography color="text.disabled">-</Typography>
+                      <Button
+                        size="small"
+                        startIcon={<LinkIcon sx={{ fontSize: 14 }} />}
+                        onClick={() => openAssetPicker('Toetsenbord', ['key', 'toet', 'keyboard'])}
+                        sx={{
+                          height: 24,
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                          px: 1,
+                          color: EQUIPMENT_COLOR,
+                          bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
+                          border: `1px solid ${alpha(EQUIPMENT_COLOR, 0.2)}`,
+                          borderRadius: 1,
+                          '&:hover': { bgcolor: alpha(EQUIPMENT_COLOR, 0.15) },
+                        }}
+                      >
+                        {t('workplaceDetail.linkAsset.link', 'Koppel asset')}
+                      </Button>
                     )}
                   </TableCell>
                   <TableCell>
@@ -925,7 +1044,24 @@ const WorkplaceDetailPage = () => {
                         {workplace.mouseAssetCode}
                       </Typography>
                     ) : (
-                      <Typography color="text.disabled">-</Typography>
+                      <Button
+                        size="small"
+                        startIcon={<LinkIcon sx={{ fontSize: 14 }} />}
+                        onClick={() => openAssetPicker('Muis', ['mou', 'muis', 'mouse'])}
+                        sx={{
+                          height: 24,
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                          px: 1,
+                          color: EQUIPMENT_COLOR,
+                          bgcolor: alpha(EQUIPMENT_COLOR, 0.08),
+                          border: `1px solid ${alpha(EQUIPMENT_COLOR, 0.2)}`,
+                          borderRadius: 1,
+                          '&:hover': { bgcolor: alpha(EQUIPMENT_COLOR, 0.15) },
+                        }}
+                      >
+                        {t('workplaceDetail.linkAsset.link', 'Koppel asset')}
+                      </Button>
                     )}
                   </TableCell>
                   <TableCell>
@@ -1255,6 +1391,17 @@ const WorkplaceDetailPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Asset Picker Drawer */}
+      <AssetPickerDrawer
+        open={assetPickerOpen}
+        onClose={() => setAssetPickerOpen(false)}
+        workplaceId={workplaceId}
+        slotLabel={assetPickerSlotLabel}
+        assetTypeFilter={assetPickerTypeFilter.length > 0 ? assetPickerTypeFilter : undefined}
+        onSuccess={showSuccess}
+        onError={showError}
+      />
 
       {/* Snackbar for notifications */}
       <Snackbar
