@@ -827,5 +827,5 @@ This document provides a comprehensive overview of the Djoppie Inventory backend
 
 - [CLAUDE.md](../CLAUDE.md) - Main project documentation
 - [ROLLOUT-ARCHITECTURE.md](ROLLOUT-ARCHITECTURE.md) - Detailed rollout workflow architecture
-- [ROLLOUT-WORKFLOW-GUIDE.md](ROLLOUT-WORKFLOW-GUIDE.md) - Rollout user guide (Dutch)
+- [wiki/User-Guide/05-Rollout-Workflow.md](wiki/User-Guide/05-Rollout-Workflow.md) - Rollout user guide (Dutch)
 - [BACKEND-CONFIGURATION-GUIDE.md](BACKEND-CONFIGURATION-GUIDE.md) - Backend configuration reference

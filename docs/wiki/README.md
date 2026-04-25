@@ -14,6 +14,7 @@ Documentation for IT Support Staff and Inventory Managers.
 | [Managing Assets](User-Guide/02-Managing-Assets.md) | Add, edit, view assets, status management, templates |
 | [Printing Labels](User-Guide/03-Printing-Labels.md) | Single and bulk QR label printing with Dymo |
 | [Exporting Data](User-Guide/04-Exporting-Data.md) | Export to Excel and CSV formats |
+| [Rollout Workflow (NL)](User-Guide/05-Rollout-Workflow.md) | Plan, execute, and report rollouts (Dutch) |
 
 ---
 

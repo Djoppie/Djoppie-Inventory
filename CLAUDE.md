@@ -675,7 +675,7 @@ Completion Transaction:
 - `RolloutAssetMovement.cs` - Asset movement audit trail
 - `RolloutDayService.cs` - Day-service junction table
 
-**Documentation**: `docs/ROLLOUT-ARCHITECTURE.md`, `docs/ROLLOUT-WORKFLOW-GUIDE.md`
+**Documentation**: `docs/BACKEND-ARCHITECTURE.md`, `docs/wiki/User-Guide/05-Rollout-Workflow.md`
 
 ### Database Schema
 
@@ -913,5 +913,5 @@ const [expandedSectors, setExpandedSectors] = useState<Set<number>>(new Set());
 - **SECURITY-REMEDIATION-CHECKLIST.md** - Security hardening guide
 - **docs/BACKEND-CONFIGURATION-GUIDE.md** - Backend configuration reference
 - **docs/ROLLOUT-ARCHITECTURE.md** - Rollout workflow technical architecture
-- **docs/ROLLOUT-WORKFLOW-GUIDE.md** - Rollout user guide (Dutch)
+- **docs/wiki/User-Guide/05-Rollout-Workflow.md** - Rollout user guide (Dutch)
 - **.azuredevops/README.md** - Azure DevOps pipeline setup

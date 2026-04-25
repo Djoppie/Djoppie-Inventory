@@ -7,7 +7,7 @@ IT asset and inventory management for Gemeente Diepenbeek — track equipment, p
 | New developer | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | Architect / reviewer | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | All other docs | [docs/README.md](docs/README.md) |
-| End user (NL) | [docs/USER-GUIDE.md](docs/USER-GUIDE.md) |
+| End user | [docs/wiki/User-Guide/](docs/wiki/User-Guide/) |
 | AI agents | [CLAUDE.md](CLAUDE.md) |
 
 ---

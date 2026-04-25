@@ -176,7 +176,7 @@ The largest feature, with its own state machine.
 
 **Atomic completion transaction** (per workplace): new assets `Nieuw → InGebruik` (+ owner, install date), old assets `InGebruik → UitDienst|Defect|Stock`, workplace `InProgress → Completed`. Every transition writes a `RolloutAssetMovement` row.
 
-Detailed walkthrough: [docs/ROLLOUT-WORKFLOW-GUIDE.md](docs/ROLLOUT-WORKFLOW-GUIDE.md).
+Detailed walkthrough: [docs/wiki/User-Guide/05-Rollout-Workflow.md](docs/wiki/User-Guide/05-Rollout-Workflow.md).
 
 ---
 
@@ -219,6 +219,6 @@ Bicep templates in `infra/bicep/`. PROD topology mirrors DEV with autoscale, fai
 | Run it locally | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | Deploy to Azure | [docs/wiki/Administrator-Guide/03-Deployment.md](docs/wiki/Administrator-Guide/03-Deployment.md) |
 | Understand auth | [docs/wiki/Administrator-Guide/02-Entra-Configuration.md](docs/wiki/Administrator-Guide/02-Entra-Configuration.md) + [docs/GRAPH-API.md](docs/GRAPH-API.md) |
-| Hack on rollout | [docs/ROLLOUT-WORKFLOW-GUIDE.md](docs/ROLLOUT-WORKFLOW-GUIDE.md) |
+| Hack on rollout | [docs/wiki/User-Guide/05-Rollout-Workflow.md](docs/wiki/User-Guide/05-Rollout-Workflow.md) |
 | Touch the data model | [docs/DATA-MODEL.md](docs/DATA-MODEL.md) |
 | Match existing UI patterns | [docs/COMPACT-DESIGN-PATTERNS.md](docs/COMPACT-DESIGN-PATTERNS.md), [docs/DJOPPIE-NEOMORPH-STYLE-GUIDE.md](docs/DJOPPIE-NEOMORPH-STYLE-GUIDE.md) |

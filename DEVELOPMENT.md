@@ -258,5 +258,5 @@ Decode failing JWTs at <https://jwt.ms> to check `aud` and `scp` claims.
 - [docs/README.md](docs/README.md) — full documentation tree
 - [CLAUDE.md](CLAUDE.md) — agent-facing project instructions (verbose)
 - [docs/wiki/Administrator-Guide/](docs/wiki/Administrator-Guide/) — deployment & ops deep-dives
-- [docs/API-REFERENCE.md](docs/API-REFERENCE.md) — REST endpoints
+- Swagger UI at <http://localhost:5052/swagger> — live REST endpoint reference
 - [docs/DATA-MODEL.md](docs/DATA-MODEL.md) — entity ER diagram

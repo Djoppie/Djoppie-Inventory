@@ -19,64 +19,29 @@ Single index for every doc in the repo. Start here.
 
 ## Reference Docs (`docs/`)
 
-### Architecture & Data
+Active developer reference. End-user / admin docs live under [`docs/wiki/`](#wiki-azure-devops-publishable).
 
 | File | What it covers |
 |------|----------------|
-| [BACKEND-ARCHITECTURE.md](BACKEND-ARCHITECTURE.md) | Deep dive on backend layout, ER diagrams per feature |
+| [BACKEND-ARCHITECTURE.md](BACKEND-ARCHITECTURE.md) | Deep-dive on backend layout, ER diagrams per feature |
 | [DATA-MODEL.md](DATA-MODEL.md) | Full entity / enum reference, mermaid ERD |
-| [API-REFERENCE.md](API-REFERENCE.md) | REST endpoint reference (request/response shapes) |
 | [GRAPH-API.md](GRAPH-API.md) | Microsoft Graph / Intune integration, required permissions |
-
-### Features
-
-| File | What it covers |
-|------|----------------|
-| [FEATURES.md](FEATURES.md) | Functional feature catalogue |
-| [RELEASE-FEATURES.md](RELEASE-FEATURES.md) | Per-release feature notes |
-| [ROLLOUT-WORKFLOW-GUIDE.md](ROLLOUT-WORKFLOW-GUIDE.md) | Rollout planner / execution / reporting walkthrough (NL) |
-| [USER-GUIDE.md](USER-GUIDE.md) | End-user usage guide |
-
-### UI & Design
-
-| File | What it covers |
-|------|----------------|
 | [COMPACT-DESIGN-PATTERNS.md](COMPACT-DESIGN-PATTERNS.md) | Reusable compact-UI patterns (filters, dense tables) |
 | [DJOPPIE-NEOMORPH-STYLE-GUIDE.md](DJOPPIE-NEOMORPH-STYLE-GUIDE.md) | Neumorphic admin styling rules |
-| [IN-APP-DOCUMENTATION-GUIDE.md](IN-APP-DOCUMENTATION-GUIDE.md) | How to add tooltips / guided tours / help drawers |
-| [PERFORMANCE-OPTIMIZATIONS.md](PERFORMANCE-OPTIMIZATIONS.md) | Render & query optimization patterns applied |
 
-### Wiki (Azure DevOps-publishable)
+> REST endpoint reference: live Swagger UI at `/swagger` (e.g. <http://localhost:5052/swagger>).
 
-Structured documentation suitable for publishing as a code wiki.
+---
+
+## Wiki (Azure DevOps-publishable)
+
+Structured end-user / admin / architecture documentation under [`docs/wiki/`](wiki/). Suitable for publishing as an Azure DevOps code wiki — see [wiki/README.md](wiki/README.md) for the publish flow.
 
 | Section | Files |
 |---------|-------|
-| [User Guide](wiki/User-Guide/) | Getting Started · Managing Assets · Printing Labels · Exporting Data |
+| [User Guide](wiki/User-Guide/) | Getting Started · Managing Assets · Printing Labels · Exporting Data · Rollout Workflow (NL) |
 | [Administrator Guide](wiki/Administrator-Guide/) | Installation · Entra Configuration · Deployment · Key Vault · Troubleshooting |
 | [Technical Reference](wiki/Technical-Reference/) | Architecture |
-| [wiki/README.md](wiki/README.md) | Wiki index + Azure DevOps publish instructions |
-
-### Testing
-
-| File | What it covers |
-|------|----------------|
-| [testing/QUICK-TEST-GUIDE.md](testing/QUICK-TEST-GUIDE.md) | Smoke-test recipes |
-| [testing/ROLLOUT-TEST-PLAN.md](testing/ROLLOUT-TEST-PLAN.md) | Rollout-specific test plan |
-| [testing/TEST-CHECKLIST.md](testing/TEST-CHECKLIST.md) | Pre-release manual QA checklist |
-
-### Plans & Specs (`docs/superpowers/`)
-
-Historical planning artefacts kept for context. Newest first.
-
-| File | What it covers |
-|------|----------------|
-| [plans/2026-04-23-reports-consolidation.md](superpowers/plans/2026-04-23-reports-consolidation.md) | Reports consolidation execution plan (PR1–PR4) |
-| [specs/2026-04-23-reports-consolidation-design.md](superpowers/specs/2026-04-23-reports-consolidation-design.md) | Reports consolidation design |
-| [plans/2026-04-12-codebase-cleanup-reorganization.md](superpowers/plans/2026-04-12-codebase-cleanup-reorganization.md) | Codebase reorg plan |
-| [specs/2026-04-12-codebase-cleanup-reorganization-design.md](superpowers/specs/2026-04-12-codebase-cleanup-reorganization-design.md) | Codebase reorg design |
-| [plans/2026-04-10-intune-device-dashboard.md](superpowers/plans/2026-04-10-intune-device-dashboard.md) | Intune dashboard plan |
-| [specs/2026-04-10-intune-device-dashboard-design.md](superpowers/specs/2026-04-10-intune-device-dashboard-design.md) | Intune dashboard design |
 
 ---
 
@@ -101,5 +66,5 @@ Historical planning artefacts kept for context. Newest first.
 | Fix a 401 / auth issue | [DEVELOPMENT §9](../DEVELOPMENT.md#9-troubleshooting) and [wiki/Administrator-Guide/05-Troubleshooting](wiki/Administrator-Guide/05-Troubleshooting.md) |
 | Rotate a Key Vault secret | [wiki/Administrator-Guide/04-Key-Vault](wiki/Administrator-Guide/04-Key-Vault.md) |
 | Add a new entity / endpoint / page | [DEVELOPMENT §8](../DEVELOPMENT.md#8-common-workflows) |
-| Understand the rollout flow | [ROLLOUT-WORKFLOW-GUIDE](ROLLOUT-WORKFLOW-GUIDE.md) |
+| Understand the rollout flow | [wiki/User-Guide/05-Rollout-Workflow](wiki/User-Guide/05-Rollout-Workflow.md) |
 | Pick the right MUI styling | [COMPACT-DESIGN-PATTERNS](COMPACT-DESIGN-PATTERNS.md), [DJOPPIE-NEOMORPH-STYLE-GUIDE](DJOPPIE-NEOMORPH-STYLE-GUIDE.md) |
