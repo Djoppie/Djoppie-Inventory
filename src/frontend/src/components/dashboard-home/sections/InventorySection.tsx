@@ -210,12 +210,13 @@ const InventorySection: React.FC<InventorySectionProps> = ({ assets, delay = 0, 
           onClick={() => setOpenReport('stock')}
         />
         <SectionKPICard
-          label="Nieuw"
+          label="Niet-toegewezen"
           value={kpis.nieuw}
-          color="#00BCD4"
+          color="#FF7700"
           icon={<FiberNewIcon />}
+          subtitle={kpis.nieuw > 0 ? 'Actie vereist' : undefined}
           pulse={kpis.nieuw > 0}
-          onClick={() => setOpenReport('new')}
+          onClick={() => navigate(`${ROUTES.INVENTORY_ASSETS}?status=Nieuw`)}
         />
       </Box>
 

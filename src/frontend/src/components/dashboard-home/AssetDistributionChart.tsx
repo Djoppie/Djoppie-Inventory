@@ -18,8 +18,10 @@ interface StatusSegment {
 
 const STATUS_COLORS: Record<string, string> = {
   InGebruik: '#4CAF50',
+  // Stock: info-blue — available but not actively unassigned
   Stock: '#2196F3',
-  Nieuw: '#00BCD4',
+  // Nieuw: Djoppie orange — actionable, unassigned assets requiring attention
+  Nieuw: '#FF7700',
   Herstelling: '#FF9800',
   Defect: '#f44336',
   UitDienst: '#9E9E9E',

@@ -1346,5 +1346,38 @@
       "retry": "Opnieuw proberen",
       "home": "Overzicht"
     }
+  },
+  "assetsPage": {
+    "bulkActions": {
+      "assignWorkplace": "Toewijzen aan werkplek",
+      "assignEmployee": "Toewijzen aan medewerker",
+      "assignDisabledTooltip": "Selecteer alleen activa met status Nieuw of Stock om te kunnen toewijzen",
+      "assetsToAssign": "Te koppelen activa",
+      "selectedAssets": "geselecteerde activa",
+      "assigning": "Bezig met toewijzen...",
+      "assignFailed": "Toewijzing mislukt.",
+      "succeeded": "Geslaagd",
+      "failed": "Mislukt"
+    }
+  },
+  "workplaceDetail": {
+    "linkAsset": {
+      "title": "Koppel asset",
+      "slot": "Slot",
+      "link": "Koppel asset",
+      "info": "Alleen activa met status Nieuw worden getoond. Kies een actief om het te koppelen aan dit slot.",
+      "search": "Zoek op code, serienummer, merk...",
+      "noResults": "Geen activa gevonden voor deze zoekopdracht.",
+      "noNieuw": "Geen activa met status Nieuw beschikbaar voor dit slot.",
+      "success": "Asset gekoppeld aan werkplek.",
+      "error": "Koppeling mislukt. Probeer het opnieuw."
+    }
+  },
+  "dashboardUnassigned": {
+    "title": "Recent aangemaakt — wacht op toewijzing",
+    "viewAll": "Alle bekijken",
+    "assignEmployee": "Medewerker",
+    "assignWorkplace": "Werkplek",
+    "nieuwCount": "{{count}} asset(s) met status Nieuw"
   }
 }

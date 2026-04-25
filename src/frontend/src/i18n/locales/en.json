@@ -1344,5 +1344,38 @@
       "retry": "Retry",
       "home": "Overview"
     }
+  },
+  "assetsPage": {
+    "bulkActions": {
+      "assignWorkplace": "Assign to workplace",
+      "assignEmployee": "Assign to employee",
+      "assignDisabledTooltip": "Select only assets with status New or Stock to assign",
+      "assetsToAssign": "Assets to assign",
+      "selectedAssets": "selected assets",
+      "assigning": "Assigning...",
+      "assignFailed": "Assignment failed.",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    }
+  },
+  "workplaceDetail": {
+    "linkAsset": {
+      "title": "Link asset",
+      "slot": "Slot",
+      "link": "Link asset",
+      "info": "Only assets with status New are shown. Select an asset to link it to this slot.",
+      "search": "Search by code, serial, brand...",
+      "noResults": "No assets found for this search.",
+      "noNieuw": "No assets with status New available for this slot.",
+      "success": "Asset linked to workplace.",
+      "error": "Linking failed. Please try again."
+    }
+  },
+  "dashboardUnassigned": {
+    "title": "Recently created — awaiting assignment",
+    "viewAll": "View all",
+    "assignEmployee": "Employee",
+    "assignWorkplace": "Workplace",
+    "nieuwCount": "{{count}} asset(s) with status New"
   }
 }

@@ -35,6 +35,8 @@ import PrintIcon from '@mui/icons-material/Print';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PlaceIcon from '@mui/icons-material/Place';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { SortOption } from '../../constants/dashboard.constants';
 import { SERVICE_COLOR, BUILDING_COLOR, SECTOR_COLOR } from '../../constants/filterColors';
 
@@ -58,6 +60,10 @@ interface DashboardToolbarProps {
   onBulkEditClick: () => void;
   onBulkPrintClick: () => void;
   onBulkDeleteClick: () => void;
+  onBulkAssignWorkplaceClick?: () => void;
+  onBulkAssignEmployeeClick?: () => void;
+  /** true when ALL selected assets are Nieuw or Stock (assignable states) */
+  canBulkAssign?: boolean;
 }
 
 export default function DashboardToolbar({
@@ -80,6 +86,9 @@ export default function DashboardToolbar({
   onBulkEditClick,
   onBulkPrintClick,
   onBulkDeleteClick,
+  onBulkAssignWorkplaceClick,
+  onBulkAssignEmployeeClick,
+  canBulkAssign = false,
 }: DashboardToolbarProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -473,6 +482,86 @@ export default function DashboardToolbar({
                   '& .MuiChip-label': { px: 0.75 },
                 }}
               />
+
+              {/* Bulk Assign Workplace Button */}
+              {onBulkAssignWorkplaceClick && (
+                <Tooltip
+                  title={
+                    canBulkAssign
+                      ? t('assetsPage.bulkActions.assignWorkplace', 'Toewijzen aan werkplek')
+                      : t(
+                          'assetsPage.bulkActions.assignDisabledTooltip',
+                          'Selecteer alleen activa met status Nieuw of Stock om te kunnen toewijzen',
+                        )
+                  }
+                >
+                  <span>
+                    <IconButton
+                      onClick={canBulkAssign ? onBulkAssignWorkplaceClick : undefined}
+                      disabled={!canBulkAssign}
+                      size="small"
+                      sx={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 1,
+                        color: canBulkAssign ? '#009688' : 'text.disabled',
+                        bgcolor: 'transparent',
+                        border: '1px solid',
+                        borderColor: canBulkAssign ? alpha('#009688', 0.3) : alpha('#9E9E9E', 0.2),
+                        transition: 'all 0.15s ease',
+                        '&:hover': canBulkAssign
+                          ? {
+                              bgcolor: alpha('#009688', 0.1),
+                              borderColor: '#009688',
+                            }
+                          : {},
+                      }}
+                    >
+                      <PlaceIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+
+              {/* Bulk Assign Employee Button */}
+              {onBulkAssignEmployeeClick && (
+                <Tooltip
+                  title={
+                    canBulkAssign
+                      ? t('assetsPage.bulkActions.assignEmployee', 'Toewijzen aan medewerker')
+                      : t(
+                          'assetsPage.bulkActions.assignDisabledTooltip',
+                          'Selecteer alleen activa met status Nieuw of Stock om te kunnen toewijzen',
+                        )
+                  }
+                >
+                  <span>
+                    <IconButton
+                      onClick={canBulkAssign ? onBulkAssignEmployeeClick : undefined}
+                      disabled={!canBulkAssign}
+                      size="small"
+                      sx={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 1,
+                        color: canBulkAssign ? '#7b1fa2' : 'text.disabled',
+                        bgcolor: 'transparent',
+                        border: '1px solid',
+                        borderColor: canBulkAssign ? alpha('#7b1fa2', 0.3) : alpha('#9E9E9E', 0.2),
+                        transition: 'all 0.15s ease',
+                        '&:hover': canBulkAssign
+                          ? {
+                              bgcolor: alpha('#7b1fa2', 0.1),
+                              borderColor: '#7b1fa2',
+                            }
+                          : {},
+                      }}
+                    >
+                      <PersonAddIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
 
               {/* Bulk Edit Button */}
               <Tooltip title={t('bulkEdit.editSelected', { defaultValue: 'Edit Selected' })}>

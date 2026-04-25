@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Fade, useTheme, alpha } from '@mui/material';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarehouseIcon from '@mui/icons-material/Warehouse';
 import WarningIcon from '@mui/icons-material/Warning';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import FiberNewIcon from '@mui/icons-material/FiberNew';
 import { getNeumorph } from '../../utils/neumorphicStyles';
 import { useAnimatedCounter } from './useAnimatedCounter';
 
@@ -14,6 +16,8 @@ interface KPIHeroSectionProps {
   stock: number;
   aandacht: number;
   activeRollouts: number;
+  /** Count of assets with status = Nieuw (unassigned, awaiting action) */
+  nieuwCount?: number;
 }
 
 interface KPICardConfig {
@@ -23,6 +27,7 @@ interface KPICardConfig {
   icon: React.ReactNode;
   subtitle?: string;
   pulse?: boolean;
+  onClick?: () => void;
 }
 
 const KPICard: React.FC<{ config: KPICardConfig; index: number; isDark: boolean }> = ({
@@ -35,6 +40,19 @@ const KPICard: React.FC<{ config: KPICardConfig; index: number; isDark: boolean 
   return (
     <Fade in timeout={400 + index * 150}>
       <Box
+        role={config.onClick ? 'button' : undefined}
+        tabIndex={config.onClick ? 0 : undefined}
+        onClick={config.onClick}
+        onKeyDown={
+          config.onClick
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  config.onClick?.();
+                }
+              }
+            : undefined
+        }
         sx={{
           p: 2.5,
           borderRadius: 3,
@@ -42,7 +60,10 @@ const KPICard: React.FC<{ config: KPICardConfig; index: number; isDark: boolean 
           boxShadow: getNeumorph(isDark, 'medium'),
           borderLeft: `4px solid ${config.color}`,
           transition: 'all 0.25s ease',
-          cursor: 'default',
+          cursor: config.onClick ? 'pointer' : 'default',
+          '&:focus-visible': config.onClick
+            ? { outline: 'none', boxShadow: `${getNeumorph(isDark, 'medium')}, 0 0 0 2px ${alpha(config.color, 0.5)}` }
+            : {},
           '&:hover': {
             transform: 'translateY(-4px)',
             boxShadow: isDark
@@ -132,9 +153,11 @@ export const KPIHeroSection: React.FC<KPIHeroSectionProps> = ({
   stock,
   aandacht,
   activeRollouts,
+  nieuwCount = 0,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const navigate = useNavigate();
 
   const inGebruikPercentage = totalAssets > 0 ? Math.round((inGebruik / totalAssets) * 100) : 0;
 
@@ -159,6 +182,15 @@ export const KPIHeroSection: React.FC<KPIHeroSectionProps> = ({
       icon: <WarehouseIcon fontSize="small" />,
     },
     {
+      label: 'Niet-toegewezen',
+      value: nieuwCount,
+      color: '#FF7700',
+      icon: <FiberNewIcon fontSize="small" />,
+      subtitle: nieuwCount > 0 ? 'Actie vereist' : 'Alles toegewezen',
+      pulse: nieuwCount > 0,
+      onClick: () => navigate('/inventory?status=Nieuw'),
+    },
+    {
       label: 'Aandacht Vereist',
       value: aandacht,
       color: '#f44336',
@@ -180,7 +212,7 @@ export const KPIHeroSection: React.FC<KPIHeroSectionProps> = ({
         gridTemplateColumns: {
           xs: 'repeat(2, 1fr)',
           sm: 'repeat(3, 1fr)',
-          lg: 'repeat(5, 1fr)',
+          lg: 'repeat(6, 1fr)',
         },
         gap: 2,
       }}

@@ -14,6 +14,8 @@ import CategorySwitcher from '../../components/common/CategorySwitcher';
 import ExportDialog from '../../components/inventory/ExportDialog';
 import BulkPrintLabelDialog from '../../components/print/BulkPrintLabelDialog';
 import BulkEditDialog from '../../components/inventory/BulkEditDialog';
+import BulkAssignWorkplaceDialog from '../../components/inventory/dialogs/BulkAssignWorkplaceDialog';
+import BulkAssignEmployeeDialog from '../../components/inventory/dialogs/BulkAssignEmployeeDialog';
 import {
   DashboardHeader,
   DashboardToolbar,
@@ -66,6 +68,8 @@ const DashboardPage = () => {
   const [bulkPrintDialogOpen, setBulkPrintDialogOpen] = useState(false);
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkAssignWorkplaceDialogOpen, setBulkAssignWorkplaceDialogOpen] = useState(false);
+  const [bulkAssignEmployeeDialogOpen, setBulkAssignEmployeeDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -96,6 +100,14 @@ const DashboardPage = () => {
       setSelectedAssetIds(new Set());
     }
   }, [filteredAndSortedAssets]);
+
+  // Can bulk assign: all selected assets must be Nieuw or Stock
+  const canBulkAssign = useMemo(() => {
+    if (selectedAssets.length === 0) return false;
+    return selectedAssets.every(
+      (a) => a.status === 'Nieuw' || a.status === 'Stock',
+    );
+  }, [selectedAssets]);
 
   // Bulk delete handler
   const handleBulkDelete = async () => {
@@ -207,6 +219,9 @@ const DashboardPage = () => {
         onBulkEditClick={() => setBulkEditDialogOpen(true)}
         onBulkPrintClick={() => setBulkPrintDialogOpen(true)}
         onBulkDeleteClick={() => setBulkDeleteDialogOpen(true)}
+        onBulkAssignWorkplaceClick={() => setBulkAssignWorkplaceDialogOpen(true)}
+        onBulkAssignEmployeeClick={() => setBulkAssignEmployeeDialogOpen(true)}
+        canBulkAssign={canBulkAssign}
       />
 
       {/* Asset List */}
@@ -259,6 +274,26 @@ const DashboardPage = () => {
         selectedAssets={selectedAssets}
         onClose={() => setBulkDeleteDialogOpen(false)}
         onConfirm={handleBulkDelete}
+      />
+
+      <BulkAssignWorkplaceDialog
+        open={bulkAssignWorkplaceDialogOpen}
+        onClose={() => setBulkAssignWorkplaceDialogOpen(false)}
+        assets={selectedAssets}
+        onSuccess={() => {
+          setSelectedAssetIds(new Set());
+          refetch();
+        }}
+      />
+
+      <BulkAssignEmployeeDialog
+        open={bulkAssignEmployeeDialogOpen}
+        onClose={() => setBulkAssignEmployeeDialogOpen(false)}
+        assets={selectedAssets}
+        onSuccess={() => {
+          setSelectedAssetIds(new Set());
+          refetch();
+        }}
       />
     </Box>
   );
