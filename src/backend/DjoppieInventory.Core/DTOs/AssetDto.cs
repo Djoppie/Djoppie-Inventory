@@ -1,7 +1,7 @@
 namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
-/// Data Transfer Object for Asset entity
+/// Read-side projection of an <see cref="DjoppieInventory.Core.Entities.Asset"/>.
 /// </summary>
 public class AssetDto
 {
@@ -30,7 +30,7 @@ public class AssetDto
     // User assignment fields
     public int? EmployeeId { get; set; }
     public EmployeeInfoDto? Employee { get; set; }
-    public string? Owner { get; set; } // Legacy field - kept for backwards compatibility
+    public string? Owner { get; set; } // Legacy denormalised — preserved so older clients keep rendering owner names. New code should consume EffectiveLocation.
     public string? JobTitle { get; set; }
     public string? OfficeLocation { get; set; }
 
@@ -53,4 +53,12 @@ public class AssetDto
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Computed location chain for the frontend. Reflects the current
+    /// effective location (employee → workplace → building OR
+    /// workplace → building) and the kind so the UI can render the
+    /// correct empty-state for unassigned <c>Nieuw</c> assets.
+    /// </summary>
+    public EffectiveLocationDto? EffectiveLocation { get; set; }
 }

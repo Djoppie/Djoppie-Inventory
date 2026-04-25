@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
 
         // Register Services
         services.AddScoped<IAssetService, AssetService>();
+        services.AddScoped<IAssetAssignmentService, AssetAssignmentService>();
         services.AddScoped<IAssetEventService, AssetEventService>();
         services.AddScoped<ICsvImportService, CsvImportService>();
         services.AddScoped<IClientSecretsService, ClientSecretsService>();
