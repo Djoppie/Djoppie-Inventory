@@ -1,6 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as assetsApi from '../api/assets.api';
-import { CreateAssetDto, UpdateAssetDto, BulkCreateAssetDto, BulkUpdateAssetsDto, PaginationParams } from '../types/asset.types';
+import {
+  CreateAssetDto,
+  UpdateAssetDto,
+  BulkCreateAssetDto,
+  BulkUpdateAssetsDto,
+  PaginationParams,
+  AssignAssetToEmployeeDto,
+  AssignAssetToWorkplaceDto,
+  UnassignAssetDto,
+  ChangeAssetStatusDto,
+} from '../types/asset.types';
 import { isValidAssetCode } from '../utils/validation';
 
 /**
@@ -104,5 +114,59 @@ export const useAssetCodeExists = (code: string) => {
     queryKey: ['assets', 'code-exists', code],
     queryFn: () => assetsApi.assetCodeExists(code),
     enabled: !!code && code.length >= 3,
+  });
+};
+
+// ===== Assignment mutation hooks =====
+
+export const useAssignAssetToEmployee = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ assetId, data }: { assetId: number; data: AssignAssetToEmployeeDto }) =>
+      assetsApi.assignAssetToEmployee(assetId, data),
+    onSuccess: (_data, { assetId }) => {
+      queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+  });
+};
+
+export const useAssignAssetToWorkplace = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ assetId, data }: { assetId: number; data: AssignAssetToWorkplaceDto }) =>
+      assetsApi.assignAssetToWorkplace(assetId, data),
+    onSuccess: (_data, { assetId }) => {
+      queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+  });
+};
+
+export const useUnassignAsset = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ assetId, data }: { assetId: number; data?: UnassignAssetDto }) =>
+      assetsApi.unassignAsset(assetId, data),
+    onSuccess: (_data, { assetId }) => {
+      queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
+  });
+};
+
+export const useChangeAssetStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ assetId, data }: { assetId: number; data: ChangeAssetStatusDto }) =>
+      assetsApi.changeAssetStatus(assetId, data),
+    onSuccess: (_data, { assetId }) => {
+      queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+    },
   });
 };

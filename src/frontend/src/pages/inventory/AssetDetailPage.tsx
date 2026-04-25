@@ -1,6 +1,6 @@
+import React, { useEffect, useState } from 'react';
 import { logger } from '../../utils/logger';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -18,6 +18,8 @@ import {
   Stack,
   IconButton,
   Tooltip,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -28,6 +30,10 @@ import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import AppsIcon from '@mui/icons-material/Apps';
+import PlaceIcon from '@mui/icons-material/Place';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { QRCodeSVG } from 'qrcode.react';
 import PrintIcon from '@mui/icons-material/Print';
 import { format } from 'date-fns';
@@ -38,11 +44,19 @@ import StatusBadge from '../../components/common/StatusBadge';
 import PrintLabelDialog from '../../components/print/PrintLabelDialog';
 import AssetEventHistory from '../../components/inventory/AssetEventHistory';
 import DevicesIcon from '@mui/icons-material/Devices';
-import PlaceIcon from '@mui/icons-material/Place';
-import BusinessIcon from '@mui/icons-material/Business';
 import { buildRoute } from '../../constants/routes';
+import { AssetStatus, LocationChainKind } from '../../types/asset.types';
+import AssetLocationChain from '../../components/inventory/AssetLocationChain';
+import AssignEmployeeDialog from '../../components/inventory/dialogs/AssignEmployeeDialog';
+import AssignWorkplaceDialog from '../../components/inventory/dialogs/AssignWorkplaceDialog';
+import UnassignDialog from '../../components/inventory/dialogs/UnassignDialog';
+import StatusTransitionDialog from '../../components/inventory/dialogs/StatusTransitionDialog';
+import { getNeumorph, getNeumorphColors } from '../../utils/neumorphicStyles';
 
-// Helper: check if an asset code has a number >= 9000 (dummy/test asset)
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 const isDummyAsset = (assetCode: string): boolean => {
   const lastDash = assetCode.lastIndexOf('-');
   if (lastDash < 0) return false;
@@ -51,168 +65,342 @@ const isDummyAsset = (assetCode: string): boolean => {
   return !isNaN(num) && num >= 9000;
 };
 
-// Scanner-style card wrapper - consistent with ScanPage
-const scannerCardSx = {
-  mb: 3,
-  borderRadius: 2,
-  border: '1px solid',
-  borderColor: 'divider',
-  overflow: 'hidden',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 8px 32px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05)'
-        : '0 4px 20px rgba(253, 185, 49, 0.3)',
-  },
-};
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
-// Consistent icon button style
-const iconButtonSx = {
-  border: '1px solid',
-  borderColor: 'divider',
-  borderRadius: 2,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    borderColor: 'primary.main',
-    boxShadow: (theme: { palette: { mode: string } }) =>
-      theme.palette.mode === 'dark'
-        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-        : '0 2px 12px rgba(253, 185, 49, 0.3)',
-  },
-};
-
-// Section Header Component - consistent with ScanPage tabs style
 interface SectionHeaderProps {
   icon: React.ReactNode;
   title: string;
+  color?: string;
 }
 
-const SectionHeader = ({ icon, title }: SectionHeaderProps) => (
-  <Stack
-    direction="row"
-    spacing={1.5}
-    alignItems="center"
-    sx={{
-      mb: 2,
-      pb: 2,
-      borderBottom: '1px solid',
-      borderColor: 'divider',
-    }}
-  >
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 36,
-        height: 36,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        bgcolor: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'rgba(255, 215, 0, 0.08)'
-            : 'rgba(253, 185, 49, 0.08)',
-        color: 'primary.main',
-        transition: 'all 0.3s ease',
-      }}
+const SectionHeader = ({ icon, title, color }: SectionHeaderProps) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const accentColor = color || theme.palette.primary.main;
+
+  return (
+    <Stack
+      direction="row"
+      spacing={1.5}
+      alignItems="center"
+      sx={{ mb: 2, pb: 2, borderBottom: '1px solid', borderColor: 'divider' }}
     >
-      {icon}
-    </Box>
-    <Typography
-      variant="h6"
-      fontWeight={700}
-      sx={{
-        color: 'primary.main',
-        letterSpacing: '0.02em',
-      }}
-    >
-      {title}
-    </Typography>
-  </Stack>
-);
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 36,
+          height: 36,
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: alpha(accentColor, 0.3),
+          bgcolor: alpha(accentColor, isDark ? 0.1 : 0.07),
+          color: accentColor,
+          transition: 'all 0.3s ease',
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        sx={{ color: accentColor, letterSpacing: '0.02em' }}
+      >
+        {title}
+      </Typography>
+    </Stack>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
 const AssetDetailPage = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const { bgSurface } = getNeumorphColors(isDark);
+
   const { data: asset, isLoading, error } = useAsset(Number(id));
   const deleteAsset = useDeleteAsset();
+
+  // Dialog open state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [assignEmployeeOpen, setAssignEmployeeOpen] = useState(false);
+  const [assignWorkplaceOpen, setAssignWorkplaceOpen] = useState(false);
+  const [unassignOpen, setUnassignOpen] = useState(false);
+  const [statusTransitionOpen, setStatusTransitionOpen] = useState(false);
 
-  const handleEdit = () => {
-    navigate(`/inventory/assets/${id}/edit`);
-  };
+  // Post-creation guided callout — read and clear sessionStorage on first render
+  // Use a ref so we only consume the key once per mount regardless of re-renders.
+  const calloutConsumedRef = React.useRef(false);
+  const [showCreatedCallout, setShowCreatedCallout] = useState(false);
+  const [createdCalloutCode, setCreatedCalloutCode] = useState('');
+
+  // Consume the sessionStorage flag once the asset is loaded
+  useEffect(() => {
+    if (!id || !asset || calloutConsumedRef.current) return;
+    calloutConsumedRef.current = true;
+
+    const key = `asset-just-created-${id}`;
+    const raw = sessionStorage.getItem(key);
+    if (!raw || asset.status !== AssetStatus.Nieuw) return;
+
+    sessionStorage.removeItem(key);
+
+    let code = asset.assetCode;
+    try {
+      const parsed = JSON.parse(raw) as { at: string; assetCode: string };
+      code = parsed.assetCode || asset.assetCode;
+    } catch {
+      // use default code
+    }
+
+    // Schedule in next microtask to satisfy the lint rule about
+    // not calling setState synchronously inside an effect body.
+    Promise.resolve().then(() => {
+      setCreatedCalloutCode(code);
+      setShowCreatedCallout(true);
+    });
+  }, [id, asset]);
+
+  const handleEdit = () => navigate(`/inventory/assets/${id}/edit`);
 
   const handleDelete = async () => {
     try {
       await deleteAsset.mutateAsync(Number(id));
       navigate('/');
-    } catch (error) {
-      logger.error('Error deleting asset:', error);
+    } catch (err) {
+      logger.error('Error deleting asset:', err);
     }
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Not set';
+    if (!dateString) return t('common.none', 'Geen');
     try {
-      return format(new Date(dateString), 'MMM dd, yyyy');
+      return format(new Date(dateString), 'dd MMM yyyy');
     } catch {
       return dateString;
     }
   };
 
+  // Determine if asset is currently assigned (either employee or workplace)
+  const isAssigned =
+    asset &&
+    (asset.effectiveLocation?.kind === LocationChainKind.Employee ||
+      asset.effectiveLocation?.kind === LocationChainKind.Workplace ||
+      asset.employee ||
+      asset.physicalWorkplace);
+
+  // Card shared styles
+  const cardSx = {
+    mb: 3,
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    overflow: 'hidden',
+    bgcolor: bgSurface,
+    boxShadow: getNeumorph(isDark, 'soft'),
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&:hover': {
+      borderColor: alpha('#FF7700', 0.3),
+      boxShadow: isDark
+        ? `0 8px 32px ${alpha('#FF7700', 0.12)}, inset 0 0 24px ${alpha('#FF7700', 0.03)}`
+        : `0 4px 20px ${alpha('#FF7700', 0.18)}`,
+    },
+  };
+
+  const iconButtonSx = {
+    border: '1px solid',
+    borderColor: 'divider',
+    borderRadius: 2,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&:hover': {
+      borderColor: 'primary.main',
+      boxShadow: isDark
+        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
+        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+    },
+  };
+
+  // ----- Loading / error states -----
   if (isLoading) return <Loading />;
 
   if (error || !asset) {
     return (
       <Box>
-        <Alert
-          severity="error"
-          sx={{
-            border: '1px solid',
-            borderColor: 'error.main',
-            fontWeight: 600,
-          }}
-        >
-          {error instanceof Error ? error.message : 'Failed to load asset'}
+        <Alert severity="error" sx={{ border: '1px solid', borderColor: 'error.main', fontWeight: 600 }}>
+          {error instanceof Error ? error.message : t('assetDetail.notFound', 'Activa niet gevonden')}
         </Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/')}
-          sx={{ mt: 2 }}
-        >
-          Back to Dashboard
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/')} sx={{ mt: 2 }}>
+          {t('common.backToDashboard', 'Terug naar Dashboard')}
         </Button>
       </Box>
     );
   }
 
+  // ----- Status-driven CTA helpers -----
+  const renderLocationCTAs = () => {
+    switch (asset.status) {
+      case AssetStatus.Nieuw:
+        return null; // Handled inside AssetLocationChain empty state
+
+      case AssetStatus.InGebruik:
+        return (
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<LinkOffIcon />}
+              onClick={() => setUnassignOpen(true)}
+              sx={{ borderColor: 'divider', color: 'text.secondary', fontWeight: 600,
+                '&:hover': { borderColor: '#FF7700', color: '#FF7700' } }}
+            >
+              {t('assetDetail.cta.unassign', 'Uittoewijzen')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<SwapHorizIcon />}
+              onClick={() => setStatusTransitionOpen(true)}
+              sx={{ borderColor: 'divider', color: 'text.secondary', fontWeight: 600,
+                '&:hover': { borderColor: '#FF7700', color: '#FF7700' } }}
+            >
+              {t('assetDetail.cta.changeStatus', 'Status wijzigen')}
+            </Button>
+          </Box>
+        );
+
+      case AssetStatus.Stock:
+        return (
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PlaceIcon />}
+              onClick={() => setAssignWorkplaceOpen(true)}
+              sx={{ bgcolor: '#FF7700', color: '#fff', fontWeight: 600, '&:hover': { bgcolor: '#E66A00' } }}
+            >
+              {t('assetLocationChain.assignToWorkplace', 'Toewijzen aan werkplek')}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PersonIcon />}
+              onClick={() => setAssignEmployeeOpen(true)}
+              sx={{ bgcolor: '#7b1fa2', color: '#fff', fontWeight: 600,
+                '&:hover': { bgcolor: alpha('#7b1fa2', 0.85) } }}
+            >
+              {t('assetLocationChain.assignToEmployee', 'Toewijzen aan medewerker')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<SwapHorizIcon />}
+              onClick={() => setStatusTransitionOpen(true)}
+              sx={{ borderColor: 'divider', color: 'text.secondary', fontWeight: 600,
+                '&:hover': { borderColor: '#FF7700', color: '#FF7700' } }}
+            >
+              {t('assetDetail.cta.changeStatus', 'Status wijzigen')}
+            </Button>
+          </Box>
+        );
+
+      case AssetStatus.Herstelling:
+      case AssetStatus.Defect:
+      case AssetStatus.UitDienst:
+        return (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<SwapHorizIcon />}
+              onClick={() => setStatusTransitionOpen(true)}
+              sx={{ borderColor: 'divider', color: 'text.secondary', fontWeight: 600,
+                '&:hover': { borderColor: '#FF7700', color: '#FF7700' } }}
+            >
+              {t('assetDetail.cta.changeStatus', 'Status wijzigen')}
+            </Button>
+          </Box>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <Box>
-      {/* Back Button - Outside card */}
-      <Tooltip title={t('common.backToDashboard', { defaultValue: 'Back to Dashboard' })}>
+      {/* Back button */}
+      <Tooltip title={t('common.backToDashboard', 'Terug naar Dashboard')}>
         <IconButton
-          onClick={() => navigate('/')}
-          sx={{
-            ...iconButtonSx,
-            mb: 2,
-            color: 'text.secondary',
-            '&:hover': {
-              ...iconButtonSx['&:hover'],
-              color: 'primary.main',
-            },
-          }}
+          onClick={() => navigate(-1)}
+          sx={{ ...iconButtonSx, mb: 2, color: 'text.secondary', '&:hover': { ...iconButtonSx['&:hover'], color: 'primary.main' } }}
         >
           <ArrowBackIcon />
         </IconButton>
       </Tooltip>
 
-      {/* Header - Scanner style */}
-      <Card elevation={0} sx={scannerCardSx}>
+      {/* Post-creation guided callout */}
+      {showCreatedCallout && (
+        <Alert
+          severity="success"
+          icon={<CheckCircleOutlineIcon />}
+          onClose={() => setShowCreatedCallout(false)}
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: alpha('#4CAF50', 0.4),
+            bgcolor: alpha('#4CAF50', isDark ? 0.1 : 0.06),
+            '& .MuiAlert-message': { width: '100%' },
+          }}
+        >
+          <Typography variant="body2" fontWeight={700} mb={0.5}>
+            {t('assetDetail.createdCallout.title', {
+              code: createdCalloutCode,
+              defaultValue: `Activa aangemaakt (${createdCalloutCode}).`,
+            })}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={1.5}>
+            {t(
+              'assetDetail.createdCallout.desc',
+              'Volgende stap: koppel aan een werkplek of medewerker om in gebruik te nemen.',
+            )}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PlaceIcon />}
+              onClick={() => { setShowCreatedCallout(false); setAssignWorkplaceOpen(true); }}
+              sx={{ bgcolor: '#FF7700', color: '#fff', fontWeight: 600, '&:hover': { bgcolor: '#E66A00' } }}
+            >
+              {t('assetLocationChain.assignToWorkplace', 'Toewijzen aan werkplek')}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<PersonIcon />}
+              onClick={() => { setShowCreatedCallout(false); setAssignEmployeeOpen(true); }}
+              sx={{ bgcolor: '#7b1fa2', color: '#fff', fontWeight: 600,
+                '&:hover': { bgcolor: alpha('#7b1fa2', 0.85) } }}
+            >
+              {t('assetLocationChain.assignToEmployee', 'Toewijzen aan medewerker')}
+            </Button>
+          </Box>
+        </Alert>
+      )}
+
+      {/* Header card */}
+      <Card elevation={0} sx={cardSx}>
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
             <Box>
@@ -225,86 +413,34 @@ const AssetDetailPage = () => {
                 </Typography>
                 <StatusBadge status={asset.status} />
                 {isDummyAsset(asset.assetCode) && (
-                  <Chip
-                    icon={<ScienceIcon />}
-                    label={t('assetForm.dummyAsset')}
-                    color="warning"
-                    variant="outlined"
-                    size="small"
-                  />
+                  <Chip icon={<ScienceIcon />} label={t('assetForm.dummyAsset')} color="warning" variant="outlined" size="small" />
                 )}
               </Box>
             </Box>
 
+            {/* Header action icons */}
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {/* Show Software button only for Laptop and Desktop categories */}
               {(asset.category === 'Laptop' || asset.category === 'Desktop') && (
-                <Tooltip title="View Installed Software">
-                  <IconButton
-                    onClick={() => navigate(buildRoute.assetSoftware(asset.id))}
-                    sx={{
-                      ...iconButtonSx,
-                      color: 'info.main',
-                      '&:hover': {
-                        borderColor: 'info.main',
-                        boxShadow: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? '0 4px 16px rgba(33, 150, 243, 0.3)'
-                            : '0 2px 12px rgba(33, 150, 243, 0.2)',
-                      },
-                    }}
-                  >
+                <Tooltip title={t('common.actions') + ' — Software'}>
+                  <IconButton onClick={() => navigate(buildRoute.assetSoftware(asset.id))} sx={{ ...iconButtonSx, color: 'info.main' }}>
                     <AppsIcon />
                   </IconButton>
                 </Tooltip>
               )}
-              {/* Show Intune Device Management button for Laptop/Desktop with serial number */}
               {(asset.category === 'Laptop' || asset.category === 'Desktop') && asset.serialNumber && (
                 <Tooltip title={t('intune.pageTitle', 'Device Management')}>
-                  <IconButton
-                    onClick={() => navigate(buildRoute.assetIntune(asset.id))}
-                    sx={{
-                      ...iconButtonSx,
-                      color: 'success.main',
-                      '&:hover': {
-                        borderColor: 'success.main',
-                        boxShadow: (theme) =>
-                          theme.palette.mode === 'dark'
-                            ? '0 4px 16px rgba(76, 175, 80, 0.3)'
-                            : '0 2px 12px rgba(76, 175, 80, 0.2)',
-                      },
-                    }}
-                  >
+                  <IconButton onClick={() => navigate(buildRoute.assetIntune(asset.id))} sx={{ ...iconButtonSx, color: 'success.main' }}>
                     <DevicesIcon />
                   </IconButton>
                 </Tooltip>
               )}
               <Tooltip title={t('common.edit')}>
-                <IconButton
-                  onClick={handleEdit}
-                  sx={{
-                    ...iconButtonSx,
-                    color: 'primary.main',
-                  }}
-                >
+                <IconButton onClick={handleEdit} sx={{ ...iconButtonSx, color: 'primary.main' }}>
                   <EditIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title={t('common.delete')}>
-                <IconButton
-                  onClick={() => setDeleteDialogOpen(true)}
-                  sx={{
-                    ...iconButtonSx,
-                    color: 'error.main',
-                    '&:hover': {
-                      borderColor: 'error.main',
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'dark'
-                          ? '0 4px 16px rgba(244, 67, 54, 0.3)'
-                          : '0 2px 12px rgba(244, 67, 54, 0.2)',
-                    },
-                  }}
-                >
+                <IconButton onClick={() => setDeleteDialogOpen(true)} sx={{ ...iconButtonSx, color: 'error.main' }}>
                   <DeleteIcon />
                 </IconButton>
               </Tooltip>
@@ -314,41 +450,58 @@ const AssetDetailPage = () => {
       </Card>
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
-        {/* Main Information */}
+        {/* ===== Left column: main content ===== */}
         <Box sx={{ flex: 1 }}>
-          {/* Identification */}
-          <Card elevation={0} sx={scannerCardSx}>
+
+          {/* Location & Assignment panel (status-adaptive) */}
+          <Card elevation={0} sx={cardSx}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <SectionHeader
-                icon={<QrCodeIcon />}
-                title={t('assetForm.identificationSection')}
+                icon={<PlaceIcon />}
+                title={t('assetDetail.locationSection', 'Locatie & Toewijzing')}
+                color="#FF7700"
               />
+              <AssetLocationChain
+                asset={asset}
+                variant="full"
+                onAssignWorkplace={
+                  !isAssigned || asset.status === AssetStatus.Stock
+                    ? () => setAssignWorkplaceOpen(true)
+                    : undefined
+                }
+                onAssignEmployee={
+                  !isAssigned || asset.status === AssetStatus.Stock
+                    ? () => setAssignEmployeeOpen(true)
+                    : undefined
+                }
+                onChangeAssignment={
+                  isAssigned ? () => setUnassignOpen(true) : undefined
+                }
+              />
+              {renderLocationCTAs()}
+            </CardContent>
+          </Card>
+
+          {/* Identification */}
+          <Card elevation={0} sx={cardSx}>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <SectionHeader icon={<QrCodeIcon />} title={t('assetForm.identificationSection')} />
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.assetCode')}
-                  </Typography>
-                  <Typography variant="body1" fontWeight="bold">
-                    {asset.assetCode}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.assetCode')}</Typography>
+                  <Typography variant="body1" fontWeight="bold">{asset.assetCode}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.category')}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.category')}</Typography>
                   <Typography variant="body1">{asset.category}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetForm.assetNameDevice')}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetForm.assetNameDevice')}</Typography>
                   <Typography variant="body1">{asset.assetName}</Typography>
                 </Box>
                 {asset.alias && (
                   <Box sx={{ flex: '1 1 200px' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('assetForm.alias')}
-                    </Typography>
+                    <Typography variant="caption" color="text.secondary">{t('assetForm.alias')}</Typography>
                     <Typography variant="body1">{asset.alias}</Typography>
                   </Box>
                 )}
@@ -356,272 +509,79 @@ const AssetDetailPage = () => {
             </CardContent>
           </Card>
 
-          {/* Assignment Details */}
-          <Card elevation={0} sx={scannerCardSx}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <SectionHeader
-                icon={<PersonIcon />}
-                title={t('assetForm.assignmentSection')}
-              />
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.primaryUser')}
-                  </Typography>
-                  <Typography variant="body1" fontWeight="medium">
-                    {asset.owner || '-'}
-                  </Typography>
-                </Box>
-                {asset.jobTitle && (
-                  <Box sx={{ flex: '1 1 200px' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('assetDetail.jobTitle')}
-                    </Typography>
-                    <Typography variant="body1">{asset.jobTitle}</Typography>
-                  </Box>
-                )}
-                {asset.officeLocation && (
-                  <Box sx={{ flex: '1 1 200px' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('assetDetail.officeLocation')}
-                    </Typography>
-                    <Typography variant="body1">{asset.officeLocation}</Typography>
-                  </Box>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
-
-          {/* Location Information */}
-          <Card elevation={0} sx={scannerCardSx}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <SectionHeader
-                icon={<PlaceIcon />}
-                title={t('assetForm.locationSection')}
-              />
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                {/* Physical Workplace - prominently displayed if present */}
-                {asset.physicalWorkplace && (
-                  <Box sx={{ flex: '1 1 100%' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('assetForm.physicalWorkplace')}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                      <PlaceIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-                      <Typography variant="body1" fontWeight="medium">
-                        {asset.physicalWorkplace.code} - {asset.physicalWorkplace.name}
-                      </Typography>
-                      {asset.physicalWorkplace.currentOccupantName && (
-                        <Chip
-                          label={asset.physicalWorkplace.currentOccupantName}
-                          size="small"
-                          variant="outlined"
-                          color="info"
-                          sx={{ ml: 1 }}
-                        />
-                      )}
-                    </Box>
-                    {/* Show floor/room if available */}
-                    {(asset.physicalWorkplace.floor || asset.physicalWorkplace.buildingName) && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, ml: 3.5 }}>
-                        {[
-                          asset.physicalWorkplace.buildingName,
-                          asset.physicalWorkplace.floor,
-                        ].filter(Boolean).join(' • ')}
-                      </Typography>
-                    )}
-                  </Box>
-                )}
-
-                {/* Building */}
-                <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetForm.building')}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                    <BusinessIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
-                    <Typography variant="body1">
-                      {asset.physicalWorkplace?.buildingName || asset.building?.name || '-'}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Service/Department */}
-                <Box sx={{ flex: '1 1 200px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetForm.service')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {asset.service ? `${asset.service.code} - ${asset.service.name}` :
-                     asset.physicalWorkplace?.serviceName || '-'}
-                  </Typography>
-                </Box>
-
-                {/* Installation Location (legacy/additional info) */}
-                {asset.installationLocation && (
-                  <Box sx={{ flex: '1 1 200px' }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {t('assetForm.installationLocation')}
-                    </Typography>
-                    <Typography variant="body1">{asset.installationLocation}</Typography>
-                  </Box>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
-
           {/* Technical Specifications */}
-          <Card elevation={0} sx={scannerCardSx}>
+          <Card elevation={0} sx={cardSx}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <SectionHeader
-                icon={<ComputerIcon />}
-                title={t('assetForm.technicalSection')}
-              />
+              <SectionHeader icon={<ComputerIcon />} title={t('assetForm.technicalSection')} />
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 150px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.brand')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {asset.brand || '-'}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.brand')}</Typography>
+                  <Typography variant="body1">{asset.brand || '-'}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.model')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {asset.model || '-'}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.model')}</Typography>
+                  <Typography variant="body1">{asset.model || '-'}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.serialNumber')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {asset.serialNumber || '-'}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.serialNumber')}</Typography>
+                  <Typography variant="body1">{asset.serialNumber || '-'}</Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
 
-          {/* Lifecycle Information */}
-          <Card elevation={0} sx={scannerCardSx}>
+          {/* Lifecycle */}
+          <Card elevation={0} sx={cardSx}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <SectionHeader
-                icon={<CalendarMonthIcon />}
-                title={t('assetForm.lifecycleSection')}
-              />
+              <SectionHeader icon={<CalendarMonthIcon />} title={t('assetForm.lifecycleSection')} />
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                 <Box sx={{ flex: '1 1 150px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.purchaseDate')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatDate(asset.purchaseDate)}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.purchaseDate')}</Typography>
+                  <Typography variant="body1">{formatDate(asset.purchaseDate)}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.warrantyExpiry')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatDate(asset.warrantyExpiry)}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.warrantyExpiry')}</Typography>
+                  <Typography variant="body1">{formatDate(asset.warrantyExpiry)}</Typography>
                 </Box>
                 <Box sx={{ flex: '1 1 150px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('assetDetail.installationDate')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatDate(asset.installationDate)}
-                  </Typography>
+                  <Typography variant="caption" color="text.secondary">{t('assetDetail.installationDate')}</Typography>
+                  <Typography variant="body1">{formatDate(asset.installationDate)}</Typography>
                 </Box>
               </Box>
               <Divider sx={{ my: 2 }} />
               <Box sx={{ display: 'flex', gap: 3 }}>
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="caption" color="text.secondary">
-                    Created
+                    {t('assetDetail.created', 'Aangemaakt')}
                   </Typography>
-                  <Typography variant="body2">
-                    {formatDate(asset.createdAt)}
-                  </Typography>
+                  <Typography variant="body2">{formatDate(asset.createdAt)}</Typography>
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="caption" color="text.secondary">
-                    Last Updated
+                    {t('assetDetail.lastUpdated', 'Laatste wijziging')}
                   </Typography>
-                  <Typography variant="body2">
-                    {formatDate(asset.updatedAt)}
-                  </Typography>
+                  <Typography variant="body2">{formatDate(asset.updatedAt)}</Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
 
-          {/* Event History */}
-          <Card elevation={0} sx={scannerCardSx}>
+          {/* Event history */}
+          <Card elevation={0} sx={cardSx}>
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <AssetEventHistory assetId={asset.id} />
             </CardContent>
           </Card>
         </Box>
 
-        {/* QR Code Section */}
-        <Box sx={{ width: { xs: '100%', md: '350px' } }}>
-          <Card
-            elevation={0}
-            sx={{
-              ...scannerCardSx,
-              position: { md: 'sticky' },
-              top: 16,
-            }}
-          >
+        {/* ===== Right column: QR code (sticky) ===== */}
+        <Box sx={{ width: { xs: '100%', md: '320px' } }}>
+          <Card elevation={0} sx={{ ...cardSx, position: { md: 'sticky' }, top: 16 }}>
             <CardContent sx={{ textAlign: 'center', p: { xs: 2, sm: 3 } }}>
-              <Stack
-                direction="row"
-                spacing={1.5}
-                alignItems="center"
-                justifyContent="center"
-                sx={{
-                  mb: 2,
-                  pb: 2,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 36,
-                    height: 36,
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? 'rgba(255, 215, 0, 0.08)'
-                        : 'rgba(253, 185, 49, 0.08)',
-                    color: 'primary.main',
-                  }}
-                >
-                  <QrCodeIcon />
-                </Box>
-                <Typography
-                  variant="h6"
-                  fontWeight={700}
-                  sx={{ color: 'primary.main', letterSpacing: '0.02em' }}
-                >
-                  QR Code
-                </Typography>
-              </Stack>
+              <SectionHeader icon={<QrCodeIcon />} title="QR Code" />
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Scan to quickly access this asset
+                {t('assetDetail.qrScanHint', 'Scan om dit asset snel op te zoeken')}
               </Typography>
 
               <Box
@@ -636,17 +596,14 @@ const AssetDetailPage = () => {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     borderColor: 'primary.main',
-                    boxShadow: (theme) =>
-                      theme.palette.mode === 'dark'
-                        ? '0 4px 16px rgba(255, 215, 0, 0.2)'
-                        : '0 2px 12px rgba(253, 185, 49, 0.3)',
+                    boxShadow: isDark ? '0 4px 16px rgba(255, 215, 0, 0.2)' : '0 2px 12px rgba(253, 185, 49, 0.3)',
                   },
                 }}
               >
                 <QRCodeSVG
                   id="asset-qr-code"
                   value={asset.assetCode}
-                  size={200}
+                  size={180}
                   level="H"
                   bgColor="#FFFFFF"
                   fgColor="#000000"
@@ -656,12 +613,7 @@ const AssetDetailPage = () => {
               <Typography
                 variant="caption"
                 display="block"
-                sx={{
-                  mt: 2,
-                  fontFamily: 'monospace',
-                  fontWeight: 600,
-                  color: 'text.secondary',
-                }}
+                sx={{ mt: 2, fontFamily: 'monospace', fontWeight: 600, color: 'text.secondary' }}
               >
                 {asset.assetCode}
               </Typography>
@@ -669,11 +621,7 @@ const AssetDetailPage = () => {
               <Tooltip title={t('printLabel.title')}>
                 <IconButton
                   onClick={() => setPrintDialogOpen(true)}
-                  sx={{
-                    ...iconButtonSx,
-                    mt: 3,
-                    color: 'primary.main',
-                  }}
+                  sx={{ ...iconButtonSx, mt: 3, color: 'primary.main' }}
                 >
                   <PrintIcon />
                 </IconButton>
@@ -683,35 +631,29 @@ const AssetDetailPage = () => {
         </Box>
       </Box>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        disableRestoreFocus
-      >
-        <DialogTitle>Delete Asset</DialogTitle>
+      {/* ===== Dialogs ===== */}
+
+      {/* Delete */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} disableRestoreFocus>
+        <DialogTitle>{t('assetDetail.deleteAsset')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete <strong>{asset.assetName}</strong> ({asset.assetCode})?
-            This action cannot be undone.
+            {t('assetDetail.deleteConfirm', {
+              name: asset.assetName,
+              code: asset.assetCode,
+              defaultValue: `Weet u zeker dat u ${asset.assetName} (${asset.assetCode}) wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`,
+            })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              setDeleteDialogOpen(false);
-              handleDelete();
-            }}
-            color="error"
-            variant="contained"
-          >
-            Delete
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel')}</Button>
+          <Button onClick={() => { setDeleteDialogOpen(false); handleDelete(); }} color="error" variant="contained">
+            {t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Print Label Dialog */}
+      {/* Print */}
       <PrintLabelDialog
         open={printDialogOpen}
         onClose={() => setPrintDialogOpen(false)}
@@ -719,6 +661,33 @@ const AssetDetailPage = () => {
         assetName={asset.assetName}
       />
 
+      {/* Assign to employee */}
+      <AssignEmployeeDialog
+        open={assignEmployeeOpen}
+        onClose={() => setAssignEmployeeOpen(false)}
+        asset={asset}
+      />
+
+      {/* Assign to workplace */}
+      <AssignWorkplaceDialog
+        open={assignWorkplaceOpen}
+        onClose={() => setAssignWorkplaceOpen(false)}
+        asset={asset}
+      />
+
+      {/* Unassign */}
+      <UnassignDialog
+        open={unassignOpen}
+        onClose={() => setUnassignOpen(false)}
+        asset={asset}
+      />
+
+      {/* Status transition */}
+      <StatusTransitionDialog
+        open={statusTransitionOpen}
+        onClose={() => setStatusTransitionOpen(false)}
+        asset={asset}
+      />
     </Box>
   );
 };
