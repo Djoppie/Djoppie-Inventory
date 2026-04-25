@@ -15,20 +15,23 @@ import {
   Divider,
   alpha,
   useTheme,
-  MenuItem,
 } from '@mui/material';
 import {
   Edit as EditIcon,
-  Business as BusinessIcon,
   CalendarMonth as CalendarIcon,
-  Inventory as InventoryIcon,
   Label as LabelIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useBulkUpdateAssets } from '../../hooks/useAssets';
-import { BulkUpdateAssetsDto, AssetStatus } from '../../types/asset.types';
-import ServiceSelect from '../common/ServiceSelect';
+import { BulkUpdateAssetsDto } from '../../types/asset.types';
 
+/**
+ * BulkEditDialog only handles intrinsic asset properties: brand, model,
+ * purchase date, warranty expiry. Status, owner, employee, building,
+ * physical workplace and installation date are mutated via the
+ * dedicated assignment endpoints — bulk-assign affordances (PR5) call
+ * those per-asset.
+ */
 interface BulkEditDialogProps {
   open: boolean;
   onClose: () => void;
@@ -42,24 +45,16 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
   const bulkUpdateMutation = useBulkUpdateAssets();
 
   // Field values
-  const [serviceId, setServiceId] = useState<number | null>(null);
   const [purchaseDate, setPurchaseDate] = useState<string>('');
-  const [installationDate, setInstallationDate] = useState<string>('');
   const [warrantyExpiry, setWarrantyExpiry] = useState<string>('');
   const [brand, setBrand] = useState<string>('');
   const [model, setModel] = useState<string>('');
-  const [status, setStatus] = useState<string>('');
-  const [installationLocation, setInstallationLocation] = useState<string>('');
 
   // Update flags
-  const [updateServiceId, setUpdateServiceId] = useState(false);
   const [updatePurchaseDate, setUpdatePurchaseDate] = useState(false);
-  const [updateInstallationDate, setUpdateInstallationDate] = useState(false);
   const [updateWarrantyExpiry, setUpdateWarrantyExpiry] = useState(false);
   const [updateBrand, setUpdateBrand] = useState(false);
   const [updateModel, setUpdateModel] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState(false);
-  const [updateInstallationLocation, setUpdateInstallationLocation] = useState(false);
 
   // Result state
   const [result, setResult] = useState<{
@@ -69,30 +64,22 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
     errors: string[];
   } | null>(null);
 
-  const hasSelectedFields = updateServiceId || updatePurchaseDate || updateInstallationDate ||
-    updateWarrantyExpiry || updateBrand || updateModel || updateStatus || updateInstallationLocation;
+  const hasSelectedFields =
+    updatePurchaseDate || updateWarrantyExpiry || updateBrand || updateModel;
 
   const handleSubmit = async () => {
     if (!hasSelectedFields) return;
 
     const dto: BulkUpdateAssetsDto = {
       assetIds: selectedAssetIds,
-      serviceId: serviceId ?? undefined,
-      updateServiceId,
       purchaseDate: purchaseDate || undefined,
       updatePurchaseDate,
-      installationDate: installationDate || undefined,
-      updateInstallationDate,
       warrantyExpiry: warrantyExpiry || undefined,
       updateWarrantyExpiry,
       brand: brand || undefined,
       updateBrand,
       model: model || undefined,
       updateModel,
-      status: status || undefined,
-      updateStatus,
-      installationLocation: installationLocation || undefined,
-      updateInstallationLocation,
     };
 
     try {
@@ -103,9 +90,8 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
         failedCount: response.failedIds.length,
         errors: response.errors,
       });
-
-      if (response.failedIds.length === 0) {
-        onSuccess?.();
+      if (response.failedIds.length === 0 && onSuccess) {
+        onSuccess();
       }
     } catch (error) {
       setResult({
@@ -119,28 +105,16 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
 
   const handleClose = () => {
     setResult(null);
-    // Reset all fields
-    setServiceId(null);
     setPurchaseDate('');
-    setInstallationDate('');
     setWarrantyExpiry('');
     setBrand('');
     setModel('');
-    setStatus('');
-    setInstallationLocation('');
-    // Reset all flags
-    setUpdateServiceId(false);
     setUpdatePurchaseDate(false);
-    setUpdateInstallationDate(false);
     setUpdateWarrantyExpiry(false);
     setUpdateBrand(false);
     setUpdateModel(false);
-    setUpdateStatus(false);
-    setUpdateInstallationLocation(false);
     onClose();
   };
-
-  const statusOptions = Object.values(AssetStatus);
 
   return (
     <Dialog
@@ -183,22 +157,17 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
       <DialogContent sx={{ pt: 3 }}>
         {result ? (
           <Box sx={{ py: 2 }}>
-            <Alert
-              severity={result.success ? 'success' : 'warning'}
-              sx={{ mb: 2 }}
-            >
-              {result.success ? (
-                t('bulkEdit.successMessage', {
-                  count: result.updatedCount,
-                  defaultValue: `Successfully updated ${result.updatedCount} assets`,
-                })
-              ) : (
-                t('bulkEdit.partialSuccess', {
-                  updated: result.updatedCount,
-                  failed: result.failedCount,
-                  defaultValue: `Updated ${result.updatedCount} assets, ${result.failedCount} failed`,
-                })
-              )}
+            <Alert severity={result.success ? 'success' : 'warning'} sx={{ mb: 2 }}>
+              {result.success
+                ? t('bulkEdit.successMessage', {
+                    count: result.updatedCount,
+                    defaultValue: `Successfully updated ${result.updatedCount} assets`,
+                  })
+                : t('bulkEdit.partialSuccess', {
+                    updated: result.updatedCount,
+                    failed: result.failedCount,
+                    defaultValue: `Updated ${result.updatedCount} assets, ${result.failedCount} failed`,
+                  })}
             </Alert>
             {result.errors.length > 0 && (
               <Box sx={{ mt: 2 }}>
@@ -217,45 +186,17 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             <Alert severity="info" sx={{ mb: 1 }}>
               {t('bulkEdit.instructions', {
-                defaultValue: 'Check the fields you want to update. Only checked fields will be modified.',
+                defaultValue:
+                  'Check the fields you want to update. Only checked fields will be modified.',
               })}
             </Alert>
 
-            {/* Service/Department */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: updateServiceId ? 'primary.main' : 'divider',
-                bgcolor: updateServiceId ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <BusinessIcon fontSize="small" sx={{ color: 'primary.main' }} />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={updateServiceId}
-                      onChange={(e) => setUpdateServiceId(e.target.checked)}
-                      color="primary"
-                    />
-                  }
-                  label={
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {t('bulkEdit.service', { defaultValue: 'Service / Department' })}
-                    </Typography>
-                  }
-                />
-              </Box>
-              {updateServiceId && (
-                <ServiceSelect
-                  value={serviceId}
-                  onChange={setServiceId}
-                />
-              )}
-            </Box>
+            <Alert severity="warning" sx={{ mb: 1 }}>
+              {t('bulkEdit.workflowHint', {
+                defaultValue:
+                  'Status, eigenaar en locatie wijzigen niet via deze dialog. Gebruik daarvoor de toewijzings-knoppen op de asset of de bulk-toewijzing in de lijst.',
+              })}
+            </Alert>
 
             {/* Dates Section */}
             <Box
@@ -263,10 +204,11 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
                 p: 2,
                 borderRadius: 2,
                 border: '1px solid',
-                borderColor: (updatePurchaseDate || updateInstallationDate || updateWarrantyExpiry)
-                  ? 'primary.main' : 'divider',
-                bgcolor: (updatePurchaseDate || updateInstallationDate || updateWarrantyExpiry)
-                  ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                borderColor: updatePurchaseDate || updateWarrantyExpiry ? 'primary.main' : 'divider',
+                bgcolor:
+                  updatePurchaseDate || updateWarrantyExpiry
+                    ? alpha(theme.palette.primary.main, 0.05)
+                    : 'transparent',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -278,7 +220,6 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Purchase Date */}
                 <Box>
                   <FormControlLabel
                     control={
@@ -303,32 +244,6 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
                   )}
                 </Box>
 
-                {/* Installation Date */}
-                <Box>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={updateInstallationDate}
-                        onChange={(e) => setUpdateInstallationDate(e.target.checked)}
-                        color="primary"
-                        size="small"
-                      />
-                    }
-                    label={t('bulkEdit.installationDate', { defaultValue: 'Installation Date' })}
-                  />
-                  {updateInstallationDate && (
-                    <TextField
-                      type="date"
-                      value={installationDate}
-                      onChange={(e) => setInstallationDate(e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                </Box>
-
-                {/* Warranty Expiry */}
                 <Box>
                   <FormControlLabel
                     control={
@@ -361,9 +276,9 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
                 p: 2,
                 borderRadius: 2,
                 border: '1px solid',
-                borderColor: (updateBrand || updateModel) ? 'primary.main' : 'divider',
-                bgcolor: (updateBrand || updateModel)
-                  ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                borderColor: updateBrand || updateModel ? 'primary.main' : 'divider',
+                bgcolor:
+                  updateBrand || updateModel ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -375,7 +290,6 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Brand */}
                 <Box>
                   <FormControlLabel
                     control={
@@ -400,7 +314,6 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
                   )}
                 </Box>
 
-                {/* Model */}
                 <Box>
                   <FormControlLabel
                     control={
@@ -426,84 +339,6 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
                 </Box>
               </Box>
             </Box>
-
-            {/* Status & Location */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: (updateStatus || updateInstallationLocation) ? 'primary.main' : 'divider',
-                bgcolor: (updateStatus || updateInstallationLocation)
-                  ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <InventoryIcon fontSize="small" sx={{ color: 'primary.main' }} />
-                <Typography variant="subtitle2" fontWeight={600}>
-                  {t('bulkEdit.statusLocation', { defaultValue: 'Status & Location' })}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* Status */}
-                <Box>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={updateStatus}
-                        onChange={(e) => setUpdateStatus(e.target.checked)}
-                        color="primary"
-                        size="small"
-                      />
-                    }
-                    label={t('bulkEdit.status', { defaultValue: 'Status' })}
-                  />
-                  {updateStatus && (
-                    <TextField
-                      select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      size="small"
-                      fullWidth
-                      sx={{ mt: 1 }}
-                    >
-                      {statusOptions.map((statusOption) => (
-                        <MenuItem key={statusOption} value={statusOption}>
-                          {t(`status.${statusOption}`, { defaultValue: statusOption })}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  )}
-                </Box>
-
-                {/* Installation Location */}
-                <Box>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={updateInstallationLocation}
-                        onChange={(e) => setUpdateInstallationLocation(e.target.checked)}
-                        color="primary"
-                        size="small"
-                      />
-                    }
-                    label={t('bulkEdit.installationLocation', { defaultValue: 'Installation Location' })}
-                  />
-                  {updateInstallationLocation && (
-                    <TextField
-                      value={installationLocation}
-                      onChange={(e) => setInstallationLocation(e.target.value)}
-                      placeholder={t('bulkEdit.locationPlaceholder', { defaultValue: 'e.g., Room 101, Floor 2' })}
-                      size="small"
-                      fullWidth
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                </Box>
-              </Box>
-            </Box>
           </Box>
         )}
       </DialogContent>
@@ -512,7 +347,9 @@ const BulkEditDialog = ({ open, onClose, selectedAssetIds, onSuccess }: BulkEdit
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} color="inherit">
-          {result ? t('common.close', { defaultValue: 'Close' }) : t('common.cancel', { defaultValue: 'Cancel' })}
+          {result
+            ? t('common.close', { defaultValue: 'Close' })
+            : t('common.cancel', { defaultValue: 'Cancel' })}
         </Button>
         {!result && (
           <Button

@@ -149,6 +149,8 @@
     "saveError": "Fout bij opslaan activa",
     "templateSection": "Snel starten met sjabloon",
     "templateSectionDesc": "Selecteer een sjabloon om veelvoorkomende activa-gegevens automatisch in te vullen",
+    "statusNieuwTooltip": "Nieuwe activa starten altijd op status Nieuw. Eigenaar en locatie voeg je later toe via toewijzing aan een werkplek of medewerker.",
+    "statusNieuwExplainer": "Status start op Nieuw — eigenaar en locatie volgen via toewijzing.",
     "noTemplate": "Geen sjabloon - Handmatig invoeren",
     "identificationSection": "Activa identificatie",
     "locationSection": "Locatie informatie",
@@ -203,6 +205,7 @@
     "assetTypeHint": "Selecteer het type asset"
   },
   "bulkCreate": {
+    "statusNieuwExplainer": "Alle activa worden aangemaakt met status Nieuw — koppel ze daarna aan een werkplek of medewerker.",
     "title": "Bulk aanmaken",
     "modeDescription": "Kies hoe u meerdere assets wilt toevoegen",
     "templateMode": "Sjabloon modus",

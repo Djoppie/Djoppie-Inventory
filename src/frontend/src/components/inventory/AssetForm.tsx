@@ -22,9 +22,6 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  Person,
-  Business,
-  Work,
   Computer,
   QrCode,
   Category as CategoryIcon,
@@ -33,7 +30,6 @@ import {
   Science,
   Warning,
   Link as LinkIcon,
-  LinkOff,
   Search,
   Numbers,
 } from '@mui/icons-material';
@@ -41,16 +37,10 @@ import { useTranslation } from 'react-i18next';
 import { useAssetTemplates } from '../../hooks/useAssetTemplates';
 import { Asset, CreateAssetDto, UpdateAssetDto, AssetTemplate } from '../../types/asset.types';
 import { IntuneDevice } from '../../types/graph.types';
-import { Employee } from '../../types/admin.types';
-import EmployeeAutocomplete from '../common/EmployeeAutocomplete';
 import CategorySelect from '../common/CategorySelect';
 import AssetTypeSelect from '../common/AssetTypeSelect';
-import ServiceSelect from '../common/ServiceSelect';
-import BuildingSelect from '../common/BuildingSelect';
-import PhysicalWorkplaceSelect from '../common/PhysicalWorkplaceSelect';
 import { intuneApi } from '../../api/intune.api';
 import { serialNumberExists } from '../../api/assets.api';
-import { employeesApi } from '../../api/admin.api';
 
 interface AssetFormProps {
   initialData?: Asset;
@@ -154,7 +144,6 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const { data: templates, isLoading: templatesLoading } = useAssetTemplates();
 
   const [isDummy, setIsDummy] = useState(initialData?.isDummy || false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<IntuneDevice | null>(null);
 
   // Serial number lookup states
@@ -163,32 +152,20 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   const [isSerialUnique, setIsSerialUnique] = useState<boolean | null>(null);
   const [isCheckingUniqueness, setIsCheckingUniqueness] = useState(false);
 
+  // Asset creation / edit only handles *intrinsic* properties.
+  // Status, owner, employee, building, workplace and installation date
+  // flow through the dedicated assignment endpoints — those fields are
+  // intentionally absent from this form. New assets always land on
+  // Status = Nieuw; the read-only chip below shows that to the user.
   const [formData, setFormData] = useState<Omit<CreateAssetDto, 'isDummy'>>({
     assetName: initialData?.assetName || '',
     category: initialData?.category || '',
-
-    // New relational fields
     assetTypeId: initialData?.assetTypeId ?? 0,
-    serviceId: initialData?.serviceId,
-    installationLocation: initialData?.installationLocation || '',
-    buildingId: initialData?.buildingId,
-    physicalWorkplaceId: initialData?.physicalWorkplaceId,
-
-    // Employee assignment (preferred)
-    employeeId: initialData?.employeeId,
-
-    // Legacy user assignment fields
-    owner: initialData?.owner || '',
-    officeLocation: initialData?.officeLocation || '',
-    jobTitle: initialData?.jobTitle || '',
-
-    status: initialData?.status || 'Stock',
     brand: initialData?.brand || '',
     model: initialData?.model || '',
     serialNumber: initialData?.serialNumber || '',
     purchaseDate: formatDateForInput(initialData?.purchaseDate),
     warrantyExpiry: formatDateForInput(initialData?.warrantyExpiry),
-    installationDate: formatDateForInput(initialData?.installationDate),
   });
 
   // Alias is stored separately (optional readable name)
@@ -284,20 +261,18 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
 
     const template = templates?.find((t: AssetTemplate) => t.id === templateId);
     if (template) {
+      // Templates may carry legacy owner / status / installation* values
+      // (kept for backward-compat). Those are deliberately ignored —
+      // assignment is a separate explicit step after asset creation.
       setFormData(prev => ({
         ...prev,
         assetName: template.assetName || prev.assetName,
         category: template.category || prev.category,
         brand: template.brand || prev.brand,
         model: template.model || prev.model,
-        owner: template.owner || prev.owner,
         assetTypeId: template.assetTypeId ?? prev.assetTypeId,
-        serviceId: template.serviceId ?? prev.serviceId,
-        installationLocation: template.installationLocation || prev.installationLocation,
-        status: template.status || prev.status,
         purchaseDate: template.purchaseDate?.split('T')[0] || prev.purchaseDate,
         warrantyExpiry: template.warrantyExpiry?.split('T')[0] || prev.warrantyExpiry,
-        installationDate: template.installationDate?.split('T')[0] || prev.installationDate,
       }));
     }
   };
@@ -318,16 +293,15 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
   };
 
   const cleanData = <T extends object>(data: T): T => {
-    const requiredFields = ['assetTypeId', 'status'];
+    const requiredFields = ['assetTypeId'];
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
       if (requiredFields.includes(key)) {
         cleaned[key] = value;
       } else {
-        // Convert empty strings to null (not undefined) so they're sent to the backend
+        // Convert empty strings to null so they're sent as null to the backend
         const cleanedValue = typeof value === 'string' && value.trim() === '' ? null : value;
         cleaned[key] = cleanedValue;
-
       }
     }
     return cleaned as T;
@@ -590,247 +564,47 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 categoryId={selectedCategoryId ?? undefined}
               />
             </Box>
-            <FormControl sx={{ flex: '1 1 180px' }} required>
-              <InputLabel>{t('assetDetail.status')}</InputLabel>
-              <Select
-                value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
-                label={t('assetDetail.status')}
-              >
-                <MenuItem value="Stock">{t('statuses.stock')}</MenuItem>
-                <MenuItem value="InGebruik">{t('statuses.ingebruik')}</MenuItem>
-                <MenuItem value="Herstelling">{t('statuses.herstelling')}</MenuItem>
-                <MenuItem value="Defect">{t('statuses.defect')}</MenuItem>
-                <MenuItem value="UitDienst">{t('statuses.uitdienst')}</MenuItem>
-                <MenuItem value="Nieuw">{t('statuses.nieuw')}</MenuItem>
-              </Select>
-            </FormControl>
+            {/* Status select removed: new assets always land on Nieuw, status
+                changes go through dedicated assignment endpoints (PR4 wires
+                up the per-asset status dialog). */}
           </Box>
         </Stack>
       </SectionCard>
 
-      {/* Location Section */}
-      <SectionCard
-        icon={<Business />}
-        title={t('assetForm.locationSection')}
-        description={t('assetForm.locationSectionDesc')}
-      >
-        <Stack spacing={2.5}>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Box sx={{ flex: '1 1 300px' }}>
-              <BuildingSelect
-                value={formData.buildingId ?? null}
-                onChange={(value) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    buildingId: value ?? undefined,
-                    // Reset physical workplace when building changes
-                    physicalWorkplaceId: undefined,
-                  }));
-                }}
-                label={t('assetForm.building')}
-                helperText={t('assetForm.buildingHint')}
-              />
-            </Box>
-            <Box sx={{ flex: '1 1 300px' }}>
-              <ServiceSelect
-                value={formData.serviceId ?? null}
-                onChange={(value) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    serviceId: value ?? undefined,
-                    // Reset physical workplace when service changes
-                    physicalWorkplaceId: undefined,
-                  }));
-                }}
-                label={t('assetForm.service')}
-                helperText={t('assetForm.serviceHint')}
-              />
-            </Box>
-          </Box>
-
-          <PhysicalWorkplaceSelect
-            value={formData.physicalWorkplaceId ?? null}
-            onChange={async (value, workplace) => {
-              setFormData(prev => ({
-                ...prev,
-                physicalWorkplaceId: value ?? undefined,
-                // Auto-fill building and service from selected workplace
-                buildingId: workplace?.buildingId ?? prev.buildingId,
-                serviceId: workplace?.serviceId ?? prev.serviceId,
-              }));
-
-              // Auto-fill employee from workplace's current occupant
-              if (workplace?.currentOccupantEmployeeId) {
-                try {
-                  const employee = await employeesApi.getById(workplace.currentOccupantEmployeeId);
-                  setSelectedEmployee(employee);
-                  setFormData(prev => ({
-                    ...prev,
-                    employeeId: employee.id,
-                    owner: employee.displayName,
-                    jobTitle: employee.jobTitle ?? prev.jobTitle,
-                    officeLocation: employee.officeLocation ?? prev.officeLocation,
-                  }));
-                  markFieldAsAutoFilled('employeeId');
-                  if (employee.jobTitle) {
-                    markFieldAsAutoFilled('jobTitle');
-                  }
-                  if (employee.officeLocation) {
-                    markFieldAsAutoFilled('officeLocation');
-                  }
-                } catch {
-                  // Ignore error if employee lookup fails
-                }
-              }
+      {!isEditMode && (
+        <Tooltip
+          title={t('assetForm.statusNieuwTooltip')}
+          placement="top"
+          arrow
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 2,
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,119,0,0.08)' : 'rgba(255,119,0,0.06)',
+              border: '1px solid',
+              borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,119,0,0.25)' : 'rgba(255,119,0,0.20)',
             }}
-            label={t('assetForm.physicalWorkplace')}
-            helperText={t('assetForm.physicalWorkplaceHint')}
-            buildingId={formData.buildingId}
-            serviceId={formData.serviceId}
-          />
-        </Stack>
-      </SectionCard>
-
-      {/* Assignment Section */}
-      <SectionCard
-        icon={<Person />}
-        title={t('assetForm.assignmentSection')}
-        description={t('assetForm.assignmentSectionDesc')}
-      >
-        <Stack spacing={2.5}>
-          <EmployeeAutocomplete
-            value={formData.employeeId}
-            onChange={(employeeId: number | null, employee: Employee | null) => {
-              setSelectedEmployee(employee);
-              // Auto-fill fields from employee
-              if (employee) {
-                setFormData(prev => ({
-                  ...prev,
-                  employeeId: employeeId ?? undefined,
-                  owner: employee.displayName,
-                  jobTitle: employee.jobTitle ?? prev.jobTitle,
-                  officeLocation: employee.officeLocation ?? prev.officeLocation,
-                  // Auto-fill physical workplace from employee's current workplace
-                  physicalWorkplaceId: employee.physicalWorkplaceId ?? prev.physicalWorkplaceId,
-                }));
-                if (employee.jobTitle) {
-                  markFieldAsAutoFilled('jobTitle');
-                }
-                if (employee.officeLocation) {
-                  markFieldAsAutoFilled('officeLocation');
-                }
-                if (employee.physicalWorkplaceId) {
-                  markFieldAsAutoFilled('physicalWorkplaceId');
-                }
-              } else {
-                setFormData(prev => ({
-                  ...prev,
-                  employeeId: undefined,
-                  owner: '',
-                  jobTitle: '',
-                  officeLocation: '',
-                }));
-              }
-            }}
-            label={t('assetDetail.primaryUser')}
-            helperText={t('assetForm.ownerOptionalHint')}
-            disabled={isLoading}
-          />
-
-          {/* Employee info display */}
-          {selectedEmployee && (
-            <Box
+          >
+            <Chip
+              label={t('statuses.nieuw')}
+              size="small"
               sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 0.5,
-                pl: 2,
-                py: 1,
-                borderLeft: `3px solid ${theme.palette.primary.main}`,
-                background: alpha(theme.palette.primary.main, 0.03),
-                borderRadius: '0 8px 8px 0',
+                bgcolor: '#FF7700',
+                color: 'white',
+                fontWeight: 600,
               }}
-            >
-              {selectedEmployee.jobTitle && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Work sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {t('assetDetail.jobTitle')}:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {selectedEmployee.jobTitle}
-                  </Typography>
-                </Box>
-              )}
-              {selectedEmployee.service && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Business sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">
-                    {t('assetForm.service')}:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {selectedEmployee.service.name}
-                  </Typography>
-                </Box>
-              )}
-              {selectedEmployee.email && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Person sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">
-                    Email:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    {selectedEmployee.email}
-                  </Typography>
-                </Box>
-              )}
+            />
+            <Box sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+              {t('assetForm.statusNieuwExplainer')}
             </Box>
-          )}
+          </Box>
+        </Tooltip>
+      )}
 
-          {/* Device-User validation indicator */}
-          {selectedDevice && selectedEmployee && (
-            <Box>
-              {selectedDevice.userPrincipalName ? (
-                (() => {
-                  const deviceUpn = selectedDevice.userPrincipalName.toLowerCase();
-                  const employeeUpn = selectedEmployee.userPrincipalName?.toLowerCase() || '';
-                  const upnMatch = deviceUpn === employeeUpn;
-
-                  return upnMatch ? (
-                    <Chip
-                      icon={<CheckCircle />}
-                      label={`${selectedEmployee.displayName} — ${selectedDevice.deviceName}`}
-                      color="success"
-                      variant="outlined"
-                      size="small"
-                      sx={{ fontWeight: 500, py: 0.5 }}
-                    />
-                  ) : (
-                    <Chip
-                      icon={<Warning />}
-                      label={`${t('assetForm.deviceLinkedToOther')}: ${selectedDevice.userPrincipalName}`}
-                      color="warning"
-                      variant="outlined"
-                      size="small"
-                      sx={{ fontWeight: 500, maxWidth: '100%' }}
-                    />
-                  );
-                })()
-              ) : (
-                <Chip
-                  icon={<LinkOff />}
-                  label={t('assetForm.deviceNotLinked')}
-                  color="default"
-                  variant="outlined"
-                  size="small"
-                  sx={{ fontWeight: 500 }}
-                />
-              )}
-            </Box>
-          )}
-        </Stack>
-      </SectionCard>
 
       {/* Technical Details + Lifecycle Section */}
       <SectionCard
@@ -893,14 +667,9 @@ const AssetForm = ({ initialData, onSubmit, onCancel, isLoading, isEditMode }: A
                 onChange={(e) => handleChange('warrantyExpiry', e.target.value)}
                 InputLabelProps={{ shrink: true }}
               />
-              <TextField
-                sx={{ flex: '1 1 200px' }}
-                label={t('assetDetail.installationDate')}
-                type="date"
-                value={formData.installationDate}
-                onChange={(e) => handleChange('installationDate', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
+              {/* Installation date field removed: it is set automatically by
+                  the assignment endpoints when an asset transitions
+                  Nieuw → InGebruik. */}
             </Box>
           </Box>
         </Stack>
