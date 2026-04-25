@@ -1,562 +1,208 @@
-# Rollout Workflow - Gebruikersgids
+# Rollout Workflow — Gebruikersgids
 
-**Versie**: 1.0
-**Laatst Bijgewerkt**: 14 maart 2026
+Gestructureerd proces voor het plannen, uitvoeren en rapporteren van IT-asset rollouts (on/offboarding, refresh, swap).
 
-## Inhoudsopgave
-
-1. [Overzicht](#overzicht)
-2. [Workflow Stappen](#workflow-stappen)
-3. [Werkplek Configuratie - De Drie Regio's](#werkplek-configuratie)
-4. [Asset Status Flow](#asset-status-flow)
-5. [Veelgestelde Vragen](#veelgestelde-vragen)
+> Technische details (entiteiten, schema, endpoints) staan niet in deze gids. Zie [`docs/BACKEND-ARCHITECTURE.md`](../../BACKEND-ARCHITECTURE.md), [`docs/DATA-MODEL.md`](../../DATA-MODEL.md) en de live Swagger UI op `/swagger`.
 
 ---
 
-## Overzicht
+## 1. Overzicht
 
-De Rollout Workflow is een gestructureerd proces voor het plannen, uitvoeren en rapporteren van IT-asset rollouts. Het systeem ondersteunt:
-
-- **Planning**: Sessies aanmaken, dagen plannen, werkplekken configureren
-- **Uitvoering**: Stap-voor-stap installatie met real-time tracking
-- **Rapportage**: Overzichten en statistieken van voltooide rollouts
-
-### Hiërarchie
+Een rollout is opgebouwd uit drie niveaus:
 
 ```
-RolloutSession (Rollout Project)
-  ├── RolloutDay 1 (Dag in planning)
-  │     ├── Workplace 1 (Werkplek gebruiker)
-  │     ├── Workplace 2
-  │     └── Workplace 3
-  ├── RolloutDay 2
-  │     └── ...
-  └── RolloutDay 3
+RolloutSession   ─ project (bv. "Q2 2026 Laptop Refresh Dienst ICT")
+  └── RolloutDay ─ uitvoeringsdag (datum + diensten)
+       └── Workplace ─ één werkplek per gebruiker
 ```
 
----
+De workflow doorloopt vier fasen:
 
-## Workflow Stappen
-
-### Stap 1: Sessie Aanmaken (RolloutListPage)
-
-**Doel**: Een nieuwe rollout sessie starten
-
-**Acties**:
-
-1. Navigeer naar "Rollouts" in het hoofdmenu
-2. Klik op "+ Nieuwe Rollout"
-3. Vul in:
-   - Sessienaam (bv. "Q1 2026 Laptop Refresh")
-   - Omschrijving (optioneel)
-   - Geplande startdatum
-   - Geplande einddatum
-4. Klik "Opslaan"
-
-**Resultaat**: Nieuwe sessie met status "Planning"
+| Fase | Pagina | Wat |
+|------|--------|-----|
+| 1. Planning | Rollouts → Planner | Sessies, dagen en werkplekken aanmaken |
+| 2. Configuratie | Werkplek-dialog | Per werkplek: welke assets, nieuw of bestaand, welke worden ingeleverd |
+| 3. Uitvoering | Rollouts → Execution | Serienummers scannen, items afvinken, werkplek voltooien |
+| 4. Rapportage | Reports (`/reports`) | Voortgang, asset-bewegingen, exports |
 
 ---
 
-### Stap 2: Dagen Toevoegen (RolloutPlannerPage)
+## 2. Fase 1 — Planning
 
-**Doel**: Rollout opdelen in uitvoerbare dagen
+### 2.1 Sessie aanmaken
 
-**Acties**:
+`Rollouts → + Nieuwe Rollout`
 
-1. Open de sessie (klik op naam in lijst)
-2. Klik "+ Nieuwe Dag"
-3. Vul in:
-   - Datum (wanneer deze dag uitgevoerd wordt)
-   - Naam (bv. "Dienst ICT - Kantoor")
-   - Dagnummer (automatisch: 1, 2, 3...)
-   - Geplande diensten (filter voor werkplekken)
-   - Notities (optioneel)
-4. Klik "Opslaan"
+Verplicht: sessienaam, geplande start- en einddatum. Optioneel: omschrijving, sector/dienst-context.
 
-**Resultaat**: Dag toegevoegd met status "Planning"
+Status na aanmaken: **Planning**.
 
-**Tip**: Gebruik het filtermenu om dagen te sorteren op datum of status.
+### 2.2 Dagen toevoegen
 
----
+In de geopende sessie, kies tussen twee weergaven via de **Planning View Toggle**:
 
-### Stap 3: Werkplekken Configureren
+- **Kalenderweergave** — visueel slepen/plannen op datum
+- **Lijstweergave** — sortable tabel, handig bij grote sessies
 
-Werkplekken kunnen op drie manieren worden toegevoegd:
+Per dag vul je in: datum, naam, en welke **diensten** op deze dag worden uitgerold (filtert later de werkplek-suggesties).
 
-#### Optie A: Handmatig Toevoegen
+### 2.3 Werkplekken toevoegen
 
-1. Open een dag (klik op de dag in de lijst)
-2. Klik "+ Nieuwe Werkplek"
-3. Vul gebruikersinformatie in:
-   - Naam gebruiker
-   - E-mailadres (optioneel)
-   - Locatie (optioneel)
-   - Dienst
-4. Configureer assets via de **drie regio's** (zie hieronder)
-5. Klik "Opslaan"
+Drie manieren:
 
-#### Optie B: Bulk Import vanuit Azure AD
+**Handmatig** — één werkplek per keer. Naam, e-mail, locatie, dienst, type setup (laptop/desktop/flex).
 
-1. Klik "Bulk Import"
-2. Selecteer bron:
-   - **Dienst**: Kies een MG-* groep
-   - **Sector**: Kies een MG-SECTOR-* groep
-   - **Afdeling**: Kies een afdeling uit Azure AD
-3. Selecteer gebruikers (of kies "Selecteer alles")
-4. Configureer standaard asset template
-5. Klik "Importeer Werkplekken"
+**Bulk Import vanuit Entra mail-groep** — kies een `MG-*` (dienst), `MG-SECTOR-*` (sector) of een afdelingsgroep. Selecteer leden, en per geselecteerde gebruiker wordt automatisch een werkplek aangemaakt met de standaard asset-template.
 
-**Resultaat**: Meerdere werkplekken aangemaakt met standaard configuratie
-
-#### Optie C: Bulk Aanmaak (Lege Werkplekken)
-
-1. Klik "Bulk Toevoegen"
-2. Vul in:
-   - Aantal werkplekken
-   - Standaard dienst
-   - Asset template (laptop, monitors, etc.)
-3. Klik "Aanmaken"
-
-**Resultaat**: Lege werkplekken met standaard configuratie (later in te vullen)
+**Bulk Aanmaak (lege werkplekken)** — n keer een lege werkplek met dezelfde standaard-template, in te vullen tijdens uitvoering. Handig voor flex-werkplekken zonder vaste eigenaar.
 
 ---
 
-## Werkplek Configuratie
+## 3. Fase 2 — Werkplek configureren
 
-Elke werkplek heeft een **Asset Plan** met drie functionele regio's:
+Open een werkplek; je ziet drie groepen items:
 
-### Regio 1: Update Assets (Bestaande Assets Bijwerken)
+### 3.1 User-assigned assets (gebruiker-gebonden)
 
-**Gebruik**: Wanneer een gebruiker al assets heeft in het systeem
+Apparatuur die aan de **persoon** wordt gekoppeld — typisch laptop. Bij voltooiing krijgt het asset deze gebruiker als eigenaar en gaat van `Nieuw → InGebruik`.
 
-**Functionaliteit**:
+Per item kies je:
+- **Bestaand asset** — zoek op serienummer of asset-code
+- **Nieuw uit template** — asset wordt bij voltooiing aangemaakt met auto-gegenereerde code (`TYPE-YY-BRAND-NNNNN`) en QR-code
+- **On-site aanmaken** — manueel invullen tijdens uitvoering
 
-- Zoek bestaande assets op serienummer
-- Koppel assets aan deze werkplek
-- Update asset informatie (eigenaar, locatie)
+### 3.2 Workplace-fixed assets (locatie-gebonden)
 
-**Voorbeeld Flow**:
+Apparatuur die aan de **fysieke werkplek** wordt gekoppeld — typisch docking, monitors, keyboard, muis. Eigenaar = werkplek-locatie, niet de persoon. Statustransitie identiek: `Nieuw → InGebruik`.
 
-1. Scan serienummer van laptop (bv. ABC123456)
-2. Systeem zoekt asset in database
-3. Als gevonden: asset wordt gekoppeld
-4. Als niet gevonden: optie om nieuw asset aan te maken
+### 3.3 Oude apparatuur (return)
 
-**Asset Status**: Blijft ongewijzigd (meestal "InGebruik")
+Hier registreer je apparatuur die de gebruiker **inlevert**. Per item kies je de retourstatus:
 
----
-
-### Regio 2: Swap/Inleveren (Oude Apparatuur Ophalen)
-
-**Gebruik**: Wanneer oude apparatuur wordt vervangen
-
-**Functionaliteit**:
-
-- Registreer oude asset die wordt ingeleverd
-- Koppel oude asset aan werkplek
-- Bij voltooien: oude asset → status "UitDienst"
-
-**Voorbeeld Flow**:
-
-1. Gebruiker levert oude laptop in (serienummer XYZ789)
-2. Scan serienummer
-3. Systeem markeert asset als "oude asset"
-4. Bij completion: XYZ789 → UitDienst
-
-**Asset Status Transitie**:
-
-```
-InGebruik → UitDienst (bij workplace completion)
-```
+| Retour-keuze | Statustransitie | Wanneer |
+|--------------|-----------------|---------|
+| **Stock** | `InGebruik → Stock` | Goed werkend, klaar voor herinzet |
+| **UitDienst** | `InGebruik → UitDienst` | EOL, definitief uit circulatie |
+| **Defect** | `InGebruik → Defect` | Stuk, gaat naar herstelling of recycling |
 
 ---
 
-### Regio 3: Nieuw Toevoegen (Nieuwe Assets Aanmaken)
+## 4. Fase 3 — Uitvoering
 
-**Gebruik**: Wanneer nieuwe apparatuur wordt uitgeleverd
+`Rollouts → open dag → Start Uitvoering`
 
-**Functionaliteit**:
+Per werkplek:
 
-- Maak nieuwe assets aan voor deze werkplek
-- Selecteer templates (laptop, docking, monitor, keyboard, mouse)
-- Genereer QR codes voor nieuwe assets
-- Bij voltooien: nieuwe asset → status "InGebruik"
+1. Klik **Start** — werkplek gaat van `Pending → InProgress`.
+2. Voor elk item: scan/typ serienummer; bij niet-gevonden krijg je de optie om alsnog aan te maken.
+3. Klik **Geïnstalleerd** of **Overgeslagen** per item.
+4. Klik **Werkplek Voltooien** zodra alles afgevinkt is.
 
-**Voorbeeld Flow**:
+Realtime: dag-progress (`5/12 werkplekken`), werkplek-progress (`3/5 items`), kleur-coded badges.
 
-1. Selecteer template "Standaard Kantoorwerkplek":
-   - 1x Laptop
-   - 1x Docking Station
-   - 2x Monitor
-   - 1x Keyboard
-   - 1x Mouse
-2. Vul brand/model in voor elk item
-3. Scan serienummers tijdens uitvoering
-4. Systeem maakt assets aan met QR codes
+### Atomic completion
 
-**Asset Status Transitie**:
+Alle volgende stappen gebeuren in één database-transactie — slaagt er één niet, dan rolt het hele geheel terug:
 
-```
-Nieuw (aangemaakt) → InGebruik (bij workplace completion)
-```
+1. Nieuwe assets: `Nieuw → InGebruik`, eigenaar gezet, `InstallationDate = nu`
+2. Oude assets: `InGebruik → UitDienst | Defect | Stock` (per gekozen retour-keuze)
+3. Werkplek: `InProgress → Completed`
+4. Dag: `CompletedWorkplaces += 1`
+5. Audit-trail (`RolloutAssetMovement`) krijgt één rij per asset-transitie
 
-**QR Code Generatie**:
+### Heropenen
 
-- Automatisch voor nieuwe assets
-- Download beschikbaar via "QR Codes Afdrukken"
-- Formaat: `{AssetCode}-QR.svg`
+Een `Completed` werkplek kan heropend worden, met twee opties:
+
+- **Status-only** — werkplek terug naar `InProgress`, asset-statussen blijven `InGebruik`
+- **Met asset-reversal** — alle transities van die werkplek worden teruggedraaid (nieuw terug naar `Nieuw`, oude terug naar `InGebruik`)
+
+Gebruik dit als je per ongeluk de verkeerde werkplek voltooid hebt.
 
 ---
 
-## Asset Status Flow
+## 5. Fase 4 — Rapportage
 
-### Rollout-Specifieke Status Transities
+Rollout-rapportage staat op de unified Reports-pagina, niet langer per sessie.
 
-```mermaid
-graph LR
-    A[Nieuw] -->|Workplace Complete| B[InGebruik]
-    C[InGebruik] -->|Swap/Inleveren| D[UitDienst]
-    B -->|Later: Defect| E[Herstelling]
-    E -->|Hersteld| B
-    B -->|EOL| D
-```
+`/reports?tab=rollouts` of via de Rapportage-knop in een sessie:
 
-### Status Betekenis in Rollout Context
+- **KPI's** — totaal werkplekken, voltooid, in uitvoering, gepland
+- **Asset-bewegingen** — alle `RolloutAssetMovement` records, filterbaar per movement-type, sessie, dienst, sector, dag
+- **Type-breakdown** — laptops/monitors/docking apart geteld
+- **Excel-export** — per dag, per dienst, of voor de hele sessie, inclusief tweede sheet "Type Breakdown"
 
-| Status | Wanneer | Actie |
-|--------|---------|-------|
-| **Nieuw** | Asset aangemaakt tijdens planning | Nog niet in gebruik |
-| **InGebruik** | Na workplace completion | Bij gebruiker geïnstalleerd |
-| **UitDienst** | Oude asset ingeleverd | Uit circulatie |
-| **Herstelling** | (Niet in rollout) | Defect apparaat in repair |
-
-### Transactionele Integriteit
-
-Bij het voltooien van een werkplek gebeurt het volgende **atomically** (all-or-nothing):
-
-1. Nieuwe assets: Nieuw → InGebruik
-2. Nieuwe assets: Owner = gebruikersnaam
-3. Nieuwe assets: InstallationDate = nu
-4. Oude assets: InGebruik → UitDienst
-5. Workplace: status = Completed
-6. Day: CompletedWorkplaces += 1
-
-Als één stap faalt, wordt **alles teruggedraaid** (rollback).
+Werkplek-gerichte rapporten (per werkplek, per medewerker) op `/reports?tab=werkplekken`. Serienummer-overzicht op `/operations/rollouts/serienummers`.
 
 ---
 
-## Stap 4: Uitvoering (RolloutExecutionPage)
+## 6. Statussen-overzicht
 
-**Doel**: Werkplekken één voor één installeren
+### Werkplek-status (`RolloutWorkplaceStatus`)
 
-**Acties**:
+| Status | Wanneer | Volgende mogelijke status |
+|--------|---------|---------------------------|
+| **Pending** | Net aangemaakt, niet gestart | InProgress, Skipped |
+| **InProgress** | Uitvoering bezig | Completed, Failed |
+| **Completed** | Alle items afgevinkt en getransacteerd | InProgress (heropenen) |
+| **Skipped** | Bewust overgeslagen (gebruiker afwezig, etc.) | InProgress (alsnog uitvoeren) |
+| **Failed** | Voltooien faalde (rollback) | InProgress (opnieuw proberen) |
+| **Ready** | Goedgekeurd, klaar voor uitvoering (optionele tussenstap) | InProgress |
 
-1. Navigeer naar de dag
-2. Klik "Start Uitvoering"
-3. Voor elke werkplek:
-   - Klik "Start" op werkplek
-   - Scan/voer serienummers in voor elk asset item
-   - Klik "Geïnstalleerd" of "Overgeslagen" per item
-   - Klik "Werkplek Voltooien" als alles klaar is
-4. Herhaal voor alle werkplekken
+### Asset-status in rollout-context
 
-**Real-Time Updates**:
-
-- Status badges kleuren mee (grijs → blauw → groen)
-- Progress bar per werkplek (0/5 → 5/5)
-- Day progress (0/10 → 10/10 workplaces)
-
-**Foutafhandeling**:
-
-- Als serienummer niet gevonden: optie om nieuw asset aan te maken
-- Als item overgeslagen: status blijft "skipped" (wordt niet meegeteld)
-- Als voltooien faalt: error melding + rollback
+| Status | Rollout-betekenis |
+|--------|-------------------|
+| `Nieuw` | Aangemaakt tijdens planning, nog niet uitgereikt |
+| `InGebruik` | Bij gebruiker / werkplek geïnstalleerd |
+| `Stock` | Ingeleverd, herbruikbaar |
+| `UitDienst` | Ingeleverd, einde levensduur |
+| `Defect` | Ingeleverd, kapot |
+| `Herstelling` | Niet rechtstreeks via rollout — buiten dit proces |
 
 ---
 
-## Stap 5: Rapportage (RolloutReportPage)
+## 7. Veelgestelde vragen
 
-**Doel**: Overzicht en statistieken van voltooide sessie
+**Kan ik een dag verwijderen die al werkplekken bevat?**
+Alleen als de dag status `Planning` heeft en geen enkele werkplek `InProgress` of `Completed` is. Cascade delete neemt de werkplekken mee.
 
-**Beschikbare Informatie**:
+**Kan ik een voltooide werkplek verwijderen?**
+Nee — voltooide werkplekken kunnen alleen worden heropend (zie §4). Verwijderen zou de audit-trail (`RolloutAssetMovement`) breken.
 
-- Totaal aantal dagen en werkplekken
-- Completion percentage per dag
-- Asset type breakdown (hoeveel laptops, monitors, etc.)
-- Tijdlijn van uitvoering
-- Export naar CSV/Excel (optioneel)
+**Kan ik een werkplek naar een andere dag verplaatsen?**
+Ja. De werkplek wordt naar de doeldag verplaatst en houdt een `MovedFromWorkplaceId`-link voor traceability. Dit werkt ook voor werkplekken die al `InProgress` zijn.
 
-**Acties**:
+**Kan ik volgorde van dagen aanpassen?**
+Dagen worden gesorteerd op datum (oplopend) en daarna `DayNumber`. Geef dagen duidelijke namen en data; handmatig herordenen is niet nodig.
 
-1. Open voltooide sessie
-2. Klik "Rapportage"
-3. Bekijk statistieken
-4. Download rapport (optioneel)
+**Wat is het verschil tussen "Overgeslagen" en "Niet geïnstalleerd"?**
+*Overgeslagen* is een bewuste keuze (item niet nodig of gebruiker heeft eigen exemplaar) — telt mee als afgehandeld. *Niet geïnstalleerd* (status blijft `Pending`) — werkplek kan nog niet worden voltooid.
 
----
+**Wat als de gebruiker een eigen keyboard heeft?**
+Klik *Overslaan* op het keyboard-item. Het asset blijft in stock (geen aanmaak), de werkplek kan gewoon voltooid worden.
 
-## Werkplek Status Transities
+**Hoe werkt de serienummer-scan?**
+Focus op het serienummer-veld, scan met barcode-scanner of typ. Na 500 ms (debounce) zoekt het systeem; niet-gevonden serienummers krijgen de optie *Nieuw aanmaken* met dat serienummer al ingevuld.
 
-```
-Pending → Ready → InProgress → Completed
-   ↓         ↓          ↓
- (Planning) (Approved) (Executing)
-```
-
-| Status | Betekenis | Acties Mogelijk |
-|--------|-----------|-----------------|
-| **Pending** | Werkplek aangemaakt, nog niet goedgekeurd | Bewerken, Verwijderen |
-| **Ready** | Goedgekeurd voor uitvoering | Starten, Bewerken |
-| **InProgress** | Bezig met installatie | Items scannen, Voltooien |
-| **Completed** | Alle items geïnstalleerd | Heropenen (optioneel) |
-
-**Status Transitie Regels**:
-
-- Pending → Ready: handmatige actie "Markeer als Klaar"
-- Ready → InProgress: automatisch bij eerste item scan
-- InProgress → Completed: handmatige actie "Werkplek Voltooien"
-- Completed → InProgress: handmatige actie "Heropenen" (met optie om asset transities te reverteren)
+**Waar zie ik QR-codes voor nieuwe assets?**
+Per asset: detail-pagina → *QR Code Downloaden* (SVG, bestandsnaam `{AssetCode}-QR.svg`).
+Bulk per dag: planner → *QR Codes Afdrukken* — bundelt alle nieuwe-asset-QR's in één print-batch.
 
 ---
 
-## Veelgestelde Vragen
+## 8. Tips
 
-### Wat gebeurt er als ik een werkplek heropen?
-
-**Antwoord**: De werkplek status gaat terug naar "InProgress". Je hebt twee opties:
-
-1. **Zonder Asset Reversal**: Alleen status wijzigt, assets blijven "InGebruik"
-2. **Met Asset Reversal**: Assets keren terug naar vorige status:
-   - InGebruik → Nieuw (nieuwe assets)
-   - UitDienst → InGebruik (oude assets)
-
-**Gebruik Case**: Je hebt per ongeluk een verkeerde werkplek voltooid.
+- **Plan met diensten, niet met namen.** Diensten op een dag (`MG-*` mail-groepen) genereren automatisch werkplek-suggesties bij bulk import.
+- **Gebruik templates.** Een goed onderhouden `AssetTemplate`-bibliotheek maakt bulk import en planning triviaal.
+- **Print QR's vroeg.** Print de hele dag-batch QR's zodra de planning vaststaat — dan hoef je tijdens uitvoering niets meer te doen.
+- **Rapporteer per dienst.** Excel-export gegroepeerd op dienst is de natuurlijke leverancier-rapport voor teamcoördinatoren.
+- **Heropen liever dan corrigeren.** Bij twijfel — heropen met asset-reversal en doe de werkplek opnieuw. Veel veiliger dan handmatig assets terug-editen.
 
 ---
 
-### Kan ik een werkplek verwijderen na completion?
+## Support
 
-**Antwoord**: Nee, voltooide werkplekken kunnen niet worden verwijderd (data integriteit).
-Je kunt alleen heropenen en opnieuw voltooien met correcte data.
-
----
-
-### Wat gebeurt er met QR codes voor nieuwe assets?
-
-**Antwoord**:
-
-- QR codes worden automatisch gegenereerd bij asset aanmaak
-- Download via "QR Codes Afdrukken" in planning overzicht
-- Formaat: SVG (schaalbaar voor printen)
-- Bestandsnaam: `{AssetCode}-QR.svg` (bv. `LAP-DELL-2026-0042-QR.svg`)
-
-**Tip**: Print alle QR codes voor een dag in één keer via de bulk print functie.
-
----
-
-### Kan ik een dag verwijderen als er werkplekken in zitten?
-
-**Antwoord**: Ja, maar alleen als:
-
-1. De dag status is "Planning" (niet Ready of Completed)
-2. Alle werkplekken status is "Pending" (niet InProgress of Completed)
-
-**Cascade Delete**: Alle werkplekken in de dag worden ook verwijderd.
-
----
-
-### Hoe werkt de serienummer scan functie?
-
-**Antwoord**:
-
-1. Focus op het serienummer veld
-2. Scan met barcode scanner (of typ handmatig)
-3. Systeem zoekt automatisch na 500ms (debounce)
-4. Als gevonden: asset details worden getoond
-5. Als niet gevonden: optie om nieuw asset aan te maken
-
-**Debounce**: Voorkomt onnodige API calls tijdens typen.
-
----
-
-### Wat is het verschil tussen "Overgeslagen" en "Niet Geïnstalleerd"?
-
-**Antwoord**:
-
-- **Overgeslagen**: Bewuste keuze om item niet te installeren (telt mee als voltooid)
-- **Niet Geïnstalleerd**: Status "pending", werkplek kan nog niet worden voltooid
-
-**Voorbeeld**: Gebruiker heeft al een eigen keyboard → klik "Overslaan" op keyboard item.
-
----
-
-### Kan ik de volgorde van dagen wijzigen?
-
-**Antwoord**: Nee, dagen worden automatisch gesorteerd op:
-
-1. Datum (oplopend)
-2. DayNumber (oplopend)
-
-**Tip**: Gebruik duidelijke namen en data voor overzichtelijke planning.
-
----
-
-### Hoe weet ik welke werkplekken al voltoo zijn?
-
-**Antwoord**: Gebruik de status filter in planning overzicht:
-
-- **Alle**: Toon alle werkplekken
-- **Voltooid**: Alleen completed workplaces
-- **In Uitvoering**: Alleen InProgress workplaces
-- **Nog Te Doen**: Pending + Ready workplaces
-
-**Visuele Indicatoren**:
-
-- 🟢 Groen badge: Completed
-- 🔵 Blauw badge: InProgress
-- ⚪ Grijs badge: Pending/Ready
-
----
-
-## Technische Details
-
-### Backend Endpoints
-
-```
-GET    /api/rollouts                    - Lijst alle sessies
-POST   /api/rollouts                    - Maak sessie
-GET    /api/rollouts/{id}               - Haal sessie op
-PUT    /api/rollouts/{id}               - Update sessie
-DELETE /api/rollouts/{id}               - Verwijder sessie
-
-GET    /api/rollouts/{id}/days          - Lijst dagen voor sessie
-POST   /api/rollouts/{id}/days          - Maak dag
-GET    /api/rollouts/days/{dayId}       - Haal dag op
-PUT    /api/rollouts/days/{dayId}       - Update dag
-DELETE /api/rollouts/days/{dayId}       - Verwijder dag
-
-GET    /api/rollouts/days/{dayId}/workplaces - Lijst werkplekken voor dag
-POST   /api/rollouts/days/{dayId}/workplaces - Maak werkplek
-GET    /api/rollouts/workplaces/{id}         - Haal werkplek op
-PUT    /api/rollouts/workplaces/{id}         - Update werkplek
-DELETE /api/rollouts/workplaces/{id}         - Verwijder werkplek
-
-POST   /api/rollouts/workplaces/{id}/start    - Start werkplek uitvoering
-POST   /api/rollouts/workplaces/{id}/complete - Voltooi werkplek
-POST   /api/rollouts/workplaces/{id}/reopen   - Heropen werkplek
-
-GET    /api/rollouts/{id}/progress - Haal progress statistieken
-```
-
-### Database Schema
-
-```sql
--- RolloutSession table
-CREATE TABLE RolloutSessions (
-    Id INT PRIMARY KEY,
-    SessionName NVARCHAR(200),
-    Description NVARCHAR(MAX),
-    Status INT, -- Enum: Planning, Ready, InProgress, Completed
-    PlannedStartDate DATETIME2,
-    PlannedEndDate DATETIME2,
-    CreatedBy NVARCHAR(200),
-    CreatedAt DATETIME2,
-    UpdatedAt DATETIME2
-);
-
--- RolloutDay table
-CREATE TABLE RolloutDays (
-    Id INT PRIMARY KEY,
-    RolloutSessionId INT FOREIGN KEY,
-    Date DATETIME2,
-    Name NVARCHAR(200),
-    DayNumber INT,
-    Status INT, -- Enum: Planning, Ready, Completed
-    TotalWorkplaces INT,
-    CompletedWorkplaces INT,
-    CreatedAt DATETIME2,
-    UpdatedAt DATETIME2
-);
-
--- RolloutWorkplace table
-CREATE TABLE RolloutWorkplaces (
-    Id INT PRIMARY KEY,
-    RolloutDayId INT FOREIGN KEY,
-    UserName NVARCHAR(200),
-    UserEmail NVARCHAR(200),
-    Location NVARCHAR(200),
-    ServiceId INT FOREIGN KEY,
-    AssetPlansJson NVARCHAR(MAX), -- JSON array van AssetPlan objecten
-    Status INT, -- Enum: Pending, Ready, InProgress, Completed
-    TotalItems INT,
-    CompletedItems INT,
-    CompletedAt DATETIME2,
-    CompletedBy NVARCHAR(200),
-    CreatedAt DATETIME2,
-    UpdatedAt DATETIME2
-);
-```
-
-### AssetPlan JSON Structure
-
-```typescript
-interface AssetPlan {
-  equipmentType: 'laptop' | 'desktop' | 'docking' | 'monitor' | 'keyboard' | 'mouse';
-  createNew: boolean; // true = create new asset, false = link existing
-  requiresSerialNumber: boolean;
-  requiresQRCode: boolean;
-  status: 'pending' | 'installed' | 'skipped';
-
-  // Optionele velden (gevuld tijdens uitvoering)
-  brand?: string;
-  model?: string;
-  existingAssetId?: number; // Link naar bestaand asset
-  existingAssetCode?: string;
-  oldAssetId?: number; // Asset dat wordt vervangen
-  oldAssetCode?: string;
-
-  // Metadata
-  metadata: {
-    position?: 'left' | 'center' | 'right'; // Voor monitors
-    hasCamera?: 'true' | 'false'; // Voor monitors
-    serialNumber?: string; // Serienummer
-    [key: string]: string; // Extra metadata
-  };
-}
-```
-
-### React Query Cache Keys
-
-```typescript
-const rolloutKeys = {
-  all: ['rollouts'],
-  sessions: () => ['rollouts', 'sessions'],
-  session: (id) => ['rollouts', 'session', id],
-  days: (sessionId) => ['rollouts', 'days', sessionId],
-  day: (dayId) => ['rollouts', 'day', dayId],
-  workplaces: (dayId) => ['rollouts', 'workplaces', dayId],
-  workplace: (workplaceId) => ['rollouts', 'workplace', workplaceId],
-  progress: (sessionId) => ['rollouts', 'progress', sessionId],
-  newAssets: (dayId) => ['rollouts', 'newAssets', dayId],
-};
-```
-
----
-
-## Support & Contact
-
-Voor technische vragen of bugs:
-
-- **Email**: <jo.wijnen@diepenbeek.be>
-- **GitHub**: <https://github.com/Djoppie/Djoppie-Inventory>
-
-Voor feature requests:
-
-- Maak een issue aan in de GitHub repository
-
----
-
-**Document Versie**: 1.0
-**Laatste Update**: 14 maart 2026
-**Auteur**: Claude Code (Project Coordinator)
-**Review Status**: Approved
+- IT-ServiceDesk: <https://diepenbeek.sharepoint.com/sites/IN-Servicedesk>
+- Bugs / feature-verzoeken: <https://github.com/Djoppie/Djoppie-Inventory/issues>
+- Maintainer: <jo.wijnen@diepenbeek.be>
