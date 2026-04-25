@@ -36,9 +36,21 @@ public class ApplicationDbContext : DbContext
     // Asset request planning
     public DbSet<AssetRequest> AssetRequests { get; set; }
 
+    // Atomic asset-code generation (per-prefix counter)
+    public DbSet<AssetCodeCounter> AssetCodeCounters { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // AssetCodeCounter configuration — atomic counter per code prefix
+        modelBuilder.Entity<AssetCodeCounter>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Prefix).IsUnique();
+            entity.Property(e => e.Prefix).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.NextNumber).IsRequired();
+        });
 
         // Asset configuration
         modelBuilder.Entity<Asset>(entity =>
@@ -57,6 +69,12 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.OfficeLocation).HasMaxLength(100);
             entity.Property(e => e.Brand).HasMaxLength(100);
             entity.Property(e => e.Model).HasMaxLength(200);
+            // Status defaults to Nieuw (5) at the entity level
+            // (Asset.Status = AssetStatus.Nieuw). A DB-level default is
+            // intentionally not configured because EF's CLR-default-as-sentinel
+            // semantics would silently override callers explicitly persisting
+            // InGebruik (= the CLR enum default). DTO restrictions in
+            // CreateAssetDto enforce the principle at the API edge.
             entity.Property(e => e.Status).HasConversion<int>();
             entity.Property(e => e.InstallationLocation).HasMaxLength(200); // Specific location within building
 

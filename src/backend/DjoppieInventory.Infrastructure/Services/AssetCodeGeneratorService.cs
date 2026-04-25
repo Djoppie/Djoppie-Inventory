@@ -1,7 +1,10 @@
+using System.Data;
 using System.Text.RegularExpressions;
+using DjoppieInventory.Core.Entities;
 using DjoppieInventory.Core.Interfaces;
 using DjoppieInventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DjoppieInventory.Infrastructure.Services;
 
@@ -13,9 +16,21 @@ namespace DjoppieInventory.Infrastructure.Services;
 /// - If purchase month is November (11) or December (12), use next year
 /// - Otherwise, use the purchase date year
 /// - If no purchase date provided, use current date
+///
+/// Concurrency: number issuance is backed by a per-prefix
+/// <see cref="AssetCodeCounter"/> row updated inside a serializable
+/// transaction. Two concurrent <c>POST /assets</c> requests against the same
+/// prefix can no longer collide on the same number — the prior MAX(code)+1
+/// approach hit unique-violation 500s under bulk and rollout-day load.
 /// </summary>
 public class AssetCodeGeneratorService : IAssetCodeGenerator
 {
+    private const int NormalStartNumber = 1;
+    private const int NormalMaxNumber = 89999;
+    private const int DummyStartNumber = 90001;
+    private const int DummyMaxNumber = 99999;
+    private const int BulkMaxBatch = 1000;
+
     private readonly ApplicationDbContext _context;
 
     // Regex pattern to validate asset code format
@@ -68,28 +83,9 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         bool isDummy,
         CancellationToken cancellationToken = default)
     {
-        // 1. Get the AssetType code
-        var assetType = await _context.AssetTypes.FindAsync(new object[] { assetTypeId }, cancellationToken);
-        if (assetType == null)
-            throw new ArgumentException($"AssetType with ID {assetTypeId} not found.", nameof(assetTypeId));
-
-        // 2. Convert brand to 4-char code
-        var brandCode = ToBrandCode(brand);
-
-        // 3. Calculate year from purchase date (Nov/Dec = next year)
-        var year = CalculateYearFromPurchaseDate(purchaseDate);
-        var yearTwoDigit = (year % 100).ToString("D2");
-
-        // 4. Build the prefix: [DUM-]TYPE-YY-MERK
-        var prefix = isDummy
-            ? $"DUM-{assetType.Code}-{yearTwoDigit}-{brandCode}"
-            : $"{assetType.Code}-{yearTwoDigit}-{brandCode}";
-
-        // 5. Calculate the next number
-        var nextNumber = await GetNextNumberAsync(prefix, isDummy, cancellationToken);
-
-        // 6. Build and return the complete asset code
-        return $"{prefix}-{nextNumber:D5}";
+        var prefix = await BuildPrefixAsync(assetTypeId, brand, purchaseDate, isDummy, cancellationToken);
+        var number = await ReserveNumbersAsync(prefix, isDummy, count: 1, cancellationToken);
+        return $"{prefix}-{number:D5}";
     }
 
     public async Task<IEnumerable<string>> GenerateBulkCodesAsync(
@@ -103,44 +99,17 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         if (count <= 0)
             throw new ArgumentException("Count must be greater than 0.", nameof(count));
 
-        if (count > 1000)
-            throw new ArgumentException("Cannot generate more than 1000 codes at once.", nameof(count));
+        if (count > BulkMaxBatch)
+            throw new ArgumentException($"Cannot generate more than {BulkMaxBatch} codes at once.", nameof(count));
 
-        // 1. Get the AssetType code
-        var assetType = await _context.AssetTypes.FindAsync(new object[] { assetTypeId }, cancellationToken);
-        if (assetType == null)
-            throw new ArgumentException($"AssetType with ID {assetTypeId} not found.", nameof(assetTypeId));
+        var prefix = await BuildPrefixAsync(assetTypeId, brand, purchaseDate, isDummy, cancellationToken);
+        var startNumber = await ReserveNumbersAsync(prefix, isDummy, count, cancellationToken);
 
-        // 2. Convert brand to 4-char code
-        var brandCode = ToBrandCode(brand);
-
-        // 3. Calculate year from purchase date (Nov/Dec = next year)
-        var year = CalculateYearFromPurchaseDate(purchaseDate);
-        var yearTwoDigit = (year % 100).ToString("D2");
-
-        // 4. Build the prefix: [DUM-]TYPE-YY-MERK
-        var prefix = isDummy
-            ? $"DUM-{assetType.Code}-{yearTwoDigit}-{brandCode}"
-            : $"{assetType.Code}-{yearTwoDigit}-{brandCode}";
-
-        // 5. Get the starting number
-        var startNumber = await GetNextNumberAsync(prefix, isDummy, cancellationToken);
-
-        // 6. Generate sequential codes
         var codes = new List<string>(count);
         for (int i = 0; i < count; i++)
         {
-            var number = startNumber + i;
-
-            if (isDummy && number > 99999)
-                throw new InvalidOperationException("Dummy asset number exceeded maximum (99999).");
-
-            if (!isDummy && number > 89999)
-                throw new InvalidOperationException("Normal asset number exceeded maximum (89999).");
-
-            codes.Add($"{prefix}-{number:D5}");
+            codes.Add($"{prefix}-{(startNumber + i):D5}");
         }
-
         return codes;
     }
 
@@ -173,12 +142,124 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         };
     }
 
+    private async Task<string> BuildPrefixAsync(
+        int assetTypeId,
+        string? brand,
+        DateTime? purchaseDate,
+        bool isDummy,
+        CancellationToken cancellationToken)
+    {
+        var assetType = await _context.AssetTypes.FindAsync(new object[] { assetTypeId }, cancellationToken);
+        if (assetType == null)
+            throw new ArgumentException($"AssetType with ID {assetTypeId} not found.", nameof(assetTypeId));
+
+        var brandCode = ToBrandCode(brand);
+        var year = CalculateYearFromPurchaseDate(purchaseDate);
+        var yearTwoDigit = (year % 100).ToString("D2");
+
+        return isDummy
+            ? $"DUM-{assetType.Code}-{yearTwoDigit}-{brandCode}"
+            : $"{assetType.Code}-{yearTwoDigit}-{brandCode}";
+    }
+
     /// <summary>
-    /// Gets the next available number for a given prefix.
-    /// For dummy assets: starts at 90001
-    /// For normal assets: starts at 00001
+    /// Atomically reserves <paramref name="count"/> consecutive numbers for
+    /// the given <paramref name="prefix"/>. Returns the first number; the
+    /// caller is responsible for emitting <c>start..start+count-1</c>.
+    ///
+    /// Concurrency model: a serializable transaction guards a single
+    /// <see cref="AssetCodeCounter"/> row per prefix. The first call seeds
+    /// the counter from the existing <c>Assets</c> table so legacy data is
+    /// respected; thereafter all increments come from the counter row, never
+    /// from MAX(code)+1.
     /// </summary>
-    private async Task<int> GetNextNumberAsync(string prefix, bool isDummy, CancellationToken cancellationToken)
+    private async Task<int> ReserveNumbersAsync(
+        string prefix,
+        bool isDummy,
+        int count,
+        CancellationToken cancellationToken)
+    {
+        if (count <= 0)
+        {
+            throw new ArgumentException("Count must be positive.", nameof(count));
+        }
+
+        var rangeStart = isDummy ? DummyStartNumber : NormalStartNumber;
+        var rangeMax = isDummy ? DummyMaxNumber : NormalMaxNumber;
+
+        // SQLite (development) does not support multiple concurrent writers
+        // anyway; SERIALIZABLE on Azure SQL gives us range-lock semantics.
+        // We retry once on transient deadlocks (rare under serializable but
+        // possible).
+        const int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                await using IDbContextTransaction tx =
+                    await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+
+                var counter = await _context.AssetCodeCounters
+                    .FirstOrDefaultAsync(c => c.Prefix == prefix, cancellationToken);
+
+                int issued;
+                if (counter is null)
+                {
+                    // First time we see this prefix. Seed from the existing
+                    // Assets table so a deployment that already has historical
+                    // codes does not start re-issuing low numbers.
+                    var seedFrom = await GetMaxExistingNumberAsync(prefix, isDummy, cancellationToken);
+                    issued = Math.Max(rangeStart, seedFrom + 1);
+
+                    counter = new AssetCodeCounter
+                    {
+                        Prefix = prefix,
+                        NextNumber = issued + count,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                    };
+                    _context.AssetCodeCounters.Add(counter);
+                }
+                else
+                {
+                    issued = counter.NextNumber;
+                    counter.NextNumber = issued + count;
+                    counter.UpdatedAt = DateTime.UtcNow;
+                }
+
+                if (issued + count - 1 > rangeMax)
+                {
+                    var bucket = isDummy ? "Dummy" : "Normal";
+                    throw new InvalidOperationException(
+                        $"{bucket} asset number range exhausted for prefix '{prefix}' (max {rangeMax}).");
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await tx.CommitAsync(cancellationToken);
+
+                return issued;
+            }
+            catch (DbUpdateException) when (attempt < maxAttempts)
+            {
+                // Lost the race to insert the very first counter row; another
+                // request created it concurrently. Retry — the second pass
+                // will hit the existing counter and increment it cleanly.
+                _context.ChangeTracker.Clear();
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Could not reserve asset code numbers for prefix '{prefix}' after {maxAttempts} attempts.");
+    }
+
+    /// <summary>
+    /// Computes the maximum number already used in the <c>Assets</c> table
+    /// for a given prefix. Only used to seed a brand-new counter row.
+    /// </summary>
+    private async Task<int> GetMaxExistingNumberAsync(
+        string prefix,
+        bool isDummy,
+        CancellationToken cancellationToken)
     {
         var prefixPattern = prefix + "-";
         var existingCodes = await _context.Assets
@@ -187,33 +268,18 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        if (isDummy)
+        int max = isDummy ? DummyStartNumber - 1 : 0;
+        foreach (var code in existingCodes)
         {
-            int maxDummyNumber = 90000;
-            foreach (var code in existingCodes)
-            {
-                if (code.Length >= 5)
-                {
-                    var numberPart = code[^5..];
-                    if (int.TryParse(numberPart, out var number) && number >= 90001 && number > maxDummyNumber)
-                        maxDummyNumber = number;
-                }
-            }
-            return maxDummyNumber + 1;
+            if (code.Length < 5) continue;
+            var numberPart = code[^5..];
+            if (!int.TryParse(numberPart, out var number)) continue;
+
+            if (isDummy && number < DummyStartNumber) continue;
+            if (!isDummy && number >= DummyStartNumber) continue;
+
+            if (number > max) max = number;
         }
-        else
-        {
-            int maxNumber = 0;
-            foreach (var code in existingCodes)
-            {
-                if (code.Length >= 5)
-                {
-                    var numberPart = code[^5..];
-                    if (int.TryParse(numberPart, out var number) && number < 90000 && number > maxNumber)
-                        maxNumber = number;
-                }
-            }
-            return maxNumber + 1;
-        }
+        return max;
     }
 }
