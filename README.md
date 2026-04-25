@@ -1,109 +1,90 @@
 # Djoppie Inventory
 
-IT Asset Management System for tracking equipment, deployments, and Intune integration.
-
-## Quick Links
+IT asset and inventory management for Gemeente Diepenbeek — track equipment, plan rollouts, integrate with Microsoft Intune, all behind Entra ID single sign-on.
 
 | Audience | Document |
 |----------|----------|
-| **Getting Started** | [QUICK_START.md](QUICK_START.md) |
-| **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| **Development Guide** | [CLAUDE.md](CLAUDE.md) |
-| **User Guide (NL)** | [docs/USER-GUIDE.md](docs/USER-GUIDE.md) |
-
-## Live Environment
-
-| Environment | Frontend | Backend |
-|-------------|----------|---------|
-| **DEV** | [blue-cliff-031d65b03.1.azurestaticapps.net](https://blue-cliff-031d65b03.1.azurestaticapps.net) | [app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net](https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net) |
-
-Login with your Diepenbeek Microsoft account.
+| New developer | [DEVELOPMENT.md](DEVELOPMENT.md) |
+| Architect / reviewer | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| All other docs | [docs/README.md](docs/README.md) |
+| End user (NL) | [docs/USER-GUIDE.md](docs/USER-GUIDE.md) |
+| AI agents | [CLAUDE.md](CLAUDE.md) |
 
 ---
 
-## Features
+## Live (Azure DEV)
 
-### Core
+| Tier | URL |
+|------|-----|
+| Frontend | <https://blue-cliff-031d65b03.1.azurestaticapps.net> |
+| Backend API | <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net> |
+| Swagger | <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net/swagger> |
 
-- **Asset Management** - CRUD operations for IT assets with QR codes
-- **QR Scanner** - Instant asset lookup via camera
-- **Intune Integration** - Sync with Microsoft Intune for device inventory
-
-### Rollout Workflow
-
-- **Planning** - Create rollout sessions with days and workplaces
-- **Execution** - Track equipment deployment to workplaces
-- **Reporting** - Progress dashboards and asset movement reports
-
-### Organization
-
-- **Services & Sectors** - Organizational hierarchy from Entra mail groups
-- **Buildings** - Location management
-- **Physical Workplaces** - Track equipment at specific locations
+Sign in with a Diepenbeek Microsoft account.
 
 ---
 
-## Tech Stack
+## Highlights
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, TypeScript, Material-UI, TanStack Query |
-| Backend | ASP.NET Core 8.0, Entity Framework Core |
-| Auth | Microsoft Entra ID (Azure AD), MSAL |
-| Database | SQLite (dev), Azure SQL (prod) |
-| Infrastructure | Azure Static Web Apps, Azure App Service |
+- **Asset CRUD** with auto-generated codes (`TYPE-YY-BRAND-NNNNN`), QR generation/scan, bulk import.
+- **Rollout workflow** — plan sessions, schedule days/services, configure workplaces, execute scans, atomically transition asset status (`Nieuw → InGebruik`, `InGebruik → UitDienst/Defect/Stock`).
+- **Intune integration** via Microsoft Graph — live compliance, hardware, app inventory.
+- **Org sync** from Entra mail groups (sectors, services, employees, managers).
+- **Reports** — overview KPIs, attention list, asset history, rollout movements, leasing, workplaces, Intune.
+- **Dutch / English** UI.
 
 ---
 
-## Project Structure
+## Tech (one-liner)
+
+React 19 + Vite + MUI + TanStack Query · ASP.NET Core 8 + EF Core · Entra ID · Azure SQL / SQLite · Static Web Apps + App Service · Bicep IaC.
+
+Full breakdown: [ARCHITECTURE.md §2](ARCHITECTURE.md#2-tech-stack).
+
+---
+
+## Get Going
+
+```bash
+git clone https://github.com/Djoppie/Djoppie-Inventory.git
+cd Djoppie-Inventory
+
+# Backend  (terminal 1)
+cd src/backend/DjoppieInventory.API
+dotnet user-secrets set "AzureAd:ClientSecret" "<get-from-team>"
+dotnet run                     # http://localhost:5052
+
+# Frontend (terminal 2)
+cd src/frontend
+npm install && npm run dev     # http://localhost:5173
+```
+
+Detailed setup, deploys, troubleshooting → [DEVELOPMENT.md](DEVELOPMENT.md).
+
+---
+
+## Repo Layout
 
 ```
 Djoppie-Inventory/
 ├── src/
-│   ├── frontend/          # React SPA
-│   └── backend/           # ASP.NET Core API
-├── docs/                  # Documentation
-├── .claude/               # Claude Code configuration
-│   ├── agents/            # Agent definitions
-│   ├── skills/            # Custom skills
-│   └── tasks/             # Task templates
-├── CLAUDE.md              # Development instructions
-├── QUICK_START.md         # Getting started
-└── ARCHITECTURE.md        # System design
+│   ├── backend/        ASP.NET Core 8 (API · Core · Infrastructure · Tests)
+│   └── frontend/       React 19 SPA (Vite)
+├── infra/              Bicep templates (DEV + PROD)
+├── scripts/            PowerShell deploy / verify / DB helpers
+├── docs/               All reference documentation
+├── .azuredevops/       Azure Pipelines + setup notes
+├── .claude/            Agent definitions used by this repo
+├── README.md           ← you are here
+├── DEVELOPMENT.md      Setup & day-to-day dev guide
+├── ARCHITECTURE.md     Compact system overview
+└── CLAUDE.md           Verbose agent-facing instructions
 ```
-
----
-
-## Development
-
-### Prerequisites
-
-- .NET 8 SDK
-- Node.js 20+
-- Azure CLI (for auth)
-
-### Quick Start
-
-```bash
-# Backend
-cd src/backend/DjoppieInventory.API
-dotnet user-secrets set "AzureAd:ClientSecret" "your-secret"
-dotnet run
-
-# Frontend (new terminal)
-cd src/frontend
-npm install
-npm run dev
-```
-
-Open <http://localhost:5173>
-
-See [QUICK_START.md](QUICK_START.md) for detailed setup.
 
 ---
 
 ## Contact
 
-- **Developer**: Jo Wijnen
-- **Email**: <jo.wijnen@diepenbeek.be>
-- **Tenant**: Diepenbeek (7db28d6f-d542-40c1-b529-5e5ed2aad545)
+- **Maintainer**: Jo Wijnen — <jo.wijnen@diepenbeek.be>
+- **Tenant**: Diepenbeek (`7db28d6f-d542-40c1-b529-5e5ed2aad545`)
+- **Issues**: <https://github.com/Djoppie/Djoppie-Inventory/issues>
