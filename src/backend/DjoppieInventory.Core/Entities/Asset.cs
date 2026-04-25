@@ -69,9 +69,13 @@ public class Asset
     public string? OfficeLocation { get; set; }
 
     /// <summary>
-    /// Current status of the asset (default: Stock)
+    /// Current status of the asset.
+    /// Default is <see cref="AssetStatus.Nieuw"/> — assets start unassigned and
+    /// transition to <see cref="AssetStatus.InGebruik"/> only via rollout completion
+    /// or an explicit assignment endpoint. CSV import is the only path that may
+    /// persist a different starting status.
     /// </summary>
-    public AssetStatus Status { get; set; } = AssetStatus.Stock;
+    public AssetStatus Status { get; set; } = AssetStatus.Nieuw;
 
     /// <summary>
     /// Manufacturer or brand of the asset (optional)
