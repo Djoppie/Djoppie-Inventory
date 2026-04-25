@@ -39,7 +39,7 @@ Structured end-user / admin / architecture documentation under [`docs/wiki/`](wi
 
 | Section | Files |
 |---------|-------|
-| [User Guide](wiki/User-Guide/) | Getting Started · Managing Assets · Printing Labels · Exporting Data · Rollout Workflow (NL) |
+| [User Guide](wiki/User-Guide/) | Getting Started · Assets beheren · Labels · Export · Rollout · Werkplekken · Rapporten (NL) |
 | [Administrator Guide](wiki/Administrator-Guide/) | Installation · Entra Configuration · Deployment · Key Vault · Troubleshooting |
 | [Technical Reference](wiki/Technical-Reference/) | Architecture |
 

@@ -10,11 +10,13 @@ Documentation for IT Support Staff and Inventory Managers.
 
 | Document | Description |
 |----------|-------------|
-| [Getting Started](User-Guide/01-Getting-Started.md) | Login, dashboard overview, searching, QR scanning |
-| [Managing Assets](User-Guide/02-Managing-Assets.md) | Add, edit, view assets, status management, templates |
-| [Printing Labels](User-Guide/03-Printing-Labels.md) | Single and bulk QR label printing with Dymo |
-| [Exporting Data](User-Guide/04-Exporting-Data.md) | Export to Excel and CSV formats |
-| [Rollout Workflow (NL)](User-Guide/05-Rollout-Workflow.md) | Plan, execute, and report rollouts (Dutch) |
+| [Getting Started (NL)](User-Guide/01-Getting-Started.md) | Inloggen, dashboard, navigatie, zoeken, QR-scan |
+| [Assets beheren (NL)](User-Guide/02-Managing-Assets.md) | Toevoegen, bewerken, bekijken; locatie via Gebouw + werkplek; statussen, templates, CSV import |
+| [Labels afdrukken (NL)](User-Guide/03-Printing-Labels.md) | Enkele en bulk QR-labels met Dymo |
+| [Data exporteren (NL)](User-Guide/04-Exporting-Data.md) | Export naar Excel en CSV |
+| [Rollout-workflow (NL)](User-Guide/05-Rollout-Workflow.md) | Plannen, uitvoeren en rapporteren van rollouts |
+| [Werkplekken (NL)](User-Guide/06-Werkplekken.md) | Fysieke werkplekken aanmaken, bewoner toewijzen, asset-koppeling |
+| [Rapporten (NL)](User-Guide/07-Rapporten.md) | Centraal rapportagecentrum: Overzicht, Activa, Werkplekken, Rollouts, Leasing, Intune |
 
 ---
 
