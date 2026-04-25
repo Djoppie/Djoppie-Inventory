@@ -1,196 +1,160 @@
-# Getting Started
+# Aan de slag — Gebruikersgids
 
-> Quick start guide for IT Support Staff and Inventory Managers.
+Snelle introductie voor IT-supportmedewerkers en inventarisbeheerders die voor het eerst met Djoppie Inventory werken.
 
----
-
-## Accessing the Application
-
-| Environment | URL |
-|-------------|-----|
-| **Production** | Contact your IT administrator |
-| **DEV** | https://blue-cliff-031d65b03.1.azurestaticapps.net |
-
-## What You Need
-
-- A modern web browser (Chrome, Firefox, Edge, or Safari)
-- Your Diepenbeek Microsoft account credentials
-- Camera access (optional, for QR code scanning)
-
-## First Steps
-
-1. Open the application URL in your web browser
-2. Sign in with your Microsoft account
-3. Grant camera permissions when prompted (for QR scanning)
-4. Start managing assets
+> Technische details (configuratie, endpoints, infrastructuur) staan niet in deze gids. Zie [`docs/BACKEND-ARCHITECTURE.md`](../../BACKEND-ARCHITECTURE.md) en de live Swagger UI op `/swagger`.
 
 ---
 
-## Signing In
+## 1. Overzicht
 
-Djoppie Inventory uses **Microsoft Entra ID** (formerly Azure AD) for secure authentication.
+Djoppie Inventory is een webapplicatie voor het beheer van IT-activa. Je kunt er assets registreren, opvolgen, exporteren en koppelen aan medewerkers, gebouwen en diensten. De applicatie draait volledig in de browser — geen installatie vereist.
 
-### Step 1: Navigate to the Application
+| Omgeving | URL |
+|----------|-----|
+| **DEV** | <https://blue-cliff-031d65b03.1.azurestaticapps.net> |
+| **Productie** | Vraag bij je IT-beheerder |
 
-- Open your web browser
-- Enter the application URL
-- You will be automatically redirected to the Microsoft sign-in page
-
-### Step 2: Enter Your Credentials
-
-- Enter your Diepenbeek email address (e.g., `yourname@diepenbeek.onmicrosoft.com`)
-- Click **Next**
-- Enter your password
-- Click **Sign in**
-
-### Step 3: Grant Permissions (First Time Only)
-
-- Review the requested permissions
-- Click **Accept** to allow the application to:
-  - Read your basic profile
-  - Access the Djoppie Inventory API on your behalf
-  - Read device information from Microsoft Intune
-
-### Step 4: Access the Dashboard
-
-- After successful authentication, you'll be redirected to the dashboard
-- Your name and profile picture appear in the top-right corner
-
-### Signing Out
-
-- Click your profile picture or name in the top-right corner
-- Select **Sign out** from the dropdown menu
+**Wat je nodig hebt:**
+- Een moderne browser (Chrome, Edge of Firefox)
+- Je Diepenbeek Microsoft-account (`naam@diepenbeek.onmicrosoft.com`)
+- Cameratoestemming (optioneel, alleen voor QR-scannen)
 
 ---
 
-## Dashboard Overview
+## 2. Inloggen
 
-The dashboard is your central hub for viewing and managing all assets.
+De applicatie gebruikt **Microsoft Entra ID** (voorheen Azure AD) voor authenticatie. Er is geen apart wachtwoord nodig — je meldt je aan met je bestaande Microsoft-account.
 
-### Header Bar
+### Stap 1: Open de applicatie
 
-| Element | Function |
-|---------|----------|
-| **Djoppie Logo** | Click to return to dashboard |
-| **Language Selector** | Switch between Dutch (NL) and English (EN) |
-| **Theme Toggle** | Switch between light and dark mode |
-| **User Profile** | Shows your name, photo, and sign-out option |
+Navigeer naar de applicatie-URL. Je wordt automatisch doorgestuurd naar de Microsoft-aanmeldingspagina.
 
-### Statistics Cards
+### Stap 2: Meld je aan
 
-| Card | Description |
-|------|-------------|
-| **Total Assets** | Total number of registered assets |
-| **In Use (InGebruik)** | Assets actively being used |
-| **In Stock** | Available assets not currently assigned |
-| **Under Repair (Herstelling)** | Assets being repaired or maintained |
-| **Defective (Defect)** | Broken assets that cannot be repaired |
-| **Decommissioned (UitDienst)** | Retired assets no longer in service |
+Voer je Diepenbeek-e-mailadres in en doorloop de Microsoft-aanmeldstroom (inclusief MFA als geconfigureerd voor jouw account).
 
-### Asset List
+### Stap 3: Machtigingen verlenen (eenmalig)
 
-Assets are displayed as cards showing:
-- Asset name and code
-- Category
-- Status badge (color-coded)
-- Owner
-- Location (building + space/floor)
+Bij de eerste aanmelding vraagt de applicatie toestemming om:
+- Je basisprofiel te lezen
+- De Djoppie Inventory API namens jou aan te roepen
 
-Click any card to view full details.
+Klik **Accepteren** om verder te gaan. Je wordt niet opnieuw gevraagd.
 
-### Bottom Navigation
+### Stap 4: Dashboard
 
-| Button | Function |
-|--------|----------|
-| **Dashboard** | View all assets |
-| **Scan** | QR code scanner and manual search |
-| **Assets** | Add new asset |
+Na succesvolle aanmelding land je op het **Activa Dashboard**. Je naam verschijnt rechtsboven in de navigatiebalk.
+
+### Afmelden
+
+Klik op je profielfoto of naam rechtsboven en kies **Afmelden**.
 
 ---
 
-## Searching and Filtering
+## 3. Navigatie
 
-### Filter by Status
+De zijbalk links bevat alle secties van de applicatie:
 
-1. Locate the **"Filter by Status"** dropdown at the top of the dashboard
-2. Select a status:
-   - **All Assets** - Show all assets
-   - **InGebruik** - Assets in use
-   - **Stock** - Available assets
-   - **Herstelling** - Under repair
-   - **Defect** - Defective assets
-   - **UitDienst** - Decommissioned
-3. The asset list updates immediately
+| Sectie | Wat je er doet |
+|--------|---------------|
+| **Dashboard** | Activa-overzicht met statusfilter en zoekbalk |
+| **Activa** | Volledige inventarislijst, assets toevoegen en beheren |
+| **Sjablonen** | Sjabloonbibliotheek voor snelle asset-aanmaak |
+| **Scannen** | QR-code scannen of asset-code handmatig invoeren |
+| **Werkplekken** | Fysieke werkplekken en hun vaste uitrusting |
+| **Uitrol** | Rollout-planning en -uitvoering (on/offboarding) |
+| **Rapporten** | Inventaris-, werkplek- en rollout-rapportage |
+| **Beheer** | Gebouwen, diensten, sectoren, medewerkers, categorieën |
 
-### Search Box
-
-Use the search box to find assets by:
-- Asset code
-- Asset name
-- Owner name
-- Building or location
-- Brand or model
+Bovenaan de balk vind je de taalwissel (**NL / EN**) en de licht-/donkermodus-toggle.
 
 ---
 
-## QR Code Scanning
+## 4. Dashboard
 
-### Using the QR Scanner
+Het dashboard geeft je een direct overzicht van alle assets in de inventaris.
 
-1. Click **Scan** in the bottom navigation bar
-2. Select the **QR Scanner** tab
-3. Grant camera permission if prompted
-4. Point your camera at the QR code (10-20 cm distance)
-5. The code is recognized automatically
-6. You're redirected to the asset detail page
+### KPI-tegels
 
-### Manual Entry Alternative
+Bovenaan staan telkaarten per status:
 
-If scanning isn't available:
+| Tegel | Betekenis |
+|-------|-----------|
+| Totaal | Alle geregistreerde assets |
+| In Gebruik | Assets actief bij een gebruiker |
+| Stock | Beschikbaar, nog niet toegewezen |
+| Nieuw | Aangemaakt, nog niet in gebruik |
+| Herstelling | Naar reparatie |
+| Defect | Kapot, niet repareerbaar |
+| Uit Dienst | Definitief buiten gebruik |
 
-1. Click the **Manual Entry** tab
-2. Type the asset code exactly as it appears
-3. Click **Search** or press **Enter**
+### Zoeken en filteren
 
-### Scanner Troubleshooting
+- **Zoekbalk** — zoek op asset-code, naam, eigenaar, merk, model of gebouw
+- **Filter op status** — klik een statusknop om de lijst te beperken tot die status; klik opnieuw om de filter op te heffen
+- **Dienst-/sectorfilter** — een uitklapbaar paneel groepeert diensten per sector zodat je snel op afdeling kunt filteren
 
-| Issue | Solution |
-|-------|----------|
-| Camera not starting | Check browser permissions, close other camera apps |
-| QR not recognized | Ensure good lighting, clean camera lens, hold steady |
-| Access denied | Camera requires HTTPS connection |
-
----
-
-## Language & Theme
-
-### Language Switching
-
-- Click the language button (NL/EN) in the header
-- Language switches immediately
-- Your preference is saved
-
-### Dark/Light Mode
-
-- Click the theme toggle (sun/moon icon) in the header
-- Theme changes immediately
-- Your preference is saved
+De lijst toont asset-kaarten met code, naam, status, eigenaar en gebouw. Klik op een kaart om de volledige detailpagina te openen.
 
 ---
 
-## Getting Help
+## 5. QR-code scannen
 
-### IT Support
+Met de scanpagina zoek je razendsnel een asset op via zijn QR-code.
 
-- Visit: [IT ServiceDesk](https://diepenbeek.sharepoint.com/sites/IN-Servicedesk)
-- Subject: "Djoppie Inventory - [Your Issue]"
-- Include: Screenshots, error messages, steps to reproduce
+### Via QR Scanner
 
-### Feature Requests
+1. Klik **Scannen** in de zijbalk (route `/inventory/scan`)
+2. Kies het tabblad **QR Scanner**
+3. Verleen cameratoestemming als de browser daarom vraagt
+4. Richt de camera op de QR-code (10–20 cm afstand, goede belichting)
+5. De code wordt automatisch herkend en je wordt doorgestuurd naar de asset-detailpagina
 
-- Submit via IT ServiceDesk
-- Subject: "Djoppie Inventory - Feature Request"
+### Via handmatige invoer
+
+Als je geen camera beschikbaar hebt:
+
+1. Kies het tabblad **Handmatige invoer**
+2. Typ de asset-code exact in (bijv. `LAP-26-DELL-00001`)
+3. Druk op **Zoeken** of Enter
+
+### Veelvoorkomende scannerproblemen
+
+| Probleem | Oplossing |
+|----------|-----------|
+| Camera start niet | Controleer browsermachtigingen; sluit andere apps die de camera gebruiken |
+| QR wordt niet herkend | Zorg voor goede belichting en houd de camera stil |
+| Toegang geweigerd | QR-scannen vereist HTTPS — gebruik de productie-URL, niet `http://` |
 
 ---
 
-**Next:** [Managing Assets](02-Managing-Assets.md)
+## 6. Taal en thema
+
+- **Taal** — klik op **NL / EN** in de navigatiebalk om te wisselen; de voorkeur wordt lokaal opgeslagen
+- **Thema** — klik op het zon-/maanpictogram om te schakelen tussen licht en donker
+
+---
+
+## 7. Veelgestelde vragen
+
+**Ik zie de zijbalk niet volledig — wat mis ik?**
+Sommige secties (Uitrol, Beheer) zijn mogelijk alleen zichtbaar voor bepaalde rollen. Neem contact op met je IT-beheerder als je verwacht toegang te hebben.
+
+**Kan ik Djoppie Inventory op mijn smartphone gebruiken?**
+Ja. De applicatie werkt in de mobiele browser. Voor QR-scannen is dat zelfs de handigste manier.
+
+**Mijn sessie is verlopen — wat nu?**
+Klik op **Aanmelden** in de navigatiebalk. Je wordt opnieuw doorgestuurd naar Microsoft voor aanmelding; dit duurt gewoonlijk maar een paar seconden.
+
+---
+
+## Support
+
+- IT-ServiceDesk: <https://diepenbeek.sharepoint.com/sites/IN-Servicedesk>
+- Bugs / feature-verzoeken: <https://github.com/Djoppie/Djoppie-Inventory/issues>
+- Maintainer: <jo.wijnen@diepenbeek.be>
+
+---
+
+**Volgende:** [Assets beheren](02-Managing-Assets.md)

@@ -1,208 +1,163 @@
-# Exporting Data
+# Gegevens exporteren — Gebruikersgids
 
-> Guide for exporting asset data to Excel and CSV formats.
+Gids voor het exporteren van inventarisgegevens naar Excel of CSV.
 
----
-
-## Overview
-
-The export feature allows you to download asset data for:
-- Inventory audits
-- Status reports
-- Department asset lists
-- Management reporting
-- Data backup
+> Technische details (ExcelJS-configuratie, API-endpoints) staan niet in deze gids. Zie [`docs/BACKEND-ARCHITECTURE.md`](../../BACKEND-ARCHITECTURE.md) en de live Swagger UI op `/swagger`.
 
 ---
 
-## Export Process
+## 1. Overzicht
 
-### Step 1: Access Export
+De exportfunctie laat je de volledige inventaris of een gefilterde selectie downloaden voor gebruik buiten de applicatie.
 
-- Click the **Export** button (icon) in the dashboard toolbar
-- The export dialog opens
+Typische toepassingen:
 
-### Step 2: Choose Format
-
-| Format | Extension | Best For |
-|--------|-----------|----------|
-| **Excel** | .xlsx | Analysis, pivot tables, formulas |
-| **CSV** | .csv | Universal compatibility, imports |
-
-### Step 3: Enter File Name
-
-- Type a custom file name
-- Option to include timestamp (YYYYMMDD_HHmmss)
-- File extension is added automatically
-
-### Step 4: Apply Filters (Optional)
-
-| Filter | Description |
-|--------|-------------|
-| **Search** | Full-text search across all fields |
-| **Status** | Filter by asset status |
-| **Category** | Filter by asset category |
-
-Active filters are shown as chips that can be removed.
-
-### Step 5: Select Columns
-
-**Default Columns:**
-- Asset Code
-- Asset Name
-- Category
-- Status
-- Owner
-- Building
-- Space
-- Brand
-- Model
-- Serial Number
-
-**Optional Columns:**
-- Purchase Date
-- Warranty Expiry
-- Installation Date
-- Created At
-- Updated At
-
-Use **Select All** or **Deselect All** for quick selection.
-
-### Step 6: Export
-
-- Click the **Export** button
-- File downloads automatically
-- Open in Excel, Google Sheets, or preferred application
+- **Inventarisaudit** — volledig overzicht als momentopname
+- **Statusrapportage** — overzicht van assets in herstelling, defect of uit dienst
+- **Dienstlijst** — alle assets van een bepaalde dienst of sector
+- **Garantiebeheer** — assets gesorteerd op garantieverval
+- **Import naar extern systeem** — CSV in het juiste importformaat
 
 ---
 
-## Export Use Cases
+## 2. Exportproces
 
-### Inventory Audit
+### Stap 1: Open de exportdialog
 
-Complete inventory snapshot for auditing:
+Ga naar **Activa** (inventarispagina) en klik het **Export**-pictogram in de werkbalk. De dialog **Inventaris Exporteren** opent.
 
-1. Open export dialog
-2. Select **Excel** format
-3. Keep all filters cleared (export all assets)
-4. Select **all columns**
-5. Include timestamp in filename
-6. Export and save for records
+### Stap 2: Kies het formaat
 
-### Status Report
+| Formaat | Extensie | Geschikt voor |
+|---------|----------|--------------|
+| **Excel** | `.xlsx` | Analyse, draaitabellen, opmaak, delen met management |
+| **CSV** | `.csv` | Import in andere systemen, universele compatibiliteit |
 
-Report on assets under repair or defective:
+### Stap 3: Geef een bestandsnaam op
 
-1. Open export dialog
-2. Filter by **Status**: Herstelling or Defect
-3. Select relevant columns:
-   - Asset Code, Asset Name, Owner, Building, Status
-4. Export to **Excel**
-5. Share with management
+Typ een naam. Schakel de optie **Tijdstempel toevoegen** in als je meerdere exports wilt bijhouden (bijv. `inventaris_20260425_143000.xlsx`).
 
-### Department Asset List
+### Stap 4: Pas filters toe (optioneel)
 
-List of assets for a specific department:
+Filters bepalen welke assets in de export worden opgenomen:
 
-1. Open export dialog
-2. **Search** by department name
-3. Select basic columns:
-   - Asset Code, Asset Name, Category, Owner, Building
-4. Export to **CSV** or **Excel**
-5. Distribute to department head
+| Filter | Werking |
+|--------|---------|
+| **Zoeken** | Vrije tekst over alle velden |
+| **Filter op status** | Één of meer statussen selecteren |
+| **Filter op asset type** | Beperk tot een specifiek asset type |
 
-### Warranty Tracking
+Actieve filters zijn zichtbaar als chips bovenaan de dialog. Verwijder ze met het kruisje om meer assets op te nemen.
 
-Assets with warranty information:
+**Tip:** Als je de filters op de inventarispagina al had ingesteld vóór je de exportdialog opende, worden ze automatisch overgenomen.
 
-1. Open export dialog
-2. Select columns:
-   - Asset Code, Asset Name, Brand, Model, Purchase Date, Warranty Expiry
-3. Export to **Excel**
-4. Sort by Warranty Expiry to identify expiring warranties
+### Stap 5: Kies de kolommen
 
-### IT Infrastructure Report
+Selecteer welke gegevensvelden je wilt exporteren:
 
-Network and computing equipment:
+**Standaard geselecteerd:**
 
-1. Open export dialog
-2. Filter by **Category**: Computing, Networking
-3. Select technical columns:
-   - Asset Code, Asset Name, Brand, Model, Serial Number, Building
-4. Export for documentation
+| Kolom | Inhoud |
+|-------|--------|
+| Asset-code | Unieke identifier (bijv. `LAP-26-DELL-00001`) |
+| Asset-naam | Officiële naam |
+| Categorie | Bijv. Computing, Displays |
+| Status | Huidige status |
+| Eigenaar | Naam van de gebruiker |
+| Gebouw | Gebouw uit het gebouwenregister |
+| Merk | Fabrikant |
+| Model | Modelnaam |
+| Serienummer | Fabrikantserienummer |
 
----
+**Optioneel toe te voegen:**
 
-## Working with Exported Data
+| Kolom | Inhoud |
+|-------|--------|
+| Aankoopdatum | Datum van aanschaf |
+| Garantieverval | Einddatum garantie |
+| Installatiedatum | Datum van ingebruikname |
+| Aangemaakt op | Datum waarop het asset in het systeem werd ingevoerd |
+| Bijgewerkt op | Datum van laatste wijziging |
 
-### Excel Tips
+Gebruik **Alles selecteren** of **Alles deselecteren** voor snelle keuze.
 
-- Use **Filter** feature (Ctrl+Shift+L) to sort and filter
-- Create **Pivot Tables** for summary reports
-- Use **Conditional Formatting** to highlight status
-- Apply **Data Validation** for consistent updates
+### Stap 6: Exporteer
 
-### CSV Import
-
-The CSV format can be imported into:
-- Google Sheets
-- Database systems
-- Other inventory systems
-- Reporting tools
+Klik **Exporteren**. Het bestand wordt automatisch gedownload naar je standaard downloadmap.
 
 ---
 
-## Troubleshooting
+## 3. Bulk-selectie exporteren
 
-### Export Not Working
+Wil je alleen een handpicking van assets exporteren?
 
-| Problem | Solution |
-|---------|----------|
-| Download doesn't start | Check browser download settings |
-| File is empty | Verify assets match your filters |
-| No columns exported | Ensure at least one column selected |
-| Wrong format | Check selected format (Excel vs CSV) |
-
-### File Issues
-
-| Problem | Solution |
-|---------|----------|
-| Can't open Excel file | Update Microsoft Office |
-| CSV shows garbled text | Open with UTF-8 encoding |
-| Dates look wrong | Format date columns in Excel |
-| Missing data | Check if field was empty in system |
-
-### Browser Issues
-
-| Problem | Solution |
-|---------|----------|
-| Popup blocked | Allow popups for this site |
-| Download blocked | Check browser security settings |
-| File not found | Check Downloads folder |
+1. Vink op de inventarispagina de gewenste assets aan (checkbox per kaart)
+2. Een exportknop verschijnt in de werkbalk naast de printknop
+3. Klik de knop — de exportdialog opent met de selectie al als filter actief
+4. Kies formaat en kolommen en exporteer
 
 ---
 
-## Column Reference
+## 4. Importcompatibele CSV
 
-| Column | Description | Example |
-|--------|-------------|---------|
-| Asset Code | Unique identifier | LAP-26-ICT-001 |
-| Asset Name | Descriptive name | Dell Latitude 5420 |
-| Category | Asset type | Computing |
-| Status | Current state | InGebruik |
-| Owner | Assigned person | Jan Jansen |
-| Building | Physical location | Hoofdgebouw |
-| Space | Room/floor | 2e verdieping |
-| Brand | Manufacturer | Dell |
-| Model | Model number | Latitude 5420 |
-| Serial Number | Manufacturer serial | ABC123XYZ |
-| Purchase Date | Acquisition date | 2024-01-15 |
-| Warranty Expiry | Warranty end date | 2027-01-15 |
-| Installation Date | Deployment date | 2024-02-01 |
-| Created At | System entry date | 2024-01-20 |
-| Updated At | Last modification | 2026-02-13 |
+Wil je een CSV exporteren die je later opnieuw kunt importeren?
+
+Schakel in de exportdialog de optie **Export voor Import** in. Dit exporteert het bestand in exact hetzelfde formaat als het CSV-importsjabloon (21 kolommen, vaste kolomvolgorde). Je kunt dit bestand bewerken en opnieuw importeren als bulkupdate.
 
 ---
 
-**Previous:** [Printing Labels](03-Printing-Labels.md)
-**Back to:** [User Guide Home](../README.md)
+## 5. Use-cases
+
+### Inventarisaudit
+
+1. Open de exportdialog; verwijder alle filters
+2. Selecteer **Excel** formaat en **alle kolommen**
+3. Voeg een tijdstempel toe aan de bestandsnaam
+4. Exporteer en sla op als officieel auditdocument
+
+### Statusrapport (herstelling / defect)
+
+1. Stel de statusfilter in op **Herstelling** of **Defect**
+2. Selecteer kolommen: Asset-code, Naam, Eigenaar, Gebouw, Status
+3. Exporteer naar Excel en deel met management
+
+### Dienstlijst
+
+1. Gebruik de zoekbalk of de dienst-/sectorfilter op de inventarispagina om te filteren op de gewenste dienst
+2. Open de exportdialog (de filter wordt meegenomen)
+3. Selecteer basiskolommen: Asset-code, Naam, Categorie, Eigenaar, Gebouw
+4. Exporteer naar Excel of CSV
+
+### Garantiebeheer
+
+1. Open de exportdialog zonder filter
+2. Selecteer kolommen: Asset-code, Naam, Merk, Model, Aankoopdatum, Garantieverval
+3. Exporteer naar Excel
+4. Sorteer in Excel op **Garantieverval** (oplopend) om snel te zien welke garanties binnenkort verlopen
+
+---
+
+## 6. Werken met de export in Excel
+
+- Gebruik **Filter** (Ctrl+Shift+L) om te sorteren en te filteren
+- Maak een **Draaitabel** voor samenvattende rapportages per dienst of gebouw
+- Gebruik **Voorwaardelijke opmaak** om statussen kleurcodering te geven
+- De kolom **Gebouw** bevat de naam uit het gebouwenregister — geen vrije tekst meer
+
+---
+
+## 7. Veelvoorkomende problemen
+
+| Probleem | Oplossing |
+|----------|-----------|
+| Download start niet | Controleer de downloadinstellingen van je browser |
+| Bestand is leeg | Controleer of je filters assets uitsluiten |
+| Geen kolommen geëxporteerd | Selecteer minimaal één kolom |
+| CSV toont garbled tekst | Open het bestand in Excel met **UTF-8** codering |
+| Datums zien er vreemd uit | Formatteer de datumkolommen in Excel als datum |
+| Pop-up geblokkeerd | Sta pop-ups toe voor deze site |
+
+---
+
+**Vorige:** [Labels afdrukken](03-Printing-Labels.md)
+**Terug naar:** [Gebruikersgids overzicht](../README.md)

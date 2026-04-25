@@ -1,244 +1,124 @@
-# Printing Labels
+# Labels afdrukken — Gebruikersgids
 
-> Guide for printing QR code labels using the Dymo LabelWriter 400 thermal printer.
-
----
-
-## Requirements
-
-### Hardware
-
-| Item | Specification |
-|------|---------------|
-| **Printer** | Dymo LabelWriter 400/450 (or compatible) |
-| **Labels** | 25mm x 25mm square labels (Dymo #30334 or compatible) |
-| **Connection** | USB to computer |
-
-### Software
-
-- Dymo LabelWriter drivers installed
-- Modern web browser (Chrome, Firefox, Edge recommended)
+Gids voor het afdrukken van QR-codelabels op een Dymo LabelWriter thermische printer.
 
 ---
 
-## Single Label Printing
+## 1. Overzicht
 
-Print a label for one asset from the Asset Detail page.
+Elk asset heeft een QR-code die zijn unieke asset-code bevat. Je kunt deze QR-code:
 
-### Step 1: Navigate to Asset
-
-- Open the asset detail page
-- Locate the QR Code section
-
-### Step 2: Click Print Label
-
-- Click the **"Print Label"** button below the QR code
-- A dialog opens showing a preview
-
-### Step 3: Review Preview
-
-- Verify the asset code is correct
-- Preview shows actual size (25mm) and enlarged view (150%)
-- Read printing instructions if needed
-
-### Step 4: Print
-
-1. Click **"Print"** in the dialog
-2. Browser print dialog opens
-3. Select **Dymo LabelWriter 400** as printer
-4. Verify settings:
-   - Scale: **100%** (important!)
-   - Paper size: **25mm x 25mm**
-   - Margins: **None**
-5. Click **Print**
-
-### Step 5: Verify Label
-
-- Check QR code is clear and fully printed
-- Verify asset code text is readable
-- Test scan with your phone
+- **Downloaden** als SVG-bestand (voor archivering of eigen printworkflow)
+- **Afdrukken als enkel label** vanaf de asset-detailpagina
+- **Bulk afdrukken** voor meerdere geselecteerde assets tegelijk
 
 ---
 
-## Bulk Label Printing
+## 2. Vereisten
 
-Print labels for multiple assets at once from the Dashboard.
-
-### Step 1: Select Assets
-
-- Go to the Dashboard
-- Each asset card has a checkbox (left of asset name)
-- Click checkboxes to select assets
-- In Table View, use the header checkbox for "select all"
-
-### Step 2: Open Bulk Print Dialog
-
-- A print button appears in the toolbar when assets are selected
-- Badge shows the number of selected assets
-- Click the print button to open dialog
-
-### Step 3: Choose Layout
-
-| Layout | QR Size | Description |
-|--------|---------|-------------|
-| **QR + Code** | 18mm | QR code with asset code below |
-| **QR + Name** | 18mm | QR code with asset name below |
-| **Code + QR + Name** | 14mm | Asset code, smaller QR, and name |
-
-### Step 4: Review and Print
-
-- Dialog shows preview of first label
-- Lists all selected assets
-- Maximum **20 labels** per batch
-- Click **"Print X Labels"** button
-
-### Step 5: Print on Dymo
-
-- Select Dymo LabelWriter 400 as printer
-- Labels print continuously on the roll
-- Each label feeds as a separate "page"
-
-### Tips for Bulk Printing
-
-- Use consistent layout for all labels in a batch
-- Print in batches of 10-20 for efficiency
-- Test with 2-3 labels first to verify settings
-- Labels print in selection order
+| Wat | Specificatie |
+|-----|-------------|
+| **Printer** | Dymo LabelWriter 400 of 450 (of compatibel model) |
+| **Labels** | 25 mm x 25 mm vierkante labels (Dymo #30334 of compatibel) |
+| **Verbinding** | USB, aangesloten op je computer |
+| **Driver** | Dymo LabelWriter-driver geïnstalleerd (download via [dymo.com/support](https://www.dymo.com/support)) |
+| **Browser** | Chrome of Edge aanbevolen |
 
 ---
 
-## Printer Settings
+## 3. Enkel label afdrukken
 
-### Recommended Configuration
+### Stap 1: Open de asset-detailpagina
 
-| Setting | Value | Reason |
-|---------|-------|--------|
-| **Printer** | Dymo LabelWriter 400 | Required for thermal printing |
-| **Scale** | 100% | Ensures accurate sizing |
-| **Paper Size** | 25mm x 25mm | Matches physical label |
-| **Margins** | None | Edge-to-edge printing |
-| **Quality** | High/Best | Crisp QR codes |
+Navigeer naar het asset (via de inventarislijst of QR-scan).
 
-### Dymo Driver Setup
+### Stap 2: Klik "Label Afdrukken"
 
-1. Download drivers from [dymo.com](https://www.dymo.com/support)
-2. Install LabelWriter 400 drivers
-3. Connect printer via USB
-4. Verify printer appears in system
+Onder de QR-code op de detailpagina klik je **Label Afdrukken**. Een dialog opent met een labelvoorbeeld.
 
----
+### Stap 3: Kies de indeling
 
-## Label Placement
+| Indeling | Inhoud | QR-grootte |
+|----------|--------|------------|
+| QR + Code | QR-code + asset-code eronder | 18 mm |
+| QR + Naam | QR-code + assetnaam eronder | 18 mm |
+| Code + QR + Naam | Asset-code boven, QR midden, naam onder | 14 mm |
 
-### Recommended Locations
+### Stap 4: Druk af
 
-| Asset Type | Placement |
-|------------|-----------|
-| **Laptops** | Bottom case, near serial number sticker |
-| **Desktops** | Front or top panel, visible when deployed |
-| **Monitors** | Back of monitor, near base |
-| **Peripherals** | Flat surface on underside |
-| **Mobile devices** | On protective case (not device itself) |
+1. Klik **Label Afdrukken** in de dialog
+2. Het browser-afdrukvenster opent
+3. Selecteer **Dymo LabelWriter** als printer
+4. Stel in:
+   - Schaal: **100%** (niet "Aanpassen aan pagina")
+   - Paginaformaat: **25 mm x 25 mm**
+   - Marges: **Geen**
+5. Klik **Afdrukken**
 
-### Avoid
+### Stap 5: Controleer het label
 
-- Surfaces that get hot (near vents, power supplies)
-- Curved surfaces (QR codes may not scan well)
-- Frequently touched areas (labels wear quickly)
-- Areas exposed to direct sunlight
-
-### QR Code Best Practices
-
-- Place on visible, flat surface
-- Minimum 25mm x 25mm size
-- Use matte finish to avoid glare
-- Test scan after placing
+Scan de afgedrukte QR-code met je telefoon of barcodescanner om te verifiëren dat hij correct werkt.
 
 ---
 
-## Troubleshooting
+## 4. QR-code downloaden (SVG)
 
-### Label Size Issues
+Wil je de QR-code opslaan of in een ander systeem gebruiken?
 
-| Problem | Solution |
-|---------|----------|
-| Label too small | Check scale is 100%, not "Fit to page" |
-| Label too large | Verify paper size is 25mm x 25mm |
-| Content cut off | Set margins to "None" |
+1. Open de asset-detailpagina
+2. Klik **QR Code Downloaden**
+3. Het SVG-bestand wordt opgeslagen als `{AssetCode}-QR.svg` (bijv. `LAP-26-DELL-00001-QR.svg`)
 
-### QR Code Issues
-
-| Problem | Solution |
-|---------|----------|
-| QR doesn't scan | Clean printer head with alcohol wipe |
-| QR is faint | Set print quality to "High" or "Best" |
-| QR is blurry | Use high-quality thermal labels |
-
-### Printer Issues
-
-| Problem | Solution |
-|---------|----------|
-| Printer not found | Check USB connection, verify power on |
-| Driver not installed | Download from dymo.com |
-| Labels jamming | Reload labels, check alignment |
-| Blank labels | Check label roll direction |
-
-### Browser Issues
-
-| Problem | Solution |
-|---------|----------|
-| Print dialog doesn't open | Disable popup blocker |
-| Wrong printer selected | Set Dymo as default, or select manually |
-| Preview looks wrong | Try different browser (Chrome recommended) |
+SVG is schaalbaar — de kwaliteit blijft behouden bij elk afdrukformaat.
 
 ---
 
-## Technical Specifications
+## 5. Bulk labels afdrukken
 
-### Label Dimensions
+Print labels voor meerdere assets tegelijk vanuit de inventarislijst.
 
-| Specification | Value |
-|---------------|-------|
-| Physical Size | 25mm x 25mm (0.98" x 0.98") |
-| Print Resolution | 300 DPI (typical for Dymo) |
+### Stap 1: Selecteer assets
 
-### QR Code Specifications
+Vink op de inventarispagina de gewenste assets aan via de checkbox links van elke kaart. Je kunt ook de header-checkbox gebruiken om de hele huidige pagina te selecteren.
 
-| Specification | Value |
-|---------------|-------|
-| Error Correction | Level H (30% damage tolerance) |
-| Colors | Black (#000000) on White (#FFFFFF) |
-| Single Text Size | 18mm x 18mm |
-| Double Text Size | 14mm x 14mm |
+### Stap 2: Open de bulk-print-dialog
 
-### Layout Details
+Een printknop verschijnt in de werkbalk zodra je één of meer assets hebt geselecteerd. De badge toont het aantal. Klik de knop.
 
-**QR + Code Layout:**
-```
-┌─────────────────────┐
-│                     │
-│    ┌───────────┐    │
-│    │  QR Code  │    │
-│    │   18mm    │    │
-│    └───────────┘    │
-│                     │
-│   LAP-26-ICT-001    │
-└─────────────────────┘
-```
+### Stap 3: Kies indeling en druk af
 
-**Code + QR + Name Layout:**
-```
-┌─────────────────────┐
-│   LAP-26-ICT-001    │
-│    ┌───────────┐    │
-│    │  QR Code  │    │
-│    │   14mm    │    │
-│    └───────────┘    │
-│   Dell Latitude     │
-└─────────────────────┘
-```
+Kies de indeling (zelfde opties als bij enkel label). De dialog toont een voorbeeld van het eerste label en een lijst van alle geselecteerde assets.
+
+- Maximum: **20 labels per batch**
+- Klik **X Labels Afdrukken** en doorloop het browser-afdrukvenster zoals bij enkel label
 
 ---
 
-**Previous:** [Managing Assets](02-Managing-Assets.md)
-**Next:** [Exporting Data](04-Exporting-Data.md)
+## 6. Labelplaatsing op het apparaat
+
+| Assettype | Aanbevolen plek |
+|-----------|----------------|
+| Laptop | Onderkant behuizing, naast het serienummersticker van de fabrikant |
+| Desktop | Voor- of bovenpaneel, zichtbaar bij opstelling |
+| Monitor | Achterkant, nabij de voet |
+| Docking / Randapparatuur | Plat vlak aan de onderkant |
+
+**Vermijd:** warme oppervlakken (bij ventilatieopeningen), sterk gebogen oppervlakken en frequent aangeraakte plekken waar het label snel slijt.
+
+---
+
+## 7. Veelvoorkomende problemen
+
+| Probleem | Oplossing |
+|----------|-----------|
+| Label te klein of te groot | Controleer of schaal op **100%** staat, niet op "Aanpassen aan pagina" |
+| Inhoud afgekapt | Stel marges in op **Geen** |
+| QR-code scant niet | Reinig de printerkop met een alcoholdoekje; stel afdrukkwaliteit in op Hoog |
+| Printer niet gevonden | Controleer USB-verbinding en voeding; herinstalleer driver |
+| Labels jammen | Herlaad de labelrol en controleer de invoerrichting |
+| Afdrukvenster opent niet | Schakel de pop-upblokkering uit voor deze site |
+
+---
+
+**Vorige:** [Assets beheren](02-Managing-Assets.md)
+**Volgende:** [Gegevens exporteren](04-Exporting-Data.md)
