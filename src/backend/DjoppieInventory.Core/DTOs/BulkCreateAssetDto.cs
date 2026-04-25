@@ -3,142 +3,79 @@ using System.ComponentModel.DataAnnotations;
 namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
-/// DTO for bulk asset creation operations.
-/// Asset codes are auto-generated from AssetType + Year + Brand.
-/// Format: [DUM-]TYPE-YY-MERK-NUMMER (e.g., LAP-26-DELL-00001)
+/// DTO for bulk asset creation. Asset codes are auto-generated from
+/// AssetType + Year + Brand. Format: <c>[DUM-]TYPE-YY-MERK-NUMMER</c>.
+///
+/// <para>
+/// Like <see cref="CreateAssetDto"/>, this DTO intentionally omits owner,
+/// location, status and installation-date fields. All bulk-created assets
+/// land on <c>Status = Nieuw</c>; assignment is a separate explicit step.
+/// </para>
 /// </summary>
 public class BulkCreateAssetDto
 {
     /// <summary>
-    /// Asset type ID - required for auto-generating asset codes (determines TYPE component).
+    /// Asset type ID — required, drives the TYPE component of the codes.
     /// </summary>
     [Required]
     public int AssetTypeId { get; set; }
 
     /// <summary>
-    /// The number of assets to create in bulk.
-    /// Must be between 1 and 100 to prevent excessive resource usage.
+    /// Number of assets to create. 1 ≤ Quantity ≤ 100.
     /// </summary>
     [Required]
     [Range(1, 100)]
     public int Quantity { get; set; } = 1;
 
     /// <summary>
-    /// If true, asset codes will be in the 9000+ range for dummy/test assets.
+    /// If true, asset codes use the 90001+ dummy range.
     /// </summary>
     public bool IsDummy { get; set; } = false;
 
     /// <summary>
-    /// Optional: Template ID to use for auto-filling asset details.
-    /// If provided, will copy brand, model, category from the template.
+    /// Optional template ID — when present, brand/model/category are
+    /// pre-filled from the template (owner / status / location fields on
+    /// the template are deliberately ignored to honour the workflow).
     /// </summary>
     public int? TemplateId { get; set; }
 
-    /// <summary>
-    /// The official device name (DeviceName) for the assets (optional).
-    /// </summary>
     [StringLength(200)]
     public string? AssetName { get; set; }
 
-    /// <summary>
-    /// Optional: Readable name/alias for the assets.
-    /// </summary>
     [StringLength(200)]
     public string? Alias { get; set; }
 
-    /// <summary>
-    /// Category for all assets in the bulk creation (optional - derived from AssetType).
-    /// </summary>
+    [StringLength(100)]
     public string? Category { get; set; }
 
-    /// <summary>
-    /// Service/department ID for all assets (optional).
-    /// </summary>
-    public int? ServiceId { get; set; }
-
-    /// <summary>
-    /// Specific installation location details (e.g., room number, floor) for all assets (optional).
-    /// </summary>
-    public string? InstallationLocation { get; set; }
-
-    /// <summary>
-    /// Primary user for all assets (optional - can be assigned later).
-    /// </summary>
-    public string? Owner { get; set; }
-
-    /// <summary>
-    /// Status for all assets. Defaults to "Stock".
-    /// </summary>
-    public string Status { get; set; } = "Stock";
-
-    /// <summary>
-    /// Optional: Brand for all assets in the bulk creation.
-    /// </summary>
+    [StringLength(100)]
     public string? Brand { get; set; }
 
-    /// <summary>
-    /// Optional: Model for all assets in the bulk creation.
-    /// </summary>
+    [StringLength(200)]
     public string? Model { get; set; }
 
     /// <summary>
-    /// Serial number prefix for generating unique serial numbers - optional.
-    /// If provided, will be combined with the asset number to create unique serial numbers.
-    /// Example: "SN" will generate SN-0001, SN-0002, etc.
-    /// If not provided, assets will be created without serial numbers.
+    /// Optional prefix for generated serial numbers, e.g. <c>SN</c> →
+    /// <c>SN-0001, SN-0002, …</c>. When omitted, assets are created
+    /// without serial numbers (operator scans them in later).
     /// </summary>
     [StringLength(50)]
     public string? SerialNumberPrefix { get; set; }
 
-    /// <summary>
-    /// Optional: Purchase date for all assets in the bulk creation.
-    /// </summary>
     public DateTime? PurchaseDate { get; set; }
 
-    /// <summary>
-    /// Optional: Warranty expiry date for all assets in the bulk creation.
-    /// </summary>
     public DateTime? WarrantyExpiry { get; set; }
-
-    /// <summary>
-    /// Optional: Installation date for all assets in the bulk creation.
-    /// </summary>
-    public DateTime? InstallationDate { get; set; }
 }
 
 /// <summary>
-/// Response DTO for bulk asset creation operations.
-/// Provides summary of the operation including successful and failed creations.
+/// Result of a bulk-create operation.
 /// </summary>
 public class BulkCreateAssetResultDto
 {
-    /// <summary>
-    /// The total number of assets requested to be created.
-    /// </summary>
     public int TotalRequested { get; set; }
-
-    /// <summary>
-    /// The number of assets successfully created.
-    /// </summary>
     public int SuccessfullyCreated { get; set; }
-
-    /// <summary>
-    /// The number of assets that failed to be created.
-    /// </summary>
     public int Failed { get; set; }
-
-    /// <summary>
-    /// List of successfully created assets.
-    /// </summary>
     public List<AssetDto> CreatedAssets { get; set; } = new();
-
-    /// <summary>
-    /// List of error messages for failed asset creations.
-    /// </summary>
     public List<string> Errors { get; set; } = new();
-
-    /// <summary>
-    /// Indicates if the operation was completely successful.
-    /// </summary>
     public bool IsFullySuccessful => Failed == 0 && SuccessfullyCreated == TotalRequested;
 }

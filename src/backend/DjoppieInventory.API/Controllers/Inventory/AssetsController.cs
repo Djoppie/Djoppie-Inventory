@@ -17,14 +17,38 @@ namespace DjoppieInventory.API.Controllers.Inventory;
 [EnableRateLimiting("fixed")]
 public class AssetsController : ControllerBase
 {
-    private readonly IAssetService _assetService;
-
+    private const string AdminPolicy = "RequireAdminRole";
     private const int MaxPageSize = 200;
     private const int DefaultPageSize = 50;
 
-    public AssetsController(IAssetService assetService)
+    private readonly IAssetService _assetService;
+    private readonly IAssetAssignmentService _assignmentService;
+
+    public AssetsController(
+        IAssetService assetService,
+        IAssetAssignmentService assignmentService)
     {
         _assetService = assetService;
+        _assignmentService = assignmentService;
+    }
+
+    private (string Name, string? Email) GetCallerIdentity()
+    {
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value;
+        return (userName, userEmail);
+    }
+
+    /// <summary>
+    /// True when the current caller is in the admin role. Today the
+    /// "RequireAdminRole" policy admits any authenticated user (see
+    /// AuthenticationExtensions.cs); when real Entra app roles are wired
+    /// up this method becomes the single switch for admin-gated paths.
+    /// </summary>
+    private bool CallerIsAdmin()
+    {
+        // TODO: replace with role check once Entra app roles are configured.
+        return User.Identity?.IsAuthenticated == true;
     }
 
     /// <summary>
@@ -200,7 +224,12 @@ public class AssetsController : ControllerBase
     /// </summary>
     /// <param name="id">The asset ID to delete</param>
     /// <param name="cancellationToken">Cancellation token</param>
+    /// <summary>
+    /// Deletes an asset from the inventory system. Admin-only because it
+    /// is the "noodknop" path for cleaning up wrongly created assets.
+    /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = AdminPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsset(int id, CancellationToken cancellationToken = default)
@@ -218,6 +247,7 @@ public class AssetsController : ControllerBase
     /// <param name="bulkDeleteDto">The bulk deletion parameters containing asset IDs</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpDelete("bulk")]
+    [Authorize(Policy = AdminPolicy)]
     [EnableRateLimiting("bulk")]
     [ProducesResponseType(typeof(BulkDeleteAssetsResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -238,6 +268,7 @@ public class AssetsController : ControllerBase
     /// <param name="bulkCreateDto">The bulk creation parameters</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost("bulk")]
+    [Authorize(Policy = AdminPolicy)]
     [EnableRateLimiting("bulk")]
     [ProducesResponseType(typeof(BulkCreateAssetResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -255,6 +286,7 @@ public class AssetsController : ControllerBase
     /// <param name="bulkUpdateDto">The bulk update parameters</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPut("bulk")]
+    [Authorize(Policy = AdminPolicy)]
     [EnableRateLimiting("bulk")]
     [ProducesResponseType(typeof(BulkUpdateAssetsResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -333,4 +365,106 @@ public class AssetsController : ControllerBase
         return Ok(asset);
     }
 
+    // ===== Assignment endpoints =====
+    // The four endpoints below are the only sanctioned paths for changing
+    // an asset's status, owner, employee link, building, or workplace.
+    // Generic PUT /assets/{id} no longer touches those fields.
+
+    /// <summary>
+    /// Assign an asset to an employee (typical for laptops). Implicitly
+    /// transitions the asset to <c>InGebruik</c> when starting from
+    /// <c>Nieuw</c> or <c>Stock</c>.
+    /// </summary>
+    [HttpPost("{id}/assign-employee")]
+    [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AssetDto>> AssignToEmployee(
+        int id,
+        AssignAssetToEmployeeDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var (name, email) = GetCallerIdentity();
+        try
+        {
+            var asset = await _assignmentService.AssignToEmployeeAsync(id, request, name, email, cancellationToken);
+            return Ok(asset);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+    }
+
+    /// <summary>
+    /// Assign an asset to a physical workplace (typical for monitors,
+    /// docking stations and desktops). Implicitly transitions to
+    /// <c>InGebruik</c> when starting from <c>Nieuw</c> or <c>Stock</c>.
+    /// </summary>
+    [HttpPost("{id}/assign-workplace")]
+    [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AssetDto>> AssignToWorkplace(
+        int id,
+        AssignAssetToWorkplaceDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var (name, email) = GetCallerIdentity();
+        try
+        {
+            var asset = await _assignmentService.AssignToWorkplaceAsync(id, request, name, email, cancellationToken);
+            return Ok(asset);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+    }
+
+    /// <summary>
+    /// Detach an asset from any employee or workplace. Status moves to
+    /// <c>Stock</c> by default; the caller can request <c>Herstelling</c>,
+    /// <c>Defect</c> or <c>UitDienst</c> via <c>TargetStatus</c>.
+    /// </summary>
+    [HttpPost("{id}/unassign")]
+    [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AssetDto>> Unassign(
+        int id,
+        UnassignAssetDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var (name, email) = GetCallerIdentity();
+        try
+        {
+            var asset = await _assignmentService.UnassignAsync(id, request, name, email, cancellationToken);
+            return Ok(asset);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+    }
+
+    /// <summary>
+    /// Move an asset to a new status. Validated by the canonical state
+    /// machine. <c>AdminOverride = true</c> bypasses the state machine —
+    /// the "noodknop" — and is honoured only for callers in the admin
+    /// policy.
+    /// </summary>
+    [HttpPost("{id}/status")]
+    [ProducesResponseType(typeof(AssetDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AssetDto>> ChangeStatus(
+        int id,
+        ChangeAssetStatusDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var (name, email) = GetCallerIdentity();
+        var callerIsAdmin = CallerIsAdmin();
+        try
+        {
+            var asset = await _assignmentService.ChangeStatusAsync(id, request, callerIsAdmin, name, email, cancellationToken);
+            return Ok(asset);
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
+        catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+    }
 }

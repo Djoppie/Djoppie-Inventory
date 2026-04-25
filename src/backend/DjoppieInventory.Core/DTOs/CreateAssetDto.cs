@@ -3,86 +3,64 @@ using System.ComponentModel.DataAnnotations;
 namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
-/// DTO for creating a new asset. AssetCode is auto-generated from AssetType + Year + Brand.
-/// Format: [DUM-]TYPE-YY-MERK-NUMMER (e.g., LAP-26-DELL-00001)
+/// DTO for creating a new asset. AssetCode is auto-generated from
+/// AssetType + Year + Brand. Format: <c>[DUM-]TYPE-YY-MERK-NUMMER</c>
+/// (e.g., <c>LAP-26-DELL-00001</c>).
+///
+/// <para>
+/// Owner, location and status fields are intentionally absent: every new
+/// asset starts with <c>Status = Nieuw</c> and no owner / no location.
+/// Use the dedicated assignment endpoints
+/// (<c>/assets/{id}/assign-employee</c>, <c>/assets/{id}/assign-workplace</c>)
+/// to associate the asset with a person or a physical workplace, or let
+/// rollout completion drive that transition.
+/// </para>
 /// </summary>
 public class CreateAssetDto
 {
     /// <summary>
-    /// Asset type ID - required for auto-generating asset code (determines TYPE component).
+    /// Asset type ID — required. Determines the TYPE component of the
+    /// generated asset code.
     /// </summary>
     [Required]
     public int AssetTypeId { get; set; }
 
     /// <summary>
-    /// Serial number of the device - optional, must be unique when provided
+    /// Serial number — optional, must be unique when provided.
     /// </summary>
     [StringLength(100)]
     public string? SerialNumber { get; set; }
 
     /// <summary>
-    /// Device name from Intune (auto-fetched based on SerialNumber, optional)
+    /// Device name from Intune (auto-fetched based on serial number) — optional.
     /// </summary>
     [StringLength(200)]
     public string? AssetName { get; set; }
 
     /// <summary>
-    /// Optional readable name for the asset (user-defined alias)
+    /// Optional user-defined alias.
     /// </summary>
     [StringLength(200)]
     public string? Alias { get; set; }
 
     /// <summary>
-    /// Category (optional - auto-derived from AssetType if not provided)
+    /// Category (optional — auto-derived from AssetType when omitted).
     /// </summary>
+    [StringLength(100)]
     public string? Category { get; set; }
 
     /// <summary>
-    /// If true, asset code will be in the 9000+ range for dummy/test assets
+    /// If true, asset code uses the 90001+ range for dummy/test assets.
     /// </summary>
     public bool IsDummy { get; set; } = false;
 
-    /// <summary>
-    /// Service/department ID for location (optional)
-    /// </summary>
-    public int? ServiceId { get; set; }
-
-    /// <summary>
-    /// Specific installation location details (e.g., room number, floor)
-    /// </summary>
-    public string? InstallationLocation { get; set; }
-
-    /// <summary>
-    /// Building ID where the asset is located (optional)
-    /// </summary>
-    public int? BuildingId { get; set; }
-
-    /// <summary>
-    /// Physical workplace ID where this asset is fixed (optional).
-    /// Set for workplace-fixed assets (monitors, docking stations, desktops).
-    /// </summary>
-    public int? PhysicalWorkplaceId { get; set; }
-
-    /// <summary>
-    /// Employee ID - reference to an Employee record (optional)
-    /// </summary>
-    public int? EmployeeId { get; set; }
-
-    /// <summary>
-    /// Primary user (optional - can be assigned later)
-    /// Legacy field - prefer using EmployeeId for new assets
-    /// </summary>
-    public string? Owner { get; set; }
-
-    public string? JobTitle { get; set; }
-
-    public string? OfficeLocation { get; set; }
-
-    public string Status { get; set; } = "Stock";
-
+    [StringLength(100)]
     public string? Brand { get; set; }
+
+    [StringLength(200)]
     public string? Model { get; set; }
+
     public DateTime? PurchaseDate { get; set; }
+
     public DateTime? WarrantyExpiry { get; set; }
-    public DateTime? InstallationDate { get; set; }
 }

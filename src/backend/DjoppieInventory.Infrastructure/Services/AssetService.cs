@@ -15,7 +15,6 @@ public class AssetService : IAssetService
     private readonly IAssetEventService _assetEventService;
     private readonly IAssetCodeGenerator _codeGenerator;
     private readonly IAssetTypeRepository _assetTypeRepository;
-    private readonly IEmployeeResolver _employeeResolver;
     private readonly IMapper _mapper;
     private readonly ILogger<AssetService> _logger;
 
@@ -24,7 +23,6 @@ public class AssetService : IAssetService
         IAssetEventService assetEventService,
         IAssetCodeGenerator codeGenerator,
         IAssetTypeRepository assetTypeRepository,
-        IEmployeeResolver employeeResolver,
         IMapper mapper,
         ILogger<AssetService> logger)
     {
@@ -32,7 +30,6 @@ public class AssetService : IAssetService
         _assetEventService = assetEventService;
         _codeGenerator = codeGenerator;
         _assetTypeRepository = assetTypeRepository;
-        _employeeResolver = employeeResolver;
         _mapper = mapper;
         _logger = logger;
     }
@@ -91,6 +88,10 @@ public class AssetService : IAssetService
             createAssetDto.PurchaseDate,
             createAssetDto.IsDummy);
 
+        // The mapper hard-codes Status = Nieuw and explicitly ignores
+        // every owner/location/employee/building/workplace field. New
+        // assets always start unassigned; assignment goes through
+        // IAssetAssignmentService or rollout completion.
         var asset = _mapper.Map<Asset>(createAssetDto);
         asset.AssetCode = assetCode;
         asset.IsDummy = createAssetDto.IsDummy;
@@ -103,10 +104,12 @@ public class AssetService : IAssetService
             asset.Category = assetType?.Name ?? string.Empty;
         }
 
-        // Auto-generate alias if not provided: <AssetType>-<Owner>-<Brand>-<Model>
+        // Auto-generate alias if not provided: <AssetType> - <Brand> - <Model>
+        // (owner intentionally not part of the alias since assets are
+        // ownerless at creation time).
         if (string.IsNullOrWhiteSpace(asset.Alias))
         {
-            asset.Alias = await GenerateAliasAsync(asset.AssetTypeId, asset.Owner, asset.Brand, asset.Model);
+            asset.Alias = await GenerateAliasAsync(asset.AssetTypeId, owner: null, asset.Brand, asset.Model);
         }
 
         var createdAsset = await _assetRepository.CreateAsync(asset);
@@ -139,112 +142,23 @@ public class AssetService : IAssetService
             throw new KeyNotFoundException($"Asset with ID {id} not found");
         }
 
-        // Capture old values for event tracking
-        var oldStatus = existingAsset.Status;
-        var oldOwner = existingAsset.Owner;
-        var oldBuilding = existingAsset.LegacyBuilding;
-
-        // Capture Intune data before mapping (for snapshot if owner changes)
-        var oldIntuneEnrollmentDate = existingAsset.IntuneEnrollmentDate;
-        var oldIntuneLastCheckIn = existingAsset.IntuneLastCheckIn;
-        var oldIntuneCertificateExpiry = existingAsset.IntuneCertificateExpiry;
-        var oldIntuneSyncedAt = existingAsset.IntuneSyncedAt;
-
+        // Generic UpdateAsset only touches *intrinsic* asset properties
+        // (asset name, alias, category, asset-type, brand, model, serial,
+        // purchase / warranty dates). Status, owner, employee, building,
+        // workplace and installation date go through IAssetAssignmentService
+        // and are explicitly ignored by the AutoMapper profile.
         _mapper.Map(updateAssetDto, existingAsset);
 
-        // Explicitly handle nullable fields to allow clearing them (AutoMapper ignores null by default)
-        // This ensures that when the frontend sends null, we actually set the field to null
-        existingAsset.Owner = updateAssetDto.Owner;
-        // Keep EmployeeId FK aligned with Owner string (null owner → null FK, owner match → FK id)
-        existingAsset.EmployeeId = await _employeeResolver.ResolveEmployeeIdAsync(updateAssetDto.Owner);
-        existingAsset.JobTitle = updateAssetDto.JobTitle;
-        existingAsset.OfficeLocation = updateAssetDto.OfficeLocation;
-        existingAsset.Brand = updateAssetDto.Brand;
-        existingAsset.Model = updateAssetDto.Model;
-        existingAsset.Alias = updateAssetDto.Alias;
-        existingAsset.InstallationLocation = updateAssetDto.InstallationLocation;
-        existingAsset.ServiceId = updateAssetDto.ServiceId;
-        existingAsset.BuildingId = updateAssetDto.BuildingId;
-        existingAsset.PhysicalWorkplaceId = updateAssetDto.PhysicalWorkplaceId;
-        existingAsset.PurchaseDate = updateAssetDto.PurchaseDate;
-        existingAsset.WarrantyExpiry = updateAssetDto.WarrantyExpiry;
-        existingAsset.InstallationDate = updateAssetDto.InstallationDate;
-
-        // Auto-generate alias if not provided: <AssetType>-<Owner>-<Brand>-<Model>
+        // Auto-generate alias if not provided: <AssetType> - <Brand> - <Model>
         if (string.IsNullOrWhiteSpace(existingAsset.Alias))
         {
-            existingAsset.Alias = await GenerateAliasAsync(existingAsset.AssetTypeId, existingAsset.Owner, existingAsset.Brand, existingAsset.Model);
+            existingAsset.Alias = await GenerateAliasAsync(existingAsset.AssetTypeId, owner: null, existingAsset.Brand, existingAsset.Model);
         }
 
         var updatedAsset = await _assetRepository.UpdateAsync(existingAsset);
 
-        _logger.LogInformation("Updated asset {AssetCode} (ID: {AssetId})",
+        _logger.LogInformation("Updated asset {AssetCode} (ID: {AssetId}) — intrinsic properties only",
             updatedAsset.AssetCode, updatedAsset.Id);
-
-        // Create events for significant changes (only if user information is provided)
-        if (!string.IsNullOrWhiteSpace(performedBy))
-        {
-            // Status changed
-            if (oldStatus != updatedAsset.Status)
-            {
-                await _assetEventService.CreateStatusChangedEventAsync(
-                    updatedAsset.Id,
-                    oldStatus,
-                    updatedAsset.Status,
-                    performedBy,
-                    performedByEmail,
-                    notes: null,
-                    cancellationToken: default);
-            }
-
-            // Owner changed
-            if (oldOwner != updatedAsset.Owner)
-            {
-                // Create Intune snapshot BEFORE owner change event (preserve data from previous owner)
-                // We need to temporarily restore the old Intune data to create the snapshot
-                var snapshotAsset = new Core.Entities.Asset
-                {
-                    Id = updatedAsset.Id,
-                    AssetCode = updatedAsset.AssetCode,
-                    Owner = oldOwner,
-                    Status = oldStatus,
-                    IntuneEnrollmentDate = oldIntuneEnrollmentDate,
-                    IntuneLastCheckIn = oldIntuneLastCheckIn,
-                    IntuneCertificateExpiry = oldIntuneCertificateExpiry,
-                    IntuneSyncedAt = oldIntuneSyncedAt
-                };
-
-                await _assetEventService.CreateIntuneSnapshotEventAsync(
-                    snapshotAsset,
-                    $"Before owner change from {oldOwner ?? "(unassigned)"} to {updatedAsset.Owner ?? "(unassigned)"}",
-                    performedBy,
-                    performedByEmail,
-                    cancellationToken: default);
-
-                // Now create the owner changed event
-                await _assetEventService.CreateOwnerChangedEventAsync(
-                    updatedAsset.Id,
-                    oldOwner,
-                    updatedAsset.Owner,
-                    performedBy,
-                    performedByEmail,
-                    notes: null,
-                    cancellationToken: default);
-            }
-
-            // Building/Location changed
-            if (oldBuilding != updatedAsset.LegacyBuilding)
-            {
-                await _assetEventService.CreateLocationChangedEventAsync(
-                    updatedAsset.Id,
-                    oldBuilding,
-                    updatedAsset.LegacyBuilding,
-                    performedBy,
-                    performedByEmail,
-                    notes: null,
-                    cancellationToken: default);
-            }
-        }
 
         return _mapper.Map<AssetDto>(updatedAsset);
     }
@@ -336,10 +250,9 @@ public class AssetService : IAssetService
             bulkCreateDto.IsDummy,
             bulkCreateDto.Quantity)).ToList();
 
-        // Parse status once
-        var assetStatus = Enum.TryParse<AssetStatus>(bulkCreateDto.Status, true, out var status)
-            ? status
-            : AssetStatus.Stock;
+        // Bulk-created assets always start with Status = Nieuw and no
+        // owner / location. Assignment is a separate explicit step.
+        const AssetStatus assetStatus = AssetStatus.Nieuw;
 
         // Auto-derive category from AssetType name when not provided
         var category = bulkCreateDto.Category;
@@ -387,16 +300,12 @@ public class AssetService : IAssetService
                 Alias = bulkCreateDto.Alias,
                 Category = category,
                 IsDummy = bulkCreateDto.IsDummy,
-                Owner = bulkCreateDto.Owner,
-                ServiceId = bulkCreateDto.ServiceId,
-                InstallationLocation = bulkCreateDto.InstallationLocation,
                 Status = assetStatus,
                 Brand = bulkCreateDto.Brand,
                 Model = bulkCreateDto.Model,
                 SerialNumber = serialNumber,
                 PurchaseDate = bulkCreateDto.PurchaseDate,
                 WarrantyExpiry = bulkCreateDto.WarrantyExpiry,
-                InstallationDate = bulkCreateDto.InstallationDate
             };
             assetsToCreate.Add(asset);
         }
@@ -446,21 +355,6 @@ public class AssetService : IAssetService
             TotalRequested = bulkUpdateDto.AssetIds.Count
         };
 
-        // Parse status if updating
-        AssetStatus? newStatus = null;
-        if (bulkUpdateDto.UpdateStatus && !string.IsNullOrWhiteSpace(bulkUpdateDto.Status))
-        {
-            if (Enum.TryParse<AssetStatus>(bulkUpdateDto.Status, true, out var status))
-            {
-                newStatus = status;
-            }
-            else
-            {
-                result.Errors.Add($"Invalid status value: {bulkUpdateDto.Status}");
-                return result;
-            }
-        }
-
         foreach (var assetId in bulkUpdateDto.AssetIds)
         {
             try
@@ -473,23 +367,14 @@ public class AssetService : IAssetService
                     continue;
                 }
 
-                // Track old values for event logging
-                var oldStatus = asset.Status;
-
-                // Apply updates only for fields marked for update
-                if (bulkUpdateDto.UpdateServiceId)
-                {
-                    asset.ServiceId = bulkUpdateDto.ServiceId;
-                }
-
+                // Bulk update only handles intrinsic asset properties.
+                // Status, owner, employee, building, workplace and
+                // installation-date changes flow through
+                // IAssetAssignmentService — bulk-assign affordances will
+                // call those endpoints directly.
                 if (bulkUpdateDto.UpdatePurchaseDate)
                 {
                     asset.PurchaseDate = bulkUpdateDto.PurchaseDate;
-                }
-
-                if (bulkUpdateDto.UpdateInstallationDate)
-                {
-                    asset.InstallationDate = bulkUpdateDto.InstallationDate;
                 }
 
                 if (bulkUpdateDto.UpdateWarrantyExpiry)
@@ -507,32 +392,9 @@ public class AssetService : IAssetService
                     asset.Model = bulkUpdateDto.Model;
                 }
 
-                if (bulkUpdateDto.UpdateStatus && newStatus.HasValue)
-                {
-                    asset.Status = newStatus.Value;
-                }
-
-                if (bulkUpdateDto.UpdateInstallationLocation)
-                {
-                    asset.InstallationLocation = bulkUpdateDto.InstallationLocation;
-                }
-
                 await _assetRepository.UpdateAsync(asset);
                 result.UpdatedIds.Add(assetId);
                 result.UpdatedCount++;
-
-                // Create status change event if status was changed
-                if (!string.IsNullOrWhiteSpace(performedBy) && bulkUpdateDto.UpdateStatus && oldStatus != asset.Status)
-                {
-                    await _assetEventService.CreateStatusChangedEventAsync(
-                        asset.Id,
-                        oldStatus,
-                        asset.Status,
-                        performedBy,
-                        performedByEmail,
-                        notes: "Bulk update",
-                        cancellationToken: default);
-                }
             }
             catch (Exception ex)
             {
