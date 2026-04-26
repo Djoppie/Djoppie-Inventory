@@ -189,11 +189,11 @@ const AssetsPage = () => {
           sectorIdRemap.set(s.id, existing.id);
         }
       });
-    const remappedServices = services.map((svc) =>
-      svc.sectorId !== undefined && sectorIdRemap.has(svc.sectorId)
-        ? { ...svc, sectorId: sectorIdRemap.get(svc.sectorId) }
-        : svc,
-    );
+    const remappedServices: Service[] = services.map((svc) => {
+      if (svc.sectorId === undefined) return svc;
+      const canonical = sectorIdRemap.get(svc.sectorId);
+      return canonical !== undefined ? { ...svc, sectorId: canonical } : svc;
+    });
     return {
       canonicalSectors: Array.from(sectorByName.values()),
       canonicalServices: remappedServices,

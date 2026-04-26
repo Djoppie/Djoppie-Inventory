@@ -41,7 +41,7 @@ export default function DashboardHeader({
   // Reuses the same query key as the dialog, so opening the dialog hits the cache.
   const { data: dataQuality } = useQuery({
     queryKey: ['data-quality', 'summary'],
-    queryFn: getDataQualitySummary,
+    queryFn: () => getDataQualitySummary(),
     staleTime: 2 * 60 * 1000,
   });
 

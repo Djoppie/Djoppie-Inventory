@@ -22,7 +22,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
 import type { AssetType, Service, Sector, Building } from '../../types/admin.types';
-import type { AssetStatus } from '../../types/asset.types';
+import { AssetStatus } from '../../types/asset.types';
 
 const FACET_COLORS = {
   status: '#FF9800',
@@ -34,12 +34,12 @@ const FACET_COLORS = {
 type FacetKey = keyof typeof FACET_COLORS;
 
 const STATUS_OPTIONS: { value: AssetStatus; label: string; color: string }[] = [
-  { value: 'Nieuw', label: 'Nieuw', color: '#8B5CF6' },
-  { value: 'InGebruik', label: 'In Gebruik', color: '#22c55e' },
-  { value: 'Stock', label: 'Stock', color: '#3B82F6' },
-  { value: 'Herstelling', label: 'Herstelling', color: '#eab308' },
-  { value: 'Defect', label: 'Defect', color: '#EF4444' },
-  { value: 'UitDienst', label: 'Uit Dienst', color: '#9CA3AF' },
+  { value: AssetStatus.Nieuw, label: 'Nieuw', color: '#8B5CF6' },
+  { value: AssetStatus.InGebruik, label: 'In Gebruik', color: '#22c55e' },
+  { value: AssetStatus.Stock, label: 'Stock', color: '#3B82F6' },
+  { value: AssetStatus.Herstelling, label: 'Herstelling', color: '#eab308' },
+  { value: AssetStatus.Defect, label: 'Defect', color: '#EF4444' },
+  { value: AssetStatus.UitDienst, label: 'Uit Dienst', color: '#9CA3AF' },
 ];
 
 export interface AssetFilterBarProps {
