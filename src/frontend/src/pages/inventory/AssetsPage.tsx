@@ -19,7 +19,6 @@ import {
   Collapse,
   Badge,
   LinearProgress,
-  Checkbox,
 } from '@mui/material';
 
 // Icons
@@ -50,17 +49,20 @@ import StorageIcon from '@mui/icons-material/Storage';
 import BuildIcon from '@mui/icons-material/Build';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-
 import { ROUTES, buildRoute } from '../../constants/routes';
 import { useAssets } from '../../hooks/useAssets';
-import { categoriesApi, assetTypesApi, servicesApi, sectorsApi } from '../../api/admin.api';
+import {
+  categoriesApi,
+  assetTypesApi,
+  servicesApi,
+  sectorsApi,
+  buildingsApi,
+} from '../../api/admin.api';
 import { assetEventsApi, AssetEvent } from '../../api/assetEvents.api';
 import Loading from '../../components/common/Loading';
+import AssetFilterBar from '../../components/inventory/AssetFilterBar';
 import type { AssetStatus } from '../../types/asset.types';
-import type { Category, AssetType, Service, Sector } from '../../types/admin.types';
+import type { Category, AssetType, Service, Sector, Building } from '../../types/admin.types';
 
 // Status color mapping
 const STATUS_COLORS: Record<AssetStatus | string, string> = {
@@ -142,94 +144,61 @@ const AssetsPage = () => {
   // Expanded state for category rows
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
 
-  // Service filter state
-  const [serviceFilterOpen, setServiceFilterOpen] = useState(false);
+  // Multi-facet filter state
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<AssetStatus>>(new Set());
+  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<Set<number>>(new Set());
   const [selectedServiceIds, setSelectedServiceIds] = useState<Set<number>>(new Set());
+  const [selectedBuildingIds, setSelectedBuildingIds] = useState<Set<number>>(new Set());
+  const [searchText, setSearchText] = useState('');
 
-  // Fetch services
+  // Fetch services / sectors / buildings for filter dropdowns
   const { data: services = [] } = useQuery<Service[]>({
     queryKey: ['services'],
     queryFn: () => servicesApi.getAll(true),
     staleTime: 300000,
   });
 
-  // Fetch sectors for grouping services
   const { data: sectors = [] } = useQuery<Sector[]>({
     queryKey: ['sectors'],
     queryFn: () => sectorsApi.getAll(true),
     staleTime: 300000,
   });
 
-  // Group services by sector (deduplicated by sector name to handle database duplicates)
-  const servicesBySector = useMemo(() => {
-    // First, create a map of sector name -> primary sector (with merged services)
-    const sectorByName = new Map<string, { sector: Sector; services: Service[]; sectorIds: number[] }>();
+  const { data: buildings = [] } = useQuery<Building[]>({
+    queryKey: ['buildings'],
+    queryFn: () => buildingsApi.getAll(true),
+    staleTime: 300000,
+  });
 
-    // Collect all sector IDs for each unique sector name
-    sectors.forEach(sector => {
-      const normalizedName = sector.name.trim().toUpperCase();
-      if (!sectorByName.has(normalizedName)) {
-        sectorByName.set(normalizedName, { sector, services: [], sectorIds: [sector.id] });
-      } else {
-        // Add this sector's ID to the list for deduplication
-        sectorByName.get(normalizedName)!.sectorIds.push(sector.id);
-      }
-    });
-
-    // Group services by their sector IDs, merging into deduplicated sectors
-    services.forEach(service => {
-      if (service.sectorId) {
-        // Find which deduplicated sector this service belongs to
-        for (const group of sectorByName.values()) {
-          if (group.sectorIds.includes(service.sectorId)) {
-            group.services.push(service);
-            break;
-          }
+  // Deduplicate sectors by normalized name and remap each service onto its
+  // canonical sector id, so the filter bar shows one entry per logical sector
+  // even if the DB has duplicate sector rows (legacy data).
+  const { canonicalSectors, canonicalServices } = useMemo(() => {
+    const sectorByName = new Map<string, Sector>();
+    const sectorIdRemap = new Map<number, number>();
+    sectors
+      .slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((s) => {
+        const key = s.name.trim().toUpperCase();
+        const existing = sectorByName.get(key);
+        if (!existing) {
+          sectorByName.set(key, s);
+          sectorIdRemap.set(s.id, s.id);
+        } else {
+          sectorIdRemap.set(s.id, existing.id);
         }
-      }
-    });
-
-    // Filter out sectors with no services and sort
-    return Array.from(sectorByName.values())
-      .filter(g => g.services.length > 0)
-      .sort((a, b) => a.sector.sortOrder - b.sector.sortOrder);
+      });
+    const remappedServices = services.map((svc) =>
+      svc.sectorId !== undefined && sectorIdRemap.has(svc.sectorId)
+        ? { ...svc, sectorId: sectorIdRemap.get(svc.sectorId) }
+        : svc,
+    );
+    return {
+      canonicalSectors: Array.from(sectorByName.values()),
+      canonicalServices: remappedServices,
+    };
   }, [services, sectors]);
-
-  // Expanded sectors in filter
-  const [expandedSectors, setExpandedSectors] = useState<Set<number>>(new Set());
-
-  const toggleSectorExpand = (sectorId: number) => {
-    setExpandedSectors(prev => {
-      const next = new Set(prev);
-      if (next.has(sectorId)) {
-        next.delete(sectorId);
-      } else {
-        next.add(sectorId);
-      }
-      return next;
-    });
-  };
-
-  // Toggle all services in a sector
-  const toggleSectorServices = (sectorId: number) => {
-    const sectorGroup = servicesBySector.find(g => g.sector.id === sectorId);
-    if (!sectorGroup) return;
-
-    const sectorServiceIds = sectorGroup.services.map(s => s.id);
-    const allSelected = sectorServiceIds.every(id => selectedServiceIds.has(id));
-
-    setSelectedServiceIds(prev => {
-      const next = new Set(prev);
-      if (allSelected) {
-        // Deselect all
-        sectorServiceIds.forEach(id => next.delete(id));
-      } else {
-        // Select all
-        sectorServiceIds.forEach(id => next.add(id));
-      }
-      return next;
-    });
-  };
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories(prev => {
@@ -243,24 +212,12 @@ const AssetsPage = () => {
     });
   };
 
-  const toggleServiceFilter = () => {
-    setServiceFilterOpen(prev => !prev);
-  };
-
-  const toggleService = (serviceId: number) => {
-    setSelectedServiceIds(prev => {
-      const next = new Set(prev);
-      if (next.has(serviceId)) {
-        next.delete(serviceId);
-      } else {
-        next.add(serviceId);
-      }
-      return next;
-    });
-  };
-
-  const clearServiceFilter = () => {
+  const clearAllFilters = () => {
+    setSelectedStatuses(new Set());
+    setSelectedAssetTypeIds(new Set());
     setSelectedServiceIds(new Set());
+    setSelectedBuildingIds(new Set());
+    setSearchText('');
   };
 
   // Sub-navigation items
@@ -283,10 +240,40 @@ const AssetsPage = () => {
       };
     }
 
-    // Filter assets by selected services
-    const filteredAssets = selectedServiceIds.size > 0
-      ? assets.filter(a => a.serviceId && selectedServiceIds.has(a.serviceId))
-      : assets;
+    // Apply all active facets + search. Empty facet = "no constraint".
+    const normalizedSearch = searchText.trim().toLowerCase();
+    const filteredAssets = assets.filter((a) => {
+      if (selectedStatuses.size > 0 && !selectedStatuses.has(a.status as AssetStatus)) {
+        return false;
+      }
+      if (selectedAssetTypeIds.size > 0) {
+        const atid = a.assetTypeId ?? a.assetType?.id;
+        if (atid === undefined || !selectedAssetTypeIds.has(atid)) return false;
+      }
+      if (selectedServiceIds.size > 0) {
+        if (!a.serviceId || !selectedServiceIds.has(a.serviceId)) return false;
+      }
+      if (selectedBuildingIds.size > 0) {
+        if (!a.buildingId || !selectedBuildingIds.has(a.buildingId)) return false;
+      }
+      if (normalizedSearch) {
+        const haystack = [
+          a.assetCode,
+          a.assetName,
+          a.alias,
+          a.serialNumber,
+          a.model,
+          a.brand,
+          a.owner,
+          a.assetType?.name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(normalizedSearch)) return false;
+      }
+      return true;
+    });
 
     const now = new Date();
     const fourYearsMs = 4 * 365 * 24 * 60 * 60 * 1000;
@@ -435,7 +422,16 @@ const AssetsPage = () => {
       inactiveStats,
       totalStats,
     };
-  }, [assets, assetTypes, categories, selectedServiceIds]);
+  }, [
+    assets,
+    assetTypes,
+    categories,
+    selectedStatuses,
+    selectedAssetTypeIds,
+    selectedServiceIds,
+    selectedBuildingIds,
+    searchText,
+  ]);
 
   // Filter status change events from recent events
   const statusChangeEvents = useMemo(() => {
@@ -577,247 +573,24 @@ const AssetsPage = () => {
         </Box>
       </Paper>
 
-      {/* Service Filter Section - Compact with Sector Grouping */}
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 2,
-          overflow: 'hidden',
-          bgcolor: isDark ? 'var(--dark-bg-elevated)' : 'background.paper',
-          boxShadow: isDark ? 'var(--neu-shadow-dark-sm)' : 'var(--neu-shadow-light-sm)',
-        }}
-      >
-        {/* Filter Toggle Header */}
-        <Box
-          onClick={toggleServiceFilter}
-          sx={{
-            px: 2,
-            py: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            borderBottom: serviceFilterOpen ? '1px solid' : 'none',
-            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-            '&:hover': {
-              bgcolor: isDark ? 'rgba(255,119,0,0.05)' : 'rgba(255,119,0,0.03)',
-            },
-          }}
-        >
-          <FilterListIcon sx={{ fontSize: 18, color: '#FF7700' }} />
-          <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }}>
-            Filter per Dienst
-          </Typography>
-          {selectedServiceIds.size > 0 && (
-            <Chip
-              label={`${selectedServiceIds.size} geselecteerd`}
-              size="small"
-              onDelete={(e) => {
-                e.stopPropagation();
-                clearServiceFilter();
-              }}
-              sx={{
-                height: 22,
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                bgcolor: alpha('#FF7700', 0.12),
-                color: '#FF7700',
-                '& .MuiChip-deleteIcon': {
-                  fontSize: 14,
-                  color: alpha('#FF7700', 0.6),
-                  '&:hover': { color: '#FF7700' },
-                },
-              }}
-            />
-          )}
-          <IconButton size="small" sx={{ p: 0.5 }}>
-            {serviceFilterOpen ? (
-              <KeyboardArrowUpIcon sx={{ fontSize: 18 }} />
-            ) : (
-              <KeyboardArrowDownIcon sx={{ fontSize: 18 }} />
-            )}
-          </IconButton>
-        </Box>
-
-        {/* Filter Panel - Grouped by Sector */}
-        <Collapse in={serviceFilterOpen}>
-          <Box
-            sx={{
-              p: 1.5,
-              maxHeight: 280,
-              overflowY: 'auto',
-              '&::-webkit-scrollbar': { width: 4 },
-              '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
-              '&::-webkit-scrollbar-thumb': {
-                bgcolor: alpha('#FF7700', 0.2),
-                borderRadius: 2,
-              },
-            }}
-          >
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-                gap: 1,
-              }}
-            >
-              {servicesBySector.map(({ sector, services: sectorServices }, sectorIndex) => {
-                const selectedInSector = sectorServices.filter(s => selectedServiceIds.has(s.id)).length;
-                const allSelected = selectedInSector === sectorServices.length;
-                const someSelected = selectedInSector > 0 && !allSelected;
-
-                return (
-                  <Box
-                    key={sector.id}
-                    sx={{
-                      borderRadius: 1.5,
-                      border: '1px solid',
-                      borderColor: selectedInSector > 0
-                        ? alpha('#FF7700', 0.25)
-                        : isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                      bgcolor: selectedInSector > 0
-                        ? alpha('#FF7700', 0.03)
-                        : 'transparent',
-                      overflow: 'hidden',
-                      transition: 'all 0.2s ease',
-                      opacity: 0,
-                      animation: serviceFilterOpen ? `fadeIn 0.2s ease forwards ${sectorIndex * 0.05}s` : 'none',
-                      '@keyframes fadeIn': {
-                        from: { opacity: 0, transform: 'translateY(5px)' },
-                        to: { opacity: 1, transform: 'translateY(0)' },
-                      },
-                    }}
-                  >
-                    {/* Sector Header */}
-                    <Box
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSectorExpand(sector.id);
-                      }}
-                      sx={{
-                        px: 1.5,
-                        py: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        cursor: 'pointer',
-                        bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-                        '&:hover': {
-                          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                        },
-                      }}
-                    >
-                      <Checkbox
-                        size="small"
-                        checked={allSelected}
-                        indeterminate={someSelected}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleSectorServices(sector.id);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        sx={{
-                          p: 0.25,
-                          color: alpha('#FF7700', 0.3),
-                          '&.Mui-checked, &.MuiCheckbox-indeterminate': {
-                            color: '#FF7700',
-                          },
-                        }}
-                      />
-                      <Typography
-                        variant="caption"
-                        fontWeight={700}
-                        sx={{
-                          flex: 1,
-                          color: selectedInSector > 0 ? '#FF7700' : 'text.primary',
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.5,
-                          fontSize: '0.65rem',
-                        }}
-                      >
-                        {sector.name}
-                      </Typography>
-                      {selectedInSector > 0 && (
-                        <Chip
-                          label={selectedInSector}
-                          size="small"
-                          sx={{
-                            height: 16,
-                            minWidth: 16,
-                            fontSize: '0.6rem',
-                            fontWeight: 700,
-                            bgcolor: '#FF7700',
-                            color: 'white',
-                            '& .MuiChip-label': { px: 0.5 },
-                          }}
-                        />
-                      )}
-                      <IconButton
-                        size="small"
-                        sx={{ p: 0 }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSectorExpand(sector.id);
-                        }}
-                      >
-                        {expandedSectors.has(sector.id) ? (
-                          <ExpandLessIcon sx={{ fontSize: 14 }} />
-                        ) : (
-                          <ExpandMoreIcon sx={{ fontSize: 14 }} />
-                        )}
-                      </IconButton>
-                    </Box>
-
-                    {/* Services within Sector */}
-                    <Collapse in={expandedSectors.has(sector.id)}>
-                      <Box sx={{ px: 1, pb: 1, pt: 0.5 }}>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {sectorServices.map((service) => {
-                            const isSelected = selectedServiceIds.has(service.id);
-                            return (
-                              <Chip
-                                key={service.id}
-                                label={service.name}
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleService(service.id);
-                                }}
-                                sx={{
-                                  height: 24,
-                                  fontSize: '0.68rem',
-                                  fontWeight: isSelected ? 600 : 500,
-                                  cursor: 'pointer',
-                                  bgcolor: isSelected
-                                    ? alpha('#FF7700', 0.15)
-                                    : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                  color: isSelected ? '#FF7700' : 'text.secondary',
-                                  border: '1px solid',
-                                  borderColor: isSelected
-                                    ? alpha('#FF7700', 0.3)
-                                    : 'transparent',
-                                  transition: 'all 0.15s ease',
-                                  '&:hover': {
-                                    bgcolor: isSelected
-                                      ? alpha('#FF7700', 0.2)
-                                      : alpha('#FF7700', 0.08),
-                                    borderColor: alpha('#FF7700', 0.3),
-                                  },
-                                }}
-                              />
-                            );
-                          })}
-                        </Box>
-                      </Box>
-                    </Collapse>
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        </Collapse>
-      </Paper>
+      {/* Multi-facet filter bar (Status / Asset Type / Dienst / Gebouw + search) */}
+      <AssetFilterBar
+        searchText={searchText}
+        onSearchChange={setSearchText}
+        selectedStatuses={selectedStatuses}
+        onStatusesChange={setSelectedStatuses}
+        selectedAssetTypeIds={selectedAssetTypeIds}
+        onAssetTypesChange={setSelectedAssetTypeIds}
+        assetTypes={assetTypes}
+        selectedServiceIds={selectedServiceIds}
+        onServicesChange={setSelectedServiceIds}
+        services={canonicalServices}
+        sectors={canonicalSectors}
+        selectedBuildingIds={selectedBuildingIds}
+        onBuildingsChange={setSelectedBuildingIds}
+        buildings={buildings}
+        onClearAll={clearAllFilters}
+      />
 
       {/* Quick Status Overview */}
       <Box
