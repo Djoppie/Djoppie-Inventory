@@ -23,16 +23,27 @@ namespace DjoppieInventory.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // NOTE: column types are intentionally left unspecified so each
+            // EF provider picks the correct mapping. SQL Server picks
+            // nvarchar(50) for Prefix (which is required because Prefix is
+            // the unique-indexed key column — TEXT cannot be indexed on SQL
+            // Server). SQLite picks TEXT and INTEGER as usual.
             migrationBuilder.CreateTable(
                 name: "AssetCodeCounters",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Prefix = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    NextNumber = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    // Explicit SQL Server-compatible types because the migration's
+                    // Designer snapshot was generated under SQLite (HasColumnType
+                    // "TEXT") and SQL Server cannot index TEXT columns.
+                    // SQLite ignores `nvarchar(...)` and treats it as TEXT
+                    // anyway, so this is safe across both providers.
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Prefix = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    NextNumber = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
