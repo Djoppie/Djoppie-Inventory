@@ -61,7 +61,7 @@ const UnassignDialog = ({ open, onClose, asset }: UnassignDialogProps) => {
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      setError(t('assetDetail.assignment.reasonRequired', 'Geef een reden op voor de uittoewijzing.'));
+      setError(t('assetDetail.assignment.reasonRequired', 'Geef een reden op voor het loskoppelen.'));
       return;
     }
     setError(null);
@@ -78,7 +78,7 @@ const UnassignDialog = ({ open, onClose, asset }: UnassignDialogProps) => {
       const message =
         err instanceof Error
           ? err.message
-          : t('assetDetail.assignment.unassignFailed', 'Uittoewijzing mislukt. Probeer het opnieuw.');
+          : t('assetDetail.assignment.unassignFailed', 'Loskoppelen mislukt. Probeer het opnieuw.');
       setError(message);
     }
   };
@@ -128,7 +128,7 @@ const UnassignDialog = ({ open, onClose, asset }: UnassignDialogProps) => {
         </Box>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
-            {t('assetDetail.assignment.unassign', 'Uittoewijzen')}
+            {t('assetDetail.assignment.unassign', 'Loskoppelen')}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {asset.assetCode} — {asset.assetName}
@@ -162,11 +162,11 @@ const UnassignDialog = ({ open, onClose, asset }: UnassignDialogProps) => {
           {/* Target status */}
           <FormControl fullWidth size="small">
             <InputLabel>
-              {t('assetDetail.assignment.targetStatus', 'Nieuwe status na uittoewijzing')}
+              {t('assetDetail.assignment.targetStatus', 'Nieuwe status na loskoppelen')}
             </InputLabel>
             <Select
               value={targetStatus}
-              label={t('assetDetail.assignment.targetStatus', 'Nieuwe status na uittoewijzing')}
+              label={t('assetDetail.assignment.targetStatus', 'Nieuwe status na loskoppelen')}
               onChange={(e) => setTargetStatus(e.target.value as AssetStatus)}
             >
               {UNASSIGN_TARGET_STATUSES.map((s) => (
@@ -227,7 +227,7 @@ const UnassignDialog = ({ open, onClose, asset }: UnassignDialogProps) => {
         >
           {unassignMutation.isPending
             ? t('common.saving', 'Opslaan...')
-            : t('assetDetail.assignment.confirmUnassign', 'Uittoewijzen')}
+            : t('assetDetail.assignment.confirmUnassign', 'Loskoppelen')}
         </Button>
       </DialogActions>
     </Dialog>

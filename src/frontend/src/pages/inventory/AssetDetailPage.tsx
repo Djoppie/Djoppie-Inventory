@@ -263,7 +263,7 @@ const AssetDetailPage = () => {
               sx={{ borderColor: 'divider', color: 'text.secondary', fontWeight: 600,
                 '&:hover': { borderColor: '#FF7700', color: '#FF7700' } }}
             >
-              {t('assetDetail.cta.unassign', 'Uittoewijzen')}
+              {t('assetDetail.cta.unassign', 'Loskoppelen')}
             </Button>
             <Button
               variant="outlined"

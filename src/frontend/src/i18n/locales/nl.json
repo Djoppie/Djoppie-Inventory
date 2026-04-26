@@ -138,7 +138,7 @@
       "desc": "Volgende stap: koppel aan een werkplek of medewerker om in gebruik te nemen."
     },
     "cta": {
-      "unassign": "Uittoewijzen",
+      "unassign": "Loskoppelen",
       "changeStatus": "Status wijzigen"
     },
     "assignment": {
@@ -158,14 +158,14 @@
       "employeeRequired": "Selecteer een medewerker.",
       "workplaceRequired": "Selecteer een werkplek.",
       "assignFailed": "Toewijzing mislukt. Probeer het opnieuw.",
-      "unassign": "Uittoewijzen",
+      "unassign": "Loskoppelen",
       "unassignWarning": "Dit verwijdert de koppeling met de huidige medewerker en/of werkplek. De activa krijgt de hieronder geselecteerde status.",
-      "targetStatus": "Nieuwe status na uittoewijzing",
+      "targetStatus": "Nieuwe status na loskoppelen",
       "reason": "Reden",
       "reasonPlaceholder": "Bijv. medewerker verlaat de organisatie, apparaat terug naar stock...",
-      "reasonRequired": "Geef een reden op voor de uittoewijzing.",
-      "confirmUnassign": "Uittoewijzen",
-      "unassignFailed": "Uittoewijzing mislukt. Probeer het opnieuw."
+      "reasonRequired": "Geef een reden op voor het loskoppelen.",
+      "confirmUnassign": "Loskoppelen",
+      "unassignFailed": "Loskoppelen mislukt. Probeer het opnieuw."
     },
     "statusTransition": {
       "title": "Status wijzigen",

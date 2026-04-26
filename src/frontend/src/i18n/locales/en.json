@@ -138,7 +138,7 @@
       "desc": "Next step: link to a workplace or employee to put it into use."
     },
     "cta": {
-      "unassign": "Unassign",
+      "unassign": "Unlink",
       "changeStatus": "Change Status"
     },
     "assignment": {
@@ -158,14 +158,14 @@
       "employeeRequired": "Select an employee.",
       "workplaceRequired": "Select a workplace.",
       "assignFailed": "Assignment failed. Please try again.",
-      "unassign": "Unassign",
+      "unassign": "Unlink",
       "unassignWarning": "This removes the link to the current employee and/or workplace. The asset will receive the status selected below.",
-      "targetStatus": "New status after unassignment",
+      "targetStatus": "New status after unlinking",
       "reason": "Reason",
       "reasonPlaceholder": "E.g. employee leaving organisation, device back to stock...",
-      "reasonRequired": "Please provide a reason for the unassignment.",
-      "confirmUnassign": "Unassign",
-      "unassignFailed": "Unassignment failed. Please try again."
+      "reasonRequired": "Please provide a reason for unlinking.",
+      "confirmUnassign": "Unlink",
+      "unassignFailed": "Unlink failed. Please try again."
     },
     "statusTransition": {
       "title": "Change Status",
