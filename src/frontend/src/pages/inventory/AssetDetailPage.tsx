@@ -279,27 +279,10 @@ const AssetDetailPage = () => {
         );
 
       case AssetStatus.Stock:
+        // Toewijzen-buttons render inside the AssetLocationChain Stock
+        // panel, so we only add Status wijzigen here to avoid duplicates.
         return (
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 2 }}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<PlaceIcon />}
-              onClick={() => setAssignWorkplaceOpen(true)}
-              sx={{ bgcolor: '#FF7700', color: '#fff', fontWeight: 600, '&:hover': { bgcolor: '#E66A00' } }}
-            >
-              {t('assetLocationChain.assignToWorkplace', 'Toewijzen aan werkplek')}
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<PersonIcon />}
-              onClick={() => setAssignEmployeeOpen(true)}
-              sx={{ bgcolor: '#7b1fa2', color: '#fff', fontWeight: 600,
-                '&:hover': { bgcolor: alpha('#7b1fa2', 0.85) } }}
-            >
-              {t('assetLocationChain.assignToEmployee', 'Toewijzen aan medewerker')}
-            </Button>
+          <Box sx={{ mt: 2 }}>
             <Button
               variant="outlined"
               size="small"
