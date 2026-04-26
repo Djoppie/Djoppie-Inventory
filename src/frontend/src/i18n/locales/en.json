@@ -1004,6 +1004,7 @@
     "loading": "Loading workplaces...",
     "errorLoading": "Error loading workplaces",
     "noWorkplaces": "No workplaces found",
+    "searchPlaceholder": "Search by code, name, building or occupant",
     "noWorkplacesDesc": "Create your first workplace to get started",
     "addWorkplace": "Add Workplace",
     "addWorkplaceDesc": "Create a new physical workplace location",

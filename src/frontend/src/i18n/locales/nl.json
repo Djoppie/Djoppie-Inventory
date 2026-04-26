@@ -1006,6 +1006,7 @@
     "loading": "Werkplekken laden...",
     "errorLoading": "Fout bij laden werkplekken",
     "noWorkplaces": "Geen werkplekken gevonden",
+    "searchPlaceholder": "Zoek op code, naam, gebouw of bewoner",
     "noWorkplacesDesc": "Maak uw eerste werkplek aan om te beginnen",
     "addWorkplace": "Werkplek toevoegen",
     "addWorkplaceDesc": "Maak een nieuwe fysieke werkplek aan",
