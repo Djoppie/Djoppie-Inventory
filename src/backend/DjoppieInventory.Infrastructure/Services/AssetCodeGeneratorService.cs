@@ -172,6 +172,13 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
     /// the counter from the existing <c>Assets</c> table so legacy data is
     /// respected; thereafter all increments come from the counter row, never
     /// from MAX(code)+1.
+    ///
+    /// The transactional block is run through the configured
+    /// <see cref="IExecutionStrategy"/>. On Azure SQL the DbContext is
+    /// configured with <c>EnableRetryOnFailure</c>, which is incompatible
+    /// with user-initiated transactions unless the entire transaction is
+    /// wrapped as one retriable unit — exactly what
+    /// <see cref="IExecutionStrategy.ExecuteAsync"/> does for us.
     /// </summary>
     private async Task<int> ReserveNumbersAsync(
         string prefix,
@@ -187,69 +194,73 @@ public class AssetCodeGeneratorService : IAssetCodeGenerator
         var rangeStart = isDummy ? DummyStartNumber : NormalStartNumber;
         var rangeMax = isDummy ? DummyMaxNumber : NormalMaxNumber;
 
-        // SQLite (development) does not support multiple concurrent writers
-        // anyway; SERIALIZABLE on Azure SQL gives us range-lock semantics.
-        // We retry once on transient deadlocks (rare under serializable but
-        // possible).
-        const int maxAttempts = 3;
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async ct =>
         {
-            try
+            // We retry once on lost-race counter inserts (DbUpdateException).
+            // Genuine transient infrastructure failures are handled one layer
+            // up by the execution strategy.
+            const int maxAttempts = 3;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                await using IDbContextTransaction tx =
-                    await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-
-                var counter = await _context.AssetCodeCounters
-                    .FirstOrDefaultAsync(c => c.Prefix == prefix, cancellationToken);
-
-                int issued;
-                if (counter is null)
+                try
                 {
-                    // First time we see this prefix. Seed from the existing
-                    // Assets table so a deployment that already has historical
-                    // codes does not start re-issuing low numbers.
-                    var seedFrom = await GetMaxExistingNumberAsync(prefix, isDummy, cancellationToken);
-                    issued = Math.Max(rangeStart, seedFrom + 1);
+                    await using IDbContextTransaction tx =
+                        await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
-                    counter = new AssetCodeCounter
+                    var counter = await _context.AssetCodeCounters
+                        .FirstOrDefaultAsync(c => c.Prefix == prefix, ct);
+
+                    int issued;
+                    if (counter is null)
                     {
-                        Prefix = prefix,
-                        NextNumber = issued + count,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                    };
-                    _context.AssetCodeCounters.Add(counter);
+                        // First time we see this prefix. Seed from the existing
+                        // Assets table so a deployment that already has historical
+                        // codes does not start re-issuing low numbers.
+                        var seedFrom = await GetMaxExistingNumberAsync(prefix, isDummy, ct);
+                        issued = Math.Max(rangeStart, seedFrom + 1);
+
+                        counter = new AssetCodeCounter
+                        {
+                            Prefix = prefix,
+                            NextNumber = issued + count,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
+                        };
+                        _context.AssetCodeCounters.Add(counter);
+                    }
+                    else
+                    {
+                        issued = counter.NextNumber;
+                        counter.NextNumber = issued + count;
+                        counter.UpdatedAt = DateTime.UtcNow;
+                    }
+
+                    if (issued + count - 1 > rangeMax)
+                    {
+                        var bucket = isDummy ? "Dummy" : "Normal";
+                        throw new InvalidOperationException(
+                            $"{bucket} asset number range exhausted for prefix '{prefix}' (max {rangeMax}).");
+                    }
+
+                    await _context.SaveChangesAsync(ct);
+                    await tx.CommitAsync(ct);
+
+                    return issued;
                 }
-                else
+                catch (DbUpdateException) when (attempt < maxAttempts)
                 {
-                    issued = counter.NextNumber;
-                    counter.NextNumber = issued + count;
-                    counter.UpdatedAt = DateTime.UtcNow;
+                    // Lost the race to insert the very first counter row; another
+                    // request created it concurrently. Retry — the second pass
+                    // will hit the existing counter and increment it cleanly.
+                    _context.ChangeTracker.Clear();
                 }
-
-                if (issued + count - 1 > rangeMax)
-                {
-                    var bucket = isDummy ? "Dummy" : "Normal";
-                    throw new InvalidOperationException(
-                        $"{bucket} asset number range exhausted for prefix '{prefix}' (max {rangeMax}).");
-                }
-
-                await _context.SaveChangesAsync(cancellationToken);
-                await tx.CommitAsync(cancellationToken);
-
-                return issued;
             }
-            catch (DbUpdateException) when (attempt < maxAttempts)
-            {
-                // Lost the race to insert the very first counter row; another
-                // request created it concurrently. Retry — the second pass
-                // will hit the existing counter and increment it cleanly.
-                _context.ChangeTracker.Clear();
-            }
-        }
 
-        throw new InvalidOperationException(
-            $"Could not reserve asset code numbers for prefix '{prefix}' after {maxAttempts} attempts.");
+            throw new InvalidOperationException(
+                $"Could not reserve asset code numbers for prefix '{prefix}' after {maxAttempts} attempts.");
+        }, cancellationToken);
     }
 
     /// <summary>
