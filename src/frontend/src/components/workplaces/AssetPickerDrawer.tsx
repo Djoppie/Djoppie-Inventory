@@ -265,7 +265,7 @@ const AssetPickerDrawer: React.FC<AssetPickerDrawerProps> = ({
                         primaryTypographyProps={{ component: 'div' }}
                         secondaryTypographyProps={{ component: 'div' }}
                         primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <Typography
                               variant="body2"
                               fontWeight={700}
@@ -273,6 +273,30 @@ const AssetPickerDrawer: React.FC<AssetPickerDrawerProps> = ({
                             >
                               {asset.assetCode}
                             </Typography>
+                            {asset.serialNumber ? (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  color: 'text.secondary',
+                                  bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06),
+                                  px: 0.75,
+                                  py: 0.125,
+                                  borderRadius: 0.75,
+                                  letterSpacing: 0.2,
+                                }}
+                                title={`Serienummer: ${asset.serialNumber}`}
+                              >
+                                S/N {asset.serialNumber}
+                              </Typography>
+                            ) : (
+                              <Typography
+                                variant="caption"
+                                sx={{ color: 'text.disabled', fontStyle: 'italic' }}
+                              >
+                                geen serienummer
+                              </Typography>
+                            )}
                             {asset.assetType?.name && (
                               <Chip
                                 label={asset.assetType.name}
@@ -290,18 +314,13 @@ const AssetPickerDrawer: React.FC<AssetPickerDrawerProps> = ({
                           </Box>
                         }
                         secondary={
-                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.25 }}>
-                            {asset.brand && (
+                          asset.brand || asset.model ? (
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.25 }}>
                               <Typography variant="caption" color="text.secondary">
                                 {asset.brand} {asset.model}
                               </Typography>
-                            )}
-                            {asset.serialNumber && (
-                              <Typography variant="caption" color="text.secondary">
-                                S/N: {asset.serialNumber}
-                              </Typography>
-                            )}
-                          </Box>
+                            </Box>
+                          ) : null
                         }
                       />
                     </ListItemButton>
