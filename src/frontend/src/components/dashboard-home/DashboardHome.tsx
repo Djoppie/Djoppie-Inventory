@@ -21,7 +21,6 @@ import {
   AdminSection,
 } from './sections';
 import CategoryFilterBar from './CategoryFilterBar';
-import DataQualityWidget from './DataQualityWidget';
 import UnassignedAssetsPanel from './UnassignedAssetsPanel';
 
 const DashboardHome = () => {
@@ -299,11 +298,6 @@ const DashboardHome = () => {
       {/* Unassigned (Nieuw) assets panel — actionable call-to-action for pending assignments */}
       <Box>
         <UnassignedAssetsPanel />
-      </Box>
-
-      {/* Data quality widget — surfaces Asset FK gaps and offers a one-shot backfill */}
-      <Box sx={{ mt: 2.5 }}>
-        <DataQualityWidget />
       </Box>
     </Box>
   );

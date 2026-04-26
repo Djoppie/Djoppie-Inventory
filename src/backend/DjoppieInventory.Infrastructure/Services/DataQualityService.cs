@@ -26,11 +26,23 @@ public class DataQualityService
     }
 
     /// <summary>
-    /// Counts the data-quality metrics powering the dashboard widget.
+    /// Counts the data-quality metrics powering the dashboard widget. When
+    /// <paramref name="categoryIds"/> is non-empty, all counts and the brand
+    /// breakdown are scoped to assets whose <c>AssetType.CategoryId</c> matches.
     /// </summary>
-    public async Task<DataQualitySummaryDto> GetSummaryAsync(CancellationToken ct = default)
+    public async Task<DataQualitySummaryDto> GetSummaryAsync(
+        int[]? categoryIds = null,
+        CancellationToken ct = default)
     {
         var inUse = _db.Assets.AsNoTracking().Where(a => a.Status == AssetStatus.InGebruik);
+
+        if (categoryIds is { Length: > 0 })
+        {
+            inUse = inUse.Where(a =>
+                a.AssetType != null
+                && a.AssetType.CategoryId != null
+                && categoryIds.Contains(a.AssetType.CategoryId.Value));
+        }
 
         var total = await inUse.CountAsync(ct);
         var noWorkplace = await inUse.CountAsync(a => a.PhysicalWorkplaceId == null, ct);
@@ -60,6 +72,32 @@ public class DataQualityService
             .CountAsync(w => w.CurrentOccupantEntraId != null
                           && occupantEntraIds.Contains(w.CurrentOccupantEntraId), ct);
 
+        // Brand breakdown: project minimal columns then aggregate in-memory so we
+        // can normalize null/empty/whitespace brand names into a single bucket
+        // without tripping over provider-specific SQL.
+        var brandRaw = await inUse
+            .Select(a => new
+            {
+                a.Brand,
+                NoWorkplace = a.PhysicalWorkplaceId == null,
+                NoEmployee = a.EmployeeId == null,
+            })
+            .ToListAsync(ct);
+
+        const string unknownBrand = "(onbekend)";
+        var brands = brandRaw
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Brand) ? unknownBrand : x.Brand!.Trim())
+            .Select(g => new BrandDataQualityDto
+            {
+                Brand = g.Key,
+                InUseTotal = g.Count(),
+                WithoutWorkplace = g.Count(x => x.NoWorkplace),
+                WithoutEmployee = g.Count(x => x.NoEmployee),
+            })
+            .OrderByDescending(b => b.InUseTotal)
+            .ThenBy(b => b.Brand)
+            .ToList();
+
         return new DataQualitySummaryDto
         {
             InUseAssetsTotal = total,
@@ -67,6 +105,7 @@ public class DataQualityService
             InUseAssetsWithoutEmployee = noEmployee,
             EmployeeBackfillCandidates = empCandidates,
             WorkplaceBackfillCandidates = wpCandidates,
+            Brands = brands,
         };
     }
 

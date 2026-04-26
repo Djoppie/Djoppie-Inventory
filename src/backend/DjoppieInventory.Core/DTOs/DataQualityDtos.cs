@@ -1,11 +1,12 @@
 namespace DjoppieInventory.Core.DTOs;
 
 /// <summary>
-/// Summary counts powering the data-quality dashboard widget.
+/// Summary counts powering the data-quality dashboard widget. When the request
+/// includes <c>categoryIds</c>, all counts are scoped to those asset categories.
 /// </summary>
 public record DataQualitySummaryDto
 {
-    /// <summary>Total in-use assets in the system (the denominator for the warnings below).</summary>
+    /// <summary>Total in-use assets in the (optionally filtered) scope.</summary>
     public int InUseAssetsTotal { get; init; }
 
     /// <summary>In-use assets with no PhysicalWorkplaceId. These show up as "no location" in reports.</summary>
@@ -19,6 +20,21 @@ public record DataQualitySummaryDto
 
     /// <summary>Candidates for the Workplace backfill: PhysicalWorkplaceId is null but we can link via occupant.</summary>
     public int WorkplaceBackfillCandidates { get; init; }
+
+    /// <summary>Per-brand breakdown of in-use assets within the filtered scope, ordered by total descending.</summary>
+    public List<BrandDataQualityDto> Brands { get; init; } = new();
+}
+
+/// <summary>
+/// Per-brand counts within the in-use scope used for the dashboard breakdown chips.
+/// </summary>
+public record BrandDataQualityDto
+{
+    /// <summary>Brand name as stored on the asset; empty/null brands are bucketed as "(onbekend)".</summary>
+    public string Brand { get; init; } = string.Empty;
+    public int InUseTotal { get; init; }
+    public int WithoutWorkplace { get; init; }
+    public int WithoutEmployee { get; init; }
 }
 
 /// <summary>

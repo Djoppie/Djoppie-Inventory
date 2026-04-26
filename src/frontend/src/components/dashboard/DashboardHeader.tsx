@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import { Box, Typography, Tooltip, IconButton, Chip, Badge, alpha, useTheme, Card } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CommentIcon from '@mui/icons-material/Comment';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import BusinessIcon from '@mui/icons-material/Business';
+import RuleFolderIcon from '@mui/icons-material/RuleFolder';
 import StatusCardGrid from './StatusCardGrid';
 import { StatusCounts } from '../../hooks/dashboard';
-import { ROUTES } from '../../constants/routes';
+import DataQualityDialog from '../dashboard-home/DataQualityDialog';
+import { getDataQualitySummary } from '../../api/dataQuality.api';
 
 interface DashboardHeaderProps {
   statusCounts: StatusCounts;
@@ -33,9 +35,22 @@ export default function DashboardHeader({
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const navigate = useNavigate();
+  const [dataQualityOpen, setDataQualityOpen] = useState(false);
+
+  // Lightweight summary fetch so the icon can show a "needs attention" dot.
+  // Reuses the same query key as the dialog, so opening the dialog hits the cache.
+  const { data: dataQuality } = useQuery({
+    queryKey: ['data-quality', 'summary'],
+    queryFn: getDataQualitySummary,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const dataQualityHasIssues = !!dataQuality && (
+    dataQuality.inUseAssetsWithoutWorkplace > 0 || dataQuality.inUseAssetsWithoutEmployee > 0
+  );
 
   return (
+    <>
     <Card
       elevation={0}
       sx={{
@@ -134,16 +149,30 @@ export default function DashboardHeader({
             </IconButton>
           </Tooltip>
 
-          {/* Physical Workplaces */}
-          <Tooltip title={t('physicalWorkplaces.title')}>
+          {/* Data Quality */}
+          <Tooltip
+            title={t('dataQuality.tooltip', {
+              defaultValue: dataQualityHasIssues
+                ? 'Data kwaliteit — actie vereist'
+                : 'Data kwaliteit',
+            })}
+          >
             <IconButton
-              onClick={() => navigate(ROUTES.PHYSICAL_WORKPLACES)}
+              onClick={() => setDataQualityOpen(true)}
               size="small"
               sx={{
                 border: '1px solid',
-                borderColor: 'divider',
+                borderColor: dataQualityOpen
+                  ? 'primary.main'
+                  : dataQualityHasIssues
+                    ? alpha('#FF9800', 0.5)
+                    : 'divider',
                 borderRadius: 1.5,
-                color: 'text.secondary',
+                color: dataQualityOpen
+                  ? 'primary.main'
+                  : dataQualityHasIssues
+                    ? '#FF9800'
+                    : 'text.secondary',
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   borderColor: 'primary.main',
@@ -152,7 +181,14 @@ export default function DashboardHeader({
                 },
               }}
             >
-              <BusinessIcon fontSize="small" />
+              <Badge
+                color="warning"
+                variant="dot"
+                invisible={!dataQualityHasIssues}
+                overlap="circular"
+              >
+                <RuleFolderIcon fontSize="small" />
+              </Badge>
             </IconButton>
           </Tooltip>
 
@@ -180,5 +216,8 @@ export default function DashboardHeader({
         onStatusClick={onStatusClick}
       />
     </Card>
+
+    <DataQualityDialog open={dataQualityOpen} onClose={() => setDataQualityOpen(false)} />
+    </>
   );
 }

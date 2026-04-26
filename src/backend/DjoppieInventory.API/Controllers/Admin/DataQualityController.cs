@@ -25,12 +25,16 @@ public class DataQualityController : ControllerBase
     /// <summary>
     /// Counts used by the dashboard "data quality" widget: how many in-use
     /// assets are missing a workplace, missing an owner, and how many can be
-    /// fixed by the backfill endpoints.
+    /// fixed by the backfill endpoints. Pass repeated <c>categoryIds</c> query
+    /// values (e.g. <c>?categoryIds=1&amp;categoryIds=3</c>) to scope the counts
+    /// and brand breakdown to those asset categories.
     /// </summary>
     [HttpGet("summary")]
     [ProducesResponseType(typeof(DataQualitySummaryDto), StatusCodes.Status200OK)]
-    public async Task<ActionResult<DataQualitySummaryDto>> GetSummary(CancellationToken ct)
-        => Ok(await _service.GetSummaryAsync(ct));
+    public async Task<ActionResult<DataQualitySummaryDto>> GetSummary(
+        [FromQuery(Name = "categoryIds")] int[]? categoryIds,
+        CancellationToken ct)
+        => Ok(await _service.GetSummaryAsync(categoryIds, ct));
 
     /// <summary>
     /// Match Asset.Owner strings to existing Employees and populate
