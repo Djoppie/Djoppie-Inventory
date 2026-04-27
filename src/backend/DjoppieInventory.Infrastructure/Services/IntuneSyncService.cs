@@ -15,17 +15,20 @@ public class IntuneSyncService : IIntuneSyncService
     private readonly IIntuneService _intuneService;
     private readonly IAssetRepository _assetRepository;
     private readonly IAssetEventService _assetEventService;
+    private readonly IAssetCodeGenerator _assetCodeGenerator;
     private readonly ILogger<IntuneSyncService> _logger;
 
     public IntuneSyncService(
         IIntuneService intuneService,
         IAssetRepository assetRepository,
         IAssetEventService assetEventService,
+        IAssetCodeGenerator assetCodeGenerator,
         ILogger<IntuneSyncService> logger)
     {
         _intuneService = intuneService ?? throw new ArgumentNullException(nameof(intuneService));
         _assetRepository = assetRepository ?? throw new ArgumentNullException(nameof(assetRepository));
         _assetEventService = assetEventService ?? throw new ArgumentNullException(nameof(assetEventService));
+        _assetCodeGenerator = assetCodeGenerator ?? throw new ArgumentNullException(nameof(assetCodeGenerator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -205,16 +208,10 @@ public class IntuneSyncService : IIntuneSyncService
             existingSerialNumbers.Add(asset.SerialNumber!);
         }
 
-        // Get asset prefix for generating asset codes
-        var assetPrefix = "LAP"; // Default for laptops
-        var existingAssetCodes = await _assetRepository.GetExistingAssetCodesAsync(assetPrefix, cancellationToken);
-        var nextAssetNumber = await _assetRepository.GetNextAssetNumberAsync(assetPrefix, false, cancellationToken);
-
-        var assetsToCreate = new List<Asset>();
-
+        // Pass 1: filter out skip cases and collect importable devices.
+        var importable = new List<(string DeviceId, string DeviceName, string SerialNumber, ManagedDevice Device)>();
         foreach (var deviceId in request.DeviceIds)
         {
-            // Check if device exists in Intune
             if (!deviceLookup.TryGetValue(deviceId, out var device))
             {
                 result.FailedDevices.Add(new FailedDeviceInfo
@@ -230,7 +227,6 @@ public class IntuneSyncService : IIntuneSyncService
             var deviceName = device.DeviceName ?? "Unknown";
             var serialNumber = device.SerialNumber?.Trim() ?? "";
 
-            // Skip devices without serial numbers - they can't be uniquely identified
             if (string.IsNullOrWhiteSpace(serialNumber))
             {
                 result.SkippedDevices.Add(new SkippedDeviceInfo
@@ -244,7 +240,6 @@ public class IntuneSyncService : IIntuneSyncService
                 continue;
             }
 
-            // Check if serial number already exists in inventory or in current batch
             if (existingSerialNumbers.Contains(serialNumber))
             {
                 result.SkippedDevices.Add(new SkippedDeviceInfo
@@ -258,30 +253,54 @@ public class IntuneSyncService : IIntuneSyncService
                 continue;
             }
 
-            // Generate asset code
-            var assetCode = $"{assetPrefix}{nextAssetNumber:D4}";
-            while (existingAssetCodes.Contains(assetCode))
-            {
-                nextAssetNumber++;
-                assetCode = $"{assetPrefix}{nextAssetNumber:D4}";
-            }
-            existingAssetCodes.Add(assetCode);
-            nextAssetNumber++;
+            existingSerialNumbers.Add(serialNumber); // Avoid duplicate within batch
+            importable.Add((deviceId, deviceName, serialNumber, device));
+        }
 
-            // Create the asset
+        // Pass 2: group by brand and reserve asset codes via the standard
+        // generator so codes follow the project format
+        // [DUM-]TYPE-YY-BRAND-NNNNN consistent with the rest of the system.
+        // Intune does not surface a purchase date, so the year defaults to
+        // "now" inside the generator.
+        var codesByDeviceId = new Dictionary<string, string>(StringComparer.Ordinal);
+        var brandGroups = importable.GroupBy(x => (x.Device.Manufacturer ?? "").Trim());
+        foreach (var brandGroup in brandGroups)
+        {
+            var groupList = brandGroup.ToList();
+            var generated = (await _assetCodeGenerator.GenerateBulkCodesAsync(
+                request.AssetTypeId,
+                brand: brandGroup.Key,
+                purchaseDate: null,
+                isDummy: false,
+                count: groupList.Count,
+                cancellationToken)).ToList();
+            for (int i = 0; i < groupList.Count; i++)
+            {
+                codesByDeviceId[groupList[i].DeviceId] = generated[i];
+            }
+        }
+
+        // Pass 3: build the Asset entities with their reserved codes.
+        var status = Enum.TryParse<AssetStatus>(request.Status, true, out var parsedStatus)
+            ? parsedStatus
+            : AssetStatus.Stock;
+        var assetsToCreate = new List<Asset>();
+        foreach (var item in importable)
+        {
+            var assetCode = codesByDeviceId[item.DeviceId];
             var newAsset = new Asset
             {
                 AssetCode = assetCode,
-                AssetName = deviceName,
-                SerialNumber = serialNumber,
-                Brand = device.Manufacturer ?? "",
-                Model = device.Model ?? "",
+                AssetName = item.DeviceName,
+                SerialNumber = item.SerialNumber,
+                Brand = item.Device.Manufacturer ?? "",
+                Model = item.Device.Model ?? "",
                 Category = "Laptop",
-                Status = Enum.TryParse<AssetStatus>(request.Status, true, out var status) ? status : AssetStatus.Stock,
+                Status = status,
                 AssetTypeId = request.AssetTypeId,
-                IntuneEnrollmentDate = device.EnrolledDateTime?.DateTime,
-                IntuneLastCheckIn = device.LastSyncDateTime?.DateTime,
-                IntuneCertificateExpiry = device.ManagementCertificateExpirationDate?.DateTime,
+                IntuneEnrollmentDate = item.Device.EnrolledDateTime?.DateTime,
+                IntuneLastCheckIn = item.Device.LastSyncDateTime?.DateTime,
+                IntuneCertificateExpiry = item.Device.ManagementCertificateExpirationDate?.DateTime,
                 IntuneSyncedAt = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -289,21 +308,14 @@ public class IntuneSyncService : IIntuneSyncService
 
             assetsToCreate.Add(newAsset);
 
-            // Track for result
             result.ImportedDevices.Add(new ImportedDeviceInfo
             {
-                DeviceId = deviceId,
-                DeviceName = deviceName,
-                SerialNumber = serialNumber,
+                DeviceId = item.DeviceId,
+                DeviceName = item.DeviceName,
+                SerialNumber = item.SerialNumber,
                 AssetCode = assetCode,
                 AssetId = 0 // Will be set after creation
             });
-
-            // Add to existing serials to prevent duplicates within batch
-            if (!string.IsNullOrWhiteSpace(serialNumber))
-            {
-                existingSerialNumbers.Add(serialNumber);
-            }
         }
 
         // Bulk create assets
