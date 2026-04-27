@@ -7,11 +7,12 @@ import { useWorkplaceStatistics, useWorkplaceEquipmentStatistics } from '../../h
 import { useRolloutSessions } from '../../hooks/rollout';
 import { useBuildings } from '../../hooks/useBuildings';
 import { useServices } from '../../hooks/useServices';
-import { assetTypesApi, categoriesApi, employeesApi } from '../../api/admin.api';
+import { assetTypesApi, employeesApi, sectorsApi } from '../../api/admin.api';
 import { getRolloutSession } from '../../api/rollout.api';
 import { ASSET_COLOR } from '../../constants/filterColors';
-import type { Asset } from '../../types/asset.types';
+import type { Asset, AssetStatus } from '../../types/asset.types';
 import type { RolloutSession } from '../../types/rollout';
+import type { Sector, Service } from '../../types/admin.types';
 
 import {
   InventorySection,
@@ -20,7 +21,7 @@ import {
   RequestsSection,
   AdminSection,
 } from './sections';
-import CategoryFilterBar from './CategoryFilterBar';
+import AssetFilterBar from '../inventory/AssetFilterBar';
 import UnassignedAssetsPanel from './UnassignedAssetsPanel';
 
 const DashboardHome = () => {
@@ -71,9 +72,13 @@ const DashboardHome = () => {
     staleTime: 60000,
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['admin-categories'],
-    queryFn: () => categoriesApi.getAll(false),
+  // categories used to be displayed by CategoryFilterBar; the new
+  // AssetFilterBar lists asset types directly so we no longer need to fetch
+  // categories on this page.
+
+  const { data: sectors = [] } = useQuery<Sector[]>({
+    queryKey: ['admin-sectors'],
+    queryFn: () => sectorsApi.getAll(true),
     staleTime: 60000,
   });
 
@@ -83,95 +88,108 @@ const DashboardHome = () => {
     staleTime: 60000,
   });
 
-  // Filter state
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<number>>(new Set());
+  // Multi-facet filter state (matches AssetFilterBar on /inventory and
+  // /inventory/assets).
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<AssetStatus>>(new Set());
   const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<Set<number>>(new Set());
+  const [selectedServiceIds, setSelectedServiceIds] = useState<Set<number>>(new Set());
+  const [selectedBuildingIds, setSelectedBuildingIds] = useState<Set<number>>(new Set());
+  const [searchText, setSearchText] = useState('');
 
-  // Build lookup: assetTypeId -> categoryId
-  const assetTypeIdToCategoryId = useMemo(() => {
-    const map = new Map<number, number>();
-    assetTypes.forEach((t) => {
-      if (t.categoryId !== undefined) map.set(t.id, t.categoryId);
+  // Deduplicate sectors by name and remap services so the Dienst dropdown
+  // collapses duplicate-sector legacy rows.
+  const { canonicalSectors, canonicalServices } = useMemo(() => {
+    const sectorByName = new Map<string, Sector>();
+    const sectorIdRemap = new Map<number, number>();
+    sectors
+      .slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .forEach((s) => {
+        const key = s.name.trim().toUpperCase();
+        const existing = sectorByName.get(key);
+        if (!existing) {
+          sectorByName.set(key, s);
+          sectorIdRemap.set(s.id, s.id);
+        } else {
+          sectorIdRemap.set(s.id, existing.id);
+        }
+      });
+    const remappedServices: Service[] = services.map((svc) => {
+      if (svc.sectorId === undefined) return svc;
+      const canonical = sectorIdRemap.get(svc.sectorId);
+      return canonical !== undefined ? { ...svc, sectorId: canonical } : svc;
     });
-    return map;
-  }, [assetTypes]);
+    return {
+      canonicalSectors: Array.from(sectorByName.values()),
+      canonicalServices: remappedServices,
+    };
+  }, [services, sectors]);
 
-  // Asset-count aggregations (unfiltered) for filter-bar badges.
-  const assetCountByCategoryId = useMemo(() => {
-    const counts = new Map<number, number>();
-    const realAssets = assets.filter((a) => !a.isDummy);
-    realAssets.forEach((a) => {
-      const catId = a.assetType?.categoryId ?? (a.assetTypeId ? assetTypeIdToCategoryId.get(a.assetTypeId) : undefined);
-      if (catId !== undefined) counts.set(catId, (counts.get(catId) ?? 0) + 1);
-    });
-    return counts;
-  }, [assets, assetTypeIdToCategoryId]);
-
-  const assetCountByAssetTypeId = useMemo(() => {
-    const counts = new Map<number, number>();
-    const realAssets = assets.filter((a) => !a.isDummy);
-    realAssets.forEach((a) => {
-      const atid = a.assetTypeId ?? a.assetType?.id;
-      if (atid !== undefined) counts.set(atid, (counts.get(atid) ?? 0) + 1);
-    });
-    return counts;
-  }, [assets]);
-
-  // Apply filter to assets for the Inventory section.
+  // Apply all filters to assets. The Inventory section sees `filteredAssets`
+  // directly so its KPIs reflect every facet. Other sections (Workplaces,
+  // Operations, Requests) still filter their own data via
+  // `selectedAssetTypeIds`; the additional facets (Status / Service / Building
+  // / search) only narrow the asset-side numbers.
   const filteredAssets: Asset[] = useMemo(() => {
-    if (selectedCategoryIds.size === 0 && selectedAssetTypeIds.size === 0) return assets;
+    const hasFacet =
+      selectedStatuses.size > 0 ||
+      selectedAssetTypeIds.size > 0 ||
+      selectedServiceIds.size > 0 ||
+      selectedBuildingIds.size > 0 ||
+      searchText.trim() !== '';
+    if (!hasFacet) return assets;
+    const normalizedSearch = searchText.trim().toLowerCase();
     return assets.filter((a) => {
-      const atid = a.assetTypeId ?? a.assetType?.id;
-
+      if (selectedStatuses.size > 0 && !selectedStatuses.has(a.status)) return false;
       if (selectedAssetTypeIds.size > 0) {
+        const atid = a.assetTypeId ?? a.assetType?.id;
         if (atid === undefined || !selectedAssetTypeIds.has(atid)) return false;
-      } else if (selectedCategoryIds.size > 0) {
-        const catId = a.assetType?.categoryId ?? (atid ? assetTypeIdToCategoryId.get(atid) : undefined);
-        if (catId === undefined || !selectedCategoryIds.has(catId)) return false;
+      }
+      if (selectedServiceIds.size > 0) {
+        if (!a.serviceId || !selectedServiceIds.has(a.serviceId)) return false;
+      }
+      if (selectedBuildingIds.size > 0) {
+        if (!a.buildingId || !selectedBuildingIds.has(a.buildingId)) return false;
+      }
+      if (normalizedSearch) {
+        const haystack = [
+          a.assetCode,
+          a.assetName,
+          a.alias,
+          a.serialNumber,
+          a.model,
+          a.brand,
+          a.owner,
+          a.assetType?.name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(normalizedSearch)) return false;
       }
       return true;
     });
-  }, [assets, selectedCategoryIds, selectedAssetTypeIds, assetTypeIdToCategoryId]);
-
-  const toggleCategory = useCallback(
-    (categoryId: number) => {
-      setSelectedCategoryIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(categoryId)) {
-          next.delete(categoryId);
-          // Also remove any asset-type selections that belonged to this category,
-          // so the drill-down stays consistent.
-          setSelectedAssetTypeIds((prevTypes) => {
-            const nextTypes = new Set(prevTypes);
-            assetTypes.forEach((t) => {
-              if (t.categoryId === categoryId && nextTypes.has(t.id)) {
-                nextTypes.delete(t.id);
-              }
-            });
-            return nextTypes;
-          });
-        } else {
-          next.add(categoryId);
-        }
-        return next;
-      });
-    },
-    [assetTypes],
-  );
-
-  const toggleAssetType = useCallback((assetTypeId: number) => {
-    setSelectedAssetTypeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(assetTypeId)) next.delete(assetTypeId);
-      else next.add(assetTypeId);
-      return next;
-    });
-  }, []);
+  }, [
+    assets,
+    selectedStatuses,
+    selectedAssetTypeIds,
+    selectedServiceIds,
+    selectedBuildingIds,
+    searchText,
+  ]);
 
   const clearFilters = useCallback(() => {
-    setSelectedCategoryIds(new Set());
+    setSelectedStatuses(new Set());
     setSelectedAssetTypeIds(new Set());
+    setSelectedServiceIds(new Set());
+    setSelectedBuildingIds(new Set());
+    setSearchText('');
   }, []);
+
+  // Sections that still use the legacy `selectedCategoryIds` prop (Workplaces,
+  // Operations, Requests) get a stable empty Set — the new filter bar exposes
+  // Asset Type directly, no category-level chip.
+  const emptyCategorySet = useMemo(() => new Set<number>(), []);
 
   if (assetsLoading) {
     return (
@@ -181,7 +199,12 @@ const DashboardHome = () => {
     );
   }
 
-  const hasAnyFilter = selectedCategoryIds.size > 0 || selectedAssetTypeIds.size > 0;
+  const hasAnyFilter =
+    selectedStatuses.size > 0 ||
+    selectedAssetTypeIds.size > 0 ||
+    selectedServiceIds.size > 0 ||
+    selectedBuildingIds.size > 0 ||
+    searchText.trim() !== '';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, p: { xs: 1.5, md: 2 } }}>
@@ -223,24 +246,28 @@ const DashboardHome = () => {
         </Box>
       </Fade>
 
-      {/* Category filter bar */}
-      {categories.length > 0 && (
-        <Fade in timeout={500}>
-          <Box>
-            <CategoryFilterBar
-              categories={categories}
-              assetTypes={assetTypes}
-              selectedCategoryIds={selectedCategoryIds}
-              selectedAssetTypeIds={selectedAssetTypeIds}
-              onToggleCategory={toggleCategory}
-              onToggleAssetType={toggleAssetType}
-              onClear={clearFilters}
-              assetCountByCategoryId={assetCountByCategoryId}
-              assetCountByAssetTypeId={assetCountByAssetTypeId}
-            />
-          </Box>
-        </Fade>
-      )}
+      {/* Multi-facet filter bar (matches /inventory and /inventory/assets) */}
+      <Fade in timeout={500}>
+        <Box>
+          <AssetFilterBar
+            searchText={searchText}
+            onSearchChange={setSearchText}
+            selectedStatuses={selectedStatuses}
+            onStatusesChange={setSelectedStatuses}
+            selectedAssetTypeIds={selectedAssetTypeIds}
+            onAssetTypesChange={setSelectedAssetTypeIds}
+            assetTypes={assetTypes}
+            selectedServiceIds={selectedServiceIds}
+            onServicesChange={setSelectedServiceIds}
+            services={canonicalServices}
+            sectors={canonicalSectors}
+            selectedBuildingIds={selectedBuildingIds}
+            onBuildingsChange={setSelectedBuildingIds}
+            buildings={buildings}
+            onClearAll={clearFilters}
+          />
+        </Box>
+      </Fade>
 
       {/* Section Grid */}
       <Box
@@ -261,7 +288,7 @@ const DashboardHome = () => {
           workplaceStats={workplaceStats}
           equipmentStats={equipmentStats}
           delay={100}
-          selectedCategoryIds={selectedCategoryIds}
+          selectedCategoryIds={emptyCategorySet}
           selectedAssetTypeIds={selectedAssetTypeIds}
           assetTypes={assetTypes}
         />
@@ -270,7 +297,7 @@ const DashboardHome = () => {
         <OperationsSection
           rolloutSessions={rolloutSessionsWithDetails}
           delay={200}
-          selectedCategoryIds={selectedCategoryIds}
+          selectedCategoryIds={emptyCategorySet}
           selectedAssetTypeIds={selectedAssetTypeIds}
           assetTypes={assetTypes}
         />
@@ -279,7 +306,7 @@ const DashboardHome = () => {
         <RequestsSection
           requests={assetRequests}
           delay={300}
-          selectedCategoryIds={selectedCategoryIds}
+          selectedCategoryIds={emptyCategorySet}
           selectedAssetTypeIds={selectedAssetTypeIds}
           assetTypes={assetTypes}
         />
