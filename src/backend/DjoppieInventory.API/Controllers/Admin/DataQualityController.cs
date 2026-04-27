@@ -59,4 +59,16 @@ public class DataQualityController : ControllerBase
         [FromQuery] bool dryRun = true,
         CancellationToken ct = default)
         => Ok(await _service.BackfillAssetWorkplaceLinksAsync(dryRun, ct));
+
+    /// <summary>
+    /// Set <c>Asset.AssetName</c> to <c>DOCK-{SerialNumber}</c> for every
+    /// docking-station asset (AssetType.Code = "DOCK") that has a serial
+    /// number. Pass <c>?dryRun=true</c> (default) to preview before committing.
+    /// </summary>
+    [HttpPost("normalize-docking-names")]
+    [ProducesResponseType(typeof(NameNormalizationResultDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<NameNormalizationResultDto>> NormalizeDockingNames(
+        [FromQuery] bool dryRun = true,
+        CancellationToken ct = default)
+        => Ok(await _service.NormalizeDockingNamesAsync(dryRun, ct));
 }

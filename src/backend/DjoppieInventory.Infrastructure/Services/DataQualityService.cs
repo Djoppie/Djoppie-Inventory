@@ -276,6 +276,88 @@ public class DataQualityService
         };
     }
 
+    /// <summary>
+    /// Set <c>Asset.AssetName</c> to <c>DOCK-{SerialNumber}</c> for every
+    /// docking-station asset that has a serial number. Skips dockings with no
+    /// serial; counts those already at the target name as
+    /// <see cref="NameNormalizationResultDto.AlreadyCorrect"/>.
+    /// </summary>
+    public async Task<NameNormalizationResultDto> NormalizeDockingNamesAsync(
+        bool dryRun,
+        CancellationToken ct = default)
+    {
+        var dockTypeIds = await _db.AssetTypes.AsNoTracking()
+            .Where(t => t.Code != null && t.Code.ToLower() == "dock")
+            .Select(t => t.Id)
+            .ToListAsync(ct);
+
+        if (dockTypeIds.Count == 0)
+        {
+            return new NameNormalizationResultDto { DryRun = dryRun };
+        }
+
+        var dockings = await _db.Assets
+            .Where(a => a.AssetTypeId != null && dockTypeIds.Contains(a.AssetTypeId.Value))
+            .ToListAsync(ct);
+
+        int matched = 0;
+        int alreadyCorrect = 0;
+        int skipped = 0;
+        var samples = new List<NameNormalizationSampleDto>();
+
+        foreach (var asset in dockings)
+        {
+            var serial = asset.SerialNumber?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(serial))
+            {
+                skipped++;
+                continue;
+            }
+
+            var newName = $"DOCK-{serial}";
+            if (string.Equals(asset.AssetName, newName, StringComparison.Ordinal))
+            {
+                alreadyCorrect++;
+                continue;
+            }
+
+            matched++;
+            if (samples.Count < SampleLimit)
+            {
+                samples.Add(new NameNormalizationSampleDto
+                {
+                    AssetId = asset.Id,
+                    AssetCode = asset.AssetCode,
+                    CurrentName = asset.AssetName,
+                    NewName = newName,
+                    SerialNumber = serial,
+                });
+            }
+
+            if (!dryRun)
+            {
+                asset.AssetName = newName;
+                asset.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        if (!dryRun && matched > 0)
+        {
+            await _db.SaveChangesAsync(ct);
+            _logger.LogInformation("Normalized {Count} docking station asset names to DOCK-{{serial}}", matched);
+        }
+
+        return new NameNormalizationResultDto
+        {
+            DryRun = dryRun,
+            Scanned = dockings.Count,
+            Matched = matched,
+            AlreadyCorrect = alreadyCorrect,
+            Skipped = skipped,
+            Samples = samples,
+        };
+    }
+
     // ---------------------------------------------------------------- Helpers
 
     /// <summary>

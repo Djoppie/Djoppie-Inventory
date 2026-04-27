@@ -67,3 +67,32 @@ public record BackfillSampleDto
     public int? MatchedWorkplaceId { get; init; }
     public string? MatchedWorkplaceCode { get; init; }
 }
+
+/// <summary>
+/// Result of a name-normalization run (e.g. setting AssetName to a derived
+/// value for a class of assets). Mirrors <see cref="BackfillResultDto"/> but
+/// captures old/new name pairs in the samples.
+/// </summary>
+public record NameNormalizationResultDto
+{
+    public bool DryRun { get; init; }
+    /// <summary>Total assets scanned within the rule's scope.</summary>
+    public int Scanned { get; init; }
+    /// <summary>Assets that were (or would be) renamed.</summary>
+    public int Matched { get; init; }
+    /// <summary>Assets already at the target name (no change needed).</summary>
+    public int AlreadyCorrect { get; init; }
+    /// <summary>Assets skipped because the inputs needed to derive the new name were missing (e.g. empty serial).</summary>
+    public int Skipped { get; init; }
+    /// <summary>First ~25 rename samples for user preview.</summary>
+    public List<NameNormalizationSampleDto> Samples { get; init; } = new();
+}
+
+public record NameNormalizationSampleDto
+{
+    public int AssetId { get; init; }
+    public string AssetCode { get; init; } = string.Empty;
+    public string CurrentName { get; init; } = string.Empty;
+    public string NewName { get; init; } = string.Empty;
+    public string? SerialNumber { get; init; }
+}
