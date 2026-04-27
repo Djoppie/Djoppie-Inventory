@@ -52,25 +52,28 @@ public class DataQualityService
         var empCandidates = await inUse.CountAsync(a =>
             a.EmployeeId == null && a.Owner != null && a.Owner != "", ct);
 
-        // Workplace backfill candidates: PhysicalWorkplaceId null, but we have
-        // an EmployeeId whose workplace is known via occupant link. We only
-        // count the upper bound here; the actual match is done in the backfill.
-        var empIdsOfCandidates = await inUse
-            .Where(a => a.PhysicalWorkplaceId == null && a.EmployeeId != null)
-            .Select(a => a.EmployeeId!.Value)
-            .Distinct()
+        // Workplace backfill candidates: PhysicalWorkplaceId null AND we have a
+        // route to a workplace. Two routes are supported:
+        //   (A) slot-route: asset.Id appears in PhysicalWorkplace.{Docking,
+        //       Monitor1..3,Keyboard,Mouse}AssetId — no EmployeeId required.
+        //   (B) occupant-route: asset.EmployeeId resolves to an Employee whose
+        //       EntraId matches PhysicalWorkplace.CurrentOccupantEntraId.
+        // We project minimal candidate data and resolve in-memory so the count
+        // matches what the actual backfill will achieve (no double-counting).
+        var slotAssetIds = await GetSlotAssetIdsAsync(ct);
+        var wpByEntraId = await BuildWorkplaceByEntraIdLookupAsync(ct);
+        var empEntraIdById = await BuildEmployeeEntraIdLookupAsync(ct);
+
+        var noWpCandidates = await inUse
+            .Where(a => a.PhysicalWorkplaceId == null)
+            .Select(a => new { a.Id, a.EmployeeId })
             .ToListAsync(ct);
 
-        var occupantEntraIds = empIdsOfCandidates.Count == 0
-            ? new List<string>()
-            : await _db.Employees.AsNoTracking()
-                .Where(e => empIdsOfCandidates.Contains(e.Id) && e.EntraId != null && e.EntraId != "")
-                .Select(e => e.EntraId)
-                .ToListAsync(ct);
-
-        var wpCandidates = occupantEntraIds.Count == 0 ? 0 : await _db.PhysicalWorkplaces.AsNoTracking()
-            .CountAsync(w => w.CurrentOccupantEntraId != null
-                          && occupantEntraIds.Contains(w.CurrentOccupantEntraId), ct);
+        var wpCandidates = noWpCandidates.Count(c =>
+            slotAssetIds.Contains(c.Id)
+            || (c.EmployeeId != null
+                && empEntraIdById.TryGetValue(c.EmployeeId.Value, out var entra)
+                && wpByEntraId.ContainsKey(entra)));
 
         // Brand breakdown: project minimal columns then aggregate in-memory so we
         // can normalize null/empty/whitespace brand names into a single bucket
@@ -186,28 +189,21 @@ public class DataQualityService
     }
 
     /// <summary>
-    /// For assets that have an EmployeeId but no PhysicalWorkplaceId, find
-    /// a workplace whose <c>CurrentOccupantEntraId</c> matches that employee
-    /// and wire it up.
+    /// Populate <c>Asset.PhysicalWorkplaceId</c> (and <c>BuildingId</c>) for
+    /// assets where it is currently null. Two routes are tried in order:
+    ///   1. Slot-route: asset.Id appears in <c>PhysicalWorkplace.{Docking,
+    ///      Monitor1..3,Keyboard,Mouse}AssetId</c> — no Employee link required.
+    ///   2. Occupant-route: <c>Asset.EmployeeId</c> resolves to an Employee
+    ///      whose EntraId matches <c>PhysicalWorkplace.CurrentOccupantEntraId</c>.
     /// </summary>
     public async Task<BackfillResultDto> BackfillAssetWorkplaceLinksAsync(bool dryRun, CancellationToken ct = default)
     {
-        // Pre-compute workplace lookup keyed by occupant EntraId.
-        var workplaces = await _db.PhysicalWorkplaces.AsNoTracking()
-            .Where(w => w.CurrentOccupantEntraId != null && w.CurrentOccupantEntraId != "")
-            .Select(w => new { w.Id, w.Code, w.CurrentOccupantEntraId })
-            .ToListAsync(ct);
-        var wpByEntraId = new Dictionary<string, (int Id, string Code)>(StringComparer.Ordinal);
-        foreach (var w in workplaces.OrderBy(w => w.Id))
-            wpByEntraId.TryAdd(w.CurrentOccupantEntraId!, (w.Id, w.Code));
-
-        // Employee.Id → EntraId for candidates.
-        var empEntraIdById = await _db.Employees.AsNoTracking()
-            .Where(e => e.EntraId != null && e.EntraId != "")
-            .ToDictionaryAsync(e => e.Id, e => e.EntraId, ct);
+        var slotMap = await GetSlotWorkplaceMapAsync(ct);
+        var wpByEntraId = await BuildWorkplaceByEntraIdLookupAsync(ct);
+        var empEntraIdById = await BuildEmployeeEntraIdLookupAsync(ct);
 
         var candidates = await _db.Assets
-            .Where(a => a.PhysicalWorkplaceId == null && a.EmployeeId != null)
+            .Where(a => a.PhysicalWorkplaceId == null)
             .ToListAsync(ct);
 
         int matched = 0;
@@ -216,8 +212,22 @@ public class DataQualityService
 
         foreach (var asset in candidates)
         {
-            if (!empEntraIdById.TryGetValue(asset.EmployeeId!.Value, out var entraId)
-                || !wpByEntraId.TryGetValue(entraId, out var wp))
+            (int Id, string Code, int? BuildingId)? wp = null;
+
+            // Route 1: slot-based (no employee link required)
+            if (slotMap.TryGetValue(asset.Id, out var slotWp))
+            {
+                wp = slotWp;
+            }
+            // Route 2: occupant-based (via Asset.EmployeeId → Employee.EntraId)
+            else if (asset.EmployeeId != null
+                     && empEntraIdById.TryGetValue(asset.EmployeeId.Value, out var entraId)
+                     && wpByEntraId.TryGetValue(entraId, out var occWp))
+            {
+                wp = occWp;
+            }
+
+            if (!wp.HasValue)
             {
                 unmatched++;
                 continue;
@@ -231,11 +241,15 @@ public class DataQualityService
                     AssetId = asset.Id,
                     AssetCode = asset.AssetCode,
                     MatchedEmployeeId = asset.EmployeeId,
-                    MatchedWorkplaceId = wp.Id,
-                    MatchedWorkplaceCode = wp.Code,
+                    MatchedWorkplaceId = wp.Value.Id,
+                    MatchedWorkplaceCode = wp.Value.Code,
                 });
             }
-            if (!dryRun) asset.PhysicalWorkplaceId = wp.Id;
+            if (!dryRun)
+            {
+                asset.PhysicalWorkplaceId = wp.Value.Id;
+                if (wp.Value.BuildingId.HasValue) asset.BuildingId = wp.Value.BuildingId;
+            }
         }
 
         if (!dryRun && matched > 0)
@@ -252,5 +266,108 @@ public class DataQualityService
             Unmatched = unmatched,
             Samples = samples,
         };
+    }
+
+    // ---------------------------------------------------------------- Helpers
+
+    /// <summary>
+    /// Returns the set of asset IDs currently referenced by any equipment slot
+    /// on a PhysicalWorkplace. Used to short-circuit workplace-resolution
+    /// without needing an Asset.EmployeeId.
+    /// </summary>
+    private async Task<HashSet<int>> GetSlotAssetIdsAsync(CancellationToken ct)
+    {
+        var slotRows = await _db.PhysicalWorkplaces.AsNoTracking()
+            .Select(w => new
+            {
+                w.DockingStationAssetId,
+                w.Monitor1AssetId,
+                w.Monitor2AssetId,
+                w.Monitor3AssetId,
+                w.KeyboardAssetId,
+                w.MouseAssetId,
+            })
+            .ToListAsync(ct);
+
+        var ids = new HashSet<int>();
+        foreach (var w in slotRows)
+        {
+            if (w.DockingStationAssetId.HasValue) ids.Add(w.DockingStationAssetId.Value);
+            if (w.Monitor1AssetId.HasValue) ids.Add(w.Monitor1AssetId.Value);
+            if (w.Monitor2AssetId.HasValue) ids.Add(w.Monitor2AssetId.Value);
+            if (w.Monitor3AssetId.HasValue) ids.Add(w.Monitor3AssetId.Value);
+            if (w.KeyboardAssetId.HasValue) ids.Add(w.KeyboardAssetId.Value);
+            if (w.MouseAssetId.HasValue) ids.Add(w.MouseAssetId.Value);
+        }
+        return ids;
+    }
+
+    /// <summary>
+    /// Build a lookup from asset.Id to the workplace that hosts it via an
+    /// equipment slot. The first workplace wins if (improbably) the same asset
+    /// appears in multiple slots — preferring lower workplace IDs for stability.
+    /// </summary>
+    private async Task<Dictionary<int, (int Id, string Code, int? BuildingId)>> GetSlotWorkplaceMapAsync(CancellationToken ct)
+    {
+        var slotRows = await _db.PhysicalWorkplaces.AsNoTracking()
+            .OrderBy(w => w.Id)
+            .Select(w => new
+            {
+                w.Id,
+                w.Code,
+                w.BuildingId,
+                w.DockingStationAssetId,
+                w.Monitor1AssetId,
+                w.Monitor2AssetId,
+                w.Monitor3AssetId,
+                w.KeyboardAssetId,
+                w.MouseAssetId,
+            })
+            .ToListAsync(ct);
+
+        var map = new Dictionary<int, (int Id, string Code, int? BuildingId)>();
+        foreach (var w in slotRows)
+        {
+            void Add(int? assetId)
+            {
+                if (assetId.HasValue) map.TryAdd(assetId.Value, (w.Id, w.Code, w.BuildingId));
+            }
+            Add(w.DockingStationAssetId);
+            Add(w.Monitor1AssetId);
+            Add(w.Monitor2AssetId);
+            Add(w.Monitor3AssetId);
+            Add(w.KeyboardAssetId);
+            Add(w.MouseAssetId);
+        }
+        return map;
+    }
+
+    /// <summary>
+    /// Map of EntraId -> workplace (id/code/buildingId) via
+    /// <c>PhysicalWorkplace.CurrentOccupantEntraId</c>.
+    /// </summary>
+    private async Task<Dictionary<string, (int Id, string Code, int? BuildingId)>> BuildWorkplaceByEntraIdLookupAsync(CancellationToken ct)
+    {
+        var rows = await _db.PhysicalWorkplaces.AsNoTracking()
+            .Where(w => w.CurrentOccupantEntraId != null && w.CurrentOccupantEntraId != "")
+            .OrderBy(w => w.Id)
+            .Select(w => new { w.Id, w.Code, w.BuildingId, w.CurrentOccupantEntraId })
+            .ToListAsync(ct);
+        var map = new Dictionary<string, (int Id, string Code, int? BuildingId)>(StringComparer.Ordinal);
+        foreach (var w in rows)
+        {
+            map.TryAdd(w.CurrentOccupantEntraId!, (w.Id, w.Code, w.BuildingId));
+        }
+        return map;
+    }
+
+    /// <summary>
+    /// Map of Employee.Id -> Employee.EntraId for employees with a non-empty EntraId.
+    /// </summary>
+    private async Task<Dictionary<int, string>> BuildEmployeeEntraIdLookupAsync(CancellationToken ct)
+    {
+        return await _db.Employees.AsNoTracking()
+            .Where(e => e.EntraId != null && e.EntraId != "")
+            .ToDictionaryAsync(e => e.Id, e => e.EntraId!, ct);
     }
 }
