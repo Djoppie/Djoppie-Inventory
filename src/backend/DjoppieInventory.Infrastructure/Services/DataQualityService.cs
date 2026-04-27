@@ -26,12 +26,14 @@ public class DataQualityService
     }
 
     /// <summary>
-    /// Counts the data-quality metrics powering the dashboard widget. When
-    /// <paramref name="categoryIds"/> is non-empty, all counts and the brand
-    /// breakdown are scoped to assets whose <c>AssetType.CategoryId</c> matches.
+    /// Counts the data-quality metrics powering the dashboard widget. The
+    /// scope can be narrowed by <paramref name="categoryIds"/> (matching
+    /// <c>AssetType.CategoryId</c>) and/or <paramref name="assetTypeIds"/>
+    /// (matching <c>Asset.AssetTypeId</c>). Both filters AND-combine when set.
     /// </summary>
     public async Task<DataQualitySummaryDto> GetSummaryAsync(
         int[]? categoryIds = null,
+        int[]? assetTypeIds = null,
         CancellationToken ct = default)
     {
         var inUse = _db.Assets.AsNoTracking().Where(a => a.Status == AssetStatus.InGebruik);
@@ -42,6 +44,12 @@ public class DataQualityService
                 a.AssetType != null
                 && a.AssetType.CategoryId != null
                 && categoryIds.Contains(a.AssetType.CategoryId.Value));
+        }
+
+        if (assetTypeIds is { Length: > 0 })
+        {
+            inUse = inUse.Where(a =>
+                a.AssetTypeId != null && assetTypeIds.Contains(a.AssetTypeId.Value));
         }
 
         var total = await inUse.CountAsync(ct);

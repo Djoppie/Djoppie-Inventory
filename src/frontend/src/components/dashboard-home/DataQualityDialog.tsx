@@ -35,8 +35,8 @@ import {
   backfillAssetWorkplaces,
   type BackfillResult,
 } from '../../api/dataQuality.api';
-import { categoriesApi } from '../../api/admin.api';
-import type { Category } from '../../types/admin.types';
+import { categoriesApi, assetTypesApi } from '../../api/admin.api';
+import type { Category, AssetType } from '../../types/admin.types';
 
 type BackfillKind = 'employees' | 'workplaces';
 
@@ -61,6 +61,13 @@ const DataQualityDialog: React.FC<DataQualityDialogProps> = ({ open, onClose }) 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories', 'all'],
     queryFn: () => categoriesApi.getAll(false),
+    staleTime: 5 * 60 * 1000,
+    enabled: open,
+  });
+
+  const { data: assetTypes = [] } = useQuery<AssetType[]>({
+    queryKey: ['asset-types', 'all'],
+    queryFn: () => assetTypesApi.getAll(false),
     staleTime: 5 * 60 * 1000,
     enabled: open,
   });
@@ -90,12 +97,51 @@ const DataQualityDialog: React.FC<DataQualityDialogProps> = ({ open, onClose }) 
     setUserOverride(next);
   };
 
-  const clearCategoryFilter = () => setUserOverride([]);
+  const clearCategoryFilter = () => {
+    setUserOverride([]);
+    setSelectedAssetTypeIds([]);
+  };
+
+  // ---------------------------------------------------------------- AssetTypes
+  // Asset-type chips only show types that fall under the active category set
+  // (or all types when no category filter is active). Selecting categories
+  // also drops any previously selected types that no longer apply.
+  const [selectedAssetTypeIds, setSelectedAssetTypeIds] = useState<number[]>([]);
+
+  const visibleAssetTypes = useMemo(() => {
+    if (selectedCategoryIds.length === 0) return assetTypes;
+    return assetTypes.filter(
+      (t) => t.categoryId !== undefined && selectedCategoryIds.includes(t.categoryId),
+    );
+  }, [assetTypes, selectedCategoryIds]);
+
+  // Drop selected types that are no longer visible (e.g. user changed categories).
+  const visibleTypeIdSet = useMemo(
+    () => new Set(visibleAssetTypes.map((t) => t.id)),
+    [visibleAssetTypes],
+  );
+  const effectiveAssetTypeIds = useMemo(
+    () => selectedAssetTypeIds.filter((id) => visibleTypeIdSet.has(id)),
+    [selectedAssetTypeIds, visibleTypeIdSet],
+  );
+
+  const sortedAssetTypeIds = useMemo(
+    () => [...effectiveAssetTypeIds].sort((a, b) => a - b),
+    [effectiveAssetTypeIds],
+  );
+
+  const toggleAssetType = (id: number) => {
+    setSelectedAssetTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const clearAssetTypeFilter = () => setSelectedAssetTypeIds([]);
 
   // -------------------------------------------------------------- Summary data
   const { data, isLoading, error } = useQuery({
-    queryKey: ['data-quality', 'summary', sortedCategoryIds],
-    queryFn: () => getDataQualitySummary(sortedCategoryIds),
+    queryKey: ['data-quality', 'summary', sortedCategoryIds, sortedAssetTypeIds],
+    queryFn: () => getDataQualitySummary(sortedCategoryIds, sortedAssetTypeIds),
     staleTime: 2 * 60 * 1000,
     enabled: open,
   });
@@ -136,6 +182,7 @@ const DataQualityDialog: React.FC<DataQualityDialogProps> = ({ open, onClose }) 
   const handleClose = () => {
     cancelBackfill();
     setUserOverride(null);
+    setSelectedAssetTypeIds([]);
     onClose();
   };
 
@@ -255,6 +302,63 @@ const DataQualityDialog: React.FC<DataQualityDialogProps> = ({ open, onClose }) 
                   Geen filter actief — alle categorieën worden getoond.
                 </Typography>
               )}
+            </Box>
+
+            {/* Asset-type filter — chips scope to selected categories */}
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  color: 'text.secondary',
+                  display: 'block',
+                  mb: 1,
+                }}
+              >
+                Filter op asset type
+              </Typography>
+              <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                {visibleAssetTypes.length === 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    Geen asset types beschikbaar binnen deze categorie.
+                  </Typography>
+                )}
+                {visibleAssetTypes.map((t) => {
+                  const selected = effectiveAssetTypeIds.includes(t.id);
+                  return (
+                    <Chip
+                      key={t.id}
+                      label={t.name}
+                      size="small"
+                      clickable
+                      onClick={() => toggleAssetType(t.id)}
+                      sx={{
+                        height: 24,
+                        fontSize: '0.7rem',
+                        fontWeight: selected ? 700 : 500,
+                        bgcolor: selected ? alpha('#2196F3', 0.18) : 'transparent',
+                        border: '1px solid',
+                        borderColor: selected ? alpha('#2196F3', 0.4) : 'divider',
+                        color: selected ? '#2196F3' : 'text.primary',
+                        '&:hover': {
+                          bgcolor: alpha('#2196F3', 0.1),
+                        },
+                      }}
+                    />
+                  );
+                })}
+                {effectiveAssetTypeIds.length > 0 && (
+                  <Chip
+                    label="Wis filter"
+                    size="small"
+                    variant="outlined"
+                    onClick={clearAssetTypeFilter}
+                    sx={{ height: 24, fontSize: '0.68rem' }}
+                  />
+                )}
+              </Stack>
             </Box>
 
             <Divider sx={{ my: 1.5 }} />

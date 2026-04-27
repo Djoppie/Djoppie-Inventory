@@ -39,14 +39,16 @@ export interface BackfillResult {
 
 /**
  * Fetch the data-quality summary, optionally scoped to one or more asset
- * categories. The backend treats no `categoryIds` (or an empty list) as
- * "all categories".
+ * categories and/or asset types. Both filters AND-combine on the backend;
+ * leaving them empty returns the full in-use scope.
  */
 export const getDataQualitySummary = async (
   categoryIds?: number[],
+  assetTypeIds?: number[],
 ): Promise<DataQualitySummary> => {
   const params = new URLSearchParams();
   (categoryIds ?? []).forEach((id) => params.append('categoryIds', String(id)));
+  (assetTypeIds ?? []).forEach((id) => params.append('assetTypeIds', String(id)));
   const { data } = await apiClient.get<DataQualitySummary>(
     '/admin/data-quality/summary',
     { params },
