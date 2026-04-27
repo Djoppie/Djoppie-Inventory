@@ -143,6 +143,8 @@ const AssetLocationChainCompact = ({ asset, onAssignWorkplace, onAssignEmployee 
     const name = loc?.employeeName || asset.employee?.displayName || '';
     const service = loc?.serviceName || asset.employee?.serviceName || '';
     const empId = loc?.employeeId || asset.employee?.id;
+    const wpCode = loc?.physicalWorkplaceCode || asset.physicalWorkplace?.code || '';
+    const wpId = loc?.physicalWorkplaceId || asset.physicalWorkplace?.id;
     return (
       <Box sx={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
         <PersonIcon sx={{ fontSize: 13, color: EMPLOYEE_COLOR, flexShrink: 0 }} />
@@ -174,6 +176,37 @@ const AssetLocationChainCompact = ({ asset, onAssignWorkplace, onAssignEmployee 
             {name}
           </Typography>
         )}
+        {wpCode && (
+          <>
+            <Dot />
+            <PlaceIcon sx={{ fontSize: 12, color: WORKPLACE_COLOR, flexShrink: 0 }} />
+            {wpId ? (
+              <Box
+                component={Link}
+                to={`/workplaces/${wpId}`}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                sx={{
+                  ml: 0.3,
+                  color: WORKPLACE_COLOR,
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                {wpCode}
+              </Box>
+            ) : (
+              <Typography
+                variant="caption"
+                sx={{ ml: 0.3, color: WORKPLACE_COLOR, fontWeight: 600, whiteSpace: 'nowrap' }}
+              >
+                {wpCode}
+              </Typography>
+            )}
+          </>
+        )}
         {service && (
           <>
             <Dot />
@@ -191,8 +224,33 @@ const AssetLocationChainCompact = ({ asset, onAssignWorkplace, onAssignEmployee 
     const code = loc?.physicalWorkplaceCode || asset.physicalWorkplace?.code || '';
     const building = loc?.buildingName || asset.physicalWorkplace?.buildingName || '';
     const wpId = loc?.physicalWorkplaceId || asset.physicalWorkplace?.id;
+    // Surface the workplace's current occupant so user-bound devices (laptops/
+    // desktops sitting on a workplace without their own Asset.EmployeeId FK)
+    // still show who is using them.
+    const occupantName = asset.physicalWorkplace?.currentOccupantName || '';
     return (
       <Box sx={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'nowrap' }}>
+        {occupantName && (
+          <>
+            <PersonIcon sx={{ fontSize: 13, color: EMPLOYEE_COLOR, flexShrink: 0 }} />
+            <Typography
+              variant="caption"
+              sx={{
+                ml: 0.4,
+                color: EMPLOYEE_COLOR,
+                fontWeight: 600,
+                fontSize: '0.8125rem',
+                whiteSpace: 'nowrap',
+                maxWidth: 110,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {occupantName}
+            </Typography>
+            <Dot />
+          </>
+        )}
         <PlaceIcon sx={{ fontSize: 13, color: WORKPLACE_COLOR, flexShrink: 0 }} />
         {wpId ? (
           <Box
