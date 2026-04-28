@@ -29,6 +29,24 @@ export type AssetReturnAction =
   | 'Decommission'
   | 'Reassign';
 
+/**
+ * Compact line summary embedded in `AssetRequestSummaryDto.lines` so the
+ * list view can show what assets are on each request without a per-row
+ * detail fetch.
+ */
+export interface AssetRequestLineSummaryDto {
+  id: number;
+  assetTypeName: string;
+  status: AssetRequestLineStatus;
+  assetCode?: string;
+  assetName?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  assetTemplateName?: string;
+  returnAction?: AssetReturnAction;
+}
+
 export interface AssetRequestSummaryDto {
   id: number;
   requestType: AssetRequestType;
@@ -36,6 +54,7 @@ export interface AssetRequestSummaryDto {
   requestedFor: string;
   employeeId?: number;
   employeeDisplayName?: string;
+  employeeUpn?: string;
   requestedDate: string;
   physicalWorkplaceId?: number;
   physicalWorkplaceName?: string;
@@ -43,6 +62,7 @@ export interface AssetRequestSummaryDto {
   completedLineCount: number;
   createdAt: string;
   completedAt?: string;
+  lines: AssetRequestLineSummaryDto[];
 }
 
 export interface AssetRequestLineDto {

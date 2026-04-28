@@ -12,6 +12,7 @@ public class AssetRequestSummaryDto
     public string RequestedFor { get; set; } = string.Empty;
     public int? EmployeeId { get; set; }
     public string? EmployeeDisplayName { get; set; }
+    public string? EmployeeUpn { get; set; }
     public DateTime RequestedDate { get; set; }
     public int? PhysicalWorkplaceId { get; set; }
     public string? PhysicalWorkplaceName { get; set; }
@@ -19,6 +20,28 @@ public class AssetRequestSummaryDto
     public int CompletedLineCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// Compact line summaries so the list view can show what assets are on the
+    /// request without a separate fetch per row. Only fields useful for
+    /// at-a-glance scanning are included; the full <see cref="AssetRequestLineDto"/>
+    /// is exposed via the detail endpoint.
+    /// </summary>
+    public List<AssetRequestLineSummaryDto> Lines { get; set; } = new();
+}
+
+public class AssetRequestLineSummaryDto
+{
+    public int Id { get; set; }
+    public string AssetTypeName { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;          // line status
+    public string? AssetCode { get; set; }
+    public string? AssetName { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? SerialNumber { get; set; }
+    public string? AssetTemplateName { get; set; }
+    public string? ReturnAction { get; set; }
 }
 
 public class AssetRequestDetailDto : AssetRequestSummaryDto
@@ -27,7 +50,13 @@ public class AssetRequestDetailDto : AssetRequestSummaryDto
     public string CreatedBy { get; set; } = string.Empty;
     public string? ModifiedBy { get; set; }
     public DateTime? ModifiedAt { get; set; }
-    public List<AssetRequestLineDto> Lines { get; set; } = new();
+
+    /// <summary>
+    /// Full per-line DTOs (detail view). Hides the compact list inherited from
+    /// <see cref="AssetRequestSummaryDto.Lines"/>: list and detail endpoints both
+    /// serialise as "lines", but the detail endpoint emits the richer shape.
+    /// </summary>
+    public new List<AssetRequestLineDto> Lines { get; set; } = new();
 }
 
 public class AssetRequestLineDto

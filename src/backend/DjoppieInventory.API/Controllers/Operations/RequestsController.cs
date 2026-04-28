@@ -292,13 +292,29 @@ public class RequestsController : ControllerBase
         RequestedFor = r.RequestedFor,
         EmployeeId = r.EmployeeId,
         EmployeeDisplayName = r.Employee?.DisplayName,
+        EmployeeUpn = r.Employee?.UserPrincipalName,
         RequestedDate = r.RequestedDate,
         PhysicalWorkplaceId = r.PhysicalWorkplaceId,
         PhysicalWorkplaceName = r.PhysicalWorkplace?.Name,
         LineCount = r.Lines.Count,
         CompletedLineCount = r.Lines.Count(l => l.Status == AssetRequestLineStatus.Completed),
         CreatedAt = r.CreatedAt,
-        CompletedAt = r.CompletedAt
+        CompletedAt = r.CompletedAt,
+        Lines = r.Lines.OrderBy(l => l.Id).Select(MapLineSummary).ToList()
+    };
+
+    private static AssetRequestLineSummaryDto MapLineSummary(AssetRequestLine l) => new()
+    {
+        Id = l.Id,
+        AssetTypeName = l.AssetType?.Name ?? string.Empty,
+        Status = l.Status.ToString(),
+        AssetCode = l.Asset?.AssetCode,
+        AssetName = l.Asset?.AssetName,
+        Brand = l.Asset?.Brand,
+        Model = l.Asset?.Model,
+        SerialNumber = l.Asset?.SerialNumber,
+        AssetTemplateName = l.AssetTemplate?.TemplateName,
+        ReturnAction = l.ReturnAction?.ToString()
     };
 
     private static AssetRequestDetailDto MapToDetail(AssetRequest r)
@@ -311,6 +327,7 @@ public class RequestsController : ControllerBase
             RequestedFor = r.RequestedFor,
             EmployeeId = r.EmployeeId,
             EmployeeDisplayName = r.Employee?.DisplayName,
+            EmployeeUpn = r.Employee?.UserPrincipalName,
             RequestedDate = r.RequestedDate,
             PhysicalWorkplaceId = r.PhysicalWorkplaceId,
             PhysicalWorkplaceName = r.PhysicalWorkplace?.Name,

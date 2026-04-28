@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useAssetRequests } from '../../../hooks/useAssetRequests';
 import { RequestStatusBadge } from './RequestStatusBadge';
 import { EmployeeLinkChip } from './EmployeeLinkChip';
+import { RequestLinesPreview } from './RequestLinesPreview';
 import type { AssetRequestType } from '../../../types/assetRequest.types';
 import Loading from '../../common/Loading';
 import ApiErrorDisplay from '../../common/ApiErrorDisplay';
@@ -76,11 +77,20 @@ export function RequestsList({ type, newPath, detailPath, titleKey, subtitleKey,
                 >
                   <TableCell>{r.requestedFor}</TableCell>
                   <TableCell>
-                    <EmployeeLinkChip employeeDisplayName={r.employeeDisplayName} />
+                    <EmployeeLinkChip
+                      employeeDisplayName={r.employeeDisplayName}
+                      employeeUpn={r.employeeUpn}
+                      dense
+                    />
                   </TableCell>
                   <TableCell>{new Date(r.requestedDate).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {r.completedLineCount} / {r.lineCount}
+                  <TableCell sx={{ minWidth: 280, py: 1.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      <Box sx={{ fontSize: '0.7rem', color: 'text.secondary', fontWeight: 600 }}>
+                        {r.completedLineCount} / {r.lineCount} voltooid
+                      </Box>
+                      <RequestLinesPreview lines={r.lines} collapsed />
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <RequestStatusBadge status={r.status} />
