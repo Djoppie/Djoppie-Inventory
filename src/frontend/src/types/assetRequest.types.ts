@@ -1,6 +1,6 @@
 /**
- * Asset Request Types
- * Matches backend DTOs for on/offboarding asset requests
+ * Asset Request Types — on/offboarding lifecycle.
+ * Matches backend DTOs in DjoppieInventory.Core/DTOs/AssetRequestDto.cs.
  */
 
 export type AssetRequestType = 'onboarding' | 'offboarding';
@@ -13,37 +13,115 @@ export type AssetRequestStatus =
   | 'Cancelled'
   | 'Rejected';
 
-export interface AssetRequestDto {
+export type AssetRequestLineSourceType =
+  | 'ToBeAssigned'
+  | 'ExistingInventory'
+  | 'NewFromTemplate';
+
+export type AssetRequestLineStatus =
+  | 'Pending'
+  | 'Reserved'
+  | 'Completed'
+  | 'Skipped';
+
+export type AssetReturnAction =
+  | 'ReturnToStock'
+  | 'Decommission'
+  | 'Reassign';
+
+export interface AssetRequestSummaryDto {
   id: number;
-  requestedDate: string; // ISO date string
   requestType: AssetRequestType;
-  employeeName: string;
-  assetType: string;
-  notes?: string;
   status: AssetRequestStatus;
-  assignedAssetId?: number;
-  assignedAssetCode?: string;
+  requestedFor: string;
+  employeeId?: number;
+  employeeDisplayName?: string;
+  requestedDate: string;
+  physicalWorkplaceId?: number;
+  physicalWorkplaceName?: string;
+  lineCount: number;
+  completedLineCount: number;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface AssetRequestLineDto {
+  id: number;
+  assetTypeId: number;
+  assetTypeName: string;
+  sourceType: AssetRequestLineSourceType;
+  assetId?: number;
+  assetCode?: string;
+  assetName?: string;
+  assetTemplateId?: number;
+  assetTemplateName?: string;
+  status: AssetRequestLineStatus;
+  returnAction?: AssetReturnAction;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssetRequestDetailDto extends AssetRequestSummaryDto {
+  notes?: string;
   createdBy: string;
-  createdAt: string; // ISO date string
   modifiedBy?: string;
-  modifiedAt?: string; // ISO date string
-  completedAt?: string; // ISO date string
+  modifiedAt?: string;
+  lines: AssetRequestLineDto[];
+}
+
+export interface AssetRequestStatisticsDto {
+  activeRequests: number;
+  monthlyRequests: number;
+  inProgressRequests: number;
+}
+
+export interface CreateAssetRequestLineDto {
+  assetTypeId: number;
+  sourceType: AssetRequestLineSourceType;
+  assetId?: number;
+  assetTemplateId?: number;
+  returnAction?: AssetReturnAction;
+  notes?: string;
 }
 
 export interface CreateAssetRequestDto {
-  requestedDate: string; // ISO date string
   requestType: AssetRequestType;
-  employeeName: string;
-  assetType: string;
+  requestedFor: string;
+  employeeId?: number;
+  requestedDate: string;
+  physicalWorkplaceId?: number;
   notes?: string;
+  lines: CreateAssetRequestLineDto[];
 }
 
 export interface UpdateAssetRequestDto {
-  requestedDate?: string; // ISO date string
-  requestType?: AssetRequestType;
-  employeeName?: string;
-  assetType?: string;
+  requestedFor?: string;
+  employeeId?: number;
+  requestedDate?: string;
+  physicalWorkplaceId?: number;
   notes?: string;
-  status?: AssetRequestStatus;
-  assignedAssetId?: number;
+}
+
+export interface UpdateAssetRequestLineDto {
+  assetTypeId?: number;
+  sourceType?: AssetRequestLineSourceType;
+  assetId?: number;
+  assetTemplateId?: number;
+  status?: AssetRequestLineStatus;
+  returnAction?: AssetReturnAction;
+  notes?: string;
+}
+
+export interface AssetRequestFilters {
+  type?: AssetRequestType;
+  status?: AssetRequestStatus[];
+  dateFrom?: string;
+  dateTo?: string;
+  employeeId?: number;
+  q?: string;
+}
+
+export interface AssetRequestTransitionDto {
+  target: 'Approved' | 'InProgress' | 'Completed' | 'Cancelled';
 }
