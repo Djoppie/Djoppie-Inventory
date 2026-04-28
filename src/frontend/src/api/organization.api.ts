@@ -69,3 +69,20 @@ export const getOrganizationNodeChildren = async (
   return response.data;
 };
 
+/**
+ * Search employees for picker components.
+ * Returns the minimal shape used by the asset-request employee picker.
+ * Backed by the existing `/admin/employees/search` endpoint
+ * (see `employeesApi.search` in `admin.api.ts`).
+ */
+export const searchEmployees = async (
+  query: string
+): Promise<{ id: number; displayName: string; userPrincipalName: string }[]> => {
+  const response = await apiClient.get<
+    { id: number; displayName: string; userPrincipalName: string }[]
+  >('/admin/employees/search', {
+    params: { q: query, maxResults: 20 },
+  });
+  return response.data;
+};
+
