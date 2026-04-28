@@ -15,8 +15,8 @@ public class AssetRequestCompletionService : IAssetRequestCompletionService
         ApplicationDbContext context,
         ILogger<AssetRequestCompletionService> logger)
     {
-        _context = context;
-        _logger = logger;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<CompletionResult> TransitionAsync(

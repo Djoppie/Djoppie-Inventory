@@ -41,18 +41,25 @@ public class RequestsController : ControllerBase
         [FromQuery] int? employeeId,
         [FromQuery] string? q)
     {
-        var filter = new AssetRequestFilter
+        try
         {
-            Type = ParseType(type),
-            Statuses = status?.Select(ParseStatus).ToList(),
-            DateFrom = dateFrom,
-            DateTo = dateTo,
-            EmployeeId = employeeId,
-            SearchQuery = q
-        };
+            var filter = new AssetRequestFilter
+            {
+                Type = ParseType(type),
+                Statuses = status?.Select(ParseStatus).ToList(),
+                DateFrom = dateFrom,
+                DateTo = dateTo,
+                EmployeeId = employeeId,
+                SearchQuery = q
+            };
 
-        var requests = await _repository.QueryAsync(filter);
-        return Ok(requests.Select(MapToSummary));
+            var requests = await _repository.QueryAsync(filter);
+            return Ok(requests.Select(MapToSummary));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id:int}")]
@@ -65,41 +72,51 @@ public class RequestsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<AssetRequestDetailDto>> Create([FromBody] CreateAssetRequestDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.RequestedFor))
-            return BadRequest("RequestedFor is required.");
-
-        var request = new AssetRequest
+        try
         {
-            RequestType = ParseType(dto.RequestType) ?? AssetRequestType.Onboarding,
-            RequestedFor = dto.RequestedFor.Trim(),
-            EmployeeId = dto.EmployeeId,
-            RequestedDate = dto.RequestedDate,
-            PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
-            Notes = dto.Notes,
-            Status = AssetRequestStatus.Pending,
-            CreatedBy = CurrentUser,
-            CreatedAt = DateTime.UtcNow
-        };
+            if (string.IsNullOrWhiteSpace(dto.RequestedFor))
+                return BadRequest("RequestedFor is required.");
+            var requestType = ParseType(dto.RequestType);
+            if (requestType == null)
+                return BadRequest("RequestType is required and must be 'onboarding' or 'offboarding'.");
 
-        foreach (var lineDto in dto.Lines)
-        {
-            request.Lines.Add(new AssetRequestLine
+            var request = new AssetRequest
             {
-                AssetTypeId = lineDto.AssetTypeId,
-                SourceType = ParseSourceType(lineDto.SourceType),
-                AssetId = lineDto.AssetId,
-                AssetTemplateId = lineDto.AssetTemplateId,
-                ReturnAction = ParseReturnAction(lineDto.ReturnAction),
-                Notes = lineDto.Notes,
-                Status = AssetRequestLineStatus.Pending,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-        }
+                RequestType = requestType.Value,
+                RequestedFor = dto.RequestedFor.Trim(),
+                EmployeeId = dto.EmployeeId,
+                RequestedDate = dto.RequestedDate,
+                PhysicalWorkplaceId = dto.PhysicalWorkplaceId,
+                Notes = dto.Notes,
+                Status = AssetRequestStatus.Pending,
+                CreatedBy = CurrentUser,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        var created = await _repository.CreateAsync(request);
-        var refreshed = await _repository.GetByIdAsync(created.Id);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDetail(refreshed!));
+            foreach (var lineDto in dto.Lines)
+            {
+                request.Lines.Add(new AssetRequestLine
+                {
+                    AssetTypeId = lineDto.AssetTypeId,
+                    SourceType = ParseSourceType(lineDto.SourceType),
+                    AssetId = lineDto.AssetId,
+                    AssetTemplateId = lineDto.AssetTemplateId,
+                    ReturnAction = ParseReturnAction(lineDto.ReturnAction),
+                    Notes = lineDto.Notes,
+                    Status = AssetRequestLineStatus.Pending,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            var created = await _repository.CreateAsync(request);
+            var refreshed = await _repository.GetByIdAsync(created.Id);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, MapToDetail(refreshed!));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id:int}")]
@@ -107,6 +124,8 @@ public class RequestsController : ControllerBase
     {
         var request = await _repository.GetByIdAsync(id);
         if (request == null) return NotFound();
+        if (request.Status == AssetRequestStatus.Completed || request.Status == AssetRequestStatus.Cancelled)
+            return Conflict("Cannot edit a completed or cancelled request.");
 
         if (dto.RequestedFor != null) request.RequestedFor = dto.RequestedFor.Trim();
         if (dto.EmployeeId.HasValue) request.EmployeeId = dto.EmployeeId.Value;
@@ -139,53 +158,67 @@ public class RequestsController : ControllerBase
     [HttpPost("{id:int}/lines")]
     public async Task<ActionResult<AssetRequestLineDto>> AddLine(int id, [FromBody] CreateAssetRequestLineDto dto)
     {
-        var request = await _repository.GetByIdAsync(id);
-        if (request == null) return NotFound();
-        if (request.Status == AssetRequestStatus.Completed || request.Status == AssetRequestStatus.Cancelled)
-            return Conflict("Cannot add lines to a completed or cancelled request.");
-
-        var line = new AssetRequestLine
+        try
         {
-            AssetRequestId = id,
-            AssetTypeId = dto.AssetTypeId,
-            SourceType = ParseSourceType(dto.SourceType),
-            AssetId = dto.AssetId,
-            AssetTemplateId = dto.AssetTemplateId,
-            ReturnAction = ParseReturnAction(dto.ReturnAction),
-            Notes = dto.Notes,
-            Status = AssetRequestLineStatus.Pending,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            var request = await _repository.GetByIdAsync(id);
+            if (request == null) return NotFound();
+            if (request.Status == AssetRequestStatus.Completed || request.Status == AssetRequestStatus.Cancelled)
+                return Conflict("Cannot add lines to a completed or cancelled request.");
 
-        await _repository.AddLineAsync(line);
-        var refreshed = await _repository.GetByIdAsync(id);
-        var inserted = refreshed!.Lines.First(l => l.Id == line.Id);
-        return Ok(MapLine(inserted));
+            var line = new AssetRequestLine
+            {
+                AssetRequestId = id,
+                AssetTypeId = dto.AssetTypeId,
+                SourceType = ParseSourceType(dto.SourceType),
+                AssetId = dto.AssetId,
+                AssetTemplateId = dto.AssetTemplateId,
+                ReturnAction = ParseReturnAction(dto.ReturnAction),
+                Notes = dto.Notes,
+                Status = AssetRequestLineStatus.Pending,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _repository.AddLineAsync(line);
+            var refreshed = await _repository.GetByIdAsync(id);
+            var inserted = refreshed!.Lines.First(l => l.Id == line.Id);
+            return Ok(MapLine(inserted));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id:int}/lines/{lineId:int}")]
     public async Task<ActionResult<AssetRequestLineDto>> UpdateLine(int id, int lineId, [FromBody] UpdateAssetRequestLineDto dto)
     {
-        var request = await _repository.GetByIdAsync(id);
-        if (request == null) return NotFound();
-        var line = request.Lines.FirstOrDefault(l => l.Id == lineId);
-        if (line == null) return NotFound();
-        if (request.Status == AssetRequestStatus.Completed || request.Status == AssetRequestStatus.Cancelled)
-            return Conflict("Cannot edit lines on a completed or cancelled request.");
+        try
+        {
+            var request = await _repository.GetByIdAsync(id);
+            if (request == null) return NotFound();
+            var line = request.Lines.FirstOrDefault(l => l.Id == lineId);
+            if (line == null) return NotFound();
+            if (request.Status == AssetRequestStatus.Completed || request.Status == AssetRequestStatus.Cancelled)
+                return Conflict("Cannot edit lines on a completed or cancelled request.");
 
-        if (dto.AssetTypeId.HasValue) line.AssetTypeId = dto.AssetTypeId.Value;
-        if (dto.SourceType != null) line.SourceType = ParseSourceType(dto.SourceType);
-        if (dto.AssetId.HasValue) line.AssetId = dto.AssetId.Value;
-        if (dto.AssetTemplateId.HasValue) line.AssetTemplateId = dto.AssetTemplateId.Value;
-        if (dto.Status != null) line.Status = ParseLineStatus(dto.Status);
-        if (dto.ReturnAction != null) line.ReturnAction = ParseReturnAction(dto.ReturnAction);
-        if (dto.Notes != null) line.Notes = dto.Notes;
+            if (dto.AssetTypeId.HasValue) line.AssetTypeId = dto.AssetTypeId.Value;
+            if (dto.SourceType != null) line.SourceType = ParseSourceType(dto.SourceType);
+            if (dto.AssetId.HasValue) line.AssetId = dto.AssetId.Value;
+            if (dto.AssetTemplateId.HasValue) line.AssetTemplateId = dto.AssetTemplateId.Value;
+            if (dto.Status != null) line.Status = ParseLineStatus(dto.Status);
+            if (dto.ReturnAction != null) line.ReturnAction = ParseReturnAction(dto.ReturnAction);
+            if (dto.Notes != null) line.Notes = dto.Notes;
 
-        await _repository.UpdateLineAsync(line);
-        var refreshed = await _repository.GetByIdAsync(id);
-        var updated = refreshed!.Lines.First(l => l.Id == lineId);
-        return Ok(MapLine(updated));
+            await _repository.UpdateLineAsync(line);
+            var refreshed = await _repository.GetByIdAsync(id);
+            var updated = refreshed!.Lines.First(l => l.Id == lineId);
+            return Ok(MapLine(updated));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id:int}/lines/{lineId:int}")]
@@ -214,7 +247,7 @@ public class RequestsController : ControllerBase
             var refreshed = await _repository.GetByIdAsync(id);
             return Ok(MapToDetail(refreshed!));
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
         {
             return BadRequest(ex.Message);
         }
@@ -314,46 +347,38 @@ public class RequestsController : ControllerBase
 
     private static AssetRequestType? ParseType(string? value) => value?.ToLower() switch
     {
+        null or "" => null,
         "onboarding" => AssetRequestType.Onboarding,
         "offboarding" => AssetRequestType.Offboarding,
-        null or "" => null,
-        _ => null
+        _ => throw new ArgumentException($"Unknown request type '{value}'")
     };
 
-    private static AssetRequestStatus ParseStatus(string value) => value switch
+    private static AssetRequestStatus ParseStatus(string value)
     {
-        "Pending" => AssetRequestStatus.Pending,
-        "Approved" => AssetRequestStatus.Approved,
-        "InProgress" => AssetRequestStatus.InProgress,
-        "Completed" => AssetRequestStatus.Completed,
-        "Cancelled" => AssetRequestStatus.Cancelled,
-        "Rejected" => AssetRequestStatus.Rejected,
-        _ => throw new ArgumentException($"Unknown status '{value}'")
-    };
+        if (Enum.TryParse<AssetRequestStatus>(value, ignoreCase: true, out var result))
+            return result;
+        throw new ArgumentException($"Unknown status '{value}'");
+    }
 
-    private static AssetLineSourceType ParseSourceType(string value) => value switch
+    private static AssetLineSourceType ParseSourceType(string value)
     {
-        "ToBeAssigned" => AssetLineSourceType.ToBeAssigned,
-        "ExistingInventory" => AssetLineSourceType.ExistingInventory,
-        "NewFromTemplate" => AssetLineSourceType.NewFromTemplate,
-        _ => AssetLineSourceType.ToBeAssigned
-    };
+        if (Enum.TryParse<AssetLineSourceType>(value, ignoreCase: true, out var result))
+            return result;
+        return AssetLineSourceType.ToBeAssigned;
+    }
 
-    private static AssetRequestLineStatus ParseLineStatus(string value) => value switch
+    private static AssetRequestLineStatus ParseLineStatus(string value)
     {
-        "Pending" => AssetRequestLineStatus.Pending,
-        "Reserved" => AssetRequestLineStatus.Reserved,
-        "Completed" => AssetRequestLineStatus.Completed,
-        "Skipped" => AssetRequestLineStatus.Skipped,
-        _ => throw new ArgumentException($"Unknown line status '{value}'")
-    };
+        if (Enum.TryParse<AssetRequestLineStatus>(value, ignoreCase: true, out var result))
+            return result;
+        throw new ArgumentException($"Unknown line status '{value}'");
+    }
 
-    private static AssetReturnAction? ParseReturnAction(string? value) => value switch
+    private static AssetReturnAction? ParseReturnAction(string? value)
     {
-        null or "" => null,
-        "ReturnToStock" => AssetReturnAction.ReturnToStock,
-        "Decommission" => AssetReturnAction.Decommission,
-        "Reassign" => AssetReturnAction.Reassign,
-        _ => throw new ArgumentException($"Unknown return action '{value}'")
-    };
+        if (string.IsNullOrEmpty(value)) return null;
+        if (Enum.TryParse<AssetReturnAction>(value, ignoreCase: true, out var result))
+            return result;
+        throw new ArgumentException($"Unknown return action '{value}'");
+    }
 }
