@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
         // Rollout Feature Redesign Services
         services.AddScoped<IOrganizationSyncService, OrganizationSyncService>();
         services.AddScoped<IAssetMovementService, AssetMovementService>();
+        services.AddScoped<IAssetRequestCompletionService, AssetRequestCompletionService>();
         services.AddScoped<IWorkplaceAssetAssignmentService, WorkplaceAssetAssignmentService>();
         services.AddScoped<RolloutMovementClassifierService>();
 
