@@ -120,4 +120,133 @@ public class AssetRequestCompletionServiceTests
         Assert.All(reloadedRequest.Lines, l => Assert.Equal(AssetRequestLineStatus.Completed, l.Status));
         Assert.Single(result.AffectedAssetIds);
     }
+
+    [Theory]
+    [InlineData(AssetReturnAction.ReturnToStock, AssetStatus.Stock)]
+    [InlineData(AssetReturnAction.Decommission, AssetStatus.UitDienst)]
+    [InlineData(AssetReturnAction.Reassign, AssetStatus.Stock)]
+    public async Task Transition_To_Completed_OffboardsAsset(AssetReturnAction action, AssetStatus expectedStatus)
+    {
+        await using var ctx = NewContext();
+        var type = SeedAssetType(ctx);
+        var asset = SeedAsset(ctx, type, AssetStatus.InGebruik);
+        asset.Owner = "Jan Janssen";
+        asset.EmployeeId = SeedEmployee(ctx).Id;
+        await ctx.SaveChangesAsync();
+
+        var request = new AssetRequest
+        {
+            RequestType = AssetRequestType.Offboarding,
+            Status = AssetRequestStatus.InProgress,
+            RequestedFor = "Jan Janssen",
+            RequestedDate = DateTime.UtcNow.Date,
+            CreatedBy = "tester",
+            CreatedAt = DateTime.UtcNow,
+            Lines = new List<AssetRequestLine>
+            {
+                new()
+                {
+                    AssetTypeId = type.Id,
+                    SourceType = AssetLineSourceType.ExistingInventory,
+                    AssetId = asset.Id,
+                    ReturnAction = action,
+                    Status = AssetRequestLineStatus.Reserved,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            }
+        };
+        ctx.AssetRequests.Add(request);
+        await ctx.SaveChangesAsync();
+
+        var service = new AssetRequestCompletionService(ctx, NullLogger<AssetRequestCompletionService>.Instance);
+        await service.TransitionAsync(request.Id, AssetRequestStatus.Completed, "tester", null);
+
+        var reloaded = await ctx.Assets.Include(a => a.Events).FirstAsync(a => a.Id == asset.Id);
+        Assert.Equal(expectedStatus, reloaded.Status);
+        Assert.Null(reloaded.Owner);
+        Assert.Null(reloaded.EmployeeId);
+        Assert.Single(reloaded.Events);
+        Assert.Equal(AssetEventType.DeviceOffboarded, reloaded.Events.Single().EventType);
+    }
+
+    [Fact]
+    public async Task Transition_To_Completed_Throws_WhenOffboardingHasNoReturnAction()
+    {
+        await using var ctx = NewContext();
+        var type = SeedAssetType(ctx);
+        var asset = SeedAsset(ctx, type, AssetStatus.InGebruik);
+
+        var request = new AssetRequest
+        {
+            RequestType = AssetRequestType.Offboarding,
+            Status = AssetRequestStatus.InProgress,
+            RequestedFor = "Jan",
+            RequestedDate = DateTime.UtcNow.Date,
+            CreatedBy = "tester",
+            CreatedAt = DateTime.UtcNow,
+            Lines = new List<AssetRequestLine>
+            {
+                new()
+                {
+                    AssetTypeId = type.Id,
+                    SourceType = AssetLineSourceType.ExistingInventory,
+                    AssetId = asset.Id,
+                    ReturnAction = null,
+                    Status = AssetRequestLineStatus.Pending,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            }
+        };
+        ctx.AssetRequests.Add(request);
+        await ctx.SaveChangesAsync();
+
+        var service = new AssetRequestCompletionService(ctx, NullLogger<AssetRequestCompletionService>.Instance);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.TransitionAsync(request.Id, AssetRequestStatus.Completed, "tester", null));
+
+        var reloadedAsset = await ctx.Assets.FirstAsync(a => a.Id == asset.Id);
+        Assert.Equal(AssetStatus.InGebruik, reloadedAsset.Status);
+    }
+
+    [Fact]
+    public async Task Transition_Skipped_Lines_AreNotMutated()
+    {
+        await using var ctx = NewContext();
+        var type = SeedAssetType(ctx);
+        var asset = SeedAsset(ctx, type, AssetStatus.Nieuw);
+        var employee = SeedEmployee(ctx);
+
+        var request = new AssetRequest
+        {
+            RequestType = AssetRequestType.Onboarding,
+            Status = AssetRequestStatus.InProgress,
+            RequestedFor = employee.UserPrincipalName,
+            EmployeeId = employee.Id,
+            RequestedDate = DateTime.UtcNow.Date,
+            CreatedBy = "tester",
+            CreatedAt = DateTime.UtcNow,
+            Lines = new List<AssetRequestLine>
+            {
+                new()
+                {
+                    AssetTypeId = type.Id,
+                    SourceType = AssetLineSourceType.ExistingInventory,
+                    AssetId = asset.Id,
+                    Status = AssetRequestLineStatus.Skipped,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            }
+        };
+        ctx.AssetRequests.Add(request);
+        await ctx.SaveChangesAsync();
+
+        var service = new AssetRequestCompletionService(ctx, NullLogger<AssetRequestCompletionService>.Instance);
+        await service.TransitionAsync(request.Id, AssetRequestStatus.Completed, "tester", null);
+
+        var reloaded = await ctx.Assets.FirstAsync(a => a.Id == asset.Id);
+        Assert.Equal(AssetStatus.Nieuw, reloaded.Status);
+    }
 }
