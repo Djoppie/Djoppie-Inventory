@@ -1,8 +1,10 @@
-import { Box, Button, Stack, Typography, Divider, Autocomplete, TextField } from '@mui/material';
+import { Box, Button, Stack, Typography, Divider } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { AssetLineRow, type EditableLine } from './AssetLineRow';
+import { AssetPicker } from './pickers/AssetPicker';
+import { TemplatePicker } from './pickers/TemplatePicker';
 import type { AssetRequestType } from '../../../types/assetRequest.types';
 import { getAssets } from '../../../api/assets.api';
 import { getTemplates } from '../../../api/templates.api';
@@ -84,40 +86,41 @@ export function RequestLinesEditor({ lines, requestType, onLinesChange, readOnly
 
       <Stack spacing={2} divider={<Divider flexItem />}>
         {lines.map((line, idx) => {
+          // Filter the asset/template options to the selected line type when present.
+          // This keeps the dropdown short and the choice obviously relevant.
+          const filterTypeId = line.assetTypeId || undefined;
+
           const assetPicker = (
-            <Autocomplete
-              size="small"
+            <AssetPicker
               options={assets}
-              getOptionLabel={(a) => `${a.assetCode} — ${a.assetName ?? ''}`}
               value={assets.find((a) => a.id === line.assetId) ?? null}
-              onChange={(_, selected) =>
+              onChange={(selected) =>
                 updateLine(idx, {
                   ...line,
                   assetId: selected?.id,
                   sourceType: 'ExistingInventory',
                 })
               }
-              renderInput={(params) => <TextField {...params} label={t('requests.lines.asset')} />}
+              label={t('requests.lines.asset')}
               disabled={readOnly}
+              filterByAssetTypeId={filterTypeId}
             />
           );
+
           const templatePicker = (
-            <Autocomplete
-              size="small"
+            <TemplatePicker
               options={templates}
-              getOptionLabel={(tpl) => tpl.templateName}
               value={templates.find((tpl) => tpl.id === line.assetTemplateId) ?? null}
-              onChange={(_, selected) =>
+              onChange={(selected) =>
                 updateLine(idx, {
                   ...line,
                   assetTemplateId: selected?.id,
                   sourceType: 'NewFromTemplate',
                 })
               }
-              renderInput={(params) => (
-                <TextField {...params} label={t('requests.lines.template')} />
-              )}
+              label={t('requests.lines.template')}
               disabled={readOnly}
+              filterByAssetTypeId={filterTypeId}
             />
           );
 

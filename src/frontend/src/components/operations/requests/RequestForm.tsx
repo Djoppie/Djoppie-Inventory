@@ -1,7 +1,8 @@
-import { Stack, TextField, Autocomplete } from '@mui/material';
+import { Stack, TextField } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { EmployeePickerWithFallback } from './EmployeePickerWithFallback';
+import { WorkplacePicker } from './pickers/WorkplacePicker';
 import { physicalWorkplacesApi } from '../../../api/physicalWorkplaces.api';
 import { searchEmployees } from '../../../api/organization.api';
 
@@ -48,16 +49,13 @@ export function RequestForm({ value, onChange, readOnly }: Props) {
         required
       />
 
-      <Autocomplete
+      <WorkplacePicker
         options={workplaces}
-        getOptionLabel={(w) => `${w.code} — ${w.name}`}
         value={workplaces.find((w) => w.id === value.physicalWorkplaceId) ?? null}
-        onChange={(_, selected) =>
+        onChange={(selected) =>
           onChange({ ...value, physicalWorkplaceId: selected?.id })
         }
-        renderInput={(params) => (
-          <TextField {...params} label={t('requests.form.physicalWorkplace')} />
-        )}
+        label={t('requests.form.physicalWorkplace')}
         disabled={readOnly}
       />
 

@@ -75,14 +75,29 @@ export const getOrganizationNodeChildren = async (
  * Backed by the existing `/admin/employees/search` endpoint
  * (see `employeesApi.search` in `admin.api.ts`).
  */
+export interface EmployeeSearchResult {
+  id: number;
+  displayName: string;
+  userPrincipalName: string;
+  email?: string;
+  jobTitle?: string;
+  department?: string;
+  serviceName?: string;
+}
+
 export const searchEmployees = async (
   query: string
-): Promise<{ id: number; displayName: string; userPrincipalName: string }[]> => {
+): Promise<EmployeeSearchResult[]> => {
   const response = await apiClient.get<
-    { id: number; displayName: string; userPrincipalName: string }[]
+    Array<EmployeeSearchResult & { service?: { name?: string } | null }>
   >('/admin/employees/search', {
     params: { q: query, maxResults: 20 },
   });
-  return response.data;
+  // Backend returns full EmployeeDto with a nested `service` object — flatten the
+  // service.name into a top-level `serviceName` so callers don't need to dig.
+  return response.data.map((e) => ({
+    ...e,
+    serviceName: e.serviceName ?? e.service?.name ?? undefined,
+  }));
 };
 
