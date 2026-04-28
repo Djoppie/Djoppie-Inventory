@@ -429,41 +429,63 @@ export interface OptimizationSummary {
 
 // ===== LEASE REPORT TYPES =====
 
-export interface LeaseReportItem {
-  id: number;
-  contractNumber: string;
-  vendorName: string;
-  startDate: string;
-  endDate: string;
-  monthlyAmount?: number;
-  totalValue?: number;
-  assetCount: number;
-  assets: LeaseAssetItem[];
-  status: 'active' | 'expiring' | 'expired';
-  daysUntilExpiration?: number;
-  notes?: string;
-}
-
-export interface LeaseAssetItem {
+/** Per-asset row in the leasing report. Each row is one asset linked to a lease contract. */
+export interface LeaseReportRow {
   assetId: number;
   assetCode: string;
-  assetName?: string;
   serialNumber?: string;
+  description?: string;
+  brand?: string;
+  model?: string;
+  assetTypeName?: string;
+  owner?: string;
+  assetStatus: string;
+
+  leaseContractId: number;
+  leaseScheduleNumber: string;
+  vendorName: string;
+  customer?: string;
+  contractStatus?: string;
+  plannedLeaseEnd: string; // ISO date
+  leaseStatus: 'None' | 'InLease' | 'Returned' | 'Cancelled';
+
+  daysRemaining: number;
+  /** Computed urgency bucket. */
+  urgencyBucket: 'Active' | 'Yellow' | 'Orange' | 'Red' | 'Returned' | 'Cancelled' | 'None';
 }
 
 export interface LeaseReportSummary {
   totalContracts: number;
-  activeContracts: number;
-  expiringContracts: number;
-  expiredContracts: number;
-  totalMonthlyAmount: number;
-  contractsByVendor: Record<string, number>;
+  activeAssets: number;
+  returnedAssets: number;
+  yellowAssets: number;
+  orangeAssets: number;
+  redAssets: number;
+  overdueAssets: number;
+  assetsByVendor: Record<string, number>;
 }
 
 export interface LeaseReportFilters {
-  status?: 'active' | 'expiring' | 'expired' | 'all';
-  vendorId?: number;
-  expiringWithinDays?: number;
+  urgency?: 'Active' | 'Yellow' | 'Orange' | 'Red' | 'Returned' | 'Cancelled' | 'all';
+  leaseStatus?: 'InLease' | 'Returned' | 'Cancelled';
+  leaseContractId?: number;
+  search?: string;
+}
+
+export interface LeaseImportUnmatched {
+  serialNumber: string;
+  description?: string;
+  leaseScheduleNumber?: string;
+  reason?: string;
+}
+
+export interface LeaseImportResult {
+  contractsCreated: number;
+  contractsUpdated: number;
+  assetsLinked: number;
+  assetsUpdated: number;
+  unmatchedSerials: LeaseImportUnmatched[];
+  errors: string[];
 }
 
 // ===== COMPREHENSIVE ROLLOUT REPORT TYPES =====

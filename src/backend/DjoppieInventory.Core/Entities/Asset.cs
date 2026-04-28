@@ -191,6 +191,22 @@ public class Asset
     /// </summary>
     public int? PhysicalWorkplaceId { get; set; }
 
+    // ===== Leasing =====
+
+    /// <summary>
+    /// Foreign key to the lease contract (lease schedule) this asset belongs to (optional).
+    /// Null for owned assets that aren't leased.
+    /// </summary>
+    public int? LeaseContractId { get; set; }
+
+    /// <summary>
+    /// Per-asset status within the lease contract.
+    /// Sourced from the supplier CSV "Contract status" column on import.
+    /// Only assets with <see cref="Core.Entities.LeaseStatus.InLease"/> are
+    /// counted toward monthly billing.
+    /// </summary>
+    public LeaseStatus LeaseStatus { get; set; } = LeaseStatus.None;
+
     // ===== Navigation Properties =====
 
     /// <summary>
@@ -236,6 +252,12 @@ public class Asset
     /// </summary>
     [JsonIgnore]
     public PhysicalWorkplace? PhysicalWorkplace { get; set; }
+
+    /// <summary>
+    /// The lease contract this asset is linked to (optional).
+    /// </summary>
+    [JsonIgnore]
+    public LeaseContract? LeaseContract { get; set; }
 
     /// <summary>
     /// Asset movements recorded for this asset

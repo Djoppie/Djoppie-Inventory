@@ -22,9 +22,10 @@ import type {
   LicenseUser,
   LicenseReportFilters,
   LicenseOptimization,
-  LeaseReportItem,
+  LeaseReportRow,
   LeaseReportSummary,
   LeaseReportFilters,
+  LeaseImportResult,
   RolloutSessionOverview,
   RolloutDayChecklist,
   UnscheduledAsset,
@@ -481,30 +482,29 @@ export const getLicenseOptimization = async (
 
 // ===== LEASE REPORT API CALLS =====
 
+const buildLeaseParams = (filters?: LeaseReportFilters): Record<string, string | number> => {
+  const params: Record<string, string | number> = {};
+  if (filters?.urgency && filters.urgency !== 'all') params.urgency = filters.urgency;
+  if (filters?.leaseStatus) params.leaseStatus = filters.leaseStatus;
+  if (filters?.leaseContractId) params.leaseContractId = filters.leaseContractId;
+  if (filters?.search) params.search = filters.search;
+  return params;
+};
+
 /**
- * Get lease contracts for report
+ * Get per-asset lease report rows.
  */
 export const getLeaseReport = async (
   filters?: LeaseReportFilters
-): Promise<LeaseReportItem[]> => {
-  const params: Record<string, string | number> = {};
-
-  if (filters?.status && filters.status !== 'all') {
-    params.status = filters.status;
-  }
-  if (filters?.vendorId) {
-    params.vendorId = filters.vendorId;
-  }
-  if (filters?.expiringWithinDays) {
-    params.expiringWithinDays = filters.expiringWithinDays;
-  }
-
-  const response = await apiClient.get<LeaseReportItem[]>('/reports/leases', { params });
+): Promise<LeaseReportRow[]> => {
+  const response = await apiClient.get<LeaseReportRow[]>('/reports/leases', {
+    params: buildLeaseParams(filters),
+  });
   return response.data;
 };
 
 /**
- * Get lease report summary
+ * Get lease report KPI summary.
  */
 export const getLeaseReportSummary = async (): Promise<LeaseReportSummary> => {
   const response = await apiClient.get<LeaseReportSummary>('/reports/leases/summary');
@@ -512,23 +512,26 @@ export const getLeaseReportSummary = async (): Promise<LeaseReportSummary> => {
 };
 
 /**
- * Export lease report as Excel
+ * Export lease report as CSV.
  */
 export const exportLeaseReport = async (
   filters?: LeaseReportFilters
 ): Promise<Blob> => {
-  const params: Record<string, string | number> = {};
-
-  if (filters?.status && filters.status !== 'all') {
-    params.status = filters.status;
-  }
-  if (filters?.expiringWithinDays) {
-    params.expiringWithinDays = filters.expiringWithinDays;
-  }
-
   const response = await apiClient.get('/reports/leases/export', {
-    params,
+    params: buildLeaseParams(filters),
     responseType: 'blob',
+  });
+  return response.data;
+};
+
+/**
+ * Import a supplier lease CSV.
+ */
+export const importLeaseCsv = async (file: File): Promise<LeaseImportResult> => {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await apiClient.post<LeaseImportResult>('/admin/leases/import', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
 };

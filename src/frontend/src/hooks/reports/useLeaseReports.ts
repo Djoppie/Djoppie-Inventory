@@ -1,44 +1,39 @@
 /**
  * Lease Report Hooks
  *
- * React Query hooks for lease contract reporting.
+ * React Query hooks for the per-asset leasing report.
  */
 
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getLeaseReport,
   getLeaseReportSummary,
   exportLeaseReport,
+  importLeaseCsv,
   downloadBlob,
 } from '../../api/reports.api';
-import type { LeaseReportFilters } from '../../types/report.types';
+import type { LeaseReportFilters, LeaseReportRow } from '../../types/report.types';
 import { reportKeys } from './keys';
 
-/**
- * Fetch lease contracts for report
- */
+/** Per-asset lease rows. */
 export const useLeaseReport = (filters?: LeaseReportFilters) => {
   return useQuery({
     queryKey: reportKeys.leasesList(filters),
     queryFn: () => getLeaseReport(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 };
 
-/**
- * Fetch lease report summary
- */
+/** KPI summary. */
 export const useLeaseReportSummary = () => {
   return useQuery({
     queryKey: reportKeys.leasesSummary(),
     queryFn: getLeaseReportSummary,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 };
 
-/**
- * Export lease report to Excel
- */
+/** CSV export. */
 export const useExportLeaseReport = () => {
   return useMutation({
     mutationFn: async (filters?: LeaseReportFilters) => {
@@ -50,39 +45,48 @@ export const useExportLeaseReport = () => {
   });
 };
 
-/**
- * Get status color for lease contract
- */
-export const getLeaseStatusColor = (
-  status: 'active' | 'expiring' | 'expired'
-): 'success' | 'warning' | 'error' => {
-  switch (status) {
-    case 'active':
-      return 'success';
-    case 'expiring':
-      return 'warning';
-    case 'expired':
-      return 'error';
-  }
+/** CSV import — invalidates lease queries on success. */
+export const useImportLeaseCsv = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => importLeaseCsv(file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: reportKeys.leasesAll() });
+    },
+  });
 };
 
-/**
- * Get status label for lease contract
- */
-export const getLeaseStatusLabel = (
-  status: 'active' | 'expiring' | 'expired'
-): string => {
-  const labels: Record<string, string> = {
-    active: 'Actief',
-    expiring: 'Bijna Verlopen',
-    expired: 'Verlopen',
-  };
-  return labels[status];
+/** Color tokens for urgency buckets. */
+export const URGENCY_COLORS: Record<LeaseReportRow['urgencyBucket'], string> = {
+  Active: '#4CAF50',
+  Yellow: '#FBC02D',
+  Orange: '#FB8C00',
+  Red: '#E53935',
+  Returned: '#9E9E9E',
+  Cancelled: '#9E9E9E',
+  None: '#BDBDBD',
 };
 
-/**
- * Format currency for display
- */
+/** Localized label for urgency buckets. */
+export const URGENCY_LABELS: Record<LeaseReportRow['urgencyBucket'], string> = {
+  Active: 'Actief',
+  Yellow: '< 3 maanden',
+  Orange: '< 6 weken',
+  Red: '< 3 weken / verlopen',
+  Returned: 'Teruggestuurd',
+  Cancelled: 'Geannuleerd',
+  None: '—',
+};
+
+/** Localized label for per-asset lease status. */
+export const LEASE_STATUS_LABELS: Record<LeaseReportRow['leaseStatus'], string> = {
+  None: '—',
+  InLease: 'In lease',
+  Returned: 'Teruggestuurd',
+  Cancelled: 'Geannuleerd',
+};
+
+/** Format euro currency. */
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('nl-NL', {
     style: 'currency',

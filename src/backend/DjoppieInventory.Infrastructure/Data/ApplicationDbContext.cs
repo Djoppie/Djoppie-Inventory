@@ -39,6 +39,9 @@ public class ApplicationDbContext : DbContext
     // Atomic asset-code generation (per-prefix counter)
     public DbSet<AssetCodeCounter> AssetCodeCounters { get; set; }
 
+    // Leasing
+    public DbSet<LeaseContract> LeaseContracts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -117,6 +120,14 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.PhysicalWorkplace)
                 .WithMany(pw => pw.FixedAssets)
                 .HasForeignKey(e => e.PhysicalWorkplaceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Lease contract FK
+            entity.Property(e => e.LeaseStatus).HasConversion<int>();
+            entity.HasIndex(e => e.LeaseContractId);
+            entity.HasOne(e => e.LeaseContract)
+                .WithMany(lc => lc.Assets)
+                .HasForeignKey(e => e.LeaseContractId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -290,9 +301,21 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade); // Delete events when asset deleted
         });
 
-        // NOTE: LeaseContract table config removed (entity deleted as dead code).
-        // The LeaseContracts table remains in the database via existing migrations.
-        // A future migration should drop the table when ready.
+        // LeaseContract configuration (lease schedule = supplier contract grouping).
+        // The legacy 1:1 LeaseContracts table is dropped and recreated by the
+        // AddLeaseContractAndAssetLeaseFields migration; the new schema is 1:N
+        // with the FK on Asset.LeaseContractId.
+        modelBuilder.Entity<LeaseContract>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.LeaseScheduleNumber).IsUnique();
+            entity.HasIndex(e => e.PlannedLeaseEnd);
+            entity.Property(e => e.LeaseScheduleNumber).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.VendorName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Customer).HasMaxLength(200);
+            entity.Property(e => e.ContractStatus).HasMaxLength(50);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+        });
 
         // RolloutSession configuration
         modelBuilder.Entity<RolloutSession>(entity =>

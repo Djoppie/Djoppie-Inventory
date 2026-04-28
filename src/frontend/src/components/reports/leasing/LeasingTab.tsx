@@ -1,12 +1,14 @@
 /**
- * LeasingTab - Lease Contracts Report
+ * LeasingTab — per-asset leasing overview.
  *
- * Displays lease contract overview with:
- * - Contract status summary (active, expiring, expired)
- * - Cost breakdown
- * - Expiration alerts
- * - Contract details with linked assets
- * - Export functionality
+ * One row per asset (not per contract), with computed return-deadline urgency:
+ *   ≥ 90d remaining → Active (green)
+ *   90–45d         → Yellow (3-month warning)
+ *   45–21d         → Orange (1.5-month warning)
+ *   < 21d / overdue → Red (3-week warning / costs accruing)
+ *
+ * Sourced from supplier CSV import; PlannedLeaseEnd from the supplier is the
+ * single source of truth for the deadline.
  */
 
 import { useState, useMemo } from 'react';
@@ -18,99 +20,179 @@ import {
   InputAdornment,
   Alert,
   useTheme,
-  Grid
+  Grid,
+  Button,
+  Chip,
+  alpha,
 } from '@mui/material';
 import { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import WarningIcon from '@mui/icons-material/Warning';
-import ErrorIcon from '@mui/icons-material/Error';
-import EuroIcon from '@mui/icons-material/Euro';
-import DevicesIcon from '@mui/icons-material/Devices';
-import BusinessIcon from '@mui/icons-material/Business';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 
 import {
   useLeaseReport,
   useLeaseReportSummary,
   useExportLeaseReport,
-  formatCurrency,
+  URGENCY_COLORS,
+  URGENCY_LABELS,
+  LEASE_STATUS_LABELS,
 } from '../../../hooks/reports';
 import { getNeumorph, getNeumorphColors } from '../../../utils/neumorphicStyles';
 import NeumorphicDataGrid from '../../admin/NeumorphicDataGrid';
 import StatisticsCard from '../../common/StatisticsCard';
 import LeasingExpiryTimeline from './LeasingExpiryTimeline';
-import type { LeaseReportFilters } from '../../../types/report.types';
+import LeaseImportDialog from './LeaseImportDialog';
+import type { LeaseReportFilters, LeaseReportRow } from '../../../types/report.types';
 
-// Statistics card configuration with color-coded urgency
-const STAT_CARDS = [
-  { key: 'total', label: 'Totaal Contracten', icon: DescriptionIcon, color: '#F57C00' },
-  { key: 'active', label: 'Actief', icon: CheckCircleIcon, color: '#4CAF50' },
-  { key: 'expiring', label: 'Bijna Verlopen', icon: WarningIcon, color: '#FFC107' },
+type UrgencyKey = NonNullable<LeaseReportFilters['urgency']>;
+type UrgencyBucketKey = Exclude<UrgencyKey, 'all'>;
+
+const URGENCY_KPI_CARDS: Array<{
+  key: UrgencyBucketKey;
+  label: string;
+  icon: typeof WarningIcon;
+  summaryKey: 'redAssets' | 'orangeAssets' | 'yellowAssets';
+}> = [
+  { key: 'Red', label: '< 3 weken / verlopen', icon: EventBusyIcon, summaryKey: 'redAssets' },
+  { key: 'Orange', label: '< 6 weken', icon: WarningIcon, summaryKey: 'orangeAssets' },
+  { key: 'Yellow', label: '< 3 maanden', icon: HourglassBottomIcon, summaryKey: 'yellowAssets' },
 ];
-
-// Status config for chips
-const STATUS_CONFIG = {
-  active: { color: '#4CAF50', icon: CheckCircleIcon, label: 'Actief' },
-  expiring: { color: '#FF9800', icon: WarningIcon, label: 'Bijna Verlopen' },
-  expired: { color: '#F44336', icon: ErrorIcon, label: 'Verlopen' },
-};
 
 const LeasingTab = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-
   const { bgBase } = getNeumorphColors(isDark);
 
-  // Filters state
   const [filters, setFilters] = useState<LeaseReportFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
 
-  // Queries
-  const { data: items = [], isLoading, error } = useLeaseReport(filters);
+  const { data: rows = [], isLoading, error } = useLeaseReport(filters);
   const { data: summary } = useLeaseReportSummary();
   const exportMutation = useExportLeaseReport();
 
-  // Filter by search
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) return items;
-    const query = searchQuery.toLowerCase();
-    return items.filter(item =>
-      item.contractNumber?.toLowerCase().includes(query) ||
-      item.vendorName?.toLowerCase().includes(query) ||
-      item.notes?.toLowerCase().includes(query)
-    );
-  }, [items, searchQuery]);
+  const filteredRows = useMemo(() => {
+    const filtered = !searchQuery
+      ? rows
+      : rows.filter(r => {
+          const q = searchQuery.toLowerCase();
+          return (
+            r.serialNumber?.toLowerCase().includes(q) ||
+            r.assetCode.toLowerCase().includes(q) ||
+            r.leaseScheduleNumber.toLowerCase().includes(q) ||
+            r.vendorName.toLowerCase().includes(q) ||
+            r.owner?.toLowerCase().includes(q) ||
+            r.description?.toLowerCase().includes(q)
+          );
+        });
+    // NeumorphicDataGrid requires an `id` field; assetId is unique per row.
+    return filtered.map(r => ({ ...r, id: r.assetId }));
+  }, [rows, searchQuery]);
 
-  // Status filter handler
-  const handleStatusFilter = (status: LeaseReportFilters['status']) => {
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const handleUrgencyFilter = (urgency: UrgencyKey) => {
     setFilters(prev => ({
       ...prev,
-      status: prev.status === status ? 'all' : status,
+      urgency: prev.urgency === urgency ? undefined : urgency,
     }));
   };
 
-  // Export
-  const handleExport = () => {
-    exportMutation.mutate(filters);
-  };
-
-  // Format date helper
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-NL', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  // Column definitions
-  const columns: GridColDef[] = useMemo(() => [
+  const columns: GridColDef<LeaseReportRow>[] = useMemo(() => [
     {
-      field: 'contractNumber',
-      headerName: 'Contract Nr.',
-      width: 160,
-      renderCell: (params: GridRenderCellParams) => (
+      field: 'urgencyBucket',
+      headerName: 'Status',
+      width: 145,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => {
+        const color = URGENCY_COLORS[params.row.urgencyBucket];
+        return (
+          <Chip
+            label={URGENCY_LABELS[params.row.urgencyBucket]}
+            size="small"
+            sx={{
+              bgcolor: alpha(color, 0.15),
+              color,
+              fontWeight: 700,
+              fontSize: '0.7rem',
+              border: `1px solid ${alpha(color, 0.4)}`,
+            }}
+          />
+        );
+      },
+    },
+    {
+      field: 'plannedLeaseEnd',
+      headerName: 'Einddatum',
+      width: 130,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => {
+        const color = URGENCY_COLORS[params.row.urgencyBucket];
+        const days = params.row.daysRemaining;
+        const remaining =
+          params.row.leaseStatus !== 'InLease'
+            ? '—'
+            : days < 0
+              ? `${Math.abs(days)}d te laat`
+              : `${days}d resterend`;
+        return (
+          <Box>
+            <Typography variant="body2" fontWeight={600}>
+              {formatDate(params.row.plannedLeaseEnd)}
+            </Typography>
+            <Typography variant="caption" sx={{ color, fontWeight: 600 }}>
+              {remaining}
+            </Typography>
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'serialNumber',
+      headerName: 'Serial',
+      width: 140,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => (
+        <Typography variant="body2" fontFamily="monospace" fontWeight={500}>
+          {params.value || '—'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'assetCode',
+      headerName: 'Asset code',
+      width: 130,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => (
+        <Typography variant="body2" fontFamily="monospace" sx={{ color: '#FF7700', fontWeight: 600 }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'description',
+      headerName: 'Toestel',
+      width: 200,
+      flex: 1,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => (
+        <Typography variant="body2">{params.value || '—'}</Typography>
+      ),
+    },
+    {
+      field: 'owner',
+      headerName: 'Gebruiker',
+      width: 180,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => (
+        <Typography variant="body2">{params.value || '—'}</Typography>
+      ),
+    },
+    {
+      field: 'leaseScheduleNumber',
+      headerName: 'Lease schedule',
+      width: 130,
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => (
         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#F57C00', fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}>
           <DescriptionIcon sx={{ fontSize: 14 }} />
           {params.value}
@@ -121,187 +203,74 @@ const LeasingTab = () => {
       field: 'vendorName',
       headerName: 'Leverancier',
       width: 180,
-      flex: 1,
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant="body2" fontWeight={500}>
-          {params.value}
-        </Typography>
-      ),
     },
     {
-      field: 'startDate',
-      headerName: 'Start',
-      width: 110,
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant="body2">
-          {formatDate(params.value)}
-        </Typography>
-      ),
-    },
-    {
-      field: 'endDate',
-      headerName: 'Einde',
-      width: 110,
-      renderCell: (params: GridRenderCellParams) => (
-        <Box>
-          <Typography variant="body2" fontWeight={500}>
-            {formatDate(params.value)}
-          </Typography>
-          {params.row.daysUntilExpiration !== undefined && params.row.daysUntilExpiration > 0 && (
-            <Typography variant="caption" color="text.secondary">
-              {params.row.daysUntilExpiration} dagen
-            </Typography>
-          )}
-        </Box>
-      ),
-    },
-    {
-      field: 'monthlyAmount',
-      headerName: 'Maandelijks',
-      width: 120,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant="body2" fontWeight={600}>
-          {params.value ? formatCurrency(params.value) : '-'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'assetCount',
-      headerName: 'Assets',
-      width: 80,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params: GridRenderCellParams) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
-          <DevicesIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <Typography variant="body2">{params.value}</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
+      field: 'leaseStatus',
+      headerName: 'Lease status',
       width: 130,
-      renderCell: (params: GridRenderCellParams) => {
-        const statusConfig = STATUS_CONFIG[params.value as keyof typeof STATUS_CONFIG];
-        const StatusIcon = statusConfig.icon;
-        return (
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: statusConfig.color, fontWeight: 600, fontSize: '0.76rem' }}>
-            <StatusIcon sx={{ fontSize: 14 }} />
-            {statusConfig.label}
-          </Box>
-        );
-      },
+      renderCell: (params: GridRenderCellParams<LeaseReportRow>) => (
+        <Typography variant="body2">{LEASE_STATUS_LABELS[params.row.leaseStatus]}</Typography>
+      ),
     },
   ], []);
 
-  // Statistics cards component - moved before error return
-  const statisticsCards = useMemo(() => (
+  // KPI cards row
+  const kpiCards = (
     <Grid container spacing={1}>
-      {STAT_CARDS.map((card) => {
-        const IconComponent = card.icon;
-        let count = 0;
-        if (card.key === 'total') {
-          count = summary?.totalContracts || 0;
-        } else if (card.key === 'active') {
-          count = summary?.activeContracts || 0;
-        } else if (card.key === 'expiring') {
-          count = summary?.expiringContracts || 0;
-        }
-        const isSelected = filters.status === card.key;
-        const isClickable = card.key !== 'total';
-
+      <Grid size={{ xs: 6, sm: 3 }}>
+        <StatisticsCard
+          icon={DescriptionIcon}
+          label="Contracten"
+          value={summary?.totalContracts ?? 0}
+          color="#F57C00"
+        />
+      </Grid>
+      <Grid size={{ xs: 6, sm: 3 }}>
+        <StatisticsCard
+          icon={CheckCircleIcon}
+          label="Actief in lease"
+          value={summary?.activeAssets ?? 0}
+          color="#4CAF50"
+        />
+      </Grid>
+      {URGENCY_KPI_CARDS.map(card => {
+        const Icon = card.icon;
+        const value = summary?.[card.summaryKey] ?? 0;
+        const isSelected = filters.urgency === card.key;
         return (
           <Grid size={{ xs: 6, sm: 3 }} key={card.key}>
             <StatisticsCard
-              icon={IconComponent}
+              icon={Icon}
               label={card.label}
-              value={count}
-              color={card.color}
-              onClick={isClickable ? () => handleStatusFilter(card.key as LeaseReportFilters['status']) : undefined}
+              value={value}
+              color={URGENCY_COLORS[card.key]}
+              onClick={() => handleUrgencyFilter(card.key)}
               isSelected={isSelected}
             />
           </Grid>
         );
       })}
-      {/* Monthly Cost Card */}
-      <Grid size={{ xs: 6, sm: 3 }}>
-        <Paper
-          sx={{
-            p: 2,
-            bgcolor: bgBase,
-            boxShadow: getNeumorph(isDark, 'soft'),
-            borderRadius: 2,
-            textAlign: 'center',
-          }}
-        >
-          <EuroIcon sx={{ fontSize: 28, color: '#1976D2', mb: 0.5 }} />
-          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976D2' }}>
-            {summary?.totalMonthlyAmount ? formatCurrency(summary.totalMonthlyAmount) : '€0'}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Maandelijks
-          </Typography>
-        </Paper>
-      </Grid>
     </Grid>
-  ), [summary, filters.status, bgBase, isDark]);
+  );
 
-  // Vendor breakdown component
-  const vendorBreakdown = useMemo(() => {
-    if (!summary?.contractsByVendor || Object.keys(summary.contractsByVendor).length === 0) {
-      return null;
-    }
-    return (
-      <Paper
-        sx={{
-          p: 2,
-          bgcolor: bgBase,
-          boxShadow: getNeumorph(isDark, 'soft'),
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-          Per Leverancier
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, rowGap: 0.75 }}>
-          {Object.entries(summary.contractsByVendor)
-            .sort(([, a], [, b]) => b - a)
-            .map(([vendor, count]) => (
-              <Box
-                key={vendor}
-                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: '#F57C00', fontWeight: 600, fontSize: '0.78rem' }}
-              >
-                <BusinessIcon sx={{ fontSize: 14 }} />
-                {vendor}: <span style={{ fontWeight: 700, marginLeft: 2 }}>{count}</span>
-              </Box>
-            ))}
-        </Box>
-      </Paper>
-    );
-  }, [summary, bgBase, isDark]);
-
-  // Expiring alert component
-  const expiringAlert = useMemo(() => {
-    if (!summary || summary.expiringContracts === 0) {
-      return null;
-    }
-    return (
-      <Alert severity="warning" icon={<WarningIcon />}>
+  // Active filter banner
+  const overdueAlert =
+    summary && summary.overdueAssets > 0 ? (
+      <Alert severity="error" icon={<EventBusyIcon />}>
         <Typography variant="subtitle2">
-          {summary.expiringContracts} contract(en) verlopen binnenkort!
-        </Typography>
-        <Typography variant="body2">
-          Bekijk de contracten met status "Bijna Verlopen" voor details.
+          {summary.overdueAssets} actieve toestel(len) zijn de einddatum al voorbij — extra leasekosten lopen!
         </Typography>
       </Alert>
-    );
-  }, [summary]);
+    ) : summary && summary.redAssets > 0 ? (
+      <Alert severity="warning" icon={<WarningIcon />}>
+        <Typography variant="subtitle2">
+          {summary.redAssets} toestel(len) moeten binnen 3 weken terug naar de leverancier.
+        </Typography>
+      </Alert>
+    ) : null;
 
-  // Advanced filters component
-  const advancedFilters = useMemo(() => (
+  // Toolbar (search + status filter + import)
+  const toolbar = (
     <Paper
       sx={{
         p: 2,
@@ -315,7 +284,7 @@ const LeasingTab = () => {
           <TextField
             fullWidth
             size="small"
-            placeholder="Zoeken op contract nr., leverancier..."
+            placeholder="Zoek op serial, asset code, gebruiker, lease schedule..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -332,30 +301,40 @@ const LeasingTab = () => {
             fullWidth
             size="small"
             select
-            label="Status"
-            value={filters.status || 'all'}
-            onChange={(e) => setFilters(prev => ({
-              ...prev,
-              status: e.target.value as LeaseReportFilters['status'],
-            }))}
+            label="Lease status"
+            value={filters.leaseStatus ?? 'all'}
+            onChange={(e) => {
+              const v = e.target.value;
+              setFilters(prev => ({
+                ...prev,
+                leaseStatus: v === 'all' ? undefined : (v as LeaseReportFilters['leaseStatus']),
+              }));
+            }}
             SelectProps={{ native: true }}
           >
             <option value="all">Alle</option>
-            <option value="active">Actief</option>
-            <option value="expiring">Bijna Verlopen</option>
-            <option value="expired">Verlopen</option>
+            <option value="InLease">In lease</option>
+            <option value="Returned">Teruggestuurd</option>
+            <option value="Cancelled">Geannuleerd</option>
           </TextField>
         </Grid>
-        <Grid size={{ xs: 6, md: 4 }}>
-          <Typography variant="body2" color="text.secondary">
-            {filteredItems.length} contracten
+        <Grid size={{ xs: 6, md: 4 }} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mr: 'auto' }}>
+            {filteredRows.length} rijen
           </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<UploadFileIcon />}
+            onClick={() => setImportOpen(true)}
+          >
+            Importeer CSV
+          </Button>
         </Grid>
       </Grid>
     </Paper>
-  ), [searchQuery, filters.status, filteredItems.length, bgBase, isDark]);
+  );
 
-  // Error check after all hooks
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 2 }}>
@@ -366,30 +345,25 @@ const LeasingTab = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      {/* Statistics Cards */}
-      {statisticsCards}
+      {kpiCards}
 
-      {/* Expiry Timeline Chart */}
-      <LeasingExpiryTimeline leases={items} />
+      <LeasingExpiryTimeline rows={rows} />
 
-      {/* Vendor Breakdown */}
-      {vendorBreakdown}
+      {overdueAlert}
 
-      {/* Expiring Alert */}
-      {expiringAlert}
-
-      {/* Table with Filters */}
       <NeumorphicDataGrid
-        rows={filteredItems}
+        rows={filteredRows}
         columns={columns}
         loading={isLoading}
         accentColor="#F57C00"
-        advancedFilters={advancedFilters}
+        advancedFilters={toolbar}
         exportable
-        onExport={handleExport}
+        onExport={() => exportMutation.mutate(filters)}
         isExporting={exportMutation.isPending}
-        initialPageSize={25}
+        initialPageSize={50}
       />
+
+      <LeaseImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </Box>
   );
 };

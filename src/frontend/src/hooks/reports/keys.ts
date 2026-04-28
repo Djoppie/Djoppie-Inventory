@@ -36,6 +36,7 @@ export const reportKeys = {
 
   // Lease Reports
   leases: () => [...reportKeys.all, 'leases'] as const,
+  leasesAll: () => [...reportKeys.leases()] as const,
   leasesList: (filters?: object) =>
     [...reportKeys.leases(), 'list', filters] as const,
   leasesSummary: () => [...reportKeys.leases(), 'summary'] as const,
