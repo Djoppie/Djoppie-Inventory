@@ -29,6 +29,7 @@ import {
   getEnhancedIconContainer,
   getEnhancedTypography,
 } from '../../../utils/designSystem';
+import { useAssetRequestStatistics } from '../../../hooks/useAssetRequests';
 
 // Requests accent color
 const REQUESTS_COLOR = '#1976D2'; // Blue
@@ -37,13 +38,8 @@ const RequestsDashboardPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const { data: statistics } = useAssetRequestStatistics();
 
-  // Quick action cards
-  // TODO: Implement onboarding/offboarding workflows
-  // - Create dedicated pages for REQUESTS_ONBOARDING and REQUESTS_OFFBOARDING
-  // - Implement asset assignment workflow for new employees
-  // - Implement asset return workflow for departing employees
-  // - Connect to HR system for employee lifecycle events
   const quickActions = [
     {
       title: 'Onboarding',
@@ -51,7 +47,6 @@ const RequestsDashboardPage = () => {
       icon: <PersonAddIcon sx={{ fontSize: 32 }} />,
       color: '#43A047',
       path: ROUTES.REQUESTS_ONBOARDING,
-      comingSoon: true,
     },
     {
       title: 'Offboarding',
@@ -59,7 +54,6 @@ const RequestsDashboardPage = () => {
       icon: <PersonRemoveIcon sx={{ fontSize: 32 }} />,
       color: '#E53935',
       path: ROUTES.REQUESTS_OFFBOARDING,
-      comingSoon: true,
     },
     {
       title: 'Historiek',
@@ -70,27 +64,22 @@ const RequestsDashboardPage = () => {
     },
   ];
 
-  // Stats (placeholder data - will be dynamic in future)
-  // TODO: Connect to backend API
-  // - GET /api/requests/statistics
-  // - Fetch: activeRequests, monthlyRequests, inProgressRequests
-  // - Update values dynamically based on API response
   const stats = [
     {
       label: 'Actieve Aanvragen',
-      value: '0',
+      value: String(statistics?.activeRequests ?? 0),
       color: '#1976D2',
       Icon: AssignmentIcon,
     },
     {
       label: 'Deze Maand',
-      value: '0',
+      value: String(statistics?.monthlyRequests ?? 0),
       color: '#43A047',
       Icon: CalendarMonthIcon,
     },
     {
       label: 'In Behandeling',
-      value: '0',
+      value: String(statistics?.inProgressRequests ?? 0),
       color: '#FF9800',
       Icon: HourglassEmptyIcon,
     },
@@ -236,18 +225,15 @@ const RequestsDashboardPage = () => {
                     borderColor: 'divider',
                     boxShadow: `0 8px 32px ${alpha(action.color, 0.08)}`,
                     height: '100%',
-                    cursor: action.comingSoon ? 'not-allowed' : 'pointer',
-                    opacity: action.comingSoon ? 0.65 : 1,
+                    cursor: 'pointer',
                     transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    '&:hover': action.comingSoon
-                      ? {}
-                      : {
-                          borderColor: action.color,
-                          boxShadow: `0 12px 40px ${alpha(action.color, 0.25)}`,
-                          transform: 'translateY(-8px) scale(1.02)',
-                        },
+                    '&:hover': {
+                      borderColor: action.color,
+                      boxShadow: `0 12px 40px ${alpha(action.color, 0.25)}`,
+                      transform: 'translateY(-8px) scale(1.02)',
+                    },
                   }}
-                  onClick={() => !action.comingSoon && navigate(action.path)}
+                  onClick={() => navigate(action.path)}
                 >
                 <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <Box
@@ -263,12 +249,10 @@ const RequestsDashboardPage = () => {
                       color: action.color,
                       boxShadow: `inset 0 2px 8px ${alpha(action.color, 0.2)}`,
                       transition: 'all 0.3s ease',
-                      ...((!action.comingSoon) && {
-                        '&:hover': {
-                          transform: 'rotate(-5deg) scale(1.1)',
-                          boxShadow: `0 0 20px ${alpha(action.color, 0.4)}`,
-                        },
-                      }),
+                      '&:hover': {
+                        transform: 'rotate(-5deg) scale(1.1)',
+                        boxShadow: `0 0 20px ${alpha(action.color, 0.4)}`,
+                      },
                     }}
                   >
                     {action.icon}
@@ -281,24 +265,6 @@ const RequestsDashboardPage = () => {
                   <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
                     {action.description}
                   </Typography>
-
-                  {action.comingSoon && (
-                    <Box
-                      sx={{
-                        mt: 2,
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: 1,
-                        bgcolor: alpha(action.color, 0.1),
-                        display: 'inline-flex',
-                        alignSelf: 'flex-start',
-                      }}
-                    >
-                      <Typography variant="caption" fontWeight={600} color={action.color}>
-                        Binnenkort beschikbaar
-                      </Typography>
-                    </Box>
-                  )}
                   </CardContent>
                 </Card>
               </Zoom>
