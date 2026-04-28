@@ -109,6 +109,18 @@ export const ROUTES = {
   /** Requests reports (history of swaps, onboarding, offboarding) */
   REQUESTS_REPORTS: '/operations/requests/reports',
 
+  /** Onboarding new request */
+  REQUEST_ONBOARDING_NEW: '/operations/requests/onboarding/new',
+
+  /** Onboarding detail page (requires :id parameter) */
+  REQUEST_ONBOARDING_DETAIL: '/operations/requests/onboarding/:id',
+
+  /** Offboarding new request */
+  REQUEST_OFFBOARDING_NEW: '/operations/requests/offboarding/new',
+
+  /** Offboarding detail page (requires :id parameter) */
+  REQUEST_OFFBOARDING_DETAIL: '/operations/requests/offboarding/:id',
+
   /** Laptop swap / Device deployment page */
   LAPTOP_SWAP: '/operations/swaps',
 
@@ -210,4 +222,14 @@ export const buildRoute = {
    * @returns The full route path
    */
   workplaceDetail: (id: number | string) => `/workplaces/${id}`,
+
+  /**
+   * Builds the onboarding request detail route.
+   */
+  onboardingRequestDetail: (id: number | string) => `/operations/requests/onboarding/${id}`,
+
+  /**
+   * Builds the offboarding request detail route.
+   */
+  offboardingRequestDetail: (id: number | string) => `/operations/requests/offboarding/${id}`,
 } as const;
