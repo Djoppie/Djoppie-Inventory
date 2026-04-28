@@ -1,94 +1,146 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  getAllAssetRequests,
-  getAssetRequestById,
-  getAssetRequestsByDateRange,
+  addAssetRequestLine,
   createAssetRequest,
-  updateAssetRequest,
   deleteAssetRequest,
+  deleteAssetRequestLine,
+  getAssetRequestById,
+  getAssetRequestStatistics,
+  linkAssetRequestEmployee,
+  queryAssetRequests,
+  transitionAssetRequest,
+  updateAssetRequest,
+  updateAssetRequestLine,
 } from '../api/assetRequests.api';
 import type {
+  AssetRequestFilters,
+  AssetRequestTransitionDto,
   CreateAssetRequestDto,
+  CreateAssetRequestLineDto,
   UpdateAssetRequestDto,
+  UpdateAssetRequestLineDto,
 } from '../types/assetRequest.types';
 
-/**
- * React Query hooks for Asset Requests
- */
-
-// Query keys
 export const assetRequestKeys = {
   all: ['assetRequests'] as const,
   lists: () => [...assetRequestKeys.all, 'list'] as const,
-  list: (filters: string) => [...assetRequestKeys.lists(), { filters }] as const,
-  details: () => [...assetRequestKeys.all, 'detail'] as const,
-  detail: (id: number) => [...assetRequestKeys.details(), id] as const,
-  dateRange: (startDate: Date, endDate: Date) =>
-    [...assetRequestKeys.all, 'dateRange', startDate.toISOString(), endDate.toISOString()] as const,
+  list: (filters: AssetRequestFilters) => [...assetRequestKeys.lists(), filters] as const,
+  detail: (id: number) => [...assetRequestKeys.all, 'detail', id] as const,
+  statistics: () => [...assetRequestKeys.all, 'statistics'] as const,
 };
 
-// Get all asset requests
-export const useAssetRequests = () => {
-  return useQuery({
-    queryKey: assetRequestKeys.lists(),
-    queryFn: getAllAssetRequests,
+export const useAssetRequests = (filters: AssetRequestFilters = {}) =>
+  useQuery({
+    queryKey: assetRequestKeys.list(filters),
+    queryFn: () => queryAssetRequests(filters),
   });
-};
 
-// Get asset request by ID
-export const useAssetRequest = (id: number) => {
-  return useQuery({
-    queryKey: assetRequestKeys.detail(id),
-    queryFn: () => getAssetRequestById(id),
+export const useAssetRequest = (id: number | undefined) =>
+  useQuery({
+    queryKey: assetRequestKeys.detail(id ?? -1),
+    queryFn: () => getAssetRequestById(id!),
     enabled: !!id,
   });
-};
 
-// Get asset requests by date range
-export const useAssetRequestsByDateRange = (startDate: Date, endDate: Date) => {
-  return useQuery({
-    queryKey: assetRequestKeys.dateRange(startDate, endDate),
-    queryFn: () => getAssetRequestsByDateRange(startDate, endDate),
+export const useAssetRequestStatistics = () =>
+  useQuery({
+    queryKey: assetRequestKeys.statistics(),
+    queryFn: getAssetRequestStatistics,
+    staleTime: 60 * 1000,
   });
-};
 
-// Create asset request
+const invalidateAll = (qc: ReturnType<typeof useQueryClient>) =>
+  qc.invalidateQueries({ queryKey: assetRequestKeys.all });
+
 export const useCreateAssetRequest = () => {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (request: CreateAssetRequestDto) => createAssetRequest(request),
-    onSuccess: () => {
-      // Invalidate and refetch all asset request queries
-      queryClient.invalidateQueries({ queryKey: assetRequestKeys.all });
-    },
+    mutationFn: (dto: CreateAssetRequestDto) => createAssetRequest(dto),
+    onSuccess: () => invalidateAll(qc),
   });
 };
 
-// Update asset request
 export const useUpdateAssetRequest = () => {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, request }: { id: number; request: UpdateAssetRequestDto }) =>
-      updateAssetRequest(id, request),
-    onSuccess: (_, variables) => {
-      // Invalidate specific request and all lists
-      queryClient.invalidateQueries({ queryKey: assetRequestKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: assetRequestKeys.lists() });
+    mutationFn: ({ id, dto }: { id: number; dto: UpdateAssetRequestDto }) =>
+      updateAssetRequest(id, dto),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: assetRequestKeys.detail(vars.id) });
+      qc.invalidateQueries({ queryKey: assetRequestKeys.lists() });
     },
   });
 };
 
-// Delete asset request
 export const useDeleteAssetRequest = () => {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deleteAssetRequest(id),
-    onSuccess: () => {
-      // Invalidate all asset request queries
-      queryClient.invalidateQueries({ queryKey: assetRequestKeys.all });
+    onSuccess: () => invalidateAll(qc),
+  });
+};
+
+export const useAddAssetRequestLine = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, dto }: { requestId: number; dto: CreateAssetRequestLineDto }) =>
+      addAssetRequestLine(requestId, dto),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: assetRequestKeys.detail(vars.requestId) });
+      qc.invalidateQueries({ queryKey: assetRequestKeys.lists() });
+    },
+  });
+};
+
+export const useUpdateAssetRequestLine = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      lineId,
+      dto,
+    }: {
+      requestId: number;
+      lineId: number;
+      dto: UpdateAssetRequestLineDto;
+    }) => updateAssetRequestLine(requestId, lineId, dto),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: assetRequestKeys.detail(vars.requestId) });
+    },
+  });
+};
+
+export const useDeleteAssetRequestLine = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, lineId }: { requestId: number; lineId: number }) =>
+      deleteAssetRequestLine(requestId, lineId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: assetRequestKeys.detail(vars.requestId) });
+    },
+  });
+};
+
+export const useTransitionAssetRequest = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: number; dto: AssetRequestTransitionDto }) =>
+      transitionAssetRequest(id, dto),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: assetRequestKeys.detail(vars.id) });
+      qc.invalidateQueries({ queryKey: assetRequestKeys.lists() });
+      qc.invalidateQueries({ queryKey: assetRequestKeys.statistics() });
+    },
+  });
+};
+
+export const useLinkAssetRequestEmployee = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, employeeId }: { id: number; employeeId: number }) =>
+      linkAssetRequestEmployee(id, employeeId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: assetRequestKeys.detail(vars.id) });
     },
   });
 };
