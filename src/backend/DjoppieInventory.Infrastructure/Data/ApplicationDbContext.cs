@@ -35,6 +35,7 @@ public class ApplicationDbContext : DbContext
 
     // Asset request planning
     public DbSet<AssetRequest> AssetRequests { get; set; }
+    public DbSet<AssetRequestLine> AssetRequestLines { get; set; }
 
     // Atomic asset-code generation (per-prefix counter)
     public DbSet<AssetCodeCounter> AssetCodeCounters { get; set; }
@@ -590,19 +591,57 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.RequestType);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.EmployeeId);
 
-            entity.Property(e => e.EmployeeName).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.AssetType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.RequestedFor).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Notes).HasMaxLength(2000);
             entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ModifiedBy).HasMaxLength(200);
             entity.Property(e => e.RequestType).HasConversion<int>();
             entity.Property(e => e.Status).HasConversion<int>();
 
-            // Foreign key to Asset (optional, set null if asset deleted)
-            entity.HasOne(e => e.AssignedAsset)
+            entity.HasOne(e => e.Employee)
                 .WithMany()
-                .HasForeignKey(e => e.AssignedAssetId)
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.PhysicalWorkplace)
+                .WithMany()
+                .HasForeignKey(e => e.PhysicalWorkplaceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(e => e.Lines)
+                .WithOne(l => l.AssetRequest)
+                .HasForeignKey(l => l.AssetRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AssetRequestLine configuration
+        modelBuilder.Entity<AssetRequestLine>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.AssetRequestId);
+            entity.HasIndex(e => e.AssetId);
+            entity.HasIndex(e => e.Status);
+
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.SourceType).HasConversion<int>();
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.ReturnAction).HasConversion<int?>();
+
+            entity.HasOne(e => e.AssetType)
+                .WithMany()
+                .HasForeignKey(e => e.AssetTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Asset)
+                .WithMany()
+                .HasForeignKey(e => e.AssetId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.AssetTemplate)
+                .WithMany()
+                .HasForeignKey(e => e.AssetTemplateId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
