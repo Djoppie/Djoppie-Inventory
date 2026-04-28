@@ -689,7 +689,7 @@ const BulkImportWorkplacesDialog = ({
                     onChange={(e) => setBulkForm({ ...bulkForm, type: e.target.value as WorkplaceType })}
                   >
                     {Object.entries(WorkplaceTypeLabels).map(([value, label]) => (
-                      <MenuItem key={value} value={Number(value)}>
+                      <MenuItem key={value} value={value}>
                         {label}
                       </MenuItem>
                     ))}

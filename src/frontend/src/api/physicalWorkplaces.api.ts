@@ -13,6 +13,7 @@ import {
   ServiceOccupancy,
   EquipmentTypeStatus,
   WorkplaceChange,
+  WorkplaceType,
   WorkplaceGapAnalysis,
   AutoCreateMissingWorkplacesDto,
   AutoCreateWorkplacesResult,
@@ -159,7 +160,7 @@ export interface BulkCreateWorkplacesDto {
   nameTemplate: string;
   floor?: string;
   room?: string;
-  type?: number;
+  type?: WorkplaceType;
   monitorCount?: number;
   hasDockingStation?: boolean;
 }

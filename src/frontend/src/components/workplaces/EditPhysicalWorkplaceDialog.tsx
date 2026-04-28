@@ -543,9 +543,9 @@ const EditPhysicalWorkplaceDialog = ({
                 }}
               >
                 {Object.entries(WorkplaceTypeLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={Number(value)}>
+                  <MenuItem key={value} value={value}>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      {getWorkplaceTypeIcon(Number(value) as WorkplaceType)}
+                      {getWorkplaceTypeIcon(value as WorkplaceType)}
                       <span>{label}</span>
                     </Stack>
                   </MenuItem>

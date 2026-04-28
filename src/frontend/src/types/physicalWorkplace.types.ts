@@ -7,11 +7,17 @@
 // WorkplaceType - Type of physical workplace
 // ============================================================
 
+/**
+ * Mirrors the C# WorkplaceType enum on the wire. The backend serialises enums
+ * as strings via JsonStringEnumConverter, so this MUST stay a string enum
+ * (matching backend member names exactly) — otherwise round-trip via
+ * GET → form state → MUI Select → PUT silently drops the type.
+ */
 export enum WorkplaceType {
-  Desktop = 0,      // Fixed desktop PC setup
-  Laptop = 1,       // Docking station for laptops
-  HotDesk = 2,      // Shared/flexible workplace
-  MeetingRoom = 3   // Conference room
+  Desktop = 'Desktop',
+  Laptop = 'Laptop',
+  HotDesk = 'HotDesk',
+  MeetingRoom = 'MeetingRoom',
 }
 
 export const WorkplaceTypeLabels: Record<WorkplaceType, string> = {
