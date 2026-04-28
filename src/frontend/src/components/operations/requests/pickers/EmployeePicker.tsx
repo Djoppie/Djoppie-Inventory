@@ -1,5 +1,5 @@
-import { Autocomplete, Avatar, Chip, TextField } from '@mui/material';
-import { RichOption, richAutocompleteSlotProps } from './RichOption';
+import { Autocomplete, Avatar, Chip, TextField, useTheme } from '@mui/material';
+import { RichOption, getRichAutocompleteSlotProps } from './RichOption';
 
 export interface EmployeePickerOption {
   id: number;
@@ -65,6 +65,8 @@ export function EmployeePicker({
   disabled,
   loading,
 }: Props) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   return (
     <Autocomplete<EmployeePickerOption>
       size="small"
@@ -92,7 +94,7 @@ export function EmployeePicker({
       clearOnBlur={false}
       getOptionLabel={(o) => `${o.displayName} (${o.userPrincipalName})`}
       isOptionEqualToValue={(a, b) => a.id === b.id}
-      slotProps={richAutocompleteSlotProps}
+      slotProps={getRichAutocompleteSlotProps(isDark)}
       renderInput={(params) => (
         <TextField {...params} label={label} required={required} />
       )}

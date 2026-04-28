@@ -1,6 +1,6 @@
-import { Autocomplete, Box, Chip, TextField, alpha } from '@mui/material';
+import { Autocomplete, Box, Chip, TextField, alpha, useTheme } from '@mui/material';
 import AddBoxIcon from '@mui/icons-material/AddBox';
-import { RichOption, richAutocompleteSlotProps } from './RichOption';
+import { RichOption, getRichAutocompleteSlotProps } from './RichOption';
 import type { AssetTemplate } from '../../../../types/asset.types';
 
 interface Props {
@@ -21,6 +21,8 @@ export function TemplatePicker({
   disabled,
   filterByAssetTypeId,
 }: Props) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const filtered = filterByAssetTypeId
     ? options.filter((t) => t.assetTypeId === filterByAssetTypeId)
     : options;
@@ -34,7 +36,7 @@ export function TemplatePicker({
       disabled={disabled}
       getOptionLabel={(t) => t.templateName}
       isOptionEqualToValue={(a, b) => a.id === b.id}
-      slotProps={richAutocompleteSlotProps}
+      slotProps={getRichAutocompleteSlotProps(isDark)}
       renderInput={(params) => <TextField {...params} label={label} />}
       renderOption={(props, tpl, { selected }) => {
         const subtitle = [

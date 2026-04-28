@@ -1,10 +1,10 @@
-import { Autocomplete, Box, Chip, TextField, alpha } from '@mui/material';
+import { Autocomplete, Box, Chip, TextField, alpha, useTheme } from '@mui/material';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HotelIcon from '@mui/icons-material/Hotel';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { RichOption, richAutocompleteSlotProps } from './RichOption';
+import { RichOption, getRichAutocompleteSlotProps } from './RichOption';
 import {
   type PhysicalWorkplace,
   WorkplaceType,
@@ -27,6 +27,8 @@ interface Props {
 }
 
 export function WorkplacePicker({ options, value, onChange, label, disabled }: Props) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   return (
     <Autocomplete<PhysicalWorkplace>
       size="small"
@@ -36,7 +38,7 @@ export function WorkplacePicker({ options, value, onChange, label, disabled }: P
       disabled={disabled}
       getOptionLabel={(w) => `${w.code} — ${w.name}`}
       isOptionEqualToValue={(a, b) => a.id === b.id}
-      slotProps={richAutocompleteSlotProps}
+      slotProps={getRichAutocompleteSlotProps(isDark)}
       renderInput={(params) => <TextField {...params} label={label} />}
       renderOption={(props, w, { selected }) => {
         const Icon = TYPE_ICONS[w.type] ?? LocationOnIcon;

@@ -1,4 +1,4 @@
-import { Autocomplete, Chip, TextField, alpha, Box } from '@mui/material';
+import { Autocomplete, Chip, TextField, alpha, Box, useTheme } from '@mui/material';
 import LaptopMacIcon from '@mui/icons-material/LaptopMac';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import MonitorIcon from '@mui/icons-material/Monitor';
@@ -6,7 +6,7 @@ import KeyboardIcon from '@mui/icons-material/Keyboard';
 import MouseIcon from '@mui/icons-material/Mouse';
 import HeadsetMicIcon from '@mui/icons-material/HeadsetMic';
 import CableIcon from '@mui/icons-material/Cable';
-import { RichOption, richAutocompleteSlotProps } from './RichOption';
+import { RichOption, getRichAutocompleteSlotProps } from './RichOption';
 import type { Asset } from '../../../../types/asset.types';
 
 type AssetStatus = Asset['status'];
@@ -58,6 +58,8 @@ export function AssetPicker({
   disabled,
   filterByAssetTypeId,
 }: Props) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const filtered = filterByAssetTypeId
     ? options.filter((a) => a.assetTypeId === filterByAssetTypeId)
     : options;
@@ -71,7 +73,7 @@ export function AssetPicker({
       disabled={disabled}
       getOptionLabel={(a) => `${a.assetCode} — ${a.assetName ?? ''}`}
       isOptionEqualToValue={(a, b) => a.id === b.id}
-      slotProps={richAutocompleteSlotProps}
+      slotProps={getRichAutocompleteSlotProps(isDark)}
       renderInput={(params) => <TextField {...params} label={label} />}
       renderOption={(props, asset, { selected }) => {
         const Icon = pickAssetIcon(asset.assetType?.name);

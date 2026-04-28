@@ -1,5 +1,6 @@
 import { Box, Stack, Typography, alpha, useTheme } from '@mui/material';
 import type { ReactNode, HTMLAttributes } from 'react';
+import { getNeumorph, getNeumorphColors } from '../../../../utils/neumorphicStyles';
 
 export interface RichOptionProps extends HTMLAttributes<HTMLLIElement> {
   /** Optional leading visual (icon, avatar, or letter badge). Reserve ~36px width. */
@@ -128,35 +129,48 @@ export function RichOption({
 }
 
 /**
- * Shared slotProps for `Autocomplete` to give all rich pickers a consistent
- * dropdown surface (rounded, soft shadow, max-height with scroll, padding).
+ * Shared slotProps factory for `Autocomplete` to give all rich pickers a
+ * consistent neumorphic dropdown surface (raised card, accent border on hover,
+ * max-height with scroll, padding).
+ *
+ * @param isDark - theme mode so the shadow values are correct
  */
-export const richAutocompleteSlotProps = {
-  paper: {
-    sx: {
-      borderRadius: 2,
-      mt: 0.5,
-      boxShadow:
-        '0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08)',
-      border: '1px solid',
-      borderColor: 'divider',
-      overflow: 'hidden',
-    },
-  },
-  listbox: {
-    sx: {
-      maxHeight: 360,
-      py: 0.5,
-      '& .MuiAutocomplete-option': {
-        padding: 0,
-        minHeight: 'auto',
-      },
-      '& .MuiAutocomplete-option[aria-selected="true"]': {
-        backgroundColor: 'transparent',
-      },
-      '& .MuiAutocomplete-option.Mui-focused': {
-        backgroundColor: 'transparent',
+export function getRichAutocompleteSlotProps(isDark: boolean) {
+  const { bgSurface } = getNeumorphColors(isDark);
+  return {
+    paper: {
+      sx: {
+        borderRadius: 2,
+        mt: 0.5,
+        bgcolor: bgSurface,
+        boxShadow: getNeumorph(isDark, 'medium'),
+        border: '1px solid',
+        borderColor: 'divider',
+        overflow: 'hidden',
       },
     },
-  },
-} as const;
+    listbox: {
+      sx: {
+        maxHeight: 360,
+        py: 0.5,
+        '& .MuiAutocomplete-option': {
+          padding: 0,
+          minHeight: 'auto',
+        },
+        '& .MuiAutocomplete-option[aria-selected="true"]': {
+          backgroundColor: 'transparent',
+        },
+        '& .MuiAutocomplete-option.Mui-focused': {
+          backgroundColor: 'transparent',
+        },
+      },
+    },
+  } as const;
+}
+
+/**
+ * @deprecated Use `getRichAutocompleteSlotProps(isDark)` for theme-aware
+ * neumorphic dropdown surface. This static export is kept for backward
+ * compatibility during migration.
+ */
+export const richAutocompleteSlotProps = getRichAutocompleteSlotProps(false);
