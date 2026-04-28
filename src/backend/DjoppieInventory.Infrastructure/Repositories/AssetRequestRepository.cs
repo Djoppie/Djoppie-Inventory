@@ -11,7 +11,7 @@ public class AssetRequestRepository : IAssetRequestRepository
 
     public AssetRequestRepository(ApplicationDbContext context)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
     private IQueryable<AssetRequest> WithIncludes(IQueryable<AssetRequest> query) =>
@@ -50,6 +50,7 @@ public class AssetRequestRepository : IAssetRequestRepository
         }
 
         return await WithIncludes(query)
+            .AsNoTracking()
             .OrderByDescending(r => r.RequestedDate)
             .ThenByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -111,6 +112,7 @@ public class AssetRequestRepository : IAssetRequestRepository
     public async Task<IReadOnlyList<AssetRequest>> GetUnlinkedAsync(CancellationToken cancellationToken = default)
     {
         return await _context.AssetRequests
+            .AsNoTracking()
             .Where(r => r.EmployeeId == null && r.Status != AssetRequestStatus.Cancelled)
             .ToListAsync(cancellationToken);
     }
