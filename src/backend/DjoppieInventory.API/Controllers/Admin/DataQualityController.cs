@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using DjoppieInventory.Core.DTOs;
 using DjoppieInventory.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -71,4 +72,51 @@ public class DataQualityController : ControllerBase
         [FromQuery] bool dryRun = true,
         CancellationToken ct = default)
         => Ok(await _service.NormalizeDockingNamesAsync(dryRun, ct));
+
+    /// <summary>
+    /// Dry-run scan of workplace-fixed assets (NOT lap/desk/pc by AssetType.Code)
+    /// that are wrongly attached to an Employee instead of a PhysicalWorkplace.
+    /// Returns per-row preview with the proposed target workplace.
+    /// </summary>
+    [HttpGet("misaligned-workplace-assets")]
+    [ProducesResponseType(typeof(MisalignedAssetResultDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MisalignedAssetResultDto>> ScanMisalignedWorkplaceAssets(
+        CancellationToken ct = default)
+        => Ok(await _service.ScanMisalignedWorkplaceAssetsAsync(dryRun: true, performedBy: null, performedByEmail: null, ct));
+
+    /// <summary>
+    /// Apply the workplace-misalignment fix: for every fixable candidate, set
+    /// <c>Asset.PhysicalWorkplaceId</c> to the linked employee's current
+    /// workplace, clear <c>Asset.EmployeeId</c>, and write an
+    /// <c>AssetEvent.OwnerChanged</c> audit row.
+    /// </summary>
+    [HttpPost("fix-misaligned-workplace-assets")]
+    [ProducesResponseType(typeof(MisalignedAssetResultDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MisalignedAssetResultDto>> FixMisalignedWorkplaceAssets(
+        CancellationToken ct = default)
+    {
+        var performedBy = User.FindFirst(ClaimTypes.Name)?.Value
+            ?? User.FindFirst("name")?.Value
+            ?? User.FindFirst(ClaimTypes.GivenName)?.Value;
+        var performedByEmail = User.FindFirst(ClaimTypes.Email)?.Value
+            ?? User.FindFirst("preferred_username")?.Value
+            ?? User.FindFirst(ClaimTypes.Upn)?.Value;
+
+        return Ok(await _service.ScanMisalignedWorkplaceAssetsAsync(
+            dryRun: false,
+            performedBy: performedBy,
+            performedByEmail: performedByEmail,
+            ct));
+    }
+
+    /// <summary>
+    /// Read-only report: user-assigned assets (laptops / desktops / PCs) that
+    /// are wrongly anchored to a PhysicalWorkplace. No auto-fix is provided —
+    /// users review and correct manually.
+    /// </summary>
+    [HttpGet("user-assets-on-workplace")]
+    [ProducesResponseType(typeof(UserAssetOnWorkplaceResultDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UserAssetOnWorkplaceResultDto>> ScanUserAssetsOnWorkplace(
+        CancellationToken ct = default)
+        => Ok(await _service.ScanUserAssetsOnWorkplaceAsync(ct));
 }

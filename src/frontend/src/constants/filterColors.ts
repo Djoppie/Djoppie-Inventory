@@ -84,6 +84,12 @@ export const ADMIN_ORGANIZATION_COLOR = '#26A69A';
  */
 export const ADMIN_LOCATION_COLOR = '#7E57C2';
 
+/**
+ * Admin Data Quality section color (Amber)
+ * Used for: Admin > Data Quality (asset audit + misalignment fixes)
+ */
+export const ADMIN_DATA_QUALITY_COLOR = '#FB8C00';
+
 // =============================================================================
 // STATUS COLORS
 // =============================================================================

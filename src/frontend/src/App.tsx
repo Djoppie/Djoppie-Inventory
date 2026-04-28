@@ -1,5 +1,5 @@
 import { ComponentType, lazy, LazyExoticComponent, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DjoppieThemeProvider } from './theme/ThemeContext';
 import { ROUTES } from './constants/routes';
@@ -50,6 +50,7 @@ const InventoryPage = lazyWithRetry(() => import('./pages/inventory/InventoryPag
 const AdminAssetsPage = lazyWithRetry(() => import('./pages/admin/AdminAssetsPage'));
 const AdminOrganisationPage = lazyWithRetry(() => import('./pages/admin/AdminOrganisationPage'));
 const AdminLocationsPage = lazyWithRetry(() => import('./pages/admin/AdminLocationsPage'));
+const AdminDataQualityPage = lazyWithRetry(() => import('./pages/admin/AdminDataQualityPage'));
 const InstalledSoftwarePage = lazyWithRetry(() => import('./pages/inventory/InstalledSoftwarePage'));
 const AssetIntunePage = lazyWithRetry(() => import('./pages/inventory/AssetIntunePage'));
 const RolloutListPage = lazyWithRetry(() => import('./pages/operations/rollouts/RolloutListPage'));
@@ -103,9 +104,11 @@ function App() {
                   <Route path={ROUTES.ASSET_INTUNE} element={<AssetIntunePage />} />
                   <Route path={ROUTES.TEMPLATES} element={<AssetTemplatesPage />} />
                   <Route path={ROUTES.INVENTORY} element={<InventoryPage />} />
+                  <Route path={ROUTES.ADMIN} element={<Navigate to={ROUTES.ADMIN_ASSETS} replace />} />
                   <Route path={ROUTES.ADMIN_ASSETS} element={<AdminAssetsPage />} />
                   <Route path={ROUTES.ADMIN_ORGANISATION} element={<AdminOrganisationPage />} />
                   <Route path={ROUTES.ADMIN_LOCATIONS} element={<AdminLocationsPage />} />
+                  <Route path={ROUTES.ADMIN_DATA_QUALITY} element={<AdminDataQualityPage />} />
                   <Route path={ROUTES.OPERATIONS} element={<OperationsDashboardPage />} />
                   <Route path={ROUTES.ROLLOUTS} element={<RolloutListPage />} />
                   <Route path={ROUTES.ROLLOUTS_NEW} element={<RolloutPlannerPage />} />

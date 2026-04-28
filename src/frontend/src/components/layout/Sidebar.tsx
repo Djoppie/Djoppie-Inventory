@@ -42,6 +42,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CategoryIcon from '@mui/icons-material/Category';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import PlaceIcon from '@mui/icons-material/Place';
+import RuleFolderIcon from '@mui/icons-material/RuleFolder';
 
 // Icons - Requests
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -525,6 +526,7 @@ const Sidebar = ({
               { label: 'Assets', icon: <CategoryIcon />, path: ROUTES.ADMIN_ASSETS, matchPaths: ['/admin/assets'] },
               { label: 'Organisation', icon: <AccountTreeIcon />, path: ROUTES.ADMIN_ORGANISATION, matchPaths: ['/admin/organisation'] },
               { label: 'Locations', icon: <PlaceIcon />, path: ROUTES.ADMIN_LOCATIONS, matchPaths: ['/admin/locations'] },
+              { label: 'Data Quality', icon: <RuleFolderIcon />, path: ROUTES.ADMIN_DATA_QUALITY, matchPaths: ['/admin/data-quality'] },
             ]}
             isCollapsed={isCollapsed}
             isExpanded={expandedSections.Admin}

@@ -43,6 +43,9 @@ export const ROUTES = {
   /** Admin Locations section (Physical Workplaces, Buildings) */
   ADMIN_LOCATIONS: '/admin/locations',
 
+  /** Admin Data Quality section (asset overview + misalignment fixes) */
+  ADMIN_DATA_QUALITY: '/admin/data-quality',
+
   /** Installed software page (requires :id parameter) */
   ASSET_SOFTWARE: '/inventory/assets/:id/software',
 

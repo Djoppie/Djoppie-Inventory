@@ -109,6 +109,27 @@ public class DataQualityService
             .ThenBy(b => b.Brand)
             .ToList();
 
+        // Misaligned counts: workplace-fixed assets (NOT lap/desk/pc) that are
+        // attached to an Employee instead of a Workplace. We need the AssetType
+        // code to filter, so project the (id, EmployeeId, AssetType.Code) tuple
+        // and resolve in-memory; same scope as the rest of GetSummary (in-use,
+        // category/type filters apply).
+        var misalignedRaw = await inUse
+            .Where(a => a.EmployeeId != null)
+            .Select(a => new { a.Id, a.EmployeeId, TypeCode = a.AssetType != null ? a.AssetType.Code : null })
+            .ToListAsync(ct);
+        var misaligned = misalignedRaw.Where(r => IsWorkplaceFixedTypeCode(r.TypeCode)).ToList();
+        var misalignedFixable = misaligned.Count(r =>
+            r.EmployeeId != null
+            && empEntraIdById.TryGetValue(r.EmployeeId.Value, out var entraId)
+            && wpByEntraId.ContainsKey(entraId));
+
+        var userAssetsOnWorkplace = await inUse
+            .Where(a => a.PhysicalWorkplaceId != null && a.AssetType != null && a.AssetType.Code != null)
+            .Select(a => new { a.AssetType!.Code })
+            .ToListAsync(ct);
+        var userAssetsOnWorkplaceCount = userAssetsOnWorkplace.Count(x => IsUserAssignedTypeCode(x.Code));
+
         return new DataQualitySummaryDto
         {
             InUseAssetsTotal = total,
@@ -116,6 +137,9 @@ public class DataQualityService
             InUseAssetsWithoutEmployee = noEmployee,
             EmployeeBackfillCandidates = empCandidates,
             WorkplaceBackfillCandidates = wpCandidates,
+            MisalignedWorkplaceAssets = misaligned.Count,
+            MisalignedWorkplaceAssetsFixable = misalignedFixable,
+            UserAssetsOnWorkplace = userAssetsOnWorkplaceCount,
             Brands = brands,
         };
     }
@@ -358,7 +382,171 @@ public class DataQualityService
         };
     }
 
+    /// <summary>
+    /// Scan (and optionally fix) workplace-fixed assets that are attached to
+    /// an <c>Employee</c> instead of a <c>PhysicalWorkplace</c>. The fix moves
+    /// the asset to the employee's current workplace and clears
+    /// <c>EmployeeId</c>; assets whose employee has no current workplace are
+    /// listed but skipped. Each commit writes an <c>AssetEvent.OwnerChanged</c>
+    /// audit row attributed to <paramref name="performedBy"/> /
+    /// <paramref name="performedByEmail"/>.
+    /// </summary>
+    public async Task<MisalignedAssetResultDto> ScanMisalignedWorkplaceAssetsAsync(
+        bool dryRun,
+        string? performedBy,
+        string? performedByEmail,
+        CancellationToken ct = default)
+    {
+        var wpByEntraId = await BuildWorkplaceByEntraIdLookupAsync(ct);
+        var empEntraIdById = await BuildEmployeeEntraIdLookupAsync(ct);
+
+        // Candidates: any asset (regardless of status) that has an EmployeeId
+        // AND whose AssetType is workplace-fixed (NOT lap/desk/pc).
+        var candidates = await _db.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Employee)
+            .Where(a => a.EmployeeId != null && a.AssetType != null)
+            .ToListAsync(ct);
+
+        candidates = candidates.Where(a => IsWorkplaceFixedTypeCode(a.AssetType!.Code)).ToList();
+
+        var rows = new List<MisalignedAssetRowDto>(candidates.Count);
+        int moved = 0;
+        int skipped = 0;
+        var now = DateTime.UtcNow;
+
+        foreach (var asset in candidates)
+        {
+            (int Id, string Code, int? BuildingId)? target = null;
+            if (asset.EmployeeId is int empId
+                && empEntraIdById.TryGetValue(empId, out var entraId)
+                && wpByEntraId.TryGetValue(entraId, out var wp))
+            {
+                target = wp;
+            }
+
+            var row = new MisalignedAssetRowDto
+            {
+                AssetId = asset.Id,
+                AssetCode = asset.AssetCode,
+                AssetName = asset.AssetName,
+                AssetTypeCode = asset.AssetType?.Code,
+                AssetTypeName = asset.AssetType?.Name,
+                EmployeeId = asset.EmployeeId,
+                EmployeeName = asset.Employee?.DisplayName,
+                TargetWorkplaceId = target?.Id,
+                TargetWorkplaceCode = target?.Code,
+                TargetBuildingId = target?.BuildingId,
+                Action = target.HasValue ? "move" : "skip",
+            };
+            rows.Add(row);
+
+            if (target.HasValue)
+            {
+                moved++;
+                if (!dryRun)
+                {
+                    var oldEmployeeName = asset.Employee?.DisplayName ?? asset.Owner ?? $"Employee #{asset.EmployeeId}";
+                    asset.EmployeeId = null;
+                    asset.PhysicalWorkplaceId = target.Value.Id;
+                    if (target.Value.BuildingId.HasValue)
+                    {
+                        asset.BuildingId = target.Value.BuildingId;
+                    }
+                    asset.UpdatedAt = now;
+
+                    _db.AssetEvents.Add(new AssetEvent
+                    {
+                        AssetId = asset.Id,
+                        EventType = AssetEventType.OwnerChanged,
+                        Description = $"Workplace-fixed asset moved from medewerker '{oldEmployeeName}' naar werkplek '{target.Value.Code}' via data-quality fix",
+                        OldValue = oldEmployeeName,
+                        NewValue = target.Value.Code,
+                        PerformedBy = performedBy,
+                        PerformedByEmail = performedByEmail,
+                        EventDate = now,
+                        CreatedAt = now,
+                    });
+                }
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+
+        if (!dryRun && moved > 0)
+        {
+            await _db.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "Misalignment fix: moved {Moved} workplace-fixed assets from employee→workplace (skipped {Skipped})",
+                moved, skipped);
+        }
+
+        return new MisalignedAssetResultDto
+        {
+            DryRun = dryRun,
+            Scanned = candidates.Count,
+            Moved = moved,
+            Skipped = skipped,
+            Rows = rows,
+        };
+    }
+
+    /// <summary>
+    /// Read-only report listing user-assigned assets (laptops / desktops /
+    /// PCs) that are wrongly anchored to a <c>PhysicalWorkplaceId</c>.
+    /// Returned rows are not auto-fixed because the correct
+    /// <c>EmployeeId</c> is not derivable safely.
+    /// </summary>
+    public async Task<UserAssetOnWorkplaceResultDto> ScanUserAssetsOnWorkplaceAsync(CancellationToken ct = default)
+    {
+        var rawCandidates = await _db.Assets
+            .Include(a => a.AssetType)
+            .Include(a => a.Employee)
+            .Include(a => a.PhysicalWorkplace)
+            .Where(a => a.PhysicalWorkplaceId != null && a.AssetType != null && a.AssetType.Code != null)
+            .ToListAsync(ct);
+
+        var filtered = rawCandidates.Where(a => IsUserAssignedTypeCode(a.AssetType!.Code)).ToList();
+
+        var rows = filtered.Select(a => new UserAssetOnWorkplaceRowDto
+        {
+            AssetId = a.Id,
+            AssetCode = a.AssetCode,
+            AssetName = a.AssetName,
+            AssetTypeCode = a.AssetType?.Code,
+            AssetTypeName = a.AssetType?.Name,
+            EmployeeId = a.EmployeeId,
+            EmployeeName = a.Employee?.DisplayName,
+            PhysicalWorkplaceId = a.PhysicalWorkplaceId!.Value,
+            PhysicalWorkplaceCode = a.PhysicalWorkplace?.Code ?? string.Empty,
+            CurrentOccupantName = a.PhysicalWorkplace?.CurrentOccupantName,
+        }).ToList();
+
+        return new UserAssetOnWorkplaceResultDto
+        {
+            Total = rows.Count,
+            Rows = rows,
+        };
+    }
+
     // ---------------------------------------------------------------- Helpers
+
+    /// <summary>
+    /// True when the given AssetType code identifies a user-assigned device
+    /// (laptop / desktop / PC) — by case-insensitive substring on
+    /// <c>"lap"</c>, <c>"desk"</c>, or <c>"pc"</c>. A null/empty code is treated
+    /// as workplace-fixed (conservative default).
+    /// </summary>
+    private static bool IsUserAssignedTypeCode(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return false;
+        var c = code.ToLowerInvariant();
+        return c.Contains("lap") || c.Contains("desk") || c.Contains("pc");
+    }
+
+    private static bool IsWorkplaceFixedTypeCode(string? code) => !IsUserAssignedTypeCode(code);
 
     /// <summary>
     /// Returns the set of asset IDs currently referenced by any equipment slot

@@ -21,6 +21,22 @@ public record DataQualitySummaryDto
     /// <summary>Candidates for the Workplace backfill: PhysicalWorkplaceId is null but we can link via occupant.</summary>
     public int WorkplaceBackfillCandidates { get; init; }
 
+    /// <summary>
+    /// Workplace-fixed assets (anything other than laptops/desktops/PCs by AssetType.Code)
+    /// that are wrongly linked to an Employee instead of a PhysicalWorkplace.
+    /// Of these, the ones with a resolvable target workplace can be auto-fixed.
+    /// </summary>
+    public int MisalignedWorkplaceAssets { get; init; }
+
+    /// <summary>Subset of <see cref="MisalignedWorkplaceAssets"/> that the auto-fix can resolve.</summary>
+    public int MisalignedWorkplaceAssetsFixable { get; init; }
+
+    /// <summary>
+    /// User-assigned assets (laptops/desktops/PCs by AssetType.Code) that are
+    /// wrongly anchored to a PhysicalWorkplace. Reported only — not auto-fixed.
+    /// </summary>
+    public int UserAssetsOnWorkplace { get; init; }
+
     /// <summary>Per-brand breakdown of in-use assets within the filtered scope, ordered by total descending.</summary>
     public List<BrandDataQualityDto> Brands { get; init; } = new();
 }
@@ -95,4 +111,64 @@ public record NameNormalizationSampleDto
     public string CurrentName { get; init; } = string.Empty;
     public string NewName { get; init; } = string.Empty;
     public string? SerialNumber { get; init; }
+}
+
+/// <summary>
+/// Result of scanning / fixing assets that are misaligned: workplace-fixed
+/// assets (not laptops / desktops / PCs) that are wrongly attached to an
+/// Employee rather than a PhysicalWorkplace. The fix moves them to the
+/// employee's current workplace and clears <c>Asset.EmployeeId</c>.
+/// </summary>
+public record MisalignedAssetResultDto
+{
+    public bool DryRun { get; init; }
+    /// <summary>Total candidate assets matched by the scan.</summary>
+    public int Scanned { get; init; }
+    /// <summary>Assets that were (or would be) moved to a workplace.</summary>
+    public int Moved { get; init; }
+    /// <summary>Assets skipped because the linked employee has no current workplace.</summary>
+    public int Skipped { get; init; }
+    /// <summary>Per-row breakdown for the dry-run preview / commit log.</summary>
+    public List<MisalignedAssetRowDto> Rows { get; init; } = new();
+}
+
+public record MisalignedAssetRowDto
+{
+    public int AssetId { get; init; }
+    public string AssetCode { get; init; } = string.Empty;
+    public string AssetName { get; init; } = string.Empty;
+    public string? AssetTypeCode { get; init; }
+    public string? AssetTypeName { get; init; }
+    public int? EmployeeId { get; init; }
+    public string? EmployeeName { get; init; }
+    public int? TargetWorkplaceId { get; init; }
+    public string? TargetWorkplaceCode { get; init; }
+    public int? TargetBuildingId { get; init; }
+    /// <summary>"move" = will be moved to TargetWorkplace, "skip" = no resolvable workplace.</summary>
+    public string Action { get; init; } = "move";
+}
+
+/// <summary>
+/// Read-only report: user-assigned assets (laptops / desktops / PCs) that
+/// are wrongly anchored to a <c>PhysicalWorkplaceId</c>. No auto-fix because
+/// the correct EmployeeId is ambiguous (could belong to current or previous occupant).
+/// </summary>
+public record UserAssetOnWorkplaceResultDto
+{
+    public int Total { get; init; }
+    public List<UserAssetOnWorkplaceRowDto> Rows { get; init; } = new();
+}
+
+public record UserAssetOnWorkplaceRowDto
+{
+    public int AssetId { get; init; }
+    public string AssetCode { get; init; } = string.Empty;
+    public string AssetName { get; init; } = string.Empty;
+    public string? AssetTypeCode { get; init; }
+    public string? AssetTypeName { get; init; }
+    public int? EmployeeId { get; init; }
+    public string? EmployeeName { get; init; }
+    public int PhysicalWorkplaceId { get; init; }
+    public string PhysicalWorkplaceCode { get; init; } = string.Empty;
+    public string? CurrentOccupantName { get; init; }
 }
