@@ -39,6 +39,18 @@ const LINE_STATUS_META = {
 } as const;
 
 /**
+ * Maps the offboarding `ReturnAction` to the asset status the device ends up in
+ * (matches AssetRequestCompletionService.ApplyOffboardingLine on the backend).
+ * The label is shown as a small pill so the user can see at a glance whether
+ * the asset went back to stock or was decommissioned.
+ */
+const RETURN_ACTION_DESTINATION = {
+  ReturnToStock: { color: '#1976D2', label: 'Stock' },
+  Reassign: { color: '#1976D2', label: 'Stock (her)' },
+  Decommission: { color: '#757575', label: 'Uit dienst' },
+} as const;
+
+/**
  * Compact stack of mini-cards summarising the assets on a request. Each card
  * shows the asset code (mono), the brand/model, and the serial number, with
  * a status dot and asset-type icon. Designed for use inside the requests list
@@ -206,6 +218,37 @@ export function RequestLinesPreview({ lines, collapsed }: Props) {
                   </Stack>
                 )}
               </Box>
+
+              {/* Destination status pill (offboarding only — set when ReturnAction present) */}
+              {line.returnAction && RETURN_ACTION_DESTINATION[line.returnAction] && (
+                (() => {
+                  const dest = RETURN_ACTION_DESTINATION[line.returnAction];
+                  return (
+                    <Box
+                      sx={{
+                        flexShrink: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.25,
+                        px: 0.75,
+                        py: 0.1,
+                        borderRadius: 999,
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.02em',
+                        bgcolor: alpha(dest.color, isDark ? 0.22 : 0.14),
+                        border: '1px solid',
+                        borderColor: alpha(dest.color, isDark ? 0.4 : 0.3),
+                        color: dest.color,
+                        textTransform: 'uppercase',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <span style={{ opacity: 0.7 }}>→</span> {dest.label}
+                    </Box>
+                  );
+                })()
+              )}
 
               {/* Status icon */}
               <meta.Icon
