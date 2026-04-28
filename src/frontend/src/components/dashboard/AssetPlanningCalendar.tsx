@@ -50,7 +50,7 @@ import {
 import { getNeumorphColors, getNeumorph } from '../../utils/neumorphicStyles';
 import { useAssets } from '../../hooks/useAssets';
 import { useRolloutSessions } from '../../hooks/rollout/useRolloutSessions';
-import { useCreateAssetRequest, useAssetRequestsByDateRange } from '../../hooks/useAssetRequests';
+import { useAssetRequests } from '../../hooks/useAssetRequests';
 
 interface DayData {
   date: Date;
@@ -65,11 +65,10 @@ interface AssetRequestDialogProps {
   selectedDate: Date | null;
   availableStock: number;
   onClose: () => void;
-  onSuccess: (message: string) => void;
   onError: (message: string) => void;
 }
 
-const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose, onSuccess, onError }: AssetRequestDialogProps) => {
+const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose, onError }: AssetRequestDialogProps) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { bgSurface } = getNeumorphColors(isDark);
@@ -79,27 +78,18 @@ const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose, onSuc
   const [assetType, setAssetType] = useState('laptop');
   const [notes, setNotes] = useState('');
 
-  const createRequest = useCreateAssetRequest();
-
+  // The lifecycle request model now requires line items (asset type + source
+  // type + optional asset/template). The simple single-asset-type dialog used
+  // here cannot produce a valid request without a redesign — Phase 5 owns the
+  // rebuild. For now, surface a notice and keep the existing field state so
+  // the dialog still mounts and visually matches the rest of the page.
   const handleSubmit = async () => {
     if (!selectedDate) return;
-
-    try {
-      await createRequest.mutateAsync({
-        requestedDate: selectedDate.toISOString(),
-        requestType,
-        employeeName: employeeName.trim(),
-        assetType,
-        notes: notes.trim() || undefined,
-      });
-
-      onSuccess('Asset aanvraag succesvol ingediend');
-      handleClose();
-    } catch (error) {
-      onError('Fout bij het indienen van de aanvraag');
-      console.error('Error creating asset request:', error);
-    }
+    onError('Asset aanvragen via deze kalender wordt vernieuwd. Gebruik /operations/requests.');
+    handleClose();
   };
+
+  const submitDisabled = !employeeName.trim();
 
   const handleClose = () => {
     setEmployeeName('');
@@ -236,7 +226,7 @@ const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose, onSuc
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!employeeName.trim() || createRequest.isPending}
+          disabled={submitDisabled}
           sx={{
             bgcolor: '#FF7700',
             '&:hover': { bgcolor: '#E06600' },
@@ -244,7 +234,7 @@ const AssetRequestDialog = ({ open, selectedDate, availableStock, onClose, onSuc
             fontWeight: 600,
           }}
         >
-          {createRequest.isPending ? 'Bezig...' : 'Aanvraag Indienen'}
+          Aanvraag Indienen
         </Button>
       </DialogActions>
     </Dialog>
@@ -270,7 +260,10 @@ export const AssetPlanningCalendar = () => {
   // Load asset requests for the 14-day period
   const today = startOfDay(new Date());
   const endDate = addDays(today, 14);
-  const { data: assetRequests, isLoading: requestsLoading } = useAssetRequestsByDateRange(today, endDate);
+  const { data: assetRequests, isLoading: requestsLoading } = useAssetRequests({
+    dateFrom: today.toISOString(),
+    dateTo: endDate.toISOString(),
+  });
 
   const isLoading = assetsLoading || sessionsLoading || requestsLoading;
 
@@ -612,7 +605,6 @@ export const AssetPlanningCalendar = () => {
         selectedDate={selectedDate}
         availableStock={selectedDate ? calendarDays.find((d) => isSameDay(d.date, selectedDate))?.availableStock || 0 : 0}
         onClose={() => setDialogOpen(false)}
-        onSuccess={(message) => setSnackbar({ open: true, message, severity: 'success' })}
         onError={(message) => setSnackbar({ open: true, message, severity: 'error' })}
       />
 

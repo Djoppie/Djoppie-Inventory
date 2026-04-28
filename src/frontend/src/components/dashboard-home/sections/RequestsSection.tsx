@@ -12,11 +12,11 @@ import { ROUTES } from '../../../constants/routes';
 import DashboardSection from './DashboardSection';
 import SectionKPICard from './SectionKPICard';
 import KPIReportDialog, { KPIReportItem } from '../KPIReportDialog';
-import type { AssetRequestDto } from '../../../types/assetRequest.types';
+import type { AssetRequestSummaryDto } from '../../../types/assetRequest.types';
 import type { AssetType } from '../../../types/admin.types';
 
 interface RequestsSectionProps {
-  requests?: AssetRequestDto[];
+  requests?: AssetRequestSummaryDto[];
   delay?: number;
   selectedCategoryIds?: Set<number>;
   selectedAssetTypeIds?: Set<number>;
@@ -26,47 +26,18 @@ interface RequestsSectionProps {
 const RequestsSection: React.FC<RequestsSectionProps> = ({
   requests = [],
   delay = 0,
-  selectedCategoryIds,
-  selectedAssetTypeIds,
-  assetTypes = [],
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
   const [openReport, setOpenReport] = useState<'pending' | 'onboarding' | 'offboarding' | 'completed' | null>(null);
 
-  const hasCatFilter = (selectedCategoryIds?.size ?? 0) > 0;
-  const hasTypeFilter = (selectedAssetTypeIds?.size ?? 0) > 0;
-  const filterActive = hasCatFilter || hasTypeFilter;
-
-  // Look up an AssetType by free-text match on the request.assetType string.
-  // AssetRequestDto.assetType is a plain string (e.g. "Laptop", "Desktop", "Monitor")
-  // — match case-insensitively against AssetType.name or AssetType.code.
-  const assetTypeByName = useMemo(() => {
-    const map = new Map<string, AssetType>();
-    assetTypes.forEach((t) => {
-      map.set(t.name.toLowerCase(), t);
-      map.set(t.code.toLowerCase(), t);
-    });
-    return map;
-  }, [assetTypes]);
-
-  // Apply filter to requests. A request matches when its assetType resolves to
-  // an AssetType whose id/categoryId is in the selected set.
-  const filteredRequests = useMemo(() => {
-    if (!filterActive) return requests;
-    return requests.filter((r) => {
-      const key = r.assetType?.toLowerCase();
-      if (!key) return false;
-      const resolved = assetTypeByName.get(key);
-      if (!resolved) return false;
-      if (hasTypeFilter) return selectedAssetTypeIds!.has(resolved.id);
-      if (hasCatFilter) {
-        return resolved.categoryId !== undefined && selectedCategoryIds!.has(resolved.categoryId);
-      }
-      return true;
-    });
-  }, [requests, filterActive, hasTypeFilter, hasCatFilter, selectedAssetTypeIds, selectedCategoryIds, assetTypeByName]);
+  // Asset-type filtering on requests was removed when the request model changed
+  // from a single asset-type string to multi-line lifecycle requests. Phase 5d
+  // will rebuild this widget on top of the new statistics endpoint; for now,
+  // requests are displayed unfiltered.
+  const filterActive = false;
+  const filteredRequests = requests;
 
   const kpis = useMemo(() => {
     const source = filteredRequests;
@@ -236,9 +207,9 @@ const RequestsSection: React.FC<RequestsSectionProps> = ({
                       fontWeight: 500,
                     }}
                   >
-                    {request.employeeName || `Request #${request.id}`}
+                    {request.employeeDisplayName || request.requestedFor || `Request #${request.id}`}
                   </Typography>
-                  {request.assetType && (
+                  {request.lineCount > 0 && (
                     <Typography
                       variant="caption"
                       sx={{
@@ -250,7 +221,7 @@ const RequestsSection: React.FC<RequestsSectionProps> = ({
                         flexShrink: 0,
                       }}
                     >
-                      {request.assetType}
+                      {`${request.completedLineCount}/${request.lineCount}`}
                     </Typography>
                   )}
                 </Box>
@@ -274,7 +245,7 @@ const RequestsSection: React.FC<RequestsSectionProps> = ({
       </Box>
 
       {openReport && (() => {
-        const buildItems = (filterFn: (r: AssetRequestDto) => boolean): KPIReportItem[] =>
+        const buildItems = (filterFn: (r: AssetRequestSummaryDto) => boolean): KPIReportItem[] =>
           filteredRequests
             .filter(filterFn)
             .sort((a, b) => {
@@ -283,25 +254,27 @@ const RequestsSection: React.FC<RequestsSectionProps> = ({
               return tb - ta;
             })
             .map((r) => {
-              const initials = (r.employeeName || 'X').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+              const displayName = r.employeeDisplayName || r.requestedFor;
+              const initials = (displayName || 'X').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
               const typeColor = r.requestType === 'onboarding' ? '#4CAF50' : '#f44336';
               const typeLabel = r.requestType === 'onboarding' ? 'Onboarding' : 'Offboarding';
               const date = r.requestedDate ? new Date(r.requestedDate).toLocaleDateString('nl-BE') : null;
+              const lineLabel = r.lineCount > 0 ? `${r.completedLineCount}/${r.lineCount} lijnen` : null;
               return {
                 id: r.id,
                 avatarText: initials,
-                primary: r.employeeName || `Request #${r.id}`,
-                secondary: [r.assetType, date ? `gevraagd ${date}` : null, r.notes ?? null].filter(Boolean).join(' · '),
+                primary: displayName || `Request #${r.id}`,
+                secondary: [date ? `gevraagd ${date}` : null, lineLabel].filter(Boolean).join(' · '),
                 chips: [
                   { label: typeLabel, color: typeColor },
-                  ...(r.assetType ? [{ label: r.assetType, color: EMPLOYEE_COLOR }] : []),
+                  ...(lineLabel ? [{ label: lineLabel, color: EMPLOYEE_COLOR }] : []),
                 ],
                 tag: { label: r.status, color: getStatusColor(r.status) },
                 onClick: () => {
                   const route = r.requestType === 'onboarding' ? ROUTES.REQUESTS_ONBOARDING : ROUTES.REQUESTS_OFFBOARDING;
                   navigate(route);
                 },
-                searchText: [r.employeeName, r.assetType, r.notes].filter(Boolean).join(' '),
+                searchText: [displayName, r.requestedFor].filter(Boolean).join(' '),
               };
             });
 
