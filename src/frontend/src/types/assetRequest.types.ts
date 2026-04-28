@@ -139,6 +139,8 @@ export interface AssetRequestFilters {
   dateFrom?: string;
   dateTo?: string;
   employeeId?: number;
+  /** Client-side only — filtered in-memory after fetch. */
+  physicalWorkplaceId?: number;
   q?: string;
 }
 

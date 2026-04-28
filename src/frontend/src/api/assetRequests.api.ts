@@ -31,6 +31,11 @@ export const queryAssetRequests = async (
   const { data } = await apiClient.get<AssetRequestSummaryDto[]>(BASE, {
     params: toQueryParams(filters),
   });
+  // Workplace filter is applied client-side until the backend grows a
+  // physicalWorkplaceId parameter.
+  if (filters.physicalWorkplaceId !== undefined) {
+    return data.filter((r) => r.physicalWorkplaceId === filters.physicalWorkplaceId);
+  }
   return data;
 };
 

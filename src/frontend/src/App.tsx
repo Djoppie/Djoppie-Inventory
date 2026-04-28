@@ -66,7 +66,7 @@ const WorkplacesPage = lazyWithRetry(() => import('./pages/workplaces/Workplaces
 const WorkplaceDetailPage = lazyWithRetry(() => import('./pages/workplaces/WorkplaceDetailPage'));
 const WorkplaceReportsPage = lazyWithRetry(() => import('./pages/workplaces/WorkplaceReportsPage'));
 const RequestsDashboardPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsDashboardPage'));
-const RequestsReportsPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsReportsPage'));
+const RequestsHistoryPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsHistoryPage'));
 const OnboardingListPage = lazyWithRetry(() => import('./pages/operations/requests/OnboardingListPage'));
 const OffboardingListPage = lazyWithRetry(() => import('./pages/operations/requests/OffboardingListPage'));
 const RequestCreatePage = lazyWithRetry(() => import('./pages/operations/requests/RequestCreatePage'));
@@ -135,7 +135,7 @@ function App() {
                   <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<OffboardingListPage />} />
                   <Route path={ROUTES.REQUEST_OFFBOARDING_NEW} element={<RequestCreatePage />} />
                   <Route path={ROUTES.REQUEST_OFFBOARDING_DETAIL} element={<RequestDetailPage />} />
-                  <Route path={ROUTES.REQUESTS_REPORTS} element={<RequestsReportsPage />} />
+                  <Route path={ROUTES.REQUESTS_REPORTS} element={<RequestsHistoryPage />} />
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
                   <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
