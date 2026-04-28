@@ -1384,13 +1384,15 @@
       "title": "Onboarding requests",
       "subtitle": "New employees and their assets",
       "newButton": "New onboarding",
-      "createTitle": "New onboarding request"
+      "createTitle": "New onboarding request",
+      "createSubtitle": "New employee onboarding process"
     },
     "offboarding": {
       "title": "Offboarding requests",
       "subtitle": "Departing employees and asset returns",
       "newButton": "New offboarding",
-      "createTitle": "New offboarding request"
+      "createTitle": "New offboarding request",
+      "createSubtitle": "Employee offboarding process"
     },
     "form": {
       "requestedFor": "Employee (name or email)",
@@ -1399,10 +1401,12 @@
       "notLinked": "Not yet linked",
       "requestedDate": "Planned date",
       "physicalWorkplace": "Workplace (optional)",
-      "notes": "Notes"
+      "notes": "Notes",
+      "sectionTitle": "Request details"
     },
     "lines": {
       "title": "Asset assignments",
+      "sectionTitle": "Asset lines",
       "addLine": "Add line",
       "assetType": "Asset type",
       "source": "Source",

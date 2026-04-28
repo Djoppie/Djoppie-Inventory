@@ -1386,13 +1386,15 @@
       "title": "Onboarding aanvragen",
       "subtitle": "Nieuwe medewerkers en hun assets",
       "newButton": "Nieuwe onboarding",
-      "createTitle": "Nieuwe onboarding aanvraag"
+      "createTitle": "Nieuwe onboarding aanvraag",
+      "createSubtitle": "Nieuwe medewerker instroomproces"
     },
     "offboarding": {
       "title": "Offboarding aanvragen",
       "subtitle": "Vertrekkende medewerkers en assets retourneren",
       "newButton": "Nieuwe offboarding",
-      "createTitle": "Nieuwe offboarding aanvraag"
+      "createTitle": "Nieuwe offboarding aanvraag",
+      "createSubtitle": "Medewerker uitstroomproces"
     },
     "form": {
       "requestedFor": "Medewerker (naam of e-mail)",
@@ -1401,10 +1403,12 @@
       "notLinked": "Nog niet gekoppeld",
       "requestedDate": "Geplande datum",
       "physicalWorkplace": "Werkplek (optioneel)",
-      "notes": "Opmerkingen"
+      "notes": "Opmerkingen",
+      "sectionTitle": "Aanvraagdetails"
     },
     "lines": {
       "title": "Asset toewijzingen",
+      "sectionTitle": "Assetregels",
       "addLine": "Regel toevoegen",
       "assetType": "Asset type",
       "source": "Bron",

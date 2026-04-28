@@ -71,8 +71,9 @@ export function EmployeePickerWithFallback({ value, onChange, fetchEmployees, re
           options={options}
           value={options.find((o) => o.id === value.employeeId) ?? null}
           onChange={(selected) => {
-            // When an option is selected, show the display name in the input
-            setDisplayText(selected ? selected.displayName : '');
+            // MUI will fire onInputChange with reason='reset' immediately after
+            // this, updating displayText to the option's label via onDisplayChange.
+            // No need to set displayText here.
             onChange(
               selected
                 ? { requestedFor: selected.userPrincipalName, employeeId: selected.id }

@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { RequestForm, type RequestFormState } from '../../../components/operations/requests/RequestForm';
@@ -191,7 +192,7 @@ export default function RequestCreatePage() {
         {/* Asset lines card */}
         <SectionCard
           title={t('requests.lines.sectionTitle', { defaultValue: 'Assetregels' })}
-          icon={<Box sx={{ width: 16, height: 16, fontSize: 16 }}>≡</Box>}
+          icon={<ListAltIcon sx={{ fontSize: 16 }} />}
           accentColor={REQUESTS_COLOR}
           isDark={isDark}
         >
