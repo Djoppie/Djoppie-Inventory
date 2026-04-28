@@ -1378,5 +1378,77 @@
     "assignEmployee": "Employee",
     "assignWorkplace": "Workplace",
     "nieuwCount": "{{count}} asset(s) with status New"
+  },
+  "requests": {
+    "onboarding": {
+      "title": "Onboarding requests",
+      "subtitle": "New employees and their assets",
+      "newButton": "New onboarding",
+      "createTitle": "New onboarding request"
+    },
+    "offboarding": {
+      "title": "Offboarding requests",
+      "subtitle": "Departing employees and asset returns",
+      "newButton": "New offboarding",
+      "createTitle": "New offboarding request"
+    },
+    "form": {
+      "requestedFor": "Employee (name or email)",
+      "requestedForHelper": "Can be filled in before the Entra account exists",
+      "linkedEmployee": "Linked employee",
+      "notLinked": "Not yet linked",
+      "requestedDate": "Planned date",
+      "physicalWorkplace": "Workplace (optional)",
+      "notes": "Notes"
+    },
+    "lines": {
+      "title": "Asset assignments",
+      "addLine": "Add line",
+      "assetType": "Asset type",
+      "source": "Source",
+      "asset": "Asset",
+      "template": "Template",
+      "returnAction": "Return action",
+      "status": "Status",
+      "notes": "Notes",
+      "noLines": "No asset lines added yet"
+    },
+    "sourceType": {
+      "ToBeAssigned": "To be determined",
+      "ExistingInventory": "Existing asset",
+      "NewFromTemplate": "New from template"
+    },
+    "lineStatus": {
+      "Pending": "Open",
+      "Reserved": "Reserved",
+      "Completed": "Completed",
+      "Skipped": "Skipped"
+    },
+    "returnAction": {
+      "ReturnToStock": "Return to stock",
+      "Decommission": "Decommission",
+      "Reassign": "Reassign"
+    },
+    "status": {
+      "Pending": "Open",
+      "Approved": "Approved",
+      "InProgress": "In progress",
+      "Completed": "Completed",
+      "Cancelled": "Cancelled",
+      "Rejected": "Rejected"
+    },
+    "actions": {
+      "approve": "Approve",
+      "start": "Start",
+      "complete": "Complete",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "completeOnboarding": "On completion, all linked assets will be marked as In Use and assigned to the employee. Continue?",
+      "completeOffboarding": "On completion, all linked assets will be processed according to their return action. Continue?",
+      "cancel": "Cancel the request? Already-completed changes remain.",
+      "delete": "Delete the request permanently?"
+    }
   }
 }

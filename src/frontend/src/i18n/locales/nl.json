@@ -1380,5 +1380,77 @@
     "assignEmployee": "Medewerker",
     "assignWorkplace": "Werkplek",
     "nieuwCount": "{{count}} asset(s) met status Nieuw"
+  },
+  "requests": {
+    "onboarding": {
+      "title": "Onboarding aanvragen",
+      "subtitle": "Nieuwe medewerkers en hun assets",
+      "newButton": "Nieuwe onboarding",
+      "createTitle": "Nieuwe onboarding aanvraag"
+    },
+    "offboarding": {
+      "title": "Offboarding aanvragen",
+      "subtitle": "Vertrekkende medewerkers en assets retourneren",
+      "newButton": "Nieuwe offboarding",
+      "createTitle": "Nieuwe offboarding aanvraag"
+    },
+    "form": {
+      "requestedFor": "Medewerker (naam of e-mail)",
+      "requestedForHelper": "Mag ingevuld worden voordat de Entra account bestaat",
+      "linkedEmployee": "Gekoppeld aan medewerker",
+      "notLinked": "Nog niet gekoppeld",
+      "requestedDate": "Geplande datum",
+      "physicalWorkplace": "Werkplek (optioneel)",
+      "notes": "Opmerkingen"
+    },
+    "lines": {
+      "title": "Asset toewijzingen",
+      "addLine": "Regel toevoegen",
+      "assetType": "Asset type",
+      "source": "Bron",
+      "asset": "Asset",
+      "template": "Template",
+      "returnAction": "Retour-actie",
+      "status": "Status",
+      "notes": "Opmerkingen",
+      "noLines": "Nog geen asset-regels toegevoegd"
+    },
+    "sourceType": {
+      "ToBeAssigned": "Nog te bepalen",
+      "ExistingInventory": "Bestaande asset",
+      "NewFromTemplate": "Nieuw via template"
+    },
+    "lineStatus": {
+      "Pending": "Open",
+      "Reserved": "Gereserveerd",
+      "Completed": "Voltooid",
+      "Skipped": "Overgeslagen"
+    },
+    "returnAction": {
+      "ReturnToStock": "Terug naar stock",
+      "Decommission": "Uit dienst",
+      "Reassign": "Hertoewijzen"
+    },
+    "status": {
+      "Pending": "Open",
+      "Approved": "Goedgekeurd",
+      "InProgress": "In behandeling",
+      "Completed": "Voltooid",
+      "Cancelled": "Geannuleerd",
+      "Rejected": "Afgewezen"
+    },
+    "actions": {
+      "approve": "Goedkeuren",
+      "start": "Starten",
+      "complete": "Afronden",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen"
+    },
+    "confirm": {
+      "completeOnboarding": "Bij afronding worden alle gekoppelde assets op 'In gebruik' gezet en aan de medewerker toegewezen. Doorgaan?",
+      "completeOffboarding": "Bij afronding worden alle gekoppelde assets afgemeld volgens hun retour-actie. Doorgaan?",
+      "cancel": "Aanvraag annuleren? Reeds afgeronde wijzigingen blijven bestaan.",
+      "delete": "Aanvraag definitief verwijderen?"
+    }
   }
 }
