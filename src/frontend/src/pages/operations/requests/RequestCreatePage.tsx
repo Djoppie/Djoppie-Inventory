@@ -196,7 +196,13 @@ export default function RequestCreatePage() {
           accentColor={REQUESTS_COLOR}
           isDark={isDark}
         >
-          <RequestLinesEditor lines={lines} requestType={requestType} onLinesChange={setLines} />
+          <RequestLinesEditor
+            lines={lines}
+            requestType={requestType}
+            onLinesChange={setLines}
+            employeeId={form.employeeId}
+            physicalWorkplaceId={form.physicalWorkplaceId}
+          />
         </SectionCard>
 
         {/* Action bar */}

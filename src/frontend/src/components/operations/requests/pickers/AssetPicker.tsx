@@ -48,6 +48,17 @@ interface Props {
   disabled?: boolean;
   /** Optional: restrict to a specific asset type id (e.g. matched line type). */
   filterByAssetTypeId?: number;
+  /** Optional: only show assets whose status is in this list. */
+  allowedStatuses?: AssetStatus[];
+  /**
+   * Optional: only show assets currently assigned to this employee or workplace.
+   * If both are provided the OR combination is used (asset matches either).
+   * When neither is provided this filter is skipped.
+   */
+  assignedToEmployeeId?: number;
+  assignedToWorkplaceId?: number;
+  /** Optional: helper text shown below the input (e.g. "geen toegewezen assets"). */
+  helperText?: string;
 }
 
 export function AssetPicker({
@@ -57,12 +68,34 @@ export function AssetPicker({
   label,
   disabled,
   filterByAssetTypeId,
+  allowedStatuses,
+  assignedToEmployeeId,
+  assignedToWorkplaceId,
+  helperText,
 }: Props) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const filtered = filterByAssetTypeId
-    ? options.filter((a) => a.assetTypeId === filterByAssetTypeId)
-    : options;
+
+  let filtered = options;
+  if (filterByAssetTypeId) {
+    filtered = filtered.filter((a) => a.assetTypeId === filterByAssetTypeId);
+  }
+  if (allowedStatuses && allowedStatuses.length > 0) {
+    filtered = filtered.filter((a) => allowedStatuses.includes(a.status));
+  }
+  if (assignedToEmployeeId !== undefined || assignedToWorkplaceId !== undefined) {
+    filtered = filtered.filter(
+      (a) =>
+        (assignedToEmployeeId !== undefined && a.employeeId === assignedToEmployeeId) ||
+        (assignedToWorkplaceId !== undefined &&
+          a.physicalWorkplaceId === assignedToWorkplaceId),
+    );
+  }
+  // Always make sure the currently-selected asset stays in the list, otherwise
+  // MUI flags a mismatch and visually clears the field.
+  if (value && !filtered.some((a) => a.id === value.id)) {
+    filtered = [value, ...filtered];
+  }
 
   return (
     <Autocomplete<Asset>
@@ -74,7 +107,9 @@ export function AssetPicker({
       getOptionLabel={(a) => `${a.assetCode} — ${a.assetName ?? ''}`}
       isOptionEqualToValue={(a, b) => a.id === b.id}
       slotProps={getRichAutocompleteSlotProps(isDark)}
-      renderInput={(params) => <TextField {...params} label={label} />}
+      renderInput={(params) => (
+        <TextField {...params} label={label} helperText={helperText} />
+      )}
       renderOption={(props, asset, { selected }) => {
         const Icon = pickAssetIcon(asset.assetType?.name);
         const status = STATUS_COLORS[asset.status];

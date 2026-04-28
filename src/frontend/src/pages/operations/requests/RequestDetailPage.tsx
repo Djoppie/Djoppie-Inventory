@@ -283,6 +283,8 @@ export default function RequestDetailPage() {
             requestType={request.requestType}
             onLinesChange={onLinesChange}
             readOnly={readOnly}
+            employeeId={request.employeeId}
+            physicalWorkplaceId={request.physicalWorkplaceId}
           />
         </SectionCard>
       </Stack>

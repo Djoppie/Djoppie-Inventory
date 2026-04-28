@@ -7,6 +7,7 @@ import { AssetLineRow, type EditableLine } from './AssetLineRow';
 import { AssetPicker } from './pickers/AssetPicker';
 import { TemplatePicker } from './pickers/TemplatePicker';
 import type { AssetRequestType } from '../../../types/assetRequest.types';
+import { AssetStatus } from '../../../types/asset.types';
 import { getAssets } from '../../../api/assets.api';
 import { getTemplates } from '../../../api/templates.api';
 import { assetTypesApi } from '../../../api/admin.api';
@@ -24,9 +25,25 @@ interface Props {
   requestType: AssetRequestType;
   onLinesChange: (lines: EditableLine[]) => void;
   readOnly?: boolean;
+  /**
+   * Form context used to scope the asset picker:
+   * - Onboarding only ever surfaces Nieuw / Stock assets.
+   * - Offboarding surfaces only assets currently assigned to this employee
+   *   and/or workplace. When neither is set we fall back to all InGebruik
+   *   assets (offboarding by definition can only target an in-use asset).
+   */
+  employeeId?: number;
+  physicalWorkplaceId?: number;
 }
 
-export function RequestLinesEditor({ lines, requestType, onLinesChange, readOnly }: Props) {
+export function RequestLinesEditor({
+  lines,
+  requestType,
+  onLinesChange,
+  readOnly,
+  employeeId,
+  physicalWorkplaceId,
+}: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -160,6 +177,29 @@ export function RequestLinesEditor({ lines, requestType, onLinesChange, readOnly
         {lines.map((line, idx) => {
           const filterTypeId = line.assetTypeId || undefined;
 
+          // Onboarding: only Nieuw/Stock assets — anything else cannot be onboarded.
+          // Offboarding: when an employee or workplace is selected, scope to assets
+          // currently assigned to either; otherwise fall back to InGebruik so the
+          // user only sees offboardable candidates.
+          const hasAssignmentContext =
+            employeeId !== undefined || physicalWorkplaceId !== undefined;
+          const allowedStatuses: AssetStatus[] | undefined =
+            requestType === 'onboarding'
+              ? [AssetStatus.Nieuw, AssetStatus.Stock]
+              : hasAssignmentContext
+                ? undefined
+                : [AssetStatus.InGebruik];
+          const assignedEmp =
+            requestType === 'offboarding' ? employeeId : undefined;
+          const assignedWp =
+            requestType === 'offboarding' ? physicalWorkplaceId : undefined;
+          const offboardingHelper =
+            requestType === 'offboarding' && hasAssignmentContext
+              ? t('requests.lines.scopedToAssignedHelper', {
+                  defaultValue: 'Toont enkel assets toegewezen aan deze medewerker of werkplek',
+                })
+              : undefined;
+
           const assetPicker = (
             <AssetPicker
               options={assets}
@@ -174,6 +214,10 @@ export function RequestLinesEditor({ lines, requestType, onLinesChange, readOnly
               label={t('requests.lines.asset')}
               disabled={readOnly}
               filterByAssetTypeId={filterTypeId}
+              allowedStatuses={allowedStatuses}
+              assignedToEmployeeId={assignedEmp}
+              assignedToWorkplaceId={assignedWp}
+              helperText={offboardingHelper}
             />
           );
 
