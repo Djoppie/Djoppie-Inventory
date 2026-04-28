@@ -151,7 +151,7 @@ const AssetLocationChainCompact = ({ asset, onAssignWorkplace, onAssignEmployee 
         {empId ? (
           <Box
             component={Link}
-            to={`/admin?tab=employees`}
+            to={`/admin/organisation?tab=employees`}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             sx={{
               ml: 0.4,
@@ -534,7 +534,7 @@ const AssetLocationChainFull = ({
         {/* Chain breadcrumb */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
           <ChainLink
-            to="/admin?tab=employees"
+            to="/admin/organisation?tab=employees"
             label={loc.employeeName || '—'}
             icon={<PersonIcon sx={{ fontSize: 16 }} />}
             color={EMPLOYEE_COLOR}
@@ -559,7 +559,7 @@ const AssetLocationChainFull = ({
             <>
               <Dot />
               <ChainLink
-                to={loc.physicalWorkplaceId ? `/workplaces/${loc.physicalWorkplaceId}` : '/admin?tab=buildings'}
+                to={loc.physicalWorkplaceId ? `/workplaces/${loc.physicalWorkplaceId}` : '/admin/locations?tab=buildings'}
                 label={loc.buildingName}
                 icon={<BusinessIcon sx={{ fontSize: 16 }} />}
                 color={BUILDING_COLOR}
@@ -649,7 +649,7 @@ const AssetLocationChainFull = ({
             <>
               <Dot />
               <ChainLink
-                to="/admin?tab=buildings"
+                to="/admin/locations?tab=buildings"
                 label={loc.buildingName}
                 icon={<BusinessIcon sx={{ fontSize: 16 }} />}
                 color={BUILDING_COLOR}
