@@ -61,7 +61,7 @@ Architecture and technical specifications.
 
 | Environment | Frontend | Backend API |
 |-------------|----------|-------------|
-| **DEV** | https://blue-cliff-031d65b03.1.azurestaticapps.net | https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net |
+| **DEV** | <https://blue-cliff-031d65b03.1.azurestaticapps.net> | <https://app-djoppie-inventory-dev-api-k5xdqp.azurewebsites.net> |
 | **Production** | Contact IT Administrator | Contact IT Administrator |
 
 ---
@@ -89,8 +89,8 @@ The wiki automatically updates when files change.
 
 ## Support
 
-- **IT ServiceDesk**: https://diepenbeek.sharepoint.com/sites/IN-Servicedesk
-- **GitHub Issues**: https://github.com/Djoppie/Djoppie-Inventory/issues
+- **IT ServiceDesk**: <https://diepenbeek.sharepoint.com/sites/IN-Servicedesk>
+- **GitHub Issues**: <https://github.com/Djoppie/Djoppie-Inventory/issues>
 
 ---
 

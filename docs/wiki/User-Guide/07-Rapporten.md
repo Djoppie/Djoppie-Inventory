@@ -194,6 +194,7 @@ Ontbrekende serienummers worden geel gemarkeerd. Klik op een ontbrekend serienum
 3. Het bestand wordt gedownload als `{Sessienaam}-rapport-{datum}.xlsx`.
 
 Het Excel-bestand bevat:
+
 - Sheet **Overzicht** — KPI-samenvatting
 - Sheet **Checklist** — alle werkplekken met assets, serienummers en status
 - Sheet **Type Breakdown** — aantallen per bewegingstype (Onboarding / Offboarding / Swap / Overig)

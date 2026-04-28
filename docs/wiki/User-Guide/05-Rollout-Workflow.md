@@ -67,6 +67,7 @@ Open een werkplek; je ziet drie groepen items:
 Apparatuur die aan de **persoon** wordt gekoppeld — typisch laptop. Bij voltooiing krijgt het asset deze gebruiker als eigenaar en gaat van `Nieuw → InGebruik`.
 
 Per item kies je:
+
 - **Bestaand asset** — zoek op serienummer of asset-code
 - **Nieuw uit template** — asset wordt bij voltooiing aangemaakt met auto-gegenereerde code (`TYPE-YY-BRAND-NNNNN`) en QR-code
 - **On-site aanmaken** — manueel invullen tijdens uitvoering
