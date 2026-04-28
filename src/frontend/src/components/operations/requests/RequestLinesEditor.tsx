@@ -4,10 +4,14 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { AssetLineRow, type EditableLine } from './AssetLineRow';
-import { AssetPicker } from './pickers/AssetPicker';
+import {
+  AssetTablePickerPanel,
+  AssetTablePickerTrigger,
+  useAssetTablePicker,
+} from './pickers/AssetTablePicker';
 import { TemplatePicker } from './pickers/TemplatePicker';
 import type { AssetRequestType } from '../../../types/assetRequest.types';
-import { AssetStatus } from '../../../types/asset.types';
+import { type Asset, type AssetTemplate, AssetStatus } from '../../../types/asset.types';
 import { getAssets } from '../../../api/assets.api';
 import { getTemplates } from '../../../api/templates.api';
 import { assetTypesApi } from '../../../api/admin.api';
@@ -34,6 +38,136 @@ interface Props {
    */
   employeeId?: number;
   physicalWorkplaceId?: number;
+}
+
+/**
+ * Per-line wrapper. Hosts the inline-expanding asset table picker hook (which
+ * cannot be called inside a `.map`) and feeds the trigger + panel slots into
+ * `AssetLineRow`.
+ */
+interface LineWrapperProps {
+  line: EditableLine;
+  idx: number;
+  requestType: AssetRequestType;
+  assetTypes: AssetTypeOption[];
+  assets: Asset[];
+  templates: AssetTemplate[];
+  employeeId?: number;
+  physicalWorkplaceId?: number;
+  readOnly?: boolean;
+  onChange: (idx: number, next: EditableLine) => void;
+  onSkipToggle?: (idx: number) => void;
+  onDelete: (idx: number) => void;
+}
+
+function LineWrapper({
+  line,
+  idx,
+  requestType,
+  assetTypes,
+  assets,
+  templates,
+  employeeId,
+  physicalWorkplaceId,
+  readOnly,
+  onChange,
+  onSkipToggle,
+  onDelete,
+}: LineWrapperProps) {
+  const { t } = useTranslation();
+  const filterTypeId = line.assetTypeId || undefined;
+  const sourceType = ('sourceType' in line ? line.sourceType : undefined) ?? 'ToBeAssigned';
+
+  const hasAssignmentContext =
+    employeeId !== undefined || physicalWorkplaceId !== undefined;
+  const allowedStatuses: AssetStatus[] | undefined =
+    requestType === 'onboarding'
+      ? [AssetStatus.Nieuw, AssetStatus.Stock]
+      : hasAssignmentContext
+        ? undefined
+        : [AssetStatus.InGebruik];
+  const assignedEmp = requestType === 'offboarding' ? employeeId : undefined;
+  const assignedWp =
+    requestType === 'offboarding' ? physicalWorkplaceId : undefined;
+  const offboardingHelper =
+    requestType === 'offboarding' && hasAssignmentContext
+      ? t('requests.lines.scopedToAssignedHelper', {
+          defaultValue:
+            'Toont enkel assets toegewezen aan deze medewerker of werkplek',
+        })
+      : undefined;
+
+  const tableState = useAssetTablePicker({
+    options: assets,
+    value: assets.find((a) => a.id === line.assetId) ?? null,
+    onChange: (selected) =>
+      onChange(idx, {
+        ...line,
+        assetId: selected?.id,
+        sourceType: 'ExistingInventory',
+      }),
+    filterByAssetTypeId: filterTypeId,
+    allowedStatuses,
+    assignedToEmployeeId: assignedEmp,
+    assignedToWorkplaceId: assignedWp,
+  });
+
+  const assetPicker = (
+    <AssetTablePickerTrigger
+      state={tableState}
+      label={t('requests.lines.asset')}
+      disabled={readOnly}
+      helperText={offboardingHelper}
+    />
+  );
+
+  const templatePicker = (
+    <TemplatePicker
+      options={templates}
+      value={templates.find((tpl) => tpl.id === line.assetTemplateId) ?? null}
+      onChange={(selected) =>
+        onChange(idx, {
+          ...line,
+          assetTemplateId: selected?.id,
+          sourceType: 'NewFromTemplate',
+        })
+      }
+      label={t('requests.lines.template')}
+      disabled={readOnly}
+      filterByAssetTypeId={filterTypeId}
+    />
+  );
+
+  // Only render the expanding panel when this line is actually using
+  // existing-inventory mode — switching the source mode collapses the panel.
+  const bottomPanel =
+    sourceType === 'ExistingInventory' ? (
+      <AssetTablePickerPanel
+        state={tableState}
+        emptyMessage={
+          requestType === 'offboarding' && hasAssignmentContext
+            ? 'Geen toegewezen assets gevonden voor deze medewerker of werkplek.'
+            : requestType === 'onboarding'
+              ? 'Geen Nieuw of Stock assets beschikbaar voor dit type.'
+              : 'Geen assets beschikbaar voor deze selectie.'
+        }
+      />
+    ) : undefined;
+
+  return (
+    <AssetLineRow
+      line={line}
+      requestType={requestType}
+      assetTypes={assetTypes}
+      onChange={(next) => onChange(idx, next)}
+      onSkipToggle={onSkipToggle ? () => onSkipToggle(idx) : undefined}
+      onDelete={() => onDelete(idx)}
+      assetPicker={assetPicker}
+      templatePicker={templatePicker}
+      bottomPanel={bottomPanel}
+      readOnly={readOnly}
+    />
+  );
 }
 
 export function RequestLinesEditor({
@@ -85,7 +219,7 @@ export function RequestLinesEditor({
 
   const skipToggle = (idx: number) => {
     const cur = lines[idx];
-    if (!('status' in cur)) return; // create-mode lines have no status yet
+    if (!('status' in cur)) return;
     const next = cur.status === 'Skipped' ? 'Pending' : 'Skipped';
     updateLine(idx, { ...cur, status: next });
   };
@@ -172,87 +306,24 @@ export function RequestLinesEditor({
         </Box>
       )}
 
-      {/* Line cards — spacing between neumorphic cards, no dividers needed */}
       <Stack spacing={1.5}>
-        {lines.map((line, idx) => {
-          const filterTypeId = line.assetTypeId || undefined;
-
-          // Onboarding: only Nieuw/Stock assets — anything else cannot be onboarded.
-          // Offboarding: when an employee or workplace is selected, scope to assets
-          // currently assigned to either; otherwise fall back to InGebruik so the
-          // user only sees offboardable candidates.
-          const hasAssignmentContext =
-            employeeId !== undefined || physicalWorkplaceId !== undefined;
-          const allowedStatuses: AssetStatus[] | undefined =
-            requestType === 'onboarding'
-              ? [AssetStatus.Nieuw, AssetStatus.Stock]
-              : hasAssignmentContext
-                ? undefined
-                : [AssetStatus.InGebruik];
-          const assignedEmp =
-            requestType === 'offboarding' ? employeeId : undefined;
-          const assignedWp =
-            requestType === 'offboarding' ? physicalWorkplaceId : undefined;
-          const offboardingHelper =
-            requestType === 'offboarding' && hasAssignmentContext
-              ? t('requests.lines.scopedToAssignedHelper', {
-                  defaultValue: 'Toont enkel assets toegewezen aan deze medewerker of werkplek',
-                })
-              : undefined;
-
-          const assetPicker = (
-            <AssetPicker
-              options={assets}
-              value={assets.find((a) => a.id === line.assetId) ?? null}
-              onChange={(selected) =>
-                updateLine(idx, {
-                  ...line,
-                  assetId: selected?.id,
-                  sourceType: 'ExistingInventory',
-                })
-              }
-              label={t('requests.lines.asset')}
-              disabled={readOnly}
-              filterByAssetTypeId={filterTypeId}
-              allowedStatuses={allowedStatuses}
-              assignedToEmployeeId={assignedEmp}
-              assignedToWorkplaceId={assignedWp}
-              helperText={offboardingHelper}
-            />
-          );
-
-          const templatePicker = (
-            <TemplatePicker
-              options={templates}
-              value={templates.find((tpl) => tpl.id === line.assetTemplateId) ?? null}
-              onChange={(selected) =>
-                updateLine(idx, {
-                  ...line,
-                  assetTemplateId: selected?.id,
-                  sourceType: 'NewFromTemplate',
-                })
-              }
-              label={t('requests.lines.template')}
-              disabled={readOnly}
-              filterByAssetTypeId={filterTypeId}
-            />
-          );
-
-          return (
-            <AssetLineRow
-              key={('id' in line && line.id) || `new-${idx}`}
-              line={line}
-              requestType={requestType}
-              assetTypes={assetTypes}
-              onChange={(next) => updateLine(idx, next)}
-              onSkipToggle={'status' in line ? () => skipToggle(idx) : undefined}
-              onDelete={() => removeLine(idx)}
-              assetPicker={assetPicker}
-              templatePicker={templatePicker}
-              readOnly={readOnly}
-            />
-          );
-        })}
+        {lines.map((line, idx) => (
+          <LineWrapper
+            key={('id' in line && line.id) || `new-${idx}`}
+            line={line}
+            idx={idx}
+            requestType={requestType}
+            assetTypes={assetTypes}
+            assets={assets}
+            templates={templates}
+            employeeId={employeeId}
+            physicalWorkplaceId={physicalWorkplaceId}
+            readOnly={readOnly}
+            onChange={updateLine}
+            onSkipToggle={readOnly ? undefined : skipToggle}
+            onDelete={removeLine}
+          />
+        ))}
       </Stack>
     </Box>
   );

@@ -42,6 +42,12 @@ interface Props {
   /** Controls passed in from parent for asset/template pickers — kept dumb on purpose */
   assetPicker: React.ReactNode;
   templatePicker: React.ReactNode;
+  /**
+   * Optional full-width region rendered below the inline fields. Used by the
+   * inline-expanding asset table picker to slide its results into the card
+   * without breaking the line's horizontal rhythm.
+   */
+  bottomPanel?: React.ReactNode;
   readOnly?: boolean;
 }
 
@@ -62,6 +68,7 @@ export function AssetLineRow({
   onDelete,
   assetPicker,
   templatePicker,
+  bottomPanel,
   readOnly,
 }: Props) {
   const { t } = useTranslation();
@@ -171,6 +178,9 @@ export function AssetLineRow({
           disabled={readOnly}
         />
       </Stack>
+
+      {/* Inline-expanding panel (asset table picker) */}
+      {bottomPanel}
 
       {/* Trailing toolbar — status badge + action icons */}
       <Stack
