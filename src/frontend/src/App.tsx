@@ -67,6 +67,10 @@ const WorkplaceDetailPage = lazyWithRetry(() => import('./pages/workplaces/Workp
 const WorkplaceReportsPage = lazyWithRetry(() => import('./pages/workplaces/WorkplaceReportsPage'));
 const RequestsDashboardPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsDashboardPage'));
 const RequestsReportsPage = lazyWithRetry(() => import('./pages/operations/requests/RequestsReportsPage'));
+const OnboardingListPage = lazyWithRetry(() => import('./pages/operations/requests/OnboardingListPage'));
+const OffboardingListPage = lazyWithRetry(() => import('./pages/operations/requests/OffboardingListPage'));
+const RequestCreatePage = lazyWithRetry(() => import('./pages/operations/requests/RequestCreatePage'));
+const RequestDetailPage = lazyWithRetry(() => import('./pages/operations/requests/RequestDetailPage'));
 const LaptopSwapPage = lazyWithRetry(() => import('./pages/operations/swaps/LaptopSwapPage'));
 const DeploymentHistoryPage = lazyWithRetry(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
 const ReportsPage = lazyWithRetry(() => import('./pages/reports/ReportsPage'));
@@ -125,8 +129,12 @@ function App() {
                   <Route path={ROUTES.WORKPLACE_REPORTS} element={<WorkplaceReportsPage />} />
                   <Route path={ROUTES.PHYSICAL_WORKPLACES} element={<WorkplacesPage />} />
                   <Route path={ROUTES.REQUESTS} element={<RequestsDashboardPage />} />
-                  <Route path={ROUTES.REQUESTS_ONBOARDING} element={<RequestsDashboardPage />} />
-                  <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<RequestsDashboardPage />} />
+                  <Route path={ROUTES.REQUESTS_ONBOARDING} element={<OnboardingListPage />} />
+                  <Route path={ROUTES.REQUEST_ONBOARDING_NEW} element={<RequestCreatePage />} />
+                  <Route path={ROUTES.REQUEST_ONBOARDING_DETAIL} element={<RequestDetailPage />} />
+                  <Route path={ROUTES.REQUESTS_OFFBOARDING} element={<OffboardingListPage />} />
+                  <Route path={ROUTES.REQUEST_OFFBOARDING_NEW} element={<RequestCreatePage />} />
+                  <Route path={ROUTES.REQUEST_OFFBOARDING_DETAIL} element={<RequestDetailPage />} />
                   <Route path={ROUTES.REQUESTS_REPORTS} element={<RequestsReportsPage />} />
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
