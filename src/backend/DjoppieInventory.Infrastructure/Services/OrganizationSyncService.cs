@@ -50,6 +50,13 @@ public class OrganizationSyncService : IOrganizationSyncService
             // Link services to sectors based on Entra group membership
             await LinkServicesToSectorsAsync(result, cancellationToken);
 
+            // Link any AssetRequests that now have a matching Employee
+            var linkedRequests = await LinkPendingAssetRequestsAsync(cancellationToken);
+            if (linkedRequests > 0)
+            {
+                _logger.LogInformation("Auto-linked {Count} pending AssetRequests after sync", linkedRequests);
+            }
+
             result.Success = result.Errors.Count == 0;
             result.CompletedAt = DateTime.UtcNow;
 
@@ -687,4 +694,59 @@ public class OrganizationSyncService : IOrganizationSyncService
     }
 
     #endregion
+
+    public async Task<int> LinkPendingAssetRequestsAsync(CancellationToken cancellationToken = default)
+    {
+        var pending = await _context.AssetRequests
+            .Where(r => r.EmployeeId == null && r.Status != AssetRequestStatus.Cancelled)
+            .ToListAsync(cancellationToken);
+
+        if (pending.Count == 0) return 0;
+
+        var employees = await _context.Employees
+            .Where(e => e.IsActive)
+            .ToListAsync(cancellationToken);
+
+        int linked = 0;
+
+        foreach (var request in pending)
+        {
+            var key = (request.RequestedFor ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(key)) continue;
+
+            Employee? match = null;
+
+            if (key.Contains('@'))
+            {
+                var matches = employees.Where(e =>
+                    string.Equals(e.UserPrincipalName, key, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(e.Email, key, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (matches.Count == 1) match = matches[0];
+            }
+            else
+            {
+                var matches = employees.Where(e =>
+                    string.Equals(e.DisplayName?.Trim(), key, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (matches.Count == 1) match = matches[0];
+            }
+
+            if (match != null)
+            {
+                request.EmployeeId = match.Id;
+                request.ModifiedAt = DateTime.UtcNow;
+                request.ModifiedBy = "system:auto-link";
+                linked++;
+                _logger.LogInformation(
+                    "Auto-linked AssetRequest {RequestId} to Employee {EmployeeId} ({DisplayName})",
+                    request.Id, match.Id, match.DisplayName);
+            }
+        }
+
+        if (linked > 0)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return linked;
+    }
 }

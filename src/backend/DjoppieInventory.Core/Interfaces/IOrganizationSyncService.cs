@@ -77,4 +77,11 @@ public interface IOrganizationSyncService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result of the sync operation including statistics</returns>
     Task<EmployeeSyncResultDto> SyncEmployeesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Attempts to link unresolved AssetRequests (EmployeeId == null) to
+    /// matching Employee records by UPN/email/displayName.
+    /// Returns the number of requests linked.
+    /// </summary>
+    Task<int> LinkPendingAssetRequestsAsync(CancellationToken cancellationToken = default);
 }
