@@ -15,7 +15,16 @@ interface Props {
   options: EmployeePickerOption[];
   value: EmployeePickerOption | null;
   onChange: (employee: EmployeePickerOption | null) => void;
+  /**
+   * Called only on genuine user input (reason === 'input' or 'clear').
+   * 'reset' events triggered by MUI when the option list changes are ignored
+   * so the search query is not overwritten while results arrive.
+   */
   onInputChange: (query: string) => void;
+  /** Controlled display value of the input box (separate from the search query). */
+  inputValue: string;
+  /** Called on every input change so the display can stay controlled. */
+  onDisplayChange: (text: string) => void;
   label: string;
   required?: boolean;
   disabled?: boolean;
@@ -49,6 +58,8 @@ export function EmployeePicker({
   value,
   onChange,
   onInputChange,
+  inputValue,
+  onDisplayChange,
   label,
   required,
   disabled,
@@ -59,10 +70,26 @@ export function EmployeePicker({
       size="small"
       options={options}
       value={value}
+      inputValue={inputValue}
       onChange={(_, selected) => onChange(selected)}
-      onInputChange={(_, v) => onInputChange(v)}
+      onInputChange={(_, v, reason) => {
+        // Always keep the displayed text in sync.
+        onDisplayChange(v);
+        // Only fire the search query update on genuine user gestures.
+        // 'reset' fires when MUI updates the input after the option list
+        // changes — it would overwrite the typed query with the option label
+        // while results are still arriving, causing the input to appear to
+        // clear itself after two characters.
+        if (reason === 'input') {
+          onInputChange(v);
+        } else if (reason === 'clear') {
+          onInputChange('');
+        }
+        // reason === 'reset' → do not touch the search query
+      }}
       disabled={disabled}
       loading={loading}
+      clearOnBlur={false}
       getOptionLabel={(o) => `${o.displayName} (${o.userPrincipalName})`}
       isOptionEqualToValue={(a, b) => a.id === b.id}
       slotProps={richAutocompleteSlotProps}
