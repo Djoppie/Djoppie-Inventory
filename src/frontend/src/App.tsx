@@ -74,6 +74,7 @@ const RequestDetailPage = lazyWithRetry(() => import('./pages/operations/request
 const LaptopSwapPage = lazyWithRetry(() => import('./pages/operations/swaps/LaptopSwapPage'));
 const DeploymentHistoryPage = lazyWithRetry(() => import('./pages/operations/swaps/DeploymentHistoryPage'));
 const ReportsPage = lazyWithRetry(() => import('./pages/reports/ReportsPage'));
+const OperationsReportsPage = lazyWithRetry(() => import('./pages/operations/reports/OperationsReportsPage'));
 const MonitoringPage = lazyWithRetry(() => import('./pages/monitoring/MonitoringPage'));
 const IntuneDeviceDashboardPage = lazyWithRetry(() => import('./pages/devices/IntuneDeviceDashboardPage'));
 const OperationsDashboardPage = lazyWithRetry(() => import('./pages/operations/OperationsDashboardPage'));
@@ -138,6 +139,7 @@ function App() {
                   <Route path={ROUTES.REQUESTS_REPORTS} element={<RequestsHistoryPage />} />
                   <Route path={ROUTES.LAPTOP_SWAP} element={<LaptopSwapPage />} />
                   <Route path={ROUTES.DEPLOYMENT_HISTORY} element={<DeploymentHistoryPage />} />
+                  <Route path={ROUTES.OPERATIONS_REPORTS} element={<OperationsReportsPage />} />
                   <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
                   <Route path={ROUTES.MONITORING} element={<MonitoringPage />} />
                   <Route path={ROUTES.MONITORING_APPLICATIONS} element={<MonitoringPage />} />

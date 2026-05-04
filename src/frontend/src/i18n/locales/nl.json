@@ -1499,5 +1499,65 @@
       "groupCompleted": "voltooid",
       "groupClickToFilter": "Klik om te filteren"
     }
+  },
+  "operations": {
+    "reports": {
+      "title": "Operations Reports",
+      "subtitle": "Historiek van alle swaps, onboardings en offboardings",
+      "tabs": {
+        "device": "Toestellen",
+        "workplace": "Werkplek equipment"
+      },
+      "kpi": {
+        "total": "Totaal",
+        "onboardings": "Onboardings",
+        "offboardings": "Offboardings",
+        "swaps": "Swaps",
+        "avgDays": "Gem. doorlooptijd",
+        "topService": "Meest actief"
+      },
+      "cols": {
+        "type": "Type",
+        "date": "Datum",
+        "employee": "Medewerker",
+        "asset": "Toestel",
+        "workplace": "Werkplek",
+        "status": "Status"
+      },
+      "filter": {
+        "searchPlaceholder": "Zoek op naam, e-mail of assetcode…",
+        "period": "Periode",
+        "from": "Van",
+        "to": "Tot",
+        "status": "Status",
+        "clearAll": "Filters wissen",
+        "statusExcludesSwaps": "(status filtert swaps uit)"
+      },
+      "empty": {
+        "deviceTitle": "Geen toestellen historiek",
+        "deviceSubtitle": "Swaps en on/offboardings van laptops en desktops verschijnen hier.",
+        "workplaceTitle": "Geen werkplek equipment historiek",
+        "workplaceSubtitle": "On/offboardings van monitors, dockings en randapparatuur verschijnen hier.",
+        "noResults": "Geen resultaten",
+        "noResultsSubtitle": "Pas de filters aan om resultaten te tonen."
+      },
+      "drawer": {
+        "employee": "Medewerker",
+        "asset": "Toestel",
+        "new": "Nieuw",
+        "old": "Oud",
+        "workplace": "Werkplek",
+        "status": "Status",
+        "lines": "Asset toewijzingen",
+        "deploymentDetails": "Deployment details",
+        "performedBy": "Uitgevoerd door",
+        "legacyNote": "Legacy swap-record — geen aanvraag lifecycle beschikbaar",
+        "openRequest": "Open volledige aanvraag"
+      },
+      "export": "Exporteer CSV",
+      "refresh": "Verversen",
+      "legacy": "legacy",
+      "swap": "Swap"
+    }
   }
 }

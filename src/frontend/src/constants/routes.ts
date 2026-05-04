@@ -124,8 +124,11 @@ export const ROUTES = {
   /** Laptop swap / Device deployment page */
   LAPTOP_SWAP: '/operations/swaps',
 
-  /** Deployment history page */
+  /** Deployment history page (legacy — redirects to OPERATIONS_REPORTS) */
   DEPLOYMENT_HISTORY: '/operations/swaps/history',
+
+  /** Unified Operations Reports page (swaps + onboarding + offboarding) */
+  OPERATIONS_REPORTS: '/operations/reports',
 
   /** Reports hub page */
   REPORTS: '/reports',

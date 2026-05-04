@@ -490,7 +490,7 @@ const Sidebar = ({
             subItems={[
               { label: 'Rollout Sessions', icon: <RocketLaunchIcon />, path: ROUTES.ROLLOUTS, matchPaths: ['/operations/rollouts'] },
               { label: 'Swaps', icon: <SwapHorizIcon />, path: ROUTES.LAPTOP_SWAP, matchPaths: ['/operations/swaps'] },
-              { label: 'Reports', icon: <AssessmentIcon />, path: ROUTES.DEPLOYMENT_HISTORY, matchPaths: ['/operations/swaps/history', '/operations/deployments'] },
+              { label: 'Reports', icon: <AssessmentIcon />, path: ROUTES.OPERATIONS_REPORTS, matchPaths: ['/operations/reports', '/operations/swaps/history'] },
             ]}
             isCollapsed={isCollapsed}
             isExpanded={expandedSections.Operations}

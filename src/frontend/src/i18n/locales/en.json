@@ -1497,5 +1497,65 @@
       "groupCompleted": "completed",
       "groupClickToFilter": "Click to filter"
     }
+  },
+  "operations": {
+    "reports": {
+      "title": "Operations Reports",
+      "subtitle": "History of all swaps, onboardings and offboardings",
+      "tabs": {
+        "device": "Devices",
+        "workplace": "Workplace equipment"
+      },
+      "kpi": {
+        "total": "Total",
+        "onboardings": "Onboardings",
+        "offboardings": "Offboardings",
+        "swaps": "Swaps",
+        "avgDays": "Avg. lead time",
+        "topService": "Most active"
+      },
+      "cols": {
+        "type": "Type",
+        "date": "Date",
+        "employee": "Employee",
+        "asset": "Device",
+        "workplace": "Workplace",
+        "status": "Status"
+      },
+      "filter": {
+        "searchPlaceholder": "Search by name, email or asset code…",
+        "period": "Period",
+        "from": "From",
+        "to": "To",
+        "status": "Status",
+        "clearAll": "Clear filters",
+        "statusExcludesSwaps": "(status filter excludes swaps)"
+      },
+      "empty": {
+        "deviceTitle": "No device history",
+        "deviceSubtitle": "Swaps and on/offboardings of laptops and desktops will appear here.",
+        "workplaceTitle": "No workplace equipment history",
+        "workplaceSubtitle": "On/offboardings of monitors, docking stations and peripherals will appear here.",
+        "noResults": "No results",
+        "noResultsSubtitle": "Adjust the filters to show results."
+      },
+      "drawer": {
+        "employee": "Employee",
+        "asset": "Device",
+        "new": "New",
+        "old": "Old",
+        "workplace": "Workplace",
+        "status": "Status",
+        "lines": "Asset assignments",
+        "deploymentDetails": "Deployment details",
+        "performedBy": "Performed by",
+        "legacyNote": "Legacy swap record — no request lifecycle available",
+        "openRequest": "Open full request"
+      },
+      "export": "Export CSV",
+      "refresh": "Refresh",
+      "legacy": "legacy",
+      "swap": "Swap"
+    }
   }
 }
