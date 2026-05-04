@@ -1511,16 +1511,24 @@
         "onboardings": "Onboardings",
         "offboardings": "Offboardings",
         "swaps": "Swaps",
+        "viaRollout": "Via rollout",
         "avgDays": "Avg. lead time",
         "topService": "Most active"
       },
       "cols": {
         "type": "Type",
+        "bron": "Source",
         "date": "Date",
         "employee": "Employee",
         "asset": "Device",
         "workplace": "Workplace",
         "status": "Status"
+      },
+      "bron": {
+        "rollout": "Rollout",
+        "fromStock": "From stock",
+        "toStock": "To stock",
+        "other": "Other"
       },
       "filter": {
         "searchPlaceholder": "Search by name, email or asset code…",
@@ -1528,8 +1536,10 @@
         "from": "From",
         "to": "To",
         "status": "Status",
+        "bron": "Source",
         "clearAll": "Clear filters",
-        "statusExcludesSwaps": "(status filter excludes swaps)"
+        "statusExcludesSwaps": "(status filter excludes swaps)",
+        "bronOnlyRollout": "(only visible for rollout rows)"
       },
       "empty": {
         "deviceTitle": "No device history",
@@ -1546,6 +1556,10 @@
         "old": "Old",
         "workplace": "Workplace",
         "status": "Status",
+        "bronTransitie": "Source / Transition",
+        "rolloutDetails": "Rollout details",
+        "rolloutSessie": "Session",
+        "dienst": "Service",
         "lines": "Asset assignments",
         "deploymentDetails": "Deployment details",
         "performedBy": "Performed by",

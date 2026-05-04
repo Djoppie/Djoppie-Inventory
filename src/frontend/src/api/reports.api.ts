@@ -6,6 +6,7 @@
 import { apiClient } from './client';
 import type {
   AssetMovement,
+  AssetMovementByDate,
   AssetMovementFilters,
   SessionProgressStats,
   DayProgressStats,
@@ -99,6 +100,27 @@ export const getSessionMovements = async (
  */
 export const getDayMovements = async (dayId: number): Promise<AssetMovement[]> => {
   const response = await apiClient.get<AssetMovement[]>(`/rollouts/days/${dayId}/movements`);
+  return response.data;
+};
+
+/**
+ * Get asset movements across all sessions within a date range.
+ * Hits: GET /api/operations/rollouts/reports/movements/by-date
+ * Both dates are required by the backend — always pass them.
+ */
+export const getMovementsByDateRange = async (
+  startDate: string,
+  endDate: string,
+  movementType?: 'Deployment' | 'Decommission' | 'Transfer'
+): Promise<AssetMovementByDate[]> => {
+  const params: Record<string, string> = {
+    startDate,
+    endDate,
+  };
+  if (movementType) {
+    params.movementType = movementType;
+  }
+  const response = await apiClient.get<AssetMovementByDate[]>('/operations/rollouts/reports/movements/by-date', { params });
   return response.data;
 };
 

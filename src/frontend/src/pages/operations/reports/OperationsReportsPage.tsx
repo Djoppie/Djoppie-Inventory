@@ -2,12 +2,13 @@
  * Operations Reports Page — Unified history of swaps, onboarding, offboarding.
  *
  * Canonical landing for Operations > Reports (sidebar entry).
- * Data comes from two sources merged via useUnifiedOperationsHistory:
+ * Data comes from three sources merged via useUnifiedOperationsHistory:
  *  - /api/operations/deployments/history  (legacy laptop swaps + pre-request lifecycle)
  *  - /api/operations/requests             (AssetRequest on/offboarding lifecycle, all statuses)
+ *  - /api/operations/rollouts/reports/movements/by-date  (rollout-driven asset transitions)
  *
  * Tab "Toestellen": laptops and desktops
- * Tab "Werkplek equipment": monitors, dockings, peripherals (from AssetRequest lines only)
+ * Tab "Werkplek equipment": monitors, dockings, peripherals (from AssetRequest + rollout lines)
  */
 
 import {
@@ -48,19 +49,23 @@ import CloseIcon from '@mui/icons-material/Close';
 import DensityMediumIcon from '@mui/icons-material/DensityMedium';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MonitorIcon from '@mui/icons-material/Monitor';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SearchIcon from '@mui/icons-material/Search';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 import {
   useUnifiedOperationsHistory,
   type EquipmentCategory,
+  type TransitionSource,
   type UnifiedHistoryRow,
   type UnifiedRowKind,
 } from '../../../components/operations/reports/useUnifiedOperationsHistory';
@@ -73,6 +78,39 @@ const TEAL = '#009688';
 const SWAP_COLOR = '#1E88E5';   // blue
 const ON_COLOR   = '#43A047';   // green
 const OFF_COLOR  = '#E53935';   // red
+
+// ── Transition source palette ─────────────────────────────────────────────────
+const TRANSITION_META: Record<TransitionSource, {
+  label: string;
+  color: string;
+  bgAlpha: number;
+  Icon?: React.ComponentType<{ sx?: object }>;
+}> = {
+  rollout: {
+    label: 'Rollout',
+    color: '#009688',
+    bgAlpha: 0.13,
+    Icon: RocketLaunchIcon as React.ComponentType<{ sx?: object }>,
+  },
+  'from-stock': {
+    label: 'Uit stock',
+    color: '#5E35B1',
+    bgAlpha: 0.12,
+    Icon: Inventory2Icon as React.ComponentType<{ sx?: object }>,
+  },
+  'to-stock': {
+    label: 'Naar stock',
+    color: '#F57C00',
+    bgAlpha: 0.12,
+    Icon: KeyboardReturnIcon as React.ComponentType<{ sx?: object }>,
+  },
+  other: {
+    label: 'Andere',
+    color: '#78909C',
+    bgAlpha: 0.1,
+    Icon: undefined,
+  },
+};
 
 const KIND_META: Record<UnifiedRowKind, { label: string; color: string; Icon: React.ComponentType<{ sx?: object }> }> = {
   swap: { label: 'Swap', color: SWAP_COLOR, Icon: SwapHorizIcon },
@@ -93,17 +131,119 @@ const ALL_STATUSES: AssetRequestStatus[] = [
   'Pending', 'Approved', 'InProgress', 'Completed', 'Cancelled', 'Rejected',
 ];
 
+const ALL_TRANSITION_SOURCES: TransitionSource[] = ['rollout', 'from-stock', 'to-stock', 'other'];
+
 // ── Sort types ─────────────────────────────────────────────────────────────────
 type SortKey = 'date' | 'employee' | 'kind' | 'status';
 type SortDir = 'asc' | 'desc';
 type DensityMode = 'compact' | 'comfortable';
 
-// ── Usefulness helpers ─────────────────────────────────────────────────────────
-
-// (no external debounce dependency needed — search filtering is client-side)
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString('nl-BE', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ── Bron pill component ────────────────────────────────────────────────────────
+
+function BronPill({ ts, isDark }: { ts: TransitionSource | undefined; isDark: boolean }) {
+  if (!ts) {
+    return (
+      <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.68rem' }}>
+        —
+      </Typography>
+    );
+  }
+
+  const meta = TRANSITION_META[ts];
+  const Icon = meta.Icon;
+
+  return (
+    <Chip
+      icon={
+        Icon ? (
+          <Icon
+            sx={{
+              fontSize: '11px !important',
+              color: `${meta.color} !important`,
+              ml: '6px !important',
+            } as object}
+          />
+        ) : undefined
+      }
+      label={meta.label}
+      size="small"
+      sx={{
+        height: 22,
+        fontSize: '0.7rem',
+        fontWeight: 700,
+        bgcolor: alpha(meta.color, isDark ? meta.bgAlpha * 1.5 : meta.bgAlpha),
+        color: meta.color,
+        border: '1px solid',
+        borderColor: alpha(meta.color, isDark ? 0.35 : 0.25),
+        letterSpacing: '0.02em',
+        '& .MuiChip-label': { px: 0.75 },
+      }}
+    />
+  );
+}
+
+// ── Status transition badge (for the drawer) ──────────────────────────────────
+
+function StatusTransitionBadge({
+  previousStatus,
+  newStatus,
+  isDark,
+}: {
+  previousStatus?: string;
+  newStatus?: string;
+  isDark: boolean;
+}) {
+  if (!previousStatus && !newStatus) return null;
+
+  const statusColor = (s: string) => {
+    switch (s.toLowerCase()) {
+      case 'nieuw': return '#7B61FF';
+      case 'ingebruik': return '#43A047';
+      case 'stock': return '#1E88E5';
+      case 'herstelling': return '#FB8C00';
+      case 'defect': return '#E53935';
+      case 'uitdienst': return '#9E9E9E';
+      default: return '#78909C';
+    }
+  };
+
+  const badge = (label: string) => {
+    const color = statusColor(label);
+    return (
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-block',
+          px: 0.8,
+          py: 0.2,
+          borderRadius: 0.75,
+          fontSize: '0.68rem',
+          fontWeight: 700,
+          bgcolor: alpha(color, isDark ? 0.2 : 0.12),
+          color,
+          border: `1px solid ${alpha(color, 0.3)}`,
+        }}
+      >
+        {label}
+      </Box>
+    );
+  };
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap">
+      {previousStatus && badge(previousStatus)}
+      {previousStatus && newStatus && (
+        <Typography sx={{ fontSize: '0.7rem', color: 'text.disabled' }}>→</Typography>
+      )}
+      {newStatus && badge(newStatus)}
+    </Stack>
+  );
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -125,6 +265,7 @@ export default function OperationsReportsPage() {
   const debouncedSearch = searchInput; // simple – we filter client-side
   const [kinds, setKinds] = useState<UnifiedRowKind[]>([]);
   const [statuses, setStatuses] = useState<AssetRequestStatus[]>([]);
+  const [transitionSources, setTransitionSources] = useState<TransitionSource[]>([]);
   const [dateFrom, setDateFrom] = useState(searchParams.get('from') ?? '');
   const [dateTo, setDateTo] = useState(searchParams.get('to') ?? '');
   const [sortKey, setSortKey] = useState<SortKey>('date');
@@ -138,6 +279,7 @@ export default function OperationsReportsPage() {
     equipmentCategory: tab,
     kinds: kinds.length > 0 ? kinds : undefined,
     statuses: statuses.length > 0 ? statuses : undefined,
+    transitionSources: transitionSources.length > 0 ? transitionSources : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     search: debouncedSearch || undefined,
@@ -179,24 +321,36 @@ export default function OperationsReportsPage() {
     setPage(0);
   };
 
-  const clearAll = () => {
-    setSearchInput(''); setKinds([]); setStatuses([]);
-    setDateFrom(''); setDateTo(''); setPage(0);
+  const toggleTransitionSource = (ts: TransitionSource) => {
+    setTransitionSources((prev) => prev.includes(ts) ? prev.filter((x) => x !== ts) : [...prev, ts]);
+    setPage(0);
   };
 
-  const hasActiveFilters = searchInput || kinds.length > 0 || statuses.length > 0 || dateFrom || dateTo;
+  const clearAll = () => {
+    setSearchInput(''); setKinds([]); setStatuses([]);
+    setTransitionSources([]); setDateFrom(''); setDateTo(''); setPage(0);
+  };
+
+  const hasActiveFilters =
+    searchInput ||
+    kinds.length > 0 ||
+    statuses.length > 0 ||
+    transitionSources.length > 0 ||
+    dateFrom ||
+    dateTo;
 
   const handleExportCSV = () => {
-    const headers = ['Datum', 'Type', 'Bron', 'Medewerker', 'Email', 'Toestel', 'Werkplek', 'Status'];
+    const headers = ['Datum', 'Type', 'Bron', 'Medewerker', 'Email', 'Toestel', 'Werkplek', 'Status', 'Rollout sessie'];
     const csvRows = sortedRows.map((r) => [
       formatDate(r.date),
       KIND_META[r.kind].label,
-      r.source === 'request' ? 'Aanvraag' : 'Swap',
+      r.transitionSource ? TRANSITION_META[r.transitionSource].label : (r.source === 'request' ? 'Aanvraag' : 'Direct'),
       r.employeeName,
       r.employeeEmail ?? '',
       r.primaryAssetCode ?? '',
       r.workplaceCode ?? '',
       r.status ?? '-',
+      r.rolloutSessionName ?? '',
     ]);
     const content = [headers, ...csvRows].map((row) => row.map((c) => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
@@ -583,6 +737,73 @@ export default function OperationsReportsPage() {
               )}
             </Stack>
           </Stack>
+
+          {/* Row 3: Bron filter */}
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.25}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                alignSelf: 'center',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Bron
+            </Typography>
+            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+              {ALL_TRANSITION_SOURCES.map((ts) => {
+                const meta = TRANSITION_META[ts];
+                const active = transitionSources.includes(ts);
+                const Icon = meta.Icon;
+                return (
+                  <Chip
+                    key={ts}
+                    icon={
+                      Icon ? (
+                        <Icon
+                          sx={{
+                            fontSize: '13px !important',
+                            color: active ? `${meta.color} !important` : undefined,
+                          } as object}
+                        />
+                      ) : undefined
+                    }
+                    label={meta.label}
+                    size="small"
+                    onClick={() => toggleTransitionSource(ts)}
+                    sx={{
+                      cursor: 'pointer',
+                      height: 26,
+                      fontSize: '0.7rem',
+                      fontWeight: active ? 700 : 500,
+                      bgcolor: active ? alpha(meta.color, isDark ? meta.bgAlpha * 1.5 : meta.bgAlpha) : 'transparent',
+                      color: active ? meta.color : 'text.secondary',
+                      border: '1px solid',
+                      borderColor: active ? alpha(meta.color, 0.4) : 'divider',
+                      transition: 'all 0.15s ease',
+                      '&:hover': { bgcolor: alpha(meta.color, isDark ? 0.1 : 0.07) },
+                    }}
+                  />
+                );
+              })}
+              {transitionSources.length > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{ alignSelf: 'center', color: 'text.disabled', fontSize: '0.65rem', fontStyle: 'italic' }}
+                >
+                  (enkel zichtbaar voor rollout-rijen)
+                </Typography>
+              )}
+            </Stack>
+          </Stack>
         </Stack>
       </Box>
 
@@ -615,6 +836,8 @@ export default function OperationsReportsPage() {
                         Type
                       </TableSortLabel>
                     </TableCell>
+                    {/* Bron column — hidden on small screens */}
+                    {!isSmall && <TableCell sx={headCell(isDark)}>Bron</TableCell>}
                     <TableCell sx={headCell(isDark)}>
                       <TableSortLabel
                         active={sortKey === 'date'}
@@ -710,11 +933,14 @@ interface KpiBarProps {
 }
 
 function KpiBar({ kpis, total, isLoading, isDark }: KpiBarProps) {
+  const ROLLOUT_COLOR = TRANSITION_META.rollout.color;
+
   const cards: Array<{ label: string; value: number | string; color: string; sub?: string }> = [
     { label: 'Totaal', value: total, color: TEAL },
     { label: 'Onboardings', value: kpis.onboardings, color: ON_COLOR },
     { label: 'Offboardings', value: kpis.offboardings, color: OFF_COLOR },
     { label: 'Swaps', value: kpis.swaps, color: SWAP_COLOR },
+    { label: 'Via rollout', value: kpis.viaRollout, color: ROLLOUT_COLOR, sub: 'bewegingen' },
     ...(kpis.avgCompletionDays !== undefined
       ? [{ label: 'Gem. doorlooptijd', value: `${kpis.avgCompletionDays}d`, color: TEAL, sub: 'aanvragen' }]
       : []),
@@ -727,7 +953,7 @@ function KpiBar({ kpis, total, isLoading, isDark }: KpiBarProps) {
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: `repeat(${cards.length}, 1fr)` },
+        gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: `repeat(${Math.min(cards.length, 6)}, 1fr)` },
         gap: 1.5,
       }}
     >
@@ -846,6 +1072,13 @@ function HistoryTableRow({ row, isDark, isSmall, cellPy, onOpen }: HistoryTableR
         </Stack>
       </TableCell>
 
+      {/* Bron — hidden on small screens */}
+      {!isSmall && (
+        <TableCell>
+          <BronPill ts={row.transitionSource} isDark={isDark} />
+        </TableCell>
+      )}
+
       {/* Date */}
       <TableCell>
         <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
@@ -854,6 +1087,11 @@ function HistoryTableRow({ row, isDark, isSmall, cellPy, onOpen }: HistoryTableR
         {row.source === 'deployment' && (
           <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.63rem' }}>
             legacy
+          </Typography>
+        )}
+        {row.source === 'rollout' && row.rolloutSessionName && (
+          <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.63rem', display: 'block' }}>
+            {row.rolloutSessionName}
           </Typography>
         )}
       </TableCell>
@@ -932,7 +1170,7 @@ function HistoryTableRow({ row, isDark, isSmall, cellPy, onOpen }: HistoryTableR
           />
         ) : (
           <Typography variant="caption" color="text.disabled" sx={{ fontStyle: 'italic', fontSize: '0.68rem' }}>
-            Swap
+            {row.source === 'rollout' ? 'Rollout' : 'Swap'}
           </Typography>
         )}
       </TableCell>
@@ -1012,6 +1250,31 @@ function DetailDrawer({ row, onClose, isDark, onNavigate }: DetailDrawerProps) {
             <Typography variant="body2" color="text.secondary">{row.employeeEmail}</Typography>
           )}
         </Section>
+
+        {/* Transition source + status transition (for rollout rows) */}
+        {row.source === 'rollout' && (
+          <Section label="Bron / Transitie">
+            <Stack spacing={0.75}>
+              {row.transitionSource && (
+                <Box>
+                  <BronPill ts={row.transitionSource} isDark={isDark} />
+                </Box>
+              )}
+              {(row.rawMovement?.previousStatus || row.rawMovement?.newStatus) && (
+                <StatusTransitionBadge
+                  previousStatus={row.rawMovement?.previousStatus}
+                  newStatus={row.rawMovement?.newStatus}
+                  isDark={isDark}
+                />
+              )}
+              {row.rolloutSessionName && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
+                  Sessie: {row.rolloutSessionName}
+                </Typography>
+              )}
+            </Stack>
+          </Section>
+        )}
 
         {/* Asset info */}
         {(row.primaryAssetCode || row.oldAssetCode) && (
@@ -1133,6 +1396,27 @@ function DetailDrawer({ row, onClose, isDark, onNavigate }: DetailDrawerProps) {
           </Section>
         )}
 
+        {/* Rollout movement details */}
+        {row.rawMovement && (
+          <Section label="Rollout details">
+            {row.rawMovement.performedBy && (
+              <Typography variant="body2" color="text.secondary">
+                Uitgevoerd door: <strong>{row.rawMovement.performedBy}</strong>
+              </Typography>
+            )}
+            {row.rawMovement.notes && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {row.rawMovement.notes}
+              </Typography>
+            )}
+            {row.rawMovement.newServiceName && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Dienst: <strong>{row.rawMovement.newServiceName}</strong>
+              </Typography>
+            )}
+          </Section>
+        )}
+
         {/* Legacy deployment info */}
         {row.rawDeployment && (
           <Section label="Deployment details">
@@ -1225,6 +1509,7 @@ function TableSkeleton({ rows }: { rows: number }) {
         {Array.from({ length: rows }).map((_, i) => (
           <TableRow key={i}>
             <TableCell><Skeleton width={80} height={20} /></TableCell>
+            <TableCell><Skeleton width={70} height={20} /></TableCell>
             <TableCell><Skeleton width={90} height={20} /></TableCell>
             <TableCell><Skeleton width={160} height={20} /></TableCell>
             <TableCell><Skeleton width={100} height={20} /></TableCell>

@@ -8,6 +8,7 @@
 import { useQuery, useMutation, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import type {
   AssetMovement,
+  AssetMovementByDate,
   AssetMovementFilters,
   SessionProgressStats,
   DayProgressStats,
@@ -133,6 +134,34 @@ export const useExportSessionReport = (): UseMutationResult<void, Error, ExportR
       const filename = reportsApi.generateReportFilename(sessionName, 'rapport', format);
       reportsApi.downloadBlob(blob, filename);
     },
+  });
+};
+
+// ===== DATE-RANGE MOVEMENTS HOOK =====
+
+export interface RolloutMovementsByDateFilters {
+  startDate: string;
+  endDate: string;
+  movementType?: 'Deployment' | 'Decommission' | 'Transfer';
+}
+
+/**
+ * Fetch asset movements across all rollout sessions within a date range.
+ * Used by the unified operations history to include rollout-driven events.
+ */
+export const useRolloutMovementsByDate = (
+  filters: RolloutMovementsByDateFilters
+): UseQueryResult<AssetMovementByDate[], Error> => {
+  return useQuery({
+    queryKey: ['rollouts', 'movements', 'byDate', filters] as const,
+    queryFn: () =>
+      reportsApi.getMovementsByDateRange(
+        filters.startDate,
+        filters.endDate,
+        filters.movementType
+      ),
+    staleTime: 60_000, // 1 minute
+    enabled: !!filters.startDate && !!filters.endDate,
   });
 };
 

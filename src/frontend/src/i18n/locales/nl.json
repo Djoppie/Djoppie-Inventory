@@ -1513,16 +1513,24 @@
         "onboardings": "Onboardings",
         "offboardings": "Offboardings",
         "swaps": "Swaps",
+        "viaRollout": "Via rollout",
         "avgDays": "Gem. doorlooptijd",
         "topService": "Meest actief"
       },
       "cols": {
         "type": "Type",
+        "bron": "Bron",
         "date": "Datum",
         "employee": "Medewerker",
         "asset": "Toestel",
         "workplace": "Werkplek",
         "status": "Status"
+      },
+      "bron": {
+        "rollout": "Rollout",
+        "fromStock": "Uit stock",
+        "toStock": "Naar stock",
+        "other": "Andere"
       },
       "filter": {
         "searchPlaceholder": "Zoek op naam, e-mail of assetcode…",
@@ -1530,8 +1538,10 @@
         "from": "Van",
         "to": "Tot",
         "status": "Status",
+        "bron": "Bron",
         "clearAll": "Filters wissen",
-        "statusExcludesSwaps": "(status filtert swaps uit)"
+        "statusExcludesSwaps": "(status filtert swaps uit)",
+        "bronOnlyRollout": "(enkel zichtbaar voor rollout-rijen)"
       },
       "empty": {
         "deviceTitle": "Geen toestellen historiek",
@@ -1548,6 +1558,10 @@
         "old": "Oud",
         "workplace": "Werkplek",
         "status": "Status",
+        "bronTransitie": "Bron / Transitie",
+        "rolloutDetails": "Rollout details",
+        "rolloutSessie": "Sessie",
+        "dienst": "Dienst",
         "lines": "Asset toewijzingen",
         "deploymentDetails": "Deployment details",
         "performedBy": "Uitgevoerd door",

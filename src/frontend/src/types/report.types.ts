@@ -37,6 +37,40 @@ export interface AssetMovement {
 }
 
 /**
+ * AssetMovementByDate — shape returned by GET /api/operations/rollouts/reports/movements/by-date.
+ * This is a separate type from AssetMovement (which maps the per-session/per-day endpoints)
+ * because the backend's AssetMovementDto has different field names from the legacy per-session shape.
+ * Enum values come as strings (JsonStringEnumConverter is configured globally on the backend).
+ */
+export interface AssetMovementByDate {
+  id: number;
+  rolloutSessionId: number;
+  sessionName?: string;
+  rolloutWorkplaceId?: number;
+  workplaceUserName?: string;
+  assetId: number;
+  assetCode: string;
+  assetName?: string;
+  serialNumber?: string;
+  movementType: 'Deployment' | 'Decommission' | 'Transfer';
+  movementTypeName?: string;
+  previousStatus?: string; // AssetStatus enum name, e.g. "Nieuw", "InGebruik", "Stock"
+  newStatus: string;       // AssetStatus enum name
+  previousOwner?: string;
+  newOwner?: string;
+  previousServiceId?: number;
+  previousServiceName?: string;
+  newServiceId?: number;
+  newServiceName?: string;
+  previousLocation?: string;
+  newLocation?: string;
+  performedBy: string;
+  performedByEmail: string;
+  performedAt: string;     // ISO datetime string
+  notes?: string;
+}
+
+/**
  * Filter options for asset movements table
  */
 export interface AssetMovementFilters {
