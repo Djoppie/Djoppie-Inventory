@@ -265,21 +265,22 @@ export interface EquipmentTypeStatus {
 // ============================================================
 
 /**
- * Summary statistics for workplace gap analysis
+ * Summary statistics for workplace gap analysis. "Device" covers
+ * user-assigned end-user devices: laptops, desktops, and PCs (status InGebruik).
  */
 export interface WorkplaceGapAnalysis {
-  /** Total laptops with status InGebruik that have an owner */
-  totalLaptopsInUse: number;
-  /** Laptop owners who have a matching PhysicalWorkplace */
+  /** Total unique device owners (laptops + desktops + PCs, status InGebruik) */
+  totalDeviceOwnersInUse: number;
+  /** Device owners who have a matching PhysicalWorkplace */
   ownersWithWorkplace: number;
-  /** Laptop owners who don't have a PhysicalWorkplace */
+  /** Device owners who don't have a PhysicalWorkplace */
   ownersWithoutWorkplace: number;
   /** Percentage of owners without workplace */
   gapPercentage: number;
   /** List of owners without workplaces, grouped by service */
   gapsByService: WorkplaceGapByService[];
   /** Detailed list of orphan owners (limited) */
-  orphanOwners: OrphanLaptopOwner[];
+  orphanOwners: OrphanDeviceOwner[];
   /** Debug info for troubleshooting */
   debug?: WorkplaceGapDebug;
 }
@@ -294,8 +295,8 @@ export interface WorkplaceGapDebug {
   workplacesWithOccupant: number;
   /** Workplaces without CurrentOccupantEmail */
   workplacesWithoutOccupant: number;
-  /** Sample laptop owner emails */
-  sampleLaptopOwners: string[];
+  /** Sample device owner emails */
+  sampleDeviceOwners: string[];
   /** Sample occupant emails */
   sampleOccupantEmails: string[];
 }
@@ -308,24 +309,26 @@ export interface WorkplaceGapByService {
   serviceName?: string;
   serviceCode?: string;
   ownersWithoutWorkplace: number;
-  totalLaptopOwners: number;
+  totalDeviceOwners: number;
 }
 
 /**
- * Details about a laptop owner who doesn't have a PhysicalWorkplace
+ * Details about a device owner (laptop / desktop / PC) without a PhysicalWorkplace
  */
-export interface OrphanLaptopOwner {
+export interface OrphanDeviceOwner {
   ownerEmail: string;
   ownerName?: string;
   jobTitle?: string;
   officeLocation?: string;
   serviceId?: number;
   serviceName?: string;
-  laptopAssetId: number;
-  laptopAssetCode: string;
-  laptopBrand?: string;
-  laptopModel?: string;
-  laptopSerialNumber?: string;
+  deviceAssetId: number;
+  deviceAssetCode: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  deviceSerialNumber?: string;
+  /** "laptop" or "desktop" — derived server-side from AssetType */
+  deviceType: string;
 }
 
 /**

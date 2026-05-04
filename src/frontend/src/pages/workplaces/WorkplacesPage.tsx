@@ -7,7 +7,6 @@ import {
   IconButton,
   Card,
   CardContent,
-  Fab,
   Stack,
   Snackbar,
   Alert,
@@ -26,9 +25,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import PlaceIcon from '@mui/icons-material/Place';
 import PersonIcon from '@mui/icons-material/Person';
 import ComputerIcon from '@mui/icons-material/Computer';
@@ -37,7 +33,6 @@ import DeskIcon from '@mui/icons-material/Desk';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import BusinessIcon from '@mui/icons-material/Business';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
@@ -46,9 +41,9 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckIcon from '@mui/icons-material/Check';
+import SettingsIcon from '@mui/icons-material/Settings';
 import {
   usePhysicalWorkplaces,
-  useDeletePhysicalWorkplace,
   useClearOccupant,
   useWorkplaceStatistics,
 } from '../../hooks/usePhysicalWorkplaces';
@@ -62,8 +57,6 @@ import ApiErrorDisplay from '../../components/common/ApiErrorDisplay';
 import { useServicesBySector } from '../../hooks/useOrganization';
 import { buildingsApi } from '../../api/admin.api';
 import WorkplaceAssetsDialog from '../../components/workplaces/WorkplaceAssetsDialog';
-import BulkImportWorkplacesDialog from '../../components/workplaces/BulkImportWorkplacesDialog';
-import EditPhysicalWorkplaceDialog from '../../components/workplaces/EditPhysicalWorkplaceDialog';
 import NeomorphConfirmDialog from '../../components/workplaces/NeomorphConfirmDialog';
 import EquipmentChip from '../../components/workplaces/EquipmentChip';
 import WorkplaceOccupantChip from '../../components/workplaces/WorkplaceOccupantChip';
@@ -134,13 +127,8 @@ const PhysicalWorkplacesPage = () => {
   }, [searchParams]);
 
   // Dialog states
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clearOccupantDialogOpen, setClearOccupantDialogOpen] = useState(false);
   const [assetsDialogOpen, setAssetsDialogOpen] = useState(false);
-  const [bulkImportDialogOpen, setBulkImportDialogOpen] = useState(false);
-  const [editingWorkplace, setEditingWorkplace] = useState<PhysicalWorkplace | null>(null);
-  const [deletingWorkplace, setDeletingWorkplace] = useState<PhysicalWorkplace | null>(null);
   const [clearingOccupantWorkplace, setClearingOccupantWorkplace] = useState<PhysicalWorkplace | null>(null);
   const [managingAssetsWorkplace, setManagingAssetsWorkplace] = useState<PhysicalWorkplace | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
@@ -151,7 +139,6 @@ const PhysicalWorkplacesPage = () => {
 
   const { data: workplaces, isLoading, error, refetch } = usePhysicalWorkplaces(filters);
   const { data: statisticsData } = useWorkplaceStatistics();
-  const deleteMutation = useDeletePhysicalWorkplace();
   const clearOccupantMutation = useClearOccupant();
 
   // Fetch services for the expandable panel
@@ -219,26 +206,6 @@ const PhysicalWorkplacesPage = () => {
     };
   }, [statisticsData]);
 
-  const handleOpenDialog = (workplace?: PhysicalWorkplace) => {
-    setEditingWorkplace(workplace ?? null);
-    setDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    setEditingWorkplace(null);
-  };
-
-  const handleOpenDeleteDialog = (workplace: PhysicalWorkplace) => {
-    setDeletingWorkplace(workplace);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleCloseDeleteDialog = () => {
-    setDeleteDialogOpen(false);
-    setDeletingWorkplace(null);
-  };
-
   const handleOpenClearOccupantDialog = (workplace: PhysicalWorkplace) => {
     setClearingOccupantWorkplace(workplace);
     setClearOccupantDialogOpen(true);
@@ -257,26 +224,6 @@ const PhysicalWorkplacesPage = () => {
   const handleCloseAssetsDialog = () => {
     setAssetsDialogOpen(false);
     setManagingAssetsWorkplace(null);
-  };
-
-  const handleDelete = async () => {
-    if (!deletingWorkplace) return;
-
-    try {
-      await deleteMutation.mutateAsync({ id: deletingWorkplace.id, hardDelete: false });
-      setSnackbar({
-        open: true,
-        message: t('physicalWorkplaces.deleteSuccess'),
-        severity: 'success',
-      });
-      handleCloseDeleteDialog();
-    } catch {
-      setSnackbar({
-        open: true,
-        message: t('physicalWorkplaces.deleteError'),
-        severity: 'error',
-      });
-    }
   };
 
   const handleClearOccupant = async () => {
@@ -493,7 +440,7 @@ const PhysicalWorkplacesPage = () => {
     },
   ], [isDark]);
 
-  // Custom action render for AdminDataTable
+  // Actions: operational only (no create/edit/delete — manage via admin)
   const renderActions = (item: PhysicalWorkplace) => (
     <Stack direction="row" spacing={0.5} justifyContent="center">
       <Tooltip title={t('physicalWorkplaces.manageAssets')} arrow>
@@ -516,28 +463,6 @@ const PhysicalWorkplacesPage = () => {
           }}
         >
           <InventoryIcon sx={{ fontSize: 15 }} />
-        </IconButton>
-      </Tooltip>
-      <Tooltip title={t('common.edit')} arrow>
-        <IconButton
-          size="small"
-          onClick={() => handleOpenDialog(item)}
-          sx={{
-            width: 28,
-            height: 28,
-            borderRadius: 0.75,
-            color: ASSET_COLOR,
-            bgcolor: 'transparent',
-            border: '1px solid',
-            borderColor: alpha(ASSET_COLOR, 0.35),
-            transition: 'all 0.15s ease',
-            '&:hover': {
-              bgcolor: alpha(ASSET_COLOR, 0.08),
-              borderColor: ASSET_COLOR,
-            },
-          }}
-        >
-          <EditIcon sx={{ fontSize: 15 }} />
         </IconButton>
       </Tooltip>
       {(item.currentOccupantEntraId || item.currentOccupantName) && (
@@ -564,28 +489,6 @@ const PhysicalWorkplacesPage = () => {
           </IconButton>
         </Tooltip>
       )}
-      <Tooltip title={t('common.delete')} arrow>
-        <IconButton
-          size="small"
-          onClick={() => handleOpenDeleteDialog(item)}
-          sx={{
-            width: 28,
-            height: 28,
-            borderRadius: 0.75,
-            color: '#EF5350',
-            bgcolor: 'transparent',
-            border: '1px solid',
-            borderColor: alpha('#EF5350', 0.35),
-            transition: 'all 0.15s ease',
-            '&:hover': {
-              bgcolor: alpha('#EF5350', 0.08),
-              borderColor: '#EF5350',
-            },
-          }}
-        >
-          <DeleteIcon sx={{ fontSize: 15 }} />
-        </IconButton>
-      </Tooltip>
     </Stack>
   );
 
@@ -693,6 +596,27 @@ const PhysicalWorkplacesPage = () => {
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 {t('physicalWorkplaces.subtitle')}
               </Typography>
+              <Button
+                component={Link}
+                to="/admin/locations?tab=workplaces"
+                size="small"
+                startIcon={<SettingsIcon sx={{ fontSize: 14 }} />}
+                sx={{
+                  mt: 0.75,
+                  height: 26,
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: workplaceAccent,
+                  border: '1px solid',
+                  borderColor: alpha(workplaceAccent, 0.35),
+                  borderRadius: 1.5,
+                  px: 1.25,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: alpha(workplaceAccent, 0.08), borderColor: workplaceAccent },
+                }}
+              >
+                Werkplekken beheren
+              </Button>
             </Box>
             <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
               <Chip
@@ -977,29 +901,6 @@ const PhysicalWorkplacesPage = () => {
           )}
 
           <Box sx={{ flex: 1 }} />
-
-          {/* Bulk Import Button */}
-          <Tooltip title="Werkplekken bulk importeren">
-            <IconButton
-              onClick={() => setBulkImportDialogOpen(true)}
-              size="small"
-              sx={{
-                width: 32,
-                height: 32,
-                color: workplaceAccent,
-                bgcolor: 'transparent',
-                border: '1px solid',
-                borderColor: alpha(workplaceAccent, 0.3),
-                transition: 'all 0.15s ease',
-                '&:hover': {
-                  bgcolor: alpha(workplaceAccent, 0.1),
-                  borderColor: workplaceAccent,
-                },
-              }}
-            >
-              <UploadFileIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
         </Stack>
       </Paper>
 
@@ -1323,16 +1224,17 @@ const PhysicalWorkplacesPage = () => {
             {t('physicalWorkplaces.noWorkplacesDesc')}
           </Typography>
           <Button
+            component={Link}
+            to="/admin/locations?tab=workplaces"
             variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
+            startIcon={<SettingsIcon />}
             size="large"
             sx={{
               bgcolor: workplaceAccent,
               '&:hover': { bgcolor: '#00796b' },
             }}
           >
-            {t('physicalWorkplaces.addWorkplace')}
+            Werkplekken beheren in Admin
           </Button>
         </Box>
       ) : (
@@ -1470,26 +1372,6 @@ const PhysicalWorkplacesPage = () => {
                       >
                         <InventoryIcon fontSize="small" />
                       </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(workplace)}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 0.75,
-                          color: ASSET_COLOR,
-                          bgcolor: 'transparent',
-                          border: '1px solid',
-                          borderColor: alpha(ASSET_COLOR, 0.35),
-                          transition: 'all 0.15s ease',
-                          '&:hover': {
-                            bgcolor: alpha(ASSET_COLOR, 0.08),
-                            borderColor: ASSET_COLOR,
-                          },
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
                       {(workplace.currentOccupantEntraId || workplace.currentOccupantName) && (
                         <IconButton
                           size="small"
@@ -1512,26 +1394,6 @@ const PhysicalWorkplacesPage = () => {
                           <PersonOffIcon fontSize="small" />
                         </IconButton>
                       )}
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDeleteDialog(workplace)}
-                        sx={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 0.75,
-                          color: '#F44336',
-                          bgcolor: 'transparent',
-                          border: '1px solid',
-                          borderColor: alpha('#F44336', 0.35),
-                          transition: 'all 0.15s ease',
-                          '&:hover': {
-                            bgcolor: alpha('#F44336', 0.08),
-                            borderColor: '#F44336',
-                          },
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
                     </Box>
                   </Box>
                 </Card>
@@ -1548,7 +1410,7 @@ const PhysicalWorkplacesPage = () => {
               getItemId={(item) => item.id}
               defaultRowsPerPage={15}
               renderActions={renderActions}
-              actionsColumnWidth={140}
+              actionsColumnWidth={80}
               externalSearchTerm={searchTerm}
               onSearchTermChange={setSearchTerm}
               hideSearch
@@ -1556,67 +1418,6 @@ const PhysicalWorkplacesPage = () => {
           )}
         </>
       )}
-
-      {/* Floating Action Button */}
-      {stats.total > 0 && (
-        <Fab
-          aria-label="add workplace"
-          onClick={() => handleOpenDialog()}
-          sx={{
-            position: 'fixed',
-            bottom: 80,
-            right: 24,
-            zIndex: 1100,
-            bgcolor: workplaceAccent,
-            color: '#fff',
-            boxShadow: `0 4px 20px ${alpha(workplaceAccent, 0.4)}`,
-            '&:hover': {
-              bgcolor: '#00796b',
-              transform: 'scale(1.1)',
-            },
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <AddIcon />
-        </Fab>
-      )}
-
-      {/* Create/Edit Dialog */}
-      <EditPhysicalWorkplaceDialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        workplace={editingWorkplace}
-        onSuccess={(message) => {
-          setSnackbar({ open: true, message, severity: 'success' });
-        }}
-        onError={(message) => {
-          setSnackbar({ open: true, message, severity: 'error' });
-        }}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <NeomorphConfirmDialog
-        open={deleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-        onConfirm={handleDelete}
-        title={t('physicalWorkplaces.deleteWorkplace')}
-        message={t('physicalWorkplaces.deleteConfirm', {
-          name: deletingWorkplace?.name,
-          code: deletingWorkplace?.code,
-        })}
-        warning={
-          (deletingWorkplace?.fixedAssetCount ?? 0) > 0
-            ? t('physicalWorkplaces.deleteWarningAssets', {
-                count: deletingWorkplace?.fixedAssetCount,
-              })
-            : undefined
-        }
-        confirmText={deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
-        cancelText={t('common.cancel')}
-        isLoading={deleteMutation.isPending}
-        variant="delete"
-        icon="delete"
-      />
 
       {/* Clear Occupant Dialog */}
       <NeomorphConfirmDialog
@@ -1648,17 +1449,7 @@ const PhysicalWorkplacesPage = () => {
         }}
       />
 
-      {/* Bulk Import Dialog */}
-      <BulkImportWorkplacesDialog
-        open={bulkImportDialogOpen}
-        onClose={() => setBulkImportDialogOpen(false)}
-        onSuccess={(message) => {
-          setSnackbar({ open: true, message, severity: 'success' });
-        }}
-        onError={(message) => {
-          setSnackbar({ open: true, message, severity: 'error' });
-        }}
-      />
+
 
       {/* Snackbar */}
       <Snackbar

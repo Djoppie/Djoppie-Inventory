@@ -168,21 +168,22 @@ public record EquipmentTypeStatusDto(
 // ============================================================
 
 /// <summary>
-/// Summary statistics for workplace gap analysis
+/// Summary statistics for workplace gap analysis. "Device" covers
+/// user-assigned end-user devices: laptops, desktops, and PCs (status InGebruik).
 /// </summary>
 public record WorkplaceGapAnalysisDto(
-    /// <summary>Total laptops with status InGebruik that have an owner</summary>
-    int TotalLaptopsInUse,
-    /// <summary>Laptop owners who have a matching PhysicalWorkplace</summary>
+    /// <summary>Total unique device owners (laptops + desktops + PCs, status InGebruik)</summary>
+    int TotalDeviceOwnersInUse,
+    /// <summary>Device owners who have a matching PhysicalWorkplace</summary>
     int OwnersWithWorkplace,
-    /// <summary>Laptop owners who don't have a PhysicalWorkplace</summary>
+    /// <summary>Device owners who don't have a PhysicalWorkplace</summary>
     int OwnersWithoutWorkplace,
     /// <summary>Percentage of owners without workplace</summary>
     decimal GapPercentage,
     /// <summary>List of owners without workplaces, grouped by service</summary>
     IEnumerable<WorkplaceGapByServiceDto> GapsByService,
     /// <summary>Detailed list of orphan owners (limited)</summary>
-    IEnumerable<OrphanLaptopOwnerDto> OrphanOwners,
+    IEnumerable<OrphanDeviceOwnerDto> OrphanOwners,
     /// <summary>Debug info for troubleshooting</summary>
     WorkplaceGapDebugDto? Debug = null
 );
@@ -197,8 +198,8 @@ public record WorkplaceGapDebugDto(
     int WorkplacesWithOccupant,
     /// <summary>Workplaces without CurrentOccupantEmail</summary>
     int WorkplacesWithoutOccupant,
-    /// <summary>Sample laptop owner emails (first 3)</summary>
-    IEnumerable<string> SampleLaptopOwners,
+    /// <summary>Sample device owner emails (first 3)</summary>
+    IEnumerable<string> SampleDeviceOwners,
     /// <summary>Sample occupant emails (first 3)</summary>
     IEnumerable<string> SampleOccupantEmails
 );
@@ -211,24 +212,26 @@ public record WorkplaceGapByServiceDto(
     string? ServiceName,
     string? ServiceCode,
     int OwnersWithoutWorkplace,
-    int TotalLaptopOwners
+    int TotalDeviceOwners
 );
 
 /// <summary>
-/// Details about a laptop owner who doesn't have a PhysicalWorkplace
+/// Details about a device owner (laptop / desktop / PC) who doesn't have a PhysicalWorkplace
 /// </summary>
-public record OrphanLaptopOwnerDto(
+public record OrphanDeviceOwnerDto(
     string OwnerEmail,
     string? OwnerName,
     string? JobTitle,
     string? OfficeLocation,
     int? ServiceId,
     string? ServiceName,
-    int LaptopAssetId,
-    string LaptopAssetCode,
-    string? LaptopBrand,
-    string? LaptopModel,
-    string? LaptopSerialNumber
+    int DeviceAssetId,
+    string DeviceAssetCode,
+    string? DeviceBrand,
+    string? DeviceModel,
+    string? DeviceSerialNumber,
+    /// <summary>"laptop" or "desktop" — derived from AssetType code/name</summary>
+    string DeviceType
 );
 
 /// <summary>

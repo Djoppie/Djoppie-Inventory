@@ -660,8 +660,9 @@ public class WorkplaceSearchController : ControllerBase
     // ============================================================
 
     /// <summary>
-    /// Analyzes the gap between laptop owners and physical workplaces.
-    /// Finds laptop owners (InGebruik) who don't have a corresponding PhysicalWorkplace.
+    /// Analyzes the gap between user-assigned device owners and physical workplaces.
+    /// Finds owners of laptops AND desktops/PCs (status InGebruik) who don't have a
+    /// corresponding PhysicalWorkplace.
     /// </summary>
     [HttpGet("workplace-gap-analysis")]
     [ProducesResponseType(typeof(WorkplaceGapAnalysisDto), StatusCodes.Status200OK)]
@@ -670,29 +671,30 @@ public class WorkplaceSearchController : ControllerBase
         [FromQuery] int limit = 100,
         CancellationToken cancellationToken = default)
     {
-        // Define laptop type keywords
-        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+        // User-assigned end-user devices: laptops + desktops/PCs.
+        // Aligned with DataQualityService.IsUserAssignedTypeCode (lap/desk/pc).
+        var deviceKeywords = new[] { "laptop", "notebook", "lap", "desktop", "desk", "pc" };
 
-        // Get all laptops that are InGebruik and have an owner
-        var laptopsInUseQuery = _context.Assets
+        // Get all user-assigned devices that are InGebruik and have an owner
+        var devicesInUseQuery = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
             .Where(a => a.Status == AssetStatus.InGebruik)
             .Where(a => a.Owner != null && a.Owner != "")
             .Where(a =>
                 (a.AssetType != null && (
-                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
-                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                    deviceKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    deviceKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
                 )) ||
-                laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))
+                deviceKeywords.Any(kw => a.Category.ToLower().Contains(kw))
             );
 
         if (serviceId.HasValue)
         {
-            laptopsInUseQuery = laptopsInUseQuery.Where(a => a.ServiceId == serviceId.Value);
+            devicesInUseQuery = devicesInUseQuery.Where(a => a.ServiceId == serviceId.Value);
         }
 
-        var laptopsInUse = await laptopsInUseQuery
+        var devicesInUse = await devicesInUseQuery
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -718,8 +720,8 @@ public class WorkplaceSearchController : ControllerBase
             .Select(o => o.Name!)
             .ToHashSet();
 
-        // Find laptop owners without workplaces (check both email and name)
-        var orphanOwners = laptopsInUse
+        // Find device owners without workplaces (check both email and name)
+        var orphanOwners = devicesInUse
             .Where(a => {
                 var ownerLower = a.Owner!.ToLower();
                 // Check if owner matches either an email OR a name
@@ -727,10 +729,10 @@ public class WorkplaceSearchController : ControllerBase
                        !existingOccupantNames.Contains(ownerLower);
             })
             .GroupBy(a => a.Owner!.ToLower())
-            .Select(g => g.First()) // Take first laptop per unique owner
+            .Select(g => g.First()) // Take first device per unique owner
             .ToList();
 
-        var ownersWithWorkplace = laptopsInUse
+        var ownersWithWorkplace = devicesInUse
             .Where(a => {
                 var ownerLower = a.Owner!.ToLower();
                 return existingOccupantEmails.Contains(ownerLower) ||
@@ -747,7 +749,7 @@ public class WorkplaceSearchController : ControllerBase
                 g.Key.ServiceName ?? "Geen dienst",
                 g.Key.ServiceCode,
                 g.Count(),
-                laptopsInUse.Count(l => l.ServiceId == g.Key.ServiceId)
+                devicesInUse.Count(l => l.ServiceId == g.Key.ServiceId)
             ))
             .OrderByDescending(g => g.OwnersWithoutWorkplace)
             .ToList();
@@ -755,7 +757,7 @@ public class WorkplaceSearchController : ControllerBase
         // Create detailed orphan list (limited)
         var orphanDetails = orphanOwners
             .Take(limit)
-            .Select(a => new OrphanLaptopOwnerDto(
+            .Select(a => new OrphanDeviceOwnerDto(
                 a.Owner!,
                 ExtractNameFromEmail(a.Owner!),
                 a.JobTitle,
@@ -766,21 +768,22 @@ public class WorkplaceSearchController : ControllerBase
                 a.AssetCode,
                 a.Brand,
                 a.Model,
-                a.SerialNumber
+                a.SerialNumber,
+                ClassifyDeviceType(a.AssetType?.Code, a.AssetType?.Name, a.Category)
             ))
             .OrderBy(o => o.ServiceName)
             .ThenBy(o => o.OwnerEmail)
             .ToList();
 
-        var totalLaptopsInUse = laptopsInUse.GroupBy(a => a.Owner!.ToLower()).Count();
+        var totalDeviceOwnersInUse = devicesInUse.GroupBy(a => a.Owner!.ToLower()).Count();
         var ownersWithoutWorkplace = orphanOwners.Count;
-        var gapPercentage = totalLaptopsInUse > 0
-            ? Math.Round((decimal)ownersWithoutWorkplace / totalLaptopsInUse * 100, 1)
+        var gapPercentage = totalDeviceOwnersInUse > 0
+            ? Math.Round((decimal)ownersWithoutWorkplace / totalDeviceOwnersInUse * 100, 1)
             : 0;
 
         _logger.LogInformation(
-            "Workplace gap analysis: {Total} laptop owners, {WithWorkplace} with workplace, {Without} without workplace ({Gap}%)",
-            totalLaptopsInUse, ownersWithWorkplace, ownersWithoutWorkplace, gapPercentage);
+            "Workplace gap analysis: {Total} device owners, {WithWorkplace} with workplace, {Without} without workplace ({Gap}%)",
+            totalDeviceOwnersInUse, ownersWithWorkplace, ownersWithoutWorkplace, gapPercentage);
 
         // Get debug info about workplaces
         var totalActiveWorkplaces = await _context.PhysicalWorkplaces
@@ -797,7 +800,7 @@ public class WorkplaceSearchController : ControllerBase
             totalActiveWorkplaces,
             workplacesWithOccupant,
             totalActiveWorkplaces - workplacesWithOccupant,
-            laptopsInUse.Take(3).Select(l => l.Owner ?? "null").ToList(),
+            devicesInUse.Take(3).Select(l => l.Owner ?? "null").ToList(),
             sampleOccupants
         );
 
@@ -806,7 +809,7 @@ public class WorkplaceSearchController : ControllerBase
             totalActiveWorkplaces, workplacesWithOccupant, totalActiveWorkplaces - workplacesWithOccupant);
 
         return Ok(new WorkplaceGapAnalysisDto(
-            totalLaptopsInUse,
+            totalDeviceOwnersInUse,
             ownersWithWorkplace,
             ownersWithoutWorkplace,
             gapPercentage,
@@ -814,6 +817,14 @@ public class WorkplaceSearchController : ControllerBase
             orphanDetails,
             debugInfo
         ));
+    }
+
+    private static string ClassifyDeviceType(string? typeCode, string? typeName, string? category)
+    {
+        var haystack = string.Join(' ', typeCode, typeName, category).ToLowerInvariant();
+        if (haystack.Contains("desktop") || haystack.Contains("desk") || haystack.Contains("pc"))
+            return "desktop";
+        return "laptop";
     }
 
     /// <summary>
@@ -832,10 +843,10 @@ public class WorkplaceSearchController : ControllerBase
         if (building == null)
             return BadRequest($"Building with ID {dto.DefaultBuildingId} not found");
 
-        // Define laptop type keywords
-        var laptopKeywords = new[] { "laptop", "notebook", "not", "lap" };
+        // User-assigned end-user devices: laptops + desktops/PCs
+        var deviceKeywords = new[] { "laptop", "notebook", "lap", "desktop", "desk", "pc" };
 
-        // Get all laptops that are InGebruik and have an owner
+        // Get all user-assigned devices that are InGebruik and have an owner
         var laptopsInUseQuery = _context.Assets
             .Include(a => a.AssetType)
             .Include(a => a.Service)
@@ -843,10 +854,10 @@ public class WorkplaceSearchController : ControllerBase
             .Where(a => a.Owner != null && a.Owner != "")
             .Where(a =>
                 (a.AssetType != null && (
-                    laptopKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
-                    laptopKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
+                    deviceKeywords.Any(kw => a.AssetType.Code.ToLower().Contains(kw)) ||
+                    deviceKeywords.Any(kw => a.AssetType.Name.ToLower().Contains(kw))
                 )) ||
-                laptopKeywords.Any(kw => a.Category.ToLower().Contains(kw))
+                deviceKeywords.Any(kw => a.Category.ToLower().Contains(kw))
             );
 
         // Filter by service IDs if provided

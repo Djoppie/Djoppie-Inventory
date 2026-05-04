@@ -81,6 +81,10 @@ export interface NeumorphicDataGridProps<T extends { id: number | string }> {
 
   // NEW: Column visibility model for responsive columns
   columnVisibilityModel?: GridColumnVisibilityModel;
+
+  // Inline editing support
+  processRowUpdate?: (newRow: T, oldRow: T) => Promise<T> | T;
+  onProcessRowUpdateError?: (error: unknown) => void;
 }
 
 const CustomToolbar = memo(function CustomToolbar({
@@ -294,6 +298,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
   onRowClick,
   maxHeight,
   columnVisibilityModel,
+  processRowUpdate,
+  onProcessRowUpdateError,
 }: NeumorphicDataGridProps<T>) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -375,6 +381,8 @@ const NeumorphicDataGrid = memo(function NeumorphicDataGrid<T extends { id: numb
         {...(columnVisibilityModel && { columnVisibilityModel })}
         disableRowSelectionOnClick={!onRowClick}
         {...(onRowClick && { onRowClick: handleRowClick })}
+        {...(processRowUpdate && { processRowUpdate: processRowUpdate as unknown as (newRow: { id: number | string; isActive?: boolean }, oldRow: { id: number | string; isActive?: boolean }) => Promise<{ id: number | string; isActive?: boolean }> | { id: number | string; isActive?: boolean } })}
+        {...(onProcessRowUpdateError && { onProcessRowUpdateError })}
         initialState={gridInitialState}
         pageSizeOptions={[10, 15, 25, 50]}
         getRowClassName={getRowClass}

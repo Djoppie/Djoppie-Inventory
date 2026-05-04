@@ -6,6 +6,7 @@ import {
   workplaceGapAnalysisApi,
   BulkCreateWorkplacesDto,
   ExportWorkplacesParams,
+  BulkUpdateWorkplacesDto,
 } from '../api/physicalWorkplaces.api';
 import {
   CreatePhysicalWorkplaceDto,
@@ -291,6 +292,21 @@ export const useDeleteAllWorkplaces = () => {
 
   return useMutation({
     mutationFn: () => physicalWorkplacesBulkApi.deleteAll(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook to bulk-patch multiple workplaces (building, service, type, isActive, floor).
+ * Only non-undefined fields are written; undefined means "leave unchanged."
+ */
+export const useBulkUpdateWorkplaces = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dto: BulkUpdateWorkplacesDto) => physicalWorkplacesBulkApi.bulkUpdate(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: physicalWorkplaceKeys.all });
     },

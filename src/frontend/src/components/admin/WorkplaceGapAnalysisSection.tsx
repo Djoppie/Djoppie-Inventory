@@ -40,6 +40,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import LaptopIcon from '@mui/icons-material/Laptop';
+import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
 import WorkIcon from '@mui/icons-material/Work';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
@@ -134,7 +135,7 @@ const WorkplaceGapAnalysisSection = () => {
                   Werkplek Gap Analyse
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Laptop eigenaren zonder werkplek
+                  Laptop & desktop eigenaren zonder werkplek
                 </Typography>
               </Box>
             </Stack>
@@ -152,10 +153,10 @@ const WorkplaceGapAnalysisSection = () => {
           <Stack direction="row" spacing={3} sx={{ mt: 2 }}>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h4" fontWeight={700} color="primary">
-                {gapAnalysis.totalLaptopsInUse}
+                {gapAnalysis.totalDeviceOwnersInUse}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Laptops in gebruik
+                Toestellen in gebruik
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'center' }}>
@@ -226,7 +227,7 @@ const WorkplaceGapAnalysisSection = () => {
                 <Chip
                   key={gap.serviceId ?? 'none'}
                   icon={<WorkIcon />}
-                  label={`${gap.serviceName}: ${gap.ownersWithoutWorkplace}/${gap.totalLaptopOwners}`}
+                  label={`${gap.serviceName}: ${gap.ownersWithoutWorkplace}/${gap.totalDeviceOwners}`}
                   size="small"
                   variant="outlined"
                   color={gap.ownersWithoutWorkplace > 0 ? 'warning' : 'success'}
@@ -238,7 +239,7 @@ const WorkplaceGapAnalysisSection = () => {
             {gapAnalysis.orphanOwners.length > 0 && (
               <>
                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                  Laptop eigenaren zonder werkplek ({gapAnalysis.orphanOwners.length})
+                  Eigenaren zonder werkplek ({gapAnalysis.orphanOwners.length})
                 </Typography>
                 <TableContainer
                   component={Paper}
@@ -271,14 +272,16 @@ const WorkplaceGapAnalysisSection = () => {
                       >
                         <TableCell>Eigenaar</TableCell>
                         <TableCell>Dienst</TableCell>
-                        <TableCell>Laptop</TableCell>
+                        <TableCell>Toestel</TableCell>
                         <TableCell>Merk/Model</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {gapAnalysis.orphanOwners.map((orphan, index) => (
+                      {gapAnalysis.orphanOwners.map((orphan, index) => {
+                        const isDesktop = orphan.deviceType === 'desktop';
+                        return (
                         <TableRow
-                          key={orphan.laptopAssetId}
+                          key={orphan.deviceAssetId}
                           sx={{
                             bgcolor: (theme) =>
                               index % 2 === 1
@@ -296,7 +299,6 @@ const WorkplaceGapAnalysisSection = () => {
                         >
                           <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                             <Stack direction="row" spacing={1} alignItems="center">
-                              <LaptopIcon fontSize="small" color="action" />
                               <Box>
                                 <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.85rem' }}>
                                   {orphan.ownerName || orphan.ownerEmail}
@@ -313,17 +315,25 @@ const WorkplaceGapAnalysisSection = () => {
                             <Typography sx={{ fontSize: '0.85rem' }}>{orphan.serviceName || '-'}</Typography>
                           </TableCell>
                           <TableCell sx={{ py: 1 }}>
-                            <Typography fontFamily="monospace" sx={{ fontSize: '0.8rem', color: '#009688', fontWeight: 600 }}>
-                              {orphan.laptopAssetCode}
-                            </Typography>
+                            <Stack direction="row" spacing={0.75} alignItems="center">
+                              {isDesktop ? (
+                                <DesktopWindowsIcon fontSize="small" sx={{ color: '#009688' }} />
+                              ) : (
+                                <LaptopIcon fontSize="small" sx={{ color: '#009688' }} />
+                              )}
+                              <Typography fontFamily="monospace" sx={{ fontSize: '0.8rem', color: '#009688', fontWeight: 600 }}>
+                                {orphan.deviceAssetCode}
+                              </Typography>
+                            </Stack>
                           </TableCell>
                           <TableCell sx={{ py: 1, fontSize: '0.85rem' }}>
                             <Typography sx={{ fontSize: '0.85rem' }}>
-                              {orphan.laptopBrand} {orphan.laptopModel}
+                              {orphan.deviceBrand} {orphan.deviceModel}
                             </Typography>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -345,8 +355,8 @@ const WorkplaceGapAnalysisSection = () => {
         </DialogTitle>
         <DialogContent>
           <Alert severity="info" sx={{ mb: 2 }}>
-            Er worden werkplekken aangemaakt voor {gapAnalysis.ownersWithoutWorkplace} laptop eigenaren
-            die momenteel geen werkplek hebben. De laptop eigenaar wordt automatisch als occupant ingesteld.
+            Er worden werkplekken aangemaakt voor {gapAnalysis.ownersWithoutWorkplace} eigenaren
+            (laptop of desktop) die momenteel geen werkplek hebben. De eigenaar wordt automatisch als occupant ingesteld.
           </Alert>
 
           <TextField

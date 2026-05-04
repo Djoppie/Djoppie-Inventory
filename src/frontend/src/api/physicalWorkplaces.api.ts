@@ -212,6 +212,21 @@ export interface DeleteAllResult {
   count: number;
 }
 
+export interface BulkUpdateWorkplacesDto {
+  ids: number[];
+  buildingId?: number;
+  serviceId?: number;
+  type?: string;
+  isActive?: boolean;
+  floor?: string;
+}
+
+export interface BulkUpdateWorkplacesResult {
+  updated: number;
+  skipped: number;
+  errors: string[];
+}
+
 export const physicalWorkplacesBulkApi = {
   /**
    * Delete all physical workplaces (requires confirm=true)
@@ -220,6 +235,14 @@ export const physicalWorkplacesBulkApi = {
     const response = await apiClient.delete<DeleteAllResult>('/workplaces/all', {
       params: { confirm: true },
     });
+    return response.data;
+  },
+
+  /**
+   * Bulk-patch multiple workplaces. Only non-undefined fields are applied.
+   */
+  bulkUpdate: async (dto: BulkUpdateWorkplacesDto): Promise<BulkUpdateWorkplacesResult> => {
+    const response = await apiClient.patch<BulkUpdateWorkplacesResult>('/workplaces/bulk', dto);
     return response.data;
   },
 

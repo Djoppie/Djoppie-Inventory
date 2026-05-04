@@ -534,6 +534,87 @@ public class WorkplacesController : ControllerBase
         return Ok(changes.OrderByDescending(c => c.ChangedAt).Take(limit));
     }
 
+    /// <summary>
+    /// Bulk-patches multiple physical workplaces in one transaction.
+    /// Only non-null fields in the patch are applied; null means "leave unchanged."
+    /// </summary>
+    [HttpPatch("bulk")]
+    [ProducesResponseType(typeof(BulkUpdateWorkplacesResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkUpdateWorkplacesResult>> BulkUpdate(
+        [FromBody] BulkUpdateWorkplacesDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (dto.Ids == null || !dto.Ids.Any())
+            return BadRequest("At least one ID is required");
+
+        var ids = dto.Ids.ToList();
+        var workplaces = await _context.PhysicalWorkplaces
+            .Where(pw => ids.Contains(pw.Id))
+            .ToListAsync(cancellationToken);
+
+        var errors = new List<string>();
+        var updated = 0;
+        var skipped = 0;
+
+        // Validate building and service if provided
+        Building? building = null;
+        if (dto.BuildingId.HasValue)
+        {
+            building = await _context.Buildings.FindAsync(new object[] { dto.BuildingId.Value }, cancellationToken);
+            if (building == null)
+                return BadRequest($"Building with ID {dto.BuildingId} not found");
+        }
+
+        Service? service = null;
+        if (dto.ServiceId.HasValue)
+        {
+            service = await _context.Services.FindAsync(new object[] { dto.ServiceId.Value }, cancellationToken);
+            if (service == null)
+                return BadRequest($"Service with ID {dto.ServiceId} not found");
+        }
+
+        foreach (var workplace in workplaces)
+        {
+            try
+            {
+                if (dto.BuildingId.HasValue)
+                    workplace.BuildingId = dto.BuildingId.Value;
+                if (dto.ServiceId.HasValue)
+                    workplace.ServiceId = dto.ServiceId.Value;
+                if (dto.Type.HasValue)
+                    workplace.Type = dto.Type.Value;
+                if (dto.IsActive.HasValue)
+                    workplace.IsActive = dto.IsActive.Value;
+                if (dto.Floor != null)
+                    workplace.Floor = dto.Floor == "" ? null : dto.Floor;
+
+                workplace.UpdatedAt = DateTime.UtcNow;
+                updated++;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"ID {workplace.Id}: {ex.Message}");
+                skipped++;
+            }
+        }
+
+        // IDs that were not found
+        var foundIds = workplaces.Select(w => w.Id).ToHashSet();
+        foreach (var id in ids.Where(id => !foundIds.Contains(id)))
+        {
+            errors.Add($"ID {id}: not found");
+            skipped++;
+        }
+
+        if (updated > 0)
+            await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Bulk updated {Count} workplaces (skipped {Skipped})", updated, skipped);
+
+        return Ok(new BulkUpdateWorkplacesResult(updated, skipped, errors));
+    }
+
     internal static PhysicalWorkplaceDto MapToDto(PhysicalWorkplace pw)
     {
         // Count equipment slots that have assets assigned
