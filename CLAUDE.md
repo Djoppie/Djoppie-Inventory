@@ -299,6 +299,8 @@ Both local development and Azure DEV environments use the same backend API regis
 - Fallback policy requires authenticated users
 - Custom "RequireAdminRole" policy for admin operations
 
+> ⚠️ **`RequireAdminRole` is currently a no-op.** The policy is registered in `AuthenticationExtensions.cs:54-55` but only requires an authenticated user — the `RequireRole(...)` call is stubbed out as a DEV TODO awaiting Entra app roles. Any endpoint behind `[Authorize(Policy = "RequireAdminRole")]` is in practice authenticated-only. Don't rely on it for sensitive operations until the roles system is implemented.
+
 ## Development Commands
 
 ### > Backend
@@ -749,6 +751,58 @@ Existing workplaces may still use JSON in `RolloutWorkplace.AssetPlansJson`:
   }
 ]
 ```
+
+## Other Major Subsystems
+
+### Onboarding / Offboarding Requests
+
+The on/offboarding workflow plans asset moves around an employee's lifecycle. It runs alongside (not inside) rollouts: rollouts are bulk team deployments, requests are per-employee.
+
+**Domain model**:
+
+- `AssetRequest` (`AssetRequest.cs`) — one row per request. `RequestType ∈ {Onboarding, Offboarding}`, `Status ∈ {Pending, Approved, InProgress, Completed, Cancelled, Rejected}`.
+- `AssetRequestLine` (`AssetRequestLine.cs`) — one row per asset on the request, keyed by `AssetTypeId`. `SourceType ∈ {ToBeAssigned, ExistingInventory, NewFromTemplate}`. Offboarding lines also carry `ReturnAction ∈ {ReturnToStock, Decommission, Reassign}`.
+- `RequestedFor` is a free-text identifier captured at intake — requests can be filed before the Entra account exists. `EmployeeId` is filled in later, either manually or automatically (see below).
+
+**API**: `Controllers/Operations/RequestsController.cs` at `/api/operations/requests`:
+
+- CRUD on requests + lines (`POST/PUT/DELETE /{id}` and `/{id}/lines/{lineId}`)
+- `POST /{id}/transition` — drives the state machine; on transition to `Completed` it atomically applies all line effects (assigning new assets, decommissioning offboarded ones).
+- `POST /{id}/link-employee` — manual link of `EmployeeId` to an `AssetRequest`.
+- `GET /statistics` — dashboard tiles.
+
+**Auto-link via Entra sync**: `OrganizationSyncService.LinkPendingAssetRequestsAsync()` runs as part of the Entra org sync and back-fills `AssetRequest.EmployeeId` for any pending request whose `RequestedFor` matches a newly-synced employee. Don't reinvent matching logic.
+
+**Frontend**: `pages/operations/requests/*` (Dashboard, Onboarding/Offboarding lists, RequestCreate, RequestDetail, RequestsHistory). The unified `OperationsReportsPage` (`/operations/reports`) merges request history with rollout/swap movements for cross-cutting reports.
+
+### Lease Contracts (Phase 1)
+
+A leasing contract groups assets under a shared planned end-date — typically a 4-year vendor contract for a batch of laptops.
+
+**Domain model**:
+
+- `LeaseContract` (`LeaseContract.cs`) — `LeaseScheduleNumber` (supplier ID, natural key for upserts), `VendorName`, `Customer`, `ContractStatus`, `PlannedLeaseEnd`.
+- `Asset.LeaseContractId` (FK, nullable) + `Asset.LeaseStatus ∈ {None, InLease, Returned, Cancelled}`. **Only assets with `LeaseStatus.InLease` count toward billing.**
+
+**API**: `Controllers/Admin/LeaseContractsController.cs` at `/api/admin/leases`:
+
+- `GET /` — list contracts (joined with asset counts).
+- `POST /import` — CSV upsert keyed on `LeaseScheduleNumber`. The supplier "Contract status" column drives per-asset `LeaseStatus`.
+- Reporting: `Controllers/Reports/LeaseReportsController.cs` (return-deadline thresholds derived from `PlannedLeaseEnd`).
+
+**Status (per project memory)**: Phase 1 (table + CSV import) shipped 2026-04-27. Phase 2 (alerts, manual CRUD, dashboard widget) is still backlog — don't implement features assuming it exists.
+
+### Asset Code Generation
+
+Asset codes are generated server-side via `IAssetCodeGenerator` (`Core/Interfaces/IAssetCodeGenerator.cs`, implementation in `Infrastructure/Services/AssetCodeGeneratorService.cs`). **Always use this service** — never compose codes by hand or via `MAX(AssetCode) + 1`.
+
+**Format**: `[DUM-]TYPE-YY-MERK-NUMMER`
+- Examples: `LAP-26-DELL-00001`, `DUM-LAP-26-HP-90001`, `DESK-26-LENO-00042`
+- `MERK` = first 4 chars of brand, uppercased.
+- `YY` rolls forward in November/December (a Nov/Dec 2026 purchase gets year `27`).
+- Normal range: `00001–89999`. Dummy range: `90001–99999`.
+
+**Concurrency**: Numbers come from a per-prefix `AssetCodeCounter` row (`Core/Entities/AssetCodeCounter.cs`) updated inside a serializable transaction. The previous `MAX+1` approach collided under bulk-create and rollout-day load — that bug is fixed, don't reintroduce it. For bulk imports use `GenerateBulkCodesAsync(count: N)` so the entire range is reserved in one round-trip.
 
 ## Key Implementation Notes
 
