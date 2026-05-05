@@ -62,14 +62,16 @@ Controllers are organized into feature-based vertical slices under `Controllers/
 src/backend/
 ├── DjoppieInventory.API/           # API Layer
 │   ├── Controllers/                # API endpoints (feature-based)
-│   │   ├── Admin/                  # /api/admin/*
-│   │   │   ├── AdminOrganizationController.cs   # Organization CRUD
-│   │   │   ├── AdminSectorsController.cs         # Organization sectors
-│   │   │   ├── AdminServicesController.cs        # Organization services (Dienst ICT, etc.)
-│   │   │   ├── AdminBuildingsController.cs       # Building/location management
-│   │   │   ├── AdminCategoriesController.cs      # Asset categories
-│   │   │   ├── AdminAssetTypesController.cs      # Asset types (laptop, monitor, etc.)
-│   │   │   └── AdminEmployeesController.cs       # Employee management
+│   │   ├── Admin/                  # /api/admin/* (note: filenames have NO "Admin" prefix; route attribute scopes them)
+│   │   │   ├── OrganizationController.cs         # Organization CRUD
+│   │   │   ├── SectorsController.cs              # Organization sectors
+│   │   │   ├── ServicesController.cs             # Organization services (Dienst ICT, etc.)
+│   │   │   ├── BuildingsController.cs            # Building/location management
+│   │   │   ├── CategoriesController.cs           # Asset categories
+│   │   │   ├── AssetTypesController.cs           # Asset types (laptop, monitor, etc.)
+│   │   │   ├── EmployeesController.cs            # Employee management
+│   │   │   ├── LeaseContractsController.cs       # Lease contract tracking (Phase 1)
+│   │   │   └── DataQualityController.cs          # Data-quality dashboards & backfill tools
 │   │   ├── Devices/                # /api/devices/*
 │   │   │   ├── IntuneDevicesController.cs        # Intune device lookup
 │   │   │   ├── IntuneSyncController.cs           # Intune sync operations
@@ -92,10 +94,16 @@ src/backend/
 │   │   │   ├── RequestsController.cs             # Asset requests
 │   │   │   └── DeploymentController.cs           # Deployment tracking
 │   │   ├── Reports/                # /api/reports/*
-│   │   │   ├── InventoryReportsController.cs
-│   │   │   ├── WorkplaceReportsController.cs
-│   │   │   ├── OperationsReportsController.cs
-│   │   │   └── DeviceReportsController.cs
+│   │   │   ├── ReportsOverviewController.cs      # Reports landing page data
+│   │   │   ├── InventoryReportsController.cs     # Inventory totals & breakdowns
+│   │   │   ├── WorkplaceReportsController.cs     # Workplace-centric reports
+│   │   │   ├── DeviceReportsController.cs        # Device reports
+│   │   │   ├── IntuneReportsController.cs        # Intune-derived reports
+│   │   │   ├── EmployeeReportsController.cs      # Employee-centric reports
+│   │   │   ├── AssetHistoryReportsController.cs  # Asset history / audit drill-down
+│   │   │   ├── LeaseReportsController.cs         # Lease contract reporting
+│   │   │   ├── RolloutReportsController.cs       # Rollout reporting (mirror; see also Operations/Rollout)
+│   │   │   └── ClientSecretsController.cs        # Entra app registration secret expiry monitoring
 │   │   ├── User/                   # /api/user
 │   │   │   └── UserController.cs                 # User profile
 │   │   └── Workplaces/             # /api/workplaces/*
@@ -214,22 +222,56 @@ src/frontend/
 
 ### Frontend Routes
 
+Source of truth: `src/frontend/src/constants/routes.ts` (use `ROUTES` constants and `buildRoute` helpers — don't hard-code paths).
+
 | Page | Route |
 |------|-------|
 | Dashboard | `/` |
-| Assets | `/inventory/assets` |
-| Add Asset | `/inventory/assets/new` |
-| Asset Detail | `/inventory/assets/:id` |
-| Asset Templates | `/inventory/templates` |
 | QR Scan | `/inventory/scan` |
 | Inventory Overview | `/inventory` |
-| Intune Dashboard | `/devices/intune` |
-| Rollouts | `/operations/rollouts` |
-| Asset Requests | `/operations/requests` |
+| Assets list | `/inventory/assets` |
+| Add Asset | `/inventory/assets/new` |
+| Bulk Create Assets | `/inventory/assets/bulk-create` |
+| Asset Detail | `/inventory/assets/:id` |
+| Edit Asset | `/inventory/assets/:id/edit` |
+| Installed Software | `/inventory/assets/:id/software` |
+| Asset Intune | `/inventory/assets/:id/intune` |
+| Asset Templates | `/inventory/templates` |
+| Admin (redirects) | `/admin` |
+| Admin → Assets | `/admin/assets` |
+| Admin → Organisation | `/admin/organisation` |
+| Admin → Locations | `/admin/locations` |
+| Admin → Data Quality | `/admin/data-quality` |
+| Operations Dashboard | `/operations` |
+| Rollouts list | `/operations/rollouts` |
+| New Rollout | `/operations/rollouts/new` |
+| Edit Rollout | `/operations/rollouts/:id` |
+| Rollout Execute | `/operations/rollouts/:id/execute` |
+| Rollout Report | `/operations/rollouts/:id/report` |
+| Rollout Day Detail | `/operations/rollouts/:id/days/:dayId` |
+| Rollout Day Edit | `/operations/rollouts/:id/days/:dayId/edit` |
+| Rollout Serial Numbers | `/operations/rollouts/serienummers` |
+| Requests Dashboard | `/operations/requests` |
+| Onboarding list | `/operations/requests/onboarding` |
+| Onboarding new | `/operations/requests/onboarding/new` |
+| Onboarding detail | `/operations/requests/onboarding/:id` |
+| Offboarding list | `/operations/requests/offboarding` |
+| Offboarding new | `/operations/requests/offboarding/new` |
+| Offboarding detail | `/operations/requests/offboarding/:id` |
+| Requests Reports / History | `/operations/requests/reports` |
 | Laptop Swap | `/operations/swaps` |
-| Reports | `/reports` |
-| Workplaces | `/workplaces` |
-| Admin | `/admin` |
+| Deployment History (legacy → Ops Reports) | `/operations/swaps/history` |
+| Operations Reports (unified swaps + on/offboarding) | `/operations/reports` |
+| Reports hub | `/reports` |
+| Monitoring hub | `/monitoring` |
+| Monitoring → Applications (app secrets) | `/monitoring/applications` |
+| Monitoring → Users (M365 licenses) | `/monitoring/users` |
+| Autopilot Devices | `/devices/autopilot` |
+| Autopilot Timeline | `/devices/autopilot/timeline/:serialNumber` |
+| Intune Dashboard | `/devices/intune` |
+| Workplaces list | `/workplaces` |
+| Workplace Detail | `/workplaces/:id` |
+| Workplace Reports | `/workplaces/reports` |
 
 ### Authentication Architecture
 
