@@ -574,6 +574,67 @@ public class WorkplacesController : ControllerBase
                 return BadRequest($"Service with ID {dto.ServiceId} not found");
         }
 
+        // Validate per-id Codes for uniqueness BEFORE applying anything.
+        // Codes must be unique per-building (matches single-update semantics +
+        // PhysicalWorkplace.Code unique index). We check both intra-batch
+        // duplicates and collisions with workplaces outside the batch.
+        if (dto.Codes is { Count: > 0 })
+        {
+            var workplacesById = workplaces.ToDictionary(w => w.Id);
+
+            // Resolve effective (code, buildingId) for each affected row.
+            var resolved = new List<(int Id, string Code, int BuildingId)>(dto.Codes.Count);
+            foreach (var (id, rawCode) in dto.Codes)
+            {
+                if (!workplacesById.TryGetValue(id, out var wp))
+                    continue; // Not-found ids are reported in the regular skipped path below
+
+                var newCode = (rawCode ?? string.Empty).Trim();
+                if (string.IsNullOrEmpty(newCode))
+                {
+                    errors.Add($"ID {id}: lege code is niet toegestaan");
+                    continue;
+                }
+
+                var effectiveBuildingId = dto.BuildingId ?? wp.BuildingId;
+                resolved.Add((id, newCode, effectiveBuildingId));
+            }
+
+            // Intra-batch dupes (same building, same code, different rows)
+            var intraDupes = resolved
+                .GroupBy(r => (r.Code, r.BuildingId))
+                .Where(g => g.Count() > 1)
+                .ToList();
+            foreach (var grp in intraDupes)
+            {
+                errors.Add($"Code '{grp.Key.Code}' is meerdere keren toegewezen binnen gebouw {grp.Key.BuildingId} ({grp.Count()} rijen).");
+            }
+
+            // Inter-batch dupes (existing workplace OUTSIDE the batch with the same code+building)
+            if (resolved.Count > 0)
+            {
+                var codes = resolved.Select(r => r.Code).Distinct().ToList();
+                var conflicts = await _context.PhysicalWorkplaces
+                    .AsNoTracking()
+                    .Where(pw => !ids.Contains(pw.Id) && codes.Contains(pw.Code))
+                    .Select(pw => new { pw.Id, pw.Code, pw.BuildingId })
+                    .ToListAsync(cancellationToken);
+
+                foreach (var r in resolved)
+                {
+                    if (conflicts.Any(c => c.Code == r.Code && c.BuildingId == r.BuildingId))
+                    {
+                        errors.Add($"ID {r.Id}: code '{r.Code}' bestaat al in gebouw {r.BuildingId}.");
+                    }
+                }
+            }
+
+            if (errors.Count > 0)
+            {
+                return BadRequest(new BulkUpdateWorkplacesResult(0, ids.Count, errors));
+            }
+        }
+
         foreach (var workplace in workplaces)
         {
             try
@@ -588,6 +649,17 @@ public class WorkplacesController : ControllerBase
                     workplace.IsActive = dto.IsActive.Value;
                 if (dto.Floor != null)
                     workplace.Floor = dto.Floor == "" ? null : dto.Floor;
+                if (dto.Room != null)
+                    workplace.Room = dto.Room == "" ? null : dto.Room;
+
+                if (dto.Codes is { Count: > 0 } && dto.Codes.TryGetValue(workplace.Id, out var newCode))
+                {
+                    workplace.Code = newCode.Trim();
+                }
+                if (dto.Names is { Count: > 0 } && dto.Names.TryGetValue(workplace.Id, out var newName))
+                {
+                    workplace.Name = newName.Trim();
+                }
 
                 workplace.UpdatedAt = DateTime.UtcNow;
                 updated++;

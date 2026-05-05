@@ -219,6 +219,15 @@ export interface BulkUpdateWorkplacesDto {
   type?: string;
   isActive?: boolean;
   floor?: string;
+  /** Plain bulk room (same value applied to every selected row). */
+  room?: string;
+  /**
+   * Per-id final codes (template-expanded client-side). The backend validates
+   * uniqueness per-building and rejects the whole batch on collision.
+   */
+  codes?: Record<number, string>;
+  /** Per-id final names (template-expanded client-side). No uniqueness rule. */
+  names?: Record<number, string>;
 }
 
 export interface BulkUpdateWorkplacesResult {
