@@ -25,6 +25,7 @@ import {
   Snackbar,
   CircularProgress,
   Button,
+  Tooltip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -35,6 +36,7 @@ import DevicesIcon from '@mui/icons-material/Devices';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DownloadIcon from '@mui/icons-material/Download';
+import LaunchIcon from '@mui/icons-material/Launch';
 import { useRolloutSession, useRolloutDays, useRolloutProgress } from '../../../hooks/useRollout';
 import type { RolloutDay } from '../../../types/rollout';
 import { getStatusColor } from '../../../api/rollout.api';
@@ -155,8 +157,8 @@ const RolloutReportPage = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={handleBack} sx={{ mr: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+        <IconButton onClick={handleBack} sx={{ mr: 0.5 }}>
           <ArrowBackIcon />
         </IconButton>
         <Box sx={{ flexGrow: 1 }}>
@@ -167,6 +169,28 @@ const RolloutReportPage = () => {
             {session.sessionName}
           </Typography>
         </Box>
+        <Tooltip title="Bekijk in canonical Reports overzicht" arrow>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<LaunchIcon sx={{ fontSize: 16 }} />}
+            onClick={() => navigate(`${ROUTES.REPORTS}?tab=rollouts&session=${sessionId}`)}
+            sx={{
+              borderColor: 'divider',
+              color: 'text.secondary',
+              fontSize: '0.75rem',
+              px: 1.5,
+              py: 0.5,
+              '&:hover': {
+                borderColor: '#FF7700',
+                color: '#FF7700',
+                bgcolor: 'rgba(255, 119, 0, 0.06)',
+              },
+            }}
+          >
+            Volledig rapport
+          </Button>
+        </Tooltip>
         <Chip
           label={t(`rollout.status.${getStatusTranslationKey(session.status)}`)}
           color={getStatusColor(session.status)}

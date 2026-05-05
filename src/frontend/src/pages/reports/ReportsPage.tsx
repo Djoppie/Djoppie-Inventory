@@ -103,7 +103,10 @@ const ReportsPage = () => {
     }
 
     if (tabParam !== activeTab) {
-      setSearchParams({ tab: activeTab }, { replace: true });
+      // Preserve extra params (e.g. session= for RolloutsTab deep-links) while updating tab
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', activeTab);
+      setSearchParams(next, { replace: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, searchParams, setSearchParams]);

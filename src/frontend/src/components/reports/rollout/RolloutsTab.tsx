@@ -93,8 +93,18 @@ const RolloutsTab = () => {
     setSearchParams(p, { replace: true });
   };
 
-  // Component state
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  // Component state — session ID is URL-driven so deep-links from RolloutReportPage work
+  const sessionFromUrl = searchParams.get('session');
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(
+    sessionFromUrl ? Number(sessionFromUrl) : null
+  );
+
+  const handleSessionChange = (id: number) => {
+    setSelectedSessionId(id);
+    const p = new URLSearchParams(searchParams);
+    p.set('session', String(id));
+    setSearchParams(p, { replace: true });
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDays, setExpandedDays] = useState<(string | number)[]>([]);
   const [showUnscheduled, setShowUnscheduled] = useState(false);
@@ -312,7 +322,7 @@ const RolloutsTab = () => {
       <RolloutSessionSelector
         reportableSessions={reportableSessions}
         selectedSessionId={selectedSessionId}
-        onSessionChange={setSelectedSessionId}
+        onSessionChange={handleSessionChange}
         isDark={isDark}
       />
 

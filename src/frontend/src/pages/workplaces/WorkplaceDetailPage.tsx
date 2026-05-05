@@ -53,6 +53,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 // Hooks
 import { usePhysicalWorkplace, usePhysicalWorkplaceAssets, useClearOccupant, useUpdateOccupant } from '../../hooks/usePhysicalWorkplaces';
@@ -405,7 +406,33 @@ const WorkplaceDetailPage = () => {
 
           {/* Right: Actions */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Tooltip title="Bekijk dit werkplek in het Reports overzicht" arrow>
+                <Chip
+                  label="Reports"
+                  size="small"
+                  icon={<AssessmentIcon sx={{ fontSize: '14px !important' }} />}
+                  onClick={() => navigate('/reports?tab=werkplekken')}
+                  sx={{
+                    height: 28,
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    color: 'text.secondary',
+                    bgcolor: neumorphColors.bgSurface,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    '& .MuiChip-icon': { color: 'text.secondary' },
+                    '&:hover': {
+                      color: '#9C27B0',
+                      borderColor: alpha('#9C27B0', 0.4),
+                      bgcolor: alpha('#9C27B0', 0.06),
+                      '& .MuiChip-icon': { color: '#9C27B0' },
+                    },
+                  }}
+                />
+              </Tooltip>
               <Tooltip title="Equipment beheren" arrow>
                 <IconButton
                   onClick={() => setAssetsDialogOpen(true)}

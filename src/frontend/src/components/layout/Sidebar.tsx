@@ -458,7 +458,6 @@ const Sidebar = ({
             subItems={[
               { label: 'Assets', icon: <InventoryIcon />, path: ROUTES.INVENTORY_ASSETS, matchPaths: ['/inventory/assets'] },
               { label: 'Templates', icon: <StyleIcon />, path: ROUTES.TEMPLATES, matchPaths: ['/inventory/templates'] },
-              { label: 'Reports', icon: <AssessmentIcon />, path: ROUTES.REPORTS, matchPaths: ['/reports'] },
             ]}
             isCollapsed={isCollapsed}
             isExpanded={expandedSections.Inventory}
@@ -472,12 +471,9 @@ const Sidebar = ({
             icon={<BusinessIcon />}
             path={ROUTES.PHYSICAL_WORKPLACES}
             matchPaths={['/workplaces']}
-            subItems={[
-              { label: 'Reports', icon: <AssessmentIcon />, path: '/workplaces/reports', matchPaths: ['/workplaces/reports'] },
-            ]}
             isCollapsed={isCollapsed}
-            isExpanded={expandedSections.Workplaces}
-            onToggle={() => toggleSection('Workplaces')}
+            isExpanded={false}
+            onToggle={() => {}}
             onNavigate={handleNavigation}
           />
 
@@ -490,7 +486,7 @@ const Sidebar = ({
             subItems={[
               { label: 'Rollout Sessions', icon: <RocketLaunchIcon />, path: ROUTES.ROLLOUTS, matchPaths: ['/operations/rollouts'] },
               { label: 'Swaps', icon: <SwapHorizIcon />, path: ROUTES.LAPTOP_SWAP, matchPaths: ['/operations/swaps'] },
-              { label: 'Reports', icon: <AssessmentIcon />, path: ROUTES.OPERATIONS_REPORTS, matchPaths: ['/operations/reports', '/operations/swaps/history'] },
+              { label: 'Historiek', icon: <AssessmentIcon />, path: ROUTES.OPERATIONS_REPORTS, matchPaths: ['/operations/reports', '/operations/swaps/history'] },
             ]}
             isCollapsed={isCollapsed}
             isExpanded={expandedSections.Operations}
@@ -508,12 +504,33 @@ const Sidebar = ({
             subItems={[
               { label: 'Onboarding', icon: <PersonAddIcon />, path: ROUTES.REQUESTS_ONBOARDING, matchPaths: ['/operations/requests/onboarding'] },
               { label: 'Offboarding', icon: <PersonRemoveIcon />, path: ROUTES.REQUESTS_OFFBOARDING, matchPaths: ['/operations/requests/offboarding'] },
-              { label: 'Reports', icon: <AssessmentIcon />, path: ROUTES.REQUESTS_REPORTS, matchPaths: ['/operations/requests/reports'] },
+              { label: 'Historiek', icon: <AssessmentIcon />, path: ROUTES.REQUESTS_REPORTS, matchPaths: ['/operations/requests/reports'] },
             ]}
             isCollapsed={isCollapsed}
             isExpanded={expandedSections.Requests}
             onToggle={() => toggleSection('Requests')}
             onNavigate={handleNavigation}
+          />
+
+          <Divider
+            sx={{
+              mx: 2,
+              my: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+            }}
+          />
+
+          {/* Reports — top-level canonical read-only hub */}
+          <NavigationGroup
+            label="Reports"
+            icon={<AssessmentIcon />}
+            path={ROUTES.REPORTS}
+            matchPaths={['/reports']}
+            isCollapsed={isCollapsed}
+            isExpanded={false}
+            onToggle={() => {}}
+            onNavigate={handleNavigation}
+            extraBottomMargin
           />
 
           {/* Admin */}
