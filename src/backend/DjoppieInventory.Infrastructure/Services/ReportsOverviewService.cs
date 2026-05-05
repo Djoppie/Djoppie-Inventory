@@ -17,21 +17,32 @@ public class ReportsOverviewService
         _logger = logger;
     }
 
-    public async Task<OverviewKpiDto> GetOverviewAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Aggregated KPIs for the Reports → Overview dashboard.
+    /// <paramref name="assetTypeIds"/> narrows the asset-typeable KPIs
+    /// (assets / intune / activity / trend / attention). Workplace, rollout
+    /// and leasing KPIs always reflect global state.
+    /// </summary>
+    public async Task<OverviewKpiDto> GetOverviewAsync(
+        int[]? assetTypeIds = null,
+        CancellationToken ct = default)
     {
+        // Normalize to a non-empty filter or null (no filter).
+        var typeFilter = assetTypeIds is { Length: > 0 } ? assetTypeIds : null;
+
         // DbContext is not thread-safe. Firing these with Task.WhenAll on a single
         // shared DbContext throws InvalidOperationException ("A second operation was
         // started on this context instance") against real SQL Server. The EF InMemory
         // provider used in tests is more tolerant, which is why this shape passed CI
         // but failed in production. Run sequentially — total latency stays sub-second.
-        var assets     = await ComputeAssetsKpiAsync(ct);
+        var assets     = await ComputeAssetsKpiAsync(typeFilter, ct);
         var rollouts   = await ComputeRolloutsKpiAsync(ct);
         var workplaces = await ComputeWorkplacesKpiAsync(ct);
         var leasing    = await ComputeLeasingKpiAsync(ct);
-        var intune     = await ComputeIntuneKpiAsync(ct);
-        var activity   = await ComputeActivityKpiAsync(ct);
-        var attention  = await ComputeAttentionAsync(ct);
-        var trend      = await ComputeTrendAsync(ct);
+        var intune     = await ComputeIntuneKpiAsync(typeFilter, ct);
+        var activity   = await ComputeActivityKpiAsync(typeFilter, ct);
+        var attention  = await ComputeAttentionAsync(typeFilter, ct);
+        var trend      = await ComputeTrendAsync(typeFilter, ct);
 
         return new OverviewKpiDto
         {
@@ -50,9 +61,15 @@ public class ReportsOverviewService
     // Assets KPI
     // ──────────────────────────────────────────────────────────────────────────
 
-    private async Task<OverviewAssetsKpi> ComputeAssetsKpiAsync(CancellationToken ct)
+    private async Task<OverviewAssetsKpi> ComputeAssetsKpiAsync(int[]? typeFilter, CancellationToken ct)
     {
-        var counts = await _db.Assets.AsNoTracking()
+        var query = _db.Assets.AsNoTracking();
+        if (typeFilter is not null)
+        {
+            query = query.Where(a => a.AssetTypeId != null && typeFilter.Contains(a.AssetTypeId.Value));
+        }
+
+        var counts = await query
             .GroupBy(a => a.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(ct);
@@ -71,7 +88,7 @@ public class ReportsOverviewService
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Workplaces KPI
+    // Workplaces KPI (NOT filtered by asset type — workplaces aren't typed)
     // ──────────────────────────────────────────────────────────────────────────
 
     private async Task<OverviewWorkplacesKpi> ComputeWorkplacesKpiAsync(CancellationToken ct)
@@ -90,7 +107,7 @@ public class ReportsOverviewService
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Rollouts KPI
+    // Rollouts KPI (NOT filtered by asset type — sessions aren't asset-typed)
     // ──────────────────────────────────────────────────────────────────────────
 
     private async Task<OverviewRolloutsKpi> ComputeRolloutsKpiAsync(CancellationToken ct)
@@ -133,7 +150,7 @@ public class ReportsOverviewService
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Leasing KPI
+    // Leasing KPI (NOT filtered by asset type)
     // ──────────────────────────────────────────────────────────────────────────
 
     private Task<OverviewLeasingKpi> ComputeLeasingKpiAsync(CancellationToken ct)
@@ -146,17 +163,20 @@ public class ReportsOverviewService
     // Intune KPI
     // ──────────────────────────────────────────────────────────────────────────
 
-    private async Task<OverviewIntuneKpi> ComputeIntuneKpiAsync(CancellationToken ct)
+    private async Task<OverviewIntuneKpi> ComputeIntuneKpiAsync(int[]? typeFilter, CancellationToken ct)
     {
         // Asset is considered enrolled in Intune when IntuneLastCheckIn is set.
         // Asset is stale when IntuneLastCheckIn is older than 30 days.
         var staleThreshold = DateTime.UtcNow.AddDays(-30);
 
-        var enrolled = await _db.Assets.AsNoTracking()
-            .CountAsync(a => a.IntuneLastCheckIn != null, ct);
+        var query = _db.Assets.AsNoTracking();
+        if (typeFilter is not null)
+        {
+            query = query.Where(a => a.AssetTypeId != null && typeFilter.Contains(a.AssetTypeId.Value));
+        }
 
-        var stale = await _db.Assets.AsNoTracking()
-            .CountAsync(a => a.IntuneLastCheckIn != null && a.IntuneLastCheckIn < staleThreshold, ct);
+        var enrolled = await query.CountAsync(a => a.IntuneLastCheckIn != null, ct);
+        var stale    = await query.CountAsync(a => a.IntuneLastCheckIn != null && a.IntuneLastCheckIn < staleThreshold, ct);
 
         return new OverviewIntuneKpi
         {
@@ -169,12 +189,21 @@ public class ReportsOverviewService
     // Activity KPI
     // ──────────────────────────────────────────────────────────────────────────
 
-    private async Task<OverviewActivityKpi> ComputeActivityKpiAsync(CancellationToken ct)
+    private async Task<OverviewActivityKpi> ComputeActivityKpiAsync(int[]? typeFilter, CancellationToken ct)
     {
         var since = DateTime.UtcNow.AddDays(-7);
-        var count = await _db.AssetEvents.AsNoTracking()
-            .CountAsync(e => e.EventDate >= since, ct);
 
+        var query = _db.AssetEvents.AsNoTracking().Where(e => e.EventDate >= since);
+        if (typeFilter is not null)
+        {
+            // Filter events by joining to Asset.AssetTypeId
+            query = query.Where(e =>
+                _db.Assets.Any(a => a.Id == e.AssetId
+                                    && a.AssetTypeId != null
+                                    && typeFilter.Contains(a.AssetTypeId.Value)));
+        }
+
+        var count = await query.CountAsync(ct);
         return new OverviewActivityKpi { EventsLast7Days = count };
     }
 
@@ -182,12 +211,17 @@ public class ReportsOverviewService
     // Attention list
     // ──────────────────────────────────────────────────────────────────────────
 
-    private async Task<List<AttentionItemDto>> ComputeAttentionAsync(CancellationToken ct)
+    private async Task<List<AttentionItemDto>> ComputeAttentionAsync(int[]? typeFilter, CancellationToken ct)
     {
         var items = new List<AttentionItemDto>();
 
-        var defectCount = await _db.Assets.AsNoTracking()
-            .CountAsync(a => a.Status == AssetStatus.Defect, ct);
+        var assetQuery = _db.Assets.AsNoTracking();
+        if (typeFilter is not null)
+        {
+            assetQuery = assetQuery.Where(a => a.AssetTypeId != null && typeFilter.Contains(a.AssetTypeId.Value));
+        }
+
+        var defectCount = await assetQuery.CountAsync(a => a.Status == AssetStatus.Defect, ct);
 
         if (defectCount > 0)
         {
@@ -202,7 +236,7 @@ public class ReportsOverviewService
         }
 
         var staleThreshold = DateTime.UtcNow.AddDays(-30);
-        var staleCount = await _db.Assets.AsNoTracking()
+        var staleCount = await assetQuery
             .CountAsync(a => a.IntuneLastCheckIn != null && a.IntuneLastCheckIn < staleThreshold, ct);
 
         if (staleCount > 0)
@@ -224,12 +258,20 @@ public class ReportsOverviewService
     // Trend (last 30 days, per-day event counts by type)
     // ──────────────────────────────────────────────────────────────────────────
 
-    private async Task<List<ActivityTrendPointDto>> ComputeTrendAsync(CancellationToken ct)
+    private async Task<List<ActivityTrendPointDto>> ComputeTrendAsync(int[]? typeFilter, CancellationToken ct)
     {
         var since = DateTime.UtcNow.Date.AddDays(-29); // last 30 days inclusive
 
-        var events = await _db.AssetEvents.AsNoTracking()
-            .Where(e => e.EventDate >= since)
+        var query = _db.AssetEvents.AsNoTracking().Where(e => e.EventDate >= since);
+        if (typeFilter is not null)
+        {
+            query = query.Where(e =>
+                _db.Assets.Any(a => a.Id == e.AssetId
+                                    && a.AssetTypeId != null
+                                    && typeFilter.Contains(a.AssetTypeId.Value)));
+        }
+
+        var events = await query
             .Select(e => new { e.EventDate, e.EventType })
             .ToListAsync(ct);
 
