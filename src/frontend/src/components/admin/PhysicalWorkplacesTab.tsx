@@ -43,7 +43,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 
 import { useSearchParams } from 'react-router-dom';
@@ -143,7 +142,6 @@ const PhysicalWorkplacesTab = () => {
 
   // ── Search & filter state — initialised from URL params ──────────────────
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get('q') ?? '');
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterState, setFilterState] = useState<WorkplacesFilterState>(() => {
     const types = (searchParams.get('types') ?? '').split(',').filter(Boolean) as WorkplaceType[];
     const active = searchParams.get('active') ?? 'all';
@@ -627,15 +625,16 @@ const PhysicalWorkplacesTab = () => {
       <Paper
         elevation={0}
         sx={{
-          mb: filtersOpen ? 0 : 1.5,
+          mb: 1.5,
           p: 1.5,
-          borderRadius: filtersOpen ? '12px 12px 0 0' : 2,
+          borderRadius: 2,
           bgcolor: bgBase,
           border: '1px solid',
           borderColor: alpha('#009688', 0.2),
           borderLeft: '3px solid #009688',
         }}
       >
+        {/* Row 1: search + count + CSV actions */}
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           {/* Search */}
           <TextField
@@ -672,28 +671,7 @@ const PhysicalWorkplacesTab = () => {
             }}
           />
 
-          {/* Filter toggle */}
-          <Tooltip title={filtersOpen ? 'Filters sluiten' : 'Filters openen'}>
-            <IconButton
-              size="small"
-              onClick={() => setFiltersOpen((p) => !p)}
-              sx={{
-                width: 34,
-                height: 34,
-                bgcolor: (filtersOpen || hasActiveFilters) ? alpha('#009688', 0.12) : 'transparent',
-                color: '#009688',
-                border: '1px solid',
-                borderColor: (filtersOpen || hasActiveFilters) ? '#009688' : alpha('#009688', 0.25),
-                borderRadius: 1.5,
-                transition: 'all 0.15s ease',
-                '&:hover': { bgcolor: alpha('#009688', 0.1) },
-              }}
-            >
-              <FilterListIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-
-          {/* Active filter chips summary */}
+          {/* Active filter chips summary — aggregate clear-all */}
           {hasActiveFilters && (
             <Chip
               label={`${[
@@ -810,14 +788,15 @@ const PhysicalWorkplacesTab = () => {
             style={{ display: 'none' }}
           />
         </Stack>
-      </Paper>
 
-      {/* ── Advanced Filters Panel ───────────────────────────────────────── */}
-      <WorkplacesFiltersPanel
-        filters={filterState}
-        onChange={setFilterState}
-        open={filtersOpen}
-      />
+        {/* Row 2: always-visible filter button row */}
+        <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${alpha('#009688', 0.1)}` }}>
+          <WorkplacesFiltersPanel
+            filters={filterState}
+            onChange={setFilterState}
+          />
+        </Box>
+      </Paper>
 
       {/* ── Quick Add Row ────────────────────────────────────────────────── */}
       <WorkplacesQuickAddRow
